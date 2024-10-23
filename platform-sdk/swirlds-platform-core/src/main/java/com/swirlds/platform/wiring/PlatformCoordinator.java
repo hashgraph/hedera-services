@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
@@ -40,6 +39,7 @@ import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.UnsignedEvent;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;

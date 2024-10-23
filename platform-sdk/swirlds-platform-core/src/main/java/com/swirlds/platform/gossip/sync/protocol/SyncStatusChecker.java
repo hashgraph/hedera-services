@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.sync.protocol;
 
-import com.swirlds.common.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.Set;

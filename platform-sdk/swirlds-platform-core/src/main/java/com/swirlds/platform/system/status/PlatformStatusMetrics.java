@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.system.status;
 
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.stats.StatConstructor;

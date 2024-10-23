@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.PlatformStatus.ACTIVE;
-import static com.swirlds.common.PlatformStatus.CHECKING;
-import static com.swirlds.common.PlatformStatus.FREEZING;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.CHECKING;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
@@ -43,6 +42,7 @@ import com.swirlds.platform.event.creation.rules.MaximumRateRule;
 import com.swirlds.platform.event.creation.rules.PlatformHealthRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.pool.TransactionPoolNexus;
+import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Duration;
 import java.util.List;
 import java.util.Random;

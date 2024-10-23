@@ -20,6 +20,6 @@ package com.swirlds.common;
  * An interface for platform status actions.
  * <p>
  * A platform status action is an occurrence that has the potential to affect the
- * {@link PlatformStatus PlatformStatus}
+ * {PlatformStatus}
  */
 public interface PlatformStatusAction {}

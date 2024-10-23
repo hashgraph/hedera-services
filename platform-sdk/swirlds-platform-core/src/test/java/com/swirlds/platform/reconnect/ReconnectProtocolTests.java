@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.common.PlatformStatus.ACTIVE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,7 +34,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.service.gossip.FallenBehindManager;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
@@ -52,6 +51,7 @@ import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;

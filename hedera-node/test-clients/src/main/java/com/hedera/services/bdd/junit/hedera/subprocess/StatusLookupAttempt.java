@@ -16,9 +16,9 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
-import static com.swirlds.common.PlatformStatus.*;
+import static com.swirlds.platform.system.status.PlatformStatus.*;
 
-import com.swirlds.common.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

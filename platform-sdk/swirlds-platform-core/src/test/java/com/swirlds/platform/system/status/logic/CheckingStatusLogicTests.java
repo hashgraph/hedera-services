@@ -22,9 +22,9 @@ import static com.swirlds.platform.system.status.logic.StatusLogicTestUtils.trig
 
 import com.hedera.service.gossip.impl.FallenBehindAction;
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;

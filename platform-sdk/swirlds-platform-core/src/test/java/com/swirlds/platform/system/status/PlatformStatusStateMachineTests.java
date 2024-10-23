@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.system.status;
 
-import static com.swirlds.common.PlatformStatus.ACTIVE;
-import static com.swirlds.common.PlatformStatus.BEHIND;
-import static com.swirlds.common.PlatformStatus.CATASTROPHIC_FAILURE;
-import static com.swirlds.common.PlatformStatus.CHECKING;
-import static com.swirlds.common.PlatformStatus.FREEZE_COMPLETE;
-import static com.swirlds.common.PlatformStatus.FREEZING;
-import static com.swirlds.common.PlatformStatus.OBSERVING;
-import static com.swirlds.common.PlatformStatus.RECONNECT_COMPLETE;
-import static com.swirlds.common.PlatformStatus.REPLAYING_EVENTS;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
+import static com.swirlds.platform.system.status.PlatformStatus.CATASTROPHIC_FAILURE;
+import static com.swirlds.platform.system.status.PlatformStatus.CHECKING;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZING;
+import static com.swirlds.platform.system.status.PlatformStatus.OBSERVING;
+import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
+import static com.swirlds.platform.system.status.PlatformStatus.REPLAYING_EVENTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;

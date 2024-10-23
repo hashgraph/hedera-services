@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.system.status;
 
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.PlatformStatusAction;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;

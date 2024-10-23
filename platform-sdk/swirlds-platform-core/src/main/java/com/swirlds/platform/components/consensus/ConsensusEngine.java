@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.components.consensus;
 
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.events.CesEvent;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 

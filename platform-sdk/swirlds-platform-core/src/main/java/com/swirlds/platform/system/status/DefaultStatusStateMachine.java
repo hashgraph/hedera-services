@@ -22,7 +22,6 @@ import static com.swirlds.logging.legacy.LogMarker.PLATFORM_STATUS;
 
 import com.hedera.service.gossip.impl.FallenBehindAction;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.PlatformStatusAction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;

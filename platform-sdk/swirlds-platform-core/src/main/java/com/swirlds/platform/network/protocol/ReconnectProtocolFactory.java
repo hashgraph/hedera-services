@@ -18,7 +18,6 @@ package com.swirlds.platform.network.protocol;
 
 import com.hedera.service.gossip.FallenBehindManager;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -29,6 +28,7 @@ import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
