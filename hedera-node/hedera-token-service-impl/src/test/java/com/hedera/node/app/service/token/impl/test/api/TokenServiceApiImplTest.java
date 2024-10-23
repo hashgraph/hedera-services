@@ -193,8 +193,10 @@ class TokenServiceApiImplTest {
 
     @Test
     void finalizesHollowAccountAsContractAsExpected() {
+        final var numAssociations = 3;
         accountStore.put(Account.newBuilder()
                 .accountId(CONTRACT_ACCOUNT_ID)
+                .numberAssociations(numAssociations)
                 .key(IMMUTABILITY_SENTINEL_KEY)
                 .build());
 
@@ -205,6 +207,7 @@ class TokenServiceApiImplTest {
         assertNotNull(finalizedAccount);
         assertEquals(Key.newBuilder().contractID(CONTRACT_ID_BY_NUM).build(), finalizedAccount.key());
         assertTrue(finalizedAccount.smartContract());
+        assertEquals(finalizedAccount.maxAutoAssociations(), numAssociations);
     }
 
     @Test

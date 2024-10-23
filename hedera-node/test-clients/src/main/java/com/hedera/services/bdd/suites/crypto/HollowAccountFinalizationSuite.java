@@ -153,8 +153,7 @@ public class HollowAccountFinalizationSuite {
                             .via(TRANSFER_TXN_2);
 
                     final var op3 = getAliasedAccountInfo(evmAddress)
-                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias())
-                            .logged();
+                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
 
                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
                             getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged();

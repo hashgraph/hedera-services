@@ -446,10 +446,17 @@ public class HandleHederaOperations implements HederaOperations {
         };
     }
 
+    /**
+     * Standardizes the given {@link ContractCreateTransactionBody} to not include initcode, gas, and initial balance
+     * values as these parameters are only set on the top-level HAPI transactions.
+     *
+     * @param createdNumber the number of the created contract
+     * @param op the operation to standardize
+     * @return the standardized operation
+     */
     private ContractCreateTransactionBody standardized(
             final long createdNumber, @NonNull final ContractCreateTransactionBody op) {
         if (needsStandardization(op)) {
-            // Initial balance, gas, and initcode are only set on top-level HAPI transactions
             return new ContractCreateTransactionBody(
                     com.hedera.hapi.node.contract.codec.ContractCreateTransactionBodyProtoCodec.INITCODE_SOURCE_UNSET,
                     op.adminKey(),
