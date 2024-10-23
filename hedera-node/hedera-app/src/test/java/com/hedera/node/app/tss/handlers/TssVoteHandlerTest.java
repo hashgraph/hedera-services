@@ -144,16 +144,16 @@ class TssVoteHandlerTest {
     @Test
     void hasReachedThresholdReturnsFalseWhenThresholdIsNotMet() {
         // Setup in-memory data
-        RosterEntry rosterEntry1 = new RosterEntry(1L, 1L, null, null, List.of());
-        RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, null, List.of());
-        Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2));
-        TssVoteTransactionBody voteTransactionBody =
+        final RosterEntry rosterEntry1 = new RosterEntry(1L, 1L, null, null, List.of());
+        final RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, null, List.of());
+        final Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2));
+        final TssVoteTransactionBody voteTransactionBody =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);
-        TssVoteTransactionBody voteTransactionBody2 =
+        final TssVoteTransactionBody voteTransactionBody2 =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.fromHex("01"));
 
         // Setup stores
-        Map<TssVoteMapKey, TssVoteTransactionBody> voteStore = new HashMap<>();
+        final Map<TssVoteMapKey, TssVoteTransactionBody> voteStore = new HashMap<>();
         voteStore.put(new TssVoteMapKey(Bytes.EMPTY, 1L), voteTransactionBody);
         voteStore.put(new TssVoteMapKey(Bytes.EMPTY, 2L), voteTransactionBody2);
 
@@ -167,24 +167,24 @@ class TssVoteHandlerTest {
         when(tssBaseStore.getVote(any(TssVoteMapKey.class)))
                 .thenAnswer(invocation -> voteStore.get(invocation.getArgument(0)));
 
-        boolean result = TssVoteHandler.hasReachedThreshold(voteTransactionBody, handleContext, 2L);
+        final boolean result = TssVoteHandler.hasReachedThreshold(voteTransactionBody, handleContext, 2L);
 
-        assertFalse(result);
+        assertFalse(result, "Threshold should not be met");
     }
 
     @Test
     void hasReachedThresholdReturnsFalseWhenThresholdIsMet() {
         // Setup in-memory data
-        RosterEntry rosterEntry1 = new RosterEntry(1L, 2L, null, null, List.of());
-        RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, null, List.of());
+        final RosterEntry rosterEntry1 = new RosterEntry(1L, 2L, null, null, List.of());
+        final RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, null, List.of());
         Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2));
-        TssVoteTransactionBody voteTransactionBody =
+        final TssVoteTransactionBody voteTransactionBody =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);
-        TssVoteTransactionBody voteTransactionBody2 =
+        final TssVoteTransactionBody voteTransactionBody2 =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.fromHex("01"));
 
         // Setup stores
-        Map<TssVoteMapKey, TssVoteTransactionBody> voteStore = new HashMap<>();
+        final Map<TssVoteMapKey, TssVoteTransactionBody> voteStore = new HashMap<>();
         voteStore.put(new TssVoteMapKey(Bytes.EMPTY, 1L), voteTransactionBody);
         voteStore.put(new TssVoteMapKey(Bytes.EMPTY, 2L), voteTransactionBody2);
 
@@ -200,7 +200,7 @@ class TssVoteHandlerTest {
 
         boolean result = TssVoteHandler.hasReachedThreshold(voteTransactionBody, handleContext, 2L);
 
-        assertTrue(result);
+        assertTrue(result, "Threshold should be met");
     }
 
     @Test

@@ -88,24 +88,26 @@ public class TssVoteHandler implements TransactionHandler {
      * @return true if the threshold has been reached, false otherwise
      */
     public static boolean hasReachedThreshold(
-            TssVoteTransactionBody tssVoteTransaction, HandleContext context, double thresholdDenominator) {
-        final var tssBaseStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
+            @NonNull final TssVoteTransactionBody tssVoteTransaction,
+            @NonNull final HandleContext context,
+            final double thresholdDenominator) {
         final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
 
-        // Get the target roster from the TssVoteTransactionBody
-        Bytes targetRosterHash = tssVoteTransaction.targetRosterHash();
-
         // Get all votes for the active roster
-        Map<RosterEntry, TssVoteTransactionBody> voteByNode = new HashMap<>();
+        final Map<RosterEntry, TssVoteTransactionBody> voteByNode = new HashMap<>();
 
-        // Also get the total active roster weight
-        long activeRosterTotalWeight = 0;
-
-        Roster activeRoster = rosterStore.getActiveRoster();
+        final Roster activeRoster = rosterStore.getActiveRoster();
         if (activeRoster == null) {
             throw new IllegalArgumentException("No active roster found");
         }
 
+        // Get the target roster from the TssVoteTransactionBody
+        final Bytes targetRosterHash = tssVoteTransaction.targetRosterHash();
+
+        // Also get the total active roster weight
+        long activeRosterTotalWeight = 0;
+
+        final var tssBaseStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
         // For every node in the active roster, check if there is a vote for the target roster hash
         for (RosterEntry rosterEntry : rosterStore.getActiveRoster().rosterEntries()) {
             activeRosterTotalWeight += rosterEntry.weight();
@@ -119,7 +121,7 @@ public class TssVoteHandler implements TransactionHandler {
         long voteWeight = 0L;
 
         // Iterate over the votes which has the same target roster hash
-        for (RosterEntry rosterEntryKey : voteByNode.keySet()) {
+        for (final RosterEntry rosterEntryKey : voteByNode.keySet()) {
             final TssVoteTransactionBody vote = voteByNode.get(rosterEntryKey);
             // If the vote byte array matches the one in the TssVoteTransaction, add the weight of the vote to the
             // counter
