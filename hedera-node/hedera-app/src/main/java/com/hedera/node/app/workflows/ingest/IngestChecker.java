@@ -55,6 +55,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeBuffer;
@@ -97,6 +98,7 @@ public final class IngestChecker {
     private final Authorizer authorizer;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private final InstantSource instantSource;
+    private final OpWorkflowMetrics workflowMetrics;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -111,6 +113,7 @@ public final class IngestChecker {
      * @param feeManager the {@link FeeManager} that manages {@link com.hedera.node.app.spi.fees.FeeCalculator}s
      * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
      * @param instantSource the {@link InstantSource} that provides the current time
+     * @param workflowMetrics the {@link OpWorkflowMetrics} that manages the metrics for all operations
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -126,7 +129,8 @@ public final class IngestChecker {
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final OpWorkflowMetrics workflowMetrics) {
         this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
@@ -139,6 +143,7 @@ public final class IngestChecker {
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.synchronizedThrottleAccumulator = requireNonNull(synchronizedThrottleAccumulator);
         this.instantSource = requireNonNull(instantSource);
+        this.workflowMetrics = requireNonNull(workflowMetrics);
     }
 
     /**
@@ -195,6 +200,7 @@ public final class IngestChecker {
         final var hederaConfig = configuration.getConfigData(HederaConfig.class);
         if (hederaConfig.ingestThrottleEnabled()) {
             if (synchronizedThrottleAccumulator.shouldThrottle(txInfo, state)) {
+                workflowMetrics.incrementThrottled(functionality);
                 throw new PreCheckException(BUSY);
             }
         }

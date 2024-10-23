@@ -27,7 +27,7 @@ import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,7 +73,7 @@ class OpWorkflowMetricsTest {
         assertThat(metrics.getMetric("app", "cryptoCreateDurationAvg").get(VALUE))
                 .isEqualTo(0);
         assertThat(metrics.getMetric("app", "cryptoCreateThrottledTps").get(VALUE))
-                .isEqualTo(0.0);
+                .isSameAs(0L);
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -154,8 +154,8 @@ class OpWorkflowMetricsTest {
         handleWorkflowMetrics.incrementThrottled(HederaFunctionality.CRYPTO_CREATE);
 
         // then
-        var throttledMetric = (SpeedometerMetric) metrics.getMetric("app", "cryptoCreateThrottledTps");
-        assertThat(throttledMetric.get(VALUE) >= 1).isTrue();
+        var throttledMetric = (Counter) metrics.getMetric("app", "cryptoCreateThrottledTps");
+        assertThat(throttledMetric.get()).isSameAs(1L);
     }
 
     @Test

@@ -69,6 +69,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
@@ -168,6 +169,9 @@ class DispatchProcessorTest {
     @Mock
     private NetworkInfo networkInfo;
 
+    @Mock
+    private OpWorkflowMetrics opWorkflowMetrics;
+
     private DispatchProcessor subject;
 
     @BeforeEach
@@ -182,7 +186,8 @@ class DispatchProcessorTest {
                 exchangeRateManager,
                 dispatcher,
                 ethereumTransactionHandler,
-                networkInfo);
+                networkInfo,
+                opWorkflowMetrics);
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
     }

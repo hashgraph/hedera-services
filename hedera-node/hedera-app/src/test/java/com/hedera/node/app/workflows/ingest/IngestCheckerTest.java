@@ -71,6 +71,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -129,6 +130,9 @@ class IngestCheckerTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
     private Authorizer authorizer;
+
+    @Mock
+    private OpWorkflowMetrics opWorkflowMetrics;
 
     @Mock(strictness = LENIENT)
     private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
@@ -192,7 +196,8 @@ class IngestCheckerTest extends AppTestBase {
                 feeManager,
                 authorizer,
                 synchronizedThrottleAccumulator,
-                instantSource);
+                instantSource,
+                opWorkflowMetrics);
     }
 
     @Nested
@@ -242,7 +247,8 @@ class IngestCheckerTest extends AppTestBase {
                 feeManager,
                 authorizer,
                 synchronizedThrottleAccumulator,
-                instantSource);
+                instantSource,
+                opWorkflowMetrics);
 
         // Then the checker should throw a PreCheckException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))

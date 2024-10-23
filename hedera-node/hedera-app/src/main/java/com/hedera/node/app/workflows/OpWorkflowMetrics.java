@@ -24,7 +24,7 @@ import com.hedera.node.config.data.StatsConfig;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.RunningAverageMetric.Config;
-import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.IntegerAccumulator;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,7 +49,7 @@ public class OpWorkflowMetrics {
     private final Map<HederaFunctionality, TransactionMetric> transactionDurationMetrics =
             new EnumMap<>(HederaFunctionality.class);
 
-    private final Map<HederaFunctionality, SpeedometerMetric> transactionThrottleMetrics =
+    private final Map<HederaFunctionality, Counter> transactionThrottleMetrics =
             new EnumMap<>(HederaFunctionality.class);
 
     private final RunningAverageMetric gasPerConsSec;
@@ -86,10 +86,9 @@ public class OpWorkflowMetrics {
             transactionDurationMetrics.put(functionality, new TransactionMetric(maxMetric, avgMetric));
 
             // initialize the transaction throttle metrics
-            //TODO: check that this configuration is correct
-            final var throttledConfig = new SpeedometerMetric.Config("app", name + "ThrottledTps")
-                    .withDescription("The number of " + name + " transactions that failed due to throttling per second")
-                    .withUnit("tps");
+            // TODO: check that this configuration is correct
+            final var throttledConfig = new Counter.Config("app", name + "ThrottledTps")
+                    .withDescription("The number of " + name + " transactions that failed due to throttling");
             transactionThrottleMetrics.put(functionality, metrics.getOrCreate(throttledConfig));
         }
 
@@ -131,7 +130,7 @@ public class OpWorkflowMetrics {
         }
         final var metric = transactionThrottleMetrics.get(functionality);
         if (metric != null) {
-            metric.cycle();
+            metric.increment();
         }
     }
 
