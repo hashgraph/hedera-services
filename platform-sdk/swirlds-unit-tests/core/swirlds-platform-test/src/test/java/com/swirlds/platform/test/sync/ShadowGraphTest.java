@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.service.gossip.impl.NoOpIntakeEventCounter;
+import com.hedera.service.gossip.impl.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -39,7 +40,6 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.ReservedEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;

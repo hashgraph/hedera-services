@@ -29,6 +29,8 @@ import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeTheirTipsIH
 
 import com.hedera.service.gossip.FallenBehindManager;
 import com.hedera.service.gossip.IntakeEventCounter;
+import com.hedera.service.gossip.impl.shadowgraph.SyncResult;
+import com.hedera.service.gossip.impl.shadowgraph.SyncTiming;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;

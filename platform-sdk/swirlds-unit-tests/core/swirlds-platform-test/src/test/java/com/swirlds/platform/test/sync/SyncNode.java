@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.service.gossip.IntakeEventCounter;
 import com.hedera.service.gossip.impl.NoOpIntakeEventCounter;
+import com.hedera.service.gossip.impl.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -37,7 +38,6 @@ import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig_;
 import com.swirlds.platform.internal.EventImpl;

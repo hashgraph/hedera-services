@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import com.hedera.service.gossip.impl.shadowgraph.ShadowgraphReservation;
 import com.swirlds.platform.consensus.EventWindow;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.shadowgraph;
+package com.hedera.service.gossip.impl.shadowgraph;
 
 /**
- * An exception thrown by {@link Shadowgraph} when an event cannot be added to the shadow graph.
+ * An exception thrown by {Shadowgraph} when an event cannot be added to the shadow graph.
  */
 public class ShadowgraphInsertionException extends RuntimeException {
 

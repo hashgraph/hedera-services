@@ -22,14 +22,14 @@ import static com.swirlds.metrics.api.FloatFormats.FORMAT_8_1;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
+import com.hedera.service.gossip.impl.shadowgraph.SyncResult;
+import com.hedera.service.gossip.impl.shadowgraph.SyncTiming;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
-import com.swirlds.platform.gossip.shadowgraph.SyncResult;
-import com.swirlds.platform.gossip.shadowgraph.SyncTiming;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageAndMaxTimeStat;
