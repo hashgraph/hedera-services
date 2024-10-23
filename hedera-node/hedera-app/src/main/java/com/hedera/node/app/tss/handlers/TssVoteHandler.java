@@ -93,13 +93,13 @@ public class TssVoteHandler implements TransactionHandler {
             final double thresholdDenominator) {
         final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
 
-        // Get all votes for the active roster
-        final Map<RosterEntry, TssVoteTransactionBody> voteByNode = new HashMap<>();
-
         final Roster activeRoster = rosterStore.getActiveRoster();
         if (activeRoster == null) {
             throw new IllegalArgumentException("No active roster found");
         }
+
+        // Get all votes for the active roster
+        final Map<RosterEntry, TssVoteTransactionBody> voteByNode = new HashMap<>();
 
         // Get the target roster from the TssVoteTransactionBody
         final Bytes targetRosterHash = tssVoteTransaction.targetRosterHash();
@@ -109,7 +109,7 @@ public class TssVoteHandler implements TransactionHandler {
 
         final var tssBaseStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
         // For every node in the active roster, check if there is a vote for the target roster hash
-        for (RosterEntry rosterEntry : rosterStore.getActiveRoster().rosterEntries()) {
+        for (final RosterEntry rosterEntry : rosterStore.getActiveRoster().rosterEntries()) {
             activeRosterTotalWeight += rosterEntry.weight();
             final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(targetRosterHash, rosterEntry.nodeId());
             if (tssBaseStore.exists(tssVoteMapKey)) {

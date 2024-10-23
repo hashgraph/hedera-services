@@ -177,7 +177,7 @@ class TssVoteHandlerTest {
         // Setup in-memory data
         final RosterEntry rosterEntry1 = new RosterEntry(1L, 2L, null, null, List.of());
         final RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, null, List.of());
-        Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2));
+        final Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2));
         final TssVoteTransactionBody voteTransactionBody =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);
         final TssVoteTransactionBody voteTransactionBody2 =
