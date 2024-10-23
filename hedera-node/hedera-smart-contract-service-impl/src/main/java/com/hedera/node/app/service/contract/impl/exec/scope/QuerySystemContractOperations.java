@@ -75,7 +75,13 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     }
 
     @Override
-    public @NonNull Predicate<Key> activeSignatureTestWith(@NonNull final VerificationStrategy strategy) {
+    public @NonNull Predicate<Key> primitiveSignatureTestWith(@NonNull final VerificationStrategy strategy) {
+        throw new UnsupportedOperationException("Cannot compute a signature test");
+    }
+
+    @NonNull
+    @Override
+    public Predicate<Key> signatureTestWith(@NonNull final VerificationStrategy strategy) {
         throw new UnsupportedOperationException("Cannot compute a signature test");
     }
 
