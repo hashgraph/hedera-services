@@ -24,14 +24,17 @@ import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Provides read-only access to the TSS base store.
  */
-public class ReadableTssBaseStore implements ReadableTssStore {
+public class ReadableTssStoreImpl implements ReadableTssStore {
     /**
      * The underlying data storage class that holds the airdrop data.
      */
@@ -40,11 +43,11 @@ public class ReadableTssBaseStore implements ReadableTssStore {
     private final ReadableKVState<TssVoteMapKey, TssVoteTransactionBody> readableTssVoteState;
 
     /**
-     * Create a new {@link ReadableTssBaseStore} instance.
+     * Create a new {@link ReadableTssStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableTssBaseStore(@NonNull final ReadableStates states) {
+    public ReadableTssStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
         this.readableTssMessageState = states.get(TSS_MESSAGE_MAP_KEY);
         this.readableTssVoteState = states.get(TSS_VOTE_MAP_KEY);
@@ -85,5 +88,16 @@ public class ReadableTssBaseStore implements ReadableTssStore {
     @Override
     public long messageStateSize() {
         return readableTssMessageState.size();
+    }
+
+    @Override
+    public List<TssMessageTransactionBody> getTssMessages(final Bytes rosterHash) {
+        final List<TssMessageTransactionBody> tssMessages = new ArrayList<>();
+        readableTssMessageState.keys().forEachRemaining(key -> {
+            if (key.rosterHash().equals(rosterHash)) {
+                tssMessages.add(readableTssMessageState.get(key));
+            }
+        });
+        return tssMessages;
     }
 }
