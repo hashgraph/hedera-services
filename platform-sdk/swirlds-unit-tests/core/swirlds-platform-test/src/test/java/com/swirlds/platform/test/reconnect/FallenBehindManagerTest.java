@@ -32,9 +32,9 @@ import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import org.hiero.consensus.gossip.FallenBehindManager;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.hiero.consensus.gossip.FallenBehindManager;
 import org.junit.jupiter.api.Test;
 
 class FallenBehindManagerTest {
