@@ -1187,7 +1187,7 @@ public class EnhancedKeyStoreLoader {
      * <ul>
      *     <li>s-private-alias.pem - the private signing key </li>
      *     <li>s-public-alias.pem - the public signing certificates of each node</li>
-     *     <li>all *.pfx files moved to <b>OLD_PFX_KEYS</b> sub-directory and no longer used.</li>
+     *     <li>all *.pfx files moved to <b>OLD_PFX_KEYS</b> subdirectory and no longer used.</li>
      *     <li>all agreement key material is deleted from disk.</li>
      * </ul>
      *
@@ -1216,7 +1216,7 @@ public class EnhancedKeyStoreLoader {
             logger.error(STARTUP.getMarker(), "Due to {} errors, reverting pem file creation.", errorCount);
             rollBackSigningKeysAndCertsChanges(pfxPrivateKeys, pfxCertificates);
         } else {
-            // cleanup pfx files by moving them to sub-directory
+            // cleanup pfx files by moving them to subdirectory
             cleanupByMovingPfxFilesToSubDirectory();
             logger.info(STARTUP.getMarker(), "Finished key store migration.");
         }
@@ -1436,7 +1436,7 @@ public class EnhancedKeyStoreLoader {
     }
 
     /**
-     * Move the PFX files to the OLD_PFX_KEYS sub-directory.
+     * Move the PFX files to the OLD_PFX_KEYS subdirectory.
      *
      * @throws KeyStoreException   if the underlying method calls throw this exception.
      * @throws KeyLoadingException if the underlying method calls throw this exception.
@@ -1444,8 +1444,10 @@ public class EnhancedKeyStoreLoader {
     private void cleanupByMovingPfxFilesToSubDirectory() throws KeyStoreException, KeyLoadingException {
         final AtomicLong cleanupErrorCount = new AtomicLong(0);
 
+        final String archiveDirectory = ".archive";
         final String now = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").format(LocalDateTime.now());
-        final Path pfxArchiveDirectory = keyStoreDirectory.resolve(".archive");
+        final String newDirectory = archiveDirectory + File.pathSeparator + now;
+        final Path pfxArchiveDirectory = keyStoreDirectory.resolve(archiveDirectory);
         final Path pfxDateDirectory = pfxArchiveDirectory.resolve(now);
 
         logger.info(STARTUP.getMarker(), "Cryptography Migration Cleanup: Moving PFX files to {}", pfxDateDirectory);
@@ -1459,7 +1461,8 @@ public class EnhancedKeyStoreLoader {
             } catch (final IOException e) {
                 logger.error(
                         ERROR.getMarker(),
-                        "Failed to create [.archive/yyyy-MM-dd_HH-mm-ss] sub-directory. Manual cleanup required.");
+                        "Failed to create [{}] subdirectory. Manual cleanup required.",
+                        newDirectory);
                 return;
             }
         }
@@ -1485,10 +1488,11 @@ public class EnhancedKeyStoreLoader {
         if (cleanupErrorCount.get() > 0) {
             logger.error(
                     ERROR.getMarker(),
-                    "Failed to move {} PFX files to [.archive/yyyy-MM-dd_HH-mm-ss]. Manual cleanup required.",
-                    cleanupErrorCount.get());
+                    "Failed to move {} PFX files to [{}] subdirectory. Manual cleanup required.",
+                    cleanupErrorCount.get(),
+                    newDirectory);
             throw new IllegalStateException(
-                    "Cryptography Migration failed to move PFX files to [.archive/yyyy-MM-dd_HH-mm-ss] sub-directory.");
+                    "Cryptography Migration failed to move PFX files to [" + newDirectory + "] subdirectory.");
         }
     }
 
