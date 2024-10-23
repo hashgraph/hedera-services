@@ -145,7 +145,7 @@ class TssVoteHandlerTest {
     void hasReachedThresholdReturnsFalseWhenThresholdIsNotMet() {
         // Setup in-memory data
         final RosterEntry rosterEntry1 = new RosterEntry(1L, 1L, null, null, List.of());
-        final RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, null, List.of());
+        final RosterEntry rosterEntry2 = new RosterEntry(2L, 3L, null, null, List.of());
         final Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2));
         final TssVoteTransactionBody voteTransactionBody =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);
@@ -167,15 +167,16 @@ class TssVoteHandlerTest {
         when(tssBaseStore.getVote(any(TssVoteMapKey.class)))
                 .thenAnswer(invocation -> voteStore.get(invocation.getArgument(0)));
 
-        final boolean result = TssVoteHandler.hasReachedThreshold(voteTransactionBody, handleContext, 2L);
+        final boolean result = TssVoteHandler.hasReachedThreshold(
+                voteTransactionBody, handleContext, TssVoteHandler.CONSENSUS_VOTE_THRESHOLD_ONE_THIRD);
 
         assertFalse(result, "Threshold should not be met");
     }
 
     @Test
-    void hasReachedThresholdReturnsFalseWhenThresholdIsMet() {
+    void hasReachedThresholdReturnsTrueWhenThresholdIsMet() {
         // Setup in-memory data
-        final RosterEntry rosterEntry1 = new RosterEntry(1L, 2L, null, null, List.of());
+        final RosterEntry rosterEntry1 = new RosterEntry(1L, 1L, null, null, List.of());
         final RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, null, List.of());
         final Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2));
         final TssVoteTransactionBody voteTransactionBody =
@@ -198,7 +199,8 @@ class TssVoteHandlerTest {
         when(tssBaseStore.getVote(any(TssVoteMapKey.class)))
                 .thenAnswer(invocation -> voteStore.get(invocation.getArgument(0)));
 
-        boolean result = TssVoteHandler.hasReachedThreshold(voteTransactionBody, handleContext, 2L);
+        boolean result = TssVoteHandler.hasReachedThreshold(
+                voteTransactionBody, handleContext, TssVoteHandler.CONSENSUS_VOTE_THRESHOLD_ONE_THIRD);
 
         assertTrue(result, "Threshold should be met");
     }
