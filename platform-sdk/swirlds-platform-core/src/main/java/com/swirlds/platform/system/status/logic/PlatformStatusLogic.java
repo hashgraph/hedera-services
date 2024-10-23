@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.system.status.logic;
 
+import com.hedera.service.gossip.impl.FallenBehindAction;
+import com.swirlds.common.PlatformStatusAction;
 import com.swirlds.platform.system.status.IllegalPlatformStatusException;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
-import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
-import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.SelfEventReachedConsensusAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;

@@ -19,6 +19,7 @@ package com.swirlds.platform.state;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.StatusActionSubmitter;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
@@ -28,7 +29,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.uptime.UptimeTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.system.status.actions;
 
+import com.swirlds.common.PlatformStatusAction;
+
 /**
  * An action to indicate that the state has been written to disk
  *

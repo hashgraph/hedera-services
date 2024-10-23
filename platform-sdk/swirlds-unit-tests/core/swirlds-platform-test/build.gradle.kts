@@ -34,5 +34,6 @@ testModuleInfo {
     requires("org.mockito.junit.jupiter")
     requires("com.swirlds.metrics.api")
     requires("org.mockito")
+    requires("com.hedera.service.gossip.impl")
     requiresStatic("com.github.spotbugs.annotations")
 }

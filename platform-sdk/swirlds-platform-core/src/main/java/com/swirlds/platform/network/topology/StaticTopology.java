@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.network.topology;
 
+import com.swirlds.common.NetworkTopology;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.PeerInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;

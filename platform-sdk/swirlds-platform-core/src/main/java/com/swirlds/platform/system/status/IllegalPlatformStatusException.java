@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system.status;
 
-import com.swirlds.platform.system.status.actions.PlatformStatusAction;
+import com.swirlds.common.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
