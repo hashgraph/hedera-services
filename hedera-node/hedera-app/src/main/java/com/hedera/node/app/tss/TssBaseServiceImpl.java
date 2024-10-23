@@ -121,7 +121,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var rosterStore = context.storeFactory().writableStore(WritableRosterStore.class);
         if (!Objects.equals(newCandidate, rosterStore.getCandidateRoster())
                 && !Objects.equals(newCandidate, rosterStore.getActiveRoster())) {
-            rosterStore.setCandidateRoster(newCandidate);
+            rosterStore.putCandidateRoster(newCandidate);
         }
     }
 
