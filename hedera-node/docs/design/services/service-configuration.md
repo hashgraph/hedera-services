@@ -1,11 +1,11 @@
 # Service Configuration
 
-The bulleted list below provides a comprehensive overview of the various configuration settings used in the Hedera Services. These settings are defined in various Config classes, 
-each managing a specific aspect of the system. For instance, 
-`AccountsConfig.java` controls account-related properties, while 
-`ContractsConfig.java` manages smart contract settings. 
-This document serves as a valuable resource for understanding how 
-Hedera Services can be customized and configured to meet specific requirements. 
+The bulleted list below provides a comprehensive overview of the various configuration settings used in the Hedera Services. These settings are defined in various Config classes,
+each managing a specific aspect of the system. For instance,
+`AccountsConfig.java` controls account-related properties, while
+`ContractsConfig.java` manages smart contract settings.
+This document serves as a valuable resource for understanding how
+Hedera Services can be customized and configured to meet specific requirements.
 For more detailed information on other types of configuration, please refer to the
 hedera-node/docs/design/services/service-configuration.md
 [Service Configuration](hedera-node/docs/services-configuration.md) file.
