@@ -205,6 +205,7 @@ class DispatchProcessorTest {
         verify(feeAccumulator).chargeNetworkFee(CREATOR_ACCOUNT_ID, FEES.networkFee());
         verify(recordBuilder).status(INVALID_PAYER_SIGNATURE);
         assertFinished(IsRootStack.NO);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -226,6 +227,8 @@ class DispatchProcessorTest {
         verifyNoInteractions(feeAccumulator);
         verify(dispatcher).dispatchHandle(context);
         verify(recordBuilder).status(SUCCESS);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
+
         assertFinished();
     }
 
@@ -245,6 +248,8 @@ class DispatchProcessorTest {
         verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(NOT_SUPPORTED);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
+
         assertFinished();
     }
 
@@ -264,6 +269,8 @@ class DispatchProcessorTest {
         verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(UNAUTHORIZED);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
+
         assertFinished();
     }
 
@@ -285,6 +292,8 @@ class DispatchProcessorTest {
         verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(AUTHORIZATION_FAILED);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
+
         assertFinished();
     }
 
@@ -306,6 +315,8 @@ class DispatchProcessorTest {
         verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(ENTITY_NOT_ALLOWED_TO_DELETE);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
+
         assertFinished();
     }
 
@@ -327,6 +338,8 @@ class DispatchProcessorTest {
         verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(INVALID_SIGNATURE);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
+
         assertFinished();
     }
 
@@ -350,6 +363,8 @@ class DispatchProcessorTest {
         verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(INVALID_SIGNATURE);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
+
         assertFinished();
     }
 
@@ -373,6 +388,8 @@ class DispatchProcessorTest {
         verify(dispatcher).dispatchHandle(context);
         verify(recordBuilder).status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
         verify(feeAccumulator, times(2)).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
+
         assertFinished();
     }
 
@@ -396,6 +413,7 @@ class DispatchProcessorTest {
         verify(dispatcher).dispatchHandle(context);
         verify(recordBuilder).status(CONTRACT_REVERT_EXECUTED);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
         assertFinished();
     }
 
@@ -419,6 +437,7 @@ class DispatchProcessorTest {
         verify(recordBuilder).status(CONSENSUS_GAS_EXHAUSTED);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
+        verify(opWorkflowMetrics).incrementThrottled(CONTRACT_CALL);
         assertFinished();
     }
 
@@ -444,6 +463,7 @@ class DispatchProcessorTest {
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
         verify(ethereumTransactionHandler).handleThrottled(context);
+        verify(opWorkflowMetrics).incrementThrottled(ETHEREUM_TRANSACTION);
         assertFinished();
     }
 
@@ -465,6 +485,7 @@ class DispatchProcessorTest {
         verify(recordBuilder).status(FAIL_INVALID);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
         assertFinished();
     }
 
@@ -491,6 +512,7 @@ class DispatchProcessorTest {
         verify(platformStateUpdates).handleTxBody(stack, CONTRACT_TXN_INFO.txBody());
         verify(recordBuilder, times(2)).status(SUCCESS);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
         assertFinished();
     }
 
@@ -510,6 +532,7 @@ class DispatchProcessorTest {
         verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
         verify(recordBuilder).status(SUCCESS);
         verify(feeAccumulator).chargeNetworkFee(PAYER_ACCOUNT_ID, FEES.totalFee());
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
         assertFinished(IsRootStack.NO);
     }
 
@@ -527,6 +550,7 @@ class DispatchProcessorTest {
 
         verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
         verify(recordBuilder).status(SUCCESS);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
         assertFinished(IsRootStack.NO);
     }
 
@@ -550,6 +574,7 @@ class DispatchProcessorTest {
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
         verify(recordBuilder).status(INSUFFICIENT_ACCOUNT_BALANCE);
         verifyNoInteractions(dispatcher);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
         assertFinished();
     }
 
@@ -569,6 +594,7 @@ class DispatchProcessorTest {
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
         verify(recordBuilder).status(DUPLICATE_TRANSACTION);
         verifyNoInteractions(dispatcher);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
         assertFinished();
     }
 

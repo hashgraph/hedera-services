@@ -144,7 +144,6 @@ public class DispatchProcessor {
      *
      * @param dispatch the dispatch to be processed
      * @param validationResult the due diligence report for the dispatch
-     * @return the work done by the dispatch
      */
     private void tryHandle(@NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
         try {

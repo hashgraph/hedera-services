@@ -198,11 +198,9 @@ public final class IngestChecker {
         // 4. Check throttles
         assertThrottlingPreconditions(txInfo, configuration);
         final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-        if (hederaConfig.ingestThrottleEnabled()) {
-            if (synchronizedThrottleAccumulator.shouldThrottle(txInfo, state)) {
-                workflowMetrics.incrementThrottled(functionality);
-                throw new PreCheckException(BUSY);
-            }
+        if (hederaConfig.ingestThrottleEnabled() && synchronizedThrottleAccumulator.shouldThrottle(txInfo, state)) {
+            workflowMetrics.incrementThrottled(functionality);
+            throw new PreCheckException(BUSY);
         }
 
         // 4a. Run pure checks
