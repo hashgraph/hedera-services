@@ -38,10 +38,12 @@ import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -131,8 +133,12 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
-        // (TSS-FUTURE) https://github.com/hashgraph/hedera-services/issues/14748
 
+        final var rosterStore = context.storeFactory().writableStore(WritableRosterStore.class);
+        if (!Objects.equals(roster, rosterStore.getCandidateRoster())
+                && !Objects.equals(roster, rosterStore.getActiveRoster())) {
+            rosterStore.putCandidateRoster(roster);
+        }
         // generate TSS messages based on the active roster and the candidate roster
         final var tssStore = context.storeFactory().readableStore(ReadableTssBaseStore.class);
         final var maxSharesPerNode =

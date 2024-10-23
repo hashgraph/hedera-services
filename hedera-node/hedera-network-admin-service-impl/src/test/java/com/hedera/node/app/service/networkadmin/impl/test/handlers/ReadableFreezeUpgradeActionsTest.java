@@ -427,6 +427,7 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc1CertificateHash"),
                 2,
                 false,
+                A_COMPLEX_KEY,
                 A_COMPLEX_KEY);
         final var node2 = new Node(
                 2,
@@ -440,6 +441,7 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc2CertificateHash"),
                 4,
                 false,
+                A_COMPLEX_KEY,
                 A_COMPLEX_KEY);
         final var node3 = new Node(
                 3,
@@ -453,6 +455,7 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc3CertificateHash"),
                 1,
                 true,
+                A_COMPLEX_KEY,
                 A_COMPLEX_KEY);
         final var node4 = new Node(
                 4,
@@ -467,6 +470,7 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc5CertificateHash"),
                 8,
                 false,
+                A_COMPLEX_KEY,
                 A_COMPLEX_KEY);
         final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
                 .value(new EntityNumber(4), node4)
@@ -551,6 +555,7 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc1CertificateHash"),
                 2,
                 false,
+                A_COMPLEX_KEY,
                 A_COMPLEX_KEY);
         final var node2 = new Node(
                 1,
@@ -564,6 +569,7 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc2CertificateHash"),
                 4,
                 false,
+                A_COMPLEX_KEY,
                 A_COMPLEX_KEY);
         final var node3 = new Node(
                 2,
@@ -577,6 +583,7 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc3CertificateHash"),
                 1,
                 false,
+                A_COMPLEX_KEY,
                 A_COMPLEX_KEY);
         final var node4 = new Node(
                 3,
@@ -591,6 +598,7 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc5CertificateHash"),
                 8,
                 true,
+                A_COMPLEX_KEY,
                 A_COMPLEX_KEY);
         final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
                 .value(new EntityNumber(3), node4)
