@@ -25,7 +25,8 @@ Some of the system accounts exist today and more can be created in the future. C
 EVM addresses in range 1 → 9 are special addresses on which the Ethereum precompiled contracts exist. This is valid for both Ethereum and Hedera. Please note that this list can expand in the future.
 
 Lastly, the system accounts can be divided in these two groups:
-- addresses in range 0 → 750 - accounts that reject hbar transfers. An exception is the HTS system contract that can receive transfers.
+- addresses in range 0 → 750 - accounts that reject hbar transfers. An exception is the HTS system contract that can receive transfers, see [below](#hedera-transfer-hts).
+  - _But see the exception for a token create call to the HTS system contract at `0.0.359` below
 - addresses in range 751 → 1000 - accounts which may receive transfers.
 
 ## Rationale
@@ -161,13 +162,15 @@ _Please note that the expected behavior described in this section is valid if th
     - success, if address is empty + creates the account;
     - fail, if address is a non-payable contract.
 
-**Hedera:**
+**Hedera:** <a id="hedera-transfer-hts"/>
 1. For addresses in range 0x0 → 0x2EE (0.0.0 → 0.0.750):
-    - Transfers using `.send` and `.transfer`: fail with status `INVALID_FEE_SUBMITTED`. Exception: `tokenCreate` to address 0x167 which is successful.
+    - Transfers using `.send` and `.transfer`: fail with status `INVALID_FEE_SUBMITTED`. **Exception: `tokenCreate` to the HTS system contract 0.0.359 (`0x167`) is allowed[^1].**
     - Transfer of HTS tokens through the HTS system contract: fail with status `INVALID_RECEIVING_NODE_ACCOUNT`.
 2. For addresses in range 0x2EF → 0x3E8 (0.0.751 → 0.0.1000):
     - success, if account exists and has `receiverSigRequired` == false;
     - success, if account exists and has `receiverSigRequired` == false and account is `sender`;
+    
+[^1]:  Transfer to the HTS system contract on token create is so that additional fees, beyond what's reasonable to put in gas (e.g., due to the gas throttle limit), can be paid.
    
 _The account is not created if it doesn't exist._
 3. For addresses above 0.0.1000:
