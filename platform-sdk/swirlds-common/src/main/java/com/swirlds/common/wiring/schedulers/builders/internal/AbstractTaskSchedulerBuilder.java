@@ -38,6 +38,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.ToLongFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -64,6 +65,7 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
     protected ForkJoinPool pool;
     protected UncaughtExceptionHandler uncaughtExceptionHandler;
     protected String hyperlink;
+    protected ToLongFunction<Object> dataCounter;
 
     protected boolean unhandledTaskMetricEnabled = false;
     protected boolean busyFractionMetricEnabled = false;
@@ -261,6 +263,13 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
     @NonNull
     public AbstractTaskSchedulerBuilder<OUT> withHyperlink(@Nullable final String hyperlink) {
         this.hyperlink = hyperlink;
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public AbstractTaskSchedulerBuilder<OUT> withDataCounter(@NonNull ToLongFunction<Object> counter) {
+        this.dataCounter = counter;
         return this;
     }
 
