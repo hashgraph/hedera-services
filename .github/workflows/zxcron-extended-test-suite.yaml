@@ -22,7 +22,12 @@ on:
     - cron: '0 */3 * * *'
 
 permissions:
-  contents: write
+  id-token: write
+  actions: read
+  pull-requests: write
+  statuses: write
+  checks: write
+  contents: read
 
 defaults:
   run:
@@ -36,29 +41,39 @@ jobs:
     name: Fetch XTS Candidate Tag
     runs-on: network-node-linux-medium
     outputs:
-      xts_tag_exists: ${{ steps.check_tags_exist.outputs.xts_tag_exists }}
-      xts_tag_commit: ${{ steps.check_tags_exist.outputs.xts_tag_commit }}
+      xts-tag-exists: ${{ steps.check-tags-exist.outputs.xts-tag-exists }}
+      xts-tag-commit: ${{ steps.check-tags-exist.outputs.xts-tag-commit }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       # Checkout the latest from dev
       - name: Checkout Code
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
         with:
           fetch-depth: '0'
+          ref: develop
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       # Check if the xts-candidate tag exists
-      # the command git branch --contains xts_tag_commit | grep -q <default branch>
-      # will return an exit code of 1 if the tag commit is not found on the develop
+      # the command git branch --contains xts-tag-commit | grep --quiet <default branch>
+      # will return an exit code of 1 if the tagged commit is not found on the develop
       # branch.
-      # TODO: Should we delete the tag as part of this job? Or should it occur after XTS passes?
       - name: Check for tags
-        id: check_tags_exist
+        id: check-tags-exist
         run: |
-          TAG=${XTS_CANDIDATE_TAG}
-          if [ $(git tag -l "${TAG}") ]; then
-            echo "xts_tag_exists=true" >> $GITHUB_OUTPUT
-            XTS_COMMIT=`git rev-list -n 1 ${XTS_CANDIDATE_TAG}`
-            git branch --contains ${XTS_COMMIT} | grep -q develop
-            echo "xts_tag_commit=`${XTS_COMMIT}`" >> $GITHUB_OUTPUT
+          XTS_COMMIT=$(git rev-list -n 1 ${XTS_CANDIDATE_TAG})
+          set +e
+          git branch --contains ${XTS_COMMIT} | grep --quiet develop >/dev/null 2>&1
+          BRANCH_ON_DEVELOP="${?}"
+          set -e
+          if [[ -n "${XTS_COMMIT}" && "${BRANCH_ON_DEVELOP}" -eq 0 ]]; then
+            echo "xts-tag-exists=true" >> $GITHUB_OUTPUT
+            echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_OUTPUT
+            echo "### Commit has been tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
+            echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_STEP_SUMMARY
             git tag -d ${XTS_CANDIDATE_TAG}
             git push --delete origin ${XTS_CANDIDATE_TAG}
           else
@@ -69,7 +84,7 @@ jobs:
     name: Execute eXtended Test Suite
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' }}
     with:
       custom-job-label: Execute eXtended Test Suite
       enable-timing-sensitive-tests: true
@@ -77,7 +92,7 @@ jobs:
       enable-hammer-tests: true
       enable-hapi-tests-time-consuming: true
       enable-network-log-capture: true
-      ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }}
+      ref: ${{ needs.fetch-xts-candidate.outputs.xts-tag-commit }}
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
@@ -87,11 +102,11 @@ jobs:
     name: JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' }}
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
-      ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }} # pass the xts-candidate tag to the JRS panel for checkout
+      ref: ${{ needs.fetch-xts-candidate.outputs.xts-tag-commit }} # pass the xts-candidate tag to the JRS panel for checkout
       branch-name: ${{ github.head_ref || github.ref_name }}
       base-branch-name: ${{ github.base_ref || '' }}
       slack-results-channel: "regression-test"
@@ -113,10 +128,10 @@ jobs:
     name: Hedera Node JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' }}
     with:
       custom-job-name: "Abbrev Update Test"
-      ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }} # pass the xts-candidate tag to the JRS panel for checkout
+      ref: ${{ needs.fetch-xts-candidate.outputs.xts-tag-commit }} # pass the xts-candidate tag to the JRS panel for checkout
       branch-name: ${{ github.head_ref || github.ref_name }}
       hedera-tests-enabled: true
       use-branch-for-slack-channel: false
@@ -137,13 +152,14 @@ jobs:
     name: Tag as XTS-Passing
     runs-on: network-node-linux-medium
     needs:
-      - abbreviated-panel
+#      - abbreviated-panel
       - extended-test-suite
       - fetch-xts-candidate
-      - hedera-node-jrs-panel
-    if: ${{ needs.abbreviated-panel.result == 'success' ||
-            needs.extended-test-suite.result == 'success' ||
-            needs.hedera-node-jrs-panel.result == 'success' }}
+#      - hedera-node-jrs-panel
+#    if: ${{ needs.abbreviated-panel.result == 'success' ||
+#            needs.extended-test-suite.result == 'success' ||
+#            needs.hedera-node-jrs-panel.result == 'success' }}
+    if: ${{ needs.extended-test-suite.result == 'success' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -152,21 +168,35 @@ jobs:
 
       - name: Checkout Tagged Code
         id: checkout_tagged_code
-        if: ${{ needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
+        if: ${{ needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' }}
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
         with:
-          ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }} # this becomes an input to the reusable flow
+          fetch-depth: '0'
+          ref: ${{ needs.fetch-xts-candidate.outputs.xts-tag-commit }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Import GPG Key
+        id: gpg_importer
+        uses: step-security/ghaction-import-gpg@6c8fe4d0126a59d57c21f87c9ae5dd3451fa3cca # v6.1.0
+        with:
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+          git_user_signingkey: true
+          gpg_private_key: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+          passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
 
       # Now that the XTS suite has run we should be able to tag for promotion
       - name: Tag for XTS promotion
         run: |
-          EPOCH_TIME=`date -j -f "%a %b %d %T %Z %Y" "\`LC_ALL=C date\`" "+%s"`
+          EPOCH_TIME=$(date +%s)
           TAG=xts-pass-${EPOCH_TIME}
-          git tag --annotate ${TAG}
+          git tag --annotate ${TAG} --message "chore: tagging commit for build candidate promotion"
           git push --set-upstream origin --tags
+          echo "### Commit Tagged for Promotion" >>  $GITHUB_STEP_SUMMARY
+          echo "promotion-tag=${TAG}" >> $GITHUB_STEP_SUMMARY
 
   report-failure:
-    name: Report XTS preparation failure
+    name: Report XTS execution failure
     runs-on: network-node-linux-medium
     needs:
       - abbreviated-panel
@@ -175,11 +205,12 @@ jobs:
       - hedera-node-jrs-panel
       - tag-for-promotion
 
-    if: ${{ needs.abbreviated-panel.result != 'success' ||
+    if: ${{ (needs.abbreviated-panel.result != 'success' ||
             needs.extended-test-suite.result != 'success' ||
             needs.fetch-xts-candidate.result != 'success' ||
             needs.hedera-node-jrs-panel.result != 'success' ||
-            needs.tag-for-promotion.result != 'success' }}
+            needs.tag-for-promotion.result != 'success') &&
+            !cancelled() && always() }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
