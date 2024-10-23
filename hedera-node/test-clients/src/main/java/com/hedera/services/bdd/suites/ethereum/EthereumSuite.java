@@ -148,7 +148,7 @@ public class EthereumSuite {
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
     private static final long DEPOSIT_AMOUNT = 20_000L;
     private static final String PARTY = "party";
-    private static final String LAZY_MEMO = "lazy-created account";
+    private static final String LAZY_MEMO = "";
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
     private static final String TOKEN_CREATE_CONTRACT = "NewTokenCreateContract";
     private static final String HELLO_WORLD_MINT_CONTRACT = "HelloWorldMint";
