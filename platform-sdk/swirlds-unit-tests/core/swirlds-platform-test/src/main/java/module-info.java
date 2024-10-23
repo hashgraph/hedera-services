@@ -9,5 +9,6 @@ open module com.swirlds.platform.test {
     requires com.swirlds.config.extensions.test.fixtures;
     requires java.desktop;
     requires org.junit.jupiter.api;
+    requires org.hiero.consensus.gossip;
     requires static transitive com.github.spotbugs.annotations;
 }
