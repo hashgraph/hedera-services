@@ -18,6 +18,7 @@ package com.swirlds.platform.state.service;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -26,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public interface ReadableRosterStore {
     /**
      * Gets the candidate roster if found in state or null otherwise.
-     * Not that state commits are buffered,
+     * Note that state commits are buffered,
      * so it is possible that a recently stored candidate roster is still in the batched changes and not yet committed.
      * Therefore, callers of this API must bear in mind that an immediate call after storing a candidate roster may return null.
      *
@@ -54,5 +55,6 @@ public interface ReadableRosterStore {
      * @param rosterHash The roster hash
      * @return The roster.
      */
-    Roster get(Bytes rosterHash);
+    @Nullable
+    Roster get(@NonNull Bytes rosterHash);
 }

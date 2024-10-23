@@ -84,10 +84,12 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         // update the roster state/map
         final RosterState previousRosterState = rosterStateOrThrow();
         final Bytes previousCandidateRosterHash = previousRosterState.candidateRosterHash();
-        final Builder newRosterState =
+        final Builder newRosterStateBuilder =
                 previousRosterState.copyBuilder().candidateRosterHash(incomingCandidateRosterHash);
         removeRoster(previousCandidateRosterHash);
-        storeRoster(candidateRoster, incomingCandidateRosterHash, newRosterState);
+
+        rosterState.put(newRosterStateBuilder.build());
+        rosterMap.put(ProtoBytes.newBuilder().value(incomingCandidateRosterHash).build(), candidateRoster);
     }
 
     /**
@@ -129,14 +131,15 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
             }
         }
 
-        final Builder newRosterState = previousRosterState
+        final Builder newRosterStateBuilder = previousRosterState
                 .copyBuilder()
                 .candidateRosterHash(Bytes.EMPTY)
                 .roundRosterPairs(roundRosterPairs);
         // since a new active roster is being set, the existing candidate roster is no longer valid
         // so we remove it if it meets removal criteria.
         removeRoster(previousRosterState.candidateRosterHash());
-        storeRoster(roster, activeRosterHash, newRosterState);
+        rosterState.put(newRosterStateBuilder.build());
+        rosterMap.put(ProtoBytes.newBuilder().value(activeRosterHash).build(), roster);
     }
 
     /**
@@ -147,22 +150,6 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
     @NonNull
     private RosterState rosterStateOrThrow() {
         return requireNonNull(rosterState.get());
-    }
-
-    /**
-     * Stores the roster in the roster map and updates the roster store with the provided builder.
-     *
-     * @param rosterToStore              the roster to store
-     * @param rosterHash                   the hash of the roster
-     * @param rosterStateBuilder       the roster state builder
-     */
-    private void storeRoster(
-            @NonNull final Roster rosterToStore,
-            @NonNull final Bytes rosterHash,
-            @NonNull final Builder rosterStateBuilder) {
-
-        this.rosterState.put(rosterStateBuilder.build());
-        this.rosterMap.put(ProtoBytes.newBuilder().value(rosterHash).build(), rosterToStore);
     }
 
     /**

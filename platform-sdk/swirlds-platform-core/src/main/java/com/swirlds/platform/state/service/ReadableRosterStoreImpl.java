@@ -58,14 +58,7 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         this.rosterMap = readableStates.get(RosterStateId.ROSTER_KEY);
     }
 
-    /**
-     * Gets the candidate roster if found in state or null otherwise.
-     * Not that state commits are buffered,
-     * so it is possible that a recently stored candidate roster is still in the batched changes and not yet committed.
-     * Therefore, callers of this API must bear in mind that an immediate call after storing a candidate roster may return null.
-     *
-     * @return the candidate roster
-     */
+    /** {@inheritDoc} */
     @Nullable
     @Override
     public Roster getCandidateRoster() {
@@ -77,16 +70,7 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         return rosterMap.get(ProtoBytes.newBuilder().value(candidateRosterHash).build());
     }
 
-    /**
-     * Gets the active roster.
-     * Returns the active roster iff:
-     *      the roster state singleton is not null
-     *      the list of round roster pairs is not empty
-     *      the first round roster pair exists
-     *      the active roster hash is present in the roster map
-     * otherwise returns null.
-     * @return the active roster
-     */
+    /** {@inheritDoc} */
     @Nullable
     @Override
     public Roster getActiveRoster() {
@@ -105,14 +89,10 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         return rosterMap.get(ProtoBytes.newBuilder().value(activeRosterHash).build());
     }
 
-    /**
-     * Gets the roster associated with the given hash.
-     *
-     * @param rosterHash the hash of the roster
-     * @return the roster if found, null otherwise
-     */
+    /** {@inheritDoc} */
+    @Nullable
     @Override
-    public Roster get(final Bytes rosterHash) {
+    public Roster get(@NonNull final Bytes rosterHash) {
         return rosterMap.get(ProtoBytes.newBuilder().value(rosterHash).build());
     }
 }
