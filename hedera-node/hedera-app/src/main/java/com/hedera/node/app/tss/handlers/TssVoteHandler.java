@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.stores.WritableTssBaseStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,7 +43,7 @@ import javax.inject.Singleton;
 @Singleton
 public class TssVoteHandler implements TransactionHandler {
 
-    public static final double THRESHOLD_ONE_THIRD = 3.0;
+    public static final double CONSENSUS_VOTE_THRESHOLD_ONE_THIRD = 3.0;
 
     @Inject
     public TssVoteHandler() {
@@ -73,7 +72,7 @@ public class TssVoteHandler implements TransactionHandler {
             return;
         }
 
-        if (!TssVoteHandler.hasReachedThreshold(txBody, context, THRESHOLD_ONE_THIRD)) {
+        if (!TssVoteHandler.hasReachedThreshold(txBody, context, CONSENSUS_VOTE_THRESHOLD_ONE_THIRD)) {
             tssBaseStore.put(tssVoteMapKey, txBody);
         }
     }
@@ -84,7 +83,7 @@ public class TssVoteHandler implements TransactionHandler {
      *
      * @param tssVoteTransaction the TssVoteTransaction to check
      * @param context the HandleContext
-     * @param thresholdDenominator the denominator of the threshold
+     * @param thresholdDenominator the denominator of the threshold fraction
      * @return true if the threshold has been reached, false otherwise
      */
     public static boolean hasReachedThreshold(
@@ -131,6 +130,6 @@ public class TssVoteHandler implements TransactionHandler {
         // Check if the total weight of votes with the same vote byte array is at least 1/thresholdDenominator of the
         // total weight of the
         // network
-        return voteWeight >= activeRosterTotalWeight / thresholdDenominator;
+        return voteWeight >= activeRosterTotalWeight / CONSENSUS_VOTE_THRESHOLD_ONE_THIRD;
     }
 }
