@@ -18,7 +18,8 @@ package com.hedera.node.app.roster;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,14 +29,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Registers the roster schemas with the {@link SchemaRegistry}.
  * Not exposed outside `hedera-app`.
  */
-public class RosterServiceImpl implements Service {
-    /** The name of this service */
-    public static final String NAME = "RosterService";
+public class RosterService implements Service {
 
     @NonNull
     @Override
     public String getServiceName() {
-        return NAME;
+        return RosterStateId.NAME;
     }
 
     @Override
