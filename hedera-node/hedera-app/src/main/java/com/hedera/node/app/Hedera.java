@@ -58,6 +58,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
@@ -74,7 +75,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
-import com.hedera.node.app.info.GenesisNetworkInfo;
+import com.hedera.node.app.info.RosterNetworkInfo;
 import com.hedera.node.app.info.StateNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterService;
@@ -599,7 +600,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                     new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
             final var genesisRoster = createRoster(requireNonNull(readableStore.getAddressBook()));
 
-            genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
+            genesisNetworkInfo = new RosterNetworkInfo(genesisRoster, ledgerConfig.id());
         }
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
         if (isNotEmbedded()) {
