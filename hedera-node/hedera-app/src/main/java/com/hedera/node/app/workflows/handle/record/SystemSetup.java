@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
@@ -53,6 +54,7 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.InitTrigger;
@@ -133,15 +135,18 @@ public class SystemSetup {
      */
     public void doPostUpgradeSetup(@NonNull final Dispatch dispatch) {
         final var systemContext = systemContextFor(dispatch);
+        final var config = dispatch.config();
 
         // We update the node details file from the address book that resulted from all pre-upgrade HAPI node changes
-        final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
-        fileService.updateAddressBookAndNodeDetailsAfterFreeze(systemContext, nodeStore);
-        dispatch.stack().commitFullStack();
+        final var nodesConfig = config.getConfigData(NodesConfig.class);
+        if (nodesConfig.enableDAB()) {
+            final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
+            fileService.updateAddressBookAndNodeDetailsAfterFreeze(systemContext, nodeStore);
+            dispatch.stack().commitFullStack();
+        }
 
         // And then we update the system files for fees schedules, throttles, override properties, and override
         // permissions from any upgrade files that are present in the configured directory
-        final var config = dispatch.config();
         final var filesConfig = config.getConfigData(FilesConfig.class);
         final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
         final List<AutoSysFileUpdate> autoUpdates = List.of(
@@ -376,7 +381,8 @@ public class SystemSetup {
         for (final Account account : accts) {
             // Since this is only called at genesis, the active savepoint's preceding record capacity will be
             // Integer.MAX_VALUE and this will never fail with MAX_CHILD_RECORDS_EXCEEDED (c.f., HandleWorkflow)
-            final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class);
+            final var recordBuilder =
+                    context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class, CRYPTO_CREATE);
             recordBuilder.accountID(account.accountIdOrThrow()).exchangeRate(exchangeRateSet);
             if (recordMemo != null) {
                 recordBuilder.memo(recordMemo);

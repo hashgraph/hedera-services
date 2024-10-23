@@ -104,7 +104,8 @@ public class EventualRecordStreamAssertion extends AbstractEventualStreamAsserti
         assertion = requireNonNull(assertionFactory.apply(spec));
         unsubscribe = STREAM_FILE_ACCESS.subscribe(recordStreamLocFor(spec), new StreamDataListener() {
             @Override
-            public void onNewItem(RecordStreamItem item) {
+            public void onNewItem(@NonNull final RecordStreamItem item) {
+                requireNonNull(item);
                 if (assertion.isApplicableTo(item)) {
                     try {
                         if (assertion.test(item)) {
@@ -138,8 +139,13 @@ public class EventualRecordStreamAssertion extends AbstractEventualStreamAsserti
     }
 
     @Override
+    protected String assertionDescription() {
+        return assertion == null ? "<N/A>" : assertion.toString();
+    }
+
+    @Override
     public String toString() {
-        return "EventuallyRecordStream{" + assertion + "}";
+        return "EventuallyRecordStream{" + assertionDescription() + "}";
     }
 
     /**

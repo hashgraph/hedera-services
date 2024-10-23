@@ -16,26 +16,19 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.ScheduleID.Builder;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
-import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 
 /**
  * A package-private utility class for Schedule Handlers.
@@ -177,215 +170,65 @@ public final class HandlerUtility {
     }
 
     /**
-     * Given a Schedule, return a copy of that schedule with the executed flag and resolution time set.
-     * @param schedule a {@link Schedule} to mark executed.
-     * @param consensusTime the current consensus time, used to set {@link Schedule#resolutionTime()}.
-     * @return a new Schedule which matches the input, except that the execute flag is set and the resolution time
-     *     is set to the consensusTime provided.
-     */
-    @NonNull
-    static Schedule markExecuted(@NonNull final Schedule schedule, @NonNull final Instant consensusTime) {
-        final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
-        return schedule.copyBuilder()
-                .executed(true)
-                .resolutionTime(consensusTimestamp)
-                .build();
-    }
-
-    /**
-     * Replace the signatories of a schedule with a new set of signatories.
-     * The schedule is not modified in place.
-     *
-     * @param schedule       the schedule
-     * @param newSignatories the new signatories
-     * @return the schedule
-     */
-    @NonNull
-    static Schedule replaceSignatories(@NonNull final Schedule schedule, @NonNull final Set<Key> newSignatories) {
-        return schedule.copyBuilder().signatories(List.copyOf(newSignatories)).build();
-    }
-
-    /**
-     * Replace signatories and mark executed schedule.
-     *
-     * @param schedule       the schedule
-     * @param newSignatories the new signatories
-     * @param consensusTime  the consensus time
-     * @return the schedule
-     */
-    @NonNull
-    static Schedule replaceSignatoriesAndMarkExecuted(
-            @NonNull final Schedule schedule,
-            @NonNull final Set<Key> newSignatories,
-            @NonNull final Instant consensusTime) {
-        final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
-        final Schedule.Builder builder = schedule.copyBuilder().executed(true).resolutionTime(consensusTimestamp);
-        return builder.signatories(List.copyOf(newSignatories)).build();
-    }
-
-    /**
      * Create a new Schedule, but without an ID or signatories.
      * This method is used to create a schedule object for processing during a ScheduleCreate, but without the
      * schedule ID, as we still need to complete validation and other processing.  Once all processing is complete,
      * a new ID is allocated and signatories are added immediately prior to storing the new object in state.
-     * @param currentTransaction The transaction body of the current Schedule Create transaction.  We assume that
+     * @param body The transaction body of the current Schedule Create transaction.  We assume that
      *     the transaction is a ScheduleCreate, but require the less specific object so that we have access to
      *     the transaction ID via {@link TransactionBody#transactionID()} from the TransactionBody stored in
      *     the {@link Schedule#originalCreateTransaction()} attribute of the Schedule.
-     * @param currentConsensusTime The current consensus time for the network.
-     * @param maxLifeSeconds The maximum number of seconds a schedule is permitted to exist on the ledger
+     * @param consensusNow The current consensus time for the network.
+     * @param maxLifetime The maximum number of seconds a schedule is permitted to exist on the ledger
      *     before it expires.
      * @return a newly created Schedule with a null schedule ID
      * @throws HandleException if the
      */
     @NonNull
     static Schedule createProvisionalSchedule(
-            @NonNull final TransactionBody currentTransaction,
-            @NonNull final Instant currentConsensusTime,
-            final long maxLifeSeconds)
-            throws HandleException {
-        // The next three items will never be null, but Sonar is persnickety, so we force NPE if any are null.
-        final TransactionID parentTransactionId = currentTransaction.transactionIDOrThrow();
-        final ScheduleCreateTransactionBody createTransaction = currentTransaction.scheduleCreateOrThrow();
-        final AccountID schedulerAccount = parentTransactionId.accountIDOrThrow();
-        final long calculatedExpirationTime =
-                calculateExpiration(createTransaction.expirationTime(), currentConsensusTime, maxLifeSeconds);
-        final ScheduleID nullId = null;
-
-        Schedule.Builder builder = Schedule.newBuilder();
-        builder.scheduleId(nullId).deleted(false).executed(false);
-        builder.waitForExpiry(createTransaction.waitForExpiry());
-        builder.adminKey(createTransaction.adminKey()).schedulerAccountId(parentTransactionId.accountID());
-        builder.payerAccountId(createTransaction.payerAccountIDOrElse(schedulerAccount));
-        builder.schedulerAccountId(schedulerAccount);
-        builder.scheduleValidStart(parentTransactionId.transactionValidStart());
-        builder.calculatedExpirationSecond(calculatedExpirationTime);
-        builder.providedExpirationSecond(
-                createTransaction.expirationTimeOrElse(Timestamp.DEFAULT).seconds());
-        builder.originalCreateTransaction(currentTransaction);
-        builder.memo(createTransaction.memo());
-        builder.scheduledTransaction(createTransaction.scheduledTransactionBody());
-        return builder.build();
+            @NonNull final TransactionBody body, @NonNull final Instant consensusNow, final long maxLifetime) {
+        final var txnId = body.transactionIDOrThrow();
+        final var op = body.scheduleCreateOrThrow();
+        final var payerId = txnId.accountIDOrThrow();
+        final long expiry = calculateExpiration(op.expirationTime(), consensusNow, maxLifetime);
+        return Schedule.newBuilder()
+                .scheduleId((ScheduleID) null)
+                .deleted(false)
+                .executed(false)
+                .waitForExpiry(op.waitForExpiry())
+                .adminKey(op.adminKey())
+                .schedulerAccountId(payerId)
+                .payerAccountId(op.payerAccountIDOrElse(payerId))
+                .schedulerAccountId(payerId)
+                .scheduleValidStart(txnId.transactionValidStart())
+                .calculatedExpirationSecond(expiry)
+                .providedExpirationSecond(
+                        op.expirationTimeOrElse(Timestamp.DEFAULT).seconds())
+                .originalCreateTransaction(body)
+                .memo(op.memo())
+                .scheduledTransaction(op.scheduledTransactionBody())
+                .build();
     }
 
     /**
-     * Complete the processing of a provisional schedule, which was created during a ScheduleCreate transaction.
-     * The schedule is completed by adding a schedule ID  and signatories.
-     *
-     * @param provisionalSchedule the provisional schedule
-     * @param newEntityNumber     the new entity number
-     * @param finalSignatories    the final signatories for the schedule
-     * @return the schedule
-     * @throws HandleException if the transaction is not handled successfully.
+     * Builds the transaction id for a scheduled transaction from its schedule.
+     * @param schedule the schedule
+     * @return its transaction id
      */
     @NonNull
-    static Schedule completeProvisionalSchedule(
-            @NonNull final Schedule provisionalSchedule,
-            final long newEntityNumber,
-            @NonNull final Set<Key> finalSignatories)
-            throws HandleException {
-        final TransactionBody originalTransaction = provisionalSchedule.originalCreateTransactionOrThrow();
-        final TransactionID parentTransactionId = originalTransaction.transactionIDOrThrow();
-        final ScheduleID finalId = getNextScheduleID(parentTransactionId, newEntityNumber);
-
-        Schedule.Builder build = provisionalSchedule.copyBuilder();
-        build.scheduleId(finalId).deleted(false).executed(false);
-        build.schedulerAccountId(parentTransactionId.accountID());
-        build.signatories(List.copyOf(finalSignatories));
-        return build.build();
-    }
-
-    /**
-     * Gets next schedule id for a given parent transaction id and new schedule number.
-     * The schedule ID is created using the shard and realm numbers from the parent transaction ID,
-     * and the new schedule number.
-     *
-     * @param parentTransactionId the parent transaction id
-     * @param newScheduleNumber   the new schedule number
-     * @return the next schedule id
-     */
-    @NonNull
-    static ScheduleID getNextScheduleID(
-            @NonNull final TransactionID parentTransactionId, final long newScheduleNumber) {
-        final AccountID schedulingAccount = parentTransactionId.accountIDOrThrow();
-        final long shardNumber = schedulingAccount.shardNum();
-        final long realmNumber = schedulingAccount.realmNum();
-        final Builder builder = ScheduleID.newBuilder().shardNum(shardNumber).realmNum(realmNumber);
-        return builder.scheduleNum(newScheduleNumber).build();
-    }
-
-    /**
-     * Transaction id for scheduled transaction id.
-     *
-     * @param valueInState the value in state
-     * @return the transaction id
-     */
-    @NonNull
-    static TransactionID transactionIdForScheduled(@NonNull Schedule valueInState) {
-        // original create transaction and its transaction ID will never be null, but Sonar...
-        final TransactionBody originalTransaction = valueInState.originalCreateTransactionOrThrow();
-        final TransactionID parentTransactionId = originalTransaction.transactionIDOrThrow();
-        final TransactionID.Builder builder = parentTransactionId.copyBuilder();
-        // This is tricky.
-        // The scheduled child transaction that is executed must have a transaction ID that exactly matches
-        // the original CREATE transaction, not the parent transaction that triggers execution.  So the child
-        // record is a child of "trigger" with an ID matching "create".  This is what mono service does, but it
-        // is not ideal.  Future work should change this (if at all possible) to have ID and parent match
-        // better, not rely on exact ID match, and only use the scheduleRef and scheduledId values in the transaction
-        // records (scheduleRef on the child pointing to the schedule ID, and scheduled ID on the parent pointing
-        // to the child transaction) for connecting things.
-        builder.scheduled(true);
-        return builder.build();
+    static TransactionID transactionIdForScheduled(@NonNull final Schedule schedule) {
+        final var op = schedule.originalCreateTransactionOrThrow();
+        final var parentTxnId = op.transactionIDOrThrow();
+        return parentTxnId.copyBuilder().scheduled(true).build();
     }
 
     private static long calculateExpiration(
-            @Nullable final Timestamp givenExpiration,
-            @NonNull final Instant currentConsensusTime,
-            final long maxLifeSeconds) {
+            @Nullable final Timestamp givenExpiration, @NonNull final Instant consensusNow, final long maxLifetime) {
         if (givenExpiration != null) {
             return givenExpiration.seconds();
         } else {
-            final Instant currentPlusMaxLife = currentConsensusTime.plusSeconds(maxLifeSeconds);
+            final var currentPlusMaxLife = consensusNow.plusSeconds(maxLifetime);
             return currentPlusMaxLife.getEpochSecond();
-        }
-    }
-
-    /**
-     * Filters the signatories to only those that are required.
-     * The required signatories are those that are present in the incoming signatories set.
-     *
-     * @param signatories the signatories
-     * @param required    the required
-     */
-    static void filterSignatoriesToRequired(Set<Key> signatories, Set<Key> required) {
-        final Set<Key> incomingSignatories = Set.copyOf(signatories);
-        signatories.clear();
-        filterSignatoriesToRequired(signatories, required, incomingSignatories);
-    }
-
-    private static void filterSignatoriesToRequired(
-            final Set<Key> signatories, final Collection<Key> required, final Set<Key> incomingSignatories) {
-        for (final Key next : required) {
-            switch (next.key().kind()) {
-                case ED25519, ECDSA_SECP256K1, CONTRACT_ID, DELEGATABLE_CONTRACT_ID:
-                    // Handle "primitive" keys, which are what the signatories set stores.
-                    if (incomingSignatories.contains(next)) {
-                        signatories.add(next);
-                    }
-                    break;
-                case KEY_LIST:
-                    // Dive down into the elements of the key list
-                    filterSignatoriesToRequired(signatories, next.keyList().keys(), incomingSignatories);
-                    break;
-                case THRESHOLD_KEY:
-                    // Dive down into the elements of the threshold key candidates list
-                    filterSignatoriesToRequired(
-                            signatories, next.thresholdKey().keys().keys(), incomingSignatories);
-                    break;
-                case ECDSA_384, RSA_3072, UNSET:
-                    // These types are unsupported
-                    break;
-            }
         }
     }
 }
