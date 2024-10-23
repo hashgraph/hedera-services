@@ -70,6 +70,7 @@ class TssBaseServiceImplTest {
                 ForkJoinPool.commonPool(),
                 ForkJoinPool.commonPool(),
                 new PlaceholderTssLibrary(),
+                ForkJoinPool.commonPool(),
                 new NoOpMetrics());
     }
 

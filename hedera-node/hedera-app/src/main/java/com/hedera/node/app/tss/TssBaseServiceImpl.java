@@ -97,10 +97,12 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final ExecutorService signingExecutor,
             @NonNull final Executor submissionExecutor,
             @NonNull final TssLibrary tssLibrary,
+            @NonNull final Executor libraryExecutor,
             @NonNull final Metrics tssMetrics) {
         requireNonNull(appContext);
         this.signingExecutor = requireNonNull(signingExecutor);
-        final var component = DaggerTssBaseServiceComponent.factory().create(appContext.gossip(), submissionExecutor);
+        final var component = DaggerTssBaseServiceComponent.factory()
+                .create(appContext.gossip(), submissionExecutor, libraryExecutor);
         tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
         tssSubmissions = component.tssSubmissions();
         this.tssLibrary = requireNonNull(tssLibrary);
@@ -153,7 +155,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         candidateRosterCreationTime.set(Instant.now().getEpochSecond());
 
         // generate TSS messages based on the active roster and the candidate roster
-        final var tssStore = context.storeFactory().writableStore(ReadableTssBaseStore.class);
+        final var tssStore = context.storeFactory().readableStore(ReadableTssBaseStore.class);
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var sourceRoster =
@@ -162,7 +164,6 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var candidateRosterHash = RosterUtils.hash(roster).getBytes();
         final var tssPrivateShares =
                 getTssPrivateShares(sourceRoster, maxSharesPerNode, tssStore, candidateRosterHash, context);
-        final var aggregatedPrivateKey = tssLibrary.aggregatePrivateShares(tssPrivateShares);
         final var candidateRosterParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int)
                 context.networkInfo().selfNodeInfo().nodeId());
 

@@ -538,6 +538,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                                 ForkJoinPool.commonPool(),
                                 ForkJoinPool.commonPool(),
                                 new PlaceholderTssLibrary(),
+                                ForkJoinPool.commonPool(),
                                 new NoOpMetrics()),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),

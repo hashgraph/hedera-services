@@ -23,14 +23,16 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.Executor;
 import javax.inject.Singleton;
 
 @Module
 public interface TssModule {
     @Provides
     @Singleton
-    static TssCryptographyManager tssCryptographyManager(@NonNull final AppContext.Gossip gossip) {
-        return new TssCryptographyManager(new PlaceholderTssLibrary(), gossip);
+    static TssCryptographyManager tssCryptographyManager(
+            @NonNull final AppContext.Gossip gossip, @NonNull @TssLibraryExecutor final Executor libraryExecutor) {
+        return new TssCryptographyManager(new PlaceholderTssLibrary(), gossip, libraryExecutor);
     }
 
     @Binds

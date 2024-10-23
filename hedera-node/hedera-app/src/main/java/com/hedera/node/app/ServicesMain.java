@@ -377,6 +377,7 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
+                        ForkJoinPool.commonPool(),
                         new NoOpMetrics()));
     }
 }

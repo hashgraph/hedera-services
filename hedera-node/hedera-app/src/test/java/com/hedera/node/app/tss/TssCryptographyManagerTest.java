@@ -47,6 +47,7 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,7 +81,7 @@ public class TssCryptographyManagerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TssCryptographyManager(tssLibrary, gossip);
+        subject = new TssCryptographyManager(tssLibrary, gossip, ForkJoinPool.commonPool());
         when(handleContext.networkInfo()).thenReturn(networkInfo);
         when(networkInfo.selfNodeInfo()).thenReturn(new NodeInfoImpl(0, AccountID.DEFAULT, 0, null, null));
     }

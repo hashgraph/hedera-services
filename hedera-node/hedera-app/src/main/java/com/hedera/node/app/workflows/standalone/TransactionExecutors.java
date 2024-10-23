@@ -100,6 +100,7 @@ public enum TransactionExecutors {
                 ForkJoinPool.commonPool(),
                 ForkJoinPool.commonPool(),
                 new PlaceholderTssLibrary(),
+                ForkJoinPool.commonPool(),
                 new NoOpMetrics());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();

@@ -121,6 +121,7 @@ public class BlockStreamManagerBenchmark {
             ForkJoinPool.commonPool(),
             ForkJoinPool.commonPool(),
             new PlaceholderTssLibrary(),
+            ForkJoinPool.commonPool());
             new NoOpMetrics());
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
             NoopBlockItemWriter::new,
