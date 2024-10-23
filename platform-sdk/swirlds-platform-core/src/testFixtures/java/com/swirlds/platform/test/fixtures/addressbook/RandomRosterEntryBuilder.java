@@ -71,9 +71,6 @@ public class RandomRosterEntryBuilder {
      */
     @NonNull
     public RosterEntry build() {
-
-        // Future work: use randotron utility methods once randotron changes merge
-
         if (nodeId == null) {
             nodeId = NodeId.of(random.nextLong(0, Long.MAX_VALUE));
         }
