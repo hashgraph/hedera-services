@@ -28,7 +28,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
-import com.hedera.node.app.tss.stores.WritableTssBaseStore;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.BitSet;
@@ -78,7 +78,7 @@ public class TssCryptographyManager {
             @NonNull final TssMessageTransactionBody op,
             @NonNull final TssParticipantDirectory tssParticipantDirectory,
             @NonNull final HandleContext context) {
-        final var tssStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
+        final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
         final var targetRosterHash = op.targetRosterHash();
         final var tssMessageBodies = tssStore.getTssMessages(targetRosterHash);
 

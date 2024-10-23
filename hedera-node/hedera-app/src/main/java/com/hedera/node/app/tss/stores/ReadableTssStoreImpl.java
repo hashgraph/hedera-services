@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Provides read-only access to the TSS base store.
  */
-public class ReadableTssBaseStore implements ReadableTssStore {
+public class ReadableTssStoreImpl implements ReadableTssStore {
     /**
      * The underlying data storage class that holds the airdrop data.
      */
@@ -43,11 +43,11 @@ public class ReadableTssBaseStore implements ReadableTssStore {
     private final ReadableKVState<TssVoteMapKey, TssVoteTransactionBody> readableTssVoteState;
 
     /**
-     * Create a new {@link ReadableTssBaseStore} instance.
+     * Create a new {@link ReadableTssStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableTssBaseStore(@NonNull final ReadableStates states) {
+    public ReadableTssStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
         this.readableTssMessageState = states.get(TSS_MESSAGE_MAP_KEY);
         this.readableTssVoteState = states.get(TSS_VOTE_MAP_KEY);

@@ -26,7 +26,7 @@ import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.handlers.TssHandlers;
-import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
+import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.utility.CommonUtils;
@@ -140,7 +140,7 @@ public class FakeTssBaseService implements TssBaseService {
     public Status getStatus(
             @NonNull final Roster roster,
             @NonNull final Bytes ledgerId,
-            @NonNull final ReadableTssBaseStore tssBaseStore) {
+            @NonNull final ReadableTssStoreImpl tssBaseStore) {
         requireNonNull(roster);
         requireNonNull(ledgerId);
         requireNonNull(tssBaseStore);
