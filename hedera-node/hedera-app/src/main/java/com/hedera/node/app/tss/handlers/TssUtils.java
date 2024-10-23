@@ -28,7 +28,6 @@ import com.hedera.node.app.tss.pairings.PairingPrivateKey;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.pairings.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -56,17 +55,17 @@ public class TssUtils {
         builder.withSelf(
                 selfNodeId,
                 new PairingPrivateKey(
-                        new FakeFieldElement(BigInteger.valueOf(10L)), SignatureSchema.create(new byte[]{1})));
+                        new FakeFieldElement(BigInteger.valueOf(10L)), SignatureSchema.create(new byte[] {1})));
         for (var rosterEntry : roster.rosterEntries()) {
             final int numSharesPerThisNode =
                     computedShares.get(rosterEntry.nodeId()).intValue();
             // FUTURE: Use the actual public key from the node
             final var pairingPublicKey = new PairingPublicKey(
-                    new FakeGroupElement(BigInteger.valueOf(10L)), SignatureSchema.create(new byte[]{1}));
+                    new FakeGroupElement(BigInteger.valueOf(10L)), SignatureSchema.create(new byte[] {1}));
             builder.withParticipant((int) rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
         }
         // FUTURE: Use the actual signature schema
-        return builder.build(SignatureSchema.create(new byte[]{1}));
+        return builder.build(SignatureSchema.create(new byte[] {1}));
     }
 
     /**
