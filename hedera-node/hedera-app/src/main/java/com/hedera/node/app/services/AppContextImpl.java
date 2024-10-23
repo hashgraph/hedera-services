@@ -18,8 +18,10 @@ package com.hedera.node.app.services;
 
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
+import java.util.function.Supplier;
 
 /**
  * Implements the {@link AppContext} interface.
@@ -27,5 +29,8 @@ import java.time.InstantSource;
  * @param signatureVerifier the signature verifier
  */
 public record AppContextImpl(
-        @NonNull InstantSource instantSource, @NonNull SignatureVerifier signatureVerifier, @NonNull Gossip gossip)
+        @NonNull InstantSource instantSource,
+        @NonNull SignatureVerifier signatureVerifier,
+        @NonNull Gossip gossip,
+        @NonNull Supplier<Metrics> metricsSupplier)
         implements AppContext {}

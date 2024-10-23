@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
@@ -35,6 +36,7 @@ import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
@@ -71,6 +73,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
     private final EthereumCallDataHydration callDataHydration;
     private final Provider<TransactionComponent.Factory> provider;
     private final GasCalculator gasCalculator;
+    private final ContractServiceComponent component;
     private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
 
     @Inject
@@ -78,11 +81,13 @@ public class EthereumTransactionHandler implements TransactionHandler {
             @NonNull final EthTxSigsCache ethereumSignatures,
             @NonNull final EthereumCallDataHydration callDataHydration,
             @NonNull final Provider<TransactionComponent.Factory> provider,
-            @NonNull final GasCalculator gasCalculator) {
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final ContractServiceComponent component) {
         this.ethereumSignatures = requireNonNull(ethereumSignatures);
         this.callDataHydration = requireNonNull(callDataHydration);
         this.provider = requireNonNull(provider);
         this.gasCalculator = requireNonNull(gasCalculator);
+        this.component = requireNonNull(component);
     }
 
     @Override
@@ -97,16 +102,29 @@ public class EthereumTransactionHandler implements TransactionHandler {
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final var ethTxData = populateEthTxData(
-                requireNonNull(txn.ethereumTransactionOrThrow().ethereumData()).toByteArray());
-        validateTruePreCheck(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
-        final byte[] callData = ethTxData.hasCallData() ? ethTxData.callData() : new byte[0];
-        final var intrinsicGas =
-                gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(callData), false);
-        validateTruePreCheck(ethTxData.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
-        // Do not allow sending HBars to Burn Address
-        if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
-            validateFalsePreCheck(Arrays.equals(ethTxData.to(), EMPTY_ADDRESS), INVALID_SOLIDITY_ADDRESS);
+        try {
+            final var ethTxData = populateEthTxData(
+                    requireNonNull(txn.ethereumTransactionOrThrow().ethereumData())
+                            .toByteArray());
+            validateTruePreCheck(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
+            final byte[] callData = ethTxData.hasCallData() ? ethTxData.callData() : new byte[0];
+            final var intrinsicGas =
+                    gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(callData), false);
+            validateTruePreCheck(ethTxData.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
+            // Do not allow sending HBars to Burn Address
+            if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
+                validateFalsePreCheck(Arrays.equals(ethTxData.to(), EMPTY_ADDRESS), INVALID_SOLIDITY_ADDRESS);
+            }
+        } catch (@NonNull final Exception e) {
+            final var contractMetrics = component.contractMetrics();
+            contractMetrics.incrementRejectedTx(CONTRACT_CALL);
+            if (e instanceof PreCheckException pce && pce.responseCode() == INSUFFICIENT_GAS) {
+                contractMetrics.incrementRejectedForGasTx(CONTRACT_CALL);
+            }
+            if (e instanceof NullPointerException) {
+                contractMetrics.incrementRejectedType3EthTx();
+            }
+            throw e;
         }
     }
 

@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl;
 
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
 import dagger.Component;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -37,8 +39,14 @@ public interface ContractServiceComponent {
                 @BindsInstance InstantSource instantSource,
                 @BindsInstance SignatureVerifier signatureVerifier,
                 @BindsInstance VerificationStrategies verificationStrategies,
-                @BindsInstance @Nullable Supplier<List<OperationTracer>> addOnTracers);
+                @BindsInstance @Nullable Supplier<List<OperationTracer>> addOnTracers,
+                @BindsInstance Supplier<Metrics> metricsSupplier,
+                @BindsInstance ContractMetrics contractMetrics);
     }
 
     ContractHandlers handlers();
+
+    Supplier<Metrics> metricsSupplier();
+
+    ContractMetrics contractMetrics();
 }

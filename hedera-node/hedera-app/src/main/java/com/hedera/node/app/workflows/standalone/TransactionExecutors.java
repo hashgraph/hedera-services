@@ -87,13 +87,15 @@ public enum TransactionExecutors {
     private ExecutorComponent newExecutorComponent(
             @NonNull final Map<String, String> properties, @NonNull final TracerBinding tracerBinding) {
         final var bootstrapConfigProvider = new BootstrapConfigProviderImpl();
+        final var noopMetrics = new NoOpMetrics();
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
                 new AppSignatureVerifier(
                         bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
-                UNAVAILABLE_GOSSIP);
+                UNAVAILABLE_GOSSIP,
+                () -> noopMetrics);
         final var tssBaseService =
                 new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
@@ -105,7 +107,7 @@ public enum TransactionExecutors {
                 .tssBaseService(tssBaseService)
                 .fileServiceImpl(fileService)
                 .contractServiceImpl(contractService)
-                .metrics(new NoOpMetrics())
+                .metrics(noopMetrics)
                 .build();
     }
 

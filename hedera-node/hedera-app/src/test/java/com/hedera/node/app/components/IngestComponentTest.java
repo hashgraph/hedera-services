@@ -98,13 +98,15 @@ class IngestComponentTest {
                 Bytes.wrap("cert7"));
 
         final var configProvider = new ConfigProviderImpl(false);
+        final var noopMetrics = new NoOpMetrics();
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
                 new AppSignatureVerifier(
                         DEFAULT_CONFIG.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
-                UNAVAILABLE_GOSSIP);
+                UNAVAILABLE_GOSSIP,
+                () -> noopMetrics);
         given(tssBaseService.tssHandlers()).willReturn(new TssHandlers(transactionHandler, transactionHandler));
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)

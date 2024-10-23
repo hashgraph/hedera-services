@@ -21,8 +21,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
+import java.util.function.Supplier;
 
 /**
  * Gives context to {@link com.swirlds.state.spi.Service} implementations on how the application workflows will do
@@ -68,4 +70,10 @@ public interface AppContext {
      * @return the gossip interface
      */
     Gossip gossip();
+
+    /**
+     * The metrics provider for the system
+     * @return the metrics provider
+     */
+    Supplier<Metrics> metricsSupplier();
 }
