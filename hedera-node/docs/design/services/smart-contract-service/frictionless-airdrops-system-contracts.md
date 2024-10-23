@@ -4,7 +4,7 @@
 
 [HIP-904](https://hips.hedera.com/hip/hip-904) introduced the Frictionless Airdrops feature for fungible and non-fungible tokens.
 This document will define the architecture and implementation of the `airdropToken`, `claimAirdrops`, `cancelAirdrops` and `rejectTokens` smart contract functions
-and their respective redirect function calls (`cancelAirdropFT`, `cancleAirdropNFT`, `claimAirdropFT`, `claimAirdropNFT`, `rejectTokenFT`, `rejectTokenNFTs`, `setUnlimitedAutomaticAssociations`) that will extend the capabilities of the Hedera Smart Contract Service (HSCS) to support frictionless airdrops.
+and their respective redirect function calls (`cancelAirdropFT`, `cancelAirdropNFT`, `claimAirdropFT`, `claimAirdropNFT`, `rejectTokenFT`, `rejectTokenNFTs`, `setUnlimitedAutomaticAssociations`) that will extend the capabilities of the Hedera Smart Contract Service (HSCS) to support frictionless airdrops.
 
 ## References
 
@@ -13,7 +13,7 @@ and their respective redirect function calls (`cancelAirdropFT`, `cancleAirdropN
 ## Goals
 
 - Expose `airdropToken`, `claimAirdrops`, `cancelAirdrops` and `rejectTokens` as new functions in the Hedera Token Service Smart Contract.
-- Expose `cancelAirdropFT`, `cancleAirdropNFT`, `claimAirdropFT`, `claimAirdropNFT`, `rejectTokenFt`, `rejectTokenNFTs`, `setUnlimitedAutomaticAssociations` as new functions in a new proxy redirect token facade contract IHRC904.
+- Expose `cancelAirdropFT`, `cancelAirdropNFT`, `claimAirdropFT`, `claimAirdropNFT`, `rejectTokenFt`, `rejectTokenNFTs`, `setUnlimitedAutomaticAssociations` as new functions in a new proxy redirect token facade contract IHRC904.
 - Implement the needed HTS system contract classes to support the new functions.
 
 ## Non Goals
