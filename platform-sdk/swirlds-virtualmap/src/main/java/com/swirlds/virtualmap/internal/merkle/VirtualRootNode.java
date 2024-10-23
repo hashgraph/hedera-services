@@ -35,7 +35,6 @@ import static com.swirlds.virtualmap.internal.Path.getSiblingPath;
 import static com.swirlds.virtualmap.internal.Path.isFarRight;
 import static com.swirlds.virtualmap.internal.Path.isLeft;
 import static com.swirlds.virtualmap.internal.merkle.VirtualMapState.MAX_LABEL_LENGTH;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -465,7 +464,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         Objects.requireNonNull(records, "Records must be initialized before rehashing");
 
         final ConcurrentBlockingIterator<VirtualLeafRecord<K, V>> rehashIterator =
-                new ConcurrentBlockingIterator<>(MAX_REHASHING_BUFFER_SIZE, Integer.MAX_VALUE, MILLISECONDS);
+                new ConcurrentBlockingIterator<>(MAX_REHASHING_BUFFER_SIZE);
         final CompletableFuture<Hash> fullRehashFuture = new CompletableFuture<>();
         final CompletableFuture<Void> leafFeedFuture = new CompletableFuture<>();
         // getting a range that is relevant for the data source
@@ -501,7 +500,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 lastLeafPath,
                 getRoute());
         final FullLeafRehashHashListener<K, V> hashListener = new FullLeafRehashHashListener<>(
-                firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource);
+                firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource, statistics);
 
         // This background thread will be responsible for hashing the tree and sending the
         // data to the hash listener to flush.
@@ -1487,8 +1486,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
         // Set up the VirtualHasher which we will use during reconnect.
         // Initial timeout is intentionally very long, timeout is reduced once we receive the first leaf in the tree.
-        reconnectIterator =
-                new ConcurrentBlockingIterator<>(MAX_RECONNECT_HASHING_BUFFER_SIZE, Integer.MAX_VALUE, MILLISECONDS);
+        reconnectIterator = new ConcurrentBlockingIterator<>(MAX_RECONNECT_HASHING_BUFFER_SIZE);
         reconnectHashingFuture = new CompletableFuture<>();
         reconnectHashingStarted = new AtomicBoolean(false);
 
@@ -1584,10 +1582,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         }
     }
 
-    public void prepareForFirstLeaf() {
-        reconnectIterator.setMaxWaitTime(MAX_RECONNECT_HASHING_BUFFER_TIMEOUT, SECONDS);
-    }
-
     public void prepareReconnectHashing(final long firstLeafPath, final long lastLeafPath) {
         assert nodeRemover != null : "Cannot prepare reconnect hashing, since reconnect is not started";
         // The hash listener will be responsible for flushing stuff to the reconnect data source
@@ -1597,6 +1591,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 keySerializer,
                 valueSerializer,
                 reconnectRecords.getDataSource(),
+                statistics,
                 nodeRemover);
 
         // This background thread will be responsible for hashing the tree and sending the

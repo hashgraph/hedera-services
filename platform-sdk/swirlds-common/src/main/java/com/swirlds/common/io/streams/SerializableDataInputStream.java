@@ -21,6 +21,8 @@ import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_LIS
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_VERSION;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.SERIALIZATION_PROTOCOL_VERSION;
 
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.base.function.CheckedFunction;
@@ -33,8 +35,11 @@ import com.swirlds.common.utility.ValueReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -49,7 +54,7 @@ import java.util.function.Supplier;
  */
 public class SerializableDataInputStream extends AugmentedDataInputStream {
 
-    private static final int PROTOCOL_VERSION = SERIALIZATION_PROTOCOL_VERSION;
+    private static final Set<Integer> SUPPORTED_PROTOCOL_VERSIONS = Set.of(SERIALIZATION_PROTOCOL_VERSION);
 
     /** A stream used to read PBJ objects */
     private final ReadableSequentialData readableSequentialData;
@@ -65,26 +70,17 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     }
 
     /**
-     * While transitioning serialization from {@link SelfSerializable} to protobuf, this stream will support both
-     * serialization methods by providing a separate instance to deserialize protobuf objects.
-     *
-     * @return the readable sequential data stream
-     */
-    public @NonNull ReadableSequentialData getReadableSequentialData() {
-        return readableSequentialData;
-    }
-
-    /**
-     * Reads the protocol version written by {@link SerializableDataOutputStream#writeProtocolVersion()} and saves it
-     * internally. From this point on, it will use this version number to deserialize.
+     * Reads the protocol version written by {@link SerializableDataOutputStream#writeProtocolVersion()}
+     * From this point on, it will use this version number to deserialize.
      *
      * @throws IOException thrown if any IO problems occur
      */
-    public void readProtocolVersion() throws IOException {
+    public int readProtocolVersion() throws IOException {
         final int protocolVersion = readInt();
-        if (protocolVersion != PROTOCOL_VERSION) {
-            throw new IOException("invalid protocol version " + protocolVersion);
+        if (!SUPPORTED_PROTOCOL_VERSIONS.contains(protocolVersion)) {
+            throw new IOException("Unsupported protocol version " + protocolVersion);
         }
+        return protocolVersion;
     }
 
     /**
@@ -585,5 +581,33 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
             throw new ClassNotFoundException(classId);
         }
         return rc;
+    }
+
+    /**
+     * Reads a PBJ record from the stream.
+     *
+     * @param codec the codec to use to parse the record
+     * @param <T>   the type of the record
+     * @return the parsed record
+     * @throws IOException if an IO error occurs
+     */
+    public @NonNull <T extends Record> T readPbjRecord(@NonNull final Codec<T> codec) throws IOException {
+        final int size = readInt();
+        readableSequentialData.limit(readableSequentialData.position() + size);
+        try {
+            final T parsed = codec.parse(readableSequentialData);
+            if (readableSequentialData.position() != readableSequentialData.limit()) {
+                throw new EOFException("PBJ record was not fully read");
+            }
+            return parsed;
+        } catch (final ParseException e) {
+            if (e.getCause() instanceof BufferOverflowException || e.getCause() instanceof BufferUnderflowException) {
+                // PBJ Codec can throw these exceptions if it does not read enough bytes
+                final EOFException eofException = new EOFException("Buffer underflow while reading PBJ record");
+                eofException.addSuppressed(e);
+                throw eofException;
+            }
+            throw new IOException(e);
+        }
     }
 }

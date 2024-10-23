@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.node.app.service.token.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.calculateWeightFromStake;
@@ -38,6 +39,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
+import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
@@ -98,7 +100,8 @@ public class EndOfStakingPeriodUpdaterTest {
                 .accountId(asAccount(800))
                 .tinybarBalance(100_000_000_000L)
                 .build());
-        subject = new EndOfStakingPeriodUpdater(new StakingRewardsHelper(), DEFAULT_CONFIG_PROVIDER);
+        subject = new EndOfStakingPeriodUpdater(
+                new StakingRewardsHelper(DEFAULT_CONFIG_PROVIDER), DEFAULT_CONFIG_PROVIDER);
     }
 
     @Test
@@ -226,9 +229,9 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(resultStakingInfo1.unclaimedStakeRewardStart()).isZero();
         assertThat(resultStakingInfo2.unclaimedStakeRewardStart()).isZero();
         assertThat(resultStakingInfo3.unclaimedStakeRewardStart()).isZero();
-        assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(86L, 6L, 5L));
+        assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(6L, 6L, 5L));
         assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
-        assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(11L, 3L, 1L));
+        assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
         assertThat(resultStakingInfo1.weight()).isZero();
         assertThat(resultStakingInfo2.weight()).isEqualTo(192);
         assertThat(resultStakingInfo3.weight()).isZero();
@@ -238,9 +241,9 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(resultStakingInfo1.weight() + resultStakingInfo2.weight() + resultStakingInfo3.weight())
                 .isLessThanOrEqualTo(SUM_OF_CONSENSUS_WEIGHTS);
 
-        assertThat(logCaptor.infoLogs()).contains("Non-zero reward sum history for node number 1 is now [86, 6, 5]");
+        assertThat(logCaptor.infoLogs()).contains("Non-zero reward sum history for node number 1 is now [6, 6, 5]");
         assertThat(logCaptor.infoLogs()).contains("Non-zero reward sum history for node number 2 is now [101, 1, 1]");
-        assertThat(logCaptor.infoLogs()).contains("Non-zero reward sum history for node number 3 is now [11, 3, 1]");
+        assertThat(logCaptor.infoLogs()).contains("Non-zero reward sum history for node number 3 is now [3, 3, 1]");
     }
 
     @Test
@@ -394,7 +397,8 @@ public class EndOfStakingPeriodUpdaterTest {
         final var expectedMidnightTime =
                 Timestamp.newBuilder().seconds(1653609599L).nanos(expectedNanos).build();
 
-        assertThat(subject.lastInstantOfPreviousPeriodFor(consensusTime)).isEqualTo(expectedMidnightTime);
+        assertThat(EndOfStakingPeriodUtils.lastInstantOfPreviousPeriodFor(consensusTime))
+                .isEqualTo(expectedMidnightTime);
     }
 
     private void commonSetup(
@@ -431,7 +435,7 @@ public class EndOfStakingPeriodUpdaterTest {
                 .willReturn((WritableSingletonState) stakingRewardsState);
         stakingRewardsStore = new WritableNetworkStakingRewardsStore(states);
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
-        given(context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class))
+        given(context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class, NODE_STAKE_UPDATE))
                 .willReturn(nodeStakeUpdateRecordBuilder);
         given(context.knownNodeIds()).willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
     }

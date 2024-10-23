@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.standalone;
 
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
 
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -26,14 +27,19 @@ import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
+import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
+import java.util.function.Supplier;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
@@ -42,47 +48,84 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 public enum TransactionExecutors {
     TRANSACTION_EXECUTORS;
 
-    private static final ThreadLocal<List<OperationTracer>> OPERATION_TRACERS = ThreadLocal.withInitial(List::of);
+    /**
+     * A strategy to bind and retrieve {@link OperationTracer} scoped to a thread.
+     */
+    public interface TracerBinding extends Supplier<List<OperationTracer>> {
+        void runWhere(@NonNull List<OperationTracer> tracers, @NonNull Runnable runnable);
+    }
 
     /**
      * Creates a new {@link TransactionExecutor} based on the given {@link State} and properties.
+     *
      * @param state the {@link State} to create the executor from
      * @param properties the properties to use for the executor
+     * @param customTracerBinding if not null, the tracer binding to use
      * @return a new {@link TransactionExecutor}
      */
-    public TransactionExecutor newExecutor(@NonNull final State state, @NonNull final Map<String, String> properties) {
-        final var executor = newExecutorComponent(properties);
+    public TransactionExecutor newExecutor(
+            @NonNull final State state,
+            @NonNull final Map<String, String> properties,
+            @Nullable final TracerBinding customTracerBinding) {
+        final var tracerBinding =
+                customTracerBinding != null ? customTracerBinding : DefaultTracerBinding.DEFAULT_TRACER_BINDING;
+        final var executor = newExecutorComponent(properties, tracerBinding);
         executor.initializer().accept(state);
         executor.stateNetworkInfo().initFrom(state);
         final var exchangeRateManager = executor.exchangeRateManager();
         return (transactionBody, consensusNow, operationTracers) -> {
             final var dispatch = executor.standaloneDispatchFactory().newDispatch(state, transactionBody, consensusNow);
-            OPERATION_TRACERS.set(List.of(operationTracers));
-            executor.dispatchProcessor().processDispatch(dispatch);
-            return dispatch.stack()
+            tracerBinding.runWhere(List.of(operationTracers), () -> executor.dispatchProcessor()
+                    .processDispatch(dispatch));
+            final var recordSource = dispatch.stack()
                     .buildHandleOutput(consensusNow, exchangeRateManager.exchangeRates())
-                    .recordsOrThrow();
+                    .recordSourceOrThrow();
+            return ((LegacyListRecordSource) recordSource).precomputedRecords();
         };
     }
 
-    private ExecutorComponent newExecutorComponent(@NonNull final Map<String, String> properties) {
+    private ExecutorComponent newExecutorComponent(
+            @NonNull final Map<String, String> properties, @NonNull final TracerBinding tracerBinding) {
         final var bootstrapConfigProvider = new BootstrapConfigProviderImpl();
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
                 new AppSignatureVerifier(
                         bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
-                        new SignatureVerifierImpl(CryptographyHolder.get())));
-        final var contractService =
-                new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, OPERATION_TRACERS::get);
+                        new SignatureVerifierImpl(CryptographyHolder.get())),
+                UNAVAILABLE_GOSSIP);
+        final var tssBaseService =
+                new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool());
+        final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
         final var configProvider = new ConfigProviderImpl(false, null, properties);
         return DaggerExecutorComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
+                .tssBaseService(tssBaseService)
                 .fileServiceImpl(fileService)
                 .contractServiceImpl(contractService)
                 .metrics(new NoOpMetrics())
                 .build();
+    }
+
+    /**
+     * The default {@link TracerBinding} implementation that uses a {@link ThreadLocal}.
+     */
+    private enum DefaultTracerBinding implements TracerBinding {
+        DEFAULT_TRACER_BINDING;
+
+        private static final ThreadLocal<List<OperationTracer>> OPERATION_TRACERS = ThreadLocal.withInitial(List::of);
+
+        @Override
+        public void runWhere(@NonNull final List<OperationTracer> tracers, @NonNull final Runnable runnable) {
+            OPERATION_TRACERS.set(tracers);
+            runnable.run();
+        }
+
+        @Override
+        public List<OperationTracer> get() {
+            return OPERATION_TRACERS.get();
+        }
     }
 }

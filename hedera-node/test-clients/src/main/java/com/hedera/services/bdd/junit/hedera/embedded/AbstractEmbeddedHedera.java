@@ -19,6 +19,8 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
+import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
+import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
@@ -28,6 +30,7 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
@@ -44,13 +47,18 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -70,20 +78,22 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Logger log = LogManager.getLogger(AbstractEmbeddedHedera.class);
 
     private static final int NANOS_IN_A_SECOND = 1_000_000_000;
-    private static final long VALID_START_TIME_OFFSET_SECS = 42;
     private static final SemanticVersion EARLIER_SEMVER =
             SemanticVersion.newBuilder().patch(1).build();
     private static final SemanticVersion LATER_SEMVER =
             SemanticVersion.newBuilder().major(999).build();
 
-    protected static final NodeId MISSING_NODE_ID = new NodeId(666L);
+    protected static final NodeId MISSING_NODE_ID = NodeId.of(666L);
     protected static final int MAX_PLATFORM_TXN_SIZE = 1024 * 6;
     protected static final int MAX_QUERY_RESPONSE_SIZE = 1024 * 1024 * 2;
+    protected static final Hash FAKE_START_OF_STATE_HASH = new Hash(new byte[48]);
     protected static final TransactionResponse OK_RESPONSE = TransactionResponse.getDefaultInstance();
     protected static final PlatformStatusChangeNotification ACTIVE_NOTIFICATION =
             new PlatformStatusChangeNotification(ACTIVE);
     protected static final PlatformStatusChangeNotification FREEZE_COMPLETE_NOTIFICATION =
             new PlatformStatusChangeNotification(FREEZE_COMPLETE);
+
+    private final boolean blockStreamEnabled;
 
     protected final Map<AccountID, NodeId> nodeIds;
     protected final Map<NodeId, com.hedera.hapi.node.base.AccountID> accountIds;
@@ -94,8 +104,9 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final AtomicInteger nextNano = new AtomicInteger(0);
     protected final Hedera hedera;
     protected final ServicesSoftwareVersion version;
-    protected final FakeTssBaseService tssBaseService;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
+    protected FakeTssBaseService tssBaseService;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -106,20 +117,33 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
         defaultNodeId = addressBook.getNodeId(0);
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
-        tssBaseService = new FakeTssBaseService();
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 this::now,
-                () -> tssBaseService);
+                appContext -> {
+                    this.tssBaseService = new FakeTssBaseService(appContext);
+                    return tssBaseService;
+                });
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
+        blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }
 
     @Override
     public void start() {
         hedera.initPlatformState(state);
+        final var writableStates = state.getWritableStates(PlatformStateService.NAME);
+        final WritableSingletonState<PlatformState> platformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
+        final var currentState = requireNonNull(platformState.get());
+        platformState.put(currentState
+                .copyBuilder()
+                .addressBook(toPbjAddressBook(addressBook))
+                .build());
+        ((CommittableWritableStates) writableStates).commit();
+
+        hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
         hedera.onStateInitialized(state, fakePlatform(), GENESIS, null);
         hedera.init(fakePlatform(), defaultNodeId);
         fakePlatform().start();
@@ -155,7 +179,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             nextNano.set(1);
         }
         return Timestamp.newBuilder()
-                .setSeconds(now().getEpochSecond() - VALID_START_TIME_OFFSET_SECS)
+                .setSeconds(now().getEpochSecond() - validStartOffsetSecs())
                 .setNanos(candidateNano)
                 .build();
     }
@@ -191,8 +215,24 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 });
     }
 
+    /**
+     * If block stream is enabled, notify the block stream manager of the state hash at the end of the round.
+     * @param roundNumber the round number
+     */
+    protected void notifyBlockStreamManagerIfEnabled(final long roundNumber) {
+        if (blockStreamEnabled) {
+            hedera.blockStreamManager().notify(new StateHashedNotification(roundNumber, FAKE_START_OF_STATE_HASH));
+        }
+    }
+
     protected abstract TransactionResponse submit(
             @NonNull Transaction transaction, @NonNull AccountID nodeAccountId, @NonNull SemanticVersion version);
+
+    /**
+     * Returns the number of seconds to offset the next valid start time.
+     * @return the number of seconds to offset the next valid start time
+     */
+    protected abstract long validStartOffsetSecs();
 
     /**
      * Returns the fake platform to start and stop.

@@ -22,7 +22,9 @@ dependencies {
     api(enforcedPlatform("io.netty:netty-bom:4.1.110.Final"))
 
     // forward logging from modules using SLF4J (e.g. 'org.hyperledger.besu.evm') to Log4J
-    runtime(javaModuleDependencies.gav("org.apache.logging.log4j.slf4j2.impl"))
+    runtime("org.apache.logging.log4j:log4j-slf4j2-impl") {
+        because("org.apache.logging.log4j.slf4j2.impl")
+    }
 }
 
 dependencies.constraints {
@@ -39,7 +41,7 @@ dependencies.constraints {
         because("com.github.benmanes.caffeine")
     }
     api("com.github.docker-java:docker-java-api:3.2.13") {
-        because("com.github.docker.java.api")
+        because("com.github.dockerjava.api")
     }
     api("com.github.spotbugs:spotbugs-annotations:4.7.3") {
         because("com.github.spotbugs.annotations")
@@ -50,16 +52,19 @@ dependencies.constraints {
     api("com.google.auto.service:auto-service:1.1.1") {
         because("com.google.auto.service.processor")
     }
-    api("com.google.guava:guava:31.1-jre") {
+    api("com.google.guava:guava:33.1.0-jre") {
         because("com.google.common")
+    }
+    api("com.google.j2objc:j2objc-annotations:3.0.0") {
+        because("com.google.j2objc.annotations")
     }
     api("com.google.jimfs:jimfs:1.2") {
         because("com.google.jimfs")
     }
-    api("com.google.protobuf:protobuf-java:3.25.4") {
+    api("com.google.protobuf:protobuf-java:4.28.2") {
         because("com.google.protobuf")
     }
-    api("com.google.protobuf:protobuf-java-util:3.25.4") {
+    api("com.google.protobuf:protobuf-java-util:4.28.2") {
         because("com.google.protobuf.util")
     }
     api("com.hedera.pbj:pbj-runtime:0.9.2") {
@@ -221,4 +226,7 @@ dependencies.constraints {
     api("uk.org.webcompere:system-stubs-jupiter:2.1.5") {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
+
+    api("com.google.protobuf:protoc:3.25.4")
+    api("io.grpc:protoc-gen-grpc-java:1.66.0")
 }

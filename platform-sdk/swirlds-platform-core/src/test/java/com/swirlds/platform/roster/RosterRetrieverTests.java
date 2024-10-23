@@ -108,7 +108,7 @@ public class RosterRetrieverTests {
             .build();
 
     private static final Roster ROSTER_FROM_ADDRESS_BOOK = Roster.newBuilder()
-            .rosters(List.of(
+            .rosterEntries(List.of(
                     RosterEntry.newBuilder()
                             .nodeId(1L)
                             .weight(1L)
@@ -295,7 +295,7 @@ public class RosterRetrieverTests {
         assertEquals(ROSTER_FROM_ADDRESS_BOOK, RosterRetriever.retrieve(state));
     }
 
-    private static X509Certificate randomX509Certificate() {
+    public static X509Certificate randomX509Certificate() {
         try {
             final SecureRandom secureRandom = CryptoUtils.getDetRandom();
 

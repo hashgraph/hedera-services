@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.parseFeeSchedules;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -39,7 +40,6 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
@@ -103,9 +103,6 @@ class SystemSetupTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private TokenContext context;
 
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableBlockRecordStore blockStore;
-
     @Mock
     private SyntheticAccountCreator syntheticAccountCreator;
 
@@ -144,13 +141,9 @@ class SystemSetupTest {
 
     @BeforeEach
     void setup() {
-        given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
         given(context.consensusTime()).willReturn(CONSENSUS_NOW);
-        given(context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class))
+        given(context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class, CRYPTO_CREATE))
                 .willReturn(genesisAccountRecordBuilder);
-        given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
-
-        given(blockStore.getLastBlockInfo()).willReturn(defaultStartupBlockInfo());
 
         subject = new SystemSetup(fileService, syntheticAccountCreator);
     }
@@ -159,6 +152,7 @@ class SystemSetupTest {
     void successfulAutoUpdatesAreDispatchedWithFilesAvailable() throws IOException {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
+                .withValue("nodes.enableDAB", true)
                 .getOrCreateConfig();
         final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
         Files.writeString(tempDir.resolve(adminConfig.upgradePropertyOverridesFile()), validPropertyOverrides());
@@ -169,15 +163,15 @@ class SystemSetupTest {
         given(dispatch.config()).willReturn(config);
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.handleContext()).willReturn(handleContext);
-        given(handleContext.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
         given(handleContext.dispatchPrecedingTransaction(any(), any(), any(), any()))
                 .willReturn(streamBuilder);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
 
         subject.doPostUpgradeSetup(dispatch);
 
         final var filesConfig = config.getConfigData(FilesConfig.class);
-        verify(fileService).updateNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
+        verify(fileService).updateAddressBookAndNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
         verifyUpdateDispatch(filesConfig.networkProperties(), serializedPropertyOverrides());
         verifyUpdateDispatch(filesConfig.hapiPermissions(), serializedPermissionOverrides());
         verifyUpdateDispatch(filesConfig.throttleDefinitions(), serializedThrottleOverrides());
@@ -186,9 +180,10 @@ class SystemSetupTest {
     }
 
     @Test
-    void onlyNodeDetailsAutoUpdateIsDispatchedWithNoFilesAvailable() {
+    void onlyAddressBookAndNodeDetailsAutoUpdateIsDispatchedWithNoFilesAvailable() {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
+                .withValue("nodes.enableDAB", true)
                 .getOrCreateConfig();
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.config()).willReturn(config);
@@ -198,7 +193,7 @@ class SystemSetupTest {
 
         subject.doPostUpgradeSetup(dispatch);
 
-        verify(fileService).updateNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
+        verify(fileService).updateAddressBookAndNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
         verify(stack, times(1)).commitFullStack();
 
         final var infoLogs = logCaptor.infoLogs();
@@ -210,9 +205,10 @@ class SystemSetupTest {
     }
 
     @Test
-    void onlyNodeDetailsAutoUpdateIsDispatchedWithInvalidFilesAvailable() throws IOException {
+    void onlyAddressBookAndNodeDetailsAutoUpdateIsDispatchedWithInvalidFilesAvailable() throws IOException {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
+                .withValue("nodes.enableDAB", true)
                 .getOrCreateConfig();
         final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
         Files.writeString(tempDir.resolve(adminConfig.upgradePropertyOverridesFile()), invalidPropertyOverrides());
@@ -227,7 +223,7 @@ class SystemSetupTest {
 
         subject.doPostUpgradeSetup(dispatch);
 
-        verify(fileService).updateNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
+        verify(fileService).updateAddressBookAndNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
         verify(stack, times(1)).commitFullStack();
 
         final var errorLogs = logCaptor.errorLogs();

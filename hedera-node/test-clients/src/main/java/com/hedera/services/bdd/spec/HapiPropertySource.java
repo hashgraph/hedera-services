@@ -29,6 +29,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.types.LongPair;
+import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -109,6 +110,16 @@ public interface HapiPropertySource {
         } catch (Exception ignore) {
         }
         return AccountID.getDefaultInstance();
+    }
+
+    /**
+     * Returns an {@link StreamMode} parsed from the given property.
+     * @param property the property to get the value from
+     * @return the {@link StreamMode} value
+     */
+    default StreamMode getStreamMode(@NonNull final String property) {
+        requireNonNull(property);
+        return StreamMode.valueOf(get(property));
     }
 
     default ServiceEndpoint getServiceEndpoint(String property) {

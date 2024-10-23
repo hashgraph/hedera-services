@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.config.legacy;
 
+import static com.swirlds.base.utility.FileSystemUtils.waitForPathPresence;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -28,7 +28,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.Arrays;
@@ -42,7 +41,7 @@ import org.apache.logging.log4j.Logger;
  * Loader that load all properties form the config.txt file
  *
  * @deprecated will be replaced by the {@link com.swirlds.config.api.Configuration} API in near future once the
- * onfig.txt has been migrated to the regular config API. If you need to use this class please try to do as less static
+ * config.txt has been migrated to the regular config API. If you need to use this class please try to do as less static
  * access as possible.
  */
 @Deprecated(forRemoval = true)
@@ -50,8 +49,6 @@ public final class LegacyConfigPropertiesLoader {
 
     private static final String APP_PROPERTY_NAME = "app";
     private static final String ADDRESS_PROPERTY_NAME = "address";
-    private static final String NEXT_NODE_ID_PROPERTY_NAME = "nextNodeId";
-    private static final String NEXT_NODE_ID_PROPERTY_NAME_LOWERCASE = "nextnodeid";
     private static final String SWIRLD_PROPERTY_NAME = "swirld";
 
     public static final String ERROR_CONFIG_TXT_NOT_FOUND_BUT_EXISTS =
@@ -69,14 +66,14 @@ public final class LegacyConfigPropertiesLoader {
     private LegacyConfigPropertiesLoader() {}
 
     /**
-     * @throws NullPointerException in case {@code configPath} parameter is {@code null}
+     * @throws NullPointerException   in case {@code configPath} parameter is {@code null}
      * @throws ConfigurationException in case {@code configPath} cannot be found in the system
      */
     public static LegacyConfigProperties loadConfigFile(@NonNull final Path configPath) throws ConfigurationException {
         Objects.requireNonNull(configPath, "configPath must not be null");
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
-        if (!Files.exists(configPath)) {
+        if (!waitForPathPresence(configPath)) {
             throw new ConfigurationException(
                     "ERROR: Configuration file not found: %s".formatted(configPath.toString()));
         }
@@ -85,7 +82,6 @@ public final class LegacyConfigPropertiesLoader {
 
         try (final Scanner scanner = new Scanner(configPath, StandardCharsets.UTF_8)) {
             final AddressBook addressBook = new AddressBook();
-            boolean nextNodeIdParsed = false;
             long lineNumber = 0;
             while (scanner.hasNextLine()) {
                 final String line = readNextLine(scanner);
@@ -129,29 +125,14 @@ public final class LegacyConfigPropertiesLoader {
                                 onError(ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS);
                             }
                         }
-                        case NEXT_NODE_ID_PROPERTY_NAME_LOWERCASE -> {
-                            try {
-                                if (!parsOriginalCase[0].equals(AddressBookUtils.NEXT_NODE_ID_KEYWORD)) {
-                                    onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
-                                } else {
-                                    final NodeId nextNodeId = new NodeId(Long.parseLong(pars[1]));
-                                    if (nextNodeId.compareTo(addressBook.getNextNodeId()) < 0) {
-                                        onError(ERROR_NEXT_NODE_NOT_GREATER_THAN_HIGHEST_ADDRESS);
-                                    }
-                                    addressBook.setNextNodeId(nextNodeId);
-                                    nextNodeIdParsed = true;
-                                }
-                            } catch (final NumberFormatException ex) {
-                                onError(ERROR_NO_PARAMETER.formatted(NEXT_NODE_ID_PROPERTY_NAME));
-                            }
+                        case "nextnodeid" -> {
+                            // As of release 0.56, nextNodeId is not used and ignored.
+                            // CI/CD pipelines need to be updated to remove this field from files.
+                            // Future Work: remove this case when nextNodeId is no longer present in CI/CD pipelines.
                         }
                         default -> onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
                     }
                 }
-            }
-            if (!nextNodeIdParsed) {
-                onError(ERROR_NO_PARAMETER.formatted(NEXT_NODE_ID_PROPERTY_NAME));
-                throw new ConfigurationException("config.txt did not have a `nextNodeId` property. (Case Sensitive)");
             }
             if (addressBook.getSize() > 0) {
                 configurationProperties.setAddressBook(addressBook);

@@ -28,16 +28,19 @@ import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStream
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
+import static com.swirlds.state.spi.HapiUtils.asAccountString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.fixtures.AppTestBase;
+import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
@@ -82,13 +85,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class BlockRecordManagerTest extends AppTestBase {
     private static final Timestamp CONSENSUS_TIME =
             Timestamp.newBuilder().seconds(1_234_567L).nanos(13579).build();
-    /** Make it small enough to trigger roll over code with the number of test blocks we have */
+    /**
+     * Make it small enough to trigger roll over code with the number of test blocks we have
+     */
     private static final int NUM_BLOCK_HASHES_TO_KEEP = 4;
 
     private static final Timestamp FIRST_CONS_TIME_OF_LAST_BLOCK = new Timestamp(1682899224, 38693760);
     private static final Instant FORCED_BLOCK_SWITCH_TIME = Instant.ofEpochSecond(1682899224L, 38693760);
-
-    /** Temporary in memory file system used for testing */
+    private static final NodeInfoImpl NODE_INFO =
+            new NodeInfoImpl(0, AccountID.newBuilder().accountNum(3).build(), 10, List.of(), Bytes.EMPTY);
+    /**
+     * Temporary in memory file system used for testing
+     */
     private FileSystem fs;
 
     private App app;
@@ -118,6 +126,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .withConfigValue("hedera.recordStream.signatureFileVersion", 6)
                 .withConfigValue("hedera.recordStream.compressFilesOnCreation", true)
                 .withConfigValue("hedera.recordStream.sidecarMaxSizeMb", 256)
+                .withConfigValue("blockStream.streamMode", "BOTH")
                 .withService(new BlockRecordService())
                 .withService(PLATFORM_STATE_SERVICE)
                 .build();
@@ -135,8 +144,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         V0540PlatformStateSchema.PLATFORM_STATE_KEY, V0540PlatformStateSchema.GENESIS_PLATFORM_STATE)
                 .commit();
 
-        blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
-                app.configProvider(), app.networkInfo().selfNodeInfo(), SIGNER, fs);
+        blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(app.configProvider(), NODE_INFO, SIGNER, fs);
     }
 
     @AfterEach
@@ -182,12 +190,8 @@ final class BlockRecordManagerTest extends AppTestBase {
         final var merkleState = app.workingStateAccessor().getState();
         final var producer = concurrent
                 ? new StreamFileProducerConcurrent(
-                        app.networkInfo().selfNodeInfo(),
-                        blockRecordFormat,
-                        blockRecordWriterFactory,
-                        ForkJoinPool.commonPool())
-                : new StreamFileProducerSingleThreaded(
-                        app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
+                        blockRecordFormat, blockRecordWriterFactory, ForkJoinPool.commonPool(), app.hapiVersion())
+                : new StreamFileProducerSingleThreaded(blockRecordFormat, blockRecordWriterFactory, app.hapiVersion());
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
                 app.configProvider(), app.workingStateAccessor().getState(), producer)) {
@@ -239,8 +243,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         final var recordStreamConfig =
                 app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         validateRecordStreamFiles(
-                fs.getPath(recordStreamConfig.logDir())
-                        .resolve("record" + app.networkInfo().selfNodeInfo().memo()),
+                fs.getPath(recordStreamConfig.logDir()).resolve("record" + asAccountString(NODE_INFO.accountId())),
                 recordStreamConfig,
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
@@ -272,8 +275,8 @@ final class BlockRecordManagerTest extends AppTestBase {
 
         final Random random = new Random(82792874);
         final var merkleState = app.workingStateAccessor().getState();
-        final var producer = new StreamFileProducerSingleThreaded(
-                app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
+        final var producer =
+                new StreamFileProducerSingleThreaded(blockRecordFormat, blockRecordWriterFactory, app.hapiVersion());
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
                 app.configProvider(), app.workingStateAccessor().getState(), producer)) {
@@ -368,8 +371,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         final var recordStreamConfig =
                 app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         validateRecordStreamFiles(
-                fs.getPath(recordStreamConfig.logDir())
-                        .resolve("record" + app.networkInfo().selfNodeInfo().memo()),
+                fs.getPath(recordStreamConfig.logDir()).resolve("record" + asAccountString(NODE_INFO.accountId())),
                 recordStreamConfig,
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,

@@ -32,6 +32,7 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -97,22 +98,21 @@ class AddressBookNetworkUtilsTests {
                 "name",
                 "swirldName",
                 new BasicSoftwareVersion(1),
-                () -> null,
-                (inputStream, path) -> null,
-                new NodeId(0));
+                ReservedSignedState.createNullReservation(),
+                NodeId.of(0));
 
-        final Address address1 = new Address(new NodeId(1), "", "", 10, null, 77, null, 88, null, null, "");
-        final Address address2 = new Address(new NodeId(2), "", "", 10, null, 77, null, 88, null, null, "");
+        final Address address1 = new Address(NodeId.of(1), "", "", 10, null, 77, null, 88, null, null, "");
+        final Address address2 = new Address(NodeId.of(2), "", "", 10, null, 77, null, 88, null, null, "");
         final AddressBook addressBook = new AddressBook();
         addressBook.add(address1);
         addressBook.add(address2);
-        platformBuilder.withBootstrapAddressBook(addressBook);
+        platformBuilder.withAddressBook(addressBook);
         final Roster roster = AddressBookUtils.createRoster(addressBook);
 
         assertNotNull(roster);
-        assertEquals(2, roster.rosters().size());
-        assertEquals(1L, roster.rosters().getFirst().nodeId());
-        assertEquals(2L, roster.rosters().getLast().nodeId());
+        assertEquals(2, roster.rosterEntries().size());
+        assertEquals(1L, roster.rosterEntries().getFirst().nodeId());
+        assertEquals(2L, roster.rosterEntries().getLast().nodeId());
     }
 
     @Test
@@ -129,15 +129,14 @@ class AddressBookNetworkUtilsTests {
                 "name",
                 "swirldName",
                 new BasicSoftwareVersion(1),
-                () -> null,
-                (inputStream, path) -> null,
-                new NodeId(0));
+                ReservedSignedState.createNullReservation(),
+                NodeId.of(0));
         final AddressBook addressBook = new AddressBook();
-        platformBuilder.withBootstrapAddressBook(addressBook);
+        platformBuilder.withAddressBook(addressBook);
         final Roster roster = AddressBookUtils.createRoster(addressBook);
 
         assertNotNull(roster);
-        assertTrue(roster.rosters().isEmpty());
+        assertTrue(roster.rosterEntries().isEmpty());
     }
 
     @Test
@@ -149,7 +148,7 @@ class AddressBookNetworkUtilsTests {
         final AddressBook addressBook = new AddressBook(List.of(address));
         final Roster roster = AddressBookUtils.createRoster(addressBook);
 
-        assertEquals(Bytes.EMPTY, roster.rosters().getFirst().gossipCaCertificate());
+        assertEquals(Bytes.EMPTY, roster.rosterEntries().getFirst().gossipCaCertificate());
     }
 
     @Test
@@ -158,10 +157,10 @@ class AddressBookNetworkUtilsTests {
         final AddressBook addressBook = new AddressBook(List.of(address));
         final Roster roster = AddressBookUtils.createRoster(addressBook);
 
-        assertEquals(1, roster.rosters().size());
+        assertEquals(1, roster.rosterEntries().size());
         assertEquals(
                 "hostnameExternal",
-                roster.rosters().getFirst().gossipEndpoint().getFirst().domainName());
+                roster.rosterEntries().getFirst().gossipEndpoint().getFirst().domainName());
     }
 
     @Test
@@ -170,10 +169,10 @@ class AddressBookNetworkUtilsTests {
         final AddressBook addressBook = new AddressBook(List.of(address));
         final Roster roster = AddressBookUtils.createRoster(addressBook);
 
-        assertEquals(1, roster.rosters().size());
+        assertEquals(1, roster.rosterEntries().size());
         assertEquals(
                 "hostnameInternal",
-                roster.rosters().getFirst().gossipEndpoint().getFirst().domainName());
+                roster.rosterEntries().getFirst().gossipEndpoint().getFirst().domainName());
     }
 
     @Test

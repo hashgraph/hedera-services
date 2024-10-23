@@ -112,8 +112,8 @@ class EventSignatureValidatorTests {
                 .eventExitedIntakePipeline(any());
 
         // create two addresses, one for the previous address book and one for the current address book
-        previousNodeAddress = generateMockAddress(new NodeId(66));
-        currentNodeAddress = generateMockAddress(new NodeId(77));
+        previousNodeAddress = generateMockAddress(NodeId.of(66));
+        currentNodeAddress = generateMockAddress(NodeId.of(77));
 
         final AddressBook previousAddressBook = new AddressBook(List.of(previousNodeAddress));
         currentAddressBook = new AddressBook(List.of(currentNodeAddress));
@@ -180,7 +180,7 @@ class EventSignatureValidatorTests {
     @Test
     @DisplayName("Node has a null public key")
     void missingPublicKey() {
-        final NodeId nodeId = new NodeId(88);
+        final NodeId nodeId = NodeId.of(88);
         final Address nodeAddress = new Address(nodeId, "", "", 10, null, 77, null, 88, null, null, "");
 
         currentAddressBook.add(nodeAddress);

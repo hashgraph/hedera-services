@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -134,12 +135,14 @@ public class ClassicTransfersCall extends AbstractCall {
             return reversionWith(
                     gasRequirement,
                     systemContractOperations()
-                            .externalizePreemptedDispatch(syntheticTransfer, INVALID_RECEIVING_NODE_ACCOUNT));
+                            .externalizePreemptedDispatch(
+                                    syntheticTransfer, INVALID_RECEIVING_NODE_ACCOUNT, CRYPTO_TRANSFER));
         }
         if (executionIsNotSupported()) {
             return haltWith(
                     gasRequirement,
-                    systemContractOperations().externalizePreemptedDispatch(syntheticTransfer, NOT_SUPPORTED));
+                    systemContractOperations()
+                            .externalizePreemptedDispatch(syntheticTransfer, NOT_SUPPORTED, CRYPTO_TRANSFER));
         }
         final var transferToDispatch = shouldRetryWithApprovals()
                 ? syntheticTransfer
@@ -172,7 +175,7 @@ public class ClassicTransfersCall extends AbstractCall {
 
     /**
      * Simulates the mono-service gas calculation for a classic transfer, which is significantly complicated by our
-     * current strategy for setting the minimum tinybar price based on the canonical prices of various operations.
+     * current strategy for setting the minimum tinycent price based on the canonical prices of various operations.
      *
      * @param body the transaction body to be dispatched
      * @param systemContractGasCalculator the gas calculator to use
@@ -191,47 +194,47 @@ public class ClassicTransfersCall extends AbstractCall {
         final var hasCustomFees = enhancement.nativeOperations().checkForCustomFees(op);
         // For fungible there are always at least two operations, so only charge half for each
         // operation
-        final var baseUnitAdjustTinybarPrice = systemContractGasCalculator.canonicalPriceInTinybars(
+        final var baseUnitAdjustTinycentPrice = systemContractGasCalculator.canonicalPriceInTinycents(
                         hasCustomFees ? DispatchType.TRANSFER_FUNGIBLE_CUSTOM_FEES : DispatchType.TRANSFER_FUNGIBLE)
                 / 2;
         // NFTs are atomic, one line can do it.
-        final var baseNftTransferTinybarPrice = systemContractGasCalculator.canonicalPriceInTinybars(
+        final var baseNftTransferTinycentsPrice = systemContractGasCalculator.canonicalPriceInTinycents(
                 hasCustomFees ? DispatchType.TRANSFER_NFT_CUSTOM_FEES : DispatchType.TRANSFER_NFT);
         // Hbar transfer is similar to fungible tokens so only charge half for each operation
-        final var baseHbarAdjustTinybarPrice =
-                systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_HBAR) / 2;
+        final var baseAdjustTinycentsPrice =
+                systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.TRANSFER_HBAR) / 2;
         final var baseLazyCreationPrice =
-                systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_CREATE)
-                        + systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_UPDATE);
+                systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.CRYPTO_CREATE)
+                        + systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.CRYPTO_UPDATE);
 
         final var extantAccounts = enhancement.nativeOperations().readableAccountStore();
-        final long minimumTinybarPrice = minimumTinybarPriceGiven(
+        final long minimumTinycentPrice = minimumTinycentPriceGiven(
                 op,
-                baseUnitAdjustTinybarPrice,
-                baseHbarAdjustTinybarPrice,
-                baseNftTransferTinybarPrice,
+                baseUnitAdjustTinycentPrice,
+                baseAdjustTinycentsPrice,
+                baseNftTransferTinycentsPrice,
                 baseLazyCreationPrice,
                 extantAccounts,
                 selector);
-        return systemContractGasCalculator.gasRequirement(body, payerId, minimumTinybarPrice);
+        return systemContractGasCalculator.gasRequirementWithTinycents(body, payerId, minimumTinycentPrice);
     }
 
-    private static long minimumTinybarPriceGiven(
+    private static long minimumTinycentPriceGiven(
             @NonNull final CryptoTransferTransactionBody op,
-            final long baseUnitAdjustTinybarPrice,
-            final long baseHbarAdjustTinybarPrice,
-            final long baseNftTransferTinybarPrice,
+            final long baseUnitAdjustTinyCentPrice,
+            final long baseAdjustTinyCentsPrice,
+            final long baseNftTransferTinyCentsPrice,
             final long baseLazyCreationPrice,
             @NonNull final ReadableAccountStore extantAccounts,
             @NonNull final byte[] selector) {
-        long minimumTinybarPrice = 0L;
-        final var numHbarAdjusts =
+        long minimumTinycentPrice = 0L;
+        final var numTinyCentsAdjusts =
                 op.transfersOrElse(TransferList.DEFAULT).accountAmounts().size();
-        minimumTinybarPrice += numHbarAdjusts * baseHbarAdjustTinybarPrice;
+        minimumTinycentPrice += numTinyCentsAdjusts * baseAdjustTinyCentsPrice;
         final Set<Bytes> aliasesToLazyCreate = new HashSet<>();
         for (final var tokenTransfers : op.tokenTransfers()) {
             final var unitAdjusts = tokenTransfers.transfers();
-            minimumTinybarPrice += unitAdjusts.size() * baseUnitAdjustTinybarPrice;
+            minimumTinycentPrice += unitAdjusts.size() * baseUnitAdjustTinyCentPrice;
             for (final var unitAdjust : unitAdjusts) {
                 if (unitAdjust.amount() > 0
                         && unitAdjust.accountIDOrElse(AccountID.DEFAULT).hasAlias()) {
@@ -243,7 +246,7 @@ public class ClassicTransfersCall extends AbstractCall {
                 }
             }
             final var nftTransfers = tokenTransfers.nftTransfers();
-            minimumTinybarPrice += nftTransfers.size() * baseNftTransferTinybarPrice;
+            minimumTinycentPrice += nftTransfers.size() * baseNftTransferTinyCentsPrice;
             for (final var nftTransfer : nftTransfers) {
                 if (nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT).hasAlias()) {
                     final var alias = nftTransfer.receiverAccountIDOrThrow().aliasOrThrow();
@@ -254,8 +257,8 @@ public class ClassicTransfersCall extends AbstractCall {
                 }
             }
         }
-        minimumTinybarPrice += aliasesToLazyCreate.size() * baseLazyCreationPrice;
-        return minimumTinybarPrice;
+        minimumTinycentPrice += aliasesToLazyCreate.size() * baseLazyCreationPrice;
+        return minimumTinycentPrice;
     }
 
     private boolean shouldRetryWithApprovals() {

@@ -43,6 +43,9 @@ on:
         description: "The Github access token used to checkout the repository, submodules, and make GitHub API calls."
         required: true
 
+permissions:
+  contents: read
+
 defaults:
   run:
     shell: bash
@@ -52,6 +55,11 @@ jobs:
     name: Launch Workflow
     runs-on: network-node-linux-small-scheduler
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       - name: Install Github CLI
         env:
           GITHUB_TOKEN: ${{ secrets.access-token }}

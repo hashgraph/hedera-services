@@ -1,5 +1,8 @@
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 
+/**
+ * Module that provides the implementation of the Hedera Consensus Service.
+ */
 module com.hedera.node.app.service.consensus.impl {
     requires transitive com.hedera.node.app.service.consensus;
     requires transitive com.hedera.node.app.spi;

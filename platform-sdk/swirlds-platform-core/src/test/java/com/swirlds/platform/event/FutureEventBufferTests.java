@@ -76,7 +76,7 @@ class FutureEventBufferTests {
         for (int i = 0; i < count; i++) {
             final PlatformEvent event = new TestingEventBuilder(random)
                     .setBirthRound(random.nextLong(1, maxFutureRound))
-                    .setCreatorId(new NodeId(random.nextInt(100)))
+                    .setCreatorId(NodeId.of(random.nextInt(100)))
                     .setTimeCreated(randomInstant(random))
                     .build();
             events.add(event);
@@ -161,7 +161,7 @@ class FutureEventBufferTests {
         for (int i = 0; i < count; i++) {
             final PlatformEvent event = new TestingEventBuilder(random)
                     .setBirthRound(random.nextLong(1, maxFutureRound))
-                    .setCreatorId(new NodeId(random.nextInt(100)))
+                    .setCreatorId(NodeId.of(random.nextInt(100)))
                     .setTimeCreated(randomInstant(random))
                     .build();
             events.add(event);
@@ -220,7 +220,7 @@ class FutureEventBufferTests {
         final long eventBirthRound = pendingConsensusRound + roundsUntilRelease;
         final PlatformEvent event = new TestingEventBuilder(random)
                 .setBirthRound(eventBirthRound)
-                .setCreatorId(new NodeId(random.nextInt(100)))
+                .setCreatorId(NodeId.of(random.nextInt(100)))
                 .setTimeCreated(randomInstant(random))
                 .build();
 

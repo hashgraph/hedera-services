@@ -49,6 +49,7 @@ import org.apache.logging.log4j.Logger;
  */
 class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Logger log = LogManager.getLogger(ConcurrentEmbeddedHedera.class);
+    private static final long VALID_START_TIME_OFFSET_SECS = 42;
     private static final Duration SIMULATED_ROUND_DURATION = Duration.ofMillis(1);
 
     private final ConcurrentFakePlatform platform;
@@ -93,6 +94,11 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                             nodeId, now(), semanticVersion, createAppPayloadWrapper(transaction.toByteArray())));
             return OK_RESPONSE;
         }
+    }
+
+    @Override
+    protected long validStartOffsetSecs() {
+        return VALID_START_TIME_OFFSET_SECS;
     }
 
     @Override
@@ -156,6 +162,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                     final var round = new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);
                     hedera.handleWorkflow().handleRound(state, round);
                     hedera.onSealConsensusRound(round, state);
+                    notifyBlockStreamManagerIfEnabled(round.getRoundNum());
                     prehandledEvents.clear();
                 }
                 // Now drain all events that will go in the next round and pre-handle them
@@ -163,8 +170,8 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                 queue.drainTo(newEvents);
                 newEvents.forEach(event -> hedera.onPreHandle(event, state));
                 prehandledEvents.addAll(newEvents);
-            } catch (Exception e) {
-                log.warn("Error handling transactions", e);
+            } catch (Throwable t) {
+                log.error("Error handling transactions", t);
             }
         }
     }

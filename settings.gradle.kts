@@ -18,11 +18,7 @@ pluginManagement { includeBuild("gradle/plugins") }
 
 plugins { id("com.hedera.gradle.settings") }
 
-
 javaModules {
-    // Project to aggregate code coverage data for the whole repository into one report´
-    module("gradle/reports")
-
     // This "intermediate parent project" should be removed
     module("platform-sdk") { artifact = "swirlds-platform" }
 
@@ -37,6 +33,8 @@ javaModules {
         module("swirlds") // not actually a Module as it has no module-info.java
         module("swirlds-benchmarks") // not actually a Module as it has no module-info.java
         module("swirlds-unit-tests/core/swirlds-platform-test") // nested module is not found automatically
+        module("consensus-gossip")  { artifact = "consensus-gossip" }
+        module("consensus-gossip-impl")  { artifact = "consensus-gossip-impl" }
     }
 
     // The Hedera services modules
@@ -80,18 +78,5 @@ javaModules {
     // Platform test applications
     directory("platform-sdk/platform-apps/tests") {
         group = "com.swirlds"
-    }
-
-    // "BOM" with versions of 3rd party dependencies
-    versions("hedera-dependency-versions")
-}
-
-dependencyResolutionManagement {
-    // Protobuf tool versions
-    versionCatalogs.create("libs") {
-        version("google-proto", "3.25.4")
-        version("grpc-proto", "1.66.0")
-
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.9.2")
     }
 }

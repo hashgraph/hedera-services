@@ -29,6 +29,7 @@ import static com.hedera.node.app.records.impl.producers.formats.v6.SignatureWri
 import static com.hedera.pbj.runtime.ProtoWriterTools.writeLong;
 import static com.hedera.pbj.runtime.ProtoWriterTools.writeMessage;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
+import static com.swirlds.state.spi.HapiUtils.asAccountString;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -181,7 +182,7 @@ public final class BlockRecordWriterV6 implements BlockRecordWriter {
 
         // Compute directories for record and sidecar files
         final Path recordDir = fileSystem.getPath(config.logDir());
-        nodeScopedRecordDir = recordDir.resolve("record" + nodeInfo.memo());
+        nodeScopedRecordDir = recordDir.resolve("record" + asAccountString(nodeInfo.accountId()));
         nodeScopedSidecarDir = nodeScopedRecordDir.resolve(config.sidecarDir());
 
         // Create parent directories if needed for the record file itself

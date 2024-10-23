@@ -41,6 +41,6 @@ public class Version046FeatureFlags extends Version034FeatureFlags {
 
     @Override
     public boolean isChargeGasOnPreEvmException(@NonNull Configuration config) {
-        return config.getConfigData(ContractsConfig.class).chargeGasOnPreEvmException();
+        return config.getConfigData(ContractsConfig.class).chargeGasOnEvmHandleException();
     }
 }

@@ -16,14 +16,8 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.common.io.extendable.ExtendableOutputStream;
-import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -33,18 +27,12 @@ import java.nio.file.StandardCopyOption;
  * Represents a preconsensus event file that can be written to.
  */
 public class PcesMutableFile {
-    /** the file version to write at the beginning of the file. atm, this is just a placeholder for future changes */
-    public static final int FILE_VERSION = 1;
-
     /**
      * Describes the file that is being written to.
      */
     private final PcesFile descriptor;
 
-    /**
-     * Counts the bytes written to the file.
-     */
-    private final CountingStreamExtension counter;
+    private final PcesFileWriter writer;
 
     /**
      * The highest ancient indicator of all events written to the file.
@@ -52,16 +40,15 @@ public class PcesMutableFile {
     private long highestAncientIdentifierInFile;
 
     /**
-     * The output stream to write to.
-     */
-    private final SerializableDataOutputStream out;
-
-    /**
      * Create a new preconsensus event file that can be written to.
      *
-     * @param descriptor a description of the file
+     * @param descriptor           a description of the file
+     * @param useFileChannelWriter whether to use a FileChannel to write to the file as opposed to an OutputStream
+     * @param syncEveryEvent       whether to sync the file after every event
      */
-    PcesMutableFile(@NonNull final PcesFile descriptor) throws IOException {
+    PcesMutableFile(
+            @NonNull final PcesFile descriptor, final boolean useFileChannelWriter, final boolean syncEveryEvent)
+            throws IOException {
         if (Files.exists(descriptor.getPath())) {
             throw new IOException("File " + descriptor.getPath() + " already exists");
         }
@@ -69,12 +56,10 @@ public class PcesMutableFile {
         Files.createDirectories(descriptor.getPath().getParent());
 
         this.descriptor = descriptor;
-        counter = new CountingStreamExtension(false);
-        out = new SerializableDataOutputStream(new ExtendableOutputStream(
-                new BufferedOutputStream(
-                        new FileOutputStream(descriptor.getPath().toFile())),
-                counter));
-        out.writeInt(FILE_VERSION);
+        writer = useFileChannelWriter
+                ? new PcesFileChannelWriter(descriptor.getPath(), syncEveryEvent)
+                : new PcesOutputStreamFileWriter(descriptor.getPath(), syncEveryEvent);
+        writer.writeVersion(PcesFileVersion.currentVersionNumber());
         highestAncientIdentifierInFile = descriptor.getLowerBound();
     }
 
@@ -98,7 +83,7 @@ public class PcesMutableFile {
             throw new IllegalStateException("Cannot write event " + event.getHash() + " with ancient indicator "
                     + event.getAncientIndicator(descriptor.getFileType()) + " to file " + descriptor);
         }
-        EventSerializationUtils.serializePlatformEvent(out, event, true);
+        writer.writeEvent(event.getGossipEvent());
         highestAncientIdentifierInFile =
                 Math.max(highestAncientIdentifierInFile, event.getAncientIndicator(descriptor.getFileType()));
     }
@@ -133,14 +118,14 @@ public class PcesMutableFile {
      * Flush the file.
      */
     public void flush() throws IOException {
-        out.flush();
+        writer.flush();
     }
 
     /**
      * Close the file.
      */
     public void close() throws IOException {
-        out.close();
+        writer.close();
     }
 
     /**
@@ -149,7 +134,7 @@ public class PcesMutableFile {
      * @return the size of the file in bytes
      */
     public long fileSize() {
-        return counter.getCount();
+        return writer.fileSize();
     }
 
     /**

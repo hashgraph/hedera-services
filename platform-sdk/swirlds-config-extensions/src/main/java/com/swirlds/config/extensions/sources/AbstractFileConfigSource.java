@@ -57,6 +57,7 @@ public abstract class AbstractFileConfigSource extends AbstractConfigSource {
         this.internalProperties = new HashMap<>();
         this.filePath = Objects.requireNonNull(filePath, "filePath can not be null");
         this.ordinal = ordinal;
+
         try (BufferedReader reader = getReader()) {
             final Properties loadedProperties = new Properties();
             loadedProperties.load(reader);

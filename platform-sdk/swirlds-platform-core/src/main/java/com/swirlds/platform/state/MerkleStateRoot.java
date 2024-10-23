@@ -29,6 +29,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -84,6 +85,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -144,12 +146,18 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
     private MerkleCryptography merkleCryptography;
+    private Time time;
 
     public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
         return services;
     }
 
     private Metrics metrics;
+
+    /**
+     * Metrics for the snapshot creation process
+     */
+    private MerkleRootSnapshotMetrics snapshotMetrics = new MerkleRootSnapshotMetrics();
 
     /**
      * Maintains information about each service, and each state of each service, known by this
@@ -235,8 +243,11 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
-        metrics = platform.getContext().getMetrics();
-        merkleCryptography = platform.getContext().getMerkleCryptography();
+        final PlatformContext platformContext = platform.getContext();
+        time = platformContext.getTime();
+        metrics = platformContext.getMetrics();
+        merkleCryptography = platformContext.getMerkleCryptography();
+        snapshotMetrics = new MerkleRootSnapshotMetrics(platformContext);
 
         // If we are initialized for event stream recovery, we have to register an
         // extra listener to make sure we call all the required Hedera lifecycles
@@ -390,7 +401,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateAccessor platformState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateModifier platformState) {
         throwIfImmutable();
         lifecycles.onHandleConsensusRound(round, this);
     }
@@ -1010,11 +1021,20 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     /**
+     * Sets the time for this state.
+     *
+     * @param time the time to set
+     */
+    public void setTime(final Time time) {
+        this.time = time;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @NonNull
     @Override
-    public PlatformStateAccessor getWritablePlatformState() {
+    public PlatformStateModifier getWritablePlatformState() {
         if (isImmutable()) {
             throw new IllegalStateException("Cannot get writable platform state when state is immutable");
         }
@@ -1022,12 +1042,22 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     /**
-     * Updates the platform state with the values from the provided instance of {@link PlatformStateAccessor}
+     * {@inheritDoc}
+     */
+    @Override
+    public void initPlatformState() {
+        if (!services.containsKey(PlatformStateService.NAME)) {
+            platformStateInitChanges = lifecycles.initPlatformState(this);
+        }
+    }
+
+    /**
+     * Updates the platform state with the values from the provided instance of {@link PlatformStateModifier}
      *
      * @param accessor a source of values
      */
     @Override
-    public void updatePlatformState(@NonNull final PlatformStateAccessor accessor) {
+    public void updatePlatformState(@NonNull final PlatformStateModifier accessor) {
         writablePlatformStateStore().setAllFrom(accessor);
     }
 
@@ -1081,5 +1111,19 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             logger.error(EXCEPTION.getMarker(), "Interrupted while hashing state. Expect buggy behavior.");
             Thread.currentThread().interrupt();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void createSnapshot(@NonNull final Path targetPath) {
+        requireNonNull(time);
+        requireNonNull(snapshotMetrics);
+        throwIfMutable();
+        throwIfDestroyed();
+        final long startTime = time.currentTimeMillis();
+        MerkleTreeSnapshotWriter.createSnapshot(this, targetPath);
+        snapshotMetrics.updateWriteStateToDiskTimeMetric(time.currentTimeMillis() - startTime);
     }
 }

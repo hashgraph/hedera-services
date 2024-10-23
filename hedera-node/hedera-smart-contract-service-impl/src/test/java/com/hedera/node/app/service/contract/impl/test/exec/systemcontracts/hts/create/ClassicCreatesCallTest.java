@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
@@ -281,7 +282,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
     void requiresNonGasCostToBeProvidedAsValue() {
         commonGivens(200_000L, 99_999L, true);
         given(recordBuilder.status()).willReturn(SUCCESS);
-        given(systemContractOperations.externalizePreemptedDispatch(any(), eq(INSUFFICIENT_TX_FEE)))
+        given(systemContractOperations.externalizePreemptedDispatch(any(), eq(INSUFFICIENT_TX_FEE), eq(TOKEN_CREATE)))
                 .willReturn(recordBuilder);
 
         final var result = subject.execute(frame).fullResult().result();
@@ -312,7 +313,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
 
     private void commonGivens(long baseCost, long value, boolean shouldBePreempted) {
         given(frame.getValue()).willReturn(Wei.of(value));
-        given(gasCalculator.canonicalPriceInTinybars(any(), any())).willReturn(baseCost);
+        given(gasCalculator.feeCalculatorPriceInTinyBars(any(), any())).willReturn(baseCost);
         stack.push(frame);
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);

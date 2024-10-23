@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -113,13 +114,14 @@ public class ClassicCreatesCall extends AbstractCall {
                         .transactionValidStart(timestamp)
                         .build())
                 .build();
-        final var baseCost = gasCalculator.canonicalPriceInTinybars(syntheticCreateWithId, spenderId);
+        final var baseCost = gasCalculator.feeCalculatorPriceInTinyBars(syntheticCreateWithId, spenderId);
         // The non-gas cost is a 20% surcharge on the HAPI TokenCreate price, minus the fee taken as gas
         long nonGasCost = baseCost + (baseCost / 5) - gasCalculator.gasCostInTinybars(FIXED_GAS_COST);
         if (frame.getValue().lessThan(Wei.of(nonGasCost))) {
             return completionWith(
                     FIXED_GAS_COST,
-                    systemContractOperations().externalizePreemptedDispatch(syntheticCreate, INSUFFICIENT_TX_FEE),
+                    systemContractOperations()
+                            .externalizePreemptedDispatch(syntheticCreate, INSUFFICIENT_TX_FEE, TOKEN_CREATE),
                     RC_AND_ADDRESS_ENCODER.encodeElements((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS));
         } else {
             operations().collectFee(spenderId, nonGasCost);
