@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyNotEmptyKey;
@@ -62,7 +64,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     /**
      * The payer account ID. Specified in the transaction body, extracted and stored separately for convenience.
      */
-    private final AccountID payer;
+    private final AccountID payerId;
     /**
      * The payer's key, as found in state
      */
@@ -128,32 +130,28 @@ public class PreHandleContextImpl implements PreHandleContext {
     }
 
     /**
-     * Create a new instance
+     * Create a new instance of {@link PreHandleContextImpl}.
+     * @throws PreCheckException if the payer account does not exist
      */
     private PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
+            @NonNull final AccountID payerId,
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher,
             final boolean isUserTx)
             throws PreCheckException {
         this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null.");
         this.txn = requireNonNull(txn, "txn must not be null!");
-        this.payer = requireNonNull(payer, "payer msut not be null!");
+        this.payerId = requireNonNull(payerId, "payer must not be null!");
         this.configuration = requireNonNull(configuration, "configuration must not be null!");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null!");
         this.isUserTx = isUserTx;
-
         this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
-
-        // Find the account, which must exist or throw a PreCheckException with the given response code.
-        final var account = accountStore.getAccountById(payer);
-        mustExist(account, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
-        // NOTE: While it is true that the key can be null on some special accounts like
-        // account 800, those accounts cannot be the payer.
-        payerKey = account.key();
-        mustExist(payerKey, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+        // Find the account, which must exist or throw on construction
+        final var payer = mustExist(accountStore.getAccountById(payerId), INVALID_PAYER_ACCOUNT_ID);
+        // It would be a catastrophic invariant failure if an account in state didn't have a key
+        payerKey = payer.keyOrThrow();
     }
 
     @Override
@@ -171,7 +169,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Override
     @NonNull
     public AccountID payer() {
-        return payer;
+        return payerId;
     }
 
     @Override
@@ -310,7 +308,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         // If we repeated the payer requirement, we would be requiring "double authorization" from
         // the contract doing the dispatch; but the contract has already authorized the action by
         // the very execution of its bytecode.
-        if (accountID.equals(payer)) {
+        if (accountID.equals(payerId)) {
             return this;
         }
         final Account account;
@@ -330,7 +328,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         }
         // Verify this key isn't for an immutable account
         verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
-        final var key = account.key();
+        final var key = account.keyOrThrow();
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
@@ -478,18 +476,20 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     @NonNull
     @Override
-    public TransactionKeys allKeysForTransaction(
-            @NonNull TransactionBody nestedTxn, @NonNull final AccountID payerForNested) throws PreCheckException {
-        dispatcher.dispatchPureChecks(nestedTxn);
-        final var nestedContext =
-                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher);
+    public TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull final AccountID payerId)
+            throws PreCheckException {
+        // Throws PreCheckException if the transaction body is structurally invalid
+        dispatcher.dispatchPureChecks(body);
+        // Throws PreCheckException if the payer account does not exist
+        final var context = new PreHandleContextImpl(storeFactory, body, payerId, configuration, dispatcher);
         try {
-            dispatcher.dispatchPreHandle(nestedContext);
+            // Accumulate all required keys in the context
+            dispatcher.dispatchPreHandle(context);
         } catch (final PreCheckException ignored) {
-            // We must ignore/translate the exception here, as this is key gathering, not transaction validation.
-            throw new PreCheckException(ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS);
+            // Translate all prehandle failures to unresolvable required signers
+            throw new PreCheckException(UNRESOLVABLE_REQUIRED_SIGNERS);
         }
-        return nestedContext;
+        return context;
     }
 
     @Override
@@ -512,8 +512,8 @@ public class PreHandleContextImpl implements PreHandleContext {
     public String toString() {
         return "PreHandleContextImpl{" + "accountStore="
                 + accountStore + ", txn="
-                + txn + ", payer="
-                + payer + ", payerKey="
+                + txn + ", payerId="
+                + payerId + ", payerKey="
                 + payerKey + ", requiredNonPayerKeys="
                 + requiredNonPayerKeys + ", innerContext="
                 + innerContext + ", storeFactory="

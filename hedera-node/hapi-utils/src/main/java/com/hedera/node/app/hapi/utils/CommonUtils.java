@@ -28,12 +28,14 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
+import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -92,6 +94,23 @@ public final class CommonUtils {
             return SignedTransaction.parseFrom(signedTransactionBytes).getSigMap();
         }
         return transaction.getSigMap();
+    }
+
+    /**
+     * Returns a {@link MessageDigest} instance for the SHA-384 algorithm, throwing an unchecked exception if the
+     * algorithm is not found.
+     * @return a {@link MessageDigest} instance for the SHA-384 algorithm
+     */
+    public static MessageDigest sha384DigestOrThrow() {
+        try {
+            return MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+        } catch (final NoSuchAlgorithmException fatal) {
+            throw new IllegalStateException(fatal);
+        }
+    }
+
+    public static Bytes noThrowSha384HashOf(final Bytes bytes) {
+        return Bytes.wrap(noThrowSha384HashOf(bytes.toByteArray()));
     }
 
     public static byte[] noThrowSha384HashOf(final byte[] byteArray) {
