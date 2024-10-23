@@ -42,7 +42,6 @@ jobs:
           printf "Commit SHA: \t${{ github.sha }}"
   cron:
     name: Cron
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
     needs:
       - trigger-task
