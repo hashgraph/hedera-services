@@ -76,7 +76,7 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = getRandomAddressBook(randotron);
         final SignedState signedState = getMockSignedState7WeightRandomAddressBook(randotron);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                new NodeId(0),
+                NodeId.of(0),
                 getMockSoftwareVersion(2),
                 // no software upgrade
                 false,
@@ -106,7 +106,7 @@ class AddressBookInitializerTest {
         // initial state has no address books set.
         final SignedState signedState = getMockSignedState(10, null, null, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                new NodeId(0),
+                NodeId.of(0),
                 getMockSoftwareVersion(2),
                 // no software upgrade
                 false,
@@ -133,7 +133,7 @@ class AddressBookInitializerTest {
         // genesis state address book is set to null to test the code path where it may be null.
         final SignedState signedState = getMockSignedState(10, null, null, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                new NodeId(0),
+                NodeId.of(0),
                 getMockSoftwareVersion(2),
                 // no software upgrade
                 false,
@@ -159,7 +159,7 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = getRandomAddressBook(randotron);
         final SignedState signedState = getMockSignedState(7, configAddressBook, null, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                new NodeId(0),
+                NodeId.of(0),
                 getMockSoftwareVersion(2),
                 // no software upgrade
                 false,
@@ -189,7 +189,7 @@ class AddressBookInitializerTest {
                 getMockSignedState(2, getRandomAddressBook(randotron), getRandomAddressBook(randotron), false);
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                new NodeId(0),
+                NodeId.of(0),
                 getMockSoftwareVersion(2),
                 // no software upgrade
                 false,
@@ -220,7 +220,7 @@ class AddressBookInitializerTest {
                 getMockSignedState(0, getRandomAddressBook(randotron), getRandomAddressBook(randotron), false);
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                new NodeId(0),
+                NodeId.of(0),
                 getMockSoftwareVersion(3),
                 // software upgrade
                 true,
@@ -250,7 +250,7 @@ class AddressBookInitializerTest {
                 getMockSignedState(2, getRandomAddressBook(randotron), getRandomAddressBook(randotron), false);
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 3);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                new NodeId(0),
+                NodeId.of(0),
                 getMockSoftwareVersion(3),
                 // software upgrade
                 true,
@@ -279,7 +279,7 @@ class AddressBookInitializerTest {
         final SignedState signedState = getMockSignedState7WeightRandomAddressBook(randotron);
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 5);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                new NodeId(0),
+                NodeId.of(0),
                 getMockSoftwareVersion(3),
                 // software upgrade
                 true,

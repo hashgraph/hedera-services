@@ -16,13 +16,11 @@
 
 name: "ZXF: Prepare Extended Test Suite"
 on:
-  workflow_run:
-    workflows:
-      - "ZXF: Deploy Production Release"
-    types:
-      - completed
-    branches:
-      - develop
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git Commit Reference for the XTS prep tag
+        required: true
 
 defaults:
   run:
@@ -38,24 +36,59 @@ jobs:
   tag-for-xts:
     name: Tag for XTS promotion
     runs-on: network-node-linux-medium
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
         with:
           egress-policy: audit
 
-      - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Checkout Default Branch
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        with:
+          fetch-depth: '0'
+          ref: 'develop'
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Validate Input Ref
+        id: validate-input
+        env:
+          COMMIT_ID: ${{ inputs.ref }}
+        run: |
+          if git merge-base --is-ancestor "${COMMIT_ID}" develop >/dev/null 2>&1; then
+            echo "commit_on_dev=true" >> $GITHUB_OUTPUT
+          else
+            echo "::error title=Branch Alignment::The provided commit (${COMMIT_ID}) is not present on the develop branch."
+            exit 1
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        if: ${{ steps.validate-input.outputs.commit_on_dev == 'true'}}
+        with:
+          fetch-depth: '0'
+          ref: ${{ inputs.ref }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Import GPG Key
+        id: gpg_importer
+        uses: step-security/ghaction-import-gpg@6c8fe4d0126a59d57c21f87c9ae5dd3451fa3cca # v6.1.0
+        with:
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+          git_user_signingkey: true
+          gpg_private_key: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+          passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
 
       # move the tag if successful
       - name: Tag Code and push
         run: |
-          git tag --force --annotate ${XTS_CANDIDATE_TAG}
+          git push --delete origin "${XTS_CANDIDATE_TAG}"
+          git tag --delete "${XTS_CANDIDATE_TAG}"
+          git tag --annotate "${XTS_CANDIDATE_TAG}" --message "chore: tagging commit for XTS promotion"
           git push --set-upstream origin --tags
 
       - name: Report failure
-        if: ${{ failure() }}
+        if: ${{ !cancelled() && failure() && always() }}
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

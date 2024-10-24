@@ -18,8 +18,9 @@ package com.hedera.services.bdd.junit.support.validators.block;
 
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
-import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
@@ -62,7 +63,7 @@ import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.roster.RosterServiceImpl;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -79,6 +80,8 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.tss.PlaceholderTssLibrary;
+import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.BytesConverter;
@@ -90,6 +93,7 @@ import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -115,6 +119,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -125,6 +130,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
@@ -159,7 +165,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "f31a2b563cbe3fef1242bd94bc610fc5134267faa7f3fefc5de176cc1f4032f28d5b27f084bbc388c5a766e4d057acdd"),
+                        "bc49350852851a2c737ef6b5db24da8ba108401952ec207a1a5a4230de8d8a626da1f3663f0560bd6cf401c601b08896"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("genesis-config.txt"),
                 node0Dir.resolve("data/config/application.properties"),
@@ -246,10 +252,12 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var configVersion =
                 bootstrapConfig.getConfigData(HederaConfig.class).configVersion();
         final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
-        final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
+        final var metrics = new NoOpMetrics();
+        final var lifecycles =
+                newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry, metrics);
         this.state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
         initGenesisPlatformState(
-                new FakePlatformContext(new NodeId(0), Executors.newSingleThreadScheduledExecutor()),
+                new FakePlatformContext(NodeId.of(0), Executors.newSingleThreadScheduledExecutor()),
                 this.state.getWritablePlatformState(),
                 addressBook,
                 currentVersion);
@@ -265,7 +273,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 new ServicesSoftwareVersion(servicesVersion, configVersion),
                 new ConfigProviderImpl().getConfiguration(),
                 networkInfo,
-                new NoOpMetrics());
+                metrics);
 
         logger.info("Registered all Service and migrated state definitions to version {}", servicesVersion);
     }
@@ -336,9 +344,12 @@ public class StateChangesValidator implements BlockStreamValidator {
             final StreamingTreeHasher inputTreeHasher,
             final StreamingTreeHasher outputTreeHasher) {
         final var itemSerialized = BlockItem.PROTOBUF.toBytes(item);
+        final var digest = sha384DigestOrThrow();
         switch (item.item().kind()) {
-            case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(itemSerialized);
-            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(itemSerialized);
+            case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(
+                    ByteBuffer.wrap(digest.digest(itemSerialized.toByteArray())));
+            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
+                    ByteBuffer.wrap(digest.digest(itemSerialized.toByteArray())));
             default -> {
                 // Other items are not part of the input/output trees
             }
@@ -517,24 +528,31 @@ public class StateChangesValidator implements BlockStreamValidator {
             final InstantSource instantSource,
             final ServicesRegistry servicesRegistry,
             final VersionedConfiguration bootstrapConfig) {
+        final var appContext = new AppContextImpl(instantSource, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(new AppContextImpl(instantSource, fakeSignatureVerifier())),
+                        new ContractServiceImpl(appContext),
                         new FileServiceImpl(),
+                        new TssBaseServiceImpl(
+                                appContext,
+                                ForkJoinPool.commonPool(),
+                                ForkJoinPool.commonPool(),
+                                new PlaceholderTssLibrary(),
+                                ForkJoinPool.commonPool()),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
                         new TokenServiceImpl(),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
-                        new BlockStreamService(bootstrapConfig),
+                        new BlockStreamService(),
                         new FeeService(),
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        new RosterServiceImpl(),
+                        new RosterService(),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
     }
@@ -638,19 +656,21 @@ public class StateChangesValidator implements BlockStreamValidator {
             @NonNull final Configuration bootstrapConfig,
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final OrderedServiceMigrator serviceMigrator,
-            @NonNull final ServicesRegistryImpl servicesRegistry) {
+            @NonNull final ServicesRegistryImpl servicesRegistry,
+            @NonNull final NoOpMetrics metrics) {
         return new MerkleStateLifecycles() {
             @Override
             public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
                 final var deserializedVersion = serviceMigrator.creationVersionOf(state);
                 return serviceMigrator.doMigrations(
                         state,
-                        servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
+                        servicesRegistry.subRegistryFor(
+                                EntityIdService.NAME, PlatformStateService.NAME, RosterStateId.NAME),
                         deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
                         currentVersion,
                         bootstrapConfig,
                         UNAVAILABLE_NETWORK_INFO,
-                        UNAVAILABLE_METRICS);
+                        metrics);
             }
 
             @Override

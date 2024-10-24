@@ -104,7 +104,7 @@ class StaleEventDetectorTests {
     @Test
     void throwIfInitialEventWindowNotSetTest() {
         final Randotron randotron = Randotron.create();
-        final NodeId selfId = new NodeId(randotron.nextPositiveLong());
+        final NodeId selfId = NodeId.of(randotron.nextPositiveLong());
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -122,7 +122,7 @@ class StaleEventDetectorTests {
     @Test
     void eventIsStaleBeforeAddedTest() {
         final Randotron randotron = Randotron.create();
-        final NodeId selfId = new NodeId(randotron.nextPositiveLong());
+        final NodeId selfId = NodeId.of(randotron.nextPositiveLong());
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -184,7 +184,7 @@ class StaleEventDetectorTests {
     @Test
     void randomEventsTest() {
         final Randotron randotron = Randotron.create();
-        final NodeId selfId = new NodeId(randotron.nextPositiveLong());
+        final NodeId selfId = NodeId.of(randotron.nextPositiveLong());
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -207,7 +207,7 @@ class StaleEventDetectorTests {
 
         for (int i = 0; i < 10_000; i++) {
             final boolean selfEvent = randotron.nextBoolean(0.25);
-            final NodeId eventCreator = selfEvent ? selfId : new NodeId(randotron.nextPositiveLong());
+            final NodeId eventCreator = selfEvent ? selfId : NodeId.of(randotron.nextPositiveLong());
 
             final TestingEventBuilder eventBuilder = new TestingEventBuilder(randotron).setCreatorId(eventCreator);
 
@@ -263,7 +263,7 @@ class StaleEventDetectorTests {
     @Test
     void clearTest() {
         final Randotron randotron = Randotron.create();
-        final NodeId selfId = new NodeId(randotron.nextPositiveLong());
+        final NodeId selfId = NodeId.of(randotron.nextPositiveLong());
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)

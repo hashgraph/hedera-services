@@ -667,19 +667,6 @@ public class RecordStreamBuilder
     }
 
     /**
-     * Sets the alias.
-     *
-     * @param alias the alias
-     * @return the builder
-     */
-    @NonNull
-    public RecordStreamBuilder alias(@NonNull final Bytes alias) {
-        requireNonNull(alias, "alias must not be null");
-        transactionRecordBuilder.alias(alias);
-        return this;
-    }
-
-    /**
      * Sets the ethereum hash.
      *
      * @param ethereumHash the ethereum hash
