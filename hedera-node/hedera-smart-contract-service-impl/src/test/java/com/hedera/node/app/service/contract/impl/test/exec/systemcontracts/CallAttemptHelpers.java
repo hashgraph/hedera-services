@@ -126,4 +126,27 @@ public final class CallAttemptHelpers {
                 List.of(translator),
                 false);
     }
+
+    public static HasCallAttempt prepareHasAttemptWithSelectorAndCustomConfig(
+            final Function function,
+            final CallTranslator<HasCallAttempt> translator,
+            final HederaWorldUpdater.Enhancement enhancement,
+            final AddressIdConverter addressIdConverter,
+            final VerificationStrategies verificationStrategies,
+            final SystemContractGasCalculator gasCalculator,
+            final Configuration config) {
+        final var input = TestHelpers.bytesForRedirectAccount(function.selector(), NON_SYSTEM_LONG_ZERO_ADDRESS);
+        return new HasCallAttempt(
+                input,
+                OWNER_BESU_ADDRESS,
+                OWNER_BESU_ADDRESS,
+                false,
+                enhancement,
+                config,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                List.of(translator),
+                false);
+    }
 }

@@ -46,7 +46,9 @@ public class ProxyEvmAccount extends AbstractProxyEvmAccount {
             // hbarAllowance(address spender)
             0xbbee989e,
             // hbarApprove(address spender, int256 amount)
-            0x86aff07c);
+            0x86aff07c,
+            // setUnlimitedAutomaticAssociations(bool enableAutoAssociations
+            0xf5677e99);
 
     // Only pass in a non-null account address if the function selector is eligible for proxy redirection.
     // A null address will return the 0x bytecode.
