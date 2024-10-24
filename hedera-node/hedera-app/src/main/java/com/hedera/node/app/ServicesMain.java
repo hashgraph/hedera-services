@@ -228,6 +228,9 @@ public class ServicesMain implements SwirldMain {
                 FileSystemManager.create(configuration),
                 recycleBin,
                 merkleCryptography);
+
+        hedera.setPlatformConfig(configuration);
+
         // Create initial state for the platform
         final var reservedState = getInitialState(
                 platformContext,
