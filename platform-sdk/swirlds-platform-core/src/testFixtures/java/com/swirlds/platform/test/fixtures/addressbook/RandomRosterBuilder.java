@@ -215,7 +215,7 @@ public class RandomRosterBuilder {
      */
     @NonNull
     public RandomRosterBuilder withWeightDistributionStrategy(
-            final WeightDistributionStrategy weightDistributionStrategy) {
+            @NonNull final WeightDistributionStrategy weightDistributionStrategy) {
 
         this.weightDistributionStrategy = weightDistributionStrategy;
         return this;
@@ -243,7 +243,7 @@ public class RandomRosterBuilder {
      * @throws IllegalStateException if real keys are not being generated or the roster has not been built
      */
     @NonNull
-    public KeysAndCerts getPrivateKeys(final NodeId nodeId) {
+    public KeysAndCerts getPrivateKeys(@NonNull final NodeId nodeId) {
         if (!realKeys) {
             throw new IllegalStateException("Real keys are not being generated");
         }
