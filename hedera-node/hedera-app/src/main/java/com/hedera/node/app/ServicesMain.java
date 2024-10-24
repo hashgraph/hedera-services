@@ -79,8 +79,8 @@ import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -489,13 +489,12 @@ public class ServicesMain implements SwirldMain {
     private static void registerServiceRuntimeConstructables(
             ServicesRegistry servicesRegistry, BlockStreamService blockStreamService, AppContext appContext) {
 
-        Function<AppContext, TssBaseService> tssBaseServiceFactory =
-                (appCtx -> new TssBaseServiceImpl(
-                        appCtx,
-                        ForkJoinPool.commonPool(),
-                        ForkJoinPool.commonPool(),
-                        new PlaceholderTssLibrary(),
-                        ForkJoinPool.commonPool()));
+        Function<AppContext, TssBaseService> tssBaseServiceFactory = (appCtx -> new TssBaseServiceImpl(
+                appCtx,
+                ForkJoinPool.commonPool(),
+                ForkJoinPool.commonPool(),
+                new PlaceholderTssLibrary(),
+                ForkJoinPool.commonPool()));
         TssBaseService tssBaseService = tssBaseServiceFactory.apply(appContext);
         ContractService contractServiceImpl = new ContractServiceImpl(appContext);
 
