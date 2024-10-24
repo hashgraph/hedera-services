@@ -26,12 +26,14 @@ import java.util.concurrent.Executor;
 import javax.inject.Singleton;
 
 @Singleton
-@Component()
+@Component(modules = {TssModule.class})
 public interface TssBaseServiceComponent {
     @Component.Factory
     interface Factory {
         TssBaseServiceComponent create(
-                @BindsInstance AppContext.Gossip gossip, @BindsInstance Executor submissionExecutor);
+                @BindsInstance AppContext.Gossip gossip,
+                @BindsInstance Executor submissionExecutor,
+                @BindsInstance @TssLibraryExecutor Executor libraryExecutor);
     }
 
     TssMessageHandler tssMessageHandler();

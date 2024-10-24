@@ -136,6 +136,18 @@ public final class TssParticipantDirectory {
     }
 
     /**
+     * Returns the tss shares for all the nodes.
+     * @return the tss shares for all the nodes
+     */
+    public Map<Integer, List<TssShareId>> getSharesById() {
+        Map<Integer, List<TssShareId>> sharesById = new HashMap<>();
+        for (Entry<TssShareId, Integer> entry : shareAllocationMap.entrySet()) {
+            sharesById.computeIfAbsent(entry.getValue(), k -> new ArrayList<>()).add(entry.getKey());
+        }
+        return sharesById;
+    }
+
+    /**
      * Returns the shares owned by the participant represented as self.
      *
      * @return the shares owned by the participant represented as self.

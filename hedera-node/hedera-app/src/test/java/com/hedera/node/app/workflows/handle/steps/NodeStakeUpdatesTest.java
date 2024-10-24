@@ -108,15 +108,15 @@ class NodeStakeUpdatesTest {
     void setUp() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 
-        subject = new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService);
+        subject = new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService, );
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void nullArgConstructor() {
-        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(null, exchangeRateManager, tssBaseService))
+        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(null, exchangeRateManager, tssBaseService, ))
                 .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(stakingPeriodCalculator, null, tssBaseService))
+        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(stakingPeriodCalculator, null, tssBaseService, ))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -314,7 +314,7 @@ class NodeStakeUpdatesTest {
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
 
         subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
-        verify(tssBaseService).setCandidateRoster(notNull(), notNull());
+        verify(tssBaseService).onNewCandidateRoster(notNull(), notNull());
     }
 
     private ReadableNodeStore simulateNodes(Node... nodes) {
