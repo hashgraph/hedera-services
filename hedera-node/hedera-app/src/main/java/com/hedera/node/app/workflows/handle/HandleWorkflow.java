@@ -632,7 +632,7 @@ public class HandleWorkflow {
                             userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
-            userTxn.stack().commitSystemStateChanges();
+            // userTxn.stack().commitSystemStateChanges();
             return true;
         }
         return false;
