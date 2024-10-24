@@ -27,6 +27,7 @@ import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.hapi.utils.InvalidTransactionException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 
@@ -46,8 +47,8 @@ public class TokenCreateWrapper {
 
     private List<FixedFeeWrapper> fixedFees;
     private List<FractionalFeeWrapper> fractionalFees;
-
     private List<RoyaltyFeeWrapper> royaltyFees;
+    private Bytes metadata;
 
     public TokenCreateWrapper(
             final boolean isFungible,
@@ -77,6 +78,7 @@ public class TokenCreateWrapper {
         this.fixedFees = List.of();
         this.fractionalFees = List.of();
         this.royaltyFees = List.of();
+        this.metadata = Bytes.EMPTY;
     }
 
     public boolean isFungible() {
@@ -127,6 +129,10 @@ public class TokenCreateWrapper {
         return expiry;
     }
 
+    public Bytes getMetadata() {
+        return metadata;
+    }
+
     public List<FixedFeeWrapper> getFixedFees() {
         return fixedFees;
     }
@@ -137,6 +143,10 @@ public class TokenCreateWrapper {
 
     public List<RoyaltyFeeWrapper> getRoyaltyFees() {
         return royaltyFees;
+    }
+
+    public void setMetadata(final Bytes metadata) {
+        this.metadata = metadata;
     }
 
     public void setFixedFees(final List<FixedFeeWrapper> fixedFees) {
