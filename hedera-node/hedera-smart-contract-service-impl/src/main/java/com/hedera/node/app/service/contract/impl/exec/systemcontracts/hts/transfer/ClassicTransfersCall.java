@@ -150,7 +150,7 @@ public class ClassicTransfersCall extends AbstractCall {
                         .cryptoTransfer(requireNonNull(approvalSwitchHelper)
                                 .switchToApprovalsAsNeededIn(
                                         syntheticTransfer.cryptoTransferOrThrow(),
-                                        systemContractOperations().activeSignatureTestWith(verificationStrategy),
+                                        systemContractOperations().signatureTestWith(verificationStrategy),
                                         nativeOperations(),
                                         senderId))
                         .build()
