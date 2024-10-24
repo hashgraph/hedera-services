@@ -19,6 +19,7 @@ package com.swirlds.state.merkle.disk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.swirlds.state.merkle.vmapsupport.OnDiskKey;
 import com.swirlds.state.test.fixtures.merkle.MerkleTestBase;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
