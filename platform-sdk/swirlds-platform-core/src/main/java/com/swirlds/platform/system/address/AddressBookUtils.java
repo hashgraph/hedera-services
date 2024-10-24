@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.system.address;
 
-import static com.swirlds.base.utility.NetworkUtils.isNameResolvable;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -181,9 +180,6 @@ public class AddressBookUtils {
         }
         // FQDN Support: The original string value is preserved, whether it is an IP Address or a FQDN.
         final String internalHostname = parts[5];
-        if (!isNameResolvable(internalHostname)) {
-            throw new ParseException("Cannot parse ip address from '" + internalHostname + "'", 5);
-        }
         final int internalPort;
         try {
             internalPort = Integer.parseInt(parts[6]);
@@ -192,9 +188,6 @@ public class AddressBookUtils {
         }
         // FQDN Support: The original string value is preserved, whether it is an IP Address or a FQDN.
         final String externalHostname = parts[7];
-        if (!isNameResolvable(externalHostname)) {
-            throw new ParseException("Cannot parse ip address from '" + externalHostname + "'", 7);
-        }
         final int externalPort;
         try {
             externalPort = Integer.parseInt(parts[8]);
