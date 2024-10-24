@@ -28,7 +28,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class SetUnlimitedAutoAssociationsTranslator extends AbstractCallTranslator<HasCallAttempt> {
 
     public static final Function SET_UNLIMITED_AUTO_ASSOC =
