@@ -63,7 +63,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -250,15 +249,12 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs);
     }
 
-    private @Nullable Schedule maybeDuplicate(
-            @NonNull final Schedule schedule, @Nullable final List<Schedule> duplicates) {
-        if (duplicates == null) {
+    private @Nullable Schedule maybeDuplicate(@NonNull final Schedule schedule, @Nullable final Schedule duplicate) {
+        if (duplicate == null) {
             return null;
         }
-        for (final var duplicate : duplicates) {
-            if (areIdentical(duplicate, schedule)) {
-                return duplicate;
-            }
+        if (areIdentical(duplicate, schedule)) {
+            return duplicate;
         }
         return null;
     }

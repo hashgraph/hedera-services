@@ -45,7 +45,7 @@ public interface ReadableScheduleStore {
     Schedule get(@Nullable ScheduleID id);
 
     /**
-     * Get a set of schedules that are "hash equal" to the provided Schedule.
+     * Get a schedule that is "hash equal" to the provided Schedule.
      * Two schedules are "hash equal" if the hash of the original create transaction for one schedule
      * is identical to the hash of the create transaction for the other schedule.  This is primarily
      * used to ensure that we do not permit duplicate schedules to be created. Note that hash equality
@@ -56,11 +56,11 @@ public interface ReadableScheduleStore {
      * @return a {@code List<Schedule>} of entries that have the same hash as the provided schedule
      */
     @Nullable
-    List<Schedule> getByEquality(@NonNull Schedule scheduleToMatch);
+    Schedule getByEquality(@NonNull Schedule scheduleToMatch);
 
     /**
-     * Given a time as seconds since the epoch, find all schedules currently in state that expire at that time.
-     * The {@code List<Schedule>} returned will contain all {@link Schedule} entries in the system that have a
+     * Given a time as seconds since the epoch, find all ScheduleID currently in state that expire at that time.
+     * The {@code List<ScheduleID>} returned will contain all {@link ScheduleID} entries in the system that have a
      * calculated expiration time that matches the requested value.  The check is no more precise than one second,
      * so the list may be quite large (significantly larger than the "schedules created" throttle).
      *
@@ -69,7 +69,7 @@ public interface ReadableScheduleStore {
      * @return a {@code List<Schedule>} of entries that have expiration times within the requested second
      */
     @Nullable
-    List<Schedule> getByExpirationSecond(long expirationTime);
+    List<ScheduleID> getByExpirationSecond(long expirationTime);
 
     /**
      * Returns the number of schedules in state, for use in enforcing creation limits.
