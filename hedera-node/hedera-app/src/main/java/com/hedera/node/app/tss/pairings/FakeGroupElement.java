@@ -18,7 +18,6 @@ package com.hedera.node.app.tss.pairings;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import org.jetbrains.annotations.NotNull;
 
 public class FakeGroupElement implements GroupElement {
     public static final FakeGroupElement GENERATOR = new FakeGroupElement(BigInteger.valueOf(5L));
@@ -28,13 +27,13 @@ public class FakeGroupElement implements GroupElement {
         this.value = value;
     }
 
-    @NotNull
+    @NonNull
     @Override
-    public GroupElement add(@NotNull GroupElement other) {
+    public GroupElement add(@NonNull GroupElement other) {
         return new FakeGroupElement(value.add(new BigInteger(other.toBytes())));
     }
 
-    @NotNull
+    @NonNull
     @Override
     public byte[] toBytes() {
         return value.toByteArray();
