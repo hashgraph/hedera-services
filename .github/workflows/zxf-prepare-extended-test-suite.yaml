@@ -87,7 +87,7 @@ jobs:
           git branch --contains ${XTS_COMMIT} | grep --quiet develop >/dev/null 2>&1
           BRANCH_ON_DEVELOP="${?}"
           set -e
-          
+
           if [[ -n "${XTS_COMMIT}" && "${BRANCH_ON_DEVELOP}" -eq 0 ]]; then
             git push --delete origin ${XTS_CANDIDATE_TAG}
             git tag -d ${XTS_CANDIDATE_TAG}
