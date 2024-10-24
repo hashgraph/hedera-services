@@ -97,8 +97,7 @@ class ClassicTransfersCallTest extends CallTestBase {
                         eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SUCCESS);
-        given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
-                .willReturn(signatureTest);
+        given(systemContractOperations.signatureTestWith(verificationStrategy)).willReturn(signatureTest);
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
                         CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations, A_NEW_ACCOUNT_ID))
                 .willReturn(CryptoTransferTransactionBody.DEFAULT);
@@ -130,8 +129,7 @@ class ClassicTransfersCallTest extends CallTestBase {
                         eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SUCCESS);
-        given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
-                .willReturn(signatureTest);
+        given(systemContractOperations.signatureTestWith(verificationStrategy)).willReturn(signatureTest);
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
                         CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations, A_NEW_ACCOUNT_ID))
                 .willReturn(CryptoTransferTransactionBody.DEFAULT);
@@ -156,8 +154,7 @@ class ClassicTransfersCallTest extends CallTestBase {
         given(recordBuilder.status())
                 .willReturn(INVALID_SIGNATURE)
                 .willReturn(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
-        given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
-                .willReturn(signatureTest);
+        given(systemContractOperations.signatureTestWith(verificationStrategy)).willReturn(signatureTest);
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
                         CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations, A_NEW_ACCOUNT_ID))
                 .willReturn(CryptoTransferTransactionBody.DEFAULT);
