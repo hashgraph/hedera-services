@@ -6,7 +6,7 @@
 
 This proposal outlines the design specification of rosters to support Threshold Signature Scheme (TSS) block signing.
 It details the roster's lifecycle, data storage, API, DevOps workflow, and necessary changes to associated
-components within the platform.
+components within the Hedera platform.
 
 |      Metadata      |                   Entities                    |
 |--------------------|-----------------------------------------------|
@@ -18,61 +18,86 @@ components within the platform.
 ## Purpose and Context
 
 The introduction of the Threshold Signature Scheme (TSS) requires a new mechanism for managing node participation in
-consensus and block signing. The Roster, a subset of the address book, will provide the data structure and API for this
-mechanism. This proposal provides a specification for the behavior of rosters starting from their creation from the
-Address Book to their terminal state. A roster reaches a terminal state when it is either adopted by the platform or
-replaced by a new roster. The candidate roster will always get adopted on the next software upgrade.
-
-The Hedera App (henceforth referred to as 'App') will maintain a version of the Address Book as a dynamic list that
-reflects the desired future state of the network's nodes. This dynamic list of Addresses will be continuously
-updated by HAPI transactions, such as those that create, update, or delete nodes. At some point when the App decides
-it's time to begin work on adopting a new address book (scope beyond this proposal), it will create a `Roster`
-object with information from the Address Book and pass it to the platform. The mechanism for doing so is detailed below.
+consensus and block signing. The Roster, a subset of the address book, will provide the data structure and API for this mechanism.
+This proposal provides a specification for the behavior of rosters from creation to terminal state.
+A roster reaches a terminal state when it is removed from the state store.
+The details of how the roster is created, validated, stored, adopted and removed are outlined in this proposal.
 
 ## What this proposal does not address
 
+1. Details relating to what components will call the new APIs to store and retrieve rosters. This belongs in the other TSS proposals.
+2. How devops will manage the lifecycles of artifacts used in creating the roster.
+
 ## Requirements
 
-- Immutability: The roster hash will be a critical piece of data. Rosters must be immutable to protect the integrity
-  of its computed hash.
-- Efficient Storage: Roster data should be stored efficiently in the state to minimize overhead and unnecessary data
-  copying.
-- Clear API: A well-defined API should be provided for the App to create and submit candidate rosters to the platform,
-  and for the platform to manage the lifecycle of submitted rosters.
-- Components update: Platform components that currently rely on the use of the Address book (such as Reconnect, Network,
-  Event Validation etc.) must be adapted to use the new `Roster` object instead.
-- Address book paradigm discontinued within the platform codebase in favor of `Roster`s
+1. Immutability: The roster hash will be a critical piece of data. Rosters must be immutable to protect the integrity of its computed hash.
+2. Efficient Storage: Roster data should be stored efficiently in the state to minimize overhead and unnecessary data copying.
+3. Clear API: A well-defined API should be provided to create and submit candidate rosters, and for components to manage the lifecycle of submitted rosters.
+4. Components update: Components that currently rely on the use of the Address book (such as Reconnect, Network, Event Validation, etc.) must be adapted to use the new `Roster` object instead.
+5. Address book paradigm discontinued within the current platform side of the codebase in favor of `Roster`s.
+6. There must be a well-laid-out mechanism for the start-up code to arrive at the correct roster to use in starting the network.
 
 ## Architecture
 
-###### Roster Lifecycle
+### Roster Types.
 
-![](TSS%20Roster%20Lifecycle.drawio.svg)
+This proposal introduces four types of `Roster`s - candidate `Roster`, active `Roster`, genesis `Roster`, and override `Roster`.
+
+1. A Candidate `Roster` is a Roster that is currently being considered for adoption to become the active `Roster`.
+2. An Active `Roster` is the roster currently being used to determine consensus.
+3. An Override `Roster` is a special Roster used to override an existing active `Roster` during a network transplant.
+4. A Genesis `Roster` is a special roster used for bootstrapping a brand-new Genesis network.
 
 ### Roster Public API
 
 #### Setting the Candidate Roster
 
-A new method will be added to the platform state to allow the App to submit a Candidate Roster to the platform:
+At some point when the Hedera App (henceforth referred to as 'App') decides it's time to begin work on adopting a new address book (scope beyond this proposal),
+it will create a candidate `Roster` object with information from the Address Book and set it to be stored it in the state.
+A candidate roster already stored in the state can also be replaced by a new one required by the App.
+
+To manage `Roster` storage and retrieval from the state, a new set of state `store` APIs will be introduced, similar to existing store implementations.
+Stores are an abstraction over state storage and retrieval. They provide a way for components to interact with states without having to specify implementation details.
+Store APIs are typically Readable or Writable. This proposal introduces a `ReadableRosterStore` and a `WritableRosterStore`.
+
+The `ReadableRosterStore` will have access methods such as `getCandidateRoster()`, `getActiveRoster()` and `getRosterHistory()`.
+These will respectively return the candidate `Roster`, active `Roster`, and the history of active rosters present in the state.
+
+A `WritableRosterStore` implementation will have methods to store `roster`s in the state such as `setCandidateRoster()` and `setActiveRoster()`.
+The `WritableRosterStore#setCandidateRoster()` method will be used to set a candidate `Roster` in the state as follows:
+
+1. Validate the candidate `Roster`.
+2. Store the candidate `Roster` hash in the `RosterState`
+3. Store the candidate Roster itself in the `RosterMap`.
+
+The `WritableRosterStore#setActiveRoster()` method will be called to set a new active `Roster` in the state. A call to `setActiveRoster` will infer the following operations:
+
+1. Invalidate and remove any existing candidate `Roster` present in the state
+2. Rotate the current active `Roster` to the previous active `Roster`
+3. Set the new Roster as the active `Roster` in the state
 
 ```java
-//in PlaformState
+//in WritableRosterStore
 
 void setCandidateRoster(@NonNull final Roster candidateRoster);
+void setActiveRoster(@NonNull final Roster roster, final long round);
+```
+
+```java
+//in ReadableRosterStore
+
+@Nullable
+Roster getCandidateRoster();
+Roster getActiveRoster();
 ```
 
 The steps to validate and add the Roster to the state will be executed within the same thread that submits the request.
-An exception will be thrown if the Roster is invalid. The durability of the submitted Roster is ensured via storing
-it in the state.
-
-The existing `PlatformState` class is in the middle of a refactor, and in the long term, may cease to exist. However,
-its replacement will continue to have this new API to set a candidate roster.
+A checked exception will be thrown if the Roster is invalid. The durability of the submitted Roster is ensured by storing it in the state.
 
 ## Data Structure
 
-The App is already responsible for managing the address book. We propose that it continues to do so, and when it
-deems necessary (such as when it receives a HAPI transaction), creates a candidate Roster object and passes it to
-the platform via the new API. The platform will then validate the roster and store it in the state.
+The App is already responsible for managing the address book.
+We propose that it continues to do so, and when it deems necessary (such as during a freeze upgrade), creates a candidate `Roster` object and stores it via the new API.
 
 ### Protobuf
 
@@ -186,8 +211,8 @@ The `RosterState` protobuf is defined as follows.
 
 ```proto
 /**
- * The current state of platform rosters.<br/>
- * This message stores a roster data for the platform in network state.
+ * The current state of rosters.<br/>
+ * This message stores a roster data in the network state.
  *
  * The roster state SHALL encapsulate the incoming candidate roster's hash,<br/>
  * and a list of pairs of round number and active roster hash.<br/>
@@ -245,26 +270,22 @@ message RoundRosterPair {
 }
 ```
 
-It is noteworthy that the roster must be immutable to guarantee the integrity of the computed hash. This map of
-rosters will typically contain the current Active Roster, an optional previously Active Roster, and an optional
-current Candidate Roster. Insertion of rosters will be controlled by ensuring that the acceptance of a new Candidate
-Roster invalidates and removes the current candidate roster. Therefore, the map is expected to have a maximum size
-of three elements.
+It is noteworthy that the roster must be immutable to guarantee the integrity of the computed hash.
+This map of rosters will typically contain the current active `Roster`, an optional previously active `Roster`, and an optional current candidate `Roster`.
+Insertion of rosters will be controlled by ensuring that the acceptance of a new Candidate Roster invalidates and removes the current candidate `Roster`.
+Therefore, the map is expected to have a maximum size of three elements.
 
-The new `RosterState` will store the `candidateRosterHash` and a list `roundRosterPairs`
-of pairs of round numbers and the active roster that was used for that round. The `roundRosterPairs` list will be
-updated only when the active roster changes. In the vast majority of cases, the list will contain only one element,
-the current active roster.
+The new `RosterState` will store the `candidateRosterHash` and a list `roundRosterPairs` of pairs of round numbers and the active `Roster` that was used for that round.
+The `roundRosterPairs` list will be updated only when the active `Roster` changes.
+In the vast majority of cases, the list will contain only one element, the current active `Roster`.
 
-Immediately following the adoption of a candidate roster, this list will have two elements — the previous active roster
-and the current active roster (which was the candidate roster). The choice of a list is suitable here as it is much
-cheaper to iterate over 2-3 elements comparing their `long` round numbers than it is to do a hash lookup. When we
-reach full Dynamic Address Book, this design choice may need to be revisited.
+Immediately following the adoption of a candidate `Roster`, this list will have two elements — the previous active `Roster` and the current active `Roster` (which was the candidate `Roster`).
+The choice of a list is suitable here as it is much cheaper to iterate over 2-3 elements comparing their `long` round numbers than it is to do a hash lookup.
+When we reach full Dynamic Address Book, this design choice may need to be revisited.
 
 If a `candidateRosterHash` hash entry already exist (hash collisions) in the map of Rosters, it will be discarded.
-That is, setting a candidate roster is an idempotent operation. One benefit of this indirection (using a Map
-instead of a Singleton) is that it avoids moving data around in the merkle state. Another benefit is that adoption
-trigger becomes straightforward (App sets the roster) with delineated responsibilities between the App and the platform.
+That is, setting a candidate `Roster` is an idempotent operation. One benefit of this indirection (using a Map instead of a Singleton) is that it avoids moving data around in the merkle state.
+Another benefit is that adoption trigger becomes straightforward (App sets the roster) with delineated responsibilities between components.
 
 ### Roster Validity
 
@@ -278,10 +299,9 @@ A Roster is considered valid if it satisfies the following conditions:
 6. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
 7. The roster must have a unique NodeId for each RosterEntry.
 
-On the submission of a new Candidate Roster, the platform will validate the roster against these conditions. Note
-that a constructed `Roster` can be valid, but not accepted by the platform. For example, if a new candidate roster
-is set via the API, but its hash evaluates to the hash of the existing candidate roster, the new roster will be
-discarded. That is, the operation has no effect.
+On the submission of a new Candidate Roster, it will be validated against these conditions.
+Note that a constructed `Roster` can be valid, but not accepted by the API.
+For example, if a new candidate roster is set via the API, but its hash evaluates to the hash of the existing candidate roster, the new roster will be discarded. That is, the operation has no effect.
 
 ## Data storage
 
@@ -293,173 +313,163 @@ the state:
 1. A `RosterState` singleton object that will store the current candidate roster hash and a list of round numbers
    and hashes of the active roster used to sign each round.
 2. A map of rosters, keyed by roster’s hash - ```Map<Hash<Roster>, Roster>```. All candidate and active rosters will be
-   stored here.
-   When a new candidate roster is received, it will be stored in this map, with the `RosterState`'s current candidate
-   roster hash updated.
+   stored here. When a new candidate roster is received, it will be stored in this map, with the `RosterState`'s current candidate roster hash updated.
 
 ### On Disk
 
 There will continue to be components used in creating the Roster - such as the private EC (elliptic curve) key, the RSA
-private key and the signing X509Certificate certificate - that will be stored on disk. However, it is at the
-discretion of the Services team to manage the lifecycle of these files, and not the platform. There will not be any
-other separate artifacts from this proposal stored directly on disk.
+private key and the signing X509Certificate certificate - that will be stored on disk.
+This proposal also introduces new artifacts that will be stored on disk such as the `genesis-config.txt` and `override-config.txt` files.
+However, it will be the responsibility of the devops team to manage the lifecycle of these files.
 
 ## Services and DevOps changes (Inversion of control)
 
 The current startup procedure will be altered as follows:
 
-- The `config.txt` file will no longer be used by the platform for storing the address book in existing networks. It
-  will no longer be used by the platform code
-- Designating `config.txt` introduces inversion of control. It will be at the exclusive prerogative of Services (the
-  App) going forward. Platform will no longer be responsible for it, and all the platform code that builds an
-  AddressBook from `config.txt` will be removed or refactored and moved into the Services codebase.
+- The `config.txt` file will no longer be used for storing the address book in existing networks.
+- Designating `config.txt` introduces inversion of control. It will be at the exclusive prerogative of Services (the App) going forward.
+  It's ownership (current platform components) will no longer be responsible for it, and all the code that builds an AddressBook from `config.txt` will be removed or refactored and moved into the current Services part of the codebase.
 
-The current network Transplant procedure is manual. DevOps is given a State and `config.txt` file on disk. This is
-then followed by a config-only upgrade to adopt the `config.txt` file using that state. This will change to the
-use of a Genesis Roster or Override Roster. The new startup sequence will be determined by the presence of a Genesis
-Roster, State, or Override Roster as described in the following sections.
+The current network Transplant procedure is manual. DevOps is given a State and `config.txt` file on disk.
+This is then followed by a config-only upgrade to adopt the `config.txt` file using that state.
+This will change to the use of a Genesis Roster or Override Roster.
+The new startup sequence will be determined by the presence of a Genesis Roster, State, or Override Roster as described in the following sections.
 
-### The new Startup Behaviour
+### The new Startup Behavior
 
+There will be four possible startup modes for the network - Genesis Network, Network Transplant, Normal restart, and Software Upgrade modes.
+
+Starting in a Genesis Network will require a `Genesis Roster`, while a Network Transplant will require an `Override Roster`.
+Normal restart and Software Upgrade modes will use the existing roster present in the state or fallback to creating one from `config.txt` file as described in the following diagram.
 ![](TSS%20Roster%20Lifecycle-Proposed%20Startup%20Behavior.drawio.svg)
+
+The mechanism of arriving at Genesis or Override Roster is as follows.
 
 #### Genesis Roster
 
 A `Genesis Roster` is an optional Roster that DevOps may provide for the explicit purpose of starting a Genesis Network
-Process. It is essential to distinguish the Genesis Roster from the Candidate, Active, or Override rosters. The
-Genesis Roster is a special roster used for the sole purpose of bootstrapping a brand-new Genesis network; one in
-which there is no existing State, and the round number begins at 1. However, its structure is exactly the same as
-the Active or Candidate Rosters.
+Process. It is essential to distinguish the Genesis Roster from the Candidate, Active, or Override rosters.
+The Genesis Roster is a special roster used for the sole purpose of bootstrapping a brand-new Genesis network; one in which there is no existing State, and the round number begins at 1.
+However, its structure is exactly the same as the Active or Candidate Rosters.
 
-The equivalent of the Genesis Roster in the current DevOps flow is the `config.txt` file. DevOps and Services may
-choose to create the Genesis Roster from the `config.txt` file or some other mechanism. The trigger for this
-workflow will be the presence of a Genesis Roster at start-up with no State on disk.
+A new, special-purpose config.txt file will be introduced and named `genesis-config.txt`.
+On startup, the determination logic (of the correct roster to use) will check for the existence of this`genesis-config.txt` file.
+This file will be in the same location and format as the current `config.txt` file.
 
-A new method will be added to the `PlatformBuilder` that will be used by the App to set the Genesis Roster.
-In most cases, there will be no need to call the method on `PlatformBuilder` to set the Genesis Roster except in the
-events we need to bootstrap a Genesis Network.
-
-```java
-//in PlatformBuilder
-
-/*
-  Set the Genesis Roster for the network.
-  <p>
-  This method is used to set the optional Genesis Roster for the network.
-  The Genesis Roster is a special roster used for the sole-purpose of bootstrapping a network.
-  The Genesis Roster, if set, is immutable and will be used to start a Genesis network Process or Network Transplant process.
-  <p>
-  @param genesisRoster the Genesis Roster for the network.
- */
-PlatformBuilder withGenesisRoster(@NonNull final Roster genesisRoster);
-```
-
-The logic to determine whether to invoke this method could be determined by some mechanism Services deems appropriate.
+A start-up determination logic will check if there is a `Roster` present in the state.
+If not, the determination logic will look for a `genesis-config.txt` on disk.
+If found, a Genesis Roster will be created from it and used as the active `Roster` for the network.
 
 #### Override Roster
 
-An `Override Roster` is an optional Roster that DevOps may provide for the explicit purpose of starting a network using
-a specific state, with a specific set of nodes, such as during a Network Transplant Process. A common example of
-this is Mainnet State being transplanted into a testing network.
+An `Override Roster` is an optional Roster that DevOps may provide for the explicit purpose of starting a network using a specific state, with a specific set of nodes, such as during a Network Transplant Process.
+A common example of this is Mainnet State being transplanted into a testing network.
 
-A quick note on PCES. The software version is used to determine which roster (active or previous) should be used to
-validate the signatures of events in the PCES. If the PCES event version is less than the current software version,
-it indicates that the event was signed with the old roster, and hence, the old roster is used for validation. If the
-PCES event version matches the current software version, the active roster is used. This behavior will be
-maintained until Birth Rounds or Dynamic Address Book is implemented.
+**A quick note on Pre-Consensus Event Stream (PCES).**
 
-Therefore, Provided an existing State, an `Override Roster` and a network upgrade (which could be a simple
-config-only upgrade if a software version upgrade isn't required), the platform will adopt the provided Override Roster.
+In the current PCES implementation, the software version is used to determine which address book (current or previous)
+should be used to validate the signatures of events in the PCES.
+If the PCES event version is less than the current software version, it indicates that the event was signed with the old roster, and hence, the old address book is used for validation.
+If the PCES event version matches the current software version, the current address book is used.
+This proposal maintains this exact behavior (until Birth Rounds or Dynamic Address Book is implemented), but it replaces the use of address books with rosters.
+Instead of using current and previous `AddressBook`s, active and previous active `Roster`s will be passed to PCES.
+A previous active `Roster`, in most cases, is the Roster that was active before the current Active Roster roster.
+There is an edge case in which this definition of Previous Roster will not hold true, and the previous active Roster will be artificially created instead of being the roster that was previously active.
+See Edge Case 1 below for more details.
+
+Like the Genesis Roster, the Override Roster will be created from a special-purpose config file named `override-config.txt`.
+This file will be in the same location and format as the current `config.txt` file.
+
+Therefore, Provided an existing State, an `override-config.txt` and a network upgrade (which could be a simple config-only upgrade if a software version upgrade isn't required), an `Override Roster` will be constructed from the `override-config.txt` and adopted as the active `Roster`.
+Now might be a good time to revisit the startup decision tree diagram for reference.
 
 The next round number for this network will continue from the last round number in the provided state.
-The trigger for adopting the `Override Roster` will be the presence of an Override Roster at start-up with a State
-existing on disk. Bear in mind the Network Transplant process is designed primarily with test networks in mind.
-Upon adoption of the Override Roster, the Override Roster should be deleted from disk. In test networks where this
-process is designed to be used, the Override Roster can be easily accessed and deleted by DevOps.
+Note that the Network Transplant process is designed primarily with test networks in mind.
+Upon adoption of the `Override Roster`, the `override-config.txt` will be renamed on disk by the implementation code that just adopted it.
+In test networks where this process is designed to be used, the renamed `override-config.txt` file will be easily accessible and removable by DevOps.
 
-A new method will be added to the `PlatformBuilder` that will be used by the App to set the Override Roster. In most
-cases, as it's the case for a Genesis Roster, there will be no need to call the method on `PlatformBuilder` to set
-the Override Roster except in the events we need to transplant a network.
+**More on Genesis and Transplant Modes**
 
-```java
-//in PlatformBuilder
-/*
-  Set the Override Roster for the network.
-  <p>
-  This method is used to set the optional Override Roster for the network.
-  The Override Roster is a special roster used for the sole purpose of Transplanting an existing network.
-  The Override Roster, if set, is immutable and will be used to trigger a Network Transplant process.
-  <p>
-  @param overrideRoster the Override Roster for the network.
- */
-PlatformBuilder withOverrideRoster(@NonNull final Roster overrideRoster);
-```
-
-#### New Transplant Procedure
-
-The App will decide a network transplant sequence based on the following heuristics:
-
-Network Transplant process == Override Roster AND State provided AND Upgrade.
-
-When both an Override Roster and State are provided, as well as a network upgrade flag set, it signifies a network
-transplant mode. The node will discard any existing candidate roster present in the state, rotate the active roster
-to the previous roster, and adopt the provided Override Roster as the new Active Roster. This way, the provided
-network state and Override Roster are adopted. There will be new code required to create the Override Roster and
-pass it to the platform via the `PlatformBuilder` if the network is intended to be in a Transplant mode.
-The Services team will be responsible for implementing this, although the details are yet to be defined.
-
-#### Genesis Network process
-
-Genesis Network process == Genesis Roster, No State provided.
+Genesis Network process == Genesis Roster (i.e. valid `genesis-config.txt` file exists), No State provided.
 When a Genesis Roster is provided, but no pre-existing state exists, it will indicate the creation of a new network.
-The node will initiate the TSS key generation process (out of scope for this proposal), create a genesis state with
-the provided Genesis Roster, and start participating in consensus from round 1.
+The node will initiate the TSS key generation process (out of scope for this proposal), create a genesis state with the provided Genesis Roster, and start participating in consensus from round 1.
 
-#### Keeping existing Network Settings
+Network Transplant process == Override Roster (i.e. valid `override-config.txt` file exists) AND State provided AND Upgrade.
+When both an `override-config.txt` file and a State are provided, as well as a network upgrade flag set, it signifies a network transplant mode.
+The node will discard any existing candidate `Roster` present in the state, rotate the active `Roster`to the previous roster, construct an `Override Roster` from the provided `override-config.txt` file, and adopt the provided Override Roster as the new active `Roster`.
+This way, the provided network state and Override Roster are adopted.
 
-Keep Network Settings (Normal restart) == No Override Roster AND State provided AND not in Software Upgrade mode. If
-only a state is provided without an Override Roster, and the network is NOT in a software upgrade mode, the node
-will retain its existing network settings, using the active roster present in the state. This will be the typical
-behavior for a node restarting within an established network.
+#### Normal Restart Mode (Keeping existing Network Settings)
 
-#### Software Upgrade and adoption of Candidate Roster
+Normal restart (Keep Network Settings) == No Override Roster AND State provided AND not in Software Upgrade mode.
+If only a state is provided without an `override-config.txt` file and the network is NOT in a software upgrade mode, the network will retain its existing settings and re-use the active `Roster` present in the state.
+This will be the typical behavior for a node restarting within an established network.
 
-Software Upgrade Process == No Override Roster AND State provided AND in Software Upgrade mode. When no Override
-Roster is provided, but a State is present, and the network IS in a software upgrade mode, the node will start in a
-Software Upgrade mode, adopting the Candidate Roster present in the state. If there is no Candidate Roster set in
-the state, the Active Roster continues to be used.
+#### Software Upgrade Mode (adoption of Candidate Roster)
 
-### Services Changes, in summary
+Software Upgrade Process == No Override Roster AND State provided AND in Software Upgrade mode.
+When no `override-config.txt` file is provided, but a State is present, and the network IS in a software upgrade mode, the node will start in a Software Upgrade mode, adopting the candidate `Roster` present in the state.
+If there is no candidate `Roster` set in the state, the active `Roster` continues to be used.
+If there's no active `Roster` found in the state, one will be loaded from the `config.txt` file.
 
-1. The App will be responsible for creating the Candidate Roster from the Address Book and calling the specified API to
-   set it.
-2. The App will be responsible for determining the mode it wants the network to start in i.e. one of restart, upgrade,
-   genesis, or transplant modes.
-3. The App will be responsible for creating the Genesis Roster, when needed, and conditionally passing it to the
-   platform.
-4. The App will be responsible for creating the Override Roster, when needed, and conditionally passing it to the
-   platform.
+### A new Determination Logic for active `Roster` (and History)
+
+![StartupAndRosters-TSS-Roster.drawio.svg](StartupAndRosters-TSS-Roster.drawio.svg)
+
+A new logic will be introduced and called from `ServicesMain` class to determine the mode the network should start in and the roster to use.
+The logic will derive all the possible roster types (from state or on disk) and determine the final active `Roster` to be used based on the decision tree.
+This final active `Roster` will be set in the state and used for the network startup.
+
+In addition, the previous active `Roster` will also be determined.
+A previous active `Roster` is the active `Roster`that was last used before the current one.
+
+There will be two ways to determine the previous active `Roster`:
+by simply getting one from the state using `ReadableRosterStore#getRosterHistory()`)
+or by (rarely) constructing one from `config.txt` (fallback mechanism).
+
+Once the active `Roster` History has been determined, it will be passed to the `PlatformBuilder`.
+
+#### Edge Case1: Constructing a Previous Active Roster from `config.txt`
+
+The case in which a previous active `Roster` is constructed from `config.txt` is an edge case.
+The first time the Network adopts the use of Rosters, there will be no previous active `Roster` in the state, and the active `Roster` will be constructed from legacy `config.txt` file.
+The previous active `Roster` will however be a Roster constructed from a `currentAddressBook` that will be loaded from the `PlatformState`.
+
+Upon determining the active `Roster` and Previous active `Roster`, the previous active `Roster` will be set in the state first as an active `Roster` via the `setActiveRoster` call followed by a later call to the same method with the active `Roster`.
+Recall the `setActiveRoster` call requires a round number.
+The round number that will be used for the call with the Previous active `Roster` will be 0.
+This ensures there is a Roster in the history for all possible PCES events.
+The round number that will be used for the call with active `Roster` is the round number of the last event in the state + 1.
+
+Note that this solution works until we get to full Dynamism. At that point, this mechanism will be revisited.
+Until then, the round numbers used here are enough for the PCES to function correctly.
+
+Setting both rosters in the state builds the roster history in the state, which makes it available for retrieval via the`getRosterHistory` call described earlier.
+
+#### Edge Case2: Previous Active Roster has a hash collision with Active Roster
+
+In the rare case the active `Roster` is the same as the Previous active `Roster`, a call to `setActiveRoster` will result in the Roster not getting stored as it will be found to already exist.
+This is expected to happen the very first time the network adopts the use of Rosters, where the active `Roster`constructed from `config.txt` and the Previous active `Roster` constructed from the `currentAddressBook` in the `PlatformState` might be the same.
+In this case, as the Roster History will contain only one element, the active `Roster` will be duplicated in the Roster History instead.
+The Round number assignments used in Edge Case 1 above will still apply.
+
+### Feature Flag for Roster Adoption
+
+A new feature flag will be introduced to signify whether to use the determination logic described in the previous section or continue to use legacy `config.txt` to create/determine Address Books.
+The feature flag will be set in the configuration file and retrievable via some call similar to `config.useRosterConfigTxt()`.
+
+When this feature flag is turned off, the network will load AddressBook from `config.txt` and create a Roster from this AddressBook as it is done today.
+The current and previous active address books in the `PlatformState` will continue to be used.
+
+Regardless of the status of this flag, on the current Platform side of the codebase, the use of `AddressBook`s will be replaced by `Roster`s.
+However, the mechanism through which the Roster is created will differ based on the status of the feature flag.
 
 ### DevOps Changes, in summary
 
-1. DevOps will decide whether to keep the `config.txt` model and if so, work with Services on its translation
-   into a Roster.
-2. DevOps will be responsible for managing the lifecycle of the files on disk that are used in creating the Roster,
-   including the new TSS encryption key.
-3. DevOps will be responsible for providing the Genesis Roster or Override Roster as files in a location App desires.
-4. DevOps will be responsible for cleaning up the Override Roster file after the network transplant process is complete.
-
-## Core Behaviors, in summary
-
-- Roster Creation: Hedera App will create a Candidate Roster from the Address Book.
-- Roster Submission: App will trigger roster submission by setting the `Roster` object in the
-  `PlatformState` API.
-- Roster Validation: The submitted roster is validated and hashed, if valid, and the hash is not already in the state.
-- Roster Storage: The Roster is stored in the State as a States API map of Roster Hash to Roster.
-  A reference to the candidate roster's hash is also stored in the `RosterState` singleton object.
-- Roster Adoption: The candidate roster is always adopted on the next software upgrade.
-- Roster Replacement: If a new candidate roster is submitted before the previous one is adopted, the corresponding new
-  Candidate Roster will replace the previous.
+1. DevOps will decide whether to keep the `config.txt` model and if so, work with Services on its translation into a Roster.
+2. DevOps will be responsible for providing the `config.txt`, `genesis-config.txt` or `override-config.txt` as files in the desired location.
+3. DevOps will be responsible for managing the lifecycle of the files on disk that are used in creating the Roster, including the new TSS encryption key.
+4. DevOps will be responsible for cleaning up the `override-config.txt` file after the network transplant process is complete.
 
 ## Technical Debt Dependencies on Services, DevOps, and Release Engineering
 
@@ -477,10 +487,10 @@ There are a few existing technical debts that the team has agreed to tackle as d
    use Node IDs only. Services and DevOps will implement this.
 
 3. Inversion of Control: The `config.txt` file does not have all the information that the Hedera Address Book needs (
-   proxy endpoints, and in the future, Block Nodes). It has verbose information for the platform. Its format could be
-   better, and it stores the account number in the memo field. Upon the creation and adoption of rosters in the
-   state, `config.txt` is no longer useful. The resolution is to offload this duty off the platform and allow
-   Services to use whatever file format that suits them as described earlier. Services will implement this.
+   proxy endpoints, and in the future, Block Nodes). Its format could be better, and it stores the account number in the memo field.
+   Upon the creation and adoption of rosters in the state, `config.txt` is no longer useful.
+   The resolution is to offload this duty off the current platform components and allow Services components to use whatever file format that suits them as described earlier.
+   Services will implement this.
 
 ### Roster changes needed for Components
 
@@ -530,6 +540,6 @@ been set. Others may be introduced during implementation.
 - Define Roster Data Structure in protobuf: Design and implement the Roster class and the associated child classes.
 - Develop the API: Method added and implemented in `PlatformState` to set a candidate roster.
 - Modify State Storage: Implement specified data structures and candidate roster logic.
-- Update Components: Modify all platform components that currently use `AddressBook` to use `Rosters` instead, if any.
+- Update Components: Modify all current platform components that currently use `AddressBook` to use `Rosters` instead, if any.
 - Testing: Conduct thorough testing as specified in this proposal.
 - Deployment: Work with DevOps and Release Engineering to deploy the changes.
