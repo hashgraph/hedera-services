@@ -57,9 +57,12 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
@@ -111,9 +114,11 @@ public class ReadableStoreFactory {
         newMap.put(
                 ReadableBlockRecordStore.class, new StoreEntry(BlockRecordService.NAME, ReadableBlockRecordStore::new));
         newMap.put(ReadableNodeStore.class, new StoreEntry(AddressBookService.NAME, ReadableNodeStoreImpl::new));
+        // Platform
         newMap.put(
                 ReadablePlatformStateStore.class,
                 new StoreEntry(PlatformStateService.NAME, ReadablePlatformStateStore::new));
+        newMap.put(ReadableRosterStore.class, new StoreEntry(RosterStateId.NAME, ReadableRosterStoreImpl::new));
         return Collections.unmodifiableMap(newMap);
     }
 

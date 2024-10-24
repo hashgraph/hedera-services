@@ -25,7 +25,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.node.app.roster.ReadableRosterStore;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
@@ -33,7 +32,7 @@ import com.hedera.node.app.tss.api.TssPrivateShare;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
-import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
+import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
@@ -41,6 +40,7 @@ import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -125,7 +125,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     public Status getStatus(
             @NonNull final Roster roster,
             @NonNull final Bytes ledgerId,
-            @NonNull final ReadableTssBaseStore tssBaseStore) {
+            @NonNull final ReadableTssStoreImpl tssBaseStore) {
         requireNonNull(roster);
         requireNonNull(ledgerId);
         requireNonNull(tssBaseStore);
@@ -158,7 +158,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         candidateRosterCreationTime.set(Instant.now().getEpochSecond());
 
         // generate TSS messages based on the active roster and the candidate roster
-        final var tssStore = context.storeFactory().readableStore(ReadableTssBaseStore.class);
+        final var tssStore = context.storeFactory().readableStore(ReadableTssStoreImpl.class);
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var sourceRoster =
@@ -199,7 +199,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private List<TssPrivateShare> getTssPrivateShares(
             @NonNull final Roster sourceRoster,
             final long maxSharesPerNode,
-            @NonNull final ReadableTssBaseStore tssStore,
+            @NonNull final ReadableTssStoreImpl tssStore,
             @NonNull final Bytes candidateRosterHash,
             final HandleContext context) {
         final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();

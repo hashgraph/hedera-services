@@ -23,7 +23,6 @@ import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
-import com.hedera.node.app.roster.ReadableRosterStore;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -31,9 +30,10 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssCryptographyManager;
-import com.hedera.node.app.tss.stores.WritableTssBaseStore;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -73,7 +73,7 @@ public class TssMessageHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.body().tssMessageOrThrow();
 
-        final var tssStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
+        final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
         final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();

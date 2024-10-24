@@ -19,7 +19,7 @@ package com.hedera.node.app.tss;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
-import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
+import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,7 +63,7 @@ public interface TssBaseService extends Service {
      * @param tssBaseStore the store to read the TSS base state from
      * @return the status of the TSS service
      */
-    Status getStatus(@NonNull Roster roster, @NonNull Bytes ledgerId, @NonNull ReadableTssBaseStore tssBaseStore);
+    Status getStatus(@NonNull Roster roster, @NonNull Bytes ledgerId, @NonNull ReadableTssStoreImpl tssBaseStore);
 
     /**
      * Adopts the given roster for TSS operations.

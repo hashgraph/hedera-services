@@ -31,7 +31,6 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.node.app.roster.ReadableRosterStore;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -42,9 +41,10 @@ import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.FakeGroupElement;
 import com.hedera.node.app.tss.pairings.PairingPrivateKey;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
-import com.hedera.node.app.tss.stores.WritableTssBaseStore;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.math.BigInteger;
@@ -95,7 +95,7 @@ class TssMessageHandlerTest {
     private StoreFactory storeFactory;
 
     @Mock
-    private WritableTssBaseStore tssStore;
+    private WritableTssStore tssStore;
 
     @Mock
     private ReadableRosterStore readableRosterStore;
@@ -144,7 +144,7 @@ class TssMessageHandlerTest {
         given(gossip.sign(any())).willReturn(signature);
 
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(storeFactory.writableStore(WritableTssBaseStore.class)).thenReturn(tssStore);
+        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(storeFactory.readableStore(ReadableRosterStore.class)).thenReturn(readableRosterStore);
 
         given(tssCryptographyManager.handleTssMessageTransaction(

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss;
 
+import static com.hedera.node.app.tss.handlers.TssUtils.getThresholdForTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 
@@ -27,7 +28,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
-import com.hedera.node.app.tss.stores.WritableTssBaseStore;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.BitSet;
@@ -77,7 +78,7 @@ public class TssCryptographyManager {
             @NonNull final TssMessageTransactionBody op,
             @NonNull final TssParticipantDirectory tssParticipantDirectory,
             @NonNull final HandleContext context) {
-        final var tssStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
+        final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
         final var targetRosterHash = op.targetRosterHash();
         final var tssMessageBodies = tssStore.getTssMessages(targetRosterHash);
 
@@ -148,7 +149,8 @@ public class TssCryptographyManager {
     }
 
     /**
-     * Check if the threshold is met. The threshold is met if more than half the consensus weight has been received.
+     * Check if the threshold consensus weight is met to submit a {@link TssVoteTransactionBody}.
+     * The threshold is met if more than half the consensus weight has been received.
      *
      * @param validTssMessages        the valid TSS messages
      * @param tssParticipantDirectory the TSS participant directory
@@ -159,7 +161,7 @@ public class TssCryptographyManager {
             @NonNull final TssParticipantDirectory tssParticipantDirectory) {
         final var numShares = tssParticipantDirectory.getShareIds().size();
         // If more than 1/2 the consensus weight has been received, then the threshold is met
-        return validTssMessages.size() >= ((numShares + 2) / 2);
+        return validTssMessages.size() >= getThresholdForTssMessages(numShares);
     }
 
     /**

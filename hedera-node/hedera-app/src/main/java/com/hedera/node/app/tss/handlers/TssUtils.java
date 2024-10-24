@@ -37,9 +37,10 @@ import java.util.Map;
 public class TssUtils {
     /**
      * Compute the TSS participant directory from the roster.
-     * @param roster the roster
+     *
+     * @param roster           the roster
      * @param maxSharesPerNode the maximum number of shares per node
-     * @param selfNodeId the node ID of the current node
+     * @param selfNodeId       the node ID of the current node
      * @return the TSS participant directory
      */
     public static TssParticipantDirectory computeTssParticipantDirectory(
@@ -47,7 +48,7 @@ public class TssUtils {
         final var computedShares = computeNodeShares(roster.rosterEntries(), maxSharesPerNode);
         final var totalShares =
                 computedShares.values().stream().mapToLong(Long::longValue).sum();
-        final var threshold = (int) (totalShares + 2) / 2;
+        final var threshold = getThresholdForTssMessages(totalShares);
 
         final var builder = TssParticipantDirectory.createBuilder().withThreshold(threshold);
         // FUTURE: This private key must be loaded from disk
@@ -65,6 +66,17 @@ public class TssUtils {
         }
         // FUTURE: Use the actual signature schema
         return builder.build(SignatureSchema.create(new byte[] {1}));
+    }
+
+    /**
+     * Compute the threshold of consensus weight needed for submitting a {@link com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody}
+     * If more than 1/2 the consensus weight has been received, then the threshold is met
+     *
+     * @param totalShares the total number of shares
+     * @return the threshold for TSS messages
+     */
+    public static int getThresholdForTssMessages(final long totalShares) {
+        return (int) (totalShares + 2) / 2;
     }
 
     /**
@@ -105,17 +117,17 @@ public class TssUtils {
     /**
      * Compute the number of shares each node should have based on the weight of the node.
      *
-     * @param rosterEntries         the list of roster entries
-     * @param maxTssMessagesPerNode the maximum number of TSS messages per node
+     * @param rosterEntries    the list of roster entries
+     * @param maxSharesPerNode the maximum number of shares per node
      * @return a map of node ID to the number of shares
      */
     public static Map<Long, Long> computeNodeShares(
-            @NonNull final List<RosterEntry> rosterEntries, final long maxTssMessagesPerNode) {
+            @NonNull final List<RosterEntry> rosterEntries, final long maxSharesPerNode) {
         final var maxWeight =
                 rosterEntries.stream().mapToLong(RosterEntry::weight).max().orElse(0);
         final var shares = new LinkedHashMap<Long, Long>();
         for (final var entry : rosterEntries) {
-            final var numShares = ((maxTssMessagesPerNode * entry.weight() + maxWeight - 1) / maxWeight);
+            final var numShares = ((maxSharesPerNode * entry.weight() + maxWeight - 1) / maxWeight);
             shares.put(entry.nodeId(), numShares);
         }
         return shares;
