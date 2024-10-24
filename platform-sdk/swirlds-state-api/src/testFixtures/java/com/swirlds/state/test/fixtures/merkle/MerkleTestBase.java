@@ -17,6 +17,7 @@
 package com.swirlds.state.test.fixtures.merkle;
 
 import static com.swirlds.state.merkle.StateUtils.computeClassId;
+import static com.swirlds.virtualmap.constructable.ConstructableUtils.registerVirtualMapConstructables;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.Codec;
@@ -51,8 +52,6 @@ import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.test.fixtures.StateTestBase;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
-import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
-import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -279,14 +278,7 @@ public class MerkleTestBase extends StateTestBase {
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(
                             MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
-            registry.registerConstructable(
-                    new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
-            registry.registerConstructable(new ClassConstructorPair(
-                    VirtualRootNode.class,
-                    () -> new VirtualRootNode<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
-            registry.registerConstructable(new ClassConstructorPair(
-                    VirtualNodeCache.class,
-                    () -> new VirtualNodeCache<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
+            registerVirtualMapConstructables(CONFIGURATION);
         } catch (ConstructableRegistryException ex) {
             throw new AssertionError(ex);
         }

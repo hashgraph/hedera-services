@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
+import static com.swirlds.virtualmap.constructable.ConstructableUtils.registerVirtualMapConstructables;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -56,10 +57,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.config.VirtualMapConfig;
-import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
-import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.Dimension;
@@ -165,16 +162,8 @@ public final class BootstrapUtils {
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(
                         MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration)));
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(
-                        VirtualNodeCache.class,
-                        () -> new VirtualNodeCache(configuration.getConfigData(VirtualMapConfig.class))));
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(
-                        VirtualRootNode.class,
-                        () -> new VirtualRootNode(configuration.getConfigData(VirtualMapConfig.class))));
+
+        registerVirtualMapConstructables(configuration);
     }
 
     /**
