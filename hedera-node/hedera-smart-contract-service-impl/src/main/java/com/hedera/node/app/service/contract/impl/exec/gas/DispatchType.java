@@ -32,65 +32,35 @@ import java.util.Objects;
  */
 @SuppressWarnings("MissingJavadoc")
 public enum DispatchType {
-    @SuppressWarnings("MissingJavadoc")
     CRYPTO_CREATE(HederaFunctionality.CRYPTO_CREATE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     CRYPTO_UPDATE(HederaFunctionality.CRYPTO_UPDATE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     TRANSFER_HBAR(HederaFunctionality.CRYPTO_TRANSFER, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     TRANSFER_FUNGIBLE(HederaFunctionality.CRYPTO_TRANSFER, TOKEN_FUNGIBLE_COMMON),
-    @SuppressWarnings("MissingJavadoc")
     TRANSFER_NFT(HederaFunctionality.CRYPTO_TRANSFER, TOKEN_NON_FUNGIBLE_UNIQUE),
-    @SuppressWarnings("MissingJavadoc")
     TRANSFER_FUNGIBLE_CUSTOM_FEES(HederaFunctionality.CRYPTO_TRANSFER, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES),
-    @SuppressWarnings("MissingJavadoc")
     TRANSFER_NFT_CUSTOM_FEES(HederaFunctionality.CRYPTO_TRANSFER, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
-    @SuppressWarnings("MissingJavadoc")
     MINT_FUNGIBLE(HederaFunctionality.TOKEN_MINT, TOKEN_FUNGIBLE_COMMON),
-    @SuppressWarnings("MissingJavadoc")
     MINT_NFT(HederaFunctionality.TOKEN_MINT, TOKEN_NON_FUNGIBLE_UNIQUE),
-    @SuppressWarnings("MissingJavadoc")
     BURN_FUNGIBLE(HederaFunctionality.TOKEN_BURN, TOKEN_FUNGIBLE_COMMON),
-    @SuppressWarnings("MissingJavadoc")
     DELETE(HederaFunctionality.TOKEN_DELETE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     BURN_NFT(HederaFunctionality.TOKEN_BURN, TOKEN_NON_FUNGIBLE_UNIQUE),
-    @SuppressWarnings("MissingJavadoc")
     ASSOCIATE(HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     DISSOCIATE(HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     APPROVE(HederaFunctionality.CRYPTO_APPROVE_ALLOWANCE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     DELETE_NFT_APPROVE(HederaFunctionality.CRYPTO_DELETE_ALLOWANCE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     GRANT_KYC(HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     REVOKE_KYC(HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     PAUSE(HederaFunctionality.TOKEN_PAUSE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     UNPAUSE(HederaFunctionality.TOKEN_UNPAUSE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     FREEZE(HederaFunctionality.TOKEN_FREEZE_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     UNFREEZE(HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     WIPE_FUNGIBLE(HederaFunctionality.TOKEN_ACCOUNT_WIPE, TOKEN_FUNGIBLE_COMMON),
-    @SuppressWarnings("MissingJavadoc")
     WIPE_NFT(HederaFunctionality.TOKEN_ACCOUNT_WIPE, TOKEN_NON_FUNGIBLE_UNIQUE),
-    @SuppressWarnings("MissingJavadoc")
     UPDATE(HederaFunctionality.TOKEN_UPDATE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     TOKEN_UPDATE_NFTS(HederaFunctionality.TOKEN_UPDATE_NFTS, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     UTIL_PRNG(HederaFunctionality.UTIL_PRNG, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
     TOKEN_INFO(HederaFunctionality.TOKEN_GET_INFO, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
-    UPDATE_TOKEN_CUSTOM_FEES(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, DEFAULT);
-    @SuppressWarnings("MissingJavadoc")
+    UPDATE_TOKEN_CUSTOM_FEES(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, DEFAULT),
     TOKEN_AIRDROP(HederaFunctionality.TOKEN_AIRDROP, DEFAULT);
 
     private final HederaFunctionality functionality;
@@ -101,12 +71,10 @@ public enum DispatchType {
         this.subtype = Objects.requireNonNull(subtype);
     }
 
-    @SuppressWarnings("MissingJavadoc")
     public HederaFunctionality functionality() {
         return functionality;
     }
 
-    @SuppressWarnings("MissingJavadoc")
     public SubType subtype() {
         return subtype;
     }
