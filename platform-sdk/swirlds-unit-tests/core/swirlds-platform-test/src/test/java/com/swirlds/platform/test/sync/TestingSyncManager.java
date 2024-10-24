@@ -17,8 +17,8 @@
 package com.swirlds.platform.test.sync;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.gossip.FallenBehindManager;
 import java.util.List;
+import org.hiero.consensus.gossip.FallenBehindManager;
 
 public class TestingSyncManager implements FallenBehindManager {
     /** whether we have fallen behind or not */

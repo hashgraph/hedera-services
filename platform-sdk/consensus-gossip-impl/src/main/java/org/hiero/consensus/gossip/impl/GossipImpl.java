@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.service.gossip.impl;
+package org.hiero.consensus.gossip.impl;
 
-import com.hedera.service.gossip.GossipService;
+import org.hiero.consensus.gossip.Gossip;
 
 /**
  * Implementation for the mock gossip service.
  */
-public final class GossipServiceImpl implements GossipService {}
+public final class GossipImpl implements Gossip {}
