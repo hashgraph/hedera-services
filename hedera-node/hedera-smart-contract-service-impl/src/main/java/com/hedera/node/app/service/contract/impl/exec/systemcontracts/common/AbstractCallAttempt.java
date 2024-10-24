@@ -265,8 +265,13 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
      * @param configEnabled whether the config is enabled
      * @return boolean result
      */
+    @Deprecated
     public boolean isSelectorIfConfigEnabled(@NonNull final Function function, final boolean configEnabled) {
         return configEnabled && isSelector(function);
+    }
+
+    public boolean isSelectorIfConfigEnabled(final boolean configEnabled, @NonNull final Function... functions) {
+        return configEnabled && isSelector(functions);
     }
 
     private boolean isRedirectSelector(@NonNull final byte[] functionSelector, @NonNull final byte[] input) {

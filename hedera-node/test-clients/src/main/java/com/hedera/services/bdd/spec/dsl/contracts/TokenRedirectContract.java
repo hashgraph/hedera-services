@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.dsl.contracts;
  */
 public enum TokenRedirectContract {
     HRC("HRC"),
+    HRC904CANCEL("HRC904TokenCancel"),
     ERC20("ERC20ABI"),
     ERC721("ERC721ABI");
 
