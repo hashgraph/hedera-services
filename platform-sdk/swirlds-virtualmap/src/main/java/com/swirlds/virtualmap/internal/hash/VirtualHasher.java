@@ -19,8 +19,8 @@ package com.swirlds.virtualmap.internal.hash;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
+import static java.util.Objects.requireNonNull;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
@@ -34,6 +34,7 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.merkle.VirtualInternalNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -85,7 +86,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * field, but it doesn't work very well as platform configs aren't loaded at the time when
      * this class is initialized. It would result in a cryptography instance with default (and
      * possibly wrong) configs be used by the hasher. Instead, this field is initialized in
-     * the {@link #hash(LongFunction, Iterator, long, long)} method and used by all hashing
+     * the {@link #hash(LongFunction, Iterator, long, long, VirtualMapConfig)} method and used by all hashing
      * tasks.
      */
     private Cryptography cryptography;
@@ -99,14 +100,20 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
     private static volatile ForkJoinPool hashingPool = null;
 
-    private static ForkJoinPool getHashingPool() {
+    /**
+     * This method is invoked from a non-static method, passing the provided configuration.
+     * Consequently, the hashing pool will be initialized using the configuration provided
+     * with the first call of the hash method. Subsequent calls will reuse the same pool.
+     */
+    private static ForkJoinPool getHashingPool(final @NonNull VirtualMapConfig virtualMapConfig) {
+        requireNonNull(virtualMapConfig);
+
         ForkJoinPool pool = hashingPool;
         if (pool == null) {
             synchronized (VirtualHasher.class) {
                 pool = hashingPool;
                 if (pool == null) {
-                    final VirtualMapConfig vmConfig = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
-                    final int hashingThreadCount = vmConfig.getNumHashThreads();
+                    final int hashingThreadCount = virtualMapConfig.getNumHashThreads();
                     pool = new ForkJoinPool(hashingThreadCount);
                     hashingPool = pool;
                 }
@@ -139,14 +146,17 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * @param lastLeafPath
      * 		The lastLeafPath of the tree that is being hashed. If &lt; 1, then a null hash result is returned.
      * 		No leaf in {@code sortedDirtyLeaves} may have a path greater than {@code lastLeafPath}.
+     * @param virtualMapConfig platform configuration for VirtualMap
      * @return The hash of the root of the tree
      */
     public Hash hash(
             final LongFunction<Hash> hashReader,
             Iterator<VirtualLeafRecord<K, V>> sortedDirtyLeaves,
             final long firstLeafPath,
-            final long lastLeafPath) {
-        return hash(hashReader, sortedDirtyLeaves, firstLeafPath, lastLeafPath, null);
+            final long lastLeafPath,
+            final @NonNull VirtualMapConfig virtualMapConfig) {
+        requireNonNull(virtualMapConfig);
+        return hash(hashReader, sortedDirtyLeaves, firstLeafPath, lastLeafPath, null, virtualMapConfig);
     }
 
     class HashHoldingTask extends AbstractTask {
@@ -282,7 +292,9 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             final Iterator<VirtualLeafRecord<K, V>> sortedDirtyLeaves,
             final long firstLeafPath,
             final long lastLeafPath,
-            VirtualHashListener<K, V> listener) {
+            VirtualHashListener<K, V> listener,
+            final @NonNull VirtualMapConfig virtualMapConfig) {
+        requireNonNull(virtualMapConfig);
 
         // If the first or last leaf path are invalid, then there is nothing to hash.
         if (firstLeafPath < 1 || lastLeafPath < 1) {
@@ -330,8 +342,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         // may not be null.
 
         // Default chunk height, from config
-        final VirtualMapConfig vmConfig = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
-        final int chunkHeight = vmConfig.virtualHasherChunkHeight();
+        final int chunkHeight = virtualMapConfig.virtualHasherChunkHeight();
         int firstLeafRank = Path.getRank(firstLeafPath);
         int lastLeafRank = Path.getRank(lastLeafPath);
 
@@ -344,9 +355,9 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         // the root task below. When the root task is done executing, that is it produced
         // a root hash, this hash is set as an input dependency for this result task, where
         // it's read and returned in the end of this method
-        final HashHoldingTask resultTask = new HashHoldingTask(getHashingPool(), 1, 1);
+        final HashHoldingTask resultTask = new HashHoldingTask(getHashingPool(virtualMapConfig), 1, 1);
         final int rootTaskHeight = Math.min(firstLeafRank, chunkHeight);
-        final ChunkHashTask rootTask = new ChunkHashTask(getHashingPool(), ROOT_PATH, rootTaskHeight);
+        final ChunkHashTask rootTask = new ChunkHashTask(getHashingPool(virtualMapConfig), ROOT_PATH, rootTaskHeight);
         rootTask.setOut(resultTask);
         map.put(ROOT_PATH, rootTask);
 
@@ -384,7 +395,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             long curPath = leaf.getPath();
             ChunkHashTask curTask = map.remove(curPath);
             if (curTask == null) {
-                curTask = new ChunkHashTask(getHashingPool(), curPath, 0);
+                curTask = new ChunkHashTask(getHashingPool(virtualMapConfig), curPath, 0);
             }
             curTask.setLeaf(leaf);
 
@@ -435,7 +446,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                 final long parentPath = Path.getGrandParentPath(curPath, parentRankHeights[curRank]);
                 ChunkHashTask parentTask = map.remove(parentPath);
                 if (parentTask == null) {
-                    parentTask = new ChunkHashTask(getHashingPool(), parentPath, parentRankHeights[curRank]);
+                    parentTask =
+                            new ChunkHashTask(getHashingPool(virtualMapConfig), parentPath, parentRankHeights[curRank]);
                 }
                 curTask.setOut(parentTask);
 
@@ -471,7 +483,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                             siblingHeight = curTask.height;
                         }
                         ChunkHashTask siblingTask = map.computeIfAbsent(
-                                siblingPath, path -> new ChunkHashTask(getHashingPool(), path, siblingHeight));
+                                siblingPath,
+                                path -> new ChunkHashTask(getHashingPool(virtualMapConfig), path, siblingHeight));
                         // Set sibling task output to the same parent
                         siblingTask.setOut(parentTask);
                     }
