@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.TSS_MESSAGE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TSS_VOTE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
@@ -77,6 +79,7 @@ import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -135,6 +138,7 @@ public class HandleWorkflow {
     private final BlockStreamManager blockStreamManager;
     private final CacheWarmer cacheWarmer;
     private final OpWorkflowMetrics opWorkflowMetrics;
+    private final TssMetrics tssMetrics;
     private final ThrottleServiceManager throttleServiceManager;
     private final SemanticVersion version;
     private final InitTrigger initTrigger;
@@ -169,6 +173,7 @@ public class HandleWorkflow {
             @NonNull final BlockStreamManager blockStreamManager,
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final OpWorkflowMetrics opWorkflowMetrics,
+            @NonNull final TssMetrics tssMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final SemanticVersion version,
             @NonNull final InitTrigger initTrigger,
@@ -197,6 +202,7 @@ public class HandleWorkflow {
         this.blockStreamManager = requireNonNull(blockStreamManager);
         this.cacheWarmer = requireNonNull(cacheWarmer);
         this.opWorkflowMetrics = requireNonNull(opWorkflowMetrics);
+        this.tssMetrics = requireNonNull(tssMetrics);
         this.throttleServiceManager = requireNonNull(throttleServiceManager);
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
@@ -353,6 +359,9 @@ public class HandleWorkflow {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+        if (userTxn.functionality() == TSS_MESSAGE || userTxn.functionality() == TSS_VOTE) {
+            tssMetrics.updateTssMetrics(userTxn.functionality());
+        }
     }
 
     /**
