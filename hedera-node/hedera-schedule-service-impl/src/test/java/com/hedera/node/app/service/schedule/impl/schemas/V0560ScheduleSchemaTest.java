@@ -18,8 +18,8 @@ package com.hedera.node.app.service.schedule.impl.schemas;
 
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY;
-import static com.hedera.node.app.service.schedule.impl.schemas.V0560ScheduleSchema.SCHEDULEIDS_BY_EXPIRY_SEC_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0560ScheduleSchema.SCHEDULE_BY_EQUALITY_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0560ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.BDDMockito.given;
@@ -96,7 +96,7 @@ class V0560ScheduleSchemaTest extends ScheduleTestBase {
                 .toList();
 
         final var stateDef1 = sortedResult.getFirst();
-        Assertions.assertThat(stateDef1.stateKey()).isEqualTo(SCHEDULEIDS_BY_EXPIRY_SEC_KEY);
+        Assertions.assertThat(stateDef1.stateKey()).isEqualTo(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
         Assertions.assertThat(stateDef1.keyCodec()).isEqualTo(ProtoLong.PROTOBUF);
         Assertions.assertThat(stateDef1.valueCodec()).isEqualTo(ScheduleIdList.PROTOBUF);
         final var stateDef2 = sortedResult.get(1);
@@ -143,7 +143,8 @@ class V0560ScheduleSchemaTest extends ScheduleTestBase {
                         .schedules(List.of(scheduler1, otherScheduleInState))
                         .build());
         writablSchedulesByExpirySec = new MapWritableKVState<>(SCHEDULES_BY_EXPIRY_SEC_KEY, schedulesByExpirySec);
-        writablScheduleIdsByExpirySec = new MapWritableKVState<>(SCHEDULEIDS_BY_EXPIRY_SEC_KEY, scheduleIdsByExpirySec);
+        writablScheduleIdsByExpirySec =
+                new MapWritableKVState<>(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY, scheduleIdsByExpirySec);
 
         final ProtoBytes protoHash1 = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(scheduler1));
         final ProtoBytes protoHash2 = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(otherScheduleInState));

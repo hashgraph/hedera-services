@@ -38,6 +38,8 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNI
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EQUALITY;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EXPIRY;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_ID;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULE_BY_EQUALITY;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULE_IDS_BY_EXPIRY;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_STAKING_INFO;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_THROTTLE_USAGE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKENS;
@@ -169,6 +171,8 @@ public class BlockImplUtils {
                         case "SCHEDULES_BY_EQUALITY" -> STATE_ID_SCHEDULES_BY_EQUALITY.protoOrdinal();
                         case "SCHEDULES_BY_EXPIRY_SEC" -> STATE_ID_SCHEDULES_BY_EXPIRY.protoOrdinal();
                         case "SCHEDULES_BY_ID" -> STATE_ID_SCHEDULES_BY_ID.protoOrdinal();
+                        case "SCHEDULE_IDS_BY_EXPIRY_SEC" -> STATE_ID_SCHEDULE_IDS_BY_EXPIRY.protoOrdinal();
+                        case "SCHEDULE_BY_EQUALITY" -> STATE_ID_SCHEDULE_BY_EQUALITY.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
                     case "TokenService" -> switch (stateKey) {

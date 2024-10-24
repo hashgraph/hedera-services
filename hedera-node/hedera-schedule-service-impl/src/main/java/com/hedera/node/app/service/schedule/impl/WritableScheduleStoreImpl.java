@@ -69,7 +69,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         super(states);
         schedulesByIdMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
         scheduleByEqualityMutable = states.get(V0560ScheduleSchema.SCHEDULE_BY_EQUALITY_KEY);
-        scheduleIdsByExpirationMutable = states.get(V0560ScheduleSchema.SCHEDULEIDS_BY_EXPIRY_SEC_KEY);
+        scheduleIdsByExpirationMutable = states.get(V0560ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
 
         final long maxCapacity =
                 configuration.getConfigData(SchedulingConfig.class).maxNumber();

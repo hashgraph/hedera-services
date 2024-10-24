@@ -43,7 +43,7 @@ import org.apache.logging.log4j.Logger;
  */
 public final class V0560ScheduleSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V0560ScheduleSchema.class);
-    private static final long MAX_SCHEDULEIDS_BY_EXPIRY_SEC_KEY = 50_000_000L;
+    private static final long MAX_SCHEDULE_IDS_BY_EXPIRY_SEC_KEY = 50_000_000L;
     private static final long MAX_SCHEDULE_BY_EQUALITY = 50_000_000L;
     /**
      * The version of the schema.
@@ -51,7 +51,7 @@ public final class V0560ScheduleSchema extends Schema {
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(56).patch(0).build();
 
-    public static final String SCHEDULEIDS_BY_EXPIRY_SEC_KEY = "SCHEDULEIDS_BY_EXPIRY_SEC";
+    public static final String SCHEDULE_IDS_BY_EXPIRY_SEC_KEY = "SCHEDULE_IDS_BY_EXPIRY_SEC";
     public static final String SCHEDULE_BY_EQUALITY_KEY = "SCHEDULE_BY_EQUALITY";
 
     /**
@@ -75,7 +75,7 @@ public final class V0560ScheduleSchema extends Schema {
 
         log.info("Started migrating Schedule Schema from 0.49.0 to 0.56.0");
         final WritableKVState<ProtoLong, ScheduleIdList> writableScheduleIdsByExpirySec =
-                ctx.newStates().get(SCHEDULEIDS_BY_EXPIRY_SEC_KEY);
+                ctx.newStates().get(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
         final WritableKVState<ProtoLong, ScheduleList> readableSchedulesByExpirySec =
                 ctx.newStates().get(SCHEDULES_BY_EXPIRY_SEC_KEY);
         StreamSupport.stream(
@@ -118,10 +118,10 @@ public final class V0560ScheduleSchema extends Schema {
 
     private static StateDefinition<ProtoLong, ScheduleIdList> scheduleIdsByExpirySec() {
         return StateDefinition.onDisk(
-                SCHEDULEIDS_BY_EXPIRY_SEC_KEY,
+                SCHEDULE_IDS_BY_EXPIRY_SEC_KEY,
                 ProtoLong.PROTOBUF,
                 ScheduleIdList.PROTOBUF,
-                MAX_SCHEDULEIDS_BY_EXPIRY_SEC_KEY);
+                MAX_SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
     }
 
     private static StateDefinition<ProtoBytes, Schedule> schedulesByEquality() {

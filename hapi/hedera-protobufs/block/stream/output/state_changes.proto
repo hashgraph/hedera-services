@@ -354,6 +354,16 @@ enum StateIdentifier {
     STATE_ID_ROSTERS = 28;
 
     /**
+    * A state identifier for scheduled transaction expiration.
+    */
+    STATE_ID_SCHEDULE_IDS_BY_EXPIRY = 29;
+
+    /**
+     * A state identifier for scheduled transaction deduplication.
+     */
+    STATE_ID_SCHEDULE_BY_EQUALITY = 30;
+
+    /**
      * A state identifier for the round receipts queue.
      */
     STATE_ID_TRANSACTION_RECEIPTS_QUEUE = 126;

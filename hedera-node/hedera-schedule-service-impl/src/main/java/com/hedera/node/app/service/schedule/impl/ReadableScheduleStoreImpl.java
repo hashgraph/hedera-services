@@ -53,7 +53,7 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
     public ReadableScheduleStoreImpl(@NonNull final ReadableStates states) {
         Objects.requireNonNull(states, NULL_STATE_IN_CONSTRUCTOR_MESSAGE);
         schedulesById = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
-        scheduleIdsByExpirationSecond = states.get(V0560ScheduleSchema.SCHEDULEIDS_BY_EXPIRY_SEC_KEY);
+        scheduleIdsByExpirationSecond = states.get(V0560ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
         schedulesByStringHash = states.get(V0560ScheduleSchema.SCHEDULE_BY_EQUALITY_KEY);
     }
 
