@@ -17,25 +17,23 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.common.test.fixtures.set.RandomAccessHashSet;
 import com.swirlds.common.test.fixtures.set.RandomAccessSet;
-import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -59,13 +57,13 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     public static final int ZZZZZ = 26 * 26 * 26 * 26 * 26; // key value corresponding to five Z's (plus 1)
 
     @Override
-    protected VirtualDataSourceBuilder createBuilder() throws IOException {
+    protected VirtualDataSourceBuilder createBuilder() {
         // The tests create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new (temp) database location for every run
-        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile();
-        MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
-        return new MerkleDbDataSourceBuilder(tableConfig);
+        testFileSystemManager.resetMerkleDb(null);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
+        return new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
     }
 
     public String randomWord(final Random random, final int maximumKeySize) {
@@ -263,10 +261,7 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
             copiesQueue.remove().release();
         }
 
-        afterSyncLearnerTree.release();
         copy.release();
-        teacherTree.release();
-        learnerTree.release();
     }
 
     /**
@@ -289,11 +284,5 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
         final VirtualMap<TestKey, TestValue> afterCopy = afterMap.copy();
         // Enforce computing the hash of its root node
         assertNotNull(afterCopy.getRight().getHash());
-
-        afterSyncLearnerTree.release();
-        copy.release();
-        afterCopy.release();
-        teacherTree.release();
-        learnerTree.release();
     }
 }

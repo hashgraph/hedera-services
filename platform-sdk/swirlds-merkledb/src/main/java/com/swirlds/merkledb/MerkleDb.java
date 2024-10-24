@@ -29,8 +29,8 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -100,12 +100,7 @@ public final class MerkleDb {
     /** Label for database component used in logging, stats, etc. */
     public static final String MERKLEDB_COMPONENT = "merkledb";
 
-    /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private final MerkleDbConfig config;
+    private final Configuration configuration;
 
     /**
      * All virtual database instances in a process. Once we have something like "application
@@ -118,8 +113,7 @@ public final class MerkleDb {
     private static final AtomicReference<Path> defaultInstancePath = new AtomicReference<>();
 
     /**
-     * The base directory in which the database directory will be created. By default, a temporary
-     * location provided by {@link LegacyTemporaryFileBuilder}.
+     * The base directory in which the database directory will be created.
      */
     private final Path storageDir;
 
@@ -163,29 +157,24 @@ public final class MerkleDb {
      * created first. If the path is {@code null}, the default MerkleDb path is used instead.
      *
      * @param path Database storage dir. If {@code null}, the default MerkleDb path is used
+     * @param configuration The configuration to use
      * @return Virtual database instance that stores its data in the specified path
      */
-    public static MerkleDb getInstance(final Path path) {
-        return getInstance(path, ConfigurationHolder.getConfigData(MerkleDbConfig.class));
-    }
-
-    static MerkleDb getInstance(final Path path, final MerkleDbConfig config) {
-        return instances.computeIfAbsent(path != null ? path : getDefaultPath(), p -> new MerkleDb(p, config));
+    public static MerkleDb getInstance(final Path path, final Configuration configuration) {
+        return instances.computeIfAbsent(
+                path != null ? path : getDefaultPath(configuration), p -> new MerkleDb(p, configuration));
     }
 
     /**
      * A database path (storage dir) to use for new or restored data sources
      *
+     * @param configuration The configuration to use
      * @return Default instance path
      */
-    private static Path getDefaultPath() {
+    private static Path getDefaultPath(final Configuration configuration) {
         return defaultInstancePath.updateAndGet(p -> {
             if (p == null) {
-                try {
-                    p = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb");
-                } catch (IOException z) {
-                    throw new UncheckedIOException(z);
-                }
+                p = FileSystemManager.create(configuration).resolveNewTemp(MERKLEDB_COMPONENT);
             }
             return p;
         });
@@ -208,7 +197,7 @@ public final class MerkleDb {
     }
 
     /**
-     * This method resets the path to a default instance to force the next {@link #getDefaultInstance()} to
+     * This method resets the path to a default instance to force the next {@link #getDefaultInstance(Configuration)} to
      * create another instance. This method is used in tests to load multiple MerkleDb instances within one process.
      * When a node is restored from a saved state, all virtual maps are restored to the default MerkleDb instance.
      * There is no way yet to provide node config to MerkleDb, it's a singleton. It leads to nodes to attempt overwriting each other's data,
@@ -223,10 +212,11 @@ public final class MerkleDb {
      * Gets a default database instance. Used by virtual data source builder to create new data
      * sources or restore data sources from snapshots.
      *
+     * @param configuration The configuration to use
      * @return Default database instance
      */
-    public static MerkleDb getDefaultInstance() {
-        return getInstance(getDefaultPath());
+    public static MerkleDb getDefaultInstance(final Configuration configuration) {
+        return getInstance(getDefaultPath(configuration), configuration);
     }
 
     /**
@@ -234,9 +224,10 @@ public final class MerkleDb {
      * file exists in the specified folder, it gets loaded into the tables map.
      *
      * @param storageDir A folder to store database files in
+     * @param configuration The configuration to use
      */
-    private MerkleDb(final Path storageDir, final MerkleDbConfig config) {
-        this.config = config;
+    private MerkleDb(final Path storageDir, final Configuration configuration) {
+        this.configuration = configuration;
         if (storageDir == null) {
             throw new IllegalArgumentException("Cannot create a MerkleDatabase instance with null storageDir");
         }
@@ -330,7 +321,7 @@ public final class MerkleDb {
     }
 
     public MerkleDbConfig getConfig() {
-        return config;
+        return configuration.getConfigData(MerkleDbConfig.class);
     }
 
     /**
@@ -360,7 +351,7 @@ public final class MerkleDb {
         final int tableId = getNextTableId();
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
         final MerkleDbDataSource dataSource =
-                new MerkleDbDataSource(this, label, tableId, tableConfig, dbCompactionEnabled);
+                new MerkleDbDataSource(this, label, tableId, tableConfig, dbCompactionEnabled, configuration);
         dataSources.set(tableId, dataSource);
         // New tables are always primary
         primaryTables.add(tableId);
@@ -399,7 +390,8 @@ public final class MerkleDb {
             final boolean makeCopyPrimary)
             throws IOException {
         final String label = dataSource.getTableName();
-        final MerkleDbTableConfig tableConfig = dataSource.getTableConfig().copy();
+        final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
+        final MerkleDbTableConfig tableConfig = dataSource.getTableConfig().copy(merkleDbConfig);
         if (tableConfigs.get(tableId) != null) {
             throw new IllegalStateException("Table with ID " + tableId + " already exists");
         }
@@ -448,7 +440,8 @@ public final class MerkleDb {
                 return ds;
             }
             try {
-                return new MerkleDbDataSource(this, tableName, tableId, tableConfig, dbCompactionEnabled);
+                return new MerkleDbDataSource(
+                        this, tableName, tableId, tableConfig, dbCompactionEnabled, configuration);
             } catch (final IOException z) {
                 rethrowIO.set(z);
                 return null;
@@ -529,7 +522,7 @@ public final class MerkleDb {
                             + " during reconnect or ISS reporting. Table name={}",
                     tableName);
         }
-        final MerkleDb targetDb = getInstance(destination);
+        final MerkleDb targetDb = getInstance(destination, configuration);
         if (targetDb.tableExists(tableName)) {
             throw new IllegalStateException("Table already exists in the target database, " + tableName);
         }
@@ -546,12 +539,14 @@ public final class MerkleDb {
      *
      * @param source Source folder
      * @param target Target folder, optional. If {@code null}, the default MerkleDb folder is used
+     * @param configuration The configuration to use
      * @return Default database instance
      * @throws IOException If an I/O error occurs
      * @throws IllegalStateException If the default database instance is already created
      */
-    public static MerkleDb restore(final Path source, final Path target) throws IOException {
-        final Path defaultInstancePath = (target != null) ? target : getDefaultPath();
+    public static MerkleDb restore(final Path source, final Path target, final Configuration configuration)
+            throws IOException {
+        final Path defaultInstancePath = (target != null) ? target : getDefaultPath(configuration);
         if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
             Files.createDirectories(defaultInstancePath);
             // For all data files, it's enough to create hard-links from the source dir to the
@@ -573,7 +568,7 @@ public final class MerkleDb {
             //   * if it has the same set of tables as in the source, restore is a no-op
             //   * if tables are different, throw an error: can't restore into an existing database
         }
-        return getInstance(defaultInstancePath);
+        return getInstance(defaultInstancePath, configuration);
     }
 
     /**

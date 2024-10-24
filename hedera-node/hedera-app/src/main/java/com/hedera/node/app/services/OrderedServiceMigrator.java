@@ -62,7 +62,8 @@ public class OrderedServiceMigrator implements ServiceMigrator {
      * @param servicesRegistry The services registry to use for the migrations
      * @param previousVersion The previous version of the state
      * @param currentVersion The current version of the state
-     * @param config The configuration to use for the migrations
+     * @param nodeConfiguration The system configuration to use at the time of migration
+     * @param platformConfiguration The platform configuration to use for subsequent object initializations
      * @param genesisNetworkInfo The network information to use for the migrations.
      *                           This is only used in genesis case
      * @param metrics The metrics to use for the migrations
@@ -74,16 +75,17 @@ public class OrderedServiceMigrator implements ServiceMigrator {
             @NonNull final ServicesRegistry servicesRegistry,
             @Nullable final SoftwareVersion previousVersion,
             @NonNull final SoftwareVersion currentVersion,
-            @NonNull final Configuration config,
+            @NonNull final Configuration nodeConfiguration,
+            @Nullable final Configuration platformConfiguration,
             @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(currentVersion);
-        requireNonNull(config);
+        requireNonNull(nodeConfiguration);
         requireNonNull(metrics);
 
         final Map<String, Object> sharedValues = new HashMap<>();
-        final var migrationStateChanges = new MigrationStateChanges(state, config);
+        final var migrationStateChanges = new MigrationStateChanges(state, nodeConfiguration);
         logger.info("Migrating Entity ID Service as pre-requisite for other services");
         final var entityIdRegistration = servicesRegistry.registrations().stream()
                 .filter(service -> EntityIdService.NAME.equals(service.service().getServiceName()))
@@ -97,7 +99,8 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                 state,
                 deserializedPbjVersion,
                 currentVersion.getPbjSemanticVersion(),
-                config,
+                nodeConfiguration,
+                platformConfiguration,
                 genesisNetworkInfo,
                 metrics,
                 // We call with null here because we're migrating the entity ID service itself
@@ -134,7 +137,8 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                             state,
                             deserializedPbjVersion,
                             currentVersion.getPbjSemanticVersion(),
-                            config,
+                            nodeConfiguration,
+                            platformConfiguration,
                             genesisNetworkInfo,
                             metrics,
                             entityIdStore,

@@ -216,6 +216,9 @@ public class ServicesMain implements SwirldMain {
         final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
 
+        // Register with the ConstructableRegistry classes which need configuration.
+        BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
+
         // Create the platform context
         final var platformContext = PlatformContext.create(
                 configuration,
@@ -225,6 +228,9 @@ public class ServicesMain implements SwirldMain {
                 FileSystemManager.create(configuration),
                 recycleBin,
                 merkleCryptography);
+
+        hedera.setPlatformConfig(configuration);
+
         // Create initial state for the platform
         final var reservedState = getInitialState(
                 platformContext,

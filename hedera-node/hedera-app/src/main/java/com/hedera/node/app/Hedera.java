@@ -324,6 +324,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @Nullable
     private CompletableFuture<Bytes> initialStateHashFuture;
 
+    private Configuration platformConfig;
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -493,6 +495,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
                 version,
                 bootstrapConfigProvider.getConfiguration(),
+                platformConfig,
                 UNAVAILABLE_NETWORK_INFO,
                 UNAVAILABLE_METRICS);
     }
@@ -617,6 +620,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 deserializedVersion,
                 version,
                 configProvider.getConfiguration(),
+                platform.getContext().getConfiguration(),
                 genesisNetworkInfo,
                 metrics);
         migrationStateChanges.addAll(migrationChanges);
@@ -1128,6 +1132,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      */
     private boolean isNotEmbedded() {
         return instantSource == InstantSource.system();
+    }
+
+    public void setPlatformConfig(Configuration configuration) {
+        this.platformConfig = configuration;
     }
 
     private class ReadReconnectStartingStateHash implements ReconnectCompleteListener {
