@@ -18,7 +18,9 @@ package com.hedera.node.app.tss.handlers;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,6 +48,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -105,13 +108,6 @@ class TssVoteHandlerTest {
         when(transactionBody.tssVoteOrThrow()).thenReturn(tssVoteTransactionBody);
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssBaseStore.class)).thenReturn(tssBaseStore);
-        when(storeFactory.readableStore(ReadableRosterStore.class)).thenReturn(rosterStore);
-        when(handleContext.configuration()).thenReturn(configuration);
-        when(configuration.getConfigData(TssConfig.class)).thenReturn(tssConfig);
-        when(tssConfig.keyActiveRoster()).thenReturn(true);
-
-        when(rosterStore.getActiveRoster()).thenReturn(roster);
-
         when(handleContext.networkInfo()).thenReturn(networkInfo);
         when(networkInfo.selfNodeInfo()).thenReturn(nodeInfo);
         when(nodeInfo.nodeId()).thenReturn(1L);
@@ -119,7 +115,12 @@ class TssVoteHandlerTest {
         when(tssVoteTransactionBody.targetRosterHash()).thenReturn(Bytes.EMPTY);
         when(tssBaseStore.exists(any(TssVoteMapKey.class))).thenReturn(false);
 
-        tssVoteHandler.handle(handleContext);
+        try (MockedStatic<TssVoteHandler> mockedStatic = mockStatic(TssVoteHandler.class)) {
+            mockedStatic
+                    .when(() -> TssVoteHandler.hasReachedThreshold(any(), any(), anyDouble()))
+                    .thenReturn(false);
+            tssVoteHandler.handle(handleContext);
+        }
 
         verify(tssBaseStore).put(any(TssVoteMapKey.class), eq(tssVoteTransactionBody));
     }
