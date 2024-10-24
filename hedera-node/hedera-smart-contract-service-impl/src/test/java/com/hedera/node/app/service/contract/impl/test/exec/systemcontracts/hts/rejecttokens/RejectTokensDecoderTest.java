@@ -19,7 +19,9 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -81,17 +83,20 @@ public class RejectTokensDecoderTest {
     void decodeHtsCall() {
         // given:
         given(attempt.configuration()).willReturn(configuration);
-        given(attempt.senderId()).willReturn(SENDER_ID);
         given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
         given(ledgerConfig.tokenRejectsMaxLen()).willReturn(10);
-
-        final var encoded = Bytes.wrapByteBuffer(RejectTokensTranslator.TOKEN_REJECT.encodeCall(
-                Tuple.of(new Address[] {FUNGIBLE_TOKEN_HEADLONG_ADDRESS}, new Tuple[] {})));
+        given(addressIdConverter.convert(asHeadlongAddress(SENDER_ID.accountNum())))
+                .willReturn(SENDER_ID);
+        final var encoded = Bytes.wrapByteBuffer(RejectTokensTranslator.TOKEN_REJECT.encodeCall(Tuple.of(
+                asHeadlongAddress(SENDER_ID.accountNum()),
+                new Address[] {FUNGIBLE_TOKEN_HEADLONG_ADDRESS},
+                new Tuple[] {})));
 
         // when
         given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
 
         final var expected = TokenRejectTransactionBody.newBuilder()
+                .owner(SENDER_ID)
                 .rejections(TokenReference.newBuilder()
                         .fungibleToken(FUNGIBLE_TOKEN_ID)
                         .build())
@@ -109,17 +114,21 @@ public class RejectTokensDecoderTest {
     void decodeHtsCallNFT() {
         // given:
         given(attempt.configuration()).willReturn(configuration);
-        given(attempt.senderId()).willReturn(SENDER_ID);
         given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
         given(ledgerConfig.tokenRejectsMaxLen()).willReturn(10);
+        given(addressIdConverter.convert(asHeadlongAddress(SENDER_ID.accountNum())))
+                .willReturn(SENDER_ID);
 
         final var encoded = Bytes.wrapByteBuffer(RejectTokensTranslator.TOKEN_REJECT.encodeCall(
-                Tuple.of(new Address[] {}, new Tuple[] {Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L)})));
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), new Address[] {}, new Tuple[] {
+                    Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L)
+                })));
 
         // when
         given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
 
         final var expected = TokenRejectTransactionBody.newBuilder()
+                .owner(SENDER_ID)
                 .rejections(TokenReference.newBuilder()
                         .nft(NftID.newBuilder()
                                 .tokenId(FUNGIBLE_TOKEN_ID)
@@ -144,6 +153,7 @@ public class RejectTokensDecoderTest {
         given(ledgerConfig.tokenRejectsMaxLen()).willReturn(10);
 
         final var encoded = Bytes.wrapByteBuffer(RejectTokensTranslator.TOKEN_REJECT.encodeCall(Tuple.of(
+                OWNER_HEADLONG_ADDRESS,
                 new Address[] {
                     FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
                     FUNGIBLE_TOKEN_HEADLONG_ADDRESS,

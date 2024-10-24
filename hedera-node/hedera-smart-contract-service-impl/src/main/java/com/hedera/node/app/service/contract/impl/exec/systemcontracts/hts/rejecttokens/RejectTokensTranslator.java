@@ -33,7 +33,7 @@ import javax.inject.Inject;
 
 public class RejectTokensTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function TOKEN_REJECT =
-            new Function("rejectTokens(address[],(address,int64)[])", ReturnTypes.INT_64);
+            new Function("rejectTokens(address,address[],(address,int64)[])", ReturnTypes.INT_64);
     public static final Function HRC_TOKEN_REJECT_FT = new Function("rejectTokenFT()", ReturnTypes.INT_64);
     public static final Function HRC_TOKEN_REJECT_NFT = new Function("rejectTokenNFTs(int64[])", ReturnTypes.INT_64);
 

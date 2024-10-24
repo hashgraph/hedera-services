@@ -37,8 +37,9 @@ import javax.inject.Singleton;
 public class RejectTokensDecoder {
 
     // Tuple indexes
-    private static final int FUNGIBLE_ADDRESS_INDEX = 0;
-    private static final int NFT_IDS_INDEX = 1;
+    private static final int OWNER_ADDRESS_INDEX = 0;
+    private static final int FUNGIBLE_ADDRESS_INDEX = 1;
+    private static final int NFT_IDS_INDEX = 2;
     private static final int NFT_ID_ADDRESS_INDEX = 0;
     private static final int NFT_ID_SERIAL_INDEX = 1;
     private static final int HRC_NFT_SERIAL_INDEX = 0;
@@ -55,7 +56,8 @@ public class RejectTokensDecoder {
         final Address[] ftAddresses = call.get(FUNGIBLE_ADDRESS_INDEX);
         final Tuple[] nftIds = call.get(NFT_IDS_INDEX);
         validateFalse(ftAddresses.length + nftIds.length > maxRejections, TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
-        final var sender = attempt.senderId();
+        final var owner = (Address) call.get(OWNER_ADDRESS_INDEX);
+        final var ownerId = attempt.addressIdConverter().convert(owner);
         var referenceList = new ArrayList<TokenReference>();
         for (Address ftAddress : ftAddresses) {
             final var tokenReference = TokenReference.newBuilder()
@@ -77,7 +79,7 @@ public class RejectTokensDecoder {
 
         return TransactionBody.newBuilder()
                 .tokenReject(
-                        TokenRejectTransactionBody.newBuilder().owner(sender).rejections(referenceList))
+                        TokenRejectTransactionBody.newBuilder().owner(ownerId).rejections(referenceList))
                 .build();
     }
 
