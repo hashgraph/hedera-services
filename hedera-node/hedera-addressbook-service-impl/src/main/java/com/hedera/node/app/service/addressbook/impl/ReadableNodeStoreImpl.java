@@ -30,6 +30,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Objects;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -91,15 +92,19 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
         for (final Iterator<EntityNumber> it = nodesState.keys(); it.hasNext(); ) {
             final var nodeNumber = it.next();
             final var nodeDetail = nodesState.get(nodeNumber);
-            final var entry = RosterEntry.newBuilder()
-                    .nodeId(nodeDetail.nodeId())
-                    .weight(nodeDetail.weight())
-                    .gossipCaCertificate(nodeDetail.gossipCaCertificate())
-                    .gossipEndpoint(nodeDetail.serviceEndpoint())
-                    .tssEncryptionKey(nodeDetail.tssEncryptionKey())
-                    .build();
-            rosterEntries.add(entry);
+            if (!nodeDetail.deleted()) {
+                final var entry = RosterEntry.newBuilder()
+                        .nodeId(nodeDetail.nodeId())
+                        .weight(nodeDetail.weight())
+                        .gossipCaCertificate(nodeDetail.gossipCaCertificate())
+                        .gossipEndpoint(nodeDetail.gossipEndpoint())
+                        .tssEncryptionKey(nodeDetail.tssEncryptionKey())
+                        .build();
+                rosterEntries.add(entry);
+            }
         }
+
+        rosterEntries.sort((re1, re2) -> Objects.compare(re1.nodeId(), re2.nodeId(), Long::compareTo));
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }
 }

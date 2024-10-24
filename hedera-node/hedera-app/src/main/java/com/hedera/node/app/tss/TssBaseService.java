@@ -87,7 +87,7 @@ public interface TssBaseService extends Service {
      * @param roster the candidate roster to key
      * @param context the TSS context
      */
-    void onNewCandidateRoster(@NonNull Roster roster, @NonNull HandleContext context);
+    void setCandidateRoster(@NonNull Roster roster, @NonNull HandleContext context);
 
     /**
      * Requests a ledger signature on a message hash.  The ledger signature is computed asynchronously and returned

@@ -37,13 +37,11 @@ import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -131,16 +129,10 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void onNewCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
+    public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
 
-        final var rosterStore = context.storeFactory().writableStore(WritableRosterStore.class);
-        if (!Objects.equals(roster, rosterStore.getCandidateRoster())
-                && !Objects.equals(roster, rosterStore.getActiveRoster())) {
-            rosterStore.putCandidateRoster(roster);
-        }
-
-        // (TSS-FUTURE) implement `keyActiveRoster`
+        // (TSS-FUTURE) Implement `keyActiveRoster`
         // https://github.com/hashgraph/hedera-services/issues/16166
 
         // generate TSS messages based on the active roster and the candidate roster
@@ -162,8 +154,8 @@ public class TssBaseServiceImpl implements TssBaseService {
             final AtomicInteger shareIndex = new AtomicInteger(0);
             for (final var tssPrivateShare : tssPrivateShares) {
                 final var tssMsg = CompletableFuture.supplyAsync(
-                                () -> tssLibrary.generateTssMessage(candidateRosterParticipantDirectory,
-                                        tssPrivateShare),
+                                () -> tssLibrary.generateTssMessage(
+                                        candidateRosterParticipantDirectory, tssPrivateShare),
                                 tssLibraryExecutor)
                         .exceptionally(e -> {
                             log.error("Error generating tssMessage", e);

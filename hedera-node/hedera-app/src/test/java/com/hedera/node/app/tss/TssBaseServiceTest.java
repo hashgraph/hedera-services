@@ -17,20 +17,20 @@
 package com.hedera.node.app.tss;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -63,7 +63,8 @@ public class TssBaseServiceTest {
         given(appContext.gossip()).willReturn(mock(AppContext.Gossip.class));
 
         final var executor = mock(Executor.class);
-        subject = new TssBaseServiceImpl(appContext, mock(ExecutorService.class), executor, new PlaceholderTssLibrary(), executor);
+        subject = new TssBaseServiceImpl(
+                appContext, mock(ExecutorService.class), executor, new PlaceholderTssLibrary(), executor);
     }
 
     @Test
@@ -71,30 +72,6 @@ public class TssBaseServiceTest {
         final var subject = mock(TssBaseService.class);
         doCallRealMethod().when(subject).getServiceName();
         assertEquals(TssBaseService.NAME, subject.getServiceName());
-    }
-
-    @Test
-    @DisplayName("Service won't set the current candidate roster as the new candidate roster")
-    void doesntSetSameCandidateRoster() {
-        // Simulate CURRENT_CANDIDATE_ROSTER and ACTIVE_ROSTER
-        mockWritableRosterStore();
-
-        // Attempt to set the same candidate roster
-        subject.onNewCandidateRoster(CURRENT_CANDIDATE_ROSTER, handleContext);
-        verify(rosterStore, never()).putCandidateRoster(any());
-    }
-
-    @Test
-    @DisplayName("Service won't set the active roster as the new candidate roster")
-    void doesntSetActiveRosterAsCandidateRoster() {
-        // Simulate CURRENT_CANDIDATE_ROSTER and ACTIVE_ROSTER
-        final var rosterStore = mockWritableRosterStore();
-        given(handleContext.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
-
-        // Attempt to set the active roster as the new candidate roster
-        subject.onNewCandidateRoster(ACTIVE_ROSTER, handleContext);
-        verify(rosterStore, never()).putCandidateRoster(any());
     }
 
     @Test
@@ -107,7 +84,7 @@ public class TssBaseServiceTest {
         final var inputRoster = Roster.newBuilder()
                 .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3))
                 .build();
-        subject.onNewCandidateRoster(inputRoster, handleContext);
+        subject.setCandidateRoster(inputRoster, handleContext);
         verify(rosterStore).putCandidateRoster(inputRoster);
     }
 
@@ -123,31 +100,72 @@ public class TssBaseServiceTest {
         return rosterStore;
     }
 
-    public static final Node NODE_1 = Node.newBuilder().nodeId(1).weight(10).build();
+    private static final Bytes BYTES_1_2_3 = Bytes.wrap("1, 2, 3");
+    public static final Node NODE_1 = Node.newBuilder()
+            .nodeId(1)
+            .weight(10)
+            .gossipCaCertificate(BYTES_1_2_3)
+            .gossipEndpoint(ServiceEndpoint.newBuilder()
+                    .ipAddressV4(Bytes.wrap("1, 1"))
+                    .port(11)
+                    .build())
+            .build();
     private static final RosterEntry ROSTER_NODE_1 = RosterEntry.newBuilder()
             .nodeId(NODE_1.nodeId())
             .weight(NODE_1.weight())
+            .gossipCaCertificate(NODE_1.gossipCaCertificate())
+            .gossipEndpoint(NODE_1.gossipEndpoint())
             .build();
-    public static final Node NODE_2 = Node.newBuilder().nodeId(2).weight(20).build();
+    public static final Node NODE_2 = Node.newBuilder()
+            .nodeId(2)
+            .weight(20)
+            .gossipCaCertificate(BYTES_1_2_3)
+            .gossipEndpoint(ServiceEndpoint.newBuilder()
+                    .ipAddressV4(Bytes.wrap("2, 2"))
+                    .port(22)
+                    .build())
+            .build();
     private static final RosterEntry ROSTER_NODE_2 = RosterEntry.newBuilder()
             .nodeId(NODE_2.nodeId())
             .weight(NODE_2.weight())
+            .gossipCaCertificate(NODE_2.gossipCaCertificate())
+            .gossipEndpoint(NODE_2.gossipEndpoint())
             .build();
-    public static final Node NODE_3 = Node.newBuilder().nodeId(3).weight(30).build();
+    public static final Node NODE_3 = Node.newBuilder()
+            .nodeId(3)
+            .weight(30)
+            .gossipCaCertificate(BYTES_1_2_3)
+            .gossipEndpoint(ServiceEndpoint.newBuilder()
+                    .ipAddressV4(Bytes.wrap("3, 3"))
+                    .port(33)
+                    .build())
+            .build();
     private static final RosterEntry ROSTER_NODE_3 = RosterEntry.newBuilder()
             .nodeId(NODE_3.nodeId())
             .weight(NODE_3.weight())
+            .gossipCaCertificate(NODE_3.gossipCaCertificate())
+            .gossipEndpoint(NODE_3.gossipEndpoint())
             .build();
-    public static final Node NODE_4 = Node.newBuilder().nodeId(4).weight(40).build();
+    public static final Node NODE_4 = Node.newBuilder()
+            .nodeId(4)
+            .weight(40)
+            .gossipCaCertificate(BYTES_1_2_3)
+            .gossipEndpoint(ServiceEndpoint.newBuilder()
+                    .ipAddressV4(Bytes.wrap("4, 4"))
+                    .port(44)
+                    .build())
+            .build();
     private static final RosterEntry ROSTER_NODE_4 = RosterEntry.newBuilder()
             .nodeId(NODE_4.nodeId())
             .weight(NODE_4.weight())
+            .gossipCaCertificate(NODE_4.gossipCaCertificate())
+            .gossipEndpoint(NODE_4.gossipEndpoint())
             .build();
 
-    private static final Roster CURRENT_CANDIDATE_ROSTER = Roster.newBuilder()
+    public static final Roster CURRENT_CANDIDATE_ROSTER = Roster.newBuilder()
             .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2))
             .build();
-    private static final Roster ACTIVE_ROSTER = Roster.newBuilder()
+    public static final Roster ACTIVE_ROSTER = Roster.newBuilder()
             .rosterEntries(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3, ROSTER_NODE_4)
             .build();
 }

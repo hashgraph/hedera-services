@@ -39,12 +39,10 @@ import com.hedera.node.config.types.StreamMode;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -150,6 +148,9 @@ public class NodeStakeUpdates {
             final var config = tokenContext.configuration();
             final var tssConfig = config.getConfigData(TssConfig.class);
             if (tssConfig.keyCandidateRoster()) {
+                // We can't use the handle context to retrieve a WritableRosterStore object because
+                // the handle context is only scoped to the token service, so we use the
+                // `newWritableRosterStore` method here instead
                 final var rosterStore = newWritableRosterStore(stack, config);
                 keyNewRoster(dispatch.handleContext(), rosterStore);
             }
@@ -171,22 +172,21 @@ public class NodeStakeUpdates {
         }
     }
 
-    private void keyNewRoster(@NonNull final HandleContext handleContext,
-            @NonNull final WritableRosterStore rosterStore) {
+    private void keyNewRoster(
+            @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
         final var nodeStore = handleContext.storeFactory().readableStore(ReadableNodeStore.class);
         final var newCandidateRoster = nodeStore.newRosterFromNodes();
 
         if (!Objects.equals(newCandidateRoster, rosterStore.getCandidateRoster())
                 && !Objects.equals(newCandidateRoster, rosterStore.getActiveRoster())) {
             rosterStore.putCandidateRoster(newCandidateRoster);
+            tssBaseService.setCandidateRoster(newCandidateRoster, handleContext);
         }
-
-        tssBaseService.onNewCandidateRoster(newCandidateRoster, handleContext);
     }
 
-    private WritableRosterStore newWritableRosterStore(@NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
-        final var writableFactory =
-                new WritableStoreFactory(stack, RosterStateId.NAME, config, storeMetricsService);
+    private WritableRosterStore newWritableRosterStore(
+            @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
+        final var writableFactory = new WritableStoreFactory(stack, RosterStateId.NAME, config, storeMetricsService);
         return writableFactory.getStore(WritableRosterStore.class);
     }
 
