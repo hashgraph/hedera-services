@@ -18,6 +18,9 @@ package com.hedera.node.app.tss.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -25,7 +28,12 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.tss.stores.WritableTssStore;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -35,6 +43,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TssVoteHandler implements TransactionHandler {
+
     @Inject
     public TssVoteHandler() {
         // Dagger2
@@ -53,5 +62,71 @@ public class TssVoteHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
+        final var txBody = context.body().tssVoteOrThrow();
+        final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
+        final var nodeId = context.networkInfo().selfNodeInfo().nodeId();
+        final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(txBody.targetRosterHash(), nodeId);
+        if (tssBaseStore.exists(tssVoteMapKey)) {
+            // Duplicate vote
+            return;
+        }
+
+        if (!TssVoteHandler.hasReachedThreshold(txBody, context)) {
+            tssBaseStore.put(tssVoteMapKey, txBody);
+        }
+    }
+
+    /**
+     * Check if the threshold number of votes (totaling at least 1/3 of weight) have already been received for the
+     * candidate roster, all with the same vote byte array.
+     *
+     * @param tssVoteTransaction the TssVoteTransaction to check
+     * @param context the HandleContext
+     * @return true if the threshold has been reached, false otherwise
+     */
+    public static boolean hasReachedThreshold(
+            @NonNull final TssVoteTransactionBody tssVoteTransaction, @NonNull final HandleContext context) {
+        final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
+
+        final Roster activeRoster = rosterStore.getActiveRoster();
+        if (activeRoster == null) {
+            throw new IllegalArgumentException("No active roster found");
+        }
+
+        // Get all votes for the active roster
+        final Map<RosterEntry, TssVoteTransactionBody> voteByNode = new HashMap<>();
+
+        // Get the target roster from the TssVoteTransactionBody
+        final Bytes targetRosterHash = tssVoteTransaction.targetRosterHash();
+
+        // Also get the total active roster weight
+        long activeRosterTotalWeight = 0;
+
+        final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
+        // For every node in the active roster, check if there is a vote for the target roster hash
+        for (final RosterEntry rosterEntry : rosterStore.getActiveRoster().rosterEntries()) {
+            activeRosterTotalWeight += rosterEntry.weight();
+            final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(targetRosterHash, rosterEntry.nodeId());
+            if (tssBaseStore.exists(tssVoteMapKey)) {
+                voteByNode.put(rosterEntry, tssBaseStore.getVote(tssVoteMapKey));
+            }
+        }
+
+        // Initialize a counter for the total weight of votes with the same vote byte array
+        long voteWeight = 0L;
+
+        // Iterate over the votes which has the same target roster hash
+        for (final RosterEntry rosterEntryKey : voteByNode.keySet()) {
+            final TssVoteTransactionBody vote = voteByNode.get(rosterEntryKey);
+            // If the vote byte array matches the one in the TssVoteTransaction, add the weight of the vote to the
+            // counter
+            if (vote.tssVote().equals(tssVoteTransaction.tssVote())) {
+                voteWeight += rosterEntryKey.weight();
+            }
+        }
+
+        // Check if the total weight of votes with the same vote byte array is at least 1/3 of the
+        // total weight of the network
+        return voteWeight >= activeRosterTotalWeight / 3;
     }
 }
