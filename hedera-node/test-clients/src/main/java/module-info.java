@@ -61,7 +61,6 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.junit.support.validators.utils;
     exports com.hedera.services.bdd.junit.support.validators.block;
     exports com.hedera.services.bdd.utils;
-    exports com.hedera.services.bdd.junit.hedera.embedded.fakes.tss;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
