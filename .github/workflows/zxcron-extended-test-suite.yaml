@@ -64,16 +64,31 @@ jobs:
       - name: Check for tags
         id: check-tags-exist
         run: |
-          XTS_COMMIT=$(git rev-list -n 1 "${XTS_CANDIDATE_TAG}")
+          # Check if the tag exists and if so grab its commit id
+          set +e
+          XTS_COMMIT=$(git rev-list -n 1 "${XTS_CANDIDATE_TAG}") >/dev/null 2>&1
+          XTS_COMMIT_FOUND="${?}"
+          set -e
+
+          # Cancel out if the tag does not exist
+          if [[ "${XTS_COMMIT_FOUND}" -ne 0 ]] then;
+            gh run cancel ${{ github.run_id }}
+          fi
+
+          # Check if the tag exists on the develop branch
           set +e
           git branch --contains "${XTS_COMMIT}" | grep --quiet develop >/dev/null 2>&1
           BRANCH_ON_DEVELOP="${?}"
           set -e
-          if [[ -n "${XTS_COMMIT}" && "${BRANCH_ON_DEVELOP}" -eq 0 ]]; then
+
+          # If the tag exists on the Develop Branch set the output variables as appropriate
+          # Otherwise cancel out
+          if [[ "${BRANCH_ON_DEVELOP}" -eq 0 ]]; then
             echo "xts-tag-exists=true" >> $GITHUB_OUTPUT
             echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_OUTPUT
             echo "### Commit has been tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
             echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_STEP_SUMMARY
+
             git push --delete origin "${XTS_CANDIDATE_TAG}"
             git tag -d "${XTS_CANDIDATE_TAG}"
           else

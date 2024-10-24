@@ -82,17 +82,19 @@ jobs:
       # move the tag if successful
       - name: Tag Code and push
         run: |
-          XTS_COMMIT=$(git rev-list -n 1 "${XTS_CANDIDATE_TAG}")
+          # Check if the tag exists
           set +e
-          git branch --contains "${XTS_COMMIT}" | grep --quiet develop >/dev/null 2>&1
-          BRANCH_ON_DEVELOP="${?}"
+          git rev-list -n 1 "${XTS_CANDIDATE_TAG}" >/dev/null 2>&1
+          XTS_COMMIT_FOUND="${?}"
           set -e
 
-          if [[ -n "${XTS_COMMIT}" && "${BRANCH_ON_DEVELOP}" -eq 0 ]]; then
+          # Delete the tag if it does exist
+          if [[ "${XTS_COMMIT_FOUND}" -eq 0 ]] then;
             git push --delete origin "${XTS_CANDIDATE_TAG}"
             git tag -d "${XTS_CANDIDATE_TAG}"
           fi
 
+          # Create the new tag
           git tag --annotate "${XTS_CANDIDATE_TAG}" --message "chore: tagging commit for XTS promotion"
           git push --set-upstream origin --tags
 
