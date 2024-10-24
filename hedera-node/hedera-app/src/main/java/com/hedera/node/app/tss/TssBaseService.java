@@ -67,13 +67,6 @@ public interface TssBaseService extends Service {
     Status getStatus(@NonNull Roster roster, @NonNull Bytes ledgerId, @NonNull ReadableTssStoreImpl tssBaseStore);
 
     /**
-     * Adopts the given roster for TSS operations.
-     * @param roster the active roster
-     * @throws IllegalArgumentException if the expected shares cannot be aggregated
-     */
-    void adopt(@NonNull Roster roster);
-
-    /**
      * Bootstraps the TSS service for the given roster in the given context.
      * @param roster the network genesis roster
      * @param context the TSS context to use for bootstrapping

@@ -87,7 +87,7 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
         return nodesState().keys();
     }
 
-    private Roster constructFromNodesState(@NonNull final ReadableKVState<EntityNumber, Node> nodesState) {
+    public static Roster constructFromNodesState(@NonNull final ReadableKVState<EntityNumber, Node> nodesState) {
         final var rosterEntries = new ArrayList<RosterEntry>();
         for (final Iterator<EntityNumber> it = nodesState.keys(); it.hasNext(); ) {
             final var nodeNumber = it.next();

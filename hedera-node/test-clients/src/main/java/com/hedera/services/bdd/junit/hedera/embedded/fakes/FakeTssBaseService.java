@@ -149,12 +149,6 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void adopt(@NonNull final Roster roster) {
-        requireNonNull(roster);
-        delegate.adopt(roster);
-    }
-
-    @Override
     public void bootstrapLedgerId(
             @NonNull final Roster roster,
             @NonNull final HandleContext context,

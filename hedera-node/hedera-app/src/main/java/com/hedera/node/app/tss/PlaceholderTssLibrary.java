@@ -68,7 +68,7 @@ public class PlaceholderTssLibrary implements TssLibrary {
     @Override
     public TssMessage generateTssMessage(
             @NotNull TssParticipantDirectory tssParticipantDirectory, @NotNull TssPrivateShare privateShare) {
-        return null;
+        return new TssMessage(new byte[0]);
     }
 
     @Override

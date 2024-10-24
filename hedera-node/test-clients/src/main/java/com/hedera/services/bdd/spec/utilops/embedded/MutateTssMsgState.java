@@ -16,46 +16,41 @@
 
 package com.hedera.services.bdd.spec.utilops.embedded;
 
-import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
+import static com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl.constructFromNodesState;
 
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
+import com.swirlds.platform.roster.RosterUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Consumer;
+import java.util.Objects;
 
 public class MutateTssMsgState extends UtilOp {
-    private final String sourceRoster;
-    private final String targetRoster;
-    private final Consumer<TssMessageTransactionBody.Builder> mutation;
-
-    public MutateTssMsgState(
-            final String sourceRoster,
-            final String targetRoster,
-            final Consumer<TssMessageTransactionBody.Builder> mutation) {
-        this.sourceRoster = sourceRoster;
-        this.targetRoster = targetRoster;
-        this.mutation = mutation;
-    }
+    public MutateTssMsgState() {}
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
+        final var rosterSingletonState = spec.embeddedRosterStateOrThrow().get();
+
+        final var rosterFromNodes = constructFromNodesState(spec.embeddedNodesOrThrow());
+        final var candidateRosterHash = RosterUtils.hash(rosterFromNodes).getBytes();
+        final var activeRosterHash = Objects.requireNonNull(rosterSingletonState)
+                .roundRosterPairs()
+                .get(0)
+                .activeRosterHash();
         final var tssMessages = spec.embeddedTssMsgStateOrThrow();
-        //        final var sourceRoster = spec.setup()
-        final var targetRoster = toPbj(TxnUtils.asId("roster", spec));
 
         var sequenceNumber = 0;
         for (int i = 0; i < 2; i++) {
             final var tsMessageMapKey = TssMessageMapKey.newBuilder()
-                    //                    .rosterHash(targetRoster)
+                    .rosterHash(activeRosterHash)
                     .sequenceNumber(sequenceNumber++)
                     .build();
             final var tssMsgBody = TssMessageTransactionBody.newBuilder()
-                    //                    .sourceRosterHash(targetRoster)
-                    //                    .targetRosterHash(targetRoster)
+                    .sourceRosterHash(Bytes.EMPTY)
+                    .targetRosterHash(activeRosterHash)
                     .shareIndex(sequenceNumber)
                     .tssMessage(Bytes.EMPTY)
                     .build();

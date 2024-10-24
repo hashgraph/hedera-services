@@ -18,7 +18,7 @@ package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
-import static com.hedera.node.app.tss.handlers.TssUtils.computeTssParticipantDirectory;
+import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static java.util.Objects.requireNonNull;
@@ -29,6 +29,7 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.api.TssPrivateShare;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
@@ -42,7 +43,6 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -71,12 +71,6 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final ExecutorService signingExecutor;
     private final TssLibrary tssLibrary;
     private final Executor tssLibraryExecutor;
-
-    /**
-     * The hash of the active roster being used to sign with the ledger private key.
-     */
-    @Nullable
-    private Bytes activeRosterHash;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
@@ -113,12 +107,6 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void adopt(@NonNull final Roster roster) {
-        requireNonNull(roster);
-        activeRosterHash = RosterUtils.hash(roster).getBytes();
-    }
-
-    @Override
     public void bootstrapLedgerId(
             @NonNull final Roster roster,
             @NonNull final HandleContext context,
@@ -140,53 +128,47 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var tssStore = storeFactory.getStore(ReadableTssStore.class);
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
-        final var sourceRoster =
+        final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
+
+        final var activeRoster =
                 storeFactory.getStore(ReadableRosterStore.class).getActiveRoster();
-        final var activeRosterHash = RosterUtils.hash(sourceRoster).getBytes();
+        final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
+
+        final var activeDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, selfId);
+        final var tssPrivateShares = getTssPrivateShares(activeDirectory, tssStore, activeRosterHash);
+
+        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
-        final var tssPrivateShares =
-                getTssPrivateShares(sourceRoster, maxSharesPerNode, tssStore, activeRosterHash, context);
-        final var candidateRosterParticipantDirectory =
-                computeTssParticipantDirectory(candidateRoster, maxSharesPerNode, (int)
-                        context.networkInfo().selfNodeInfo().nodeId());
 
         final AtomicInteger shareIndex = new AtomicInteger(0);
         for (final var tssPrivateShare : tssPrivateShares) {
-            final var tssMsg = CompletableFuture.supplyAsync(
-                            () -> tssLibrary.generateTssMessage(candidateRosterParticipantDirectory, tssPrivateShare),
+            CompletableFuture.runAsync(
+                            () -> {
+                                final var msg = tssLibrary.generateTssMessage(candidateDirectory, tssPrivateShare);
+                                final var tssMessage = TssMessageTransactionBody.newBuilder()
+                                        .sourceRosterHash(activeRosterHash)
+                                        .targetRosterHash(candidateRosterHash)
+                                        .shareIndex(shareIndex.getAndAdd(1))
+                                        .tssMessage(Bytes.wrap(msg.bytes()))
+                                        .build();
+                                // FUTURE : Remove handleContext and provide configuration and networkInfo
+                                tssSubmissions.submitTssMessage(tssMessage, context);
+                            },
                             tssLibraryExecutor)
                     .exceptionally(e -> {
                         log.error("Error generating tssMessage", e);
                         return null;
                     });
-            tssMsg.thenAccept(msg -> {
-                if (msg == null) {
-                    return;
-                }
-                final var tssMessage = TssMessageTransactionBody.newBuilder()
-                        .sourceRosterHash(activeRosterHash)
-                        .targetRosterHash(candidateRosterHash)
-                        .shareIndex(shareIndex.getAndAdd(1))
-                        .tssMessage(Bytes.wrap(msg.bytes()))
-                        .build();
-                // FUTURE : Remove handleContext and provide configuration and networkInfo
-                tssSubmissions.submitTssMessage(tssMessage, context);
-            });
         }
     }
 
     @NonNull
     private List<TssPrivateShare> getTssPrivateShares(
-            @NonNull final Roster sourceRoster,
-            final long maxSharesPerNode,
+            @NonNull final TssParticipantDirectory activeRosterParticipantDirectory,
             @NonNull final ReadableTssStore tssStore,
-            @NonNull final Bytes candidateRosterHash,
-            final HandleContext context) {
-        final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
-        final var activeRosterParticipantDirectory =
-                computeTssParticipantDirectory(sourceRoster, maxSharesPerNode, selfId);
+            @NonNull final Bytes activeRosterHash) {
         final var validTssOps = validateTssMessages(
-                tssStore.getTssMessages(candidateRosterHash), activeRosterParticipantDirectory, tssLibrary);
+                tssStore.getTssMessageBodies(activeRosterHash), activeRosterParticipantDirectory, tssLibrary);
         final var validTssMessages = getTssMessages(validTssOps);
         return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
     }

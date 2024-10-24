@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.utilops.TssVerbs.stopIgnoringTssSigna
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -46,7 +47,6 @@ import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
@@ -125,21 +125,24 @@ public class RepeatableTssTests {
     Stream<DynamicTest> tssMessageSubmittedForRekeyingIsSuccessful() throws CertificateEncodingException {
         final var gossipCertificates = generateX509Certificates(2);
         return hapiTest(
+                newKeyNamed("adminKey"),
                 blockStreamMustIncludePassFrom(spec -> successfulTssMessageThenVote()),
                 // Current TSS default is not to try to key the candidate
                 overriding("tss.keyCandidateRoster", "true"),
                 nodeCreate("testNode")
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
-                mutateTssMsgState("sourceRoster", "targetRoster", builder -> {
-                    builder.tssMessage(Bytes.EMPTY);
-                }),
+                mutateTssMsgState(),
                 doWithStartupConfig(
                         "staking.periodMins",
                         stakePeriodMins -> waitUntilStartOfNextStakingPeriod(parseLong(stakePeriodMins))),
                 // This transaction is now first in a new staking period and should trigger the TSS rekeying process,
                 // in particular a successful TssMessage from the embedded node (and then a TssVote since this is our
                 // placeholder implementation of TssMessageHandler)
+                cryptoCreate("rekeyingTransaction"),
+                doWithStartupConfig(
+                        "staking.periodMins",
+                        stakePeriodMins -> waitUntilStartOfNextStakingPeriod(parseLong(stakePeriodMins))),
                 cryptoCreate("rekeyingTransaction"));
     }
 
