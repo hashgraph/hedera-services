@@ -68,14 +68,27 @@ public interface SystemContractOperations {
             @NonNull HederaFunctionality functionality);
 
     /**
-     * Returns a {@link Predicate} that tests whether the given {@link Key} is active based on the
-     * given verification strategy.
+     * Returns a {@link Predicate} that tests whether a primitive {@link Key} has signed
+     * based on the given verification strategy. Used when dispatching a synthetic
+     * transaction, as the workflow expects only a primitive signature test.
      *
      * @param strategy the verification strategy to use
-     * @return a {@link Predicate} that tests whether the given {@link Key} is active
+     * @return a {@link Predicate} that tests whether a primitive {@link Key} is active
      */
     @NonNull
-    Predicate<Key> activeSignatureTestWith(@NonNull VerificationStrategy strategy);
+    Predicate<Key> primitiveSignatureTestWith(@NonNull VerificationStrategy strategy);
+
+    /**
+     * Returns a {@link Predicate} that tests whether a {@link Key} structure has an
+     * active signature based on the given verification strategy. Used when checking
+     * whether the workflow will judge an account's key to have signed a dispatch, and
+     * hence whether a debit should be switched to an approval.
+     *
+     * @param strategy the verification strategy to use
+     * @return a test whether a {@link Key} structure has an active signature
+     */
+    @NonNull
+    Predicate<Key> signatureTestWith(@NonNull VerificationStrategy strategy);
 
     /**
      * Attempts to create a child record of the current record, with the given {@code result}.
