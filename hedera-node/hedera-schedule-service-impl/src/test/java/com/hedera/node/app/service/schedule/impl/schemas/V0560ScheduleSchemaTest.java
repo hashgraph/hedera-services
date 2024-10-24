@@ -96,13 +96,14 @@ class V0560ScheduleSchemaTest extends ScheduleTestBase {
                 .toList();
 
         final var stateDef1 = sortedResult.getFirst();
-        Assertions.assertThat(stateDef1.stateKey()).isEqualTo(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
-        Assertions.assertThat(stateDef1.keyCodec()).isEqualTo(ProtoLong.PROTOBUF);
-        Assertions.assertThat(stateDef1.valueCodec()).isEqualTo(ScheduleIdList.PROTOBUF);
+        Assertions.assertThat(stateDef1.stateKey()).isEqualTo(SCHEDULE_BY_EQUALITY_KEY);
+        Assertions.assertThat(stateDef1.keyCodec()).isEqualTo(ProtoBytes.PROTOBUF);
+        Assertions.assertThat(stateDef1.valueCodec()).isEqualTo(Schedule.PROTOBUF);
+
         final var stateDef2 = sortedResult.get(1);
-        Assertions.assertThat(stateDef2.stateKey()).isEqualTo(SCHEDULE_BY_EQUALITY_KEY);
-        Assertions.assertThat(stateDef2.keyCodec()).isEqualTo(ProtoBytes.PROTOBUF);
-        Assertions.assertThat(stateDef2.valueCodec()).isEqualTo(Schedule.PROTOBUF);
+        Assertions.assertThat(stateDef2.stateKey()).isEqualTo(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
+        Assertions.assertThat(stateDef2.keyCodec()).isEqualTo(ProtoLong.PROTOBUF);
+        Assertions.assertThat(stateDef2.valueCodec()).isEqualTo(ScheduleIdList.PROTOBUF);
     }
 
     @Test
