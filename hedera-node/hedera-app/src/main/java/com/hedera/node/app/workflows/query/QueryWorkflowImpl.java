@@ -124,6 +124,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param feeManager the {@link FeeManager} to calculate the fees
      * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
      * @param instantSource the {@link InstantSource} to get the current time
+     * @param workflowMetrics the {@link OpWorkflowMetrics} to update the metrics
      * @param shouldCharge If the workflow should charge for handling queries.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -270,6 +271,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
                 // 5. Check query throttles
                 if (shouldCharge && synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)) {
+                    workflowMetrics.incrementThrottled(function);
                     throw new PreCheckException(BUSY);
                 }
 
