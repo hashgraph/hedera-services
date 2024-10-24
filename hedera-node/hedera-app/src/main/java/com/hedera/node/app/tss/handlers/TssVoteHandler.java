@@ -28,7 +28,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.tss.stores.WritableTssBaseStore;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,7 +65,7 @@ public class TssVoteHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var txBody = context.body().tssVoteOrThrow();
-        final var tssBaseStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
+        final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
         final var nodeId = context.networkInfo().selfNodeInfo().nodeId();
         final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(txBody.targetRosterHash(), nodeId);
         if (tssBaseStore.exists(tssVoteMapKey)) {
@@ -107,7 +107,7 @@ public class TssVoteHandler implements TransactionHandler {
         // Also get the total active roster weight
         long activeRosterTotalWeight = 0;
 
-        final var tssBaseStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
+        final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
         // For every node in the active roster, check if there is a vote for the target roster hash
         for (final RosterEntry rosterEntry : rosterStore.getActiveRoster().rosterEntries()) {
             activeRosterTotalWeight += rosterEntry.weight();

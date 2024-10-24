@@ -34,7 +34,7 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.tss.stores.WritableTssBaseStore;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -62,7 +62,7 @@ class TssVoteHandlerTest {
     private HandleContext handleContext;
 
     @Mock
-    private WritableTssBaseStore tssBaseStore;
+    private WritableTssStore tssBaseStore;
 
     @Mock
     private ReadableRosterStore rosterStore;
@@ -107,7 +107,7 @@ class TssVoteHandlerTest {
         when(handleContext.body()).thenReturn(transactionBody);
         when(transactionBody.tssVoteOrThrow()).thenReturn(tssVoteTransactionBody);
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(storeFactory.writableStore(WritableTssBaseStore.class)).thenReturn(tssBaseStore);
+        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssBaseStore);
         when(handleContext.networkInfo()).thenReturn(networkInfo);
         when(networkInfo.selfNodeInfo()).thenReturn(nodeInfo);
         when(nodeInfo.nodeId()).thenReturn(1L);
@@ -130,7 +130,7 @@ class TssVoteHandlerTest {
         when(handleContext.body()).thenReturn(transactionBody);
         when(transactionBody.tssVoteOrThrow()).thenReturn(tssVoteTransactionBody);
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(storeFactory.writableStore(WritableTssBaseStore.class)).thenReturn(tssBaseStore);
+        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssBaseStore);
         when(handleContext.networkInfo()).thenReturn(networkInfo);
         when(networkInfo.selfNodeInfo()).thenReturn(nodeInfo);
         when(nodeInfo.nodeId()).thenReturn(1L);
@@ -160,7 +160,7 @@ class TssVoteHandlerTest {
 
         // Mock behavior
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(storeFactory.writableStore(WritableTssBaseStore.class)).thenReturn(tssBaseStore);
+        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssBaseStore);
         when(storeFactory.readableStore(ReadableRosterStore.class)).thenReturn(rosterStore);
         when(rosterStore.getActiveRoster()).thenReturn(roster);
         when(tssBaseStore.exists(any(TssVoteMapKey.class)))
@@ -192,7 +192,7 @@ class TssVoteHandlerTest {
 
         // Mock behavior
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(storeFactory.writableStore(WritableTssBaseStore.class)).thenReturn(tssBaseStore);
+        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssBaseStore);
         when(storeFactory.readableStore(ReadableRosterStore.class)).thenReturn(rosterStore);
         when(rosterStore.getActiveRoster()).thenReturn(roster);
         when(tssBaseStore.exists(any(TssVoteMapKey.class)))
