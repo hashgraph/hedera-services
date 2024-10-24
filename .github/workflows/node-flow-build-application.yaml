@@ -83,3 +83,23 @@ jobs:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  deploy-ci-trigger:
+    name: Trigger CI Flows
+    runs-on: network-node-linux-medium
+    needs: code
+    if: ${{ needs.code.result == 'success' }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
+      - name: Trigger ZXF Deploy Production Release
+        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
+        with:
+          workflow: .github/workflows/node-flow-deploy-release-artifact.yaml
+          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
+          ref: develop # ensure we are always using the workflow definition from the develop branch
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          inputs: '{ "event": "${{ toJSON(github.event) }}", "ref": "${{ github.ref }}" }'

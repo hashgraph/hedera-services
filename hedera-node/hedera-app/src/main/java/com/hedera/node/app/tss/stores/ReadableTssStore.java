@@ -64,5 +64,10 @@ public interface ReadableTssStore {
      */
     long messageStateSize();
 
+    /**
+     * Get the list of Tss messages for the given roster hash.
+     * @param rosterHash The roster hash to look up.
+     * @return The list of Tss messages, or an empty list if not found.
+     */
     List<TssMessageTransactionBody> getTssMessages(Bytes rosterHash);
 }

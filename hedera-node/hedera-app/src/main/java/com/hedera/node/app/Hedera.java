@@ -598,7 +598,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             final var readableStore =
                     new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
             final var genesisRoster = createRoster(requireNonNull(readableStore.getAddressBook()));
-
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();

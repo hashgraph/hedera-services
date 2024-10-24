@@ -120,6 +120,10 @@ public class AddressBookUtils {
                 if (address != null) {
                     addressBook.add(address);
                 }
+            } else if (trimmedLine.startsWith("nextNodeId")) {
+                // As of release 0.56, nextNodeId is not used and ignored.
+                // CI/CD pipelines need to be updated to remove this field from files.
+                // Future Work: remove this case and hard fail when nextNodeId is no longer present in CI/CD pipelines.
             } else {
                 throw new ParseException(
                         "The line [%s] does not start with `%s`."

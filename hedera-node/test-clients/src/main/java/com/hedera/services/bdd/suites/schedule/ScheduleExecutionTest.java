@@ -143,7 +143,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 
-public class ScheduleExecutionSpecs {
+public class ScheduleExecutionTest {
     private final long normalTriggeredTxnTimestampOffset = 1;
 
     @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
