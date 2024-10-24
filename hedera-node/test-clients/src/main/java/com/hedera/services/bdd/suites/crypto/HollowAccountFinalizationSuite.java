@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.noCreditAboveNumber;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -82,6 +83,7 @@ import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -557,6 +559,12 @@ public class HollowAccountFinalizationSuite {
                             getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged();
 
                     allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
+                    // ensure that the finalized contract has a self management key
+                    final var contractIdKey = Key.newBuilder()
+                            .setContractID(spec.registry().getContractId(CONTRACT))
+                            .build();
+                    final var op4 = getAccountInfo(CONTRACT).has(accountWith().key(contractIdKey));
+                    allRunFor(spec, op4);
                 }));
     }
 

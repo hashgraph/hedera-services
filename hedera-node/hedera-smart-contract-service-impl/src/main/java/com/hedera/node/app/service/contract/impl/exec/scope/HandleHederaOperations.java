@@ -33,7 +33,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -447,22 +446,20 @@ public class HandleHederaOperations implements HederaOperations {
         };
     }
 
+    /**
+     * Standardizes the given {@link ContractCreateTransactionBody} to not include initcode, gas, and initial balance
+     * values as these parameters are only set on the top-level HAPI transactions.
+     *
+     * @param createdNumber the number of the created contract
+     * @param op the operation to standardize
+     * @return the standardized operation
+     */
     private ContractCreateTransactionBody standardized(
             final long createdNumber, @NonNull final ContractCreateTransactionBody op) {
-        var standardAdminKey = op.adminKey();
-        if (op.hasAdminKey()) {
-            final var adminNum =
-                    op.adminKeyOrThrow().contractIDOrElse(ContractID.DEFAULT).contractNumOrElse(0L);
-            // For mono-service fidelity, don't set an explicit admin key for a self-managed contract
-            if (createdNumber == adminNum) {
-                standardAdminKey = null;
-            }
-        }
-        if (needsStandardization(op, standardAdminKey)) {
-            // Initial balance, gas, and initcode are only set on top-level HAPI transactions
+        if (needsStandardization(op)) {
             return new ContractCreateTransactionBody(
                     com.hedera.hapi.node.contract.codec.ContractCreateTransactionBodyProtoCodec.INITCODE_SOURCE_UNSET,
-                    standardAdminKey,
+                    op.adminKey(),
                     0L,
                     0L,
                     op.proxyAccountID(),
@@ -481,8 +478,7 @@ public class HandleHederaOperations implements HederaOperations {
         }
     }
 
-    private boolean needsStandardization(
-            @NonNull final ContractCreateTransactionBody op, @Nullable final Key standardAdminKey) {
-        return op.hasInitcode() || op.gas() > 0L || op.initialBalance() > 0L || standardAdminKey != op.adminKey();
+    private boolean needsStandardization(@NonNull final ContractCreateTransactionBody op) {
+        return op.hasInitcode() || op.gas() > 0L || op.initialBalance() > 0L;
     }
 }
