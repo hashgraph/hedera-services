@@ -131,7 +131,8 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public Response send(
             @NonNull final Query query,
             @NonNull final HederaFunctionality functionality,
-            @NonNull final AccountID nodeAccountId) {
+            @NonNull final AccountID nodeAccountId,
+            final boolean asNodeOperator) {
         return requireNonNull(embeddedHedera).send(query, nodeAccountId);
     }
 
