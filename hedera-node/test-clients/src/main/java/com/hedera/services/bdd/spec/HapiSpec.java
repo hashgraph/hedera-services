@@ -511,8 +511,7 @@ public class HapiSpec implements Runnable, Executable {
      */
     public @NonNull WritableKVState<TssMessageMapKey, TssMessageTransactionBody> embeddedTssMsgStateOrThrow() {
         final var state = embeddedStateOrThrow();
-        return state.getWritableStates(TssBaseService.NAME)
-                .get(TSS_MESSAGE_MAP_KEY);
+        return state.getWritableStates(TssBaseService.NAME).get(TSS_MESSAGE_MAP_KEY);
     }
 
     /**
