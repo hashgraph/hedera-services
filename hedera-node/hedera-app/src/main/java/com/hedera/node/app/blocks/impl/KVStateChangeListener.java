@@ -45,6 +45,7 @@ import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
@@ -190,6 +191,9 @@ public class KVStateChangeListener implements StateChangeListener {
                     .build();
             case ScheduleList scheduleList -> MapChangeValue.newBuilder()
                     .scheduleListValue(scheduleList)
+                    .build();
+            case ScheduleIdList scheduleIdList -> MapChangeValue.newBuilder()
+                    .scheduleIdListValue(scheduleIdList)
                     .build();
             case SlotValue slotValue -> MapChangeValue.newBuilder()
                     .slotValueValue(slotValue)

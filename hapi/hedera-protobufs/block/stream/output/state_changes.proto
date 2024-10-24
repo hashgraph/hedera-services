@@ -805,6 +805,11 @@ message MapChangeValue {
          * A roster value.
          */
         com.hedera.hapi.node.state.roster.Roster roster_value = 16;
+
+        /**
+         * A list of scheduled ids.
+         */
+        proto.ScheduleIdList schedule_id_list_value = 17;
     }
 }
 
