@@ -115,6 +115,7 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -488,7 +489,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         return serviceMigrator.doMigrations(
                 state,
-                servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
+                servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME, RosterStateId.NAME),
                 deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
                 version,
                 bootstrapConfigProvider.getConfiguration(),
