@@ -117,9 +117,7 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         givenSenderAccount();
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT_WITH_SIGNER_NONCE);
@@ -155,9 +153,7 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         givenSenderAccount();
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT_WITH_SIGNER_NONCE);
@@ -191,9 +187,7 @@ class ContextTransactionProcessorTest {
                 processor,
                 customGasCharging);
 
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT);
@@ -222,9 +216,7 @@ class ContextTransactionProcessorTest {
                 processor,
                 customGasCharging);
 
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willThrow(new HandleException(INVALID_CONTRACT_ID));
@@ -407,5 +399,13 @@ class ContextTransactionProcessorTest {
     void givenSenderAccount() {
         given(rootProxyWorldUpdater.getHederaAccount(SENDER_ID)).willReturn(senderAccount);
         given(senderAccount.getNonce()).willReturn(1L);
+    }
+
+    void givenBodyWithTxnIdWillReturnHEVM() {
+        final var body = TransactionBody.newBuilder()
+                .transactionID(TransactionID.DEFAULT)
+                .build();
+        given(context.body()).willReturn(body);
+        given(hevmTransactionFactory.fromHapiTransaction(body)).willReturn(HEVM_CREATION);
     }
 }

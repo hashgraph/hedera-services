@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -198,15 +199,17 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
             for (final var signatory : signatories) {
                 accumulateSimple(registry.getKey(signatory), expect);
             }
-            Assertions.assertArrayEquals(
-                    expect.build().getKeysList().toArray(),
-                    actualInfo.getSigners().getKeysList().toArray(),
-                    "Wrong signatories!");
+            var expectedKeySet = new HashSet<>(expect.build().getKeysList());
+            var actualKeySet = new HashSet<>(actualInfo.getSigners().getKeysList());
+            Assertions.assertEquals(expectedKeySet.size(), actualKeySet.size());
+            Assertions.assertTrue(expectedKeySet.containsAll(actualKeySet), "Wrong signatories!");
+            Assertions.assertTrue(actualKeySet.containsAll(expectedKeySet), "Wrong signatories!");
         });
 
         expectedExpirationTimeRelativeTo.ifPresent(stringLongPair -> Assertions.assertEquals(
-                getRelativeExpiry(spec, stringLongPair.getKey(), stringLongPair.getValue()),
-                actualInfo.getExpirationTime(),
+                getRelativeExpiry(spec, stringLongPair.getKey(), stringLongPair.getValue())
+                        .getSeconds(),
+                actualInfo.getExpirationTime().getSeconds(),
                 "Wrong Expiration Time!"));
 
         expectedWaitForExpiry.ifPresent(aBoolean ->

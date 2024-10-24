@@ -56,7 +56,7 @@ import javax.inject.Singleton;
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_SIGN}.
  */
 @Singleton
-public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
+public class ScheduleSignHandler extends ScheduleManager implements TransactionHandler {
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 
     @Inject
@@ -105,11 +105,16 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         final var signatories = schedule.signatories();
         final var newSignatories = newSignatories(context.keyVerifier().signingCryptoKeys(), signatories, requiredKeys);
         schedule = schedule.copyBuilder().signatories(newSignatories).build();
-        if (tryToExecuteSchedule(context, schedule, requiredKeys, validationResult, isLongTermEnabled)) {
-            scheduleStore.put(markedExecuted(schedule, consensusNow));
-        } else {
+        if (isLongTermEnabled && schedule.waitForExpiry()) {
             validateTrue(!newSignatories.equals(signatories), NO_NEW_VALID_SIGNATURES);
             scheduleStore.put(schedule);
+        } else {
+            if (tryToExecuteSchedule(context, schedule, requiredKeys, validationResult, isLongTermEnabled)) {
+                scheduleStore.put(markedExecuted(schedule, consensusNow));
+            } else {
+                validateTrue(!newSignatories.equals(signatories), NO_NEW_VALID_SIGNATURES);
+                scheduleStore.put(schedule);
+            }
         }
         context.savepointStack()
                 .getBaseBuilder(ScheduleStreamBuilder.class)

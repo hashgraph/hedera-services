@@ -186,16 +186,21 @@ public final class HandlerUtility {
      */
     @NonNull
     static Schedule createProvisionalSchedule(
-            @NonNull final TransactionBody body, @NonNull final Instant consensusNow, final long maxLifetime) {
+            @NonNull final TransactionBody body,
+            @NonNull final Instant consensusNow,
+            final long maxLifetime,
+            final boolean longTermEnabled) {
         final var txnId = body.transactionIDOrThrow();
         final var op = body.scheduleCreateOrThrow();
         final var payerId = txnId.accountIDOrThrow();
-        final long expiry = calculateExpiration(op.expirationTime(), consensusNow, maxLifetime);
-        return Schedule.newBuilder()
-                .scheduleId((ScheduleID) null)
+        final long expiry = calculateExpiration(op.expirationTime(), consensusNow, maxLifetime, longTermEnabled);
+        final var builder = Schedule.newBuilder();
+        if (longTermEnabled) {
+            builder.waitForExpiry(op.waitForExpiry());
+        }
+        return builder.scheduleId((ScheduleID) null)
                 .deleted(false)
                 .executed(false)
-                .waitForExpiry(op.waitForExpiry())
                 .adminKey(op.adminKey())
                 .schedulerAccountId(payerId)
                 .payerAccountId(op.payerAccountIDOrElse(payerId))
@@ -223,8 +228,11 @@ public final class HandlerUtility {
     }
 
     private static long calculateExpiration(
-            @Nullable final Timestamp givenExpiration, @NonNull final Instant consensusNow, final long maxLifetime) {
-        if (givenExpiration != null) {
+            @Nullable final Timestamp givenExpiration,
+            @NonNull final Instant consensusNow,
+            final long maxLifetime,
+            final boolean longTermEnabled) {
+        if (givenExpiration != null && longTermEnabled) {
             return givenExpiration.seconds();
         } else {
             final var currentPlusMaxLife = consensusNow.plusSeconds(maxLifetime);

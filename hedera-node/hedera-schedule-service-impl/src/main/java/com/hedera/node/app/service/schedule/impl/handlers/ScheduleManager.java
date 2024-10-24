@@ -55,16 +55,23 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
-abstract class AbstractScheduleHandler {
+@Singleton
+public class ScheduleManager {
+
+    @Inject
+    public ScheduleManager() {}
+
     private static final Comparator<Key> KEY_COMPARATOR = new KeyComparator();
 
     @FunctionalInterface
-    protected interface TransactionKeysFn {
+    public interface TransactionKeysFn {
         TransactionKeys apply(@NonNull TransactionBody body, @NonNull AccountID payerId) throws PreCheckException;
     }
 
@@ -75,7 +82,7 @@ abstract class AbstractScheduleHandler {
      * @return the schedule's signing requirements
      * @throws HandleException if the signing requirements cannot be determined
      */
-    protected @NonNull TransactionKeys getTransactionKeysOrThrow(
+    public @NonNull TransactionKeys getTransactionKeysOrThrow(
             @NonNull final Schedule schedule, @NonNull final TransactionKeysFn fn) throws HandleException {
         requireNonNull(schedule);
         requireNonNull(fn);
@@ -116,7 +123,7 @@ abstract class AbstractScheduleHandler {
      * @param keys the transaction keys
      * @return the required keys
      */
-    protected @NonNull List<Key> allRequiredKeys(@NonNull final TransactionKeys keys) {
+    public @NonNull List<Key> allRequiredKeys(@NonNull final TransactionKeys keys) {
         final var all = new ArrayList<Key>();
         all.add(keys.payerKey());
         all.addAll(keys.requiredNonPayerKeys());
@@ -188,7 +195,7 @@ abstract class AbstractScheduleHandler {
      * @return the validation result
      */
     @NonNull
-    protected ResponseCodeEnum validate(
+    public ResponseCodeEnum validate(
             @Nullable final Schedule schedule, @Nullable final Instant consensusNow, final boolean isLongTermEnabled) {
         if (schedule == null) {
             return INVALID_SCHEDULE_ID;
@@ -231,7 +238,7 @@ abstract class AbstractScheduleHandler {
      * @param isLongTermEnabled the is long term enabled
      * @return if the schedule was executed
      */
-    protected boolean tryToExecuteSchedule(
+    public boolean tryToExecuteSchedule(
             @NonNull final HandleContext context,
             @NonNull final Schedule schedule,
             @NonNull final List<Key> requiredKeys,
