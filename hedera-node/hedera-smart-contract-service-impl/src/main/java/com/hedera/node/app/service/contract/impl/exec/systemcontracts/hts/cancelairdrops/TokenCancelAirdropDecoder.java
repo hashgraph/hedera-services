@@ -34,18 +34,23 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.Arrays;
 import javax.inject.Inject;
 
 public class TokenCancelAirdropDecoder {
 
     // Tuple indexes
+    // Indexes for CANCEL_AIRDROP
+    // cancelAirdrops((address,address,address,int64)[])
     private static final int TRANSFER_LIST = 0;
     private static final int SENDER = 0;
     private static final int RECEIVER = 1;
     private static final int TOKEN = 2;
     private static final int SERIAL = 3;
+
+    // Indexes for HRC_CANCEL_AIRDROP_FT and HRC_CANCEL_AIRDROP_NFT
+    // cancelAirdropFT(address)
+    // cancelAirdropNFT(address,int64)
     private static final int HRC_RECEIVER = 0;
     private static final int HRC_SERIAL = 1;
 
@@ -58,28 +63,29 @@ public class TokenCancelAirdropDecoder {
         final var call = TokenCancelAirdropTranslator.CANCEL_AIRDROP.decodeCall(attempt.inputBytes());
         final var maxPendingAirdropsToCancel =
                 attempt.configuration().getConfigData(TokensConfig.class).maxAllowedPendingAirdropsToCancel();
-        validateFalse(((Tuple[]) call.get(0)).length > maxPendingAirdropsToCancel, PENDING_AIRDROP_ID_LIST_TOO_LONG);
-
         final var transferList = (Tuple[]) call.get(TRANSFER_LIST);
-        final var pendingAirdrops = new ArrayList<PendingAirdropId>();
-        Arrays.stream(transferList).forEach(transfer -> {
-            final var senderAddress = (Address) transfer.get(SENDER);
-            final var receiverAddress = (Address) transfer.get(RECEIVER);
-            final var tokenAddress = (Address) transfer.get(TOKEN);
-            final var serial = (long) transfer.get(SERIAL);
+        validateFalse(transferList.length > maxPendingAirdropsToCancel, PENDING_AIRDROP_ID_LIST_TOO_LONG);
 
-            final var senderId = attempt.addressIdConverter().convert(senderAddress);
-            final var receiverId = attempt.addressIdConverter().convert(receiverAddress);
-            final var tokenId = asTokenId(tokenAddress);
+        final var pendingAirdrops = Arrays.stream(transferList)
+                .map(transfer -> {
+                    final var senderAddress = (Address) transfer.get(SENDER);
+                    final var receiverAddress = (Address) transfer.get(RECEIVER);
+                    final var tokenAddress = (Address) transfer.get(TOKEN);
+                    final var serial = (long) transfer.get(SERIAL);
 
-            final var token = attempt.enhancement().nativeOperations().getToken(tokenId.tokenNum());
-            validateTrue(token != null, INVALID_TOKEN_ID);
-            if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-                pendingAirdrops.add(pendingFTAirdrop(senderId, receiverId, tokenId));
-            } else {
-                pendingAirdrops.add(pendingNFTAirdrop(senderId, receiverId, tokenId, serial));
-            }
-        });
+                    final var senderId = attempt.addressIdConverter().convert(senderAddress);
+                    final var receiverId = attempt.addressIdConverter().convert(receiverAddress);
+                    final var tokenId = asTokenId(tokenAddress);
+
+                    final var token = attempt.enhancement().nativeOperations().getToken(tokenId.tokenNum());
+                    validateTrue(token != null, INVALID_TOKEN_ID);
+                    if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+                        return pendingFTAirdrop(senderId, receiverId, tokenId);
+                    } else {
+                        return pendingNFTAirdrop(senderId, receiverId, tokenId, serial);
+                    }
+                })
+                .toList();
 
         return TransactionBody.newBuilder()
                 .tokenCancelAirdrop(
@@ -90,7 +96,7 @@ public class TokenCancelAirdropDecoder {
     public TransactionBody decodeCancelAirdropFT(@NonNull final HtsCallAttempt attempt) {
         final var call = TokenCancelAirdropTranslator.HRC_CANCEL_AIRDROP_FT.decodeCall(attempt.inputBytes());
 
-        final var senderAddress = attempt.senderId();
+        final var senderId = attempt.senderId();
         final var receiverAddress = (Address) call.get(HRC_RECEIVER);
         final var token = attempt.redirectTokenId();
         validateTrue(token != null, INVALID_TOKEN_ID);
@@ -98,14 +104,14 @@ public class TokenCancelAirdropDecoder {
 
         return TransactionBody.newBuilder()
                 .tokenCancelAirdrop(TokenCancelAirdropTransactionBody.newBuilder()
-                        .pendingAirdrops(pendingFTAirdrop(senderAddress, receiverId, token)))
+                        .pendingAirdrops(pendingFTAirdrop(senderId, receiverId, token)))
                 .build();
     }
 
     public TransactionBody decodeCancelAirdropNFT(@NonNull final HtsCallAttempt attempt) {
         final var call = TokenCancelAirdropTranslator.HRC_CANCEL_AIRDROP_NFT.decodeCall(attempt.inputBytes());
 
-        final var senderAddress = attempt.senderId();
+        final var senderId = attempt.senderId();
         final var receiverAddress = (Address) call.get(HRC_RECEIVER);
         final var serial = (long) call.get(HRC_SERIAL);
         final var token = attempt.redirectTokenId();
@@ -114,7 +120,7 @@ public class TokenCancelAirdropDecoder {
 
         return TransactionBody.newBuilder()
                 .tokenCancelAirdrop(TokenCancelAirdropTransactionBody.newBuilder()
-                        .pendingAirdrops(pendingNFTAirdrop(senderAddress, receiverId, token, serial)))
+                        .pendingAirdrops(pendingNFTAirdrop(senderId, receiverId, token, serial)))
                 .build();
     }
 

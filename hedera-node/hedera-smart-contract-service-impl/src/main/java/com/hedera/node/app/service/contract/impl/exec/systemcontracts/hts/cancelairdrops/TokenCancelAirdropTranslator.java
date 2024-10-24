@@ -27,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,10 +35,13 @@ import javax.inject.Inject;
 
 public class TokenCancelAirdropTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    // Actual signature definition with struct name before flattening
+    // cancelAirdrops(PendingAirdrop[])
     public static final Function CANCEL_AIRDROP =
-            new Function("cancelAirdrops((address,address,address,int64)[])", "(int32)");
-    public static final Function HRC_CANCEL_AIRDROP_FT = new Function("cancelAirdropFT(address)", "(int32)");
-    public static final Function HRC_CANCEL_AIRDROP_NFT = new Function("cancelAirdropNFT(address,int64)", "(int32)");
+            new Function("cancelAirdrops((address,address,address,int64)[])", ReturnTypes.INT_64);
+    public static final Function HRC_CANCEL_AIRDROP_FT = new Function("cancelAirdropFT(address)", ReturnTypes.INT_64);
+    public static final Function HRC_CANCEL_AIRDROP_NFT =
+            new Function("cancelAirdropNFT(address,int64)", ReturnTypes.INT_64);
 
     private final TokenCancelAirdropDecoder decoder;
 
@@ -52,23 +56,24 @@ public class TokenCancelAirdropTranslator extends AbstractCallTranslator<HtsCall
         final var cancelAirdropEnabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractCancelAirdropsEnabled();
         return attempt.isTokenRedirect()
-                ? attempt.isSelectorIfConfigEnabled(HRC_CANCEL_AIRDROP_FT, cancelAirdropEnabled)
-                        || attempt.isSelectorIfConfigEnabled(HRC_CANCEL_AIRDROP_NFT, cancelAirdropEnabled)
-                : attempt.isSelectorIfConfigEnabled(CANCEL_AIRDROP, cancelAirdropEnabled);
+                ? attempt.isSelectorIfConfigEnabled(cancelAirdropEnabled, HRC_CANCEL_AIRDROP_FT, HRC_CANCEL_AIRDROP_NFT)
+                : attempt.isSelectorIfConfigEnabled(cancelAirdropEnabled, CANCEL_AIRDROP);
     }
 
     @Override
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall(
-                attempt,
-                attempt.isSelector(CANCEL_AIRDROP) ? decoder.decodeCancelAirdrop(attempt) : bodyForHRC(attempt),
-                TokenCancelAirdropTranslator::gasRequirement);
+                attempt, bodyFor(attempt), TokenCancelAirdropTranslator::gasRequirement);
     }
 
-    private TransactionBody bodyForHRC(@NonNull final HtsCallAttempt attempt) {
-        return attempt.isSelector(HRC_CANCEL_AIRDROP_FT)
-                ? decoder.decodeCancelAirdropFT(attempt)
-                : decoder.decodeCancelAirdropNFT(attempt);
+    private TransactionBody bodyFor(@NonNull final HtsCallAttempt attempt) {
+        if (attempt.isSelector(CANCEL_AIRDROP)) {
+            return decoder.decodeCancelAirdrop(attempt);
+        } else if (attempt.isSelector(HRC_CANCEL_AIRDROP_FT)) {
+            return decoder.decodeCancelAirdropFT(attempt);
+        } else {
+            return decoder.decodeCancelAirdropNFT(attempt);
+        }
     }
 
     public static long gasRequirement(
