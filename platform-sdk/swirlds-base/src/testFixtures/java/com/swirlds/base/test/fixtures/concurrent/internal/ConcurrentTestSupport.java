@@ -117,7 +117,7 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
      *
      * @param callable A callable to submit.
      * @param <V>      The type of the results returned by the Callables.
-     * @return result from the executed Callables. It can be null.
+     * @return result from the executed Callables. It can be null
      * @see ConcurrentTestSupport#executeAndWait(Runnable...)
      */
     @NonNull
@@ -128,7 +128,7 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
     }
 
     /**
-     * Closes this the underlying executorService so all pending activity is finished before finishing the test
+     * Closes this the underlying executorService so all pending activity is finished before finishing the test.
      */
     @Override
     public void close() {

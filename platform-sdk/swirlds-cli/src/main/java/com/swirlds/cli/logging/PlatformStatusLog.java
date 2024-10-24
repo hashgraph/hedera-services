@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  */
 public class PlatformStatusLog implements FormattableString {
     /**
-     * Regex for parsing platform status log line remainder
+     * Regex for parsing platform status log line remainder.
      */
     public static final String PLATFORM_STATUS_LOG_LINE_REGEX = "(.*spent )(.*)( in )(.*)(\\. Now in )([A-Z_]+)(.*)";
 
@@ -39,41 +39,41 @@ public class PlatformStatusLog implements FormattableString {
     public static final String STATUS_HTML_CLASS = "status-detail";
 
     /**
-     * The full original string
+     * The full original string.
      */
     private final String originalString;
 
     /**
-     * "Platform spent"
+     * Platform spent.
      */
     private final String platformSpent;
     /**
-     * How long the platform spent in the previous status
+     * How long the platform spent in the previous status.
      */
     private final String duration;
     /**
-     * "in"
+     * in.
      */
     private final String in;
     /**
-     * The previous platform status
+     * The previous platform status.
      */
     private final String previousStatus;
     /**
-     * "Now in"
+     * Now in.
      */
     private final String nowIn;
     /**
-     * The new platform status
+     * The new platform status.
      */
     private final String newStatus;
     /**
-     * The rest of the line after the new platform status
+     * The rest of the line after the new platform status.
      */
     private final String statusMessageRemainder;
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param inputString the input string, which is platform status specific portion of the log
      */
@@ -95,7 +95,7 @@ public class PlatformStatusLog implements FormattableString {
     }
 
     /**
-     * Get the duration of the previous platform status
+     * Get the duration of the previous platform status.
      *
      * @return the duration of the previous platform status
      */
@@ -105,7 +105,7 @@ public class PlatformStatusLog implements FormattableString {
     }
 
     /**
-     * Get the previous platform status
+     * Get the previous platform status.
      *
      * @return the previous platform status
      */
@@ -115,7 +115,7 @@ public class PlatformStatusLog implements FormattableString {
     }
 
     /**
-     * Get the new platform status
+     * Get the new platform status.
      *
      * @return the new platform status
      */

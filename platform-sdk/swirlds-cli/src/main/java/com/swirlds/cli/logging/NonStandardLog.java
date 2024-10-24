@@ -35,7 +35,7 @@ import java.util.Objects;
  */
 public class NonStandardLog {
     /**
-     * The original text
+     * The original text.
      */
     private String nonStandardText = "";
 

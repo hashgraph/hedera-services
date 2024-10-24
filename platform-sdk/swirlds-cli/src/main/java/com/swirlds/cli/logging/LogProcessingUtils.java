@@ -86,7 +86,7 @@ public class LogProcessingUtils {
     }
 
     /**
-     * Escapes the input string to be HTML safe
+     * Escapes the input string to be HTML safe.
      *
      * @param inputString the string to escape
      * @return the escaped string
