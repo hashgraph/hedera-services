@@ -90,6 +90,8 @@ public enum DispatchType {
     TOKEN_INFO(HederaFunctionality.TOKEN_GET_INFO, DEFAULT),
     @SuppressWarnings("MissingJavadoc")
     UPDATE_TOKEN_CUSTOM_FEES(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, DEFAULT);
+    @SuppressWarnings("MissingJavadoc")
+    TOKEN_AIRDROP(HederaFunctionality.TOKEN_AIRDROP, DEFAULT);
 
     private final HederaFunctionality functionality;
     private final SubType subtype;
