@@ -167,14 +167,13 @@ jobs:
     name: Tag as XTS-Passing
     runs-on: network-node-linux-medium
     needs:
-#      - abbreviated-panel
+      - abbreviated-panel
       - extended-test-suite
       - fetch-xts-candidate
-#      - hedera-node-jrs-panel
-#    if: ${{ needs.abbreviated-panel.result == 'success' ||
-#            needs.extended-test-suite.result == 'success' ||
-#            needs.hedera-node-jrs-panel.result == 'success' }}
-    if: ${{ needs.extended-test-suite.result == 'success' }}
+      - hedera-node-jrs-panel
+    if: ${{ needs.abbreviated-panel.result == 'success' ||
+            needs.extended-test-suite.result == 'success' ||
+            needs.hedera-node-jrs-panel.result == 'success' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
