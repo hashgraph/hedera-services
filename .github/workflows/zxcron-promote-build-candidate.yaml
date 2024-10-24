@@ -18,7 +18,7 @@ name: "ZXCron: Promote Build Candidate"
 on:
   workflow_dispatch:
   schedule:
-    # Runs Extended Test Suite every three hours
+    # Runs Promote Build Candidate at 2000 hours
     - cron: '0 20 * * *'
 
 permissions:
@@ -58,8 +58,8 @@ jobs:
           if [[ -n "${CANDIDATE_TAG}" ]]; then
             CANDIDATE_COMMIT=$(git rev-list --max-count 1 ${CANDIDATE_TAG})
             if git branch --contains "${CANDIDATE_COMMIT}" | grep --quiet develop >/dev/null 2>&1; then
-              git tag --delete $(git tag --list "${TAG_PATTERN}")
               git push --delete origin $(git tag --list "${TAG_PATTERN}")
+              git tag --delete $(git tag --list "${TAG_PATTERN}")
               echo "build-candidate-exists=true" >> "${GITHUB_OUTPUT}"
               echo "build-candidate-commit=${CANDIDATE_COMMIT}" >> "${GITHUB_OUTPUT}"
               echo "### Build Candidate Found" >>  "${GITHUB_STEP_SUMMARY}"
