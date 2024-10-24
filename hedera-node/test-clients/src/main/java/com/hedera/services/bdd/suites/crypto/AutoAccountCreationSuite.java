@@ -133,8 +133,8 @@ public class AutoAccountCreationSuite {
     private static final Key VALID_ED_25519_KEY =
             Key.newBuilder().setEd25519(ALIAS_CONTENT).build();
     private static final ByteString VALID_25519_ALIAS = VALID_ED_25519_KEY.toByteString();
-    private static final String AUTO_MEMO = "auto-created account";
-    public static final String LAZY_MEMO = "lazy-created account";
+    private static final String AUTO_MEMO = "";
+    public static final String LAZY_MEMO = "";
     public static final String VALID_ALIAS = "validAlias";
     private static final String PAYER = "payer";
     private static final String TRANSFER_TXN = "transferTxn";
@@ -160,9 +160,9 @@ public class AutoAccountCreationSuite {
     private static final String SPONSOR = "autoCreateSponsor";
     public static final String LAZY_CREATE_SPONSOR = "lazyCreateSponsor";
 
-    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
-    private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 39418863L;
-    private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 39418863L;
+    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39_376_619L;
+    private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 39_376_619L;
+    private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 39_376_619L;
     private static final long EXPECTED_ASSOCIATION_FEE = 41666666L;
 
     public static final String CRYPTO_TRANSFER_RECEIVER = "cryptoTransferReceiver";
