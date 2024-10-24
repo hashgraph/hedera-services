@@ -89,7 +89,7 @@ jobs:
           set -e
 
           # Delete the tag if it does exist
-          if [[ "${XTS_COMMIT_FOUND}" -eq 0 ]] then;
+          if [[ "${XTS_COMMIT_FOUND}" -eq 0 ]]; then
             git push --delete origin "${XTS_CANDIDATE_TAG}"
             git tag -d "${XTS_CANDIDATE_TAG}"
           fi

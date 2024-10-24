@@ -71,7 +71,7 @@ jobs:
           set -e
 
           # Cancel out if the tag does not exist
-          if [[ "${XTS_COMMIT_FOUND}" -ne 0 ]] then;
+          if [[ "${XTS_COMMIT_FOUND}" -ne 0 ]]; then
             gh run cancel ${{ github.run_id }}
           fi
 
