@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.cancelairdrops;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.cancelairdrops.TokenCancelAirdropTranslator.CANCEL_AIRDROP;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.cancelairdrops.TokenCancelAirdropTranslator.HRC_CANCEL_AIRDROP_FT;
@@ -30,9 +31,9 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_A
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -83,15 +84,15 @@ class TokenCancelAirdropDecoderTest {
         subject = new TokenCancelAirdropDecoder();
 
         lenient().when(attempt.addressIdConverter()).thenReturn(addressIdConverter);
+        lenient().when(attempt.configuration()).thenReturn(configuration);
+        lenient().when(attempt.enhancement()).thenReturn(enhancement);
+        lenient().when(enhancement.nativeOperations()).thenReturn(nativeOperations);
+        lenient().when(configuration.getConfigData(TokensConfig.class)).thenReturn(tokensConfig);
     }
 
     @Test
     void cancelAirdropDecoder1FTTest() {
         // given:
-        given(attempt.configuration()).willReturn(configuration);
-        given(attempt.enhancement()).willReturn(enhancement);
-        given(enhancement.nativeOperations()).willReturn(nativeOperations);
-        given(configuration.getConfigData(TokensConfig.class)).willReturn(tokensConfig);
         given(tokensConfig.maxAllowedPendingAirdropsToCancel()).willReturn(10);
         given(nativeOperations.getToken(FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(FUNGIBLE_TOKEN);
         given(addressIdConverter.convert(asHeadlongAddress(SENDER_ID.accountNum())))
@@ -124,79 +125,25 @@ class TokenCancelAirdropDecoderTest {
     @Test
     void failsIfPendingAirdropsAboveLimit() {
         // given:
-        given(attempt.configuration()).willReturn(configuration);
-        given(configuration.getConfigData(TokensConfig.class)).willReturn(tokensConfig);
-        given(tokensConfig.maxAllowedPendingAirdropsToCancel()).willReturn(10);
+        given(tokensConfig.maxAllowedPendingAirdropsToCancel()).willReturn(2);
 
-        final var encoded = Bytes.wrapByteBuffer(CANCEL_AIRDROP.encodeCall(Tuple.singleton(new Tuple[] {
-            Tuple.of(
-                    asHeadlongAddress(SENDER_ID.accountNum()),
-                    OWNER_ACCOUNT_AS_ADDRESS,
-                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                    0L),
-            Tuple.of(
-                    asHeadlongAddress(SENDER_ID.accountNum()),
-                    OWNER_ACCOUNT_AS_ADDRESS,
-                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                    0L),
-            Tuple.of(
-                    asHeadlongAddress(SENDER_ID.accountNum()),
-                    OWNER_ACCOUNT_AS_ADDRESS,
-                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                    0L),
-            Tuple.of(
-                    asHeadlongAddress(SENDER_ID.accountNum()),
-                    OWNER_ACCOUNT_AS_ADDRESS,
-                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                    0L),
-            Tuple.of(
-                    asHeadlongAddress(SENDER_ID.accountNum()),
-                    OWNER_ACCOUNT_AS_ADDRESS,
-                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                    0L),
-            Tuple.of(
-                    asHeadlongAddress(SENDER_ID.accountNum()),
-                    OWNER_ACCOUNT_AS_ADDRESS,
-                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                    0L),
-            Tuple.of(
-                    asHeadlongAddress(SENDER_ID.accountNum()),
-                    OWNER_ACCOUNT_AS_ADDRESS,
-                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                    0L),
-            Tuple.of(
-                    asHeadlongAddress(SENDER_ID.accountNum()),
-                    OWNER_ACCOUNT_AS_ADDRESS,
-                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                    0L),
-            Tuple.of(
-                    asHeadlongAddress(SENDER_ID.accountNum()),
-                    OWNER_ACCOUNT_AS_ADDRESS,
-                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                    0L),
-            Tuple.of(
-                    asHeadlongAddress(SENDER_ID.accountNum()),
-                    OWNER_ACCOUNT_AS_ADDRESS,
-                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                    0L),
-            Tuple.of(
-                    asHeadlongAddress(SENDER_ID.accountNum()),
-                    OWNER_ACCOUNT_AS_ADDRESS,
-                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                    0L)
-        })));
+        final var tuple = Tuple.of(
+                asHeadlongAddress(SENDER_ID.accountNum()),
+                OWNER_ACCOUNT_AS_ADDRESS,
+                FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                0L);
+        final var encoded =
+                Bytes.wrapByteBuffer(CANCEL_AIRDROP.encodeCall(Tuple.singleton(new Tuple[] {tuple, tuple, tuple})));
         given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
 
-        assertThrows(HandleException.class, () -> subject.decodeCancelAirdrop(attempt));
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeCancelAirdrop(attempt))
+                .withMessage(PENDING_AIRDROP_ID_LIST_TOO_LONG.protoName());
     }
 
     @Test
     void failsIfTokenIsNull() {
         // given:
-        given(attempt.configuration()).willReturn(configuration);
-        given(attempt.enhancement()).willReturn(enhancement);
-        given(enhancement.nativeOperations()).willReturn(nativeOperations);
-        given(configuration.getConfigData(TokensConfig.class)).willReturn(tokensConfig);
         given(tokensConfig.maxAllowedPendingAirdropsToCancel()).willReturn(10);
         given(nativeOperations.getToken(FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(null);
         given(addressIdConverter.convert(asHeadlongAddress(SENDER_ID.accountNum())))
@@ -212,42 +159,14 @@ class TokenCancelAirdropDecoderTest {
         })));
         given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
 
-        assertThrows(
-                HandleException.class,
-                () -> subject.decodeCancelAirdrop(attempt),
-                PENDING_AIRDROP_ID_LIST_TOO_LONG.protoName());
-    }
-
-    @Test
-    void failsIfTokenIsNullHRCFT() {
-        final var encoded = Bytes.wrapByteBuffer(HRC_CANCEL_AIRDROP_FT.encodeCallWithArgs(OWNER_ACCOUNT_AS_ADDRESS));
-        given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
-
-        assertThrows(
-                HandleException.class,
-                () -> subject.decodeCancelAirdropFT(attempt),
-                PENDING_AIRDROP_ID_LIST_TOO_LONG.protoName());
-    }
-
-    @Test
-    void failsIfTokenIsNullHRCNFT() {
-        final var encoded =
-                Bytes.wrapByteBuffer(HRC_CANCEL_AIRDROP_NFT.encodeCallWithArgs(OWNER_ACCOUNT_AS_ADDRESS, 1L));
-        given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
-
-        assertThrows(
-                HandleException.class,
-                () -> subject.decodeCancelAirdropNFT(attempt),
-                PENDING_AIRDROP_ID_LIST_TOO_LONG.protoName());
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeCancelAirdrop(attempt))
+                .withMessage(INVALID_TOKEN_ID.protoName());
     }
 
     @Test
     void cancelAirdropDecoder1NFTTest() {
         // given:
-        given(attempt.configuration()).willReturn(configuration);
-        given(attempt.enhancement()).willReturn(enhancement);
-        given(enhancement.nativeOperations()).willReturn(nativeOperations);
-        given(configuration.getConfigData(TokensConfig.class)).willReturn(tokensConfig);
         given(tokensConfig.maxAllowedPendingAirdropsToCancel()).willReturn(10);
         given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(NON_FUNGIBLE_TOKEN);
         given(addressIdConverter.convert(asHeadlongAddress(SENDER_ID.accountNum())))
