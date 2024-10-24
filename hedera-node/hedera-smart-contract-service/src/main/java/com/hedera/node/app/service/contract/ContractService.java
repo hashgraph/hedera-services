@@ -27,6 +27,9 @@ import java.util.Set;
  * Contract Service</a>.
  */
 public interface ContractService extends RpcService {
+    /**
+     * The name of the service.
+     */
     String NAME = "ContractService";
 
     /**

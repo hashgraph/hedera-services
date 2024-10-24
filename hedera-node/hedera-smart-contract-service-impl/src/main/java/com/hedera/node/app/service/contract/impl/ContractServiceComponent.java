@@ -28,11 +28,24 @@ import java.util.function.Supplier;
 import javax.inject.Singleton;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
+/**
+ * The contract service component
+ */
 @Singleton
 @Component(modules = ContractServiceModule.class)
 public interface ContractServiceComponent {
+    /**
+     * A factory for creating a {@link ContractServiceComponent}.
+     */
     @Component.Factory
     interface Factory {
+        /**
+         * @param instantSource the source of the current instant
+         * @param signatureVerifier the verifier used for signature verification
+         * @param verificationStrategies the current verification strategy to use
+         * @param addOnTracers all operation tracer callbacks
+         * @return the contract service component
+         */
         ContractServiceComponent create(
                 @BindsInstance InstantSource instantSource,
                 @BindsInstance SignatureVerifier signatureVerifier,
@@ -40,5 +53,8 @@ public interface ContractServiceComponent {
                 @BindsInstance @Nullable Supplier<List<OperationTracer>> addOnTracers);
     }
 
+    /**
+     * @return all contract transaction handlers
+     */
     ContractHandlers handlers();
 }

@@ -30,6 +30,7 @@ import java.util.Objects;
 /**
  * Enumerates the types of child transactions that can be dispatched to the HTS system contract.
  */
+@SuppressWarnings("MissingJavadoc")
 public enum DispatchType {
     CRYPTO_CREATE(HederaFunctionality.CRYPTO_CREATE, DEFAULT),
     CRYPTO_UPDATE(HederaFunctionality.CRYPTO_UPDATE, DEFAULT),

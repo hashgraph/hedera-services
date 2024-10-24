@@ -39,6 +39,9 @@ public class CustomPrevRandaoOperation extends AbstractOperation {
 
     private final long gasCost;
 
+    /**
+     * @param gasCalculator the gas calculator to be used
+     */
     public CustomPrevRandaoOperation(@NonNull final GasCalculator gasCalculator) {
         super(PREVRANDAO.opcode(), "PRNGSEED", 0, 1, requireNonNull(gasCalculator));
         gasCost = gasCalculator.getBaseTierGasCost();

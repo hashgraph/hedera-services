@@ -45,6 +45,7 @@ import org.hyperledger.besu.datatypes.Address;
  * everything it will need to execute.
  */
 public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
+    /** Selector for redirectForAccount(address,bytes) method. */
     public static final Function REDIRECT_FOR_ACCOUNT = new Function("redirectForAccount(address,bytes)");
 
     @Nullable

@@ -29,8 +29,19 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * Util class used for logging on granting approvals
+ */
 public class GrantApprovalLoggingUtils {
 
+    /**
+     * @param tokenId the token id that the spender is approved
+     * @param sender the sender account
+     * @param spender the spender account
+     * @param amount the amount of the granted approval
+     * @param accountStore the current account store
+     * @param frame the current message frame
+     */
     public static void logSuccessfulFTApprove(
             @NonNull final TokenID tokenId,
             @NonNull final AccountID sender,
@@ -49,6 +60,14 @@ public class GrantApprovalLoggingUtils {
                 .build());
     }
 
+    /**
+     * @param tokenId the token id that the spender is approved
+     * @param sender the sender account
+     * @param spender the spender account
+     * @param amount the amount of the granted approval
+     * @param accountStore the current account store
+     * @param frame the current message frame
+     */
     public static void logSuccessfulNFTApprove(
             @NonNull final TokenID tokenId,
             @NonNull final AccountID sender,

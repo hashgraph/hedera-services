@@ -54,6 +54,12 @@ public class CustomCallOperation extends CallOperation {
     private final FeatureFlags featureFlags;
     private final AddressChecks addressChecks;
 
+    /**
+     * Constructor for custom call operations.
+     * @param gasCalculator the gas calculator to use
+     * @param addressChecks checks against addresses reserved for Hedera
+     * @param featureFlags current evm module feature flags
+     */
     public CustomCallOperation(
             @NonNull final FeatureFlags featureFlags,
             @NonNull final GasCalculator gasCalculator,

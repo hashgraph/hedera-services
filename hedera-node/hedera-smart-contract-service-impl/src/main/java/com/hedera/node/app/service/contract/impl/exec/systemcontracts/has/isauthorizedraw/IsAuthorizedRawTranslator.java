@@ -38,8 +38,10 @@ import javax.inject.Singleton;
 @Singleton
 public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAttempt> {
 
+    /** Selector for isAuthorizedRaw(address,bytes,bytes) method. */
     public static final Function IS_AUTHORIZED_RAW =
             new Function("isAuthorizedRaw(address,bytes,bytes)", ReturnTypes.BOOL);
+
     private static final int ADDRESS_ARG = 0;
     private static final int HASH_ARG = 1;
     private static final int SIGNATURE_ARG = 2;

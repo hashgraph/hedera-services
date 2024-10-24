@@ -40,8 +40,14 @@ import javax.inject.Singleton;
 @Singleton
 public class CanonicalDispatchPrices {
     private final Map<DispatchType, Long> pricesMap = new EnumMap<>(DispatchType.class);
+    /**
+     * Value to convert prices from USD to tinycents in Hedera
+     */
     public static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
 
+    /**
+     * @param assetsLoader used to load the fee schedule from recources
+     */
     @Inject
     public CanonicalDispatchPrices(@NonNull final AssetsLoader assetsLoader) {
         requireNonNull(assetsLoader);

@@ -53,6 +53,15 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
     private final Supplier<HederaWorldUpdater> feesOnlyUpdater;
     private final Map<HederaEvmVersion, TransactionProcessor> processors;
 
+    /**
+     * @param context the context of the query
+     * @param hederaEvmContext the hedera EVM context
+     * @param tracer the tracer to use
+     * @param worldUpdater the world updater for the transaction
+     * @param hevmStaticTransactionFactory the factory to create Hedera EVM transaction for static calls
+     * @param feesOnlyUpdater if base commit fails, a fees-only updater
+     * @param processors a map from the version of the Hedera EVM to the transaction processor
+     */
     @Inject
     public ContextQueryProcessor(
             @NonNull final QueryContext context,

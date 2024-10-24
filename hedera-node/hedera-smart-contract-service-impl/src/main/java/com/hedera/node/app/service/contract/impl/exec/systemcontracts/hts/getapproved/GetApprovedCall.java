@@ -36,12 +36,23 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Implements the token redirect {@code approved()} call of the HTS system contract.
+ */
 public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
 
     private final long serialNo;
     private final boolean isErcCall;
     private final boolean isStaticCall;
 
+    /**
+     * @param gasCalculator the gas calculator to be used
+     * @param enhancement the enhancement to be used
+     * @param token the token against which the call executed
+     * @param serialNo the serial number of the token
+     * @param isErcCall true whether the call is ERC call
+     * @param isStaticCall true whether the call is static call
+     */
     public GetApprovedCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull HederaWorldUpdater.Enhancement enhancement,

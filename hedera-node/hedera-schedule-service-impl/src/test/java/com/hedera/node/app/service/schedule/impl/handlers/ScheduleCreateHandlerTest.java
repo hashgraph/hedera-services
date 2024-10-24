@@ -256,7 +256,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         given(mockContext.entityNumGenerator()).willReturn(entityNumGenerator);
         given(entityNumGenerator.newEntityNum()).willReturn(nextEntityId);
         given(mockContext.allKeysForTransaction(Mockito.any(), Mockito.any())).willReturn(testChildKeys);
-        // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
+        // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(testChildKeys));
     }
