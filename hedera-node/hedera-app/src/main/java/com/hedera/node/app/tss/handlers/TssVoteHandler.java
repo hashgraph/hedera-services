@@ -44,8 +44,6 @@ import javax.inject.Singleton;
 @Singleton
 public class TssVoteHandler implements TransactionHandler {
 
-    public static final double CONSENSUS_VOTE_THRESHOLD_ONE_THIRD = 3.0;
-
     @Inject
     public TssVoteHandler() {
         // Dagger2
@@ -73,7 +71,7 @@ public class TssVoteHandler implements TransactionHandler {
             return;
         }
 
-        if (!TssVoteHandler.hasReachedThreshold(txBody, context, CONSENSUS_VOTE_THRESHOLD_ONE_THIRD)) {
+        if (!TssVoteHandler.hasReachedThreshold(txBody, context)) {
             tssBaseStore.put(tssVoteMapKey, txBody);
         }
     }
@@ -84,13 +82,10 @@ public class TssVoteHandler implements TransactionHandler {
      *
      * @param tssVoteTransaction the TssVoteTransaction to check
      * @param context the HandleContext
-     * @param thresholdDenominator the denominator of the threshold fraction
      * @return true if the threshold has been reached, false otherwise
      */
     public static boolean hasReachedThreshold(
-            @NonNull final TssVoteTransactionBody tssVoteTransaction,
-            @NonNull final HandleContext context,
-            final double thresholdDenominator) {
+            @NonNull final TssVoteTransactionBody tssVoteTransaction, @NonNull final HandleContext context) {
         final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
 
         final Roster activeRoster = rosterStore.getActiveRoster();
@@ -130,9 +125,8 @@ public class TssVoteHandler implements TransactionHandler {
             }
         }
 
-        // Check if the total weight of votes with the same vote byte array is at least 1/thresholdDenominator of the
-        // total weight of the
-        // network
-        return voteWeight >= activeRosterTotalWeight / CONSENSUS_VOTE_THRESHOLD_ONE_THIRD;
+        // Check if the total weight of votes with the same vote byte array is at least 1/3 of the
+        // total weight of the network
+        return voteWeight >= activeRosterTotalWeight / 3;
     }
 }
