@@ -135,8 +135,9 @@ import org.apache.logging.log4j.Logger;
  * 		The value
  */
 @DebugIterationEndpoint
-public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue> extends PartialBinaryMerkleInternal
-        implements CustomReconnectRoot<Long, Long>, ExternalSelfSerializable, VirtualRoot, MerkleInternal {
+public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
+        extends PartialBinaryMerkleInternal
+        implements CustomReconnectRoot<Long, Long>, ExternalSelfSerializable, VirtualRoot<K, V>, MerkleInternal {
 
     private static final String NO_NULL_KEYS_ALLOWED_MESSAGE = "Null keys are not allowed";
 
@@ -151,8 +152,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     public static class ClassVersion {
         public static final int VERSION_1_ORIGINAL = 1;
         public static final int VERSION_2_KEYVALUE_SERIALIZERS = 2;
+        public static final int VERSION_3_NO_NODE_CACHE = 3;
 
-        public static final int CURRENT_VERSION = VERSION_2_KEYVALUE_SERIALIZERS;
+        public static final int CURRENT_VERSION = VERSION_3_NO_NODE_CACHE;
     }
 
     /**
@@ -261,7 +263,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * defined lifecycle rules. This class makes calls to the pipeline, and the pipeline calls back methods
      * defined in this class.
      */
-    private VirtualPipeline pipeline;
+    private VirtualPipeline<K, V> pipeline;
 
     /**
      * Hash of this root node. If null, the node isn't hashed yet.
@@ -445,7 +447,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // At this point in time the copy knows if it should be flushed or merged, and so it is safe
         // to register with the pipeline.
         if (pipeline == null) {
-            pipeline = new VirtualPipeline(config, state.getLabel());
+            pipeline = new VirtualPipeline<>(config, state.getLabel());
         }
         pipeline.registerCopy(this);
     }
@@ -634,7 +636,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     // Exposed for tests only.
-    public VirtualPipeline getPipeline() {
+    public VirtualPipeline<K, V> getPipeline() {
         return pipeline;
     }
 
@@ -642,7 +644,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public boolean isRegisteredToPipeline(final VirtualPipeline pipeline) {
+    public boolean isRegisteredToPipeline(final VirtualPipeline<K, V> pipeline) {
         return pipeline == this.pipeline;
     }
 
@@ -1249,13 +1251,15 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public void serialize(final SerializableDataOutputStream out, final Path outputDirectory) throws IOException {
+        final long start = System.currentTimeMillis();
         final RecordAccessor<K, V> detachedRecords = pipeline.detachCopy(this, outputDirectory);
-        assert detachedRecords.getDataSource() == null : "No data source should be created.";
+        assert detachedRecords == null : "Detached records should not be created.";
         out.writeNormalisedString(state.getLabel());
         out.writeSerializable(dataSourceBuilder, true);
         out.writeSerializable(keySerializer, true);
         out.writeSerializable(valueSerializer, true);
-        out.writeSerializable(detachedRecords.getCache(), true);
+//        out.writeSerializable(detachedRecords.getCache(), true);
+        logger.info(VIRTUAL_MERKLE_STATS.getMarker(), "VRN serialize {} took {} ms", getFastCopyVersion(), System.currentTimeMillis() - start);
     }
 
     /**
@@ -1283,7 +1287,11 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             keySerializer = in.readSerializable();
             valueSerializer = in.readSerializable();
         }
-        cache = in.readSerializable();
+        if (version < ClassVersion.VERSION_3_NO_NODE_CACHE) {
+            // Future work: once all states are version 3 or later, this code branch can be
+            // removed alltogether, and cache may be a final field
+            cache = in.readSerializable();
+        }
     }
 
     // Hashing implementation
@@ -1394,7 +1402,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public <T> T detach(final Path destination) {
+    public RecordAccessor<K, V> detach(final Path destination) throws IOException {
         if (isDestroyed()) {
             throw new IllegalStateException("detach is illegal on already destroyed copies");
         }
@@ -1405,22 +1413,28 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             throw new IllegalStateException("copy must be hashed before it is detached");
         }
 
+        detached.set(true);
+
         // The pipeline is paused while this runs, so I can go ahead and call snapshot on the data
         // source, and also snapshot the cache. I will create a new "RecordAccessor" for the detached
         // record state.
-        final T snapshot;
+        long start = System.currentTimeMillis();
+        final VirtualDataSource dataSourceCopy = dataSourceBuilder.copy(dataSource, false);
+        logger.info(VIRTUAL_MERKLE_STATS.getMarker(), "VRN DS copy {} took {} ms", getFastCopyVersion(), System.currentTimeMillis() - start);
         if (destination == null) {
-            //noinspection unchecked
-            snapshot = (T) new RecordAccessorImpl<>(
-                    state, cache.snapshot(), keySerializer, valueSerializer, dataSourceBuilder.copy(dataSource, false));
+            final VirtualNodeCache<K, V> cacheSnapshot = cache.snapshot();
+            return new RecordAccessorImpl<>(state, cacheSnapshot, keySerializer, valueSerializer, dataSourceCopy);
         } else {
-            dataSourceBuilder.snapshot(destination, dataSource);
-            //noinspection unchecked
-            snapshot = (T) new RecordAccessorImpl<>(state, cache.snapshot(), keySerializer, valueSerializer, null);
+            try {
+                start = System.currentTimeMillis();
+                flush(cache, state, dataSourceCopy);
+                logger.info(VIRTUAL_MERKLE_STATS.getMarker(), "VRN cache flush {} took {} ms", getFastCopyVersion(), System.currentTimeMillis() - start);
+                dataSourceBuilder.snapshot(destination, dataSourceCopy);
+            } finally {
+                dataSourceCopy.close();
+            }
+            return null;
         }
-
-        detached.set(true);
-        return snapshot;
     }
 
     /**

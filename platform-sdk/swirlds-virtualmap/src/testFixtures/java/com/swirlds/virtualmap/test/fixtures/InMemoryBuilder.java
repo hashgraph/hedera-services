@@ -20,6 +20,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
@@ -31,6 +32,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class InMemoryBuilder implements VirtualDataSourceBuilder {
 
     private final Map<String, InMemoryDataSource> databases = new ConcurrentHashMap<>();
+
+    // Path to data source, used in snapshot() and restore()
+    private static final Map<String, InMemoryDataSource> snapshots = new ConcurrentHashMap<>();
 
     private static final long CLASS_ID = 0x29e653a8c81959b8L;
 
@@ -57,6 +61,7 @@ public class InMemoryBuilder implements VirtualDataSourceBuilder {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public InMemoryDataSource build(final String label, final boolean withDbCompactionEnabled) {
         return databases.computeIfAbsent(label, (s) -> createDataSource(label));
@@ -65,6 +70,7 @@ public class InMemoryBuilder implements VirtualDataSourceBuilder {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public InMemoryDataSource copy(final VirtualDataSource snapshotMe, final boolean makeCopyActive) {
         final InMemoryDataSource source = (InMemoryDataSource) snapshotMe;
@@ -78,18 +84,18 @@ public class InMemoryBuilder implements VirtualDataSourceBuilder {
      */
     @Override
     public void snapshot(final Path to, final VirtualDataSource snapshotMe) {
-        //		final InMemoryDataSource<TestKey, TestValue> source = (InMemoryDataSource<TestKey, TestValue>) snapshotMe;
-        //		final InMemoryDataSource<TestKey, TestValue> snapshot = new InMemoryDataSource<>(source);
-        //		databases.put(createUniqueDataSourceName(source.getName()), snapshot);
+        final InMemoryDataSource source = (InMemoryDataSource) snapshotMe;
+        final InMemoryDataSource snapshot = new InMemoryDataSource(source);
+        snapshots.put(to.toString(), snapshot);
     }
 
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public VirtualDataSource restore(final String label, final Path from) {
-        // FUTURE WORK: determine if there really is something that needs to be done here.
-        return null;
+        return snapshots.get(from.toString());
     }
 
     @Override

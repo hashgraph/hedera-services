@@ -21,6 +21,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -88,6 +89,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
         if (tableConfig == null) {
@@ -108,6 +110,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public VirtualDataSource copy(final VirtualDataSource snapshotMe, final boolean makeCopyActive) {
         if (!(snapshotMe instanceof MerkleDbDataSource source)) {
@@ -141,6 +144,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public VirtualDataSource restore(final String label, final Path source) {
         try {

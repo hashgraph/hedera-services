@@ -38,6 +38,7 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode.ClassVersion;
 import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
@@ -225,8 +226,6 @@ class VirtualRootNodeTest extends VirtualTestBase {
     void testSerializeDeserialize() throws IOException {
         String fileName = "rootNode.bin";
         serializeRoot(fileName);
-        final VirtualRootNode<TestKey, TestValue> root2 = createRoot();
-
         deserializeRootNodeAndVerify(
                 new FileInputStream(tempDir.resolve(fileName).toFile()), ClassVersion.CURRENT_VERSION);
     }
@@ -237,9 +236,15 @@ class VirtualRootNodeTest extends VirtualTestBase {
         try (SerializableDataInputStream input = new SerializableDataInputStream(resourceAsStream)) {
             root.deserialize(input, tempDir, version);
             root.postInit(new DummyVirtualStateAccessor());
+            final VirtualNodeCache<TestKey, TestValue> cache = root.getCache();
             for (int i = 0; i < 100; i++) {
+                final TestKey key = new TestKey(i);
+                if (version >= ClassVersion.VERSION_3_NO_NODE_CACHE) {
+                    // Cache must be empty, all values must be in the data source
+                    assertNull(cache.lookupLeafByKey(key, false));
+                }
                 if (i % 7 != 0) {
-                    assertEquals(new TestValue(i), root.get(new TestKey(i)));
+                    assertEquals(new TestValue(i), root.get(key));
                 } else {
                     assertNull(root.get(new TestKey(i)));
                 }
@@ -328,7 +333,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
     @Test
     @DisplayName("Detach Test")
-    void detachTest() {
+    void detachTest() throws IOException {
         final List<Path> paths = new LinkedList<>();
         paths.add(Path.of("asdf"));
         paths.add(null);
@@ -509,7 +514,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
     @Test
     void getVersion() {
-        assertEquals(2, createRoot().getVersion());
+        assertEquals(3, createRoot().getVersion());
     }
 
     @Test

@@ -740,9 +740,11 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         return true;
     }
 
-    /** Wait for any merges to finish, then close all data stores and free all resources. */
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void close() throws IOException {
+    public void close(final boolean keepData) throws IOException {
         if (!closed.getAndSet(true)) {
             try {
                 // Stop merging and shutdown the datasource compactor
@@ -779,7 +781,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                     // updated count of open databases
                     COUNT_OF_OPEN_DATABASES.decrement();
                     // Notify the database
-                    database.closeDataSource(this);
+                    database.closeDataSource(this, !keepData);
                 }
             }
         }

@@ -17,6 +17,8 @@
 package com.swirlds.virtualmap.datasource;
 
 import com.swirlds.common.io.SelfSerializable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 
 /**
@@ -43,6 +45,7 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      * @return
      * 		An opened {@link VirtualDataSource}.
      */
+    @NonNull
     VirtualDataSource build(String label, final boolean withDbCompactionEnabled);
 
     /**
@@ -63,6 +66,7 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      * @return
      * 		An opened {@link VirtualDataSource}
      */
+    @NonNull
     VirtualDataSource copy(VirtualDataSource snapshotMe, boolean makeCopyActive);
 
     /**
@@ -95,5 +99,6 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      * @return
      * 		An opened {@link VirtualDataSource}
      */
+    @NonNull
     VirtualDataSource restore(String label, Path source);
 }

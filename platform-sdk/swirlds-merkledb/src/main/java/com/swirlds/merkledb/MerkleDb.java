@@ -466,8 +466,9 @@ public final class MerkleDb {
      * {@link #getDataSource(String, boolean)} method.
      *
      * @param dataSource The closed data source
+     * @param deleteData Indicates whether to delete the data source directory
      */
-    public void closeDataSource(final MerkleDbDataSource dataSource) {
+    void closeDataSource(final MerkleDbDataSource dataSource, boolean deleteData) {
         if (this != dataSource.getDatabase()) {
             throw new IllegalStateException("Can't close table in a different database");
         }
@@ -480,7 +481,9 @@ public final class MerkleDb {
         }
         final String label = metadata.getTableName();
         tableConfigs.set(tableId, null);
-        DataFileCommon.deleteDirectoryAndContents(getTableDir(label, tableId));
+        if (deleteData) {
+            DataFileCommon.deleteDirectoryAndContents(getTableDir(label, tableId));
+        }
         storeMetadata();
     }
 

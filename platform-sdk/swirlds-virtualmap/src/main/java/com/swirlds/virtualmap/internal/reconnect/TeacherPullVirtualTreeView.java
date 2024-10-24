@@ -39,6 +39,7 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
@@ -94,14 +95,19 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final ReconnectConfig reconnectConfig,
             final VirtualRootNode<K, V> root,
             final VirtualStateAccessor state,
-            final VirtualPipeline pipeline) {
+            final VirtualPipeline<K, V> pipeline) {
         // There is no distinction between originalState and reconnectState in this implementation
         super(root, state, state);
         this.reconnectConfig = reconnectConfig;
         new ThreadConfiguration(threadManager)
                 .setRunnable(() -> {
-                    records = pipeline.detachCopy(root);
-                    ready.countDown();
+                    try {
+                        records = pipeline.detachCopy(root);
+                    } catch (final IOException z) {
+                        throw new UncheckedIOException(z);
+                    } finally {
+                        ready.countDown();
+                    }
                 })
                 .setComponent("virtualmap")
                 .setThreadName("detacher")
