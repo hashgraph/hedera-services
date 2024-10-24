@@ -56,7 +56,7 @@ import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.roster.RosterServiceImpl;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -80,6 +80,7 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -95,6 +96,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
@@ -228,6 +230,7 @@ public class ServicesMain implements SwirldMain {
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
         final Hedera hedera = newHedera();
+
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
         final AddressBook diskAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
@@ -389,7 +392,6 @@ public class ServicesMain implements SwirldMain {
             @NonNull final InitTrigger trigger,
             @NonNull final Metrics metrics,
             @NonNull final Hedera hedera) {
-
         if (trigger != GENESIS) {
             requireNonNull(deserializedVersion, "Deserialized version cannot be null for trigger " + trigger);
         }
@@ -488,7 +490,12 @@ public class ServicesMain implements SwirldMain {
             ServicesRegistry servicesRegistry, BlockStreamService blockStreamService, AppContext appContext) {
 
         Function<AppContext, TssBaseService> tssBaseServiceFactory =
-                (appCtx -> new TssBaseServiceImpl(appCtx, ForkJoinPool.commonPool(), ForkJoinPool.commonPool()));
+                (appCtx -> new TssBaseServiceImpl(
+                        appCtx,
+                        ForkJoinPool.commonPool(),
+                        ForkJoinPool.commonPool(),
+                        new PlaceholderTssLibrary(),
+                        ForkJoinPool.commonPool()));
         TssBaseService tssBaseService = tssBaseServiceFactory.apply(appContext);
         ContractService contractServiceImpl = new ContractServiceImpl(appContext);
 
@@ -509,7 +516,7 @@ public class ServicesMain implements SwirldMain {
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        new RosterServiceImpl(),
+                        new RosterService(),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
     }
@@ -619,7 +626,7 @@ public class ServicesMain implements SwirldMain {
         requireNonNull(addressBookPath);
         try {
             final LegacyConfigProperties props =
-                    LegacyConfigPropertiesLoader.loadConfigFile(getAbsolutePath(addressBookPath));
+                    LegacyConfigPropertiesLoader.loadConfigFile(FileUtils.getAbsolutePath(addressBookPath));
             props.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
             return props.getAddressBook();
         } catch (final Exception e) {
@@ -635,6 +642,11 @@ public class ServicesMain implements SwirldMain {
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
-                appContext -> new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool()));
+                appContext -> new TssBaseServiceImpl(
+                        appContext,
+                        ForkJoinPool.commonPool(),
+                        ForkJoinPool.commonPool(),
+                        new PlaceholderTssLibrary(),
+                        ForkJoinPool.commonPool()));
     }
 }
