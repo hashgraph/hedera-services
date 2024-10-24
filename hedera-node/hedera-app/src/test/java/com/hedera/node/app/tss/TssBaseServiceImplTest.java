@@ -23,7 +23,6 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.state.spi.SchemaRegistry;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,8 +69,7 @@ class TssBaseServiceImplTest {
                 ForkJoinPool.commonPool(),
                 ForkJoinPool.commonPool(),
                 new PlaceholderTssLibrary(),
-                ForkJoinPool.commonPool(),
-                new NoOpMetrics());
+                ForkJoinPool.commonPool());
     }
 
     @Test

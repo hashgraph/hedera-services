@@ -36,15 +36,11 @@ import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.metrics.api.Counter;
-import com.swirlds.metrics.api.LongGauge;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -73,20 +69,6 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final ExecutorService signingExecutor;
     private final TssLibrary tssLibrary;
     private final Executor tssLibraryExecutor;
-    private final Metrics tssMetrics;
-
-    private static final Counter.Config TSS_MESSAGE_TX_COUNT =
-            new Counter.Config("app", "tss_message_total").withDescription("total number of tss message transactions");
-
-    private static final Counter.Config TSS_VOTE_TX_COUNT =
-            new Counter.Config("app", "tss_vote_total").withDescription("total number of tss vote transactions");
-
-    LongGauge.Config CANDIDATE_ROSTER_CREATION = new LongGauge.Config("app", "candidate_roster_creation")
-            .withDescription("timestamp of candidate roster creation");
-
-    private final Counter tssMessageTxCount;
-    private final Counter tssVoteTxCount;
-    private final LongGauge candidateRosterCreationTime;
 
     /**
      * The hash of the active roster being used to sign with the ledger private key.
@@ -99,8 +81,7 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final ExecutorService signingExecutor,
             @NonNull final Executor submissionExecutor,
             @NonNull final TssLibrary tssLibrary,
-            @NonNull final Executor tssLibraryExecutor,
-            @NonNull final Metrics tssMetrics) {
+            @NonNull final Executor tssLibraryExecutor) {
         requireNonNull(appContext);
         this.signingExecutor = requireNonNull(signingExecutor);
         final var component = DaggerTssBaseServiceComponent.factory()
@@ -109,10 +90,6 @@ public class TssBaseServiceImpl implements TssBaseService {
         tssSubmissions = component.tssSubmissions();
         this.tssLibrary = requireNonNull(tssLibrary);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
-        this.tssMetrics = requireNonNull(tssMetrics);
-        tssMessageTxCount = tssMetrics.getOrCreate(TSS_MESSAGE_TX_COUNT);
-        tssVoteTxCount = tssMetrics.getOrCreate(TSS_VOTE_TX_COUNT);
-        candidateRosterCreationTime = tssMetrics.getOrCreate(CANDIDATE_ROSTER_CREATION);
     }
 
     @Override
@@ -155,7 +132,6 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
         // (TSS-FUTURE) https://github.com/hashgraph/hedera-services/issues/14748
-        candidateRosterCreationTime.set(Instant.now().getEpochSecond());
 
         // generate TSS messages based on the active roster and the candidate roster
         final var tssStore = context.storeFactory().readableStore(ReadableTssStoreImpl.class);
@@ -191,7 +167,6 @@ public class TssBaseServiceImpl implements TssBaseService {
                         .build();
                 tssSubmissions.submitTssMessage(tssMessage, context);
             });
-            tssMessageTxCount.increment();
         }
     }
 

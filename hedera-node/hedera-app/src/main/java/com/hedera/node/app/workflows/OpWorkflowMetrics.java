@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.workflows;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.TSS_MESSAGE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TSS_VOTE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -26,7 +24,6 @@ import com.hedera.node.config.data.StatsConfig;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.RunningAverageMetric.Config;
-import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.IntegerAccumulator;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,18 +45,10 @@ public class OpWorkflowMetrics {
             .withDescription("average EVM gas used per second of consensus time")
             .withFormat("%,13.6f");
 
-    private static final Counter.Config TSS_MESSAGE_TX_COUNT =
-            new Counter.Config("app", "tss_message_total").withDescription("total number of tss message transactions");
-
-    private static final Counter.Config TSS_VOTE_TX_COUNT =
-            new Counter.Config("app", "tss_vote_total").withDescription("total number of tss vote transactions");
-
     private final Map<HederaFunctionality, TransactionMetric> transactionMetrics =
             new EnumMap<>(HederaFunctionality.class);
 
     private final RunningAverageMetric gasPerConsSec;
-    private final Counter tssMessageTxCount;
-    private final Counter tssVoteTxCount;
 
     private long gasUsedThisConsensusSecond = 0L;
 
@@ -93,8 +82,6 @@ public class OpWorkflowMetrics {
 
         final StatsConfig statsConfig = configProvider.getConfiguration().getConfigData(StatsConfig.class);
         gasPerConsSec = metrics.getOrCreate(GAS_PER_CONS_SEC_CONFIG.withHalfLife(statsConfig.runningAvgHalfLifeSecs()));
-        tssMessageTxCount = metrics.getOrCreate(TSS_MESSAGE_TX_COUNT);
-        tssVoteTxCount = metrics.getOrCreate(TSS_VOTE_TX_COUNT);
     }
 
     /**
@@ -115,24 +102,6 @@ public class OpWorkflowMetrics {
             // the updates would introduce a severe performance penalty.
             metric.max.update(duration);
             metric.avg.update(duration, 1);
-        }
-    }
-
-    /**
-     * Increment counter metrics for TssVote or TssMessage transactions.
-     *
-     * @param functionality the TSS {@link HederaFunctionality} for which the metrics will be updated
-     */
-    public void updateTssMetrics(@NonNull final HederaFunctionality functionality) {
-        requireNonNull(functionality, "functionality must not be null");
-        if (functionality == HederaFunctionality.NONE) {
-            return;
-        }
-
-        if (functionality == TSS_MESSAGE) {
-            tssMessageTxCount.increment();
-        } else if (functionality == TSS_VOTE) {
-            tssVoteTxCount.increment();
         }
     }
 
