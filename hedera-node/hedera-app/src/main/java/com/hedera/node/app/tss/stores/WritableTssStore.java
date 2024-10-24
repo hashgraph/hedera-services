@@ -29,9 +29,9 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Extends the {@link ReadableTssBaseStore} with write access to the TSS base store.
+ * Extends the {@link ReadableTssStoreImpl} with write access to the TSS base store.
  */
-public class WritableTssBaseStore extends ReadableTssBaseStore {
+public class WritableTssStore extends ReadableTssStoreImpl {
     /**
      * The underlying data storage class that holds the Pending Airdrops data.
      */
@@ -39,7 +39,7 @@ public class WritableTssBaseStore extends ReadableTssBaseStore {
 
     private final WritableKVState<TssVoteMapKey, TssVoteTransactionBody> tssVoteState;
 
-    public WritableTssBaseStore(@NonNull final WritableStates states) {
+    public WritableTssStore(@NonNull final WritableStates states) {
         super(states);
         this.tssMessageState = states.get(TSS_MESSAGE_MAP_KEY);
         this.tssVoteState = states.get(TSS_VOTE_MAP_KEY);
