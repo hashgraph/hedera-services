@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.queries;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.spec.SpecOperation;
@@ -32,7 +31,6 @@ public class NodeOperatorQueriesBase {
 
     // node operator account
     protected static final String NODE_OPERATOR = "operator";
-    protected static final String QUERY_TEST_ACCOUNT = "queryTestAccount";
     protected static final String FUNGIBLE_QUERY_TOKEN = "fungibleQueryToken";
     protected static final String OWNER = "owner";
     protected static final String PAYER = "payer";
@@ -47,10 +45,7 @@ public class NodeOperatorQueriesBase {
     protected static SpecOperation[] createAllAccountsAndTokens() {
 
         final var createOperations = new ArrayList<SpecOperation>(List.of(
-                cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(OWNER).balance(0L),
-                cryptoCreate(QUERY_TEST_ACCOUNT).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
                 tokenCreate(FUNGIBLE_QUERY_TOKEN)
                         .treasury(OWNER)
                         .tokenType(FUNGIBLE_COMMON)

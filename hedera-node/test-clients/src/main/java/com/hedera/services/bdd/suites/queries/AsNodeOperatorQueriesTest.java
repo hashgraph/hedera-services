@@ -20,13 +20,14 @@ import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
-@OrderedInIsolation
 @HapiTestLifecycle
 @DisplayName("Node Operator Queries")
 /**
@@ -65,6 +65,8 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
             final AtomicLong payerBalanceAfterFirstQuery = new AtomicLong();
             final AtomicLong payerBalanceAfterSecondQuery = new AtomicLong();
             return hapiTest(
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
                     getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set),
                     // perform paid query, pay for the query with payer account
                     // the grpc client performs the query to different ports
@@ -93,6 +95,8 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
             final AtomicLong payerBalanceAfterFirstQuery = new AtomicLong();
             final AtomicLong payerBalanceAfterSecondQuery = new AtomicLong();
             return hapiTest(
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
                     getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set),
                     // perform paid query, pay for the query with payer account
                     // the grpc client performs the query to different ports
