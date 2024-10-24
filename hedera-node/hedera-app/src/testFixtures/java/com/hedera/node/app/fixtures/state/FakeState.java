@@ -138,7 +138,8 @@ public class FakeState implements State {
                 } else if (state instanceof Map<?, ?> map) {
                     data.put(
                             stateName,
-                            withAnyRegisteredListeners(serviceName, new MapWritableKVState<>(stateName, map)));
+                            withAnyRegisteredListeners(
+                                    serviceName, new MapWritableKVState<>(stateName, (Map<?, ? extends Record>) map)));
                 } else if (state instanceof AtomicReference<?> ref) {
                     data.put(stateName, withAnyRegisteredListeners(serviceName, stateName, ref));
                 }
@@ -181,7 +182,7 @@ public class FakeState implements State {
         return state;
     }
 
-    private <K, V> MapWritableKVState<K, V> withAnyRegisteredListeners(
+    private <K, V extends Record> MapWritableKVState<K, V> withAnyRegisteredListeners(
             @NonNull final String serviceName, @NonNull final MapWritableKVState<K, V> state) {
         listeners.forEach(listener -> {
             if (listener.stateTypes().contains(MAP)) {
@@ -227,7 +228,7 @@ public class FakeState implements State {
         });
     }
 
-    private <K, V> void registerKVListener(
+    private <K, V extends Record> void registerKVListener(
             @NonNull final String serviceName, WritableKVStateBase<K, V> state, StateChangeListener listener) {
         final var stateId = listener.stateIdFor(serviceName, state.getStateKey());
         state.registerListener(new KVChangeListener<>() {

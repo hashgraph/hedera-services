@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
  * @param <K> The key type
  * @param <V> The value type
  */
-public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V> {
+public abstract class ReadableKVStateBase<K, V extends Record> implements ReadableKVState<K, V> {
     /** The state key, which cannot be null */
     private final String stateKey;
 
@@ -44,7 +44,9 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
 
     private final Set<K> unmodifiableReadKeys = Collections.unmodifiableSet(readCache.keySet());
 
-    private static final Object marker = new Object();
+    private record Marker() {}
+
+    private static final Record marker = new Marker();
 
     /**
      * Create a new StateBase.

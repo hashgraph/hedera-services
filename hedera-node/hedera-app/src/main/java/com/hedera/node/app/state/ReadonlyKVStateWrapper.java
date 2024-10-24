@@ -32,7 +32,7 @@ import java.util.Set;
  * @param <K> The type of the key
  * @param <V> The type of the value
  */
-public class ReadonlyKVStateWrapper<K, V> implements ReadableKVState<K, V> {
+public class ReadonlyKVStateWrapper<K, V extends Record> implements ReadableKVState<K, V> {
     private final WritableKVState<K, V> delegate;
 
     /**

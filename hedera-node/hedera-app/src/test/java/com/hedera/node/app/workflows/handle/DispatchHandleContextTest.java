@@ -122,6 +122,7 @@ import com.swirlds.state.test.fixtures.MapReadableKVState;
 import com.swirlds.state.test.fixtures.MapReadableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.StateTestBase;
+import com.swirlds.state.test.fixtures.StringRecord;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -532,7 +533,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     final class DispatcherTest {
         private static final Predicate<Key> VERIFIER_CALLBACK = key -> true;
         private static final String FOOD_SERVICE = "FOOD_SERVICE";
-        private static final Map<String, String> BASE_DATA = Map.of(
+        private static final Map<String, StringRecord> BASE_DATA = Map.of(
                 A_KEY, APPLE,
                 B_KEY, BANANA,
                 C_KEY, CHERRY,
@@ -650,7 +651,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         @Test
         void testDispatchPrecedingWithChangedDataDoesntFail() {
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
-            final Map<String, String> newData = new HashMap<>(BASE_DATA);
+            final Map<String, StringRecord> newData = new HashMap<>(BASE_DATA);
             newData.put(B_KEY, BLUEBERRY);
 
             assertThatNoException()
