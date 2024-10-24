@@ -22,10 +22,11 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.handlers.TssHandlers;
-import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
+import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.utility.CommonUtils;
@@ -83,7 +84,12 @@ public class FakeTssBaseService implements TssBaseService {
     private final Queue<Runnable> pendingTssSubmission = new ArrayDeque<>();
 
     public FakeTssBaseService(@NonNull final AppContext appContext) {
-        delegate = new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), pendingTssSubmission::offer);
+        delegate = new TssBaseServiceImpl(
+                appContext,
+                ForkJoinPool.commonPool(),
+                pendingTssSubmission::offer,
+                new PlaceholderTssLibrary(),
+                ForkJoinPool.commonPool());
     }
 
     /**
@@ -134,7 +140,7 @@ public class FakeTssBaseService implements TssBaseService {
     public Status getStatus(
             @NonNull final Roster roster,
             @NonNull final Bytes ledgerId,
-            @NonNull final ReadableTssBaseStore tssBaseStore) {
+            @NonNull final ReadableTssStoreImpl tssBaseStore) {
         requireNonNull(roster);
         requireNonNull(ledgerId);
         requireNonNull(tssBaseStore);
