@@ -137,4 +137,27 @@ message NodeCreateTransactionBody {
      * This field is REQUIRED and MUST NOT be set to an empty `KeyList`.
      */
     proto.Key admin_key = 7;
+
+    /**
+     * An ALT_BN128 elliptic curve public encryption key.<br/>
+     * This is controlled by the node operator and specific to this
+     * node's TSS operations.
+     * <p>
+     * The elliptic curve type MAY change in the future. For example,
+     * if the Ethereum ecosystem creates precompiles for BLS12_381,
+     * we may switch to that curve.<br/>
+     * This value SHALL be specified according to EIP-196 and EIP-197 standards.
+     * See [EIP-196](https://eips.ethereum.org/EIPS/eip-196#encoding) and
+     * (EIP-197](https://eips.ethereum.org/EIPS/eip-197#encoding)<br/>
+     * This field is OPTIONAL (that is, it can initially be null),
+     * but once set, it MUST NOT be null.<br/>
+     * If this field is set:
+     * <ul>
+     *   <li>This field MUST contain the bytes of a standard ALT_BN128 key value.</li>
+     *   <li>This key MUST only be used for node TSS operations.</li>
+     *   <li>This key MUST be unique in all future rosters.</li>
+     *   <li>This key MUST be used to encrypt all of this node's future TSS messages.</li>
+     * </ul>
+     */
+    bytes tss_encryption_key = 8;
 }
