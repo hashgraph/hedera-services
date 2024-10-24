@@ -52,6 +52,7 @@ import com.swirlds.common.merkle.impl.internal.AbstractMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
+import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
@@ -80,6 +81,7 @@ import com.swirlds.virtualmap.internal.reconnect.ConcurrentBlockingIterator;
 import com.swirlds.virtualmap.internal.reconnect.LearnerPullVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.LearnerPushVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.NodeTraversalOrder;
+import com.swirlds.virtualmap.internal.reconnect.ParallelSyncTraversalOrder;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectHashListener;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectNodeRemover;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectState;
@@ -176,7 +178,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * cancel the reconnect with an exception. If we cannot make space after this many seconds,
      * then it means a single round of hashing has exceeded this time threshold.
      */
-    private static final int MAX_RECONNECT_HASHING_BUFFER_TIMEOUT = 60;
+    private static final int MAX_RECONNECT_HASHING_BUFFER_TIMEOUT = 600;
 
     /**
      * The number of seconds to wait for the full leaf rehash process to finish
@@ -1447,6 +1449,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
             case VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC -> new TeacherPullVirtualTreeView<>(
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
+            case VirtualMapReconnectMode.PULL_PARALLEL_SYNC -> new TeacherPullVirtualTreeView<>(
+                    getStaticThreadManager(), reconnectConfig, this, state, pipeline);
             default -> throw new UnsupportedOperationException("Unknown reconnect mode: " + config.reconnectMode());
         };
     }
@@ -1513,7 +1517,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public LearnerTreeView<Long> buildLearnerView(
-            final ReconnectConfig reconnectConfig, @NonNull final ReconnectMapStats mapStats) {
+            final int viewId,
+            final ReconnectConfig reconnectConfig,
+            @NonNull final ReconnectNodeCount nodeCount,
+            @NonNull final ReconnectMapStats mapStats) {
         assert originalMap != null;
         // During reconnect we want to look up state from the original records
         final VirtualStateAccessor originalState = originalMap.getState();
@@ -1521,11 +1528,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 originalMap.getRecords(), originalState.getFirstLeafPath(), originalState.getLastLeafPath());
         return switch (config.reconnectMode()) {
             case VirtualMapReconnectMode.PUSH -> new LearnerPushVirtualTreeView<>(
-                    reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover, mapStats);
+                    viewId, this, originalMap.records, originalState, reconnectState, nodeRemover, mapStats);
             case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM -> {
-                final NodeTraversalOrder topToBottom = new TopToBottomTraversalOrder();
+                final NodeTraversalOrder topToBottom = new TopToBottomTraversalOrder(nodeCount);
                 yield new LearnerPullVirtualTreeView<>(
                         reconnectConfig,
+                        viewId,
                         this,
                         originalMap.records,
                         originalState,
@@ -1535,15 +1543,29 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         mapStats);
             }
             case VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC -> {
-                final NodeTraversalOrder twoPhasePessimistic = new TwoPhasePessimisticTraversalOrder();
+                final NodeTraversalOrder twoPhasePessimistic = new TwoPhasePessimisticTraversalOrder(nodeCount);
                 yield new LearnerPullVirtualTreeView<>(
                         reconnectConfig,
+                        viewId,
                         this,
                         originalMap.records,
                         originalState,
                         reconnectState,
                         nodeRemover,
                         twoPhasePessimistic,
+                        mapStats);
+            }
+            case VirtualMapReconnectMode.PULL_PARALLEL_SYNC -> {
+                final NodeTraversalOrder parallelSync = new ParallelSyncTraversalOrder(nodeCount);
+                yield new LearnerPullVirtualTreeView<>(
+                        reconnectConfig,
+                        viewId,
+                        this,
+                        originalMap.records,
+                        originalState,
+                        reconnectState,
+                        nodeRemover,
+                        parallelSync,
                         mapStats);
             }
             default -> throw new UnsupportedOperationException("Unknown reconnect mode: " + config.reconnectMode());
@@ -1602,6 +1624,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 .setRunnable(() -> reconnectHashingFuture.complete(hasher.hash(
                         reconnectRecords::findHash, reconnectIterator, firstLeafPath, lastLeafPath, hashListener)))
                 .setExceptionHandler((thread, exception) -> {
+                    exception.printStackTrace(System.err);
                     // Shut down the iterator. This will cause reconnect to terminate.
                     reconnectIterator.close();
                     final var message = "VirtualMap@" + getRoute() + " failed to hash during reconnect";

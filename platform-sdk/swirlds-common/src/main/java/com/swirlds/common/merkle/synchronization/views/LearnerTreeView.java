@@ -18,19 +18,20 @@ package com.swirlds.common.merkle.synchronization.views;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.Queue;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * A "view" into a merkle tree (or subtree) used to perform a reconnect operation. This view is used to access
@@ -49,24 +50,20 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
      *
      * @param learningSynchronizer the learning synchronizer
      * @param workGroup the work group to run teaching task(s) in
-     * @param inputStream the input stream to read data from teacher
-     * @param outputStream the output stream to write data to teacher
-     * @param rootsToReceive if custom tree views are encountered, they must be added to this queue
+     * @param in the input stream to read data from teacher
+     * @param out the output stream to write data to teacher
+     * @param subtreeListener to notify if custom tree views are encountered
      * @param reconstructedRoot the root node of the reconnected tree must be set here
      */
     void startLearnerTasks(
             final LearningSynchronizer learningSynchronizer,
             final StandardWorkGroup workGroup,
-            final MerkleDataInputStream inputStream,
-            final MerkleDataOutputStream outputStream,
-            final Queue<MerkleNode> rootsToReceive,
-            final AtomicReference<T> reconstructedRoot);
-
-    /**
-     * Aborts the reconnect process on the learner side. It may be used to release resources, when
-     * reconnect failed with an exception.
-     */
-    default void abort() {}
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
+            final Map<Integer, LearnerTreeView<?>> views,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
+            final AtomicReference<MerkleNode> reconstructedRoot,
+            final Consumer<Integer> completeListener);
 
     /**
      * Check if this view represents the root of the state.
@@ -162,6 +159,16 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
      * 		the node to release
      */
     void releaseNode(T node);
+
+    /**
+     * Indicates whether this learner view uses a shared or a dedicated message queue when
+     * reading messages from an async input stream.
+     *
+     * @return true if this view uses a dedicated async input stream queue; false otherwise
+     */
+    default boolean usesSharedInputQueue() {
+        return false;
+    }
 
     /**
      * Record metrics related to queries about children of a given parent during reconnect.

@@ -33,6 +33,7 @@ import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.internal.reconnect.TeacherPullVirtualTreeView;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -327,10 +328,12 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
 
             imitationMap.setChild(0, map.getChild(0).copy());
 
-            final TeacherTreeView<Long> view =
-                    ((VirtualRootNode<?, ?>) map.getChild(1)).buildTeacherView(reconnectConfig);
+            final VirtualRootNode<TestKey, TestValue> virtualRootNode = map.getChild(1);
+            // FUTURE WORK: this is broken with "push" reconnects
+            final TeacherPullVirtualTreeView<TestKey, TestValue> view =
+                    (TeacherPullVirtualTreeView<TestKey, TestValue>) virtualRootNode.buildTeacherView(reconnectConfig);
             final TeacherTreeView<Long> badView =
-                    new BrokenVirtualMapTeacherView(view, permittedInternals, permittedLeaves);
+                    new BrokenVirtualMapTeacherView<>(virtualRootNode, view, permittedInternals, permittedLeaves);
             final MerkleNode imitationRoot = new FakeVirtualRootNode(badView);
             imitationMap.setChild(1, imitationRoot);
 
