@@ -24,9 +24,9 @@ on:
       ref:
         required: true
         description: "The github ref that triggered the workflow"
-      event:
-        required: true
-        description: "The github event of the triggering workflow"
+#      event:
+#        required: true
+#        description: "The github event of the triggering workflow"
 
 defaults:
   run:
@@ -154,12 +154,12 @@ jobs:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{ "ref": "${{ inputs.ref }}" }'
 
-      - name: Trigger ZXF Deploy Integration
-        if: ${{ needs.release-branch.result == 'success' }}
-        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
-        with:
-          workflow: .github/workflows/node-zxf-deploy-integration.yaml
-          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
-          ref: develop # ensure we are always using the workflow definition from the develop branch
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
-          inputs: '{ "event": "${{ inputs.event }}" }'
+#      - name: Trigger ZXF Deploy Integration
+#        if: ${{ needs.release-branch.result == 'success' }}
+#        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
+#        with:
+#          workflow: .github/workflows/node-zxf-deploy-integration.yaml
+#          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
+#          ref: develop # ensure we are always using the workflow definition from the develop branch
+#          token: ${{ secrets.GH_ACCESS_TOKEN }}
+#          inputs: '{ "event": "${{ inputs.event }}" }'

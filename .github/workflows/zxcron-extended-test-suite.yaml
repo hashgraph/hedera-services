@@ -74,8 +74,8 @@ jobs:
             echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_OUTPUT
             echo "### Commit has been tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
             echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_STEP_SUMMARY
-            git tag -d ${XTS_CANDIDATE_TAG}
             git push --delete origin ${XTS_CANDIDATE_TAG}
+            git tag -d ${XTS_CANDIDATE_TAG}
           else
             gh run cancel ${{ github.run_id }}
           fi
