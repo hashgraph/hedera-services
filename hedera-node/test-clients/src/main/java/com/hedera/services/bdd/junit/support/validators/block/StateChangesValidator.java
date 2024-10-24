@@ -88,7 +88,6 @@ import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakePlatformContext;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
@@ -97,12 +96,16 @@ import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.config.BasicConfig;
+import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -129,7 +132,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -256,11 +258,13 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var lifecycles =
                 newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry, metrics);
         this.state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
-        initGenesisPlatformState(
-                new FakePlatformContext(NodeId.of(0), Executors.newSingleThreadScheduledExecutor()),
-                this.state.getWritablePlatformState(),
-                addressBook,
-                currentVersion);
+        final Configuration platformConfig = ConfigurationBuilder.create()
+                .withConfigDataType(MetricsConfig.class)
+                .withConfigDataType(TransactionConfig.class)
+                .withConfigDataType(CryptoConfig.class)
+                .withConfigDataType(BasicConfig.class)
+                .build();
+        initGenesisPlatformState(platformConfig, this.state.getWritablePlatformState(), addressBook, currentVersion);
         final var stateToBeCopied = state;
         state = state.copy();
         // get the state hash before applying the state changes from current block

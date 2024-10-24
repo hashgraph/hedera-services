@@ -91,7 +91,7 @@ class StateTest {
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
         boolean shouldSaveToDisk = random.nextBoolean();
         SignedState signedState = new SignedState(
-                TestPlatformContextBuilder.create().build(),
+                TestPlatformContextBuilder.create().build().getConfiguration(),
                 CryptoStatic::verifySignature,
                 root,
                 "test",

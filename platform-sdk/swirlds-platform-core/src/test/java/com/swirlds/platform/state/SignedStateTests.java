@@ -213,7 +213,7 @@ class SignedStateTests {
         when(state.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState = new SignedState(
-                TestPlatformContextBuilder.create().build(),
+                TestPlatformContextBuilder.create().build().getConfiguration(),
                 mock(SignatureVerifier.class),
                 state,
                 "test",
