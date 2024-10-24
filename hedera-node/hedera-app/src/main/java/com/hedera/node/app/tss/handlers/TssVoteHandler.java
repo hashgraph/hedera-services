@@ -77,7 +77,7 @@ public class TssVoteHandler implements TransactionHandler {
     }
 
     /**
-     * Check if the threshold number of votes (totaling at least 1/thresholdDenominator of weight) have already been received for the
+     * Check if the threshold number of votes (totaling at least 1/3 of weight) have already been received for the
      * candidate roster, all with the same vote byte array.
      *
      * @param tssVoteTransaction the TssVoteTransaction to check
