@@ -86,7 +86,7 @@ public class PlannedIss implements SelfSerializable, PlannedIncident {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

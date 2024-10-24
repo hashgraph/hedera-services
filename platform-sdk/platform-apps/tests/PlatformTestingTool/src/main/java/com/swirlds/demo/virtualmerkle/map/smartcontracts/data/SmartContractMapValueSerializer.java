@@ -41,7 +41,7 @@ public final class SmartContractMapValueSerializer implements ValueSerializer<Sm
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

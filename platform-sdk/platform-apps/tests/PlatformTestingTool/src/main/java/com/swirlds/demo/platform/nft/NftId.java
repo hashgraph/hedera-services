@@ -103,7 +103,7 @@ public class NftId implements SelfSerializable {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION_ORIGINAL;
     }
 

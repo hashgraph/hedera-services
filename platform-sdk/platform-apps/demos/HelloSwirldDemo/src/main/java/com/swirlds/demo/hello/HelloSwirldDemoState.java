@@ -133,7 +133,7 @@ public class HelloSwirldDemoState extends PartialMerkleLeaf implements SwirldSta
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.MIGRATE_TO_SERIALIZABLE;
     }
 

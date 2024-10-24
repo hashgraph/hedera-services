@@ -96,7 +96,7 @@ public class FCMapComplexValue extends PartialNaryMerkleInternal implements Keye
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

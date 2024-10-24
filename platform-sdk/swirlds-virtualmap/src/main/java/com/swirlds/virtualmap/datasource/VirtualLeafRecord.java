@@ -156,7 +156,7 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

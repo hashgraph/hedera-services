@@ -157,7 +157,7 @@ public class RandomDelayCfg implements SelfSerializable, FastCopyable {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.MIGRATE_TO_SERIALIZABLE;
     }
 

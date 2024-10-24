@@ -58,7 +58,7 @@ public class MerkleKey extends PartialMerkleLeaf implements MerkleLeaf {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

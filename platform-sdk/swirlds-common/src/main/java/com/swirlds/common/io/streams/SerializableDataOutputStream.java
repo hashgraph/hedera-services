@@ -284,7 +284,7 @@ public class SerializableDataOutputStream extends AugmentedDataOutputStream {
         if (writeClassId) {
             this.writeLong(serializable.getClassId());
         }
-        this.writeInt(serializable.getVersion());
+        this.writeInt(serializable.getClassVersion());
     }
 
     /**

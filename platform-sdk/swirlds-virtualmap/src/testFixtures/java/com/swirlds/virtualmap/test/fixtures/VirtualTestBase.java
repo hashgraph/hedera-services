@@ -307,7 +307,7 @@ public class VirtualTestBase {
         }
 
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return 1;
         }
 
@@ -343,7 +343,7 @@ public class VirtualTestBase {
         }
 
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return 1;
         }
 

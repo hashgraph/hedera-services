@@ -214,7 +214,7 @@ public class FCQValue<T extends FastCopyable & SerializableHashable> extends Par
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 
