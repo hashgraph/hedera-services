@@ -32,18 +32,15 @@ import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
-import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * Validates and responds to a {@link TssVoteTransactionBody}.
+ * <p>Tracked <a href="https://github.com/hashgraph/hedera-services/issues/14750">here</a>
  */
 @Singleton
 public class TssVoteHandler implements TransactionHandler {
-
-    public static final double THRESHOLD_ONE_THIRD = 3.0;
 
     @Inject
     public TssVoteHandler() {
@@ -65,71 +62,59 @@ public class TssVoteHandler implements TransactionHandler {
         requireNonNull(context);
         final var txBody = context.body().tssVoteOrThrow();
         final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
-        final var nodeId = context.networkInfo().selfNodeInfo().nodeId();
-        final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(txBody.targetRosterHash(), nodeId);
+        final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(
+                txBody.targetRosterHash(), context.creatorInfo().nodeId());
         if (tssBaseStore.exists(tssVoteMapKey)) {
             // Duplicate vote
             return;
         }
 
-        if (!TssVoteHandler.hasReachedThreshold(txBody, context, THRESHOLD_ONE_THIRD)) {
+        if (!TssVoteHandler.hasReachedThreshold(txBody, context)) {
             tssBaseStore.put(tssVoteMapKey, txBody);
         }
     }
 
     /**
-     * Check if the threshold number of votes (totaling at least 1/thresholdDenominator of weight) have already been received for the
+     * Check if the threshold number of votes (totaling at least 1/3 of weight) have already been received for the
      * candidate roster, all with the same vote byte array.
      *
      * @param tssVoteTransaction the TssVoteTransaction to check
      * @param context the HandleContext
-     * @param thresholdDenominator the denominator of the threshold
      * @return true if the threshold has been reached, false otherwise
      */
     public static boolean hasReachedThreshold(
-            TssVoteTransactionBody tssVoteTransaction, HandleContext context, double thresholdDenominator) {
-        final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
+            @NonNull final TssVoteTransactionBody tssVoteTransaction, @NonNull final HandleContext context) {
         final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
 
-        // Get the target roster from the TssVoteTransactionBody
-        Bytes targetRosterHash = tssVoteTransaction.targetRosterHash();
-
-        // Get all votes for the active roster
-        Map<RosterEntry, TssVoteTransactionBody> voteByNode = new HashMap<>();
-
-        // Also get the total active roster weight
-        long activeRosterTotalWeight = 0;
-
-        Roster activeRoster = rosterStore.getActiveRoster();
+        final Roster activeRoster = rosterStore.getActiveRoster();
         if (activeRoster == null) {
             throw new IllegalArgumentException("No active roster found");
         }
+        // Get the target roster from the TssVoteTransactionBody
+        final Bytes targetRosterHash = tssVoteTransaction.targetRosterHash();
 
-        // For every node in the active roster, check if there is a vote for the target roster hash
-        for (RosterEntry rosterEntry : rosterStore.getActiveRoster().rosterEntries()) {
-            activeRosterTotalWeight += rosterEntry.weight();
-            final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(targetRosterHash, rosterEntry.nodeId());
-            if (tssBaseStore.exists(tssVoteMapKey)) {
-                voteByNode.put(rosterEntry, tssBaseStore.getVote(tssVoteMapKey));
-            }
-        }
-
+        // Also get the total active roster weight
+        long activeRosterTotalWeight = 0;
         // Initialize a counter for the total weight of votes with the same vote byte array
         long voteWeight = 0L;
-
-        // Iterate over the votes which has the same target roster hash
-        for (RosterEntry rosterEntryKey : voteByNode.keySet()) {
-            final TssVoteTransactionBody vote = voteByNode.get(rosterEntryKey);
-            // If the vote byte array matches the one in the TssVoteTransaction, add the weight of the vote to the
-            // counter
-            if (vote.tssVote().equals(tssVoteTransaction.tssVote())) {
-                voteWeight += rosterEntryKey.weight();
+        final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
+        // For every node in the active roster, check if there is a vote for the target roster hash
+        for (final RosterEntry rosterEntry : activeRoster.rosterEntries()) {
+            activeRosterTotalWeight += rosterEntry.weight();
+            final var tssVoteMapKey = new TssVoteMapKey(targetRosterHash, rosterEntry.nodeId());
+            if (tssBaseStore.exists(tssVoteMapKey)) {
+                final var vote = tssBaseStore.getVote(tssVoteMapKey);
+                // If the vote byte array matches the one in the TssVoteTransaction, add the weight of the vote to the
+                // counter
+                if (vote.tssVote().equals(tssVoteTransaction.tssVote())) {
+                    voteWeight += rosterEntry.weight();
+                }
             }
         }
 
-        // Check if the total weight of votes with the same vote byte array is at least 1/thresholdDenominator of the
-        // total weight of the
-        // network
-        return voteWeight >= activeRosterTotalWeight / thresholdDenominator;
+        // Check if the total weight of votes with the same vote byte array is at least 1/3 of the
+        // total weight of the network
+        // Adding a +1 to the threshold to account for rounding errors.
+        return voteWeight >= (activeRosterTotalWeight / 3) + ((activeRosterTotalWeight % 3) == 0 ? 0 : 1);
     }
 }

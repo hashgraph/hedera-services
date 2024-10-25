@@ -19,6 +19,8 @@ package com.hedera.node.app.tss.handlers;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,11 +35,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.tss.stores.WritableTssStore;
-import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadableRosterStore;
-import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -55,7 +55,7 @@ class TssVoteHandlerTest {
     @Mock
     private PreHandleContext preHandleContext;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
     @Mock
@@ -68,28 +68,13 @@ class TssVoteHandlerTest {
     private TssVoteTransactionBody tssVoteTransactionBody;
 
     @Mock
-    private Roster roster;
-
-    @Mock
-    private RosterEntry rosterEntry;
-
-    @Mock
     private TransactionBody transactionBody;
 
     @Mock
     private StoreFactory storeFactory;
 
-    @Mock
-    private NetworkInfo networkInfo;
-
-    @Mock
+    @Mock(strictness = LENIENT)
     private NodeInfo nodeInfo;
-
-    @Mock
-    private Configuration configuration;
-
-    @Mock
-    private TssConfig tssConfig;
 
     private TssVoteHandler tssVoteHandler;
 
@@ -97,6 +82,8 @@ class TssVoteHandlerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         tssVoteHandler = new TssVoteHandler();
+        when(handleContext.creatorInfo()).thenReturn(nodeInfo);
+        when(nodeInfo.nodeId()).thenReturn(1L);
     }
 
     @Test
@@ -105,21 +92,17 @@ class TssVoteHandlerTest {
         when(transactionBody.tssVoteOrThrow()).thenReturn(tssVoteTransactionBody);
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssBaseStore);
-        when(storeFactory.readableStore(ReadableRosterStore.class)).thenReturn(rosterStore);
-        when(handleContext.configuration()).thenReturn(configuration);
-        when(configuration.getConfigData(TssConfig.class)).thenReturn(tssConfig);
-        when(tssConfig.keyActiveRoster()).thenReturn(true);
-
-        when(rosterStore.getActiveRoster()).thenReturn(roster);
-
-        when(handleContext.networkInfo()).thenReturn(networkInfo);
-        when(networkInfo.selfNodeInfo()).thenReturn(nodeInfo);
-        when(nodeInfo.nodeId()).thenReturn(1L);
+        ;
 
         when(tssVoteTransactionBody.targetRosterHash()).thenReturn(Bytes.EMPTY);
         when(tssBaseStore.exists(any(TssVoteMapKey.class))).thenReturn(false);
 
-        tssVoteHandler.handle(handleContext);
+        try (MockedStatic<TssVoteHandler> mockedStatic = mockStatic(TssVoteHandler.class)) {
+            mockedStatic
+                    .when(() -> TssVoteHandler.hasReachedThreshold(any(), any()))
+                    .thenReturn(false);
+            tssVoteHandler.handle(handleContext);
+        }
 
         verify(tssBaseStore).put(any(TssVoteMapKey.class), eq(tssVoteTransactionBody));
     }
@@ -130,9 +113,6 @@ class TssVoteHandlerTest {
         when(transactionBody.tssVoteOrThrow()).thenReturn(tssVoteTransactionBody);
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssBaseStore);
-        when(handleContext.networkInfo()).thenReturn(networkInfo);
-        when(networkInfo.selfNodeInfo()).thenReturn(nodeInfo);
-        when(nodeInfo.nodeId()).thenReturn(1L);
         when(tssVoteTransactionBody.targetRosterHash()).thenReturn(Bytes.EMPTY);
         when(tssBaseStore.exists(any(TssVoteMapKey.class))).thenReturn(true);
 
@@ -144,18 +124,22 @@ class TssVoteHandlerTest {
     @Test
     void hasReachedThresholdReturnsFalseWhenThresholdIsNotMet() {
         // Setup in-memory data
-        RosterEntry rosterEntry1 = new RosterEntry(1L, 1L, null, null, List.of());
-        RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, null, List.of());
-        Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2));
-        TssVoteTransactionBody voteTransactionBody =
+        final RosterEntry rosterEntry1 = new RosterEntry(1L, 1L, null, null, List.of());
+        final RosterEntry rosterEntry2 = new RosterEntry(2L, 4L, null, null, List.of());
+        final RosterEntry rosterEntry3 = new RosterEntry(3L, 2L, null, null, List.of());
+        final Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2, rosterEntry3));
+        final TssVoteTransactionBody voteTransactionBody =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);
-        TssVoteTransactionBody voteTransactionBody2 =
+        final TssVoteTransactionBody voteTransactionBody2 =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.fromHex("01"));
+        final TssVoteTransactionBody voteTransactionBody3 =
+                new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.fromHex("02"));
 
         // Setup stores
-        Map<TssVoteMapKey, TssVoteTransactionBody> voteStore = new HashMap<>();
+        final Map<TssVoteMapKey, TssVoteTransactionBody> voteStore = new HashMap<>();
         voteStore.put(new TssVoteMapKey(Bytes.EMPTY, 1L), voteTransactionBody);
         voteStore.put(new TssVoteMapKey(Bytes.EMPTY, 2L), voteTransactionBody2);
+        voteStore.put(new TssVoteMapKey(Bytes.EMPTY, 3L), voteTransactionBody3);
 
         // Mock behavior
         when(handleContext.storeFactory()).thenReturn(storeFactory);
@@ -167,26 +151,30 @@ class TssVoteHandlerTest {
         when(tssBaseStore.getVote(any(TssVoteMapKey.class)))
                 .thenAnswer(invocation -> voteStore.get(invocation.getArgument(0)));
 
-        boolean result = TssVoteHandler.hasReachedThreshold(voteTransactionBody, handleContext, 2L);
+        final boolean result = TssVoteHandler.hasReachedThreshold(voteTransactionBody, handleContext);
 
-        assertFalse(result);
+        assertFalse(result, "Threshold should not be met");
     }
 
     @Test
-    void hasReachedThresholdReturnsFalseWhenThresholdIsMet() {
+    void hasReachedThresholdReturnsTrueWhenThresholdIsMet() {
         // Setup in-memory data
-        RosterEntry rosterEntry1 = new RosterEntry(1L, 2L, null, null, List.of());
-        RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, null, List.of());
-        Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2));
-        TssVoteTransactionBody voteTransactionBody =
+        final RosterEntry rosterEntry1 = new RosterEntry(1L, 1L, null, null, List.of());
+        final RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, null, List.of());
+        final RosterEntry rosterEntry3 = new RosterEntry(3L, 3L, null, null, List.of());
+        final Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2, rosterEntry3));
+        final TssVoteTransactionBody voteTransactionBody =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);
-        TssVoteTransactionBody voteTransactionBody2 =
+        final TssVoteTransactionBody voteTransactionBody2 =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.fromHex("01"));
+        final TssVoteTransactionBody voteTransactionBody3 =
+                new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);
 
         // Setup stores
-        Map<TssVoteMapKey, TssVoteTransactionBody> voteStore = new HashMap<>();
+        final Map<TssVoteMapKey, TssVoteTransactionBody> voteStore = new HashMap<>();
         voteStore.put(new TssVoteMapKey(Bytes.EMPTY, 1L), voteTransactionBody);
         voteStore.put(new TssVoteMapKey(Bytes.EMPTY, 2L), voteTransactionBody2);
+        voteStore.put(new TssVoteMapKey(Bytes.EMPTY, 3L), voteTransactionBody3);
 
         // Mock behavior
         when(handleContext.storeFactory()).thenReturn(storeFactory);
@@ -198,9 +186,9 @@ class TssVoteHandlerTest {
         when(tssBaseStore.getVote(any(TssVoteMapKey.class)))
                 .thenAnswer(invocation -> voteStore.get(invocation.getArgument(0)));
 
-        boolean result = TssVoteHandler.hasReachedThreshold(voteTransactionBody, handleContext, 2L);
+        boolean result = TssVoteHandler.hasReachedThreshold(voteTransactionBody, handleContext);
 
-        assertTrue(result);
+        assertTrue(result, "Threshold should be met");
     }
 
     @Test
@@ -224,6 +212,6 @@ class TssVoteHandlerTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> TssVoteHandler.hasReachedThreshold(voteTransactionBody, handleContext, 2.0));
+                () -> TssVoteHandler.hasReachedThreshold(voteTransactionBody, handleContext));
     }
 }
