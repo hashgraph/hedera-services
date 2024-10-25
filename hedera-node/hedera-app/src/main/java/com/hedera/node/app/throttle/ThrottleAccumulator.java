@@ -205,8 +205,10 @@ public class ThrottleAccumulator {
         if (queryFunction == CRYPTO_GET_ACCOUNT_BALANCE
                 && configuration.getConfigData(TokensConfig.class).countingGetBalanceThrottleEnabled()) {
             final var accountStore = new ReadableStoreFactory(state).getStore(ReadableAccountStore.class);
-            final int balanceCount = getBalanceCount(query, accountStore);
-            allReqMet = manager.allReqsMetAt(now, Math.max(1, balanceCount), ONE_TO_ONE);
+            final var tokenConfig = configuration.getConfigData(TokensConfig.class);
+            final int associationCount =
+                    Math.clamp(getAssociationCount(query, accountStore), 1, tokenConfig.maxRelsPerInfoQuery());
+            allReqMet = manager.allReqsMetAt(now, associationCount, ONE_TO_ONE);
         } else {
             allReqMet = manager.allReqsMetAt(now);
         }
@@ -218,12 +220,12 @@ public class ThrottleAccumulator {
         return false;
     }
 
-    private int getBalanceCount(@NonNull final Query query, @NonNull final ReadableAccountStore accountStore) {
+    private int getAssociationCount(@NonNull final Query query, @NonNull final ReadableAccountStore accountStore) {
         final var accountID = query.cryptogetAccountBalanceOrThrow().accountID();
         if (accountID != null) {
             final var account = accountStore.getAccountById(accountID);
             if (account != null) {
-                return account.numberPositiveBalances();
+                return account.numberAssociations();
             }
         }
         return 0;
