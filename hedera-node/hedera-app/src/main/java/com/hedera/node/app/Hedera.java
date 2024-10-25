@@ -318,6 +318,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @Nullable
     private CompletableFuture<Bytes> initialStateHashFuture;
 
+    private List<StateChanges.Builder> migrationChanges;
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -829,8 +831,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         // state definitions for those children. (And note services may even require migrations for
         // those children to be usable with the current version of the software.)
         final var migrationStateChanges = ((MerkleStateRoot) state).platformStateInitChangesOrThrow();
+
+        final var stateChanges = new ArrayList<StateChanges.Builder>();
+        stateChanges.addAll(migrationStateChanges);
+        stateChanges.addAll(migrationChanges);
         // With the States API grounded in the working state, we can create the object graph from it
-        initializeDagger(state, trigger, migrationStateChanges);
+        initializeDagger(state, trigger, stateChanges);
         // Log the active configuration
         logConfiguration();
     }
@@ -1048,6 +1054,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      */
     private boolean isNotEmbedded() {
         return instantSource == InstantSource.system();
+    }
+
+    public void setMigrationStateChanges(final List<StateChanges.Builder> migrationStateChanges) {
+        migrationChanges = migrationStateChanges;
     }
 
     private class ReadReconnectStartingStateHash implements ReconnectCompleteListener {

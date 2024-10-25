@@ -321,7 +321,8 @@ public class ServicesMain implements SwirldMain {
         ServicesSoftwareVersion deserializedVersion = getServicesSoftwareVersion(previousSoftwareVersion);
 
         // Migrate and initialize the State API before creating the platform
-        migrateAndInitializeServices(state, deserializedVersion, trigger, metrics, hedera);
+        final var migrationStateChanges =
+                migrateAndInitializeServices(state, deserializedVersion, trigger, metrics, hedera);
 
         // Initialize the address book and set on platform builder
         final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
@@ -342,6 +343,7 @@ public class ServicesMain implements SwirldMain {
                 .withRoster(roster)
                 .withKeysAndCerts(keysAndCerts);
 
+        hedera.setMigrationStateChanges(migrationStateChanges);
         hedera.setInitialStateHash(stateHash);
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
