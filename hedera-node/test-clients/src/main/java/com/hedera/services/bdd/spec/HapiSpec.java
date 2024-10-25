@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.resourceAsString;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.turnLoggingOff;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.utilops.SysFileOverrideOp.Target.*;
@@ -52,7 +53,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.WITH_LONG_TERM_SCHEDULE_TURNED_ON_SUFFIX;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -88,9 +92,11 @@ import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.utilops.SysFileOverrideOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AbstractEventualStreamAssertion;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -150,6 +156,8 @@ public class HapiSpec implements Runnable, Executable {
      * operations with equivalent EthereumTransactions
      */
     private static final String AS_WRITTEN_DISPLAY_NAME = "as written";
+
+    private static final String LONG_TERM_FLAG = "scheduling.longTermEnabled";
 
     public static final ThreadLocal<HederaNetwork> TARGET_NETWORK = new ThreadLocal<>();
     /**
@@ -549,9 +557,16 @@ public class HapiSpec implements Runnable, Executable {
 
         List<SpecOperation> ops = new ArrayList<>();
 
-        if (!suitePrefix.endsWith(ETH_SUFFIX)) {
-            ops.addAll(Stream.of(given, when, then).flatMap(Arrays::stream).toList());
-        } else {
+        /**
+         * Handling special prefix cases:
+         * If the class name is prefixed with ETH_SUFFIX we convert all
+         * HapiContractCall and HapiContractCreate transactions into HapiEthereumCall and HapiEthereumContractCreate.
+         *
+         * If the class name is prefixed with WITH_LONG_TERM_SCHEDULE_TURNED_ON_SUFFIX we turn on the
+         * long term flag(scheduling.longTermEnabled) and... TODO: add what else will be done here
+         */
+        var className = name.split("\\.")[0];
+        if (className.endsWith(ETH_SUFFIX)) {
             if (!isEthereumAccountCreatedForSpec(this)) {
                 ops.addAll(createEthereumAccountForSpec(this));
             }
@@ -562,6 +577,12 @@ public class HapiSpec implements Runnable, Executable {
                     adminKey,
                     hapiSetup.defaultCreateGas(),
                     this));
+        } else if (className.endsWith(WITH_LONG_TERM_SCHEDULE_TURNED_ON_SUFFIX)) {
+            var enableLongTermSchedule = turnLongTermScheduleOnOperation();
+            ops.add(enableLongTermSchedule);
+            ops.addAll(Stream.of(given, when, then).flatMap(Arrays::stream).toList());
+        } else { // if there is no suffix that matches we just add the test operations to the list without modification
+            ops.addAll(Stream.of(given, when, then).flatMap(Arrays::stream).toList());
         }
 
         try {
@@ -577,6 +598,13 @@ public class HapiSpec implements Runnable, Executable {
             specStateObserver.observe(new SpecStateObserver.SpecState(hapiRegistry, keyFactory));
         }
         nullOutInfrastructure();
+    }
+
+    private static HapiFileUpdate turnLongTermScheduleOnOperation() {
+        return fileUpdate(HapiSuite.APP_PROPERTIES)
+            .fee(ONE_HUNDRED_HBARS)
+            .payingWith(EXCHANGE_RATE_CONTROL)
+            .overridingProps(Map.of(LONG_TERM_FLAG, "true"));
     }
 
     @Nullable

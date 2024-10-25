@@ -166,6 +166,7 @@ public abstract class HapiSuite {
 
     public static final HapiSpecSetup DEFAULT_PROPS = HapiSpecSetup.getDefaultInstance();
     public static final String ETH_SUFFIX = "_Eth";
+    public static final String WITH_LONG_TERM_SCHEDULE_TURNED_ON_SUFFIX = "_LongTermSchedule";
 
     private boolean deferResultsSummary = false;
     private boolean onlyLogHeader = false;
