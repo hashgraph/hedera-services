@@ -16,6 +16,12 @@
 
 package com.hedera.node.app.tss;
 
+import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ACTIVE_ROSTER;
+import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.CURRENT_CANDIDATE_ROSTER;
+import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ROSTER_NODE_1;
+import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ROSTER_NODE_2;
+import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ROSTER_NODE_3;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -25,9 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -125,37 +129,9 @@ public class TssBaseServiceTest {
         given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
 
         // Mock the candidate and active rosters
-        lenient().when(rosterStore.getCandidateRoster()).thenReturn(TssBaseServiceTest.CURRENT_CANDIDATE_ROSTER);
-        lenient().when(rosterStore.getActiveRoster()).thenReturn(TssBaseServiceTest.ACTIVE_ROSTER);
+        lenient().when(rosterStore.getCandidateRoster()).thenReturn(CURRENT_CANDIDATE_ROSTER);
+        lenient().when(rosterStore.getActiveRoster()).thenReturn(ACTIVE_ROSTER);
 
         return rosterStore;
     }
-
-    public static final Node NODE_1 = Node.newBuilder().nodeId(1).weight(10).build();
-    private static final RosterEntry ROSTER_NODE_1 = RosterEntry.newBuilder()
-            .nodeId(NODE_1.nodeId())
-            .weight(NODE_1.weight())
-            .build();
-    public static final Node NODE_2 = Node.newBuilder().nodeId(2).weight(20).build();
-    private static final RosterEntry ROSTER_NODE_2 = RosterEntry.newBuilder()
-            .nodeId(NODE_2.nodeId())
-            .weight(NODE_2.weight())
-            .build();
-    public static final Node NODE_3 = Node.newBuilder().nodeId(3).weight(30).build();
-    private static final RosterEntry ROSTER_NODE_3 = RosterEntry.newBuilder()
-            .nodeId(NODE_3.nodeId())
-            .weight(NODE_3.weight())
-            .build();
-    public static final Node NODE_4 = Node.newBuilder().nodeId(4).weight(40).build();
-    private static final RosterEntry ROSTER_NODE_4 = RosterEntry.newBuilder()
-            .nodeId(NODE_4.nodeId())
-            .weight(NODE_4.weight())
-            .build();
-
-    private static final Roster CURRENT_CANDIDATE_ROSTER = Roster.newBuilder()
-            .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2))
-            .build();
-    private static final Roster ACTIVE_ROSTER = Roster.newBuilder()
-            .rosterEntries(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3, ROSTER_NODE_4)
-            .build();
 }
