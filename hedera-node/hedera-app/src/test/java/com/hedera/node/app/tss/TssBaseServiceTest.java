@@ -88,7 +88,7 @@ public class TssBaseServiceTest {
         mockWritableRosterStore();
 
         // Attempt to set the same candidate roster
-        subject.setCandidateRoster(CURRENT_CANDIDATE_ROSTER, handleContext, readableStoreFactory);
+        subject.setCandidateRoster(CURRENT_CANDIDATE_ROSTER, handleContext);
         verify(rosterStore, never()).putCandidateRoster(any());
     }
 
@@ -101,7 +101,7 @@ public class TssBaseServiceTest {
         given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
 
         // Attempt to set the active roster as the new candidate roster
-        subject.setCandidateRoster(ACTIVE_ROSTER, handleContext, readableStoreFactory);
+        subject.setCandidateRoster(ACTIVE_ROSTER, handleContext);
         verify(rosterStore, never()).putCandidateRoster(any());
     }
 
@@ -115,7 +115,7 @@ public class TssBaseServiceTest {
         final var inputRoster = Roster.newBuilder()
                 .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3))
                 .build();
-        subject.setCandidateRoster(inputRoster, handleContext, readableStoreFactory);
+        subject.setCandidateRoster(inputRoster, handleContext);
         verify(rosterStore).putCandidateRoster(inputRoster);
     }
 

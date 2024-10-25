@@ -142,6 +142,8 @@ public class AddressBookTestBase {
     private final byte[] invalidIPBytes = {49, 46, 48, 46, 48, 46, 48};
     protected final ServiceEndpoint endpoint10 = new ServiceEndpoint(Bytes.wrap(invalidIPBytes), 1234, null);
 
+    private static final Bytes TSS_KEY = Bytes.wrap(new byte[] {1, 2, 3});
+
     protected Node node;
 
     @Mock
@@ -247,7 +249,7 @@ public class AddressBookTestBase {
                 0,
                 deleted,
                 key,
-                anotherKey);
+                TSS_KEY);
     }
 
     protected void givenValidNodeWithAdminKey(Key adminKey) {
@@ -262,7 +264,7 @@ public class AddressBookTestBase {
                 0,
                 false,
                 adminKey,
-                anotherKey);
+                TSS_KEY);
     }
 
     protected Node createNode() {
@@ -276,7 +278,7 @@ public class AddressBookTestBase {
                 .grpcCertificateHash(Bytes.wrap(grpcCertificateHash))
                 .weight(0)
                 .adminKey(key)
-                .tssEncryptionKey(anotherKey)
+                .tssEncryptionKey(TSS_KEY)
                 .build();
     }
 

@@ -27,7 +27,6 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.api.TssPrivateShare;
@@ -119,19 +118,20 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void setCandidateRoster(
-            @NonNull final Roster candidateRoster,
-            final HandleContext context,
-            @NonNull final ReadableStoreFactory storeFactory) {
+    public void setCandidateRoster(@NonNull final Roster candidateRoster, @NonNull final HandleContext context) {
         requireNonNull(candidateRoster);
+
+        // (TSS-FUTURE) Implement `keyActiveRoster`
+        // https://github.com/hashgraph/hedera-services/issues/16166
+        final var storeFactory = context.storeFactory();
         // generate TSS messages based on the active roster and the candidate roster
-        final var tssStore = storeFactory.getStore(ReadableTssStore.class);
+        final var tssStore = storeFactory.readableStore(ReadableTssStore.class);
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
 
         final var activeRoster =
-                storeFactory.getStore(ReadableRosterStore.class).getActiveRoster();
+                storeFactory.readableStore(ReadableRosterStore.class).getActiveRoster();
         final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
 
         final var activeDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, selfId);

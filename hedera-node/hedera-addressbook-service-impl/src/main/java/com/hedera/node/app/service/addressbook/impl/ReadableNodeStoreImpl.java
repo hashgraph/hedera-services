@@ -87,19 +87,23 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
         return nodesState().keys();
     }
 
-    public static Roster constructFromNodesState(@NonNull final ReadableKVState<EntityNumber, Node> nodesState) {
+    private Roster constructFromNodesState(@NonNull final ReadableKVState<EntityNumber, Node> nodesState) {
         final var rosterEntries = new ArrayList<RosterEntry>();
         for (final Iterator<EntityNumber> it = nodesState.keys(); it.hasNext(); ) {
             final var nodeNumber = it.next();
-            final var node = nodesState.get(nodeNumber);
-            final var entry = RosterEntry.newBuilder()
-                    .nodeId(node.nodeId())
-                    .weight(node.weight())
-                    .gossipCaCertificate(node.gossipCaCertificate())
-                    .gossipEndpoint(node.gossipEndpoint())
-                    .build();
-            rosterEntries.add(entry);
+            final var nodeDetail = nodesState.get(nodeNumber);
+            if (!nodeDetail.deleted()) {
+                final var entry = RosterEntry.newBuilder()
+                        .nodeId(nodeDetail.nodeId())
+                        .weight(nodeDetail.weight())
+                        .gossipCaCertificate(nodeDetail.gossipCaCertificate())
+                        .gossipEndpoint(nodeDetail.gossipEndpoint())
+                        .tssEncryptionKey(nodeDetail.tssEncryptionKey())
+                        .build();
+                rosterEntries.add(entry);
+            }
         }
+
         rosterEntries.sort(Comparator.comparingLong(RosterEntry::nodeId));
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }

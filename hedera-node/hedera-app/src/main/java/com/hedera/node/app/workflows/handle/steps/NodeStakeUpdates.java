@@ -29,7 +29,6 @@ import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPerio
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.handle.Dispatch;
@@ -38,6 +37,7 @@ import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -148,9 +148,11 @@ public class NodeStakeUpdates {
             final var config = tokenContext.configuration();
             final var tssConfig = config.getConfigData(TssConfig.class);
             if (tssConfig.keyCandidateRoster()) {
-                final var writableFactory =
-                        new WritableStoreFactory(stack, RosterStateId.NAME, config, storeMetricsService);
-                keyNewRoster(dispatch.handleContext(), dispatch.readableStoreFactory(), writableFactory);
+                // We can't use the handle context to retrieve a WritableRosterStore object because
+                // the handle context is only scoped to the token service, so we use the
+                // `newWritableRosterStore` method here instead
+                final var rosterStore = newWritableRosterStore(stack, config);
+                keyNewRoster(dispatch.handleContext(), rosterStore);
             }
         }
     }
@@ -171,20 +173,21 @@ public class NodeStakeUpdates {
     }
 
     private void keyNewRoster(
-            @NonNull final HandleContext context,
-            @NonNull final ReadableStoreFactory readableStoreFactory,
-            @NonNull final WritableStoreFactory writableStoreFactory) {
-
-        final var nodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
+            @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
+        final var nodeStore = handleContext.storeFactory().readableStore(ReadableNodeStore.class);
         final var newCandidateRoster = nodeStore.newRosterFromNodes();
 
-        final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
         if (!Objects.equals(newCandidateRoster, rosterStore.getCandidateRoster())
                 && !Objects.equals(newCandidateRoster, rosterStore.getActiveRoster())) {
             rosterStore.putCandidateRoster(newCandidateRoster);
+            tssBaseService.setCandidateRoster(newCandidateRoster, handleContext);
         }
+    }
 
-        tssBaseService.setCandidateRoster(newCandidateRoster, context, readableStoreFactory);
+    private WritableRosterStore newWritableRosterStore(
+            @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
+        final var writableFactory = new WritableStoreFactory(stack, RosterStateId.NAME, config, storeMetricsService);
+        return writableFactory.getStore(WritableRosterStore.class);
     }
 
     private static boolean isLaterUtcDay(@NonNull final Instant now, @NonNull final Instant then) {

@@ -33,8 +33,7 @@ public interface ReadableNodeStore {
 
     /**
      * Constructs a new {@link Roster} object using the current info for each node defined in state.
-     * Accordingly, be warned that <b>this method iterates over all nodes!</b> Only invoke it if
-     * absolutely necessary, e.g. in the case of creating a new roster.
+     * Accordingly, be warned that <b>this method iterates over all nodes.</b>
      *
      * @return a new roster, representing the most current node configurations available
      */

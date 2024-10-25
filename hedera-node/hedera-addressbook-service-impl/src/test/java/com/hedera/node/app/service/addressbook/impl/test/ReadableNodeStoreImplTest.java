@@ -114,11 +114,14 @@ class ReadableNodeStoreImplTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("Constructing a new roster includes all of the latest nodes defined in state")
-    void newRosterFromNodesIncludesAllDefinitions() {
+    void newRosterFromNodesIncludesAllUndeletedDefinitions() {
         final ReadableKVState<EntityNumber, Node> nodesState = emptyReadableNodeStateBuilder()
                 .value(EntityNumber.newBuilder().number(1).build(), NODE_1)
                 .value(EntityNumber.newBuilder().number(2).build(), NODE_2)
                 .value(EntityNumber.newBuilder().number(3).build(), NODE_3)
+                .value(
+                        EntityNumber.newBuilder().number(4).build(),
+                        Node.newBuilder().nodeId(4).weight(40).deleted(true).build())
                 .build();
         given(readableStates.<EntityNumber, Node>get(anyString())).willReturn(nodesState);
 

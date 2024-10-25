@@ -72,17 +72,19 @@ public class SynchronizedThrottleAccumulator {
      *
      * @param queryFunction the functionality of the query
      * @param query the query to update the throttle requirements for
+     * @param state the current state of the node
      * @param queryPayerId the payer id of the query
      * @return whether the query should be throttled
      */
     public synchronized boolean shouldThrottle(
             @NonNull final HederaFunctionality queryFunction,
             @NonNull final Query query,
+            @NonNull final State state,
             @Nullable AccountID queryPayerId) {
         requireNonNull(query);
         requireNonNull(queryFunction);
         setDecisionTime(instantSource.instant());
-        return frontendThrottle.checkAndEnforceThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
+        return frontendThrottle.checkAndEnforceThrottle(queryFunction, lastDecisionTime, query, state, queryPayerId);
     }
 
     private void setDecisionTime(@NonNull final Instant time) {

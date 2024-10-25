@@ -18,7 +18,6 @@ package com.hedera.node.app.tss;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -78,12 +77,10 @@ public interface TssBaseService extends Service {
     /**
      * Starts the process of keying a candidate roster with TSS key material.
      *
-     * @param roster               the candidate roster to key
-     * @param context
-     * @param readableStoreFactory readable store factory
+     * @param roster the candidate roster to key
+     * @param context the TSS context
      */
-    void setCandidateRoster(
-            @NonNull Roster roster, final HandleContext context, @NonNull ReadableStoreFactory readableStoreFactory);
+    void setCandidateRoster(@NonNull Roster roster, @NonNull HandleContext context);
 
     /**
      * Requests a ledger signature on a message hash.  The ledger signature is computed asynchronously and returned

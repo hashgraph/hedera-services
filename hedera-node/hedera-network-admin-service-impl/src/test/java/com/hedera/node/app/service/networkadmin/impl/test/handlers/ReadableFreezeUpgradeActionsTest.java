@@ -116,6 +116,8 @@ class ReadableFreezeUpgradeActionsTest {
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     A_THRESHOLD_KEY)))
             .build();
+    private static final Bytes TSS_KEY = Bytes.wrap(new byte[] {1, 2, 3});
+
     private Path noiseFileLoc;
     private Path noiseSubFileLoc;
     private Path zipArchivePath; // path to valid.zip test zip file (in zipSourceDir directory)
@@ -428,7 +430,7 @@ class ReadableFreezeUpgradeActionsTest {
                 2,
                 false,
                 A_COMPLEX_KEY,
-                A_COMPLEX_KEY);
+                TSS_KEY);
         final var node2 = new Node(
                 2,
                 asAccount(4),
@@ -442,7 +444,7 @@ class ReadableFreezeUpgradeActionsTest {
                 4,
                 false,
                 A_COMPLEX_KEY,
-                A_COMPLEX_KEY);
+                TSS_KEY);
         final var node3 = new Node(
                 3,
                 asAccount(6),
@@ -456,7 +458,7 @@ class ReadableFreezeUpgradeActionsTest {
                 1,
                 true,
                 A_COMPLEX_KEY,
-                A_COMPLEX_KEY);
+                TSS_KEY);
         final var node4 = new Node(
                 4,
                 asAccount(8),
@@ -471,7 +473,7 @@ class ReadableFreezeUpgradeActionsTest {
                 8,
                 false,
                 A_COMPLEX_KEY,
-                A_COMPLEX_KEY);
+                TSS_KEY);
         final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
                 .value(new EntityNumber(4), node4)
                 .value(new EntityNumber(2), node2)
@@ -556,7 +558,7 @@ class ReadableFreezeUpgradeActionsTest {
                 2,
                 false,
                 A_COMPLEX_KEY,
-                A_COMPLEX_KEY);
+                TSS_KEY);
         final var node2 = new Node(
                 1,
                 asAccount(4),
@@ -570,7 +572,7 @@ class ReadableFreezeUpgradeActionsTest {
                 4,
                 false,
                 A_COMPLEX_KEY,
-                A_COMPLEX_KEY);
+                TSS_KEY);
         final var node3 = new Node(
                 2,
                 asAccount(6),
@@ -584,7 +586,7 @@ class ReadableFreezeUpgradeActionsTest {
                 1,
                 false,
                 A_COMPLEX_KEY,
-                A_COMPLEX_KEY);
+                TSS_KEY);
         final var node4 = new Node(
                 3,
                 asAccount(8),
@@ -599,7 +601,7 @@ class ReadableFreezeUpgradeActionsTest {
                 8,
                 true,
                 A_COMPLEX_KEY,
-                A_COMPLEX_KEY);
+                TSS_KEY);
         final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
                 .value(new EntityNumber(3), node4)
                 .value(new EntityNumber(1), node2)

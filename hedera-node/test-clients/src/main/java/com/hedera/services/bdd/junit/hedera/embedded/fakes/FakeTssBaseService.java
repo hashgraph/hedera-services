@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.handlers.TssHandlers;
@@ -186,13 +185,10 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void setCandidateRoster(
-            @NonNull final Roster roster,
-            @NonNull final HandleContext context,
-            @NonNull final ReadableStoreFactory readableStoreFactory) {
+    public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
         requireNonNull(context);
-        delegate.setCandidateRoster(roster, context, readableStoreFactory);
+        delegate.setCandidateRoster(roster, context);
     }
 
     @Override
