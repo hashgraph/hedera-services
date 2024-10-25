@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -37,8 +38,8 @@ import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.hashing.PbjStreamHasher;
 import com.swirlds.platform.event.hashing.UnsignedEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -75,7 +76,7 @@ public class TipsetEventCreator implements EventCreator {
     /**
      * The address book for the current network.
      */
-    private final AddressBook addressBook;
+    private final Roster roster;
 
     /**
      * The size of the current address book.
@@ -128,7 +129,7 @@ public class TipsetEventCreator implements EventCreator {
      * @param platformContext     the platform context
      * @param random              a source of randomness, does not need to be cryptographically secure
      * @param signer              used for signing things with this node's private key
-     * @param addressBook         the current address book
+     * @param roster              the current roster
      * @param selfId              this node's ID
      * @param softwareVersion     the current software version of the application
      * @param transactionSupplier provides transactions to be included in new events
@@ -137,7 +138,7 @@ public class TipsetEventCreator implements EventCreator {
             @NonNull final PlatformContext platformContext,
             @NonNull final Random random,
             @NonNull final Signer signer,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final TransactionSupplier transactionSupplier) {
@@ -148,23 +149,23 @@ public class TipsetEventCreator implements EventCreator {
         this.selfId = Objects.requireNonNull(selfId);
         this.transactionSupplier = Objects.requireNonNull(transactionSupplier);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
-        this.addressBook = Objects.requireNonNull(addressBook);
+        this.roster = Objects.requireNonNull(roster);
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
         cryptography = platformContext.getCryptography();
         antiSelfishnessFactor = Math.max(1.0, eventCreationConfig.antiSelfishnessFactor());
-        tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
+        tipsetMetrics = new TipsetMetrics(platformContext, roster);
         ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
-        tipsetTracker = new TipsetTracker(time, addressBook, ancientMode);
+        tipsetTracker = new TipsetTracker(time, roster, ancientMode);
         childlessOtherEventTracker = new ChildlessEventTracker();
-        tipsetWeightCalculator = new TipsetWeightCalculator(
-                platformContext, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
-        networkSize = addressBook.getSize();
+        tipsetWeightCalculator =
+                new TipsetWeightCalculator(platformContext, roster, selfId, tipsetTracker, childlessOtherEventTracker);
+        networkSize = roster.rosterEntries().size();
 
         zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
@@ -183,7 +184,7 @@ public class TipsetEventCreator implements EventCreator {
         }
 
         final NodeId eventCreator = event.getCreatorId();
-        if (!addressBook.contains(eventCreator)) {
+        if (RosterUtils.getIndex(roster, eventCreator.id()) == -1) {
             return;
         }
         final boolean selfEvent = eventCreator.equals(selfId);
