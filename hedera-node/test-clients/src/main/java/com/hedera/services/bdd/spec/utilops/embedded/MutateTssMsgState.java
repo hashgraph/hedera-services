@@ -34,8 +34,6 @@ public class MutateTssMsgState extends UtilOp {
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         final var rosterSingletonState = spec.embeddedRosterStateOrThrow().get();
 
-        final var rosterFromNodes = constructFromNodesState(spec.embeddedNodesOrThrow());
-        final var candidateRosterHash = RosterUtils.hash(rosterFromNodes).getBytes();
         final var activeRosterHash = Objects.requireNonNull(rosterSingletonState)
                 .roundRosterPairs()
                 .get(0)
@@ -43,6 +41,8 @@ public class MutateTssMsgState extends UtilOp {
         final var tssMessages = spec.embeddedTssMsgStateOrThrow();
 
         var sequenceNumber = 0;
+        // Since each node will get 3 shares when weight of nodes is 1 in Embedded test,
+        // we need to create 12 TssMessages
         for (int i = 0; i < 12; i++) {
             final var tsMessageMapKey = TssMessageMapKey.newBuilder()
                     .rosterHash(activeRosterHash)
