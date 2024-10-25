@@ -21,6 +21,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -322,7 +323,7 @@ class StateSigningTests {
         final NodeId nodeRemovedFromAddressBook = nodes.get(0).getNodeId();
         final long weightRemovedFromAddressBook = nodes.get(0).getWeight();
         final AddressBook updatedAddressBook = signedState.getAddressBook().remove(nodeRemovedFromAddressBook);
-        signedState.getState().getWritablePlatformState().setAddressBook(updatedAddressBook);
+        signedState.getState().getWritablePlatformState(CONFIGURATION).setAddressBook(updatedAddressBook);
 
         // Tamper with a node's signature
         final long weightWithModifiedSignature = nodes.get(1).getWeight();

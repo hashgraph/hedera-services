@@ -189,7 +189,7 @@ public class SwirldsPlatform implements Platform {
 
         // This method is a no-op if we are not in birth round mode, or if we have already migrated.
         final SoftwareVersion appVersion = blocks.appVersion();
-        modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion);
+        modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion, platformContext.getConfiguration());
 
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             try {

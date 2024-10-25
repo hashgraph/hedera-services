@@ -17,6 +17,7 @@
 package com.swirlds.platform.state;
 
 import com.swirlds.common.merkle.MerkleInternal;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -36,8 +37,10 @@ public interface MerkleRoot extends MerkleInternal {
     /**
      * This method makes sure that the platform state is initialized.
      * If it's already initialized, it does nothing.
+     *
+     * @param platformConfiguration platform configuration
      */
-    void initPlatformState();
+    void initPlatformState(@NonNull final Configuration platformConfiguration);
 
     /**
      * Get readable platform state.
@@ -52,17 +55,20 @@ public interface MerkleRoot extends MerkleInternal {
      * Get writable platform state. Works only on mutable {@link MerkleRoot}.
      * Call this method only if you need to modify the platform state.
      *
+     * @param platformConfiguration platform configuration
      * @return mutable platform state
      */
     @NonNull
-    PlatformStateModifier getWritablePlatformState();
+    PlatformStateModifier getWritablePlatformState(@NonNull final Configuration platformConfiguration);
 
     /**
      * Set the platform state.
      *
      * @param platformState the platform state
+     * @param platformConfiguration platform configuration
      */
-    void updatePlatformState(@NonNull final PlatformStateModifier platformState);
+    void updatePlatformState(
+            @NonNull final PlatformStateModifier platformState, @NonNull final Configuration platformConfiguration);
 
     /**
      * Generate a string that describes this state.

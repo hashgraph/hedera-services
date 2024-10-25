@@ -21,6 +21,8 @@ import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles
 
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
@@ -36,7 +38,9 @@ public class SignedStateUtils {
     public static SignedState randomSignedState(Random random) {
         MerkleStateRoot root =
                 new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.minor()));
-        randomPlatformState(random, root.getWritablePlatformState());
+        final Configuration configuration =
+                ConfigurationBuilder.create().autoDiscoverExtensions().build();
+        randomPlatformState(random, root.getWritablePlatformState(configuration));
         boolean shouldSaveToDisk = random.nextBoolean();
         SignedState signedState = new SignedState(
                 TestPlatformContextBuilder.create().build(),

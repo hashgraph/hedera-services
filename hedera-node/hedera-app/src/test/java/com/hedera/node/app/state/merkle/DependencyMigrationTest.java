@@ -46,7 +46,6 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -114,21 +113,6 @@ class DependencyMigrationTest extends MerkleTestBase {
                             networkInfo,
                             mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        void configRequired() {
-            final var subject = new OrderedServiceMigrator();
-            Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            merkleTree,
-                            servicesRegistry,
-                            null,
-                            new ServicesSoftwareVersion(CURRENT_VERSION),
-                            VERSIONED_CONFIG,
-                            null,
-                            networkInfo,
-                            mock(Metrics.class)))
-                    .isInstanceOf(NoSuchElementException.class);
         }
 
         @Test

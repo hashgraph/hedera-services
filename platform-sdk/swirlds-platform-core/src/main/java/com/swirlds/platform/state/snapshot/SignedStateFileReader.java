@@ -129,7 +129,7 @@ public final class SignedStateFileReader {
                 false,
                 false);
 
-        newSignedState.setSigSet(normalizedData.sigSet);
+        newSignedState.setSigSet(normalizedData.sigSet, platformContext.getConfiguration());
 
         returnState = new DeserializedSignedState(
                 newSignedState.reserve("SignedStateFileReader.readStateFile()"), normalizedData.hash);

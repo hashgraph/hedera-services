@@ -351,7 +351,8 @@ public class AddressBookUtils {
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of
             // modifying the address book.
-            final PlatformStateModifier platformState = state.getWritablePlatformState();
+            final PlatformStateModifier platformState =
+                    state.getWritablePlatformState(platformContext.getConfiguration());
             platformState.bulkUpdate(v -> {
                 v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
                 v.setPreviousAddressBook(

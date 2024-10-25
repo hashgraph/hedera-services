@@ -20,8 +20,10 @@ import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.apache.logging.log4j.LogManager;
@@ -38,9 +40,14 @@ public class TransactionHandler {
     /** Stats relevant to SwirldState operations. */
     private final SwirldStateMetrics stats;
 
-    public TransactionHandler(final NodeId selfId, final SwirldStateMetrics stats) {
+    /** Platform configuration. */
+    private final Configuration platformConfiguration;
+
+    public TransactionHandler(
+            final NodeId selfId, final SwirldStateMetrics stats, final @NonNull Configuration platformConfiguration) {
         this.selfId = selfId;
         this.stats = stats;
+        this.platformConfiguration = platformConfiguration;
     }
 
     /**
@@ -56,7 +63,7 @@ public class TransactionHandler {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
 
-            state.getSwirldState().handleConsensusRound(round, state.getWritablePlatformState());
+            state.getSwirldState().handleConsensusRound(round, state.getWritablePlatformState(platformConfiguration));
 
             final double secondsElapsed = (System.nanoTime() - startTime) * NANOSECONDS_TO_SECONDS;
 

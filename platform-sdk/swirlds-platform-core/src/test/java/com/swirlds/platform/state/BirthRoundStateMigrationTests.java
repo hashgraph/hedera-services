@@ -83,13 +83,15 @@ class BirthRoundStateMigrationTests {
         final SignedState signedState = generateSignedState(random, platformContext);
         final Hash originalHash = signedState.getState().getHash();
 
-        final SoftwareVersion previousSoftwareVersion =
-                signedState.getState().getWritablePlatformState().getCreationSoftwareVersion();
+        final SoftwareVersion previousSoftwareVersion = signedState
+                .getState()
+                .getWritablePlatformState(platformContext.getConfiguration())
+                .getCreationSoftwareVersion();
 
         final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
         BirthRoundStateMigration.modifyStateForBirthRoundMigration(
-                signedState, AncientMode.GENERATION_THRESHOLD, newSoftwareVersion);
+                signedState, AncientMode.GENERATION_THRESHOLD, newSoftwareVersion, platformContext.getConfiguration());
 
         assertEquals(originalHash, signedState.getState().getHash());
 
@@ -113,7 +115,8 @@ class BirthRoundStateMigrationTests {
         ;
         final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
-        PlatformStateModifier writablePlatformState = signedState.getState().getWritablePlatformState();
+        PlatformStateModifier writablePlatformState =
+                signedState.getState().getWritablePlatformState(platformContext.getConfiguration());
         writablePlatformState.setLastRoundBeforeBirthRoundMode(signedState.getRound() - 100);
         writablePlatformState.setFirstVersionInBirthRoundMode(previousSoftwareVersion);
         writablePlatformState.setLowestJudgeGenerationBeforeBirthRoundMode(100);
@@ -121,7 +124,7 @@ class BirthRoundStateMigrationTests {
         final Hash originalHash = signedState.getState().getHash();
 
         BirthRoundStateMigration.modifyStateForBirthRoundMigration(
-                signedState, AncientMode.BIRTH_ROUND_THRESHOLD, newSoftwareVersion);
+                signedState, AncientMode.BIRTH_ROUND_THRESHOLD, newSoftwareVersion, platformContext.getConfiguration());
 
         assertEquals(originalHash, signedState.getState().getHash());
 
@@ -159,7 +162,7 @@ class BirthRoundStateMigrationTests {
                 .minimumJudgeAncientThreshold();
 
         BirthRoundStateMigration.modifyStateForBirthRoundMigration(
-                signedState, AncientMode.BIRTH_ROUND_THRESHOLD, newSoftwareVersion);
+                signedState, AncientMode.BIRTH_ROUND_THRESHOLD, newSoftwareVersion, platformContext.getConfiguration());
 
         assertNotEquals(originalHash, signedState.getState().getHash());
 

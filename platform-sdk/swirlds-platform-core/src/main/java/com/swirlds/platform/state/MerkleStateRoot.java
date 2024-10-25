@@ -39,6 +39,7 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -1034,20 +1035,21 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @NonNull
     @Override
-    public PlatformStateModifier getWritablePlatformState() {
+    public PlatformStateModifier getWritablePlatformState(@NonNull final Configuration platformConfiguration) {
+        requireNonNull(platformConfiguration);
         if (isImmutable()) {
             throw new IllegalStateException("Cannot get writable platform state when state is immutable");
         }
-        return writablePlatformStateStore();
+        return writablePlatformStateStore(platformConfiguration);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void initPlatformState() {
+    public void initPlatformState(@NonNull final Configuration platformConfiguration) {
         if (!services.containsKey(PlatformStateService.NAME)) {
-            platformStateInitChanges = lifecycles.initPlatformState(this);
+            platformStateInitChanges = lifecycles.initPlatformState(this, platformConfiguration);
         }
     }
 
@@ -1057,8 +1059,9 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * @param accessor a source of values
      */
     @Override
-    public void updatePlatformState(@NonNull final PlatformStateModifier accessor) {
-        writablePlatformStateStore().setAllFrom(accessor);
+    public void updatePlatformState(
+            @NonNull final PlatformStateModifier accessor, @NonNull final Configuration platformConfiguration) {
+        writablePlatformStateStore(platformConfiguration).setAllFrom(accessor);
     }
 
     /**
@@ -1074,9 +1077,9 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         return new ReadablePlatformStateStore(getReadableStates(PlatformStateService.NAME), versionFactory);
     }
 
-    private WritablePlatformStateStore writablePlatformStateStore() {
+    private WritablePlatformStateStore writablePlatformStateStore(@NonNull final Configuration platformConfiguration) {
         if (!services.containsKey(PlatformStateService.NAME)) {
-            platformStateInitChanges = lifecycles.initPlatformState(this);
+            platformStateInitChanges = lifecycles.initPlatformState(this, platformConfiguration);
         }
         final var store = new WritablePlatformStateStore(getWritableStates(PlatformStateService.NAME), versionFactory);
         if (preV054PlatformState != null) {

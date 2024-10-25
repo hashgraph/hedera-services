@@ -76,12 +76,13 @@ public class OrderedServiceMigrator implements ServiceMigrator {
             @Nullable final SoftwareVersion previousVersion,
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration nodeConfiguration,
-            @Nullable final Configuration platformConfiguration,
+            @NonNull final Configuration platformConfiguration,
             @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);
+        requireNonNull(platformConfiguration);
         requireNonNull(metrics);
 
         final Map<String, Object> sharedValues = new HashMap<>();

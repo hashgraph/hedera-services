@@ -64,7 +64,8 @@ public class TransactionHandlerTester {
         when(consensusState.getSwirldState()).thenReturn(swirldState);
         when(consensusState.copy()).thenReturn(consensusState);
         when(consensusState.getReadablePlatformState()).thenReturn(platformState);
-        when(consensusState.getWritablePlatformState()).thenReturn(platformState);
+        when(consensusState.getWritablePlatformState(platformContext.getConfiguration()))
+                .thenReturn(platformState);
         doAnswer(i -> {
                     handledRounds.add(i.getArgument(0));
                     return null;
