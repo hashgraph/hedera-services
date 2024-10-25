@@ -131,7 +131,11 @@ message EthereumOutput {
      * This field is not settled and MAY be removed or modified.
      */
     repeated proto.TransactionSidecarRecord sidecars = 1;
-
+    /**
+     * An ethereum hash value.
+     * <p>
+     * This SHALL be a keccak256 hash of the ethereumData.
+     */
     bytes ethereum_hash = 2;
 
     oneof eth_result {
