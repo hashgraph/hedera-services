@@ -442,6 +442,28 @@ class DispatchProcessorTest {
     }
 
     @Test
+    void throttledTxIncrementsMetric() throws ThrottleException {
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatchValidator.validationReportFor(dispatch)).willReturn(newSuccess(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
+        givenAuthorization(CRYPTO_TRANSFER_TXN_INFO);
+        doThrow(ThrottleException.newGasThrottleException())
+                .when(dispatchUsageManager)
+                .screenForCapacity(dispatch);
+
+        subject.processDispatch(dispatch);
+
+        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(recordBuilder).status(CONSENSUS_GAS_EXHAUSTED);
+        verify(feeAccumulator).chargeNetworkFee(PAYER_ACCOUNT_ID, FEES.totalFee());
+        verify(opWorkflowMetrics).incrementThrottled(CRYPTO_TRANSFER);
+        assertFinished(IsRootStack.NO);
+    }
+
+    @Test
     void consGasExhaustedForEthTxnDoesExtraWork() throws ThrottleException {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.handleContext()).willReturn(context);

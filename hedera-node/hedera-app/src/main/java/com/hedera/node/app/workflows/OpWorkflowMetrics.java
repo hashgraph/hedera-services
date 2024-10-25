@@ -86,8 +86,8 @@ public class OpWorkflowMetrics {
             transactionDurationMetrics.put(functionality, new TransactionMetric(maxMetric, avgMetric));
 
             // initialize the transaction throttle metrics
-            final var throttledConfig = new Counter.Config("app", name + "ThrottledTps")
-                    .withDescription("The number of " + name + " transactions that failed due to throttling");
+            final var throttledConfig = new Counter.Config("app", name + "ThrottledTxns")
+                    .withDescription("The number of " + name + " transactions that were rejected due to throttle limits");
             transactionThrottleMetrics.put(functionality, metrics.getOrCreate(throttledConfig));
         }
 
