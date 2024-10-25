@@ -721,7 +721,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testThrottleFails() throws ParseException {
         // given
-        when(synchronizedThrottleAccumulator.shouldThrottle(eq(HederaFunctionality.FILE_GET_INFO), any(), any()))
+        when(synchronizedThrottleAccumulator.shouldThrottle(eq(HederaFunctionality.FILE_GET_INFO), any(), any(), any()))
                 .thenReturn(true);
         final var responseBuffer = newEmptyBuffer();
 
@@ -757,7 +757,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 instantSource,
                 opWorkflowMetrics,
                 false);
-        when(synchronizedThrottleAccumulator.shouldThrottle(eq(HederaFunctionality.FILE_GET_INFO), any(), any()))
+        when(synchronizedThrottleAccumulator.shouldThrottle(eq(HederaFunctionality.FILE_GET_INFO), any(), any(), any()))
                 .thenReturn(true);
         final var responseBuffer = newEmptyBuffer();
 

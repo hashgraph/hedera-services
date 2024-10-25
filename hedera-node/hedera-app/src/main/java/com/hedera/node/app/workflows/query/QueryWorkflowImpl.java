@@ -270,7 +270,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 handler.validate(context);
 
                 // 5. Check query throttles
-                if (shouldCharge && synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)) {
+                if (shouldCharge && synchronizedThrottleAccumulator.shouldThrottle(function, query, state, payerID)) {
                     workflowMetrics.incrementThrottled(function);
                     throw new PreCheckException(BUSY);
                 }

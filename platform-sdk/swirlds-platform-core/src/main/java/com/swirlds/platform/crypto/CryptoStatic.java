@@ -530,6 +530,7 @@ public final class CryptoStatic {
                 if (cryptoConfig.enableNewKeyStoreModel()) {
                     logger.debug(STARTUP.getMarker(), "Reading keys using the enhanced key loader");
                     keysAndCerts = EnhancedKeyStoreLoader.using(addressBook, configuration)
+                            .migrate()
                             .scan()
                             .generateIfNecessary()
                             .verify()
