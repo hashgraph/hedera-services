@@ -61,14 +61,20 @@ public class TokenRejectSystemContractTest {
 
     @HapiTest
     @DisplayName("Reject fungible token")
-    public Stream<DynamicTest> tokenRejectSystemContractTest(@FungibleToken SpecFungibleToken token) {
+    public Stream<DynamicTest> tokenRejectSystemContractTest(
+            @FungibleToken(initialSupply = 1000) SpecFungibleToken token) {
         return hapiTest(withOpContext((spec, opLog) -> {
-            allRunFor(spec, sender.associateTokens(token), token.treasury().transferUnitsTo(sender, 100, token));
+            allRunFor(
+                    spec,
+                    sender.associateTokens(token),
+                    token.treasury().transferUnitsTo(sender, 100, token),
+                    token.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 900L)));
             final var tokenAddress = token.addressOn(spec.targetNetworkOrThrow());
             allRunFor(
                     spec,
                     tokenReject.call("rejectTokens", sender, new Address[] {tokenAddress}, new Address[0]),
-                    sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 0L)));
+                    sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 0L)),
+                    token.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 1000L)));
         }));
     }
 
@@ -77,12 +83,17 @@ public class TokenRejectSystemContractTest {
     public Stream<DynamicTest> tokenRejectSystemContractNftTest(
             @NonFungibleToken(numPreMints = 1) SpecNonFungibleToken nft) {
         return hapiTest(withOpContext((spec, opLog) -> {
-            allRunFor(spec, sender.associateTokens(nft), nft.treasury().transferNFTsTo(sender, nft, 1L));
+            allRunFor(
+                    spec,
+                    sender.associateTokens(nft),
+                    nft.treasury().transferNFTsTo(sender, nft, 1L),
+                    nft.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)));
             final var tokenAddress = nft.addressOn(spec.targetNetworkOrThrow());
             allRunFor(
                     spec,
                     tokenReject.call("rejectTokens", sender, new Address[] {}, new Address[] {tokenAddress}),
-                    sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)));
+                    sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    nft.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 1L)));
         }));
     }
 
@@ -121,11 +132,17 @@ public class TokenRejectSystemContractTest {
                                     new Address[] {nft1Address, nft2Address, nft3Address})
                             .gas(1_000_000L),
                     sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 0L)),
+                    token1.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 100L)),
                     sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token2.name(), 0L)),
+                    token2.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(token2.name(), 100L)),
                     sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token3.name(), 0L)),
+                    token3.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(token3.name(), 100L)),
                     sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft1.name(), 0L)),
+                    nft1.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(nft1.name(), 1L)),
                     sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft2.name(), 0L)),
-                    sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft3.name(), 0L)));
+                    nft2.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(nft2.name(), 1L)),
+                    sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft3.name(), 0L)),
+                    nft3.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(nft3.name(), 1L)));
         }));
     }
 

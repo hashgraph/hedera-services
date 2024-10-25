@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.rejecttokens;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelectorAndCustomConfig;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelectorForRedirectWithConfig;
@@ -25,8 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.token.TokenReference;
+import com.hedera.hapi.node.token.TokenRejectTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -36,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.rejecttokens.RejectTokensDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.rejecttokens.RejectTokensTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
@@ -91,6 +96,27 @@ public class RejectTokensTranslatorTest {
     @BeforeEach
     void setUp() {
         subject = new RejectTokensTranslator(decoder);
+    }
+
+    @Test
+    void matchesHTSWithInvalidSig() {
+        // given:
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.systemContractRejectTokensEnabled()).willReturn(true);
+        attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
+                BurnTranslator.BURN_TOKEN_V1,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                configuration);
+
+        // when:
+        boolean matches = subject.matches(attempt);
+
+        // then:
+        assertFalse(matches);
     }
 
     @Test
@@ -226,10 +252,39 @@ public class RejectTokensTranslatorTest {
     @Test
     void gasRequirementCalculatesCorrectly() {
         long expectedGas = 1000L;
-        given(gasCalculator.gasRequirement(transactionBody, DispatchType.TOKEN_REJECT, payerId))
+        final var body = TokenRejectTransactionBody.newBuilder()
+                .rejections(TokenReference.newBuilder()
+                        .fungibleToken(FUNGIBLE_TOKEN_ID)
+                        .build())
+                .owner(SENDER_ID)
+                .build();
+        given(gasCalculator.canonicalPriceInTinycents(DispatchType.TOKEN_REJECT_FT))
                 .willReturn(expectedGas);
-
+        given(transactionBody.tokenReject()).willReturn(body);
+        given(gasCalculator.gasRequirementWithTinycents(transactionBody, payerId, expectedGas))
+                .willReturn(expectedGas);
         long result = RejectTokensTranslator.gasRequirement(transactionBody, gasCalculator, enhancement, payerId);
+
+        assertEquals(expectedGas, result);
+    }
+
+    @Test
+    void gasRequirementHRCFungible() {
+        long expectedGas = 1000L;
+        given(gasCalculator.gasRequirement(transactionBody, DispatchType.TOKEN_REJECT_FT, payerId))
+                .willReturn(expectedGas);
+        long result =
+                RejectTokensTranslator.gasRequirementHRCFungible(transactionBody, gasCalculator, enhancement, payerId);
+
+        assertEquals(expectedGas, result);
+    }
+
+    @Test
+    void gasRequirementHRCNft() {
+        long expectedGas = 1000L;
+        given(gasCalculator.gasRequirement(transactionBody, DispatchType.TOKEN_REJECT_NFT, payerId))
+                .willReturn(expectedGas);
+        long result = RejectTokensTranslator.gasRequirementHRCNft(transactionBody, gasCalculator, enhancement, payerId);
 
         assertEquals(expectedGas, result);
     }
@@ -254,6 +309,7 @@ public class RejectTokensTranslatorTest {
 
         // then:
         assertEquals(DispatchForResponseCodeHtsCall.class, call.getClass());
+        verify(decoder).decodeTokenRejects(attempt);
     }
 
     @Test
@@ -276,6 +332,7 @@ public class RejectTokensTranslatorTest {
 
         // then:
         assertEquals(DispatchForResponseCodeHtsCall.class, call.getClass());
+        verify(decoder).decodeHrcTokenRejectFT(attempt);
     }
 
     @Test
@@ -298,5 +355,6 @@ public class RejectTokensTranslatorTest {
 
         // then:
         assertEquals(DispatchForResponseCodeHtsCall.class, call.getClass());
+        verify(decoder).decodeHrcTokenRejectNFT(attempt);
     }
 }

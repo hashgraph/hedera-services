@@ -16,15 +16,17 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.rejecttokens;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -33,12 +35,10 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.token.TokenReference;
 import com.hedera.hapi.node.token.TokenRejectTransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.rejecttokens.RejectTokensDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.rejecttokens.RejectTokensTranslator;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
@@ -57,12 +57,6 @@ public class RejectTokensDecoderTest {
 
     @Mock
     private AddressIdConverter addressIdConverter;
-
-    @Mock
-    private Enhancement enhancement;
-
-    @Mock
-    private HederaNativeOperations nativeOperations;
 
     @Mock
     private Configuration configuration;
@@ -121,7 +115,7 @@ public class RejectTokensDecoderTest {
 
         final var encoded = Bytes.wrapByteBuffer(RejectTokensTranslator.TOKEN_REJECT.encodeCall(
                 Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), new Address[] {}, new Tuple[] {
-                    Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L)
+                    Tuple.of(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L)
                 })));
 
         // when
@@ -131,7 +125,7 @@ public class RejectTokensDecoderTest {
                 .owner(SENDER_ID)
                 .rejections(TokenReference.newBuilder()
                         .nft(NftID.newBuilder()
-                                .tokenId(FUNGIBLE_TOKEN_ID)
+                                .tokenId(NON_FUNGIBLE_TOKEN_ID)
                                 .serialNumber(1L)
                                 .build())
                         .build())
@@ -163,27 +157,27 @@ public class RejectTokensDecoderTest {
                     FUNGIBLE_TOKEN_HEADLONG_ADDRESS
                 },
                 new Tuple[] {
-                    Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
-                    Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
-                    Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
-                    Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
-                    Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
-                    Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
+                    Tuple.of(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
+                    Tuple.of(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
+                    Tuple.of(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
+                    Tuple.of(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
+                    Tuple.of(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
+                    Tuple.of(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 1L),
                 })));
 
         // when
         given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
 
         // then
-        assertThrows(HandleException.class, () -> subject.decodeTokenRejects(attempt));
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeTokenRejects(attempt))
+                .withMessage(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED.toString());
     }
 
     @Test
     void decodeHRCFungible() {
         // given:
         given(attempt.senderId()).willReturn(SENDER_ID);
-
-        final var encoded = Bytes.wrapByteBuffer(RejectTokensTranslator.HRC_TOKEN_REJECT_FT.encodeCall(Tuple.of()));
 
         // when
         given(attempt.redirectTokenId()).willReturn(FUNGIBLE_TOKEN_ID);
@@ -248,6 +242,8 @@ public class RejectTokensDecoderTest {
         given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
 
         // then
-        assertThrows(HandleException.class, () -> subject.decodeHrcTokenRejectNFT(attempt));
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeHrcTokenRejectNFT(attempt))
+                .withMessage(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED.toString());
     }
 }

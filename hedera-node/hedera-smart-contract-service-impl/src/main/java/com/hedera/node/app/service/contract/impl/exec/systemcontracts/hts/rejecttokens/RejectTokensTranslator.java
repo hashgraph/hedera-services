@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.rejec
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
@@ -29,6 +30,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 import javax.inject.Inject;
 
 public class RejectTokensTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -38,10 +42,14 @@ public class RejectTokensTranslator extends AbstractCallTranslator<HtsCallAttemp
     public static final Function HRC_TOKEN_REJECT_NFT = new Function("rejectTokenNFTs(int64[])", ReturnTypes.INT_64);
 
     private final RejectTokensDecoder decoder;
+    private final Map<Function, DispatchGasCalculator> gasCalculators = new HashMap<>();
 
     @Inject
     public RejectTokensTranslator(@NonNull final RejectTokensDecoder decoder) {
         this.decoder = decoder;
+        gasCalculators.put(TOKEN_REJECT, RejectTokensTranslator::gasRequirement);
+        gasCalculators.put(HRC_TOKEN_REJECT_FT, RejectTokensTranslator::gasRequirementHRCFungible);
+        gasCalculators.put(HRC_TOKEN_REJECT_NFT, RejectTokensTranslator::gasRequirementHRCNft);
     }
 
     @Override
@@ -49,14 +57,33 @@ public class RejectTokensTranslator extends AbstractCallTranslator<HtsCallAttemp
         final var rejectEnabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractRejectTokensEnabled();
         return attempt.isTokenRedirect()
-                ? attempt.isSelectorIfConfigEnabled(HRC_TOKEN_REJECT_FT, rejectEnabled)
-                        || attempt.isSelectorIfConfigEnabled(HRC_TOKEN_REJECT_NFT, rejectEnabled)
+                ? attempt.isSelectorIfConfigEnabled(rejectEnabled, HRC_TOKEN_REJECT_FT, HRC_TOKEN_REJECT_NFT)
                 : attempt.isSelectorIfConfigEnabled(TOKEN_REJECT, rejectEnabled);
     }
 
     @Override
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
-        return new DispatchForResponseCodeHtsCall(attempt, bodyFor(attempt), RejectTokensTranslator::gasRequirement);
+        final var gasRequirement = gasCalculators.entrySet().stream()
+                .filter(entry -> attempt.isSelector(entry.getKey()))
+                .map(Entry::getValue)
+                .findFirst();
+        return new DispatchForResponseCodeHtsCall(attempt, bodyFor(attempt), gasRequirement.get());
+    }
+
+    public static long gasRequirementHRCFungible(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.TOKEN_REJECT_FT, payerId);
+    }
+
+    public static long gasRequirementHRCNft(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.TOKEN_REJECT_NFT, payerId);
     }
 
     public static long gasRequirement(
@@ -64,7 +91,16 @@ public class RejectTokensTranslator extends AbstractCallTranslator<HtsCallAttemp
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final AccountID payerId) {
-        return systemContractGasCalculator.gasRequirement(body, DispatchType.TOKEN_REJECT, payerId);
+        final var accumulatedCanonicalPricing = body.tokenReject().rejections().stream()
+                .map(rejection -> {
+                    if (rejection.hasFungibleToken()) {
+                        return systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.TOKEN_REJECT_FT);
+                    } else {
+                        return systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.TOKEN_REJECT_NFT);
+                    }
+                })
+                .reduce(0L, Long::sum);
+        return systemContractGasCalculator.gasRequirementWithTinycents(body, payerId, accumulatedCanonicalPricing);
     }
 
     private TransactionBody bodyFor(@NonNull HtsCallAttempt attempt) {

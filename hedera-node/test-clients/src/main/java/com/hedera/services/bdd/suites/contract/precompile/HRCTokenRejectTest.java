@@ -54,13 +54,15 @@ public class HRCTokenRejectTest {
 
     @HapiTest
     @DisplayName("HRC rejectTokenFT works")
-    public Stream<DynamicTest> hrcFungibleWorks(@FungibleToken SpecFungibleToken token) {
+    public Stream<DynamicTest> hrcFungibleWorks(@FungibleToken(initialSupply = 1000) SpecFungibleToken token) {
         return hapiTest(
                 sender.associateTokens(token),
                 token.treasury().transferUnitsTo(sender, 10L, token),
+                token.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 990L)),
                 sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 10L)),
                 token.call(HRC904REJECT, "rejectTokenFT").with(call -> call.payingWith(sender.name())),
-                sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 0L)));
+                sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 0L)),
+                token.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 1000L)));
     }
 
     @HapiTest
@@ -69,9 +71,11 @@ public class HRCTokenRejectTest {
         return hapiTest(
                 sender.associateTokens(nft),
                 nft.treasury().transferNFTsTo(sender, nft, 1L),
+                nft.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
                 sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 1L)),
                 nft.call(HRC904REJECT, "rejectTokenNFTs", new long[] {1L}).with(call -> call.payingWith(sender.name())),
-                sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)));
+                sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                nft.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 1L)));
     }
 
     @HapiTest
@@ -81,11 +85,13 @@ public class HRCTokenRejectTest {
         return hapiTest(
                 sender.associateTokens(nft),
                 nft.treasury().transferNFTsTo(sender, nft, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L),
+                nft.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
                 sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 10L)),
                 nft.call(HRC904REJECT, "rejectTokenNFTs", new long[] {1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L})
                         .with(call -> call.payingWith(sender.name()))
                         .gas(1_000_000L),
-                sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)));
+                sender.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                nft.treasury().getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 10L)));
     }
 
     @HapiTest

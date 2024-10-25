@@ -37,11 +37,17 @@ import javax.inject.Singleton;
 public class RejectTokensDecoder {
 
     // Tuple indexes
+    // Indexes for TOKEN_REJECT
+    // rejectTokens(address,address[],(address,int64)[])
     private static final int OWNER_ADDRESS_INDEX = 0;
     private static final int FUNGIBLE_ADDRESS_INDEX = 1;
     private static final int NFT_IDS_INDEX = 2;
+    // Indexes for NftID struct (address,int64)
     private static final int NFT_ID_ADDRESS_INDEX = 0;
     private static final int NFT_ID_SERIAL_INDEX = 1;
+
+    // Indexes for HRC_TOKEN_REJECT_NFT
+    // rejectTokenNFTs(int64[])
     private static final int HRC_NFT_SERIAL_INDEX = 0;
 
     @Inject
