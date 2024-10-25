@@ -131,7 +131,9 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
-        // (TSS-FUTURE) https://github.com/hashgraph/hedera-services/issues/14748
+
+        // (TSS-FUTURE) Implement `keyActiveRoster`
+        // https://github.com/hashgraph/hedera-services/issues/16166
 
         // generate TSS messages based on the active roster and the candidate roster
         final var tssStore = context.storeFactory().readableStore(ReadableTssStoreImpl.class);
