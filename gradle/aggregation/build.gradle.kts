@@ -28,3 +28,12 @@ dependencies {
     implementation(project(":StressTestingTool"))
     implementation(project(":test-clients"))
 }
+
+tasks.named<JacocoReport>("testCodeCoverageReport") {
+    // Exclude test-clients classes from the final report
+    classDirectories.setFrom(
+        files(
+            classDirectories.files.map { fileTree(it) { exclude("hedera-node/test-clients/**") } }
+        )
+    )
+}
