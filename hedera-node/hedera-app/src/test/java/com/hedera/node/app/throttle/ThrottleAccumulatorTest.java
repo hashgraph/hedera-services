@@ -28,16 +28,17 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_BURN;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
+import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECEIPT;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.pbj.runtime.ProtoTestTools.getThreadLocalDataBuffer;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,6 +61,8 @@ import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoGetAccountBalanceQuery;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.Query;
@@ -69,12 +72,14 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.app.hapi.utils.throttles.BucketThrottle;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
@@ -83,11 +88,14 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.InputStream;
@@ -95,6 +103,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -200,17 +209,130 @@ class ThrottleAccumulatorTest {
 
         // when
         final var queryPayerId = AccountID.newBuilder().accountNum(1_234L).build();
-        var noAns = subject.checkAndEnforceThrottle(CRYPTO_GET_ACCOUNT_BALANCE, TIME_INSTANT, query, queryPayerId);
-        subject.checkAndEnforceThrottle(GET_VERSION_INFO, TIME_INSTANT.plusNanos(1), query, queryPayerId);
-        final var yesAns =
-                subject.checkAndEnforceThrottle(GET_VERSION_INFO, TIME_INSTANT.plusNanos(2), query, queryPayerId);
-        final var throttlesNow = subject.activeThrottlesFor(CRYPTO_GET_ACCOUNT_BALANCE);
+        var noAns = subject.checkAndEnforceThrottle(TRANSACTION_GET_RECEIPT, TIME_INSTANT, query, state, queryPayerId);
+        subject.checkAndEnforceThrottle(GET_VERSION_INFO, TIME_INSTANT.plusNanos(1), query, state, queryPayerId);
+        final var yesAns = subject.checkAndEnforceThrottle(
+                GET_VERSION_INFO, TIME_INSTANT.plusNanos(2), query, state, queryPayerId);
+        final var throttlesNow = subject.activeThrottlesFor(TRANSACTION_GET_RECEIPT);
         final var dNow = throttlesNow.get(0);
 
         // then
         assertFalse(noAns);
         assertTrue(yesAns);
         assertEquals(10999999990000L, dNow.used());
+    }
+
+    @Test
+    void worksAsExpectedForSimpleGetBalanceThrottle() throws IOException, ParseException {
+        // given
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("tokens.countingGetBalanceThrottleEnabled", false)
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
+        subject = new ThrottleAccumulator(
+                () -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE, throttleMetrics, gasThrottle);
+        final var defs = getThrottleDefs("bootstrap/throttles.json");
+        subject.rebuildFor(defs);
+        final var query = Query.newBuilder()
+                .cryptogetAccountBalance(CryptoGetAccountBalanceQuery.newBuilder()
+                        .accountID(RECEIVER_ID)
+                        .build())
+                .build();
+        final var account = Account.newBuilder().numberPositiveBalances(2).build();
+        final var states = MapReadableStates.builder()
+                .state(new MapReadableKVState<>("ACCOUNTS", Map.of(RECEIVER_ID, account)))
+                .state(new MapReadableKVState<>("ALIASES", Map.of()))
+                .build();
+        lenient().when(state.getReadableStates(TokenService.NAME)).thenReturn(states);
+
+        // when
+        final var result = new boolean[] {
+            subject.checkAndEnforceThrottle(
+                    CRYPTO_GET_ACCOUNT_BALANCE, TIME_INSTANT.plusNanos(0), query, state, PAYER_ID),
+            subject.checkAndEnforceThrottle(
+                    CRYPTO_GET_ACCOUNT_BALANCE, TIME_INSTANT.plusNanos(1), query, state, PAYER_ID),
+            subject.checkAndEnforceThrottle(
+                    CRYPTO_GET_ACCOUNT_BALANCE, TIME_INSTANT.plusNanos(2), query, state, PAYER_ID),
+            subject.checkAndEnforceThrottle(
+                    CRYPTO_GET_ACCOUNT_BALANCE, TIME_INSTANT.plusNanos(3), query, state, PAYER_ID)
+        };
+
+        // then
+        assertThat(result).containsExactly(false, false, false, true);
+    }
+
+    @Test
+    void worksAsExpectedForCountingGetBalanceThrottle() throws IOException, ParseException {
+        // given
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("tokens.countingGetBalanceThrottleEnabled", true)
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
+        subject = new ThrottleAccumulator(
+                () -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE, throttleMetrics, gasThrottle);
+        final var defs = getThrottleDefs("bootstrap/throttles.json");
+        subject.rebuildFor(defs);
+        final var query = Query.newBuilder()
+                .cryptogetAccountBalance(CryptoGetAccountBalanceQuery.newBuilder()
+                        .accountID(RECEIVER_ID)
+                        .build())
+                .build();
+        final var account = Account.newBuilder().numberPositiveBalances(2).build();
+        final var states = MapReadableStates.builder()
+                .state(new MapReadableKVState<>("ACCOUNTS", Map.of(RECEIVER_ID, account)))
+                .state(new MapReadableKVState<>("ALIASES", Map.of()))
+                .build();
+        given(state.getReadableStates(TokenService.NAME)).willReturn(states);
+
+        // when
+        final var result = new boolean[] {
+            subject.checkAndEnforceThrottle(
+                    CRYPTO_GET_ACCOUNT_BALANCE, TIME_INSTANT.plusNanos(0), query, state, PAYER_ID),
+            subject.checkAndEnforceThrottle(
+                    CRYPTO_GET_ACCOUNT_BALANCE, TIME_INSTANT.plusNanos(1), query, state, PAYER_ID)
+        };
+
+        // then
+        assertThat(result).containsExactly(false, true);
+    }
+
+    @Test
+    void worksAsExpectedForCountingGetBalanceThrottleWithEmptyAccount() throws IOException, ParseException {
+        // given
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("tokens.countingGetBalanceThrottleEnabled", true)
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
+        subject = new ThrottleAccumulator(
+                () -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE, throttleMetrics, gasThrottle);
+        final var defs = getThrottleDefs("bootstrap/throttles.json");
+        subject.rebuildFor(defs);
+        final var query = Query.newBuilder()
+                .cryptogetAccountBalance(CryptoGetAccountBalanceQuery.newBuilder()
+                        .accountID(RECEIVER_ID)
+                        .build())
+                .build();
+        final var account = Account.newBuilder().numberPositiveBalances(0).build();
+        final var states = MapReadableStates.builder()
+                .state(new MapReadableKVState<>("ACCOUNTS", Map.of(RECEIVER_ID, account)))
+                .state(new MapReadableKVState<>("ALIASES", Map.of()))
+                .build();
+        given(state.getReadableStates(TokenService.NAME)).willReturn(states);
+
+        // when
+        final var result = new boolean[] {
+            subject.checkAndEnforceThrottle(
+                    CRYPTO_GET_ACCOUNT_BALANCE, TIME_INSTANT.plusNanos(0), query, state, PAYER_ID),
+            subject.checkAndEnforceThrottle(
+                    CRYPTO_GET_ACCOUNT_BALANCE, TIME_INSTANT.plusNanos(1), query, state, PAYER_ID),
+            subject.checkAndEnforceThrottle(
+                    CRYPTO_GET_ACCOUNT_BALANCE, TIME_INSTANT.plusNanos(2), query, state, PAYER_ID),
+            subject.checkAndEnforceThrottle(
+                    CRYPTO_GET_ACCOUNT_BALANCE, TIME_INSTANT.plusNanos(3), query, state, PAYER_ID)
+        };
+
+        // then
+        assertThat(result).containsExactly(false, false, false, true);
     }
 
     @Test
@@ -229,7 +351,8 @@ class ThrottleAccumulatorTest {
 
         // then
         final var queryPayerId = AccountID.newBuilder().accountNum(1_234L).build();
-        assertTrue(subject.checkAndEnforceThrottle(NETWORK_GET_EXECUTION_TIME, TIME_INSTANT, query, queryPayerId));
+        assertTrue(
+                subject.checkAndEnforceThrottle(NETWORK_GET_EXECUTION_TIME, TIME_INSTANT, query, state, queryPayerId));
     }
 
     @ParameterizedTest
@@ -247,7 +370,7 @@ class ThrottleAccumulatorTest {
 
         // then
         System.out.println(logCaptor.warnLogs());
-        assertThat(logCaptor.warnLogs(), contains(throttleType + " gas throttling enabled, but limited to 0 gas/sec"));
+        assertThat(logCaptor.warnLogs()).contains(throttleType + " gas throttling enabled, but limited to 0 gas/sec");
     }
 
     @ParameterizedTest
@@ -1101,7 +1224,8 @@ class ThrottleAccumulatorTest {
                 DeterministicThrottle.withMtpsAndBurstPeriod(15_000_000, 2),
                 DeterministicThrottle.withMtpsAndBurstPeriod(5_000, 2),
                 DeterministicThrottle.withMtpsAndBurstPeriod(50_000, 3),
-                DeterministicThrottle.withMtpsAndBurstPeriod(5000, 4));
+                DeterministicThrottle.withMtpsAndBurstPeriod(5000, 4),
+                DeterministicThrottle.withMtpsAndBurstPeriod(3000, 1));
 
         // when
         subject.rebuildFor(defs);

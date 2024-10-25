@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL_LOCAL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_GET_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
@@ -171,6 +172,7 @@ public class ThrottleAccumulator {
      * @param queryFunction the functionality of the query
      * @param now the time at which the query is being processed
      * @param query the query to update the throttle requirements for
+     * @param state the current state of the node
      * @param queryPayerId the payer id of the query
      * @return whether the query should be throttled
      */
@@ -178,6 +180,7 @@ public class ThrottleAccumulator {
             @NonNull final HederaFunctionality queryFunction,
             @NonNull final Instant now,
             @NonNull final Query query,
+            @NonNull final State state,
             @Nullable final AccountID queryPayerId) {
         final var configuration = configProvider.getConfiguration();
         if (throttleExempt(queryPayerId, configuration)) {
@@ -197,11 +200,33 @@ public class ThrottleAccumulator {
         if (manager == null) {
             return true;
         }
-        if (!manager.allReqsMetAt(now)) {
+
+        final boolean allReqMet;
+        if (queryFunction == CRYPTO_GET_ACCOUNT_BALANCE
+                && configuration.getConfigData(TokensConfig.class).countingGetBalanceThrottleEnabled()) {
+            final var accountStore = new ReadableStoreFactory(state).getStore(ReadableAccountStore.class);
+            final int balanceCount = getBalanceCount(query, accountStore);
+            allReqMet = manager.allReqsMetAt(now, Math.max(1, balanceCount), ONE_TO_ONE);
+        } else {
+            allReqMet = manager.allReqsMetAt(now);
+        }
+
+        if (!allReqMet) {
             reclaimLastAllowedUse();
             return true;
         }
         return false;
+    }
+
+    private int getBalanceCount(@NonNull final Query query, @NonNull final ReadableAccountStore accountStore) {
+        final var accountID = query.cryptogetAccountBalanceOrThrow().accountID();
+        if (accountID != null) {
+            final var account = accountStore.getAccountById(accountID);
+            if (account != null) {
+                return account.numberPositiveBalances();
+            }
+        }
+        return 0;
     }
 
     /**
