@@ -65,8 +65,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class TokenServiceApiImpl implements TokenServiceApi {
     private static final Logger logger = LogManager.getLogger(TokenServiceApiImpl.class);
-    private static final Key STANDIN_CONTRACT_KEY =
-            Key.newBuilder().contractID(ContractID.newBuilder().contractNum(0)).build();
 
     private final WritableAccountStore accountStore;
     private final AccountID fundingAccountID;
@@ -178,7 +176,9 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         }
         final var accountAsContract = hollowAccount
                 .copyBuilder()
-                .key(STANDIN_CONTRACT_KEY)
+                .key(Key.newBuilder()
+                        .contractID(ContractID.newBuilder().contractNum(hollowAccountId.accountNumOrThrow()))
+                        .build())
                 .smartContract(true)
                 .maxAutoAssociations(hollowAccount.numberAssociations())
                 .build();
