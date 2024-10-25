@@ -56,7 +56,9 @@ tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("(WORKFLOWS|STREAM_VALIDATION|LOG_VALIDATION)") }
+    // Unlike other tests, these intentionally corrupt embedded state to test FAIL_INVALID
+    // code paths; hence we do not run LOG_VALIDATION after the test suite finishes
+    useJUnitPlatform { includeTags("(WORKFLOWS|STREAM_VALIDATION)") }
 
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
@@ -92,7 +94,8 @@ val prCheckTags =
         "hapiTestSmartContract" to "SMART_CONTRACT",
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
-        "hapiTestMisc" to "!(CRYPTO|TOKEN|RESTART|UPGRADE|SMART_CONTRACT|ND_RECONNECT|LONG_RUNNING)"
+        "hapiTestMisc" to
+            "!(WORKFLOWS|CRYPTO|TOKEN|RESTART|UPGRADE|SMART_CONTRACT|ND_RECONNECT|LONG_RUNNING)"
     )
 val prCheckStartPorts =
     mapOf(

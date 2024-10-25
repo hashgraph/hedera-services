@@ -30,7 +30,8 @@ dependencies {
 }
 
 tasks.named<JacocoReport>("testCodeCoverageReport") {
+    val exclusions = listOf("test-clients", "testFixtures")
     classDirectories.setFrom(
-        classDirectories.files.filterNot { it.absolutePath.contains("test-clients") }
+        classDirectories.files.filterNot { file -> exclusions.any { file.path.contains(it) } }
     )
 }

@@ -17,7 +17,9 @@
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
@@ -67,8 +69,13 @@ import static java.util.stream.Collectors.joining;
 import com.google.common.base.MoreObjects;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
+import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
@@ -495,8 +502,30 @@ public class HapiSpec implements Runnable, Executable {
      */
     public @NonNull WritableKVState<com.hedera.hapi.node.base.AccountID, Account> embeddedAccountsOrThrow() {
         final var state = embeddedStateOrThrow();
-        return state.getWritableStates(com.hedera.node.app.service.token.TokenService.NAME)
-                .get(ACCOUNTS_KEY);
+        return state.getWritableStates(TokenService.NAME).get(ACCOUNTS_KEY);
+    }
+
+    /**
+     * Get the {@link WritableKVState} for the embedded network's tokens, if this spec is targeting an embedded network.
+     *
+     * @return the embedded tokens state
+     * @throws IllegalStateException if this spec is not targeting an embedded network
+     */
+    public @NonNull WritableKVState<com.hedera.hapi.node.base.TokenID, Token> embeddedTokensOrThrow() {
+        final var state = embeddedStateOrThrow();
+        return state.getWritableStates(TokenService.NAME).get(TOKENS_KEY);
+    }
+
+    /**
+     * Get the {@link WritableKVState} for the embedded network's schedule expiries, if this spec is
+     * targeting an embedded network.
+     *
+     * @return the embedded schedule expiries state
+     * @throws IllegalStateException if this spec is not targeting an embedded network
+     */
+    public @NonNull WritableKVState<ProtoLong, ScheduleList> embeddedScheduleExpiriesOrThrow() {
+        final var state = embeddedStateOrThrow();
+        return state.getWritableStates(ScheduleService.NAME).get(SCHEDULES_BY_EXPIRY_SEC_KEY);
     }
 
     /**
