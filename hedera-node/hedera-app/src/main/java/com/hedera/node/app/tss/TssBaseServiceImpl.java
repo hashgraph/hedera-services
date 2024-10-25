@@ -131,7 +131,9 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
-        // (TSS-FUTURE) https://github.com/hashgraph/hedera-services/issues/14748
+
+        // (TSS-FUTURE) Implement `keyActiveRoster`
+        // https://github.com/hashgraph/hedera-services/issues/16166
 
         // generate TSS messages based on the active roster and the candidate roster
         final var tssStore = context.storeFactory().readableStore(ReadableTssStoreImpl.class);
@@ -146,27 +148,34 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var candidateRosterParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int)
                 context.networkInfo().selfNodeInfo().nodeId());
 
-        final AtomicInteger shareIndex = new AtomicInteger(0);
-        for (final var tssPrivateShare : tssPrivateShares) {
-            final var tssMsg = CompletableFuture.supplyAsync(
-                            () -> tssLibrary.generateTssMessage(candidateRosterParticipantDirectory, tssPrivateShare),
-                            tssLibraryExecutor)
-                    .exceptionally(e -> {
-                        log.error("Error generating tssMessage", e);
-                        return null;
-                    });
-            tssMsg.thenAccept(msg -> {
-                if (msg == null) {
-                    return;
-                }
-                final var tssMessage = TssMessageTransactionBody.newBuilder()
-                        .sourceRosterHash(activeRosterHash)
-                        .targetRosterHash(candidateRosterHash)
-                        .shareIndex(shareIndex.getAndAdd(1))
-                        .tssMessage(Bytes.wrap(msg.bytes()))
-                        .build();
-                tssSubmissions.submitTssMessage(tssMessage, context);
-            });
+        // https://github.com/hashgraph/hedera-services/issues/16166
+        final boolean hasKeyMaterial = false;
+        if (!hasKeyMaterial) {
+            final AtomicInteger shareIndex = new AtomicInteger(0);
+            for (final var tssPrivateShare : tssPrivateShares) {
+                final var tssMsg = CompletableFuture.supplyAsync(
+                                () -> tssLibrary.generateTssMessage(
+                                        candidateRosterParticipantDirectory, tssPrivateShare),
+                                tssLibraryExecutor)
+                        .exceptionally(e -> {
+                            log.error("Error generating tssMessage", e);
+                            return null;
+                        });
+                tssMsg.thenAccept(msg -> {
+                    if (msg == null) {
+                        return;
+                    }
+                    final var tssMessage = TssMessageTransactionBody.newBuilder()
+                            .sourceRosterHash(activeRosterHash)
+                            .targetRosterHash(candidateRosterHash)
+                            .shareIndex(shareIndex.getAndAdd(1))
+                            .tssMessage(Bytes.wrap(msg.bytes()))
+                            .build();
+                    tssSubmissions.submitTssMessage(tssMessage, context);
+                });
+            }
+        } else {
+
         }
     }
 

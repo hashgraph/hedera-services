@@ -17,34 +17,67 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
+import static com.hedera.node.app.tss.TssBaseServiceTest.ACTIVE_ROSTER;
+import static com.hedera.node.app.tss.TssBaseServiceTest.CURRENT_CANDIDATE_ROSTER;
+import static com.hedera.node.app.tss.TssBaseServiceTest.NODE_1;
+import static com.hedera.node.app.tss.TssBaseServiceTest.NODE_2;
+import static com.hedera.node.app.tss.TssBaseServiceTest.NODE_3;
+import static com.hedera.node.app.tss.TssBaseServiceTest.NODE_4;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterState;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.TssBaseServiceTest;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.node.config.types.StreamMode;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -75,21 +108,45 @@ class NodeStakeUpdatesTest {
     @Mock
     private Dispatch dispatch;
 
+    @Mock
+    private WritableStates writableStates;
+
+    @Mock
+    private HandleContext handleContext;
+
+    @Mock
+    private StoreFactory storeFactory;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
+
+    @Mock
+    private WritableSingletonState<RosterState> rosterState;
+
     private NodeStakeUpdates subject;
 
     @BeforeEach
     void setUp() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 
-        subject = new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService);
+        subject =
+                new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService, storeMetricsService);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void nullArgConstructor() {
-        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(null, exchangeRateManager, tssBaseService))
+        Assertions.assertThatThrownBy(
+                        () -> new NodeStakeUpdates(null, exchangeRateManager, tssBaseService, storeMetricsService))
                 .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(stakingPeriodCalculator, null, tssBaseService))
+        Assertions.assertThatThrownBy(
+                        () -> new NodeStakeUpdates(stakingPeriodCalculator, null, tssBaseService, storeMetricsService))
+                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() ->
+                        new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, null, storeMetricsService))
+                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(
+                        () -> new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -254,14 +311,139 @@ class NodeStakeUpdatesTest {
         Assertions.assertThat(result).isTrue();
     }
 
+    @Test
+    void stakingPeriodDoesntSetCandidateRosterForDisabledFlag() {
+        // Simulate staking information
+        given(context.configuration()).willReturn(newConfig(990, false));
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
+                        .build());
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
+
+        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
+        verifyNoInteractions(tssBaseService);
+    }
+
+    @Test
+    @DisplayName("Service won't set the current candidate roster as the new candidate roster")
+    void doesntSetSameCandidateRoster() {
+        // Simulate staking information,
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
+                        .build());
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
+
+        // Simulate disabled `keyCandidateRoster` property
+        given(context.configuration()).willReturn(newConfig(990, false));
+
+        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
+        verify(tssBaseService, never()).setCandidateRoster(any(), any());
+    }
+
+    @Test
+    @DisplayName("Service won't set the active roster as the new candidate roster")
+    void doesntSetActiveRosterAsCandidateRoster() {
+        // Simulate staking information
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
+                        .build());
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
+
+        // Enable keyCandidateRoster
+        given(context.configuration()).willReturn(newConfig(DEFAULT_STAKING_PERIOD_MINS, true));
+
+        // Simulate the same address book input as the current candidate and active rosters
+        final var nodeStore = simulateNodes(NODE_1, NODE_2, NODE_3, NODE_4);
+        given(dispatch.handleContext()).willReturn(handleContext);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
+        given(stack.getWritableStates(notNull())).willReturn(writableStates);
+        simulateCandidateAndActiveRosters();
+
+        // Attempt to set the (equivalent) active roster as the new candidate roster
+        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
+        verify(tssBaseService, never()).setCandidateRoster(any(), any());
+    }
+
+    @Test
+    void stakingPeriodSetsCandidateRosterForEnabledFlag() {
+        // Simulate staking information
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
+                        .build());
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
+
+        // Enable keyCandidateRoster
+        given(context.configuration()).willReturn(newConfig(DEFAULT_STAKING_PERIOD_MINS, true));
+
+        // Simulate an updated address book
+        final var nodeStore = simulateNodes(NODE_1, NODE_2, NODE_3);
+        given(dispatch.handleContext()).willReturn(handleContext);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
+        given(stack.getWritableStates(notNull())).willReturn(writableStates);
+        simulateCandidateAndActiveRosters();
+
+        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
+        verify(tssBaseService).setCandidateRoster(notNull(), notNull());
+    }
+
+    private ReadableNodeStore simulateNodes(Node... nodes) {
+        final Map<EntityNumber, Node> translated = Arrays.stream(nodes)
+                .collect(Collectors.toMap(
+                        n -> EntityNumber.newBuilder().number(n.nodeId()).build(), node -> node));
+        final WritableKVState<EntityNumber, Node> nodeWritableKVState = new MapWritableKVState<>(NODES_KEY, translated);
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodeWritableKVState);
+        final ReadableNodeStore nodeStore = new ReadableNodeStoreImpl(writableStates);
+        given(context.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
+
+        return nodeStore;
+    }
+
+    private static final ProtoBytes CANDIDATE_ROSTER_HASH = ProtoBytes.newBuilder()
+            .value(RosterUtils.hash(CURRENT_CANDIDATE_ROSTER).getBytes())
+            .build();
+    private static final ProtoBytes ACTIVE_ROSTER_HASH = ProtoBytes.newBuilder()
+            .value(RosterUtils.hash(ACTIVE_ROSTER).getBytes())
+            .build();
+
+    private void simulateCandidateAndActiveRosters() {
+        given(rosterState.get())
+                .willReturn(new RosterState(
+                        CANDIDATE_ROSTER_HASH.value(),
+                        List.of(RoundRosterPair.newBuilder()
+                                .roundNumber(12345)
+                                .activeRosterHash(ACTIVE_ROSTER_HASH.value())
+                                .build())));
+        given(writableStates.<RosterState>getSingleton(RosterStateId.ROSTER_STATES_KEY))
+                .willReturn(rosterState);
+        given(writableStates.<ProtoBytes, Roster>get(RosterStateId.ROSTER_KEY))
+                .willReturn(new MapWritableKVState<>(
+                        RosterStateId.ROSTER_KEY,
+                        Map.of(
+                                CANDIDATE_ROSTER_HASH,
+                                TssBaseServiceTest.CURRENT_CANDIDATE_ROSTER,
+                                ACTIVE_ROSTER_HASH,
+                                TssBaseServiceTest.ACTIVE_ROSTER)));
+    }
+
     private Configuration newPeriodMinsConfig() {
         return newPeriodMinsConfig(DEFAULT_STAKING_PERIOD_MINS);
     }
 
     private Configuration newPeriodMinsConfig(final long periodMins) {
+        return newConfig(periodMins, false);
+    }
+
+    private Configuration newConfig(final long periodMins, final boolean keyCandidateRoster) {
         return HederaTestConfigBuilder.create()
                 .withConfigDataType(StakingConfig.class)
                 .withValue("staking.periodMins", periodMins)
+                .withValue("tss.keyCandidateRoster", keyCandidateRoster)
                 .getOrCreateConfig();
     }
 }
