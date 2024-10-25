@@ -351,7 +351,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      *
      * @param virtualMapConfig virtual map platform configuration
      */
-    public VirtualRootNode(final @NonNull VirtualMapConfig virtualMapConfig) {
+    public VirtualRootNode(@NonNull final VirtualMapConfig virtualMapConfig) {
         requireNonNull(virtualMapConfig);
         this.fastCopyVersion = 0;
         // Hasher is required during reconnects
@@ -371,10 +371,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * @param virtualMapConfig virtual map platform configuration
      */
     public VirtualRootNode(
-            final @NonNull KeySerializer<K> keySerializer,
-            final @NonNull ValueSerializer<V> valueSerializer,
-            final @NonNull VirtualDataSourceBuilder dataSourceBuilder,
-            final @NonNull VirtualMapConfig virtualMapConfig) {
+            @NonNull final KeySerializer<K> keySerializer,
+            @NonNull final ValueSerializer<V> valueSerializer,
+            @NonNull final VirtualDataSourceBuilder dataSourceBuilder,
+            @NonNull final VirtualMapConfig virtualMapConfig) {
         requireNonNull(keySerializer);
         requireNonNull(valueSerializer);
         requireNonNull(dataSourceBuilder);

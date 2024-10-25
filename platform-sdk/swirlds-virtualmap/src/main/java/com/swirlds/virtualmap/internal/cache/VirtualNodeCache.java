@@ -331,7 +331,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      *
      * @param virtualMapConfig platform configuration for VirtualMap
      */
-    public VirtualNodeCache(final @NonNull VirtualMapConfig virtualMapConfig) {
+    public VirtualNodeCache(@NonNull final VirtualMapConfig virtualMapConfig) {
         requireNonNull(virtualMapConfig);
         this.keyToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyLeafIndex = new ConcurrentHashMap<>();

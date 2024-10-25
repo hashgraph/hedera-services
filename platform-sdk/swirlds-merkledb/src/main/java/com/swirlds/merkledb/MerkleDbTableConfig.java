@@ -152,7 +152,7 @@ public final class MerkleDbTableConfig implements SelfSerializable {
      * @param merkleDbConfig platform config for MerkleDbDataSource
      */
     public MerkleDbTableConfig(
-            final short hashVersion, final DigestType hashType, final @NonNull MerkleDbConfig merkleDbConfig) {
+            final short hashVersion, final DigestType hashType, @NonNull final MerkleDbConfig merkleDbConfig) {
         requireNonNull(merkleDbConfig);
 
         // Mandatory fields
@@ -433,7 +433,7 @@ public final class MerkleDbTableConfig implements SelfSerializable {
      * @param merkleDbConfig platform config for MerkleDbDataSource
      * @return Table config copy
      */
-    public MerkleDbTableConfig copy(final @NonNull MerkleDbConfig merkleDbConfig) {
+    public MerkleDbTableConfig copy(@NonNull final MerkleDbConfig merkleDbConfig) {
         requireNonNull(merkleDbConfig);
         final MerkleDbTableConfig copy = new MerkleDbTableConfig(hashVersion, hashType, merkleDbConfig);
         copy.preferDiskIndices(preferDiskBasedIndices);

@@ -202,7 +202,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
-            final @NonNull Configuration configuration,
+            @NonNull final Configuration configuration,
             final long mapSize,
             final Path storeDir,
             final String storeName,

@@ -82,7 +82,7 @@ public class LongListDisk extends AbstractLongList<Long> {
     /**
      * Create a {@link LongListDisk} with default parameters.
      */
-    public LongListDisk(final @NonNull Configuration configuration) {
+    public LongListDisk(@NonNull final Configuration configuration) {
         this(DEFAULT_NUM_LONGS_PER_CHUNK, DEFAULT_MAX_LONGS_TO_STORE, DEFAULT_RESERVED_BUFFER_LENGTH, configuration);
     }
 
@@ -90,7 +90,7 @@ public class LongListDisk extends AbstractLongList<Long> {
             final int numLongsPerChunk,
             final long maxLongs,
             final long reservedBufferLength,
-            final @NonNull Configuration configuration) {
+            @NonNull final Configuration configuration) {
         super(numLongsPerChunk, maxLongs, reservedBufferLength);
         this.fileSystemManager = FileSystemManager.create(configuration);
         try {
@@ -113,11 +113,11 @@ public class LongListDisk extends AbstractLongList<Long> {
      * @param configuration platform configuration
      * @throws IOException If there was a problem reading the file
      */
-    public LongListDisk(final Path file, final @NonNull Configuration configuration) throws IOException {
+    public LongListDisk(final Path file, @NonNull final Configuration configuration) throws IOException {
         this(file, DEFAULT_RESERVED_BUFFER_LENGTH, configuration);
     }
 
-    LongListDisk(final Path file, final long reservedBufferLength, final @NonNull Configuration configuration)
+    LongListDisk(final Path file, final long reservedBufferLength, @NonNull final Configuration configuration)
             throws IOException {
         super(file, reservedBufferLength, configuration);
         freeChunks = new ConcurrentLinkedDeque<>();
