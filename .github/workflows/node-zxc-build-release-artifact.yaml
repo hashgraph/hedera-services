@@ -143,7 +143,7 @@ jobs:
           npm install --save-dev \
             @semantic-release/changelog \
             @semantic-release/git \
-            conventional-changelog-conventionalcommits  
+            conventional-changelog-conventionalcommits
 
       - name: Determine Version
         id: semantic
