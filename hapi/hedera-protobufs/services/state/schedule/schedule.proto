@@ -149,11 +149,12 @@ message ScheduleList {
 
 /**
  * A message for storing a list of schedule_ids in state.
- * This is used to store lists of schedule_id that expire at a particular time.
+ * This is used to store lists of ScheduleID values.
+ * One example is all schedules that expire at a particular time.
  */
 message ScheduleIdList {
-    /**
-     * a list of schedule_ids, in no particular order.
-     */
+   /**
+    * A list of schedule_ids, in no particular order.
+    */
     repeated ScheduleID schedule_ids = 1;
 }
