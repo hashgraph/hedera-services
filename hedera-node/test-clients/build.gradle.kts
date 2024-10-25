@@ -44,7 +44,7 @@ tasks.register<JavaExec>("runTestClient") {
 }
 
 tasks.jacocoTestReport {
-    classDirectories.setFrom(files(project(":app").buildDir.resolve("classes/java/main")))
+    classDirectories.setFrom(files(project(":app").layout.buildDirectory.dir("classes/java/main")))
     sourceDirectories.setFrom(files(project(":app").projectDir.resolve("src/main/java")))
     reports {
         xml.required.set(true)

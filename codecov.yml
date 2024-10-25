@@ -22,4 +22,4 @@ coverage:
 github_checks:
   annotations: true
 ignore:
-  - "test-clients"
+  - "hedera-node/test-clients"
