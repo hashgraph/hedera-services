@@ -460,6 +460,7 @@ public class HapiSpec implements Runnable, Executable {
 
     /**
      * Returns the {@link EmbeddedHedera} for a spec in embedded mode, or throws if the spec is not in embedded mode.
+     *
      * @return the embedded Hedera
      * @throws IllegalStateException if the spec is not in embedded mode
      */
@@ -508,9 +509,10 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     /**
-     * Get the {@link WritableKVState} for the embedded network's accounts, if this spec is targeting an embedded network.
+     * Get the {@link WritableKVState} for the embedded network's tssMessages, if this spec is targeting an
+     * embedded network.
      *
-     * @return the embedded accounts state
+     * @return the embedded tss messages state
      * @throws IllegalStateException if this spec is not targeting an embedded network
      */
     public @NonNull WritableKVState<TssMessageMapKey, TssMessageTransactionBody> embeddedTssMsgStateOrThrow() {
@@ -518,6 +520,13 @@ public class HapiSpec implements Runnable, Executable {
         return state.getWritableStates(TssBaseService.NAME).get(TSS_MESSAGE_MAP_KEY);
     }
 
+    /**
+     * Get the {@link WritableKVState} for the embedded network's rosters, if this spec is targeting an
+     * embedded network.
+     *
+     * @return the embedded roster state
+     * @throws IllegalStateException if this spec is not targeting an embedded network
+     */
     public @NonNull WritableSingletonState<RosterState> embeddedRosterStateOrThrow() {
         final var state = embeddedStateOrThrow();
         return state.getWritableStates(RosterStateId.NAME).getSingleton(ROSTER_STATES_KEY);
@@ -934,7 +943,7 @@ public class HapiSpec implements Runnable, Executable {
      * can be used to choose which keys to sign with in both the initial {@code ScheduleCreate},
      * and any {@code ScheduleSign} transactions.
      *
-     * @param numKeys the number of keys that will be used to sign the transaction
+     * @param numKeys     the number of keys that will be used to sign the transaction
      * @param numSignTxns the number of {@code ScheduleSign} transactions that will be executed
      * @return a list of indices that can be used to choose signing keys
      */
@@ -1193,7 +1202,7 @@ public class HapiSpec implements Runnable, Executable {
      * restored to their original values after running the tests.
      *
      * @param propertiesToPreserve the properties to preserve
-     * @param ops the operations
+     * @param ops                  the operations
      * @return a {@link Stream} of {@link DynamicTest}s
      */
     public static Stream<DynamicTest> propertyPreservingHapiTest(
@@ -1239,7 +1248,7 @@ public class HapiSpec implements Runnable, Executable {
     /**
      * Customizes the {@link HapiSpec} to target the given network.
      *
-     * @param spec the {@link HapiSpec} to customize
+     * @param spec          the {@link HapiSpec} to customize
      * @param targetNetwork the target network
      */
     public static void doTargetSpec(@NonNull final HapiSpec spec, @NonNull final HederaNetwork targetNetwork) {
