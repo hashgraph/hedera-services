@@ -81,7 +81,7 @@ class SetUnlimitedAutoAssociationsCallTest extends CallTestBase {
 
         subject = new SetUnlimitedAutoAssociationsCall(attempt, transactionBody);
         final var result = subject.execute(frame).fullResult().result();
-        assertEquals(State.REVERT, result.getState());
+        assertEquals(State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 Bytes.wrap(SetUnlimitedAutoAssociationsTranslator.SET_UNLIMITED_AUTO_ASSOC
                         .getOutputs()

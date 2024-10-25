@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -53,12 +52,6 @@ public class SetUnlimitedAutoAssociationsCall extends AbstractCall {
                 .dispatch(transactionBody, verificationStrategy, sender, ContractCallStreamBuilder.class);
 
         final var gasRequirement = gasCalculator.gasRequirement(transactionBody, DispatchType.CRYPTO_UPDATE, sender);
-
-        final var status = recordBuilder.status();
-        if (status != ResponseCodeEnum.SUCCESS) {
-            return reversionWith(gasRequirement, recordBuilder);
-        } else {
-            return completionWith(gasRequirement, recordBuilder, encodedRc(standardized(status)));
-        }
+        return completionWith(gasRequirement, recordBuilder, encodedRc(standardized(recordBuilder.status())));
     }
 }
