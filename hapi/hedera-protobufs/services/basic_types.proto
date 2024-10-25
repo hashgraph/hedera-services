@@ -1246,7 +1246,7 @@ enum HederaFunctionality {
     TokenCancelAirdrop = 94;
 
     /**
-      * Claim one or more pending airdrops
+     * Claim one or more pending airdrops
      */
     TokenClaimAirdrop = 95;
 

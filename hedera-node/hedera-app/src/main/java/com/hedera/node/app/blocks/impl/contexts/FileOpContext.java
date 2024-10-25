@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.blocks.impl.TranslationContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -34,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public record FileOpContext(
         @NonNull String memo,
+        @NonNull ExchangeRateSet transactionExchangeRates,
         @NonNull TransactionID txnId,
         @NonNull Transaction transaction,
         @NonNull HederaFunctionality functionality,

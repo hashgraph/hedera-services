@@ -71,8 +71,9 @@ public class BlockItemsTranslator {
         requireNonNull(context);
         requireNonNull(result);
         requireNonNull(outputs);
-        final var receiptBuilder =
-                TransactionReceipt.newBuilder().status(result.status()).exchangeRate(result.exchangeRate());
+        final var receiptBuilder = TransactionReceipt.newBuilder()
+                .status(result.status())
+                .exchangeRate(context.transactionExchangeRates());
         final var function = context.functionality();
         switch (function) {
             case CONTRACT_CALL,

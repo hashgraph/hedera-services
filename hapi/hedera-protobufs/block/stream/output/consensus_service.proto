@@ -6,7 +6,11 @@
  * ### Topic Running Hash Calculation
  * Submitted messages include a topic running hash. This value has changed
  * over time, with the known versions detailed in the `RunningHashVersion`
- * enumeration.
+ * enumeration. The running hash version SHALL NOT be transmitted in the
+ * Block Stream, however, as it is a fixed value that can only be changed
+ * with a new release of consensus node software following a HIP to update
+ * the specification, so repeating that fixed value in the block stream is
+ * wasteful and unnecessary.
  *
  * ### Keywords
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
