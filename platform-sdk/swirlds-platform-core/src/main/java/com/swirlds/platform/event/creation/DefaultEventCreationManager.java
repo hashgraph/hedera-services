@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event.creation;
 
-import static com.swirlds.platform.event.creation.EventCreationStatus.ATTEMPTING_CREATION;
-import static com.swirlds.platform.event.creation.EventCreationStatus.IDLE;
-import static com.swirlds.platform.event.creation.EventCreationStatus.NO_ELIGIBLE_PARENTS;
-import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
+import static org.hiero.event.creator.EventCreationStatus.ATTEMPTING_CREATION;
+import static org.hiero.event.creator.EventCreationStatus.IDLE;
+import static org.hiero.event.creator.EventCreationStatus.NO_ELIGIBLE_PARENTS;
+import static org.hiero.event.creator.EventCreationStatus.RATE_LIMITED;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
@@ -27,7 +27,6 @@ import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
-import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.event.creation.rules.MaximumRateRule;
 import com.swirlds.platform.event.creation.rules.PlatformHealthRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
@@ -40,6 +39,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.hiero.event.creator.EventCreationRule;
+import org.hiero.event.creator.EventCreationStatus;
 
 /**
  * Default implementation of the {@link EventCreationManager}.

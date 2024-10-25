@@ -16,12 +16,13 @@
 
 package com.swirlds.platform.event.creation.rules;
 
-import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
+import static org.hiero.event.creator.EventCreationStatus.RATE_LIMITED;
 
-import com.swirlds.platform.event.creation.EventCreationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
+import org.hiero.event.creator.EventCreationRule;
+import org.hiero.event.creator.EventCreationStatus;
 
 /**
  * Combines multiple {@link EventCreationRule} objects into a single object. Allows event creation if all the contained

@@ -16,14 +16,15 @@
 
 package com.swirlds.platform.event.creation.rules;
 
-import static com.swirlds.platform.event.creation.EventCreationStatus.OVERLOADED;
+import static org.hiero.event.creator.EventCreationStatus.OVERLOADED;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.event.creation.EventCreationConfig;
-import com.swirlds.platform.event.creation.EventCreationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.LongSupplier;
+import org.hiero.event.creator.EventCreationRule;
+import org.hiero.event.creator.EventCreationStatus;
 
 /**
  * Prevents event creations when the system is stressed and unable to keep up with its work load.
