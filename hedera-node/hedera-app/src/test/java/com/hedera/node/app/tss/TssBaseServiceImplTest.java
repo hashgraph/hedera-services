@@ -64,7 +64,12 @@ class TssBaseServiceImplTest {
     @BeforeEach
     void setUp() {
         given(appContext.gossip()).willReturn(gossip);
-        subject = new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool());
+        subject = new TssBaseServiceImpl(
+                appContext,
+                ForkJoinPool.commonPool(),
+                ForkJoinPool.commonPool(),
+                new PlaceholderTssLibrary(),
+                ForkJoinPool.commonPool());
     }
 
     @Test
