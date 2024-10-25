@@ -165,7 +165,7 @@ public class DispatchProcessor {
             // Since there is no easy way to say how much work was done in the failed dispatch,
             // and current throttling is very rough-grained, we just return USER_TRANSACTION here
         } catch (final ThrottleException e) {
-            var functionality = dispatch.txnInfo().functionality();
+            final var functionality = dispatch.txnInfo().functionality();
             workflowMetrics.incrementThrottled(functionality);
             rollbackAndRechargeFee(dispatch, validationResult, e.getStatus());
             if (functionality == ETHEREUM_TRANSACTION) {

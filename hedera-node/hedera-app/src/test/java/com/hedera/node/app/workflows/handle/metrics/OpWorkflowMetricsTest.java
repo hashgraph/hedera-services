@@ -154,7 +154,7 @@ class OpWorkflowMetricsTest {
         handleWorkflowMetrics.incrementThrottled(HederaFunctionality.CRYPTO_CREATE);
 
         // then
-        var throttledMetric = (Counter) metrics.getMetric("app", "cryptoCreateThrottledTps");
+        final var throttledMetric = (Counter) metrics.getMetric("app", "cryptoCreateThrottledTps");
         assertThat(throttledMetric.get()).isSameAs(1L);
     }
 
