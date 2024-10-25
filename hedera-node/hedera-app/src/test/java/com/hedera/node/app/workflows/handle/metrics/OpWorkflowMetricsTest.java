@@ -72,7 +72,7 @@ class OpWorkflowMetricsTest {
                 .isEqualTo(0);
         assertThat(metrics.getMetric("app", "cryptoCreateDurationAvg").get(VALUE))
                 .isEqualTo(0);
-        assertThat(metrics.getMetric("app", "cryptoCreateThrottledTps").get(VALUE))
+        assertThat(metrics.getMetric("app", "cryptoCreateThrottledTxns").get(VALUE))
                 .isSameAs(0L);
     }
 
@@ -154,7 +154,7 @@ class OpWorkflowMetricsTest {
         handleWorkflowMetrics.incrementThrottled(HederaFunctionality.CRYPTO_CREATE);
 
         // then
-        final var throttledMetric = (Counter) metrics.getMetric("app", "cryptoCreateThrottledTps");
+        final var throttledMetric = (Counter) metrics.getMetric("app", "cryptoCreateThrottledTxns");
         assertThat(throttledMetric.get()).isSameAs(1L);
     }
 
