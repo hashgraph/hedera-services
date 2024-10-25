@@ -148,34 +148,27 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var candidateRosterParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int)
                 context.networkInfo().selfNodeInfo().nodeId());
 
-        // https://github.com/hashgraph/hedera-services/issues/16166
-        final boolean hasKeyMaterial = false;
-        if (!hasKeyMaterial) {
-            final AtomicInteger shareIndex = new AtomicInteger(0);
-            for (final var tssPrivateShare : tssPrivateShares) {
-                final var tssMsg = CompletableFuture.supplyAsync(
-                                () -> tssLibrary.generateTssMessage(
-                                        candidateRosterParticipantDirectory, tssPrivateShare),
-                                tssLibraryExecutor)
-                        .exceptionally(e -> {
-                            log.error("Error generating tssMessage", e);
-                            return null;
-                        });
-                tssMsg.thenAccept(msg -> {
-                    if (msg == null) {
-                        return;
-                    }
-                    final var tssMessage = TssMessageTransactionBody.newBuilder()
-                            .sourceRosterHash(activeRosterHash)
-                            .targetRosterHash(candidateRosterHash)
-                            .shareIndex(shareIndex.getAndAdd(1))
-                            .tssMessage(Bytes.wrap(msg.bytes()))
-                            .build();
-                    tssSubmissions.submitTssMessage(tssMessage, context);
-                });
-            }
-        } else {
-
+        final AtomicInteger shareIndex = new AtomicInteger(0);
+        for (final var tssPrivateShare : tssPrivateShares) {
+            final var tssMsg = CompletableFuture.supplyAsync(
+                            () -> tssLibrary.generateTssMessage(candidateRosterParticipantDirectory, tssPrivateShare),
+                            tssLibraryExecutor)
+                    .exceptionally(e -> {
+                        log.error("Error generating tssMessage", e);
+                        return null;
+                    });
+            tssMsg.thenAccept(msg -> {
+                if (msg == null) {
+                    return;
+                }
+                final var tssMessage = TssMessageTransactionBody.newBuilder()
+                        .sourceRosterHash(activeRosterHash)
+                        .targetRosterHash(candidateRosterHash)
+                        .shareIndex(shareIndex.getAndAdd(1))
+                        .tssMessage(Bytes.wrap(msg.bytes()))
+                        .build();
+                tssSubmissions.submitTssMessage(tssMessage, context);
+            });
         }
     }
 
