@@ -48,12 +48,12 @@ public class StateNetworkInfo implements NetworkInfo {
     private final Bytes ledgerId;
     private final Map<Long, NodeInfo> nodeInfos;
     private final long selfId;
-    private Roster roster;
+    private Roster activeRoster;
 
     public StateNetworkInfo(
             @NonNull final State state, final long selfId, @NonNull final ConfigProvider configProvider) {
         this.selfId = selfId;
-        this.roster = new Roster(retrieve(state).rosterEntries());
+        this.activeRoster = new Roster(retrieve(state).rosterEntries());
         this.nodeInfos = buildNodeInfoMap(state);
         // Load the ledger ID from configuration
         final var config = configProvider.getConfiguration();
@@ -92,7 +92,7 @@ public class StateNetworkInfo implements NetworkInfo {
 
     @Override
     public void updateFrom(@NonNull final State state) {
-        roster = new Roster(retrieve(state).rosterEntries());
+        activeRoster = new Roster(retrieve(state).rosterEntries());
         nodeInfos.clear();
         nodeInfos.putAll(buildNodeInfoMap(state));
     }
@@ -107,7 +107,7 @@ public class StateNetworkInfo implements NetworkInfo {
      */
     private Map<Long, NodeInfo> buildNodeInfoMap(final State state) {
         final var nodeInfos = new LinkedHashMap<Long, NodeInfo>();
-        final var rosterEntries = roster.rosterEntries();
+        final var rosterEntries = activeRoster.rosterEntries();
         final ReadableKVState<EntityNumber, Node> nodeState =
                 state.getReadableStates(AddressBookService.NAME).get(NODES_KEY);
         for (final var rosterEntry : rosterEntries) {
@@ -122,6 +122,6 @@ public class StateNetworkInfo implements NetworkInfo {
 
     @Override
     public Roster roster() {
-        return roster;
+        return activeRoster;
     }
 }
