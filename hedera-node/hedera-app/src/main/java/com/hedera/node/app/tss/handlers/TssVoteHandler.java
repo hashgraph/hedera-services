@@ -32,8 +32,6 @@ import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
-import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -64,8 +62,8 @@ public class TssVoteHandler implements TransactionHandler {
         requireNonNull(context);
         final var txBody = context.body().tssVoteOrThrow();
         final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
-        final var nodeId = context.networkInfo().selfNodeInfo().nodeId();
-        final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(txBody.targetRosterHash(), nodeId);
+        final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(
+                txBody.targetRosterHash(), context.creatorInfo().nodeId());
         if (tssBaseStore.exists(tssVoteMapKey)) {
             // Duplicate vote
             return;
@@ -92,41 +90,31 @@ public class TssVoteHandler implements TransactionHandler {
         if (activeRoster == null) {
             throw new IllegalArgumentException("No active roster found");
         }
-
-        // Get all votes for the active roster
-        final Map<RosterEntry, TssVoteTransactionBody> voteByNode = new HashMap<>();
-
         // Get the target roster from the TssVoteTransactionBody
         final Bytes targetRosterHash = tssVoteTransaction.targetRosterHash();
 
         // Also get the total active roster weight
         long activeRosterTotalWeight = 0;
-
-        final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
-        // For every node in the active roster, check if there is a vote for the target roster hash
-        for (final RosterEntry rosterEntry : rosterStore.getActiveRoster().rosterEntries()) {
-            activeRosterTotalWeight += rosterEntry.weight();
-            final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(targetRosterHash, rosterEntry.nodeId());
-            if (tssBaseStore.exists(tssVoteMapKey)) {
-                voteByNode.put(rosterEntry, tssBaseStore.getVote(tssVoteMapKey));
-            }
-        }
-
         // Initialize a counter for the total weight of votes with the same vote byte array
         long voteWeight = 0L;
-
-        // Iterate over the votes which has the same target roster hash
-        for (final RosterEntry rosterEntryKey : voteByNode.keySet()) {
-            final TssVoteTransactionBody vote = voteByNode.get(rosterEntryKey);
-            // If the vote byte array matches the one in the TssVoteTransaction, add the weight of the vote to the
-            // counter
-            if (vote.tssVote().equals(tssVoteTransaction.tssVote())) {
-                voteWeight += rosterEntryKey.weight();
+        final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
+        // For every node in the active roster, check if there is a vote for the target roster hash
+        for (final RosterEntry rosterEntry : activeRoster.rosterEntries()) {
+            activeRosterTotalWeight += rosterEntry.weight();
+            final var tssVoteMapKey = new TssVoteMapKey(targetRosterHash, rosterEntry.nodeId());
+            if (tssBaseStore.exists(tssVoteMapKey)) {
+                final var vote = tssBaseStore.getVote(tssVoteMapKey);
+                // If the vote byte array matches the one in the TssVoteTransaction, add the weight of the vote to the
+                // counter
+                if (vote.tssVote().equals(tssVoteTransaction.tssVote())) {
+                    voteWeight += rosterEntry.weight();
+                }
             }
         }
 
         // Check if the total weight of votes with the same vote byte array is at least 1/3 of the
         // total weight of the network
-        return voteWeight >= activeRosterTotalWeight / 3;
+        // Adding a +1 to the threshold to account for rounding errors.
+        return voteWeight >= (activeRosterTotalWeight / 3) + 1;
     }
 }
