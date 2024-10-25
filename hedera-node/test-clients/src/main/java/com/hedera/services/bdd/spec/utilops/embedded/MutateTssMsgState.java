@@ -16,14 +16,11 @@
 
 package com.hedera.services.bdd.spec.utilops.embedded;
 
-import static com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl.constructFromNodesState;
-
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.swirlds.platform.roster.RosterUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
