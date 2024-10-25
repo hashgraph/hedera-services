@@ -33,7 +33,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStoreException;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -113,6 +115,7 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
         assertThatCode(loader::generateIfNecessary).doesNotThrowAnyException();
         assertThatCode(loader::verify).doesNotThrowAnyException();
@@ -159,6 +162,7 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
         assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
@@ -183,9 +187,15 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
+        assertThatCode(loader::generateIfNecessary).isInstanceOf(KeyGeneratingException.class);
         assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
-        assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
+        if (directoryName.equals("hybrid-invalid-case-2") || directoryName.equals("enhanced-invalid-case-2")) {
+            assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
+        } else {
+            assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
+        }
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
     }
 
@@ -213,5 +223,54 @@ class EnhancedKeyStoreLoaderTest {
      */
     private AddressBook addressBook() {
         return loadConfigFile(testDataDirectory.resolve("config.txt")).getAddressBook();
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
+    //////////////////////// MIGRATION SPECIFIC UNIT TESTS //////////////////////
+    /////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * The Negative Type 2 tests are designed to test the case where the key store loader is able to scan the key
+     * directory, but one or more private keys are either corrupt or missing.
+     *
+     * @param directoryName the directory name containing the test data being used to cover a given test case.
+     * @throws IOException if an I/O error occurs during test setup.
+     */
+    @ParameterizedTest
+    @DisplayName("Migration Negative Cases Test")
+    @ValueSource(strings = {"migration-invalid-missing-private-key", "migration-invalid-missing-public-key"})
+    void migraitonNegativeCaseTest(final String directoryName) throws IOException {
+        final Path keyDirectory = testDataDirectory.resolve(directoryName);
+        final AddressBook addressBook = addressBook();
+        final EnhancedKeyStoreLoader loader = EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory));
+
+        assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
+
+        // read all files into memory for later comparison.
+        Map<String, byte[]> fileContents = new HashMap<>();
+        try (Stream<Path> paths = Files.list(keyDirectory)) {
+            paths.forEach(path -> {
+                try {
+                    fileContents.put(path.getFileName().toString(), Files.readAllBytes(path));
+                } catch (IOException e) {
+                    assert (false);
+                }
+            });
+        }
+
+        assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
+
+        // check that the migration rolled back the changes and that the files are identical.
+        try (Stream<Path> paths = Files.list(keyDirectory)) {
+            paths.forEach(path -> {
+                try {
+                    assertThat(Files.readAllBytes(path))
+                            .isEqualTo(fileContents.get(path.getFileName().toString()));
+                } catch (IOException e) {
+                    assert (false);
+                }
+            });
+        }
     }
 }
