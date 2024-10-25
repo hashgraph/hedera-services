@@ -79,7 +79,7 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
      * Create a {@link LongListHeap} from a file that was saved.
      *
      * @param file the file to read from
-     *             * @param configuration the configuration to use
+     * @param configuration the configuration to use
      * @throws IOException If there was a problem reading the file
      */
     public LongListHeap(final Path file, final Configuration configuration) throws IOException {
