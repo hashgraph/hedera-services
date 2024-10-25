@@ -40,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHan
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
@@ -78,6 +79,7 @@ public class DispatchProcessor {
     private final TransactionDispatcher dispatcher;
     private final EthereumTransactionHandler ethereumTransactionHandler;
     private final NetworkInfo networkInfo;
+    private final OpWorkflowMetrics workflowMetrics;
 
     @Inject
     public DispatchProcessor(
@@ -90,7 +92,8 @@ public class DispatchProcessor {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final EthereumTransactionHandler ethereumTransactionHandler,
-            final NetworkInfo networkInfo) {
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final OpWorkflowMetrics workflowMetrics) {
         this.authorizer = requireNonNull(authorizer);
         this.validator = requireNonNull(validator);
         this.recordFinalizer = requireNonNull(recordFinalizer);
@@ -101,6 +104,7 @@ public class DispatchProcessor {
         this.dispatcher = requireNonNull(dispatcher);
         this.ethereumTransactionHandler = requireNonNull(ethereumTransactionHandler);
         this.networkInfo = requireNonNull(networkInfo);
+        this.workflowMetrics = requireNonNull(workflowMetrics);
     }
 
     /**
@@ -140,7 +144,6 @@ public class DispatchProcessor {
      *
      * @param dispatch the dispatch to be processed
      * @param validationResult the due diligence report for the dispatch
-     * @return the work done by the dispatch
      */
     private void tryHandle(@NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
         try {
@@ -162,8 +165,10 @@ public class DispatchProcessor {
             // Since there is no easy way to say how much work was done in the failed dispatch,
             // and current throttling is very rough-grained, we just return USER_TRANSACTION here
         } catch (final ThrottleException e) {
+            final var functionality = dispatch.txnInfo().functionality();
+            workflowMetrics.incrementThrottled(functionality);
             rollbackAndRechargeFee(dispatch, validationResult, e.getStatus());
-            if (dispatch.txnInfo().functionality() == ETHEREUM_TRANSACTION) {
+            if (functionality == ETHEREUM_TRANSACTION) {
                 ethereumTransactionHandler.handleThrottled(dispatch.handleContext());
             }
         } catch (final Exception e) {

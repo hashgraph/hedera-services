@@ -19,12 +19,6 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
-import static com.hedera.node.app.tss.TssBaseServiceTest.ACTIVE_ROSTER;
-import static com.hedera.node.app.tss.TssBaseServiceTest.CURRENT_CANDIDATE_ROSTER;
-import static com.hedera.node.app.tss.TssBaseServiceTest.NODE_1;
-import static com.hedera.node.app.tss.TssBaseServiceTest.NODE_2;
-import static com.hedera.node.app.tss.TssBaseServiceTest.NODE_3;
-import static com.hedera.node.app.tss.TssBaseServiceTest.NODE_4;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,12 +31,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
@@ -56,13 +52,13 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.TssBaseServiceTest;
 import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.config.types.StreamMode;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.roster.RosterUtils;
@@ -360,7 +356,7 @@ class NodeStakeUpdatesTest {
         given(context.configuration()).willReturn(newConfig(DEFAULT_STAKING_PERIOD_MINS, true));
 
         // Simulate the same address book input as the current candidate and active rosters
-        final var nodeStore = simulateNodes(NODE_1, NODE_2, NODE_3, NODE_4);
+        final var nodeStore = simulateNodes(RosterCase.NODE_1, RosterCase.NODE_2, RosterCase.NODE_3, RosterCase.NODE_4);
         given(dispatch.handleContext()).willReturn(handleContext);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
@@ -385,7 +381,7 @@ class NodeStakeUpdatesTest {
         given(context.configuration()).willReturn(newConfig(DEFAULT_STAKING_PERIOD_MINS, true));
 
         // Simulate an updated address book
-        final var nodeStore = simulateNodes(NODE_1, NODE_2, NODE_3);
+        final var nodeStore = simulateNodes(RosterCase.NODE_1, RosterCase.NODE_2, RosterCase.NODE_3);
         given(dispatch.handleContext()).willReturn(handleContext);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
@@ -408,20 +404,13 @@ class NodeStakeUpdatesTest {
         return nodeStore;
     }
 
-    private static final ProtoBytes CANDIDATE_ROSTER_HASH = ProtoBytes.newBuilder()
-            .value(RosterUtils.hash(CURRENT_CANDIDATE_ROSTER).getBytes())
-            .build();
-    private static final ProtoBytes ACTIVE_ROSTER_HASH = ProtoBytes.newBuilder()
-            .value(RosterUtils.hash(ACTIVE_ROSTER).getBytes())
-            .build();
-
     private void simulateCandidateAndActiveRosters() {
         given(rosterState.get())
                 .willReturn(new RosterState(
-                        CANDIDATE_ROSTER_HASH.value(),
+                        RosterCase.CANDIDATE_ROSTER_HASH.value(),
                         List.of(RoundRosterPair.newBuilder()
                                 .roundNumber(12345)
-                                .activeRosterHash(ACTIVE_ROSTER_HASH.value())
+                                .activeRosterHash(RosterCase.ACTIVE_ROSTER_HASH.value())
                                 .build())));
         given(writableStates.<RosterState>getSingleton(RosterStateId.ROSTER_STATES_KEY))
                 .willReturn(rosterState);
@@ -429,10 +418,10 @@ class NodeStakeUpdatesTest {
                 .willReturn(new MapWritableKVState<>(
                         RosterStateId.ROSTER_KEY,
                         Map.of(
-                                CANDIDATE_ROSTER_HASH,
-                                TssBaseServiceTest.CURRENT_CANDIDATE_ROSTER,
-                                ACTIVE_ROSTER_HASH,
-                                TssBaseServiceTest.ACTIVE_ROSTER)));
+                                RosterCase.CANDIDATE_ROSTER_HASH,
+                                RosterCase.CURRENT_CANDIDATE_ROSTER,
+                                RosterCase.ACTIVE_ROSTER_HASH,
+                                RosterCase.ACTIVE_ROSTER)));
     }
 
     private Configuration newPeriodMinsConfig() {
@@ -449,5 +438,86 @@ class NodeStakeUpdatesTest {
                 .withValue("staking.periodMins", periodMins)
                 .withValue("tss.keyCandidateRoster", keyCandidateRoster)
                 .getOrCreateConfig();
+    }
+
+    private static class RosterCase {
+        static final Bytes BYTES_1_2_3 = Bytes.wrap("1, 2, 3");
+        static final Node NODE_1 = Node.newBuilder()
+                .nodeId(1)
+                .weight(10)
+                .gossipCaCertificate(BYTES_1_2_3)
+                .gossipEndpoint(ServiceEndpoint.newBuilder()
+                        .ipAddressV4(Bytes.wrap("1, 1"))
+                        .port(11)
+                        .build())
+                .build();
+        static final RosterEntry ROSTER_NODE_1 = RosterEntry.newBuilder()
+                .nodeId(NODE_1.nodeId())
+                .weight(NODE_1.weight())
+                .gossipCaCertificate(NODE_1.gossipCaCertificate())
+                .gossipEndpoint(NODE_1.gossipEndpoint())
+                .build();
+        static final Node NODE_2 = Node.newBuilder()
+                .nodeId(2)
+                .weight(20)
+                .gossipCaCertificate(BYTES_1_2_3)
+                .gossipEndpoint(ServiceEndpoint.newBuilder()
+                        .ipAddressV4(Bytes.wrap("2, 2"))
+                        .port(22)
+                        .build())
+                .build();
+        static final RosterEntry ROSTER_NODE_2 = RosterEntry.newBuilder()
+                .nodeId(NODE_2.nodeId())
+                .weight(NODE_2.weight())
+                .gossipCaCertificate(NODE_2.gossipCaCertificate())
+                .gossipEndpoint((ServiceEndpoint.newBuilder()
+                        .ipAddressV4(Bytes.wrap("2, 2"))
+                        .port(22)
+                        .build()))
+                .build();
+        static final Node NODE_3 = Node.newBuilder()
+                .nodeId(3)
+                .weight(30)
+                .gossipCaCertificate(BYTES_1_2_3)
+                .gossipEndpoint(ServiceEndpoint.newBuilder()
+                        .ipAddressV4(Bytes.wrap("3, 3"))
+                        .port(33)
+                        .build())
+                .build();
+        static final RosterEntry ROSTER_NODE_3 = RosterEntry.newBuilder()
+                .nodeId(NODE_3.nodeId())
+                .weight(NODE_3.weight())
+                .gossipCaCertificate(NODE_3.gossipCaCertificate())
+                .gossipEndpoint(NODE_3.gossipEndpoint())
+                .build();
+        static final Node NODE_4 = Node.newBuilder()
+                .nodeId(4)
+                .weight(40)
+                .gossipCaCertificate(BYTES_1_2_3)
+                .gossipEndpoint(ServiceEndpoint.newBuilder()
+                        .ipAddressV4(Bytes.wrap("4, 4"))
+                        .port(44)
+                        .build())
+                .build();
+        static final RosterEntry ROSTER_NODE_4 = RosterEntry.newBuilder()
+                .nodeId(NODE_4.nodeId())
+                .weight(NODE_4.weight())
+                .gossipCaCertificate(NODE_4.gossipCaCertificate())
+                .gossipEndpoint(NODE_4.gossipEndpoint())
+                .build();
+
+        static final Roster CURRENT_CANDIDATE_ROSTER = Roster.newBuilder()
+                .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2))
+                .build();
+        static final Roster ACTIVE_ROSTER = Roster.newBuilder()
+                .rosterEntries(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3, ROSTER_NODE_4)
+                .build();
+
+        static final ProtoBytes CANDIDATE_ROSTER_HASH = ProtoBytes.newBuilder()
+                .value(RosterUtils.hash(CURRENT_CANDIDATE_ROSTER).getBytes())
+                .build();
+        static final ProtoBytes ACTIVE_ROSTER_HASH = ProtoBytes.newBuilder()
+                .value(RosterUtils.hash(ACTIVE_ROSTER).getBytes())
+                .build();
     }
 }
