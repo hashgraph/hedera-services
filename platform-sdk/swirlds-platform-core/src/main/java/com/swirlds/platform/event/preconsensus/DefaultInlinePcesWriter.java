@@ -67,9 +67,6 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
         try {
             commonPcesWriter.prepareOutputStream(event);
             commonPcesWriter.getCurrentMutableFile().writeEvent(event);
-
-            commonPcesWriter.getCurrentMutableFile().flush();
-
             return event;
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
