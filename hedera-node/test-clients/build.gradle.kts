@@ -43,6 +43,46 @@ tasks.register<JavaExec>("runTestClient") {
     mainClass = providers.gradleProperty("testClient")
 }
 
+tasks.jacocoTestReport {
+    classDirectories.setFrom(files(project(":app").buildDir.resolve("classes/java/main")))
+    sourceDirectories.setFrom(files(project(":app").projectDir.resolve("src/main/java")))
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
+tasks.test {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform { includeTags("(WORKFLOWS|STREAM_VALIDATION|LOG_VALIDATION)") }
+
+    systemProperty("junit.jupiter.execution.parallel.enabled", true)
+    systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+    // Surprisingly, the Gradle JUnitPlatformTestExecutionListener fails to gather result
+    // correctly if test classes run in parallel (concurrent execution WITHIN a test class
+    // is fine). So we need to force the test classes to run in the same thread. Luckily this
+    // is not a huge limitation, as our test classes generally have enough non-leaky tests to
+    // get a material speed up. See https://github.com/gradle/gradle/issues/6453.
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+    systemProperty(
+        "junit.jupiter.testclass.order.default",
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+    )
+    // Tell our launcher to target an embedded network
+    systemProperty("hapi.spec.embedded.mode", true)
+    // Configure log4j2.xml for the embedded node
+    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
 val prCheckTags =
     mapOf(
         "hapiTestAdhoc" to "ADHOC",
@@ -66,9 +106,11 @@ val prCheckStartPorts =
         "hapiTestMisc" to "32000"
     )
 
-tasks { prCheckTags.forEach { (taskName, _) -> register(taskName) { dependsOn("test") } } }
+tasks {
+    prCheckTags.forEach { (taskName, _) -> register(taskName) { dependsOn("testSubprocess") } }
+}
 
-tasks.test {
+tasks.register<Test>("testSubprocess") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 

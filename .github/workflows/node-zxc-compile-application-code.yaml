@@ -206,7 +206,7 @@ jobs:
       - name: Unit Testing
         id: gradle-test
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} :aggregation:testCodeCoverageReport -x :test-clients:test --continue --scan
+        run: ${GRADLE_EXEC} :aggregation:testCodeCoverageReport --continue --scan
 
 
       - name: Publish Unit Test Report
