@@ -58,7 +58,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.swirlds.common.RosterStateId.ROSTER_KEY;
 import static com.swirlds.common.RosterStateId.ROSTER_STATES_KEY;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -70,8 +69,6 @@ import static java.util.stream.Collectors.joining;
 import com.google.common.base.MoreObjects;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
@@ -519,11 +516,6 @@ public class HapiSpec implements Runnable, Executable {
     public @NonNull WritableKVState<TssMessageMapKey, TssMessageTransactionBody> embeddedTssMsgStateOrThrow() {
         final var state = embeddedStateOrThrow();
         return state.getWritableStates(TssBaseService.NAME).get(TSS_MESSAGE_MAP_KEY);
-    }
-
-    public @NonNull WritableKVState<ProtoBytes, Roster> embeddedRosterKVStateOrThrow() {
-        final var state = embeddedStateOrThrow();
-        return state.getWritableStates(RosterStateId.NAME).get(ROSTER_KEY);
     }
 
     public @NonNull WritableSingletonState<RosterState> embeddedRosterStateOrThrow() {

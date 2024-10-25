@@ -96,7 +96,6 @@ public class TssSubmissions {
         final var attemptsLeft = new AtomicInteger(tssConfig.timesToTrySubmission());
         return CompletableFuture.runAsync(
                 () -> {
-                    System.out.println("Starting async block execution");
                     var fatalFailure = false;
                     var failureReason = "<N/A>";
                     TransactionBody body;

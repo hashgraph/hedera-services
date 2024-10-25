@@ -61,5 +61,9 @@ public interface NetworkInfo {
      */
     void updateFrom(State state);
 
+    /**
+     * Returns the current roster used by the network.
+     * @return the current roster
+     */
     Roster roster();
 }

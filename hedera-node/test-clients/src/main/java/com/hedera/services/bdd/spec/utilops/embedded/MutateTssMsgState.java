@@ -24,6 +24,10 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
+/**
+ * Mutates the TSS message state by adding 12 TssMessages for the active roster.
+ * This is needed for generating the key material for a candidate roster when setCandidateRoster is called.
+ */
 public class MutateTssMsgState extends UtilOp {
     public MutateTssMsgState() {}
 
