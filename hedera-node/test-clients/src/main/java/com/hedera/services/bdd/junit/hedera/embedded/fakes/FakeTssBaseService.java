@@ -25,6 +25,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -192,10 +193,11 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
+    public void setCandidateRoster(
+            @NonNull final Roster roster, @NonNull final HandleContext context, @NonNull final TssMetrics tssMetrics) {
         requireNonNull(roster);
         requireNonNull(context);
-        delegate.setCandidateRoster(roster, context);
+        delegate.setCandidateRoster(roster, context, tssMetrics);
     }
 
     @Override

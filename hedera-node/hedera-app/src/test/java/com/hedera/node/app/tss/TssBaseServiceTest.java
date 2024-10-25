@@ -56,6 +56,9 @@ public class TssBaseServiceTest {
     @Mock
     private WritableRosterStore rosterStore;
 
+    @Mock
+    private TssMetrics tssMetrics;
+
     private TssBaseService subject;
 
     @BeforeEach
@@ -84,7 +87,7 @@ public class TssBaseServiceTest {
         final var inputRoster = Roster.newBuilder()
                 .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3))
                 .build();
-        subject.setCandidateRoster(inputRoster, handleContext);
+        subject.setCandidateRoster(inputRoster, handleContext, tssMetrics);
         verify(rosterStore).putCandidateRoster(inputRoster);
     }
 

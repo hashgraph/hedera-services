@@ -360,7 +360,7 @@ public class HandleWorkflow {
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
         if (userTxn.functionality() == TSS_MESSAGE || userTxn.functionality() == TSS_VOTE) {
-            tssMetrics.updateTssMetrics(userTxn.functionality());
+            tssMetrics.updateTssTransactionMetrics(userTxn.functionality());
         }
     }
 
@@ -602,7 +602,8 @@ public class HandleWorkflow {
                     userTxn.tokenContextImpl(),
                     streamMode,
                     userTxn.type() == GENESIS_TRANSACTION,
-                    blockStreamManager.lastIntervalProcessTime());
+                    blockStreamManager.lastIntervalProcessTime(),
+                    tssMetrics);
         } catch (final Exception e) {
             // We don't propagate a failure here to avoid a catastrophic scenario
             // where we are "stuck" trying to process node stake updates and never

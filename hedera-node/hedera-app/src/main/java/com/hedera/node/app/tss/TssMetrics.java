@@ -22,22 +22,35 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * A class to track all the metrics related to TSS functionalities.
+ */
 @Singleton
 public class TssMetrics {
+    private static final String TSS_CANDIDATE_ROSTER_LIFECYCLE = "tss_candidate_roster_lifecycle";
+    private static final String TSS_CANDIDATE_ROSTER_LIFECYCLE_DESC = "the lifecycle of the current candidate roster";
+    private static final LongGauge.Config TSS_ROSTER_LIFECYCLE_CONFIG = new LongGauge.Config(
+                    "app", TSS_CANDIDATE_ROSTER_LIFECYCLE)
+            .withDescription(TSS_CANDIDATE_ROSTER_LIFECYCLE_DESC);
+    private final LongGauge tssCandidateRosterLifecycle;
 
-    private static final Counter.Config TSS_MESSAGE_TX_COUNT =
-            new Counter.Config("app", "tss_message_total").withDescription("total number of tss message transactions");
+    private static final String TSS_MESSAGE_COUNTER_METRIC = "tss_message_total";
+    private static final String TSS_MESSAGE_COUNTER_METRIC_DESC = "total numbers of tss message transactions";
+    private static final Counter.Config TSS_MESSAGE_TX_COUNTER =
+            new Counter.Config("app", TSS_MESSAGE_COUNTER_METRIC).withDescription(TSS_MESSAGE_COUNTER_METRIC_DESC);
+    private final Counter tssMessageTxCounter;
 
-    private static final Counter.Config TSS_VOTE_TX_COUNT =
-            new Counter.Config("app", "tss_vote_total").withDescription("total number of tss vote transactions");
-
-    private final Counter tssMessageTxCount;
-    private final Counter tssVoteTxCount;
+    private static final String TSS_VOTE_COUNTER_METRIC = "tss_vote_total";
+    private static final String TSS_VOTE_COUNTER_METRIC_DESC = "total numbers of tss vote transactions";
+    private static final Counter.Config TSS_VOTE_TX_COUNTER =
+            new Counter.Config("app", TSS_VOTE_COUNTER_METRIC).withDescription(TSS_VOTE_COUNTER_METRIC_DESC);
+    private final Counter tssVoteTxCounter;
 
     /**
      * Constructor for the TssMetrics
@@ -48,8 +61,9 @@ public class TssMetrics {
     public TssMetrics(@NonNull final Metrics metrics) {
         requireNonNull(metrics, "metrics must not be null");
 
-        tssMessageTxCount = metrics.getOrCreate(TSS_MESSAGE_TX_COUNT);
-        tssVoteTxCount = metrics.getOrCreate(TSS_VOTE_TX_COUNT);
+        tssCandidateRosterLifecycle = metrics.getOrCreate(TSS_ROSTER_LIFECYCLE_CONFIG);
+        tssMessageTxCounter = metrics.getOrCreate(TSS_MESSAGE_TX_COUNTER);
+        tssVoteTxCounter = metrics.getOrCreate(TSS_VOTE_TX_COUNTER);
     }
 
     /**
@@ -57,16 +71,34 @@ public class TssMetrics {
      *
      * @param functionality the TSS {@link HederaFunctionality} for which the metrics will be updated
      */
-    public void updateTssMetrics(@NonNull final HederaFunctionality functionality) {
+    public void updateTssTransactionMetrics(@NonNull final HederaFunctionality functionality) {
         requireNonNull(functionality, "functionality must not be null");
         if (functionality == HederaFunctionality.NONE) {
             return;
         }
 
         if (functionality == TSS_MESSAGE) {
-            tssMessageTxCount.increment();
+            tssMessageTxCounter.increment();
         } else if (functionality == TSS_VOTE) {
-            tssVoteTxCount.increment();
+            tssVoteTxCounter.increment();
         }
+    }
+
+    /**
+     * Track when the candidate roster is set/
+     *
+     * @param lifecycle the time at which the candidate roster is set
+     */
+    public void updateCandidateRosterLifecycle(long lifecycle) {
+        tssCandidateRosterLifecycle.set(lifecycle);
+    }
+
+    /**
+     * The time it takes to aggregate private shares from the key material.
+     *
+     * @param aggregationTime the time which it takes to compute shares from the key material
+     */
+    public void updateAggregationTime(long aggregationTime) {
+        tssCandidateRosterLifecycle.set(aggregationTime);
     }
 }

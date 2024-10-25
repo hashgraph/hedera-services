@@ -41,6 +41,8 @@ import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -129,7 +131,8 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
+    public void setCandidateRoster(
+            @NonNull final Roster roster, @NonNull final HandleContext context, @NonNull final TssMetrics tssMetrics) {
         requireNonNull(roster);
 
         // (TSS-FUTURE) Implement `keyActiveRoster`
@@ -143,10 +146,16 @@ public class TssBaseServiceImpl implements TssBaseService {
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster();
         final var activeRosterHash = RosterUtils.hash(sourceRoster).getBytes();
         final var candidateRosterHash = RosterUtils.hash(roster).getBytes();
+
+        final var aggregationCalculationStart = Instant.now();
         final var tssPrivateShares =
                 getTssPrivateShares(sourceRoster, maxSharesPerNode, tssStore, candidateRosterHash, context);
         final var candidateRosterParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int)
                 context.networkInfo().selfNodeInfo().nodeId());
+        final var aggregationCalculationEnd = Instant.now();
+        final var durationOfAggregation = Duration.between(aggregationCalculationStart, aggregationCalculationEnd)
+                .toSeconds();
+        tssMetrics.updateAggregationTime(durationOfAggregation);
 
         // https://github.com/hashgraph/hedera-services/issues/16166
         final boolean hasKeyMaterial = false;

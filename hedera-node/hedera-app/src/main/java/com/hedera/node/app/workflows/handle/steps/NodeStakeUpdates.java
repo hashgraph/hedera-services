@@ -31,6 +31,7 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
@@ -97,7 +98,8 @@ public class NodeStakeUpdates {
             @NonNull final TokenContext tokenContext,
             @NonNull final StreamMode streamMode,
             final boolean isGenesis,
-            @NonNull final Instant lastIntervalProcessTime) {
+            @NonNull final Instant lastIntervalProcessTime,
+            @NonNull final TssMetrics tssMetrics) {
         requireNonNull(stack);
         requireNonNull(dispatch);
         requireNonNull(tokenContext);
@@ -152,7 +154,7 @@ public class NodeStakeUpdates {
                 // the handle context is only scoped to the token service, so we use the
                 // `newWritableRosterStore` method here instead
                 final var rosterStore = newWritableRosterStore(stack, config);
-                keyNewRoster(dispatch.handleContext(), rosterStore);
+                keyNewRoster(dispatch.handleContext(), rosterStore, tssMetrics);
             }
         }
     }
@@ -173,14 +175,17 @@ public class NodeStakeUpdates {
     }
 
     private void keyNewRoster(
-            @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
+            @NonNull final HandleContext handleContext,
+            @NonNull final WritableRosterStore rosterStore,
+            @NonNull final TssMetrics tssMetrics) {
         final var nodeStore = handleContext.storeFactory().readableStore(ReadableNodeStore.class);
         final var newCandidateRoster = nodeStore.newRosterFromNodes();
 
         if (!Objects.equals(newCandidateRoster, rosterStore.getCandidateRoster())
                 && !Objects.equals(newCandidateRoster, rosterStore.getActiveRoster())) {
+            tssMetrics.updateCandidateRosterLifecycle(Instant.now().getEpochSecond());
             rosterStore.putCandidateRoster(newCandidateRoster);
-            tssBaseService.setCandidateRoster(newCandidateRoster, handleContext);
+            tssBaseService.setCandidateRoster(newCandidateRoster, handleContext, tssMetrics);
         }
     }
 
