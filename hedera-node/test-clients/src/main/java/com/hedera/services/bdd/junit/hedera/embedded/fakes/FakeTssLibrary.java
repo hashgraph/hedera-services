@@ -21,19 +21,26 @@ import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.api.TssPrivateShare;
 import com.hedera.node.app.tss.api.TssPublicShare;
+import com.hedera.node.app.tss.api.TssShareId;
 import com.hedera.node.app.tss.api.TssShareSignature;
+import com.hedera.node.app.tss.pairings.FakeFieldElement;
 import com.hedera.node.app.tss.pairings.PairingPrivateKey;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.pairings.PairingSignature;
+import com.hedera.node.app.tss.pairings.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.math.BigInteger;
 import java.util.List;
 
 public class FakeTssLibrary implements TssLibrary {
-
+    private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
+    private static final PairingPrivateKey PRIVATE_KEY =
+            new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
     @NonNull
     @Override
     public TssMessage generateTssMessage(@NonNull final TssParticipantDirectory tssParticipantDirectory) {
-        return null;
+        return new TssMessage(new byte[0]);
     }
 
     @NonNull
@@ -41,13 +48,13 @@ public class FakeTssLibrary implements TssLibrary {
     public TssMessage generateTssMessage(
             @NonNull final TssParticipantDirectory tssParticipantDirectory,
             @NonNull final TssPrivateShare privateShare) {
-        return null;
+        return new TssMessage(new byte[0]);
     }
 
     @Override
     public boolean verifyTssMessage(
             @NonNull final TssParticipantDirectory participantDirectory, @NonNull final TssMessage tssMessage) {
-        return false;
+        return true;
     }
 
     @NonNull
@@ -55,13 +62,13 @@ public class FakeTssLibrary implements TssLibrary {
     public List<TssPrivateShare> decryptPrivateShares(
             @NonNull final TssParticipantDirectory participantDirectory,
             @NonNull final List<TssMessage> validTssMessages) {
-        return List.of();
+        return List.of(new TssPrivateShare(new TssShareId(0), PRIVATE_KEY));
     }
 
     @NonNull
     @Override
     public PairingPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares) {
-        return null;
+        return PRIVATE_KEY;
     }
 
     @NonNull
@@ -75,7 +82,7 @@ public class FakeTssLibrary implements TssLibrary {
     @NonNull
     @Override
     public PairingPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares) {
-        return null;
+        return PRIVATE_KEY.createPublicKey();
     }
 
     @NonNull

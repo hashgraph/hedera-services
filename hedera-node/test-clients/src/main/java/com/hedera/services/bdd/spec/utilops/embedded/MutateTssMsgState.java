@@ -43,7 +43,7 @@ public class MutateTssMsgState extends UtilOp {
         final var tssMessages = spec.embeddedTssMsgStateOrThrow();
 
         var sequenceNumber = 0;
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 12; i++) {
             final var tsMessageMapKey = TssMessageMapKey.newBuilder()
                     .rosterHash(activeRosterHash)
                     .sequenceNumber(sequenceNumber++)

@@ -139,10 +139,6 @@ public class RepeatableTssTests {
                 // This transaction is now first in a new staking period and should trigger the TSS rekeying process,
                 // in particular a successful TssMessage from the embedded node (and then a TssVote since this is our
                 // placeholder implementation of TssMessageHandler)
-                cryptoCreate("rekeyingTransaction"),
-                doWithStartupConfig(
-                        "staking.periodMins",
-                        stakePeriodMins -> waitUntilStartOfNextStakingPeriod(parseLong(stakePeriodMins))),
                 cryptoCreate("rekeyingTransaction"));
     }
 

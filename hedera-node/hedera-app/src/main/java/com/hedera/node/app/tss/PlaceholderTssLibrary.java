@@ -74,7 +74,7 @@ public class PlaceholderTssLibrary implements TssLibrary {
     @Override
     public boolean verifyTssMessage(
             @NotNull TssParticipantDirectory participantDirectory, @NotNull TssMessage tssMessage) {
-        return false;
+        return true;
     }
 
     @NotNull

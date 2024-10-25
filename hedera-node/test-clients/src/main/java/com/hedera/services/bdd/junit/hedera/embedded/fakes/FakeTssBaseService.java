@@ -89,8 +89,8 @@ public class FakeTssBaseService implements TssBaseService {
                 appContext,
                 ForkJoinPool.commonPool(),
                 pendingTssSubmission::offer,
-                new PlaceholderTssLibrary(),
-                ForkJoinPool.commonPool());
+                new FakeTssLibrary(),
+                pendingTssSubmission::offer);
     }
 
     /**
