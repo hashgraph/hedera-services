@@ -37,19 +37,16 @@ import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.LedgerId;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.node.state.roster.RosterState;
-import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.context.PlatformContext;
@@ -73,6 +70,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
@@ -83,9 +81,8 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
-import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.ReadableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
@@ -300,12 +297,12 @@ public class ServicesMain implements SwirldMain {
      * We need to choose the correct roster in the following cases:
      * <ul>
      *   <li> At genesis, a roster loaded from disk.</li>
-     *   <li>At restart, the active roster in the saved state.</li>
-     *   <li>At upgrade boundary, the candidate roster in the saved state IF that state satisfies conditions (e.g. the roster has been keyed).</li>
-     *</ul>
+     *   <li> At restart, the active roster in the saved state.</li>
+     *   <li> At upgrade boundary, the candidate roster in the saved state IF that state satisfies conditions (e.g. the roster has been keyed).</li>
+     * </ul>
      *
-     *             * @param version              the software version of the current node
-     *      * @param initialState         the initial state of the platform
+     * @param version              the software version of the current node
+     * @param initialState         the initial state of the platform
      * @return the roster
      */
     private static @NotNull Roster chooseRoster(
@@ -315,54 +312,57 @@ public class ServicesMain implements SwirldMain {
 
         final SignedState loadedSignedState = initialState.get();
         if (loadedSignedState.isGenesisState()) {
+            // Not sure if we have roster defined on disk for the genesis case, so load the disk address book for now
+            // and construct the roster from it
             final AddressBook diskAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
             return createRoster(diskAddressBook);
         }
 
-        final var activeRoster = getActiveRoster(loadedSignedState);
+        final var state = ((MerkleStateRoot) loadedSignedState.getState());
+        final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
+        final var activeRoster = requireNonNull(rosterStore.getActiveRoster());
         final boolean softwareUpgrade = detectSoftwareUpgrade(version, loadedSignedState);
-        if (softwareUpgrade) {
-            // Retrieve the candidate roster
-            final var candidateRoster = getCandidateRoster(loadedSignedState);
-            final boolean hasBeenKeyed = hasEnoughKeyMaterial(candidateRoster);
-            if (!hasBeenKeyed) {
-                return activeRoster;
-            } else {
-                if (hasLedgerId(loadedSignedState)) {
-                    // If there is an existing ledger ID, does the key material match the ledger ID
-                    final LedgerId ledgerId = getLedgerId(activeRoster);
-                    final LedgerId candidateLedgerId = getLedgerId(candidateRoster);
-                    if (ledgerId.equals(candidateLedgerId)) {
-                        // return the candidate roster to be adopted, handled in HandleWorkflow POST_UPGRADE_TRANSACTION
-                        return candidateRoster;
-                    } else {
-                        // if the key material does NOT match the ledger ID:
-                        //   - we can’t adopt the candidate roster; log an exception, and revert to the most
-                        // recent active roster
-                        //   - don’t do anything with the candidate roster, because we expect the system to
-                        // replace it at some point
-                        logger.error("The key material does not match the ledger ID");
-                        return activeRoster;
-                    }
-                } else {
-                    return activeRoster;
-                }
-            }
-        } else {
+        if (!softwareUpgrade) { // if not an upgrade and just a restart, return the active roster
             return activeRoster;
         }
-    }
 
-    private static boolean hasLedgerId(SignedState loadedSignedState) {
-        return false;
-    }
+        // Otherwise, we are at an upgrade boundary, see:
+        // https://github.com/hashgraph/hedera-services/blob/develop/platform-sdk/docs/proposals/TSS-Ledger-Id/TSS-Ledger-Id.md?plain=1#L723
+        // If there is no candidate roster set in the state, the active roster continues to be used
+        final var candidateRoster = rosterStore.getCandidateRoster();
+        if (candidateRoster == null) {
+            return activeRoster;
+        }
 
-    private static @NonNull LedgerId getLedgerId(Roster activeRoster) {
-        final List<Bytes> tssEncryptionKeys = activeRoster.rosterEntries().stream()
-                .map(RosterEntry::tssEncryptionKey)
-                .toList();
-        // TODO: if enough keys, aggregate them to produce the ledger id, otherwise return null
-        return null;
+        final boolean activeRosterKeyed = hasEnoughKeyMaterial(activeRoster);
+        final boolean candidateRosterKeyed = hasEnoughKeyMaterial(candidateRoster);
+        final var ledgerId = getLedgerId(loadedSignedState);
+
+        // If the existing active roster and candidate roster do not have complete key material and the network does not
+        // yet have a ledger id, the node will adopt the candidate roster immediately on software upgrade
+        if (!activeRosterKeyed && !candidateRosterKeyed && ledgerId == null) {
+            return candidateRoster;
+        }
+
+        // If the candidate roster exists, has key material, and the number of yes
+        // votes passes the threshold for adoption, then the candidate roster
+        // will be adopted and become the new active roster.
+        // Validation Check: if the state already has a ledger id set, the ledger
+        // id recovered from the key material must match the ledger id in the state.
+        if (candidateRosterKeyed && ledgerId != null) {
+            final var candidateLedgerId = recoverLedgerId(candidateRoster);
+            if (ledgerId.equals(candidateLedgerId)) {
+                return candidateRoster;
+            }
+
+            // If the candidate roster key material does not match the ledger ID:
+            //   - we can’t adopt the candidate roster; log an exception, and revert to the most recent active roster
+            //   - don’t do anything with the candidate roster, because we expect the system to replace it at some point
+            logger.error("The key material does not match the ledger ID");
+        }
+
+        // In all other cases the existing active roster will remain the active roster.
+        return activeRoster;
     }
 
     // TODO: Check that we have enough key material, i.e. check that there are enough votes and that the TSS messages in
@@ -371,33 +371,18 @@ public class ServicesMain implements SwirldMain {
         return false;
     }
 
-    private static @NotNull Roster getCandidateRoster(SignedState loadedSignedState) {
-        final var state = ((MerkleStateRoot) loadedSignedState.getState());
-        final var readableStates = state.getReadableStates(RosterStateId.NAME);
-        final ReadableSingletonState<RosterState> rosterState =
-                readableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
-        final ReadableKVState<ProtoBytes, Roster> rosterMap = readableStates.get(RosterStateId.ROSTER_KEY);
-        final RosterState rosterStateSingleton = rosterState.get();
-        final Bytes candidateRosterHash = rosterStateSingleton.candidateRosterHash();
-        final var candidateRoster =
-                rosterMap.get(ProtoBytes.newBuilder().value(candidateRosterHash).build());
-        return requireNonNull(candidateRoster);
+    private static @Nullable LedgerId getLedgerId(SignedState loadedSignedState) {
+        // FUTURE: lookup the ledger id from the state described in
+        // https://github.com/hashgraph/hedera-services/blob/develop/platform-sdk/docs/proposals/TSS-Ledger-Id/TSS-Ledger-Id.md#ledger-id-queue
+        return LedgerId.DEFAULT;
     }
 
-    private static @NotNull Roster getActiveRoster(SignedState loadedSignedState) {
-        final var state = ((MerkleStateRoot) loadedSignedState.getState());
-        final var readableStates = state.getReadableStates(RosterStateId.NAME);
-        final ReadableSingletonState<RosterState> rosterState =
-                readableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
-        final ReadableKVState<ProtoBytes, Roster> rosterMap = readableStates.get(RosterStateId.ROSTER_KEY);
-
-        final RosterState rosterStateSingleton = rosterState.get();
-        final List<RoundRosterPair> rostersAndRounds = rosterStateSingleton.roundRosterPairs();
-        final RoundRosterPair latestRoundRosterPair = rostersAndRounds.getFirst();
-        final Bytes activeRosterHash = latestRoundRosterPair.activeRosterHash();
-        final var activeRoster =
-                rosterMap.get(ProtoBytes.newBuilder().value(activeRosterHash).build());
-        return requireNonNull(activeRoster);
+    private static @NonNull LedgerId recoverLedgerId(Roster roster) {
+        final List<Bytes> tssEncryptionKeys = roster.rosterEntries().stream()
+                .map(RosterEntry::tssEncryptionKey)
+                .toList();
+        // TODO: if enough keys, aggregate them to produce the ledger id, otherwise return null
+        return null;
     }
 
     /**
