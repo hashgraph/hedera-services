@@ -29,7 +29,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.TssCryptographyManager;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.data.TssConfig;

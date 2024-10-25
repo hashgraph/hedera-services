@@ -29,14 +29,15 @@ import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.pairings.PairingSignature;
 import com.hedera.node.app.tss.pairings.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 
 public class FakeTssLibrary implements TssLibrary {
     private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
     private static final PairingPrivateKey PRIVATE_KEY =
             new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+
     @NonNull
     @Override
     public TssMessage generateTssMessage(@NonNull final TssParticipantDirectory tssParticipantDirectory) {
@@ -62,7 +63,12 @@ public class FakeTssLibrary implements TssLibrary {
     public List<TssPrivateShare> decryptPrivateShares(
             @NonNull final TssParticipantDirectory participantDirectory,
             @NonNull final List<TssMessage> validTssMessages) {
-        return List.of(new TssPrivateShare(new TssShareId(0), PRIVATE_KEY));
+        final var privateShares = new ArrayList<TssPrivateShare>();
+        var shareId = 0;
+        for (var message : validTssMessages) {
+            privateShares.add(new TssPrivateShare(new TssShareId(shareId++), PRIVATE_KEY));
+        }
+        return privateShares;
     }
 
     @NonNull
