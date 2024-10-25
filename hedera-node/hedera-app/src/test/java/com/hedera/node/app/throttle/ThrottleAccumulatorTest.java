@@ -238,7 +238,7 @@ class ThrottleAccumulatorTest {
                         .accountID(RECEIVER_ID)
                         .build())
                 .build();
-        final var account = Account.newBuilder().numberPositiveBalances(2).build();
+        final var account = Account.newBuilder().numberAssociations(2).build();
         final var states = MapReadableStates.builder()
                 .state(new MapReadableKVState<>("ACCOUNTS", Map.of(RECEIVER_ID, account)))
                 .state(new MapReadableKVState<>("ALIASES", Map.of()))
@@ -277,7 +277,7 @@ class ThrottleAccumulatorTest {
                         .accountID(RECEIVER_ID)
                         .build())
                 .build();
-        final var account = Account.newBuilder().numberPositiveBalances(2).build();
+        final var account = Account.newBuilder().numberAssociations(2).build();
         final var states = MapReadableStates.builder()
                 .state(new MapReadableKVState<>("ACCOUNTS", Map.of(RECEIVER_ID, account)))
                 .state(new MapReadableKVState<>("ALIASES", Map.of()))
@@ -312,7 +312,7 @@ class ThrottleAccumulatorTest {
                         .accountID(RECEIVER_ID)
                         .build())
                 .build();
-        final var account = Account.newBuilder().numberPositiveBalances(0).build();
+        final var account = Account.newBuilder().numberAssociations(0).build();
         final var states = MapReadableStates.builder()
                 .state(new MapReadableKVState<>("ACCOUNTS", Map.of(RECEIVER_ID, account)))
                 .state(new MapReadableKVState<>("ALIASES", Map.of()))
