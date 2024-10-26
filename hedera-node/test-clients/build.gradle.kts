@@ -211,8 +211,6 @@ tasks.register<Test>("testEmbedded") {
     )
     // Tell our launcher to target a concurrent embedded network
     systemProperty("hapi.spec.embedded.mode", "concurrent")
-    // Configure log4j2.xml for the concurrent embedded node
-    systemProperty("log4j.configurationFile", "concurrent-node0-log4j2.xml")
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -262,8 +260,6 @@ tasks.register<Test>("testRepeatable") {
     )
     // Tell our launcher to target a repeatable embedded network
     systemProperty("hapi.spec.embedded.mode", "repeatable")
-    // Configure log4j2.xml for the repeatable embedded node
-    systemProperty("log4j.configurationFile", "repeatable-node0-log4j2.xml")
 
     // Limit heap and number of processors
     maxHeapSize = "8g"

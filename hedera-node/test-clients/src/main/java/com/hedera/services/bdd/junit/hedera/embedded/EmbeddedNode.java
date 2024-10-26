@@ -71,7 +71,9 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
                 "blockStream.blockFileDir",
                 getExternalPath(BLOCK_STREAMS_DIR).getParent().toString());
         System.setProperty("hedera.profiles.active", "DEV");
-        if (isSharedNetwork()) {
+        final var log4j2ConfigLoc = getExternalPath(LOG4J2_XML).toString();
+        if (isForShared(log4j2ConfigLoc)) {
+            System.setProperty("log4j.configurationFile", log4j2ConfigLoc);
             try (var ignored = Configurator.initialize(null, "")) {
                 // Only initialize logging for the shared embedded network
             }
@@ -102,8 +104,7 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
         return this;
     }
 
-    private boolean isSharedNetwork() {
-        final var log4j2ConfigLoc = getExternalPath(LOG4J2_XML).toString();
-        return log4j2ConfigLoc.contains(CONCURRENT_WORKING_DIR) || log4j2ConfigLoc.contains(REPEATABLE_WORKING_DIR);
+    private boolean isForShared(@NonNull final String log4jConfigLoc) {
+        return log4jConfigLoc.contains(CONCURRENT_WORKING_DIR) || log4jConfigLoc.contains(REPEATABLE_WORKING_DIR);
     }
 }
