@@ -40,6 +40,12 @@ public class TssMetrics {
             .withDescription(TSS_CANDIDATE_ROSTER_LIFECYCLE_DESC);
     private final LongGauge tssCandidateRosterLifecycle;
 
+    private static final String TSS_SHARES_AGGREGATION_TIME = "tss_shares_aggregation_time";
+    private static final String TSS_SHARES_AGGREGATION_TIME_DESC = "the lifecycle of the current candidate roster";
+    private static final LongGauge.Config TSS_SHARES_AGGREGATION_CONFIG =
+            new LongGauge.Config("app", TSS_SHARES_AGGREGATION_TIME).withDescription(TSS_SHARES_AGGREGATION_TIME_DESC);
+    private final LongGauge tssSharesAggregationTime;
+
     private static final String TSS_MESSAGE_COUNTER_METRIC = "tss_message_total";
     private static final String TSS_MESSAGE_COUNTER_METRIC_DESC = "total numbers of tss message transactions";
     private static final Counter.Config TSS_MESSAGE_TX_COUNTER =
@@ -53,7 +59,7 @@ public class TssMetrics {
     private final Counter tssVoteTxCounter;
 
     /**
-     * Constructor for the TssMetrics
+     * Constructor for the TssMetrics.
      *
      * @param metrics the {@link Metrics} object where all metrics will be registered
      */
@@ -62,6 +68,7 @@ public class TssMetrics {
         requireNonNull(metrics, "metrics must not be null");
 
         tssCandidateRosterLifecycle = metrics.getOrCreate(TSS_ROSTER_LIFECYCLE_CONFIG);
+        tssSharesAggregationTime = metrics.getOrCreate(TSS_SHARES_AGGREGATION_CONFIG);
         tssMessageTxCounter = metrics.getOrCreate(TSS_MESSAGE_TX_COUNTER);
         tssVoteTxCounter = metrics.getOrCreate(TSS_VOTE_TX_COUNTER);
     }
@@ -85,11 +92,11 @@ public class TssMetrics {
     }
 
     /**
-     * Track when the candidate roster is set/
+     * Track when the candidate roster is set.
      *
      * @param lifecycle the time at which the candidate roster is set
      */
-    public void updateCandidateRosterLifecycle(long lifecycle) {
+    public void updateCandidateRosterLifecycle(final long lifecycle) {
         tssCandidateRosterLifecycle.set(lifecycle);
     }
 
@@ -98,7 +105,7 @@ public class TssMetrics {
      *
      * @param aggregationTime the time which it takes to compute shares from the key material
      */
-    public void updateAggregationTime(long aggregationTime) {
-        tssCandidateRosterLifecycle.set(aggregationTime);
+    public void updateAggregationTime(final long aggregationTime) {
+        tssSharesAggregationTime.set(aggregationTime);
     }
 }
