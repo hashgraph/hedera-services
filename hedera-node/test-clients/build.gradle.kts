@@ -195,7 +195,7 @@ tasks.register<Test>("testEmbedded") {
     useJUnitPlatform {
         includeTags(
             if (ciTagExpression.isBlank()) "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE)"
-            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&(!WORKFLOWS)"
         )
     }
 
