@@ -22,4 +22,6 @@ coverage:
 github_checks:
   annotations: true
 ignore:
-  - "hedera-node/test-clients"
+  - "**/test-clients/**"
+  - "**/statedumpers/**"
+  - "**/testFixtures/**"
