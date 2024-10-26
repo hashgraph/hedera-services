@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.GENESIS_PROPERTI
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.LOG4J2_XML;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
-import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork.EMBEDDED_WORKING_DIR;
+import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork.CONCURRENT_WORKING_DIR;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork.REPEATABLE_WORKING_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.updateUpgradeArtifactsProperty;
@@ -80,7 +80,7 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
     }
 
     @Override
-    public EmbeddedNode initWorkingDir(@NonNull String configTxt) {
+    public EmbeddedNode initWorkingDir(@NonNull final String configTxt) {
         super.initWorkingDir(configTxt);
         updateUpgradeArtifactsProperty(getExternalPath(APPLICATION_PROPERTIES), getExternalPath(UPGRADE_ARTIFACTS_DIR));
         return this;
@@ -104,6 +104,6 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
 
     private boolean isSharedNetwork() {
         final var log4j2ConfigLoc = getExternalPath(LOG4J2_XML).toString();
-        return log4j2ConfigLoc.contains(EMBEDDED_WORKING_DIR) || log4j2ConfigLoc.contains(REPEATABLE_WORKING_DIR);
+        return log4j2ConfigLoc.contains(CONCURRENT_WORKING_DIR) || log4j2ConfigLoc.contains(REPEATABLE_WORKING_DIR);
     }
 }

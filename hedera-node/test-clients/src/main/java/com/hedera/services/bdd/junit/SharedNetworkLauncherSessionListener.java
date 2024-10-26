@@ -18,8 +18,10 @@ package com.hedera.services.bdd.junit;
 
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
@@ -43,42 +45,86 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
         session.getLauncher().registerTestExecutionListeners(new SharedNetworkExecutionListener());
     }
 
-    private static class SharedNetworkExecutionListener implements TestExecutionListener {
-        private boolean isEmbedded = false;
+    /**
+     * A {@link TestExecutionListener} that starts the shared network before the test plan is executed,
+     * unless the requested mode is a per-class network, in which case the network is started per class.
+     */
+    public static class SharedNetworkExecutionListener implements TestExecutionListener {
+        private enum Embedding {
+            NA,
+            PER_CLASS,
+            CONCURRENT,
+            REPEATABLE
+        }
+
+        private Embedding embedding;
 
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
-            isEmbedded = embeddedModeRequested() || repeatableModeRequested();
-            final HederaNetwork targetNetwork;
-            if (isEmbedded) {
-                targetNetwork = EmbeddedNetwork.newSharedNetwork();
-            } else {
-                final var initialPortProperty = System.getProperty("hapi.spec.initial.port");
-                if (!initialPortProperty.isBlank()) {
-                    final var initialPort = Integer.parseInt(initialPortProperty);
-                    SubProcessNetwork.initializeNextPortsForNetwork(CLASSIC_HAPI_TEST_NETWORK_SIZE, initialPort);
-                }
-                targetNetwork = SubProcessNetwork.newSharedNetwork(CLASSIC_HAPI_TEST_NETWORK_SIZE);
-            }
-            targetNetwork.start();
-            SHARED_NETWORK.set(targetNetwork);
             REPEATABLE_KEY_GENERATOR.set(new RepeatableKeyGenerator());
+            embedding = embeddingMode();
+            final HederaNetwork network =
+                    switch (embedding) {
+                        case NA -> {
+                            final var initialPortProperty = System.getProperty("hapi.spec.initial.port");
+                            if (!initialPortProperty.isBlank()) {
+                                final var initialPort = Integer.parseInt(initialPortProperty);
+                                SubProcessNetwork.initializeNextPortsForNetwork(
+                                        CLASSIC_HAPI_TEST_NETWORK_SIZE, initialPort);
+                            }
+                            yield SubProcessNetwork.newSharedNetwork(CLASSIC_HAPI_TEST_NETWORK_SIZE);
+                        }
+                        case PER_CLASS -> null;
+                        case CONCURRENT -> EmbeddedNetwork.newSharedNetwork(EmbeddedMode.CONCURRENT);
+                        case REPEATABLE -> EmbeddedNetwork.newSharedNetwork(EmbeddedMode.REPEATABLE);
+                    };
+            if (network != null) {
+                network.start();
+                SHARED_NETWORK.set(network);
+            }
         }
 
         @Override
         public void testPlanExecutionFinished(@NonNull final TestPlan testPlan) {
-            if (!isEmbedded) {
+            if (embedding == Embedding.NA) {
                 HapiClients.tearDown();
             }
             SHARED_NETWORK.get().terminate();
         }
-    }
 
-    private static boolean embeddedModeRequested() {
-        return "true".equalsIgnoreCase(System.getProperty("hapi.spec.embedded.mode"));
-    }
+        /**
+         * Restarts the shared embedded network with the given mode.
+         * @param mode the mode in which to restart the shared embedded network
+         */
+        public static void ensureEmbedding(@NonNull final EmbeddedMode mode) {
+            requireNonNull(mode);
+            if (SHARED_NETWORK.get() != null) {
+                if (SHARED_NETWORK.get() instanceof EmbeddedNetwork embeddedNetwork) {
+                    if (embeddedNetwork.mode() != mode) {
+                        SHARED_NETWORK.get().terminate();
+                        SHARED_NETWORK.set(null);
+                    }
+                } else {
+                    throw new IllegalStateException("Shared network is not an embedded network");
+                }
+            }
+            if (SHARED_NETWORK.get() == null) {
+                startSharedEmbedded(mode);
+            }
+        }
 
-    public static boolean repeatableModeRequested() {
-        return "true".equalsIgnoreCase(System.getProperty("hapi.spec.repeatable.mode"));
+        private static void startSharedEmbedded(@NonNull final EmbeddedMode mode) {
+            SHARED_NETWORK.set(EmbeddedNetwork.newSharedNetwork(mode));
+            SHARED_NETWORK.get().start();
+        }
+
+        private static Embedding embeddingMode() {
+            return switch (System.getProperty("hapi.spec.embedded.mode")) {
+                case "per-class" -> Embedding.PER_CLASS;
+                case "concurrent" -> Embedding.CONCURRENT;
+                case "repeatable" -> Embedding.REPEATABLE;
+                default -> Embedding.NA;
+            };
+        }
     }
 }

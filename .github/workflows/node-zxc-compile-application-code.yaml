@@ -307,7 +307,7 @@ jobs:
         with:
           check_name: 'Node: HAPI Test (Misc) Results'
           json_thousands_separator: ','
-          junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
+          junit_files: "**/test-clients/build/test-results/**/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Misc) Report Artifacts
@@ -315,7 +315,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-misc && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Misc) Reports
-          path: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
+          path: "**/test-clients/build/test-results/**/TEST-*.xml"
           retention-days: 7
 
       - name: Upload HAPI Test (Misc) Network Logs

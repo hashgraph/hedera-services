@@ -6,8 +6,8 @@
       <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n"/>
     </Console>
 
-    <RollingFile name="RollingFile" fileName="build/embedded-test/node0/output/hgcaa.log"
-      filePattern="build/embedded-test/node0/output/hgcaa-%i.log">
+    <RollingFile name="RollingFile" fileName="build/concurrent-test/node0/output/hgcaa.log"
+      filePattern="build/concurrent-test/node0/output/hgcaa-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
       </PatternLayout>
@@ -17,8 +17,8 @@
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
-    <RollingFile name="QueriesRollingFile" fileName="build/embedded-test/node0/output/queries.log"
-      filePattern="build/embedded-test/node0/output/queries-%i.log">
+    <RollingFile name="QueriesRollingFile" fileName="build/concurrent-test/node0/output/queries.log"
+      filePattern="build/concurrent-test/node0/output/queries-%i.log">
       <BurstFilter level="INFO" rate="50" maxBurst="500"/>
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
@@ -29,8 +29,8 @@
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
-    <RollingFile name="fileLog" fileName="build/embedded-test/node0/output/swirlds.log"
-      filePattern="build/embedded-test/node0/output/swirlds-sdk-%i.log">
+    <RollingFile name="fileLog" fileName="build/concurrent-test/node0/output/swirlds.log"
+      filePattern="build/concurrent-test/node0/output/swirlds-sdk-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
@@ -40,8 +40,8 @@
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
-    <RollingFile name="vMapLog" fileName="build/embedded-test/node0/output/swirlds-vmap.log"
-      filePattern="build/embedded-test/node0/output/swirlds-vmap-%i.log">
+    <RollingFile name="vMapLog" fileName="build/concurrent-test/node0/output/swirlds-vmap.log"
+      filePattern="build/concurrent-test/node0/output/swirlds-vmap-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
@@ -52,8 +52,8 @@
     </RollingFile>
 
     <!-- Platform hash stream logs -->
-    <RollingFile name="swirldsHashStream" fileName="build/embedded-test/node0/output/swirlds-hashstream/swirlds-hashstream.log"
-      filePattern="build/embedded-test/node0/output/swirlds-hashstream/swirlds-hashstream-%i.log">
+    <RollingFile name="swirldsHashStream" fileName="build/concurrent-test/node0/output/swirlds-hashstream/swirlds-hashstream.log"
+      filePattern="build/concurrent-test/node0/output/swirlds-hashstream/swirlds-hashstream-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
@@ -65,8 +65,8 @@
 
     <!-- Transaction state logs -->
     <RollingFile name="TransactionStateLogs"
-                 fileName="build/embedded-test/node0/output/transaction-state/state-changes.log"
-                 filePattern="build/embedded-test/node0/output/transaction-state/state-changes-%i.log">
+                 fileName="build/concurrent-test/node0/output/transaction-state/state-changes.log"
+                 filePattern="build/concurrent-test/node0/output/transaction-state/state-changes-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %m{nolookups}%n</pattern>
       </PatternLayout>
@@ -75,8 +75,8 @@
     </RollingFile>
 
     <RollingFile name="StateLogs"
-                 fileName="build/embedded-test/node0/output/state/state-changes.log"
-                 filePattern="build/embedded-test/node0/output/state/state-changes-%i.log">
+                 fileName="build/concurrent-test/node0/output/state/state-changes.log"
+                 filePattern="build/concurrent-test/node0/output/state/state-changes-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %m{nolookups}%n</pattern>
       </PatternLayout>
@@ -84,8 +84,8 @@
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
-    <RollingFile name="TestClientRollingFile" fileName="build/embedded-test/node0/output/test-clients.log"
-    filePattern="build/embedded-test/node0/output/test-clients-%d{yyyy-MM-dd}-%i.log.gz">
+    <RollingFile name="TestClientRollingFile" fileName="build/concurrent-test/node0/output/test-clients.log"
+    filePattern="build/concurrent-test/node0/output/test-clients-%d{yyyy-MM-dd}-%i.log.gz">
     <PatternLayout>
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
     </PatternLayout>

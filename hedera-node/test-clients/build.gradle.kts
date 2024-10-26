@@ -58,7 +58,7 @@ tasks.test {
 
     // Unlike other tests, these intentionally corrupt embedded state to test FAIL_INVALID
     // code paths; hence we do not run LOG_VALIDATION after the test suite finishes
-    useJUnitPlatform { includeTags("(WORKFLOWS|STREAM_VALIDATION)") }
+    useJUnitPlatform { includeTags("(INTEGRATION|STREAM_VALIDATION)") }
 
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
@@ -72,10 +72,8 @@ tasks.test {
         "junit.jupiter.testclass.order.default",
         "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
     )
-    // Tell our launcher to target an embedded network
-    systemProperty("hapi.spec.embedded.mode", true)
-    // Configure log4j2.xml for the embedded node
-    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
+    // Tell our launcher to target an embedded network whose mode is set per-class
+    systemProperty("hapi.spec.embedded.mode", "per-class")
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -95,7 +93,7 @@ val prCheckTags =
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
         "hapiTestMisc" to
-            "!(WORKFLOWS|CRYPTO|TOKEN|RESTART|UPGRADE|SMART_CONTRACT|ND_RECONNECT|LONG_RUNNING)"
+            "!(INTEGRATION|CRYPTO|TOKEN|RESTART|UPGRADE|SMART_CONTRACT|ND_RECONNECT|LONG_RUNNING)"
     )
 val prCheckStartPorts =
     mapOf(
@@ -195,7 +193,7 @@ tasks.register<Test>("testEmbedded") {
     useJUnitPlatform {
         includeTags(
             if (ciTagExpression.isBlank()) "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE)"
-            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&(!WORKFLOWS)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&(!INTEGRATION)"
         )
     }
 
@@ -211,10 +209,10 @@ tasks.register<Test>("testEmbedded") {
         "junit.jupiter.testclass.order.default",
         "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
     )
-    // Tell our launcher to target an embedded network
-    systemProperty("hapi.spec.embedded.mode", true)
-    // Configure log4j2.xml for the embedded node
-    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
+    // Tell our launcher to target a concurrent embedded network
+    systemProperty("hapi.spec.embedded.mode", "concurrent")
+    // Configure log4j2.xml for the concurrent embedded node
+    systemProperty("log4j.configurationFile", "concurrent-node0-log4j2.xml")
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -263,8 +261,8 @@ tasks.register<Test>("testRepeatable") {
         "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
     )
     // Tell our launcher to target a repeatable embedded network
-    systemProperty("hapi.spec.repeatable.mode", true)
-    // Configure log4j2.xml for the embedded node
+    systemProperty("hapi.spec.embedded.mode", "repeatable")
+    // Configure log4j2.xml for the repeatable embedded node
     systemProperty("log4j.configurationFile", "repeatable-node0-log4j2.xml")
 
     // Limit heap and number of processors

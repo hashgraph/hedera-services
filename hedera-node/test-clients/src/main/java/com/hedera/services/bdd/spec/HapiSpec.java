@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KE
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
-import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
@@ -1258,7 +1257,7 @@ public class HapiSpec implements Runnable, Executable {
 
         if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork) {
             final Map<String, String> overrides;
-            if (repeatableModeRequested()) {
+            if (embeddedNetwork.inRepeatableMode()) {
                 // Statuses are immediately available in repeatable mode because ingest is synchronous;
                 // ECDSA signatures are inherently random, so use only ED25519 in repeatable mode
                 overrides = Map.of("status.wait.sleep.ms", "0", "default.keyAlgorithm", "ED25519");
@@ -1268,7 +1267,7 @@ public class HapiSpec implements Runnable, Executable {
             spec.addOverrideProperties(overrides);
             final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
             spec.setNextValidStart(embeddedHedera::nextValidStart);
-            if (repeatableModeRequested()) {
+            if (embeddedNetwork.inRepeatableMode()) {
                 spec.setKeyGenerator(requireNonNull(REPEATABLE_KEY_GENERATOR.get()));
             }
         }

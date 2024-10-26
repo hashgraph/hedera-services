@@ -30,10 +30,10 @@ public class TestTags {
     public static final String ND_RECONNECT = "ND_RECONNECT";
     public static final String UPGRADE = "UPGRADE";
     /**
-     * Tags a collection of embedded tests that are run along with the default {@code Test}
-     * task to test the integration of the app workflows (e.g., ingest, pre-handle, handle).
+     * Tags a embedded tests run as part of the default {@code Test} to provide efficient
+     * integration tests of the app workflows (e.g., ingest, pre-handle, handle) and services.
      */
-    public static final String WORKFLOWS = "WORKFLOWS";
+    public static final String INTEGRATION = "INTEGRATION";
     /**
      * Tags a test that <b>must</b> be run in embedded mode, either because it directly
      * submits duplicate or invalid transactions to non-default nodes; or because it
