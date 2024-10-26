@@ -102,7 +102,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21"
+        default: "21.0.4"
       node-version:
         description: "NodeJS Version:"
         type: string
