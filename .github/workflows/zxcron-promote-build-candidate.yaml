@@ -24,6 +24,7 @@ on:
 permissions:
   actions: read
   contents: read
+  statuses: write
 
 defaults:
   run:
@@ -52,6 +53,8 @@ jobs:
 
       - name: Find Build Candidates
         id: find-build-candidates
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           TAG_PATTERN="xts-pass-*"
           CANDIDATE_TAG="$(git tag --list --sort=-version:refname "${TAG_PATTERN}" | head --lines 1)"
