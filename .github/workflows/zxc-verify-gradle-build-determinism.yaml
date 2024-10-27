@@ -32,7 +32,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21"
+        default: "21.0.4"
 
     secrets:
       gradle-cache-username:
