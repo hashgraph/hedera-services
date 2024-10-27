@@ -61,7 +61,9 @@ public enum DispatchType {
     UTIL_PRNG(HederaFunctionality.UTIL_PRNG, DEFAULT),
     TOKEN_INFO(HederaFunctionality.TOKEN_GET_INFO, DEFAULT),
     UPDATE_TOKEN_CUSTOM_FEES(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, DEFAULT),
-    TOKEN_AIRDROP(HederaFunctionality.TOKEN_AIRDROP, DEFAULT);
+    TOKEN_AIRDROP(HederaFunctionality.TOKEN_AIRDROP, DEFAULT),
+    TOKEN_CLAIM_AIRDROP(HederaFunctionality.TOKEN_CLAIM_AIRDROP, DEFAULT),
+    TOKEN_CANCEL_AIRDROP(HederaFunctionality.TOKEN_CANCEL_AIRDROP, DEFAULT);
 
     private final HederaFunctionality functionality;
     private final SubType subtype;

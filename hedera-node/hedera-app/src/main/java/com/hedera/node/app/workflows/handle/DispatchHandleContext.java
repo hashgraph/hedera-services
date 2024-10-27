@@ -180,8 +180,9 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return feeAccumulator.chargeNetworkFee(payerId, amount);
     }
 
+    @NonNull
     @Override
-    public @NonNull Configuration configuration() {
+    public Configuration configuration() {
         return config;
     }
 
@@ -460,6 +461,11 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public Map<AccountID, Long> dispatchPaidRewards() {
         return dispatchPaidRewards == null ? emptyMap() : dispatchPaidRewards;
+    }
+
+    @Override
+    public NodeInfo creatorInfo() {
+        return creatorInfo;
     }
 
     private <T> T dispatchForRecord(
