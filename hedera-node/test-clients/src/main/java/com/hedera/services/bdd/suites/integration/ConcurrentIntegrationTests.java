@@ -22,12 +22,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.services.bdd.junit.EmbeddedReason.MANIPULATES_EVENT_VERSION;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
-import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.CONCURRENT;
 import static com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion.PAST;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -37,17 +38,18 @@ import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateScheduleE
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateToken;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.simulatePostUpgradeTransaction;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewSingleton;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertHgcaaLogContains;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertHgcaaLogDoesNotContain;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usingVersion;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.TransactionResult;
@@ -64,9 +66,9 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
 import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -80,33 +82,20 @@ import org.junit.jupiter.api.Tag;
 @TargetEmbeddedMode(CONCURRENT)
 public class ConcurrentIntegrationTests {
     @HapiTest
-    final Stream<DynamicTest> hollowAccountCompletionHappensWithUnsuccessfulTxn() {
+    @DisplayName("hollow account completion happens even with unsuccessful txn")
+    final Stream<DynamicTest> hollowAccountCompletionHappensEvenWithUnsuccessfulTxn() {
         return hapiTest(
+                tokenCreate("token").treasury(DEFAULT_PAYER).initialSupply(123L),
+                cryptoCreate("unassociated"),
                 createHollow(
                         1,
                         i -> "hollowAccount",
                         evmAddress -> cryptoTransfer(tinyBarsFromTo(GENESIS, evmAddress, ONE_HUNDRED_HBARS))),
-                cryptoTransfer(tinyBarsFromTo("hollowAccount", FUNDING, 1))
+                cryptoTransfer(TokenMovement.moving(1, "token").between(DEFAULT_PAYER, "unassociated"))
                         .payingWith("hollowAccount")
-                        .sigMapPrefixes(uniqueWithFullPrefixesFor("hollowAccount")));
-    }
-
-    @EmbeddedHapiTest(MANIPULATES_EVENT_VERSION)
-    @DisplayName("only warns of missing creator if event version is current")
-    final Stream<DynamicTest> onlyWarnsOfMissingCreatorIfCurrentVersion() {
-        return hapiTest(
-                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
-                        .setNode("0.0.666")
-                        .withSubmissionStrategy(usingVersion(PAST))
-                        .hasAnyStatusAtAll(),
-                assertHgcaaLogDoesNotContain(
-                        byNodeId(0), "node 666 which is not in the address book", Duration.ofSeconds(1)),
-                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
-                        .setNode("0.0.666")
-                        .withSubmissionStrategy(usingVersion(SyntheticVersion.PRESENT))
-                        .hasAnyStatusAtAll(),
-                assertHgcaaLogContains(
-                        byNodeId(0), "node 666 which is not in the address book", Duration.ofSeconds(1)));
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor("hollowAccount"))
+                        .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                getAccountInfo("hollowAccount").isNotHollow());
     }
 
     @EmbeddedHapiTest(MANIPULATES_EVENT_VERSION)
@@ -120,6 +109,18 @@ public class ConcurrentIntegrationTests {
                         .withSubmissionStrategy(usingVersion(PAST))
                         .hasKnownStatus(com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY),
                 getAccountBalance("somebody").hasTinyBars(0L));
+    }
+
+    @EmbeddedHapiTest(MANIPULATES_EVENT_VERSION)
+    @DisplayName("only warns of missing creator if event version is current")
+    final Stream<DynamicTest> completelySkipsTransactionFromUnknownNode() {
+        return hapiTest(
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
+                        .setNode("0.0.666")
+                        .via("toBeSkipped")
+                        .withSubmissionStrategy(usingVersion(SyntheticVersion.PRESENT))
+                        .hasAnyStatusAtAll(),
+                getTxnRecord("toBeSkipped").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
     @GenesisHapiTest
