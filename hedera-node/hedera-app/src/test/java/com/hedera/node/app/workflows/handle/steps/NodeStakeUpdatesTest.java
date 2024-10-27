@@ -339,7 +339,7 @@ class NodeStakeUpdatesTest {
         given(context.configuration()).willReturn(newConfig(990, false));
 
         subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH, tssMetrics);
-        verify(tssBaseService, never()).setCandidateRoster(any(), any(), tssMetrics);
+        verify(tssBaseService, never()).setCandidateRoster(any(), any(), any());
     }
 
     @Test
@@ -365,7 +365,7 @@ class NodeStakeUpdatesTest {
 
         // Attempt to set the (equivalent) active roster as the new candidate roster
         subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH, tssMetrics);
-        verify(tssBaseService, never()).setCandidateRoster(any(), any(), tssMetrics);
+        verify(tssBaseService, never()).setCandidateRoster(any(), any(), any());
     }
 
     @Test
@@ -389,7 +389,7 @@ class NodeStakeUpdatesTest {
         simulateCandidateAndActiveRosters();
 
         subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH, tssMetrics);
-        verify(tssBaseService).setCandidateRoster(notNull(), notNull(), tssMetrics);
+        verify(tssBaseService).setCandidateRoster(notNull(), notNull(), notNull());
     }
 
     private ReadableNodeStore simulateNodes(Node... nodes) {
