@@ -81,6 +81,30 @@ public final class CallAttemptHelpers {
                 false);
     }
 
+    public static HtsCallAttempt prepareHtsAttemptWithSelectorForRedirectWithConfig(
+            final Function function,
+            final CallTranslator<HtsCallAttempt> translator,
+            final HederaWorldUpdater.Enhancement enhancement,
+            final AddressIdConverter addressIdConverter,
+            final VerificationStrategies verificationStrategies,
+            final SystemContractGasCalculator gasCalculator,
+            final Configuration config) {
+        final var input = TestHelpers.bytesForRedirect(function.selector(), NON_SYSTEM_LONG_ZERO_ADDRESS);
+
+        return new HtsCallAttempt(
+                input,
+                OWNER_BESU_ADDRESS,
+                OWNER_BESU_ADDRESS,
+                false,
+                enhancement,
+                config,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                List.of(translator),
+                false);
+    }
+
     public static HtsCallAttempt prepareHtsAttemptWithSelectorAndCustomConfig(
             final Function function,
             final CallTranslator<HtsCallAttempt> translator,

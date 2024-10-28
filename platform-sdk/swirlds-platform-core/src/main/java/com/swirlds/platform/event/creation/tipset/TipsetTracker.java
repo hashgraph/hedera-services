@@ -19,6 +19,7 @@ package com.swirlds.platform.event.creation.tipset;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.Tipset.merge;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
@@ -26,7 +27,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.sequence.map.SequenceMap;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -58,7 +58,7 @@ public class TipsetTracker {
      */
     private Tipset latestGenerations;
 
-    private final AddressBook addressBook;
+    private final Roster roster;
 
     private final AncientMode ancientMode;
     private EventWindow eventWindow;
@@ -69,15 +69,15 @@ public class TipsetTracker {
      * Create a new tipset tracker.
      *
      * @param time        provides wall clock time
-     * @param addressBook the current address book
+     * @param roster      the current roster
      * @param ancientMode the {@link AncientMode} to use
      */
     public TipsetTracker(
-            @NonNull final Time time, @NonNull final AddressBook addressBook, @NonNull final AncientMode ancientMode) {
+            @NonNull final Time time, @NonNull final Roster roster, @NonNull final AncientMode ancientMode) {
 
-        this.addressBook = Objects.requireNonNull(addressBook);
+        this.roster = Objects.requireNonNull(roster);
 
-        this.latestGenerations = new Tipset(addressBook);
+        this.latestGenerations = new Tipset(roster);
 
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, ed -> ed.eventDescriptor()
@@ -147,7 +147,7 @@ public class TipsetTracker {
 
         final Tipset eventTipset;
         if (parentTipsets.isEmpty()) {
-            eventTipset = new Tipset(addressBook)
+            eventTipset = new Tipset(roster)
                     .advance(
                             eventDescriptorWrapper.creator(),
                             eventDescriptorWrapper.eventDescriptor().generation());
@@ -199,7 +199,7 @@ public class TipsetTracker {
      */
     public void clear() {
         eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
-        latestGenerations = new Tipset(addressBook);
+        latestGenerations = new Tipset(roster);
         tipsets.clear();
     }
 }
