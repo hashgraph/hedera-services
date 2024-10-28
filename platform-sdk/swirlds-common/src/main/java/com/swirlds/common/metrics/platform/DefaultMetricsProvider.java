@@ -113,13 +113,9 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
     public @NonNull Metrics createPlatformMetrics(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "selfId must not be null");
 
-        final DefaultPlatformMetrics newMetrics =
-                new DefaultPlatformMetrics(nodeId, metricKeyRegistry, executor, factory, metricsConfig);
+        DefaultPlatformMetrics newMetrics = platformMetrics.computeIfAbsent(
+                nodeId, id -> new DefaultPlatformMetrics(id, metricKeyRegistry, executor, factory, metricsConfig));
 
-        final DefaultPlatformMetrics oldMetrics = platformMetrics.putIfAbsent(nodeId, newMetrics);
-        if (oldMetrics != null) {
-            throw new IllegalStateException(String.format("PlatformMetrics for %s already exists", nodeId));
-        }
         globalMetrics.subscribe(newMetrics::handleGlobalMetrics);
 
         if (lifecyclePhase == LifecyclePhase.STARTED) {

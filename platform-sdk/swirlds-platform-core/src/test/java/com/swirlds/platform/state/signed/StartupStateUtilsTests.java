@@ -44,6 +44,7 @@ import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.builder.internal.StaticPlatformBuilder;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -91,6 +92,10 @@ public class StartupStateUtilsTests {
                 .withValue("state.savedStateDirectory", testDirectory.toString())
                 .getOrCreateConfig()
                 .getConfigData(StateCommonConfig.class));
+
+        // Ensure the metrics provider is initialized
+        Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        StaticPlatformBuilder.setupGlobalMetrics(configuration);
     }
 
     @AfterEach
