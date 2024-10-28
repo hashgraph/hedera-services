@@ -143,7 +143,7 @@ jobs:
 
       - name: Notify Jenkins of Release (Preview Network)
         id: jenkins-preview
-        uses: fjogeleit/http-request-action@0bd00a33db6f82063a3c6befd41f232f61d66583 # v1.15.2
+        uses: fjogeleit/http-request-action@bf78da14118941f7e940279dd58f67e863cbeff6 # v1.16.3
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           url: ${{ secrets.jenkins-preview-url }}
