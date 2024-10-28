@@ -32,7 +32,6 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.impl.BlockImplUtils;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -60,21 +59,6 @@ public enum BlockStreamAccess {
 
     private static final String UNCOMPRESSED_FILE_EXT = ".blk";
     private static final String COMPRESSED_FILE_EXT = UNCOMPRESSED_FILE_EXT + ".gz";
-
-    public static void main(String[] args) {
-        final var loc =
-                "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/nodeStakeUpdateExportedAtUpgradeBoundary-test/node0/data/block-streams/block-0.0.3";
-        final var blocks = BLOCK_STREAM_ACCESS.readBlocks(Path.of(loc));
-        for (final var block : blocks) {
-            for (final var item : block.items()) {
-                if (item.hasEventTransaction()) {
-                    final var parts =
-                            TransactionParts.from(item.eventTransactionOrThrow().applicationTransactionOrThrow());
-                    System.out.println(parts.function());
-                }
-            }
-        }
-    }
 
     /**
      * Reads all files matching the block file pattern from the given path and returns them in
