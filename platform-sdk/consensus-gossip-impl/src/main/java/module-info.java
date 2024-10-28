@@ -1,6 +1,6 @@
-module com.hedera.consensus.gossip.impl {
-    requires transitive com.hedera.service.gossip;
+module org.hiero.consensus.gossip.impl {
+    requires transitive org.hiero.consensus.gossip;
 
-    provides com.hedera.service.gossip.GossipService with
-            com.hedera.service.gossip.impl.GossipServiceImpl;
+    provides org.hiero.consensus.gossip.Gossip with
+            org.hiero.consensus.gossip.impl.GossipImpl;
 }
