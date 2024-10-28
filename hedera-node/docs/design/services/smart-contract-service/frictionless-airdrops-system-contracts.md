@@ -55,24 +55,24 @@ struct NftID {
 
 New system contract functions must be added to the `IHederaTokenService` interface to support airdropping tokens.
 
-| Function Selector Hash |                                                 Function Signature                                                  | HAPI Transaction |    Response    |                                 |
-|------------------------|---------------------------------------------------------------------------------------------------------------------|------------------|----------------|---------------------------------|
-| `0x2f348119`           | `function airdropTokens(TokenTransferList[] memory tokenTransfers) external returns (int64 responseCode)`           | TokenAirdrop     | `ResponseCode` | The response code from the call |
-| `0x012ebcaf`           | `function cancelAirdrops(PendingAirdrop[] memory pendingAirdrops) external returns (int64 responseCode)`            | TokenCancel      | `ResponseCode` | The response code from the call |
-| `0x05961641`           | `function claimAirdrops(PendingAirdrop[] memory pendingAirdrops) external returns (int64 responseCode)`             | TokenClaim       | `ResponseCode` | The response code from the call |
-| `0x179300d7`           | `function rejectTokens(address[] memory ftAddresses,  NftID[] memory nftIDs) external returns (int64 responseCode)` | TokenReject      | `ResponseCode` | The response code from the call |
+| Function Selector Hash |                                                               Function Signature                                                               | HAPI Transaction |    Response    |                                 |
+|------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|------------------|----------------|---------------------------------|
+| `0x2f348119`           | `function airdropTokens(TokenTransferList[] memory tokenTransfers) external returns (int64 responseCode)`                                      | TokenAirdrop     | `ResponseCode` | The response code from the call |
+| `0x012ebcaf`           | `function cancelAirdrops(PendingAirdrop[] memory pendingAirdrops) external returns (int64 responseCode)`                                       | TokenCancel      | `ResponseCode` | The response code from the call |
+| `0x05961641`           | `function claimAirdrops(PendingAirdrop[] memory pendingAirdrops) external returns (int64 responseCode)`                                        | TokenClaim       | `ResponseCode` | The response code from the call |
+| `0xebd595e0`           | `function rejectTokens(address rejectingAaddress, address[] memory ftAddresses,  NftID[] memory nftIDs) external returns (int64 responseCode)` | TokenReject      | `ResponseCode` | The response code from the call |
 
 New system contract functions must be added to a new `IHRC904` interface to support airdropping tokens.
 
-| Function Selector Hash |                                                  Function Signature                                                  | HAPI Transaction | Responsible service |    Response    |                                 |
-|------------------------|----------------------------------------------------------------------------------------------------------------------|------------------|---------------------|----------------|---------------------------------|
-| `0xcef5b705`           | `function cancelAirdropFT(address receiverAddress) external returns (uint256 responseCode)`                          | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
-| `0xad4917cf`           | `function cancelAirdropNFT(address receiverAddress, int64 serialNumber) external returns (uint256 responseCode)`     | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
-| `0xa83bc5b2`           | `function claimAirdropFT(address senderAddress) external returns (uint256 responseCode)`                             | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
-| `0x63ada5d7`           | `function claimAirdropNFT(address senderAddress, int64 serialNumber) external returns (uint256 responseCode)`        | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
-| `0x76c6b391`           | `function rejectTokenFT() external returns (uint256 responseCode)`                                                   | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
-| `0xa869c78a`           | `function rejectTokenNFTs(int64[] memory serialNumbers) external returns (uint256 responseCode)`                     | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
-| `0x966884d4`           | `function setUnlimitedAutomaticAssociations(boolean enableAutoAssociations) external returns (uint256 responseCode)` | CryptoUpdate     | HAS                 | `ResponseCode` | The response code from the call |
+| Function Selector Hash |                                                Function Signature                                                 | HAPI Transaction | Responsible service |    Response    |                                 |
+|------------------------|-------------------------------------------------------------------------------------------------------------------|------------------|---------------------|----------------|---------------------------------|
+| `0xcef5b705`           | `function cancelAirdropFT(address receiverAddress) external returns (uint256 responseCode)`                       | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
+| `0xad4917cf`           | `function cancelAirdropNFT(address receiverAddress, int64 serialNumber) external returns (uint256 responseCode)`  | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
+| `0xa83bc5b2`           | `function claimAirdropFT(address senderAddress) external returns (uint256 responseCode)`                          | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
+| `0x63ada5d7`           | `function claimAirdropNFT(address senderAddress, int64 serialNumber) external returns (uint256 responseCode)`     | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
+| `0x76c6b391`           | `function rejectTokenFT() external returns (uint256 responseCode)`                                                | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
+| `0xa869c78a`           | `function rejectTokenNFTs(int64[] memory serialNumbers) external returns (uint256 responseCode)`                  | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
+| `0xf5677e99`           | `function setUnlimitedAutomaticAssociations(bool enableAutoAssociations) external returns (uint256 responseCode)` | CryptoUpdate     | HAS                 | `ResponseCode` | The response code from the call |
 
 #### Input limitations
 
@@ -117,22 +117,28 @@ We will apply the `TokenReject`, `TokenAirdrop`, `TokenClaimAirdrop`, `TokenCanc
 
 - Verify that the `airdropTokens` function airdrops multiple tokens both ft and nft to multiple accounts.
 - Verify that the `airdropTokens` function airdrops 10 tokens both ft and nft to multiple accounts.
+- Verify that the `airdropTokens` function can airdrop multiple fungible tokens to multiple accounts.
+- Verify that the `airdropTokens` function can airdrop multiple nft tokens to multiple accounts.
 - Verify that the `airdropTokens` function airdrops a fungible token to an account.
 - Verify that the `airdropTokens` function airdrops a nft token to an account.
 - Verify that the `cancelAirdrops` function cancels multiple pending airdrops.
 - Verify that the `cancelAirdrops` function cancels 10 pending airdrops.
-- Verify that the `cancelAirdrops` function cancels single pending airdrop.
+- Verify that the `cancelAirdrops` function cancels single pending fungible token airdrop.
+- Verify that the `cancelAirdrops` function cancels single pending nft airdrop.
 - Verify that the `claimAirdrops` function claims multiple pending airdrops.
 - Verify that the `claimAirdrops` function claims 10 pending airdrops.
-- Verify that the `claimAirdrops` function claims a single pending airdrop.
-- Verify that the `rejectTokens` function rejects tokens for multiple accounts.
+- Verify that the `claimAirdrops` function claims a single pending fungible token airdrop.
+- Verify that the `claimAirdrops` function claims a single pending nft airdrop.
+- Verify that the `rejectTokens` function rejects fungible token for an account.
+- Verify that the `rejectTokens` function rejects nft token for an account.
+- Verify that the `rejectTokens` function rejects multiple tokens for an account.
 - Verify that the `cancelAirdropFT` function cancels a pending airdrop of the redirected token.
 - Verify that the `cancelAirdropNFT` function cancels a pending airdrop of the redirected nft serial.
 - Verify that the `claimAirdropFT` function claims a pending airdrop of the redirected token.
 - Verify that the `claimAirdropNFT` function claims a pending airdrop of the redirected nft serial number.
 - Verify that the `rejectTokenFT` function rejects tokens for a given account.
 - Verify that the `rejectTokenNFTs` function rejects tokens for a given account and serial number.
-- Verify that the `rejectTokenNFTs` function rejects 10 tokens for a given account and serial number.
+- Verify that the `rejectTokenNFTs` function rejects 10 nft serials for a given account.
 - Verify that the `setUnlimitedAutomaticAssociations` function enables the automatic associations to unlimited (-1) for a given account.
 - Verify that the `setUnlimitedAutomaticAssociations` function disables the automatic associations to zero for a given account.
 
@@ -141,7 +147,7 @@ We will apply the `TokenReject`, `TokenAirdrop`, `TokenClaimAirdrop`, `TokenCanc
 - Verify that the `airdropTokens` function fails when the sender does not have enough balance.
 - Verify that the `airdropTokens` function fails when the receiver does not have a valid account.
 - Verify that the `airdropTokens` function fails when the token does not exist.
-- Verify that the `airdropTokens` function fails when the airdrop amounts are out of bounds.
+- Verify that the `airdropTokens` function fails when the airdropped serials are out of bounds.
 - Verify that the `airdropTokens` function fails when 11 or more airdrops are provided.
 - Verify that the `cancelAirdrops` function fails when the sender does not have any pending airdrops.
 - Verify that the `cancelAirdrops` function fails when the sender does not have a valid account.
@@ -158,18 +164,17 @@ We will apply the `TokenReject`, `TokenAirdrop`, `TokenClaimAirdrop`, `TokenCanc
 - Verify that the `claimAirdrops` function fails when the nft does not exist.
 - Verify that the `claimAirdrops` function fails when the nft serial number does not exist.
 - Verify that the `rejectTokens` function fails when the sender does not have any associated tokens.
-- Verify that the `rejectTokens` function fails when the sender does not have a pending airdrop.
 - Verify that the `rejectTokens` function fails when the provided fungible token is invalid.
 - Verify that the `rejectTokens` function fails when the provided nft is invalid.
+- Verify that the `rejectTokens` function fails when 11 or more tokens are provided.
 - Verify that the `cancelAirdropFT` function fails when the sender does not have any pending airdrops.
-- Verify that the `cancelAirdropFT` function fails when the sender does not have a valid account.
+- Verify that the `cancelAirdropFT` function fails when the receiver does not have a valid account.
 - Verify that the `cancelAirdropNFT` function fails when the sender does not have any pending airdrops.
-- Verify that the `cancelAirdropNFT` function fails when the sender does not have a valid account.
+- Verify that the `cancelAirdropNFT` function fails when the receiver does not have a valid account.
 - Verify that the `claimAirdropFT` function fails when the sender does not have any pending airdrops.
 - Verify that the `claimAirdropFT` function fails when the sender does not have a valid account.
 - Verify that the `claimAirdropNFT` function fails when the sender does not have any pending airdrops.
 - Verify that the `claimAirdropNFT` function fails when the sender does not have a valid account.
 - Verify that the `rejectTokenFT` function fails when the sender does not have any tokens.
-- Verify that the `rejectTokenFT` function fails when the sender does not have a valid account.
 - Verify that the `rejectTokensNFT` function fails when the sender does not have any tokens.
 - Verify that the `rejectTokensNFT` function fails when 11 or more serials are provided.
