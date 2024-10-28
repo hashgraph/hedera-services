@@ -64,15 +64,15 @@ New system contract functions must be added to the `IHederaTokenService` interfa
 
 New system contract functions must be added to a new `IHRC904` interface to support airdropping tokens.
 
-| Function Selector Hash |                                                Function Signature                                                 | HAPI Transaction | Responsible service |    Response    |                                 |
-|------------------------|-------------------------------------------------------------------------------------------------------------------|------------------|---------------------|----------------|---------------------------------|
-| `0xcef5b705`           | `function cancelAirdropFT(address receiverAddress) external returns (uint256 responseCode)`                       | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
-| `0xad4917cf`           | `function cancelAirdropNFT(address receiverAddress, int64 serialNumber) external returns (uint256 responseCode)`  | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
-| `0xa83bc5b2`           | `function claimAirdropFT(address senderAddress) external returns (uint256 responseCode)`                          | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
-| `0x63ada5d7`           | `function claimAirdropNFT(address senderAddress, int64 serialNumber) external returns (uint256 responseCode)`     | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
-| `0x76c6b391`           | `function rejectTokenFT() external returns (uint256 responseCode)`                                                | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
-| `0xa869c78a`           | `function rejectTokenNFTs(int64[] memory serialNumbers) external returns (uint256 responseCode)`                  | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
-| `0xf5677e99`           | `function setUnlimitedAutomaticAssociations(bool enableAutoAssociations) external returns (uint256 responseCode)` | CryptoUpdate     | HAS                 | `ResponseCode` | The response code from the call |
+| Function Selector Hash |                                               Function Signature                                                | HAPI Transaction | Responsible service |    Response    |                                 |
+|------------------------|-----------------------------------------------------------------------------------------------------------------|------------------|---------------------|----------------|---------------------------------|
+| `0xcef5b705`           | `function cancelAirdropFT(address receiverAddress) external returns (int64 responseCode)`                       | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
+| `0xad4917cf`           | `function cancelAirdropNFT(address receiverAddress, int64 serialNumber) external returns (int64 responseCode)`  | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
+| `0xa83bc5b2`           | `function claimAirdropFT(address senderAddress) external returns (int64 responseCode)`                          | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
+| `0x63ada5d7`           | `function claimAirdropNFT(address senderAddress, int64 serialNumber) external returns (int64 responseCode)`     | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
+| `0x76c6b391`           | `function rejectTokenFT() external returns (int64 responseCode)`                                                | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
+| `0xa869c78a`           | `function rejectTokenNFTs(int64[] memory serialNumbers) external returns (int64 responseCode)`                  | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
+| `0xf5677e99`           | `function setUnlimitedAutomaticAssociations(bool enableAutoAssociations) external returns (int64 responseCode)` | CryptoUpdate     | HAS                 | `ResponseCode` | The response code from the call |
 
 #### Input limitations
 
