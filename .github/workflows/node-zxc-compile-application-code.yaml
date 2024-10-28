@@ -102,7 +102,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21"
+        default: "21.0.4"
       node-version:
         description: "NodeJS Version:"
         type: string
@@ -176,7 +176,7 @@ jobs:
         run: git fetch --unshallow --no-recurse-submodules
 
       - name: Setup Java
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
+        uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}

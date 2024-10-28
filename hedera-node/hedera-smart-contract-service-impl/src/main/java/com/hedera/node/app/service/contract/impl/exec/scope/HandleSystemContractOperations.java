@@ -63,17 +63,19 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         this.maybeEthSenderKey = maybeEthSenderKey;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public @NonNull Predicate<Key> activeSignatureTestWith(@NonNull final VerificationStrategy strategy) {
+    public @NonNull Predicate<Key> primitiveSignatureTestWith(@NonNull final VerificationStrategy strategy) {
+        requireNonNull(strategy);
+        return strategy.asPrimitiveSignatureTestIn(context, maybeEthSenderKey);
+    }
+
+    @NonNull
+    @Override
+    public Predicate<Key> signatureTestWith(@NonNull final VerificationStrategy strategy) {
+        requireNonNull(strategy);
         return strategy.asSignatureTestIn(context, maybeEthSenderKey);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public @NonNull <T extends StreamBuilder> T dispatch(
             @NonNull final TransactionBody syntheticBody,
@@ -87,7 +89,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         return context.dispatchChildTransaction(
                 syntheticBody,
                 recordBuilderClass,
-                activeSignatureTestWith(strategy),
+                primitiveSignatureTestWith(strategy),
                 syntheticPayerId,
                 CHILD,
                 HandleContext.ConsensusThrottling.ON);
@@ -139,9 +141,6 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         return transactionWith(transactionBody);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public ExchangeRate currentExchangeRate() {
