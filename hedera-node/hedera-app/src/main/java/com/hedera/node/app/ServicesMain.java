@@ -106,7 +106,6 @@ public class ServicesMain implements SwirldMain {
      */
     private final SwirldMain delegate;
 
-
     /**
      * Create a new instance
      */
@@ -270,7 +269,8 @@ public class ServicesMain implements SwirldMain {
         }
 
         // We do not support downgrading from one version to an older version.
-        ServicesSoftwareVersion deserializedVersion = StateInitializer.getServicesSoftwareVersion(previousSoftwareVersion);
+        ServicesSoftwareVersion deserializedVersion =
+                StateInitializer.getServicesSoftwareVersion(previousSoftwareVersion);
 
         // Migrate and initialize the State API before creating the platform
         final var migrationStateChanges =

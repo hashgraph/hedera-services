@@ -5,17 +5,14 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
-
-// File: hedera-node/hedera-app/src/main/java/com/hedera/node/app/StateInitializer.java
 
 package com.hedera.node.app;
 
@@ -34,8 +31,8 @@ import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
-import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.GenesisNetworkInfo;
@@ -200,7 +197,6 @@ public class StateInitializer {
         return migrationStateChanges;
     }
 
-
     // Register all service schema RuntimeConstructable factories before platform init
     private static void registerServiceRuntimeConstructables(
             ServicesRegistry servicesRegistry, BlockStreamService blockStreamService, AppContext appContext) {
@@ -240,7 +236,6 @@ public class StateInitializer {
         return instantSource == InstantSource.system();
     }
 
-
     static ServicesSoftwareVersion getServicesSoftwareVersion(SoftwareVersion previousSoftwareVersion) {
         ServicesSoftwareVersion deserializedVersion = null;
         if (previousSoftwareVersion instanceof ServicesSoftwareVersion servicesSoftwareVersion) {
@@ -274,6 +269,4 @@ public class StateInitializer {
         logger.info("Unmarked post-upgrade work as done");
         ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
     }
-
-
 }
