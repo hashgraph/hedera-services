@@ -44,6 +44,7 @@ import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
+import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -153,6 +154,9 @@ class HandleWorkflowTest {
     @Mock
     private BoundaryStateChangeListener boundaryStateChangeListener;
 
+    @Mock
+    private UserTxnFactory userTxnFactory;
+
     private HandleWorkflow subject;
 
     @BeforeEach
@@ -161,13 +165,7 @@ class HandleWorkflowTest {
         subject = new HandleWorkflow(
                 networkInfo,
                 nodeStakeUpdates,
-                authorizer,
-                feeManager,
                 dispatchProcessor,
-                serviceScopeLookup,
-                childDispatchFactory,
-                dispatcher,
-                networkUtilizationManager,
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
@@ -182,11 +180,9 @@ class HandleWorkflowTest {
                 stakeInfoHelper,
                 recordCache,
                 exchangeRateManager,
-                preHandleWorkflow,
                 stakePeriodManager,
-                kvStateChangeListener,
-                boundaryStateChangeListener,
-                List.of());
+                List.of(),
+                userTxnFactory);
     }
 
     @Test
