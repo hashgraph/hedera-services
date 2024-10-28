@@ -85,6 +85,7 @@ import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
+import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.signature.AppSignatureVerifier;
@@ -343,11 +344,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
-            @NonNull final Function<AppContext, TssBaseService> tssBaseServiceFactory) {
+            @NonNull final Function<AppContext, TssBaseService> tssBaseServiceFactory,
+            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
+        requireNonNull(migrationStateChanges);
         this.serviceMigrator = requireNonNull(migrator);
         this.instantSource = requireNonNull(instantSource);
+        this.migrationChanges = migrationStateChanges;
         logger.info(
                 """
 
@@ -812,6 +816,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         return streamMode != RECORDS;
     }
 
+    public void setMigrationChanges(@NonNull final List<StateChanges.Builder> migrationChanges) {
+        this.migrationChanges = migrationChanges;
+    }
+
     /*==================================================================================================================
     *
     * Genesis Initialization
@@ -830,7 +838,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         // the States API, even if it already has all its children in the Merkle tree, as it will lack
         // state definitions for those children. (And note services may even require migrations for
         // those children to be usable with the current version of the software.)
-        final var migrationStateChanges = ((MerkleStateRoot) state).platformStateInitChangesOrThrow();
+        final var migrationStateChanges = migrationChanges;
 
         final var stateChanges = new ArrayList<StateChanges.Builder>();
         stateChanges.addAll(migrationStateChanges);
