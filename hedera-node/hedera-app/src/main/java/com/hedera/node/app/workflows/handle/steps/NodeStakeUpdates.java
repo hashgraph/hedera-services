@@ -42,6 +42,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.LocalDate;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -183,7 +184,8 @@ public class NodeStakeUpdates {
 
         if (!Objects.equals(newCandidateRoster, rosterStore.getCandidateRoster())
                 && !Objects.equals(newCandidateRoster, rosterStore.getActiveRoster())) {
-            tssMetrics.updateCandidateRosterLifecycle(Instant.now().getEpochSecond());
+            tssMetrics.updateCandidateRosterLifecycle(
+                    InstantSource.system().instant().getEpochSecond());
             rosterStore.putCandidateRoster(newCandidateRoster);
             tssBaseService.setCandidateRoster(newCandidateRoster, handleContext, tssMetrics);
         }

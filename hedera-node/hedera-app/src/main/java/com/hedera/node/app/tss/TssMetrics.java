@@ -97,6 +97,7 @@ public class TssMetrics {
      * @param lifecycle the time at which the candidate roster is set
      */
     public void updateCandidateRosterLifecycle(final long lifecycle) {
+        if (lifecycle <= 0) throw new IllegalArgumentException("Candidate roster lifecycle must be positive");
         tssCandidateRosterLifecycle.set(lifecycle);
     }
 
@@ -106,6 +107,8 @@ public class TssMetrics {
      * @param aggregationTime the time which it takes to compute shares from the key material
      */
     public void updateAggregationTime(final long aggregationTime) {
+        if (aggregationTime <= 0)
+            throw new IllegalArgumentException("Private shares aggregation time must be positive");
         tssSharesAggregationTime.set(aggregationTime);
     }
 }
