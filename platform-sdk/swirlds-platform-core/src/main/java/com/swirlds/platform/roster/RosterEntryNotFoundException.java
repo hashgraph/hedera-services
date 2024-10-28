@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss;
+package com.swirlds.platform.roster;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.mock;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-import org.junit.jupiter.api.Test;
-
-class TssBaseServiceTest {
-    @Test
-    void nameIsAsExpected() {
-        final var subject = mock(TssBaseService.class);
-        doCallRealMethod().when(subject).getServiceName();
-        assertEquals(TssBaseService.NAME, subject.getServiceName());
+/**
+ * An exception thrown when a RosterEntry cannot be found, e.g. when searching by NodeId.
+ */
+public class RosterEntryNotFoundException extends RuntimeException {
+    /**
+     * A default constructor.
+     * @param message a message
+     */
+    public RosterEntryNotFoundException(@NonNull final String message) {
+        super(message);
     }
 }

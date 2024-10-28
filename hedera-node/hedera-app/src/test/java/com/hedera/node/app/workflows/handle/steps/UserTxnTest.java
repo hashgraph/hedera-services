@@ -39,6 +39,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
+import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
@@ -55,7 +56,6 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
@@ -171,7 +171,7 @@ class UserTxnTest {
     }
 
     @Test
-    void usesRecordStreamBuilderWithDefaultConfig() {
+    void usesPairedStreamBuilderWithDefaultConfig() {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1));
 
         final var subject = UserTxn.from(
@@ -201,7 +201,7 @@ class UserTxnTest {
         assertNotNull(subject.readableStoreFactory());
         assertNotNull(subject.config());
 
-        assertThat(subject.baseBuilder()).isInstanceOf(RecordStreamBuilder.class);
+        assertThat(subject.baseBuilder()).isInstanceOf(PairedStreamBuilder.class);
     }
 
     @Test
