@@ -16,30 +16,31 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
-import static com.swirlds.common.units.DataUnit.UNIT_KILOBYTES;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
-import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.transaction.TransactionWrapper;
+import com.swirlds.platform.test.fixtures.event.PcesWriterTestUtils;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
-import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Objects;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -50,6 +51,9 @@ class DefaultInlinePcesWriterTest {
     private Path tempDir;
 
     private final AncientMode ancientMode = GENERATION_THRESHOLD;
+    private final int numEvents = 1_000;
+    private final NodeId selfId = NodeId.of(0);
+
     private PlatformContext platformContext;
 
     @BeforeEach
@@ -68,58 +72,16 @@ class DefaultInlinePcesWriterTest {
                 .build();
     }
 
-    /**
-     * Build a transaction generator.
-     */
-    private static TransactionGenerator buildTransactionGenerator() {
-
-        final int transactionCount = 10;
-        final int averageTransactionSizeInKb = 10;
-        final int transactionSizeStandardDeviationInKb = 5;
-
-        return (final Random random) -> {
-            final TransactionWrapper[] transactions = new TransactionWrapper[transactionCount];
-            for (int index = 0; index < transactionCount; index++) {
-
-                final int transactionSize = (int) UNIT_KILOBYTES.convertTo(
-                        Math.max(
-                                1,
-                                averageTransactionSizeInKb
-                                        + random.nextDouble() * transactionSizeStandardDeviationInKb),
-                        UNIT_BYTES);
-                final byte[] bytes = new byte[transactionSize];
-                random.nextBytes(bytes);
-
-                transactions[index] = createAppPayloadWrapper(bytes);
-            }
-            return transactions;
-        };
-    }
-
-    /**
-     * Build an event generator.
-     */
-    static StandardGraphGenerator buildGraphGenerator(
-            @NonNull final PlatformContext platformContext, @NonNull final Random random) {
-        Objects.requireNonNull(platformContext);
-        final TransactionGenerator transactionGenerator = buildTransactionGenerator();
-
-        return new StandardGraphGenerator(
-                platformContext,
-                random.nextLong(),
-                new StandardEventSource().setTransactionGenerator(transactionGenerator),
-                new StandardEventSource().setTransactionGenerator(transactionGenerator),
-                new StandardEventSource().setTransactionGenerator(transactionGenerator),
-                new StandardEventSource().setTransactionGenerator(transactionGenerator));
-    }
-
     @Test
-    void test() throws Exception {
+    void standardOperationTest() throws Exception {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final NodeId selfId = NodeId.of(0);
 
-        final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
-        final PlatformEvent event = generator.generateEvent().getBaseEvent();
+        final StandardGraphGenerator generator = PcesWriterTestUtils.buildGraphGenerator(platformContext, random);
+
+        final List<PlatformEvent> events = new LinkedList<>();
+        for (int i = 0; i < numEvents; i++) {
+            events.add(generator.generateEventWithoutIndex().getBaseEvent());
+        }
 
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
@@ -127,11 +89,79 @@ class DefaultInlinePcesWriterTest {
         final DefaultInlinePcesWriter writer = new DefaultInlinePcesWriter(platformContext, fileManager);
 
         writer.beginStreamingNewEvents();
-        final PlatformEvent actual = writer.writeEvent(event);
+        for (PlatformEvent event : events) {
+            writer.writeEvent(event);
+        }
 
-        final String[] fileList = tempDir.toFile().list();
-        assertThat(actual).isEqualTo(event);
-        assertThat(fileList).isNotNull();
-        assertThat(fileList.length).isEqualTo(1);
+        PcesWriterTestUtils.verifyStream(selfId, events, platformContext, 0, ancientMode);
+    }
+
+    @Test
+    void ancientEventTest() throws Exception {
+
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final StandardGraphGenerator generator = PcesWriterTestUtils.buildGraphGenerator(platformContext, random);
+
+        final int stepsUntilAncient = random.nextInt(50, 100);
+        final PcesSequencer sequencer = new DefaultPcesSequencer();
+        final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
+
+        final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
+        final DefaultInlinePcesWriter writer = new DefaultInlinePcesWriter(platformContext, fileManager);
+        final AtomicLong latestDurableSequenceNumber = new AtomicLong();
+
+        // We will add this event at the very end, it should be ancient by then
+        final PlatformEvent ancientEvent = generator.generateEventWithoutIndex().getBaseEvent();
+
+        final List<PlatformEvent> events = new LinkedList<>();
+        for (int i = 0; i < numEvents; i++) {
+            events.add(generator.generateEventWithoutIndex().getBaseEvent());
+        }
+
+        writer.beginStreamingNewEvents();
+
+        final Collection<PlatformEvent> rejectedEvents = new HashSet<>();
+
+        long lowerBound = ancientMode.selectIndicator(0, 1);
+        final Iterator<PlatformEvent> iterator = events.iterator();
+        while (iterator.hasNext()) {
+            final PlatformEvent event = iterator.next();
+
+            sequencer.assignStreamSequenceNumber(event);
+            writer.writeEvent(event);
+            lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
+
+            writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
+
+            if (event.getAncientIndicator(ancientMode) < lowerBound) {
+                // Although it's not common, it's actually possible that the generator will generate
+                // an event that is ancient (since it isn't aware of what we consider to be ancient)
+                rejectedEvents.add(event);
+                iterator.remove();
+            }
+        }
+
+        // Add the ancient event
+        sequencer.assignStreamSequenceNumber(ancientEvent);
+        if (lowerBound > ancientEvent.getAncientIndicator(ancientMode)) {
+            // This is probably not possible... but just in case make sure this event is ancient
+            try {
+                writer.updateNonAncientEventBoundary(new EventWindow(
+                        1,
+                        ancientEvent.getAncientIndicator(ancientMode) + 1,
+                        ancientEvent.getAncientIndicator(ancientMode) + 1,
+                        ancientMode));
+            } catch (final IllegalArgumentException e) {
+                // ignore, more likely than not this event is way older than the actual ancient threshold
+            }
+        }
+
+        rejectedEvents.add(ancientEvent);
+
+        rejectedEvents.forEach(
+                event -> assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
+
+        PcesWriterTestUtils.verifyStream(selfId, events, platformContext, 0, ancientMode);
     }
 }
