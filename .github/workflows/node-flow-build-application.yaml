@@ -42,7 +42,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21.0.4"
+        default: "21.0.5"
       java-distribution:
         description: "Java JDK Distribution:"
         type: string
@@ -63,7 +63,7 @@ jobs:
     name: Code
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
-      java-version: ${{ github.event.inputs.java-version || '21.0.4' }}
+      java-version: ${{ github.event.inputs.java-version || '21.0.5' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       enable-unit-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-unit-tests == 'true' }}
       enable-hapi-tests-misc: ${{ github.event.inputs.enable-hapi-tests == 'true' }}

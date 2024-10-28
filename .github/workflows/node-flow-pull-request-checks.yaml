@@ -296,7 +296,7 @@ jobs:
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: temurin
-      java-version: 21.0.4
+      java-version: 21.0.5
     secrets:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
@@ -311,7 +311,7 @@ jobs:
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: temurin
-      java-version: 21.0.4
+      java-version: 21.0.5
     secrets:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}

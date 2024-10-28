@@ -39,15 +39,15 @@ RUN set -eux; \
         case "${ARCH}" in \
            aarch64|arm64) \
             ESUM='d768eecddd7a515711659e02caef8516b7b7177fa34880a56398fd9822593a79'; \
-            BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.4%2B7/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.4_7.tar.gz'; \
+            BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.5_11.tar.gz'; \
             ;; \
           amd64|i386:x86-64) \
             ESUM='51fb4d03a4429c39d397d3a03a779077159317616550e4e71624c9843083e7b9'; \
-            BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.4%2B7/OpenJDK21U-jdk_x64_linux_hotspot_21.0.4_7.tar.gz'; \
+            BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz'; \
             ;; \
            ppc64el|powerpc:common64) \
             ESUM='c208cd0fb90560644a90f928667d2f53bfe408c957a5e36206585ad874427761'; \
-            BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.4%2B7/OpenJDK21U-jdk_ppc64le_linux_hotspot_21.0.4_7.tar.gz'; \
+            BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_ppc64le_linux_hotspot_21.0.5_11.tar.gz'; \
             ;; \
            *) \
             echo "Unsupported arch: ${ARCH}"; \
@@ -222,7 +222,7 @@ FROM operating-system-base AS production-image-interim
 ARG SOURCE_DATE_EPOCH
 
 # Define Standard Environment Variables
-ENV JAVA_VERSION "jdk-21.0.4+7"
+ENV JAVA_VERSION "jdk-21.0.5+11"
 ENV JAVA_HOME /usr/local/java
 ENV PATH ${JAVA_HOME}/bin:${PATH}
 
@@ -258,7 +258,7 @@ FROM scratch AS production-image
 COPY --from=production-image-interim / /
 
 # Define Standard Environment Variables
-ENV JAVA_VERSION "jdk-21.0.4+7"
+ENV JAVA_VERSION "jdk-21.0.5+11"
 ENV JAVA_HOME /usr/local/java
 ENV PATH ${JAVA_HOME}/bin:${PATH}
 

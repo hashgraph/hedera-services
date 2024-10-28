@@ -27,7 +27,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21.0.4"
+        default: "21.0.5"
       java-distribution:
         description: "Java JDK Distribution:"
         type: string
@@ -53,7 +53,7 @@ jobs:
       trigger-env-deploy: none
       release-profile: AdhocCommit
       dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
-      java-version: ${{ github.event.inputs.java-version || '21.0.4' }}
+      java-version: ${{ github.event.inputs.java-version || '21.0.5' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
 
