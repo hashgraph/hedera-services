@@ -38,6 +38,8 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.system.Round;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -113,18 +115,13 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public void adopt(@NonNull final Roster roster) {
         requireNonNull(roster);
-        // TODO:
-        //                - adopt candidate as active roster (with state round + 1)
-        //                    - add the candidate roster to roundRosterPairs (with state round + 1):
-        //                        - in the `roundRosterPairs` data (from state) we’ll have the ‘previous’
-        // roster with the LOWEST round number, and the roster that just went from ACTIVE to not active
-        //                            - Remove the previously-active roster
-        //                            - put the candidate roster into `roundRosterPairs`
-        //                            - the roster that was active at node shutdown becomes the ‘previous’
-        // roster
-        //                        - for the roster we’re throwing away, delete the TSS key material
-        // (tss_message and tss_vote materials)
-        //                - remove the RosterState.candidateRosterHash
+        //  TODO: need to get context
+        HandleContext context = null;
+        final var rosterStore = context.storeFactory().writableStore(WritableRosterStore.class);
+
+        // TODO: need to get real round
+        Round round = null;
+        rosterStore.putActiveRoster(roster, round.getRoundNum());
         activeRosterHash = RosterUtils.hash(roster).getBytes();
     }
 
