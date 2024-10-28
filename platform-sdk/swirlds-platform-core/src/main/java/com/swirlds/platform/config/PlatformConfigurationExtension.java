@@ -31,7 +31,6 @@ import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.logging.api.internal.configuration.InternalLoggingConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
-import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.ProtocolConfig;
@@ -45,6 +44,7 @@ import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.hiero.event.creator.impl.rules.EventCreationConfig;
 
 /**
  * Registers configuration types for the platform.

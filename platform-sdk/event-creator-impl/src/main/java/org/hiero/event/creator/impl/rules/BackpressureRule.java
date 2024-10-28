@@ -14,41 +14,44 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.creation.rules;
+package org.hiero.event.creator.impl.rules;
 
-import static org.hiero.event.creator.EventCreationStatus.RATE_LIMITED;
+import static org.hiero.event.creator.EventCreationStatus.OVERLOADED;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.utility.throttle.RateLimiter;
-import com.swirlds.platform.event.creation.EventCreationConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
+import java.util.function.LongSupplier;
 import org.hiero.event.creator.EventCreationRule;
 import org.hiero.event.creator.EventCreationStatus;
 
 /**
- * Throttles event creation rate over time.
+ * Prevents event creations when the system is stressed and unable to keep up with its work load.
  */
-public class MaximumRateRule implements EventCreationRule {
+public class BackpressureRule implements EventCreationRule {
 
-    private final RateLimiter rateLimiter;
+    /**
+     * Prevent new events from being created if the event intake queue ever meets or exceeds this size.
+     */
+    private final int eventIntakeThrottle;
+
+    private final LongSupplier eventIntakeQueueSize;
 
     /**
      * Constructor.
      *
-     * @param platformContext the platform context for this node
+     * @param platformContext      the platform's context
+     * @param eventIntakeQueueSize provides the size of the event intake queue
      */
-    public MaximumRateRule(@NonNull final PlatformContext platformContext) {
+    public BackpressureRule(
+            @NonNull final PlatformContext platformContext, @NonNull final LongSupplier eventIntakeQueueSize) {
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
-        final double maxCreationRate = eventCreationConfig.maxCreationRate();
-        if (maxCreationRate > 0) {
-            rateLimiter = new RateLimiter(platformContext.getTime(), maxCreationRate);
-        } else {
-            // No brakes!
-            rateLimiter = null;
-        }
+        eventIntakeThrottle = eventCreationConfig.eventIntakeThrottle();
+
+        this.eventIntakeQueueSize = Objects.requireNonNull(eventIntakeQueueSize);
     }
 
     /**
@@ -56,10 +59,7 @@ public class MaximumRateRule implements EventCreationRule {
      */
     @Override
     public boolean isEventCreationPermitted() {
-        if (rateLimiter != null) {
-            return rateLimiter.request();
-        }
-        return true;
+        return eventIntakeQueueSize.getAsLong() < eventIntakeThrottle;
     }
 
     /**
@@ -67,9 +67,7 @@ public class MaximumRateRule implements EventCreationRule {
      */
     @Override
     public void eventWasCreated() {
-        if (rateLimiter != null) {
-            rateLimiter.trigger();
-        }
+        // no-op
     }
 
     /**
@@ -78,6 +76,6 @@ public class MaximumRateRule implements EventCreationRule {
     @NonNull
     @Override
     public EventCreationStatus getEventCreationStatus() {
-        return RATE_LIMITED;
+        return OVERLOADED;
     }
 }

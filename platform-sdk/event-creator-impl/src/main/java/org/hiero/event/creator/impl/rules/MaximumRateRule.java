@@ -14,45 +14,40 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.creation.rules;
+package org.hiero.event.creator.impl.rules;
 
-import static org.hiero.event.creator.EventCreationStatus.OVERLOADED;
+import static org.hiero.event.creator.EventCreationStatus.RATE_LIMITED;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.event.creation.EventCreationConfig;
+import com.swirlds.common.utility.throttle.RateLimiter;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
-import java.util.function.LongSupplier;
 import org.hiero.event.creator.EventCreationRule;
 import org.hiero.event.creator.EventCreationStatus;
 
 /**
- * Prevents event creations when the system is stressed and unable to keep up with its work load.
+ * Throttles event creation rate over time.
  */
-public class BackpressureRule implements EventCreationRule {
+public class MaximumRateRule implements EventCreationRule {
 
-    /**
-     * Prevent new events from being created if the event intake queue ever meets or exceeds this size.
-     */
-    private final int eventIntakeThrottle;
-
-    private final LongSupplier eventIntakeQueueSize;
+    private final RateLimiter rateLimiter;
 
     /**
      * Constructor.
      *
-     * @param platformContext      the platform's context
-     * @param eventIntakeQueueSize provides the size of the event intake queue
+     * @param platformContext the platform context for this node
      */
-    public BackpressureRule(
-            @NonNull final PlatformContext platformContext, @NonNull final LongSupplier eventIntakeQueueSize) {
+    public MaximumRateRule(@NonNull final PlatformContext platformContext) {
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
-        eventIntakeThrottle = eventCreationConfig.eventIntakeThrottle();
-
-        this.eventIntakeQueueSize = Objects.requireNonNull(eventIntakeQueueSize);
+        final double maxCreationRate = eventCreationConfig.maxCreationRate();
+        if (maxCreationRate > 0) {
+            rateLimiter = new RateLimiter(platformContext.getTime(), maxCreationRate);
+        } else {
+            // No brakes!
+            rateLimiter = null;
+        }
     }
 
     /**
@@ -60,7 +55,10 @@ public class BackpressureRule implements EventCreationRule {
      */
     @Override
     public boolean isEventCreationPermitted() {
-        return eventIntakeQueueSize.getAsLong() < eventIntakeThrottle;
+        if (rateLimiter != null) {
+            return rateLimiter.request();
+        }
+        return true;
     }
 
     /**
@@ -68,7 +66,9 @@ public class BackpressureRule implements EventCreationRule {
      */
     @Override
     public void eventWasCreated() {
-        // no-op
+        if (rateLimiter != null) {
+            rateLimiter.trigger();
+        }
     }
 
     /**
@@ -77,6 +77,6 @@ public class BackpressureRule implements EventCreationRule {
     @NonNull
     @Override
     public EventCreationStatus getEventCreationStatus() {
-        return OVERLOADED;
+        return RATE_LIMITED;
     }
 }

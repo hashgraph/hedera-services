@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.creation.rules;
+package org.hiero.event.creator.impl.rules;
 
-import static com.swirlds.common.utility.CompareTo.isLessThanOrEqualTo;
 import static org.hiero.event.creator.EventCreationStatus.OVERLOADED;
 
+import com.swirlds.common.utility.CompareTo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -54,7 +54,8 @@ public class PlatformHealthRule implements EventCreationRule {
      */
     @Override
     public boolean isEventCreationPermitted() {
-        return isLessThanOrEqualTo(currentUnhealthyDurationSupplier.get(), maximumPermissibleUnhealthyDuration);
+        return CompareTo.isLessThanOrEqualTo(
+                currentUnhealthyDurationSupplier.get(), maximumPermissibleUnhealthyDuration);
     }
 
     /**

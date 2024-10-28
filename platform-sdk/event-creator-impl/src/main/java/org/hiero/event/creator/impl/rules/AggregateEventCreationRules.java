@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.creation.rules;
+package org.hiero.event.creator.impl.rules;
 
 import static org.hiero.event.creator.EventCreationStatus.RATE_LIMITED;
 

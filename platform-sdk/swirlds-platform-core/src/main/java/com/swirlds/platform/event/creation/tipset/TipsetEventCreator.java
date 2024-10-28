@@ -32,7 +32,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.hashing.PbjStreamHasher;
 import com.swirlds.platform.event.hashing.UnsignedEventHasher;
@@ -52,6 +51,7 @@ import java.util.Objects;
 import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.event.creator.impl.rules.EventCreationConfig;
 
 /**
  * Responsible for creating new events using the tipset algorithm.

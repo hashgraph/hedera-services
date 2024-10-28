@@ -26,9 +26,6 @@ import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
-import com.swirlds.platform.event.creation.rules.MaximumRateRule;
-import com.swirlds.platform.event.creation.rules.PlatformHealthRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.events.UnsignedEvent;
@@ -41,6 +38,10 @@ import java.util.List;
 import java.util.Objects;
 import org.hiero.event.creator.EventCreationRule;
 import org.hiero.event.creator.EventCreationStatus;
+import org.hiero.event.creator.impl.rules.AggregateEventCreationRules;
+import org.hiero.event.creator.impl.rules.EventCreationConfig;
+import org.hiero.event.creator.impl.rules.MaximumRateRule;
+import org.hiero.event.creator.impl.rules.PlatformHealthRule;
 
 /**
  * Default implementation of the {@link EventCreationManager}.

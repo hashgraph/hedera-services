@@ -23,7 +23,6 @@ import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,6 +35,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.event.creator.impl.rules.EventCreationConfig;
 
 /**
  * Calculates tipset advancement weights for events created by a node.

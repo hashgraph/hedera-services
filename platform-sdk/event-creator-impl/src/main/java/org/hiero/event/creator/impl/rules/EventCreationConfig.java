@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.creation;
+package org.hiero.event.creator.impl.rules;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
