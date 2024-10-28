@@ -47,6 +47,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.roster.LedgerId;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.util.HapiUtils;
@@ -70,6 +71,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordSource;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
@@ -94,6 +96,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -102,6 +105,7 @@ import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -416,17 +420,19 @@ public class HandleWorkflow {
                     // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
-
-                    final boolean ledgerIdExist = true;
-                    if (ledgerIdExist) {
-                        // TODO: get candidate roster from state using ReadableRosterStore
-                        final var candidateRoster = new Roster(List.of());
-                        tssBaseService.adopt(candidateRoster);
+                    final var ledgerId = getLedgerId(dispatch.handleContext());
+                    if (ledgerId != null) {
+                        final var rosterStore =
+                                dispatch.handleContext().storeFactory().readableStore(ReadableRosterStore.class);
+                        final var candidateRoster = rosterStore.getCandidateRoster();
+                        if (candidateRoster != null) {
+                            tssBaseService.adopt(candidateRoster);
+                        }
                     } else {
                         // If there is NOT an existing ledger ID, adopt the ledger ID i.e. CREATE a ledger ID and store
                         // it in state as “the” ledger ID
                         final var genesisRoster = new Roster(List.of());
-                        tssBaseService.bootstrapLedgerId(genesisRoster, dispatch.handleContext(), ledgerId -> {});
+                        tssBaseService.bootstrapLedgerId(genesisRoster, dispatch.handleContext(), id -> {});
                     }
                 }
                 updateNodeStakes(userTxn, dispatch);
@@ -475,6 +481,12 @@ public class HandleWorkflow {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
             return failInvalidStreamItems(userTxn);
         }
+    }
+
+    private static @Nullable LedgerId getLedgerId(HandleContext context) {
+        // FUTURE: lookup the ledger id from the state described in
+        // https://github.com/hashgraph/hedera-services/blob/develop/platform-sdk/docs/proposals/TSS-Ledger-Id/TSS-Ledger-Id.md#ledger-id-queue
+        return LedgerId.DEFAULT;
     }
 
     /**
