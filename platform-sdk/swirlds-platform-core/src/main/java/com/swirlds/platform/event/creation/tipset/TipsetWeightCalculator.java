@@ -20,10 +20,12 @@ import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.event.creation.EventCreationConfig;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -101,7 +103,7 @@ public class TipsetWeightCalculator {
      */
     private Tipset latestSelfEventTipset;
 
-    private final AddressBook addressBook;
+    private final Roster roster;
 
     private final RateLimitedLogger ancientParentLogger;
     private final RateLimitedLogger allParentsAreAncientLogger;
@@ -110,14 +112,14 @@ public class TipsetWeightCalculator {
      * Create a new tipset weight calculator.
      *
      * @param platformContext       the platform context
-     * @param addressBook           the current address book
+     * @param roster                the current roster
      * @param selfId                the ID of the node tracked by this object
      * @param tipsetTracker         builds tipsets for individual events
      * @param childlessEventTracker tracks non-ancient events without children
      */
     public TipsetWeightCalculator(
             @NonNull final PlatformContext platformContext,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final NodeId selfId,
             @NonNull final TipsetTracker tipsetTracker,
             @NonNull final ChildlessEventTracker childlessEventTracker) {
@@ -125,17 +127,17 @@ public class TipsetWeightCalculator {
         this.selfId = Objects.requireNonNull(selfId);
         this.tipsetTracker = Objects.requireNonNull(tipsetTracker);
         this.childlessEventTracker = Objects.requireNonNull(childlessEventTracker);
-        this.addressBook = Objects.requireNonNull(addressBook);
+        this.roster = Objects.requireNonNull(roster);
 
-        totalWeight = addressBook.getTotalWeight();
-        selfWeight = addressBook.getAddress(selfId).getWeight();
+        totalWeight = RosterUtils.computeTotalWeight(roster);
+        selfWeight = RosterUtils.getRosterEntry(roster, selfId.id()).weight();
         maximumPossibleAdvancementWeight = totalWeight - selfWeight;
         maxSnapshotHistorySize = platformContext
                 .getConfiguration()
                 .getConfigData(EventCreationConfig.class)
                 .tipsetSnapshotHistorySize();
 
-        snapshot = new Tipset(addressBook);
+        snapshot = new Tipset(roster);
         latestSelfEventTipset = snapshot;
         snapshotHistory.add(snapshot);
 
@@ -330,7 +332,7 @@ public class TipsetWeightCalculator {
      * Clear the tipset weight calculator to its initial state.
      */
     public void clear() {
-        snapshot = new Tipset(addressBook);
+        snapshot = new Tipset(roster);
         latestSelfEventTipset = snapshot;
         snapshotHistory.clear();
         snapshotHistory.add(snapshot);
