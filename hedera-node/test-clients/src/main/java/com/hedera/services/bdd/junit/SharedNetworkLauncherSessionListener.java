@@ -27,6 +27,7 @@ import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
 import org.junit.platform.launcher.TestExecutionListener;
@@ -119,7 +120,9 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
         }
 
         private static Embedding embeddingMode() {
-            return switch (System.getProperty("hapi.spec.embedded.mode")) {
+            final var mode = Optional.ofNullable(System.getProperty("hapi.spec.embedded.mode"))
+                    .orElse("");
+            return switch (mode) {
                 case "per-class" -> Embedding.PER_CLASS;
                 case "concurrent" -> Embedding.CONCURRENT;
                 case "repeatable" -> Embedding.REPEATABLE;
