@@ -23,6 +23,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowa
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.cancelairdrops.TokenCancelAirdropTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.claimairdrops.TokenClaimAirdropTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.customfees.TokenCustomFeesTranslator;
@@ -456,6 +457,15 @@ public interface HtsTranslatorsModule {
     @Named("HtsTranslators")
     static CallTranslator<HtsCallAttempt> provideTokenClaimAirdropDecoder(
             @NonNull final TokenClaimAirdropTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @Named("HtsTranslators")
+    static CallTranslator<HtsCallAttempt> provideTokenCancelAirdropTranslator(
+            @NonNull final TokenCancelAirdropTranslator translator) {
         return translator;
     }
 }
