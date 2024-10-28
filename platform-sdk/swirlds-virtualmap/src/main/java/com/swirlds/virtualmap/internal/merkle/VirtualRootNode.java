@@ -616,11 +616,11 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         return dataSource;
     }
 
-    KeySerializer<K> getKeySerializer() {
+    public KeySerializer<K> getKeySerializer() {
         return keySerializer;
     }
 
-    ValueSerializer<V> getValueSerializer() {
+    public ValueSerializer<V> getValueSerializer() {
         return valueSerializer;
     }
 
