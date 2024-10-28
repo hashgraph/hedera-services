@@ -236,7 +236,7 @@ public class StateInitializer {
         return instantSource == InstantSource.system();
     }
 
-    static ServicesSoftwareVersion getServicesSoftwareVersion(SoftwareVersion previousSoftwareVersion) {
+    public static ServicesSoftwareVersion getServicesSoftwareVersion(SoftwareVersion previousSoftwareVersion) {
         ServicesSoftwareVersion deserializedVersion = null;
         if (previousSoftwareVersion instanceof ServicesSoftwareVersion servicesSoftwareVersion) {
             deserializedVersion = servicesSoftwareVersion;

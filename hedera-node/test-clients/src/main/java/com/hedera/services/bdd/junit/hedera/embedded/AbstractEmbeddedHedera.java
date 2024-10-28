@@ -19,9 +19,17 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
+import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
+import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static java.util.Objects.requireNonNull;
@@ -32,10 +40,19 @@ import static java.util.stream.StreamSupport.stream;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.info.GenesisNetworkInfo;
+import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.services.ServicesRegistry.Factory;
+import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
@@ -49,16 +66,24 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
+import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -117,18 +142,87 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
         defaultNodeId = addressBook.getNodeId(0);
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
+
+        final var configuration = buildConfiguration();
+        setupGlobalMetrics(configuration);
+        final NodeId selfId = defaultNodeId;
+        InitTrigger trigger = GENESIS;
+
+        ConfigProviderImpl configProvider;
+        BootstrapConfigProviderImpl bootstrapConfigProvider = new BootstrapConfigProviderImpl();
+        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
+
+        final SoftwareVersion previousSoftwareVersion = NO_VERSION;
+
+        // Migrate and initialize the State API before creating the platform
+        //        final var migrationStateChanges
+        //                = StateInitializer.migrateAndInitializeServices(state, deserializedVersion, trigger, metrics,
+        // hedera);
+
+        FakeServiceMigrator fakeServiceMigrator = new FakeServiceMigrator();
+        final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
+        Factory registryFactory = ServicesRegistryImpl::new;
+        ServicesRegistry servicesRegistry =
+                registryFactory.create(ConstructableRegistry.getInstance(), bootstrapConfigProvider.configuration());
+        NetworkInfo genesisNetworkInfo = null;
+        if (trigger == GENESIS) {
+            final var config = configProvider.getConfiguration();
+            final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+            final var readableStore =
+                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+            final var genesisRoster = createRoster(requireNonNull(readableStore.getAddressBook()));
+
+            genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
+        }
+        var migrationStateChanges = fakeServiceMigrator.doMigrations(
+                state,
+                servicesRegistry,
+                previousSoftwareVersion,
+                getNodeStartupVersion(bootstrapConfig),
+                configProvider.getConfiguration(),
+                genesisNetworkInfo,
+                metrics);
+
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
-                new FakeServiceMigrator(),
+                fakeServiceMigrator,
                 this::now,
                 appContext -> {
                     this.tssBaseService = new FakeTssBaseService(appContext);
                     return tssBaseService;
-                });
+                },
+                migrationStateChanges);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
+        hedera.setMigrationChanges(migrationStateChanges);
+
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
+    }
+
+    private static ServicesSoftwareVersion getNodeStartupVersion(@NonNull final Configuration config) {
+        final var versionConfig = config.getConfigData(VersionConfig.class);
+        return new ServicesSoftwareVersion(
+                versionConfig.servicesVersion(),
+                config.getConfigData(HederaConfig.class).configVersion());
+    }
+
+    /**
+     * Build the configuration for this node.
+     *
+     * @return the configuration
+     */
+    @NonNull
+    private static Configuration buildConfiguration() {
+        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
+                .withSource(SystemEnvironmentConfigSource.getInstance())
+                .withSource(SystemPropertiesConfigSource.getInstance());
+        rethrowIO(() ->
+                BootstrapUtils.setupConfigBuilder(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+        final Configuration configuration = configurationBuilder.build();
+        checkConfiguration(configuration);
+        return configuration;
     }
 
     @Override
