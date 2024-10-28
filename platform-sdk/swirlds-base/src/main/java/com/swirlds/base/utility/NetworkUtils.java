@@ -30,6 +30,9 @@ import java.util.concurrent.ExecutionException;
  */
 public final class NetworkUtils {
 
+    /**
+     * The maximum amount of time to wait for the DNS hostname to become resolvable.
+     */
     public static final Duration DNS_RESOLUTION_WAIT_TIME = Duration.ofSeconds(60);
 
     /**
