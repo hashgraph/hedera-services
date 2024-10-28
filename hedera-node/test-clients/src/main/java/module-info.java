@@ -99,6 +99,7 @@ module com.hedera.node.test.clients {
     requires com.hedera.node.app.service.util.impl;
     requires com.swirlds.base.test.fixtures;
     requires com.swirlds.config.extensions.test.fixtures;
+    requires com.swirlds.config.extensions;
     requires com.swirlds.platform.core.test.fixtures;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
@@ -124,5 +125,4 @@ module com.hedera.node.test.clients {
     requires static com.github.spotbugs.annotations;
     requires static com.hedera.pbj.runtime;
     requires static org.junit.platform.engine;
-    requires com.swirlds.config.extensions;
 }
