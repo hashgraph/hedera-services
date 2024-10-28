@@ -495,6 +495,72 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 UNAVAILABLE_METRICS);
     }
 
+    public void initializeStatesApi( @NonNull final State state,
+                                     @NonNull final Metrics metrics,
+                                     @NonNull final InitTrigger trigger,
+                                     @Nullable final SoftwareVersion previousVersion){
+        requireNonNull(state);
+        this.metrics = requireNonNull(metrics);
+        this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
+        logger.info(
+                "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
+                version,
+                configProvider
+                        .getConfiguration()
+                        .getConfigData(HederaConfig.class)
+                        .activeProfile(),
+                trigger,
+                previousVersion == null ? "<NONE>" : previousVersion);
+
+        logger.info("Initializing Hedera platform state");
+        final var deserializedVersion = serviceMigrator.creationVersionOf(state);
+
+        final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
+        final var platformStateMigrations = serviceMigrator.doMigrations(
+                state,
+                servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
+                deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
+                version,
+                bootstrapConfigProvider.getConfiguration(),
+                UNAVAILABLE_NETWORK_INFO,
+                UNAVAILABLE_METRICS);
+        migrationStateChanges.addAll(platformStateMigrations);
+
+        final var readableStore = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+        logger.info(
+                "Platform state includes freeze time={} and last frozen={}",
+                readableStore.getFreezeTime(),
+                readableStore.getLastFrozenTime());
+
+        ServicesSoftwareVersion savedStateVersion = null;
+        // We do not support downgrading from one version to an older version.
+        if (previousVersion instanceof ServicesSoftwareVersion servicesSoftwareVersion) {
+            savedStateVersion = servicesSoftwareVersion;
+        } else if (previousVersion instanceof HederaSoftwareVersion hederaSoftwareVersion) {
+            savedStateVersion = new ServicesSoftwareVersion(
+                    hederaSoftwareVersion.servicesVersion(), hederaSoftwareVersion.configVersion());
+        } else {
+            if (previousVersion != null) {
+                logger.fatal("Deserialized state not created with Hedera software");
+                throw new IllegalStateException("Deserialized state not created with Hedera software");
+            }
+        }
+        if (version.compareTo(savedStateVersion) < 0) {
+            logger.fatal(
+                    "Fatal error, state source version {} is higher than node software version {}",
+                    savedStateVersion,
+                    version);
+            throw new IllegalStateException("Cannot downgrade from " + savedStateVersion + " to " + version);
+        }
+
+        try {
+            migrateAndInitialize(state, savedStateVersion, trigger, metrics);
+        } catch (final Throwable t) {
+            logger.fatal("Critical failure during initialization", t);
+            throw new IllegalStateException("Critical failure during initialization", t);
+        }
+    }
+
     /**
      * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b>
      * {@link SwirldMain#init(Platform, NodeId)} and after {@link #newMerkleStateRoot()}.
