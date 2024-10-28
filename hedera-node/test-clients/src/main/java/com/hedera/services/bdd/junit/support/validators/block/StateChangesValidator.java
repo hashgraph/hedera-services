@@ -654,7 +654,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             @NonNull final OrderedServiceMigrator serviceMigrator,
             @NonNull final ServicesRegistryImpl servicesRegistry) {
         return new MerkleStateLifecycles() {
-            @Override
+
             public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
                 final var deserializedVersion = serviceMigrator.creationVersionOf(state);
                 return serviceMigrator.doMigrations(

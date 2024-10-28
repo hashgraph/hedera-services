@@ -102,7 +102,6 @@ import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
@@ -139,6 +138,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -322,6 +322,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @Nullable
     private CompletableFuture<Bytes> initialStateHashFuture;
 
+    @Nullable
+    private List<StateChanges.Builder> migrationStateChanges;
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -335,9 +338,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * <p>This registration is a critical side effect that must happen called before any Platform initialization
      * steps that try to create or deserialize a {@link MerkleStateRoot}.
      *
-     * @param constructableRegistry  the registry to register {@link RuntimeConstructable} factories with
-     * @param registryFactory        the factory to use for creating the services registry
-     * @param migrator               the migrator to use with the services
+     * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
+     * @param registryFactory       the factory to use for creating the services registry
+     * @param migrator              the migrator to use with the services
      * @param tssBaseServiceFactory the factory for the TSS base service
      */
     public Hedera(
@@ -475,33 +478,15 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     *
     =================================================================================================================*/
 
-    /**
-     * Invoked by {@link MerkleStateRoot} when it needs to ensure the {@link PlatformStateService} is initialized.
-     *
-     * @param state the root state to be initialized
-     * @return the state changes after initialization
-     */
-    public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
-        requireNonNull(state);
-        logger.info("Initializing Hedera platform state");
-        final var deserializedVersion = serviceMigrator.creationVersionOf(state);
-        return serviceMigrator.doMigrations(
-                state,
-                servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
-                deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
-                version,
-                bootstrapConfigProvider.getConfiguration(),
-                UNAVAILABLE_NETWORK_INFO,
-                UNAVAILABLE_METRICS);
-    }
-
-    public void initializeStatesApi( @NonNull final State state,
-                                     @NonNull final Metrics metrics,
-                                     @NonNull final InitTrigger trigger,
-                                     @Nullable final SoftwareVersion previousVersion){
+    public void initializeStatesApi(
+            @NonNull final State state,
+            @NonNull final Metrics metrics,
+            @NonNull final InitTrigger trigger,
+            @Nullable AddressBook genesisAddressBook) {
         requireNonNull(state);
         this.metrics = requireNonNull(metrics);
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
+        final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
                 version,
@@ -510,11 +495,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         .getConfigData(HederaConfig.class)
                         .activeProfile(),
                 trigger,
-                previousVersion == null ? "<NONE>" : previousVersion);
+                deserializedVersion == null ? "<NONE>" : deserializedVersion);
 
         logger.info("Initializing Hedera platform state");
-        final var deserializedVersion = serviceMigrator.creationVersionOf(state);
-
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
         final var platformStateMigrations = serviceMigrator.doMigrations(
                 state,
@@ -532,19 +515,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 readableStore.getFreezeTime(),
                 readableStore.getLastFrozenTime());
 
-        ServicesSoftwareVersion savedStateVersion = null;
-        // We do not support downgrading from one version to an older version.
-        if (previousVersion instanceof ServicesSoftwareVersion servicesSoftwareVersion) {
-            savedStateVersion = servicesSoftwareVersion;
-        } else if (previousVersion instanceof HederaSoftwareVersion hederaSoftwareVersion) {
-            savedStateVersion = new ServicesSoftwareVersion(
-                    hederaSoftwareVersion.servicesVersion(), hederaSoftwareVersion.configVersion());
-        } else {
-            if (previousVersion != null) {
-                logger.fatal("Deserialized state not created with Hedera software");
-                throw new IllegalStateException("Deserialized state not created with Hedera software");
-            }
-        }
+        ServicesSoftwareVersion savedStateVersion =
+                deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion);
         if (version.compareTo(savedStateVersion) < 0) {
             logger.fatal(
                     "Fatal error, state source version {} is higher than node software version {}",
@@ -554,7 +526,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         }
 
         try {
-            migrateAndInitialize(state, savedStateVersion, trigger, metrics);
+            migrateAndInitialize(state, savedStateVersion, trigger, metrics, genesisAddressBook);
         } catch (final Throwable t) {
             logger.fatal("Critical failure during initialization", t);
             throw new IllegalStateException("Critical failure during initialization", t);
@@ -567,10 +539,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
     public void onStateInitialized(
-            @NonNull final State state,
-            @NonNull final Platform platform,
-            @NonNull final InitTrigger trigger,
-            @Nullable final SoftwareVersion previousVersion) {
+            @NonNull final State state, @NonNull final Platform platform, @NonNull final InitTrigger trigger) {
         // A Hedera object can receive multiple onStateInitialized() calls throughout its lifetime if
         // the platform needs to initialize a learned state after reconnect; however, it cannot be
         // used by multiple platform instances
@@ -579,49 +548,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             throw new IllegalStateException("Platform should never change once set");
         }
         this.platform = requireNonNull(platform);
-        this.metrics = platform.getContext().getMetrics();
-        this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
-        logger.info(
-                "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
-                version,
-                configProvider
-                        .getConfiguration()
-                        .getConfigData(HederaConfig.class)
-                        .activeProfile(),
-                trigger,
-                previousVersion == null ? "<NONE>" : previousVersion);
-        final var readableStore = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-        logger.info(
-                "Platform state includes freeze time={} and last frozen={}",
-                readableStore.getFreezeTime(),
-                readableStore.getLastFrozenTime());
-
-        ServicesSoftwareVersion deserializedVersion = null;
-        // We do not support downgrading from one version to an older version.
-        if (previousVersion instanceof ServicesSoftwareVersion servicesSoftwareVersion) {
-            deserializedVersion = servicesSoftwareVersion;
-        } else if (previousVersion instanceof HederaSoftwareVersion hederaSoftwareVersion) {
-            deserializedVersion = new ServicesSoftwareVersion(
-                    hederaSoftwareVersion.servicesVersion(), hederaSoftwareVersion.configVersion());
-        } else {
-            if (previousVersion != null) {
-                logger.fatal("Deserialized state not created with Hedera software");
-                throw new IllegalStateException("Deserialized state not created with Hedera software");
-            }
+        if (state.getReadableStates(PlatformStateService.NAME).isEmpty()) {
+            initializeStatesApi(state, metrics, trigger, platform.getAddressBook());
         }
-        if (version.compareTo(deserializedVersion) < 0) {
-            logger.fatal(
-                    "Fatal error, state source version {} is higher than node software version {}",
-                    deserializedVersion,
-                    version);
-            throw new IllegalStateException("Cannot downgrade from " + deserializedVersion + " to " + version);
-        }
-        try {
-            migrateAndInitialize(state, deserializedVersion, trigger, metrics);
-        } catch (final Throwable t) {
-            logger.fatal("Critical failure during initialization", t);
-            throw new IllegalStateException("Critical failure during initialization", t);
-        }
+        // With the States API grounded in the working state, we can create the object graph from it
+        initializeDagger(state, trigger);
     }
 
     /**
@@ -636,13 +567,15 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param state               current state
      * @param deserializedVersion version deserialized
      * @param trigger             trigger that is calling migration
+     * @param genesisAddressBook
      * @return the state changes caused by the migration
      */
     private List<StateChanges.Builder> onMigrate(
             @NonNull final State state,
             @Nullable final ServicesSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
-            @NonNull final Metrics metrics) {
+            @NonNull final Metrics metrics,
+            @Nullable final AddressBook genesisAddressBook) {
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getPbjSemanticVersion();
         final var isUpgrade = version.compareTo(deserializedVersion) > 0;
         logger.info(
@@ -659,9 +592,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (trigger == GENESIS) {
             final var config = configProvider.getConfiguration();
             final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-            final var readableStore =
-                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-            final var genesisRoster = createRoster(requireNonNull(readableStore.getAddressBook()));
+            final var genesisRoster = createRoster(requireNonNull(genesisAddressBook));
 
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
@@ -712,7 +643,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * {@link #newMerkleStateRoot()} or an instance of {@link MerkleStateRoot} created by the platform and
      * loaded from the saved state).
      *
-     * <p>(FUTURE) Consider moving this initialization into {@link #onStateInitialized(State, Platform, InitTrigger, SoftwareVersion)}
+     * <p>(FUTURE) Consider moving this initialization into {@link #onStateInitialized(State, Platform, InitTrigger)}
      * instead, as there is no special significance to having it here instead.
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
@@ -960,7 +891,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final State state,
             @Nullable final ServicesSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
-            @NonNull final Metrics metrics) {
+            @NonNull final Metrics metrics,
+            @Nullable final AddressBook genesisAddressBook) {
         if (trigger != GENESIS) {
             requireNonNull(deserializedVersion, "Deserialized version cannot be null for trigger " + trigger);
         }
@@ -968,9 +900,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         // the States API, even if it already has all its children in the Merkle tree, as it will lack
         // state definitions for those children. (And note services may even require migrations for
         // those children to be usable with the current version of the software.)
-        final var migrationStateChanges = onMigrate(state, deserializedVersion, trigger, metrics);
-        // With the States API grounded in the working state, we can create the object graph from it
-        initializeDagger(state, trigger, migrationStateChanges);
+        migrationStateChanges = onMigrate(state, deserializedVersion, trigger, metrics, genesisAddressBook);
         // Log the active configuration
         logConfiguration();
     }
@@ -981,10 +911,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     *
     =================================================================================================================*/
 
-    private void initializeDagger(
-            @NonNull final State state,
-            @NonNull final InitTrigger trigger,
-            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
+    private void initializeDagger(@NonNull final State state, @NonNull final InitTrigger trigger) {
         final var notifications = platform.getNotificationEngine();
         final var blockStreamEnabled = isBlockStreamEnabled();
         // The Dagger component should be constructed every time we reach this point, even if
@@ -1035,7 +962,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .metrics(metrics)
                 .kvStateChangeListener(kvStateChangeListener)
                 .boundaryStateChangeListener(boundaryStateChangeListener)
-                .migrationStateChanges(migrationStateChanges)
+                .migrationStateChanges(migrationStateChanges != null ? migrationStateChanges : new ArrayList<>())
                 .initialStateHash(initialStateHash)
                 .networkInfo(networkInfo)
                 .build();
@@ -1056,6 +983,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                                         .orElseGet(() -> startBlockHashFrom(state));
                             });
             daggerApp.tssBaseService().registerLedgerSignatureConsumer(daggerApp.blockStreamManager());
+            migrationStateChanges = null;
         }
     }
 

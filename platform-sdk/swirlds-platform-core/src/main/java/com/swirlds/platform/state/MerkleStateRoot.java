@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
+import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
@@ -43,7 +44,9 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.SnapshotPlatformStateAccessor;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -1017,7 +1020,16 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public PlatformStateAccessor getReadablePlatformState() {
-        return readablePlatformStateStore();
+        return services.isEmpty()
+                ? new SnapshotPlatformStateAccessor(getPlatformState(), versionFactory)
+                : readablePlatformStateStore();
+    }
+
+    private com.hedera.hapi.platform.state.PlatformState getPlatformState() {
+        final var index = findNodeIndex(PlatformStateService.NAME, PLATFORM_STATE_KEY);
+        return index == -1
+                ? V0540PlatformStateSchema.GENESIS_PLATFORM_STATE
+                : ((SingletonNode<com.hedera.hapi.platform.state.PlatformState>) getChild(index)).getValue();
     }
 
     /**
@@ -1039,16 +1051,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             throw new IllegalStateException("Cannot get writable platform state when state is immutable");
         }
         return writablePlatformStateStore();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void initPlatformState() {
-        if (!services.containsKey(PlatformStateService.NAME)) {
-            platformStateInitChanges = lifecycles.initPlatformState(this);
-        }
     }
 
     /**
@@ -1075,9 +1077,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     private WritablePlatformStateStore writablePlatformStateStore() {
-        if (!services.containsKey(PlatformStateService.NAME)) {
-            platformStateInitChanges = lifecycles.initPlatformState(this);
-        }
         final var store = new WritablePlatformStateStore(getWritableStates(PlatformStateService.NAME), versionFactory);
         if (preV054PlatformState != null) {
             store.setAllFrom(preV054PlatformState);

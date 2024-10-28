@@ -71,14 +71,12 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -224,10 +222,11 @@ public class ServicesMain implements SwirldMain {
                 selfId,
                 diskAddressBook);
         final var initialState = reservedState.state();
-        hedera.initializeStatesApi((MerkleStateRoot)initialState.get().getState().getSwirldState(),
+        hedera.initializeStatesApi(
+                (MerkleStateRoot) initialState.get().getState().getSwirldState(),
                 metrics,
                 isGenesis.get() ? InitTrigger.GENESIS : InitTrigger.RESTART,
-                version);
+                isGenesis.get() ? diskAddressBook : null);
 
         final var cryptography = CryptographyFactory.create();
         CryptographyHolder.set(cryptography);

@@ -241,7 +241,6 @@ public class SignedState implements SignedStateInfo {
     public void setSigSet(@NonNull final SigSet sigSet) {
         this.sigSet = Objects.requireNonNull(sigSet);
         signingWeight = 0;
-        state.initPlatformState();
         if (!isGenesisState()) {
             // Only non-genesis states will have signing weight
             final AddressBook addressBook = getAddressBook();
