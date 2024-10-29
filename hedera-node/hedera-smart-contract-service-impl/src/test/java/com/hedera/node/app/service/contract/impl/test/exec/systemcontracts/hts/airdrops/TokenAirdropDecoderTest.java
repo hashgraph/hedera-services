@@ -26,9 +26,9 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_I
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SYSTEM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -152,7 +152,9 @@ public class TokenAirdropDecoderTest {
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
         given(addressIdConverter.convert(asHeadlongAddress(SYSTEM_ADDRESS)))
                 .willReturn(AccountID.newBuilder().accountNum(750).build());
-        assertThrows(HandleException.class, () -> subject.decodeAirdrop(attempt));
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeAirdrop(attempt))
+                .withMessage("");
     }
 
     @Test
@@ -243,7 +245,9 @@ public class TokenAirdropDecoderTest {
         given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
         given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
-        assertThrows(HandleException.class, () -> subject.decodeAirdrop(attempt));
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeAirdrop(attempt))
+                .withMessage("");
     }
 
     @Test
@@ -291,6 +295,8 @@ public class TokenAirdropDecoderTest {
         given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
         given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
-        assertThrows(HandleException.class, () -> subject.decodeAirdrop(attempt));
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeAirdrop(attempt))
+                .withMessage("");
     }
 }
