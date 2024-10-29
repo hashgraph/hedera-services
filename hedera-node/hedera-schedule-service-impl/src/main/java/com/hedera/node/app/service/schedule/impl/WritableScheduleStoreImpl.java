@@ -167,7 +167,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                     if (schedule != null) {
                         final ProtoBytes hash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
                         scheduleIdByEqualityMutable.remove(hash);
-                    }else {
+                    } else {
                         logger.error("Schedule {} not found in state schedulesByIdMutable.", scheduleId);
                     }
                     schedulesByIdMutable.remove(scheduleId);
