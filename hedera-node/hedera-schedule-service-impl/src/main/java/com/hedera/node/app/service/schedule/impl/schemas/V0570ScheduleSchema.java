@@ -29,6 +29,7 @@ import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
@@ -83,8 +84,8 @@ public final class V0570ScheduleSchema extends Schema {
         log.info("Started migrating Schedule Schema from 0.49.0 to 0.57.0");
         final WritableKVState<ProtoLong, ScheduleIdList> writableScheduleIdsByExpirySec =
                 ctx.newStates().get(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
-        final WritableKVState<ProtoLong, ScheduleList> readableSchedulesByExpirySec =
-                ctx.newStates().get(SCHEDULES_BY_EXPIRY_SEC_KEY);
+        final ReadableKVState<ProtoLong, ScheduleList> readableSchedulesByExpirySec =
+                ctx.previousStates().get(SCHEDULES_BY_EXPIRY_SEC_KEY);
         StreamSupport.stream(
                         Spliterators.spliterator(
                                 readableSchedulesByExpirySec.keys(), readableSchedulesByExpirySec.size(), DISTINCT),
@@ -99,8 +100,8 @@ public final class V0570ScheduleSchema extends Schema {
 
         final WritableKVState<ProtoBytes, ScheduleID> writableScheduleByEquality =
                 ctx.newStates().get(SCHEDULE_ID_BY_EQUALITY_KEY);
-        final WritableKVState<ProtoBytes, ScheduleList> readableSchedulesByEquality =
-                ctx.newStates().get(SCHEDULES_BY_EQUALITY_KEY);
+        final ReadableKVState<ProtoBytes, ScheduleList> readableSchedulesByEquality =
+                ctx.previousStates().get(SCHEDULES_BY_EQUALITY_KEY);
         StreamSupport.stream(
                         Spliterators.spliterator(
                                 readableSchedulesByEquality.keys(), readableSchedulesByEquality.size(), DISTINCT),

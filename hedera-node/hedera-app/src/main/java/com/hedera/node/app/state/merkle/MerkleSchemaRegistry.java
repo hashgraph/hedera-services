@@ -361,12 +361,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
         // Create the "before" and "after" writable states (we won't commit anything
         // from these states until we have completed migration for this schema)
-        // We need those removed stateKeys in migrate(), then will be removed there.
-        //        final var statesToRemove = schema.statesToRemove();
+        final var statesToRemove = schema.statesToRemove();
         final var writableStates = stateRoot.getWritableStates(serviceName);
         final var remainingStates = new HashSet<>(writableStates.stateKeys());
-        //        remainingStates.removeAll(statesToRemove);
-        //        logger.info("  Removing states {} from service {}", statesToRemove, serviceName);
+        remainingStates.removeAll(statesToRemove);
+        logger.info("  Removing states {} from service {}", statesToRemove, serviceName);
         final var newStates = new FilteredWritableStates(writableStates, remainingStates);
         return new RedefinedWritableStates(writableStates, newStates);
     }

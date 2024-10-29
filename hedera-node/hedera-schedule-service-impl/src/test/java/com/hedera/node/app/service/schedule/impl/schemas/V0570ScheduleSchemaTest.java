@@ -31,7 +31,6 @@ import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility;
@@ -44,6 +43,8 @@ import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapReadableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.security.InvalidKeyException;
 import java.util.Comparator;
@@ -71,15 +72,16 @@ class V0570ScheduleSchemaTest extends ScheduleTestBase {
 
     private final Map<ProtoLong, ScheduleList> schedulesByExpirySec = new HashMap<>();
     private final Map<ProtoLong, ScheduleIdList> scheduleIdsByExpirySec = new HashMap<>();
-    private MapWritableKVState<ProtoLong, ScheduleList> writablSchedulesByExpirySec;
-    private MapWritableKVState<ProtoLong, ScheduleIdList> writablScheduleIdsByExpirySec;
+    private MapReadableKVState<ProtoLong, ScheduleList> readableSchedulesByExpirySec;
+    private MapWritableKVState<ProtoLong, ScheduleIdList> writableScheduleIdsByExpirySec;
 
     private final Map<ProtoBytes, ScheduleList> schedulesByEquality = new HashMap<>();
-    private final Map<ProtoBytes, Schedule> scheduleByEquality = new HashMap<>();
-    private MapWritableKVState<ProtoBytes, ScheduleList> writableSchedulesByEquality;
-    private MapWritableKVState<ProtoBytes, Schedule> writableScheduleByEquality;
+    private final Map<ProtoBytes, ScheduleID> scheduleByEquality = new HashMap<>();
+    private MapReadableKVState<ProtoBytes, ScheduleList> readableSchedulesByEquality;
+    private MapWritableKVState<ProtoBytes, ScheduleID> writableScheduleIdByEquality;
 
     private MapWritableStates writableStates = null;
+    private MapReadableStates readableStates = null;
 
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
@@ -138,9 +140,8 @@ class V0570ScheduleSchemaTest extends ScheduleTestBase {
         assertThat(logCaptor.infoLogs()).contains("Started migrating Schedule Schema from 0.49.0 to 0.57.0");
         assertThat(logCaptor.infoLogs()).contains("Migrated 1 Schedules from SCHEDULES_BY_EXPIRY_SEC_KEY");
         assertThat(logCaptor.infoLogs()).contains("Migrated 2 Schedules from SCHEDULES_BY_EQUALITY_KEY");
-
-        assertThat(writablScheduleIdsByExpirySec.size()).isEqualTo(1L);
-        assertThat(writableScheduleByEquality.size()).isEqualTo(2L);
+        assertThat(writableScheduleIdsByExpirySec.size()).isEqualTo(1L);
+        assertThat(writableScheduleIdByEquality.size()).isEqualTo(2L);
     }
 
     private void setupMigrationContext() {
@@ -151,8 +152,8 @@ class V0570ScheduleSchemaTest extends ScheduleTestBase {
                 ScheduleList.newBuilder()
                         .schedules(List.of(scheduler1, otherScheduleInState))
                         .build());
-        writablSchedulesByExpirySec = new MapWritableKVState<>(SCHEDULES_BY_EXPIRY_SEC_KEY, schedulesByExpirySec);
-        writablScheduleIdsByExpirySec =
+        readableSchedulesByExpirySec = new MapReadableKVState<>(SCHEDULES_BY_EXPIRY_SEC_KEY, schedulesByExpirySec);
+        writableScheduleIdsByExpirySec =
                 new MapWritableKVState<>(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY, scheduleIdsByExpirySec);
 
         final ProtoBytes protoHash1 = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(scheduler1));
@@ -165,16 +166,18 @@ class V0570ScheduleSchemaTest extends ScheduleTestBase {
                 ScheduleList.newBuilder()
                         .schedules(List.of(otherScheduleInState))
                         .build());
-        writableSchedulesByEquality = new MapWritableKVState<>(SCHEDULES_BY_EQUALITY_KEY, schedulesByEquality);
-        writableScheduleByEquality = new MapWritableKVState<>(SCHEDULE_ID_BY_EQUALITY_KEY, scheduleByEquality);
+        readableSchedulesByEquality = new MapReadableKVState<>(SCHEDULES_BY_EQUALITY_KEY, schedulesByEquality);
+        writableScheduleIdByEquality = new MapWritableKVState<>(SCHEDULE_ID_BY_EQUALITY_KEY, scheduleByEquality);
 
         writableStates = MapWritableStates.builder()
-                .state(writableSchedulesByEquality)
-                .state(writableScheduleByEquality)
-                .state(writablSchedulesByExpirySec)
-                .state(writablScheduleIdsByExpirySec)
+                .state(writableScheduleIdByEquality)
+                .state(writableScheduleIdsByExpirySec)
                 .build();
-
+        readableStates = MapReadableStates.builder()
+                .state(readableSchedulesByExpirySec)
+                .state(readableSchedulesByEquality)
+                .build();
         given(migrationContext.newStates()).willReturn(writableStates);
+        given(migrationContext.previousStates()).willReturn(readableStates);
     }
 }

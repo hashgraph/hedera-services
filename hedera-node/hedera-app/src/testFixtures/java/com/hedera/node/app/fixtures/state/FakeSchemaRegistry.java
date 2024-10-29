@@ -151,11 +151,10 @@ public class FakeSchemaRegistry implements SchemaRegistry {
         });
         state.addService(serviceName, stateDataSources);
 
-        // Don't remove them here because we remove them in migrate()
-        //        final var statesToRemove = schema.statesToRemove();
+        final var statesToRemove = schema.statesToRemove();
         final var writableStates = state.getWritableStates(serviceName);
         final var remainingStates = new HashSet<>(writableStates.stateKeys());
-        //        remainingStates.removeAll(statesToRemove);
+        remainingStates.removeAll(statesToRemove);
         final var newStates = new FilteredWritableStates(writableStates, remainingStates);
         return new RedefinedWritableStates(writableStates, newStates);
     }
