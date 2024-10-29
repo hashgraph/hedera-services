@@ -115,7 +115,7 @@ file on disk would pose risks of introducing errors.
 
 The platform `AddressBook` lifecycle is being replaced with a new `roster` lifecycle. A new feature flag
 `addressbook.useRosterLifecycle` will be used to toggle between the current `config.txt` based address book
-lifecycle and the new `roster` lifecycle. The feature flag will be set to `fakse` by default. The new roster
+lifecycle and the new `roster` lifecycle. The feature flag will be set to `false` by default. The new roster
 lifecycle will be enabled by setting the flag to `true`.
 
 ### Architecture and/or Components
@@ -670,7 +670,8 @@ Manual Testing Plan:
 
 #### Software Upgrade Network Transplant
 
-1. Copy the PCES files from a single node in the source network and replicate to all nodes in the target network.
+1. Copy the state and PCES files from a single node in the source network and replicate them to all nodes in the target
+   network.
 2. There must be a loadable state present on disk in the standard location.
 3. There must be a software upgrade happening.
 4. Provide a `override-config.txt` file on disk in the same directory that `config.txt` is normally provided.
