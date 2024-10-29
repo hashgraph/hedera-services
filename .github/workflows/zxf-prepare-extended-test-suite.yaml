@@ -27,6 +27,7 @@ defaults:
     shell: bash
 
 permissions:
+  actions: write
   contents: write
 
 env:
