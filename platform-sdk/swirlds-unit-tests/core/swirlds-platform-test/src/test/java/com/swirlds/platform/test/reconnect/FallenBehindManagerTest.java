@@ -25,7 +25,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.topology.NetworkTopology;
@@ -35,6 +34,7 @@ import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.hiero.consensus.gossip.FallenBehindManager;
 import org.junit.jupiter.api.Test;
 
 class FallenBehindManagerTest {

@@ -27,7 +27,7 @@ import com.swirlds.config.api.validation.annotation.Min;
 
 /**
  * Configuration for the block stream.
- * @param streamMode Default value of RECORDS disables the block stream; BOTH enables it
+ * @param streamMode Value of RECORDS disables the block stream; BOTH enables it
  * @param writerMode if we are writing to a file or gRPC stream
  * @param blockFileDir directory to store block files
  * @param compressFilesOnCreation whether to compress files on creation
@@ -36,7 +36,7 @@ import com.swirlds.config.api.validation.annotation.Min;
  */
 @ConfigData("blockStream")
 public record BlockStreamConfig(
-        @ConfigProperty(defaultValue = "RECORDS") @NetworkProperty StreamMode streamMode,
+        @ConfigProperty(defaultValue = "BOTH") @NetworkProperty StreamMode streamMode,
         @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "data/block-streams") @NodeProperty String blockFileDir,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
