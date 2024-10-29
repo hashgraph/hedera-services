@@ -99,6 +99,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
@@ -426,7 +427,8 @@ public class HandleWorkflow {
                                 dispatch.handleContext().storeFactory().readableStore(ReadableRosterStore.class);
                         final var candidateRoster = rosterStore.getCandidateRoster();
                         if (candidateRoster != null) {
-                            tssBaseService.adopt(candidateRoster);
+                            final long roundNumber = ((CesEvent) userTxn.event()).getRoundReceived();
+                            tssBaseService.adopt(candidateRoster, dispatch.handleContext(), roundNumber);
                         }
                     } else {
                         // If there is NOT an existing ledger ID, adopt the ledger ID i.e. CREATE a ledger ID and store
@@ -676,7 +678,7 @@ public class HandleWorkflow {
      * @param creator the creator of the transaction
      * @param txn the consensus transaction
      * @param consensusNow the consensus time
-     * @param type the trnasaction type
+     * @param type the transaction type
      * @return the new user transaction
      */
     private UserTxn newUserTxn(

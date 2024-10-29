@@ -148,9 +148,10 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void adopt(@NonNull final Roster roster) {
+    public void adopt(@NonNull final Roster roster, @NonNull final HandleContext context, final long roundNumber) {
         requireNonNull(roster);
-        delegate.adopt(roster);
+        requireNonNull(context);
+        delegate.adopt(roster, context, roundNumber);
     }
 
     @Override

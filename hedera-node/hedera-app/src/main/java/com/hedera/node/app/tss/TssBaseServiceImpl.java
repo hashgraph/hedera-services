@@ -39,7 +39,6 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
-import com.swirlds.platform.system.Round;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -113,15 +112,12 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void adopt(@NonNull final Roster roster) {
+    public void adopt(@NonNull final Roster roster, @NonNull final HandleContext context, final long roundNumber) {
         requireNonNull(roster);
-        //  TODO: need to get context
-        HandleContext context = null;
-        final var rosterStore = context.storeFactory().writableStore(WritableRosterStore.class);
+        requireNonNull(context);
 
-        // TODO: need to get real round
-        Round round = null;
-        rosterStore.putActiveRoster(roster, round.getRoundNum());
+        final var rosterStore = context.storeFactory().writableStore(WritableRosterStore.class);
+        rosterStore.putActiveRoster(roster, roundNumber);
         activeRosterHash = RosterUtils.hash(roster).getBytes();
     }
 

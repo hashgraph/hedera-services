@@ -68,9 +68,11 @@ public interface TssBaseService extends Service {
     /**
      * Adopts the given roster for TSS operations.
      * @param roster the active roster
+     * @param context the TSS context
+     * @param roundNumber the current round number
      * @throws IllegalArgumentException if the expected shares cannot be aggregated
      */
-    void adopt(@NonNull Roster roster);
+    void adopt(@NonNull Roster roster, @NonNull final HandleContext context, final long roundNumber);
 
     /**
      * Bootstraps the TSS service for the given roster in the given context.
