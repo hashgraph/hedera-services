@@ -18,6 +18,7 @@ package com.hedera.node.app.tss;
 
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.api.TssLibrary;
+import com.swirlds.metrics.api.Metrics;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -30,8 +31,10 @@ public interface TssModule {
     @Provides
     @Singleton
     static TssCryptographyManager tssCryptographyManager(
-            @NonNull final AppContext.Gossip gossip, @NonNull @TssLibraryExecutor final Executor libraryExecutor) {
-        return new TssCryptographyManager(new PlaceholderTssLibrary(), gossip, libraryExecutor);
+            @NonNull final AppContext.Gossip gossip,
+            @NonNull @TssLibraryExecutor final Executor libraryExecutor,
+            @NonNull Metrics metrics) {
+        return new TssCryptographyManager(new PlaceholderTssLibrary(), gossip, libraryExecutor, metrics);
     }
 
     @Binds

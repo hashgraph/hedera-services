@@ -40,12 +40,6 @@ public class TssMetrics {
             .withDescription(TSS_CANDIDATE_ROSTER_LIFECYCLE_DESC);
     private final LongGauge tssCandidateRosterLifecycle;
 
-    private static final String TSS_SHARES_AGGREGATION_TIME = "tss_shares_aggregation_time";
-    private static final String TSS_SHARES_AGGREGATION_TIME_DESC = "the lifecycle of the current candidate roster";
-    private static final LongGauge.Config TSS_SHARES_AGGREGATION_CONFIG =
-            new LongGauge.Config("app", TSS_SHARES_AGGREGATION_TIME).withDescription(TSS_SHARES_AGGREGATION_TIME_DESC);
-    private final LongGauge tssSharesAggregationTime;
-
     private static final String TSS_MESSAGE_COUNTER_METRIC = "tss_message_total";
     private static final String TSS_MESSAGE_COUNTER_METRIC_DESC = "total numbers of tss message transactions";
     private static final Counter.Config TSS_MESSAGE_TX_COUNTER =
@@ -57,6 +51,15 @@ public class TssMetrics {
     private static final Counter.Config TSS_VOTE_TX_COUNTER =
             new Counter.Config("app", TSS_VOTE_COUNTER_METRIC).withDescription(TSS_VOTE_COUNTER_METRIC_DESC);
     private final Counter tssVoteTxCounter;
+
+    private static final String TSS_SHARES_AGGREGATION_TIME = "tss_shares_aggregation_time";
+    private static final String TSS_SHARES_AGGREGATION_TIME_DESC =
+            "the time it takes to compute shares from the key material";
+    private static final LongGauge.Config TSS_SHARES_AGGREGATION_CONFIG =
+            new LongGauge.Config("app", TSS_SHARES_AGGREGATION_TIME).withDescription(TSS_SHARES_AGGREGATION_TIME_DESC);
+    private final LongGauge tssSharesAggregationTime;
+
+    private final long tssSharesAggregationStart = 0L;
 
     /**
      * Constructor for the TssMetrics.
@@ -110,5 +113,9 @@ public class TssMetrics {
         if (aggregationTime <= 0)
             throw new IllegalArgumentException("Private shares aggregation time must be positive");
         tssSharesAggregationTime.set(aggregationTime);
+    }
+
+    public void trackSharesAggregationStartTime(final long aggregationStartTime) {
+        this.tssSharesAggregationTime.set(aggregationStartTime);
     }
 }

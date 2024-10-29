@@ -44,6 +44,7 @@ import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
@@ -103,6 +104,9 @@ class TssMessageHandlerTest {
     @Mock
     private PairingPrivateKey pairingPrivateKey;
 
+    @Mock
+    private Metrics metrics;
+
     private Roster roster;
     private TssMessageHandler subject;
     private LedgerIdWithSignature ledgerIdWithSignature;
@@ -121,7 +125,7 @@ class TssMessageHandlerTest {
                 .withParticipant(1, 10, pairingPublicKey)
                 .build(SIGNATURE_SCHEMA);
 
-        subject = new TssMessageHandler(submissionManager, gossip, tssCryptographyManager);
+        subject = new TssMessageHandler(submissionManager, gossip, tssCryptographyManager, metrics);
     }
 
     @Test

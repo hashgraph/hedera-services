@@ -33,6 +33,8 @@ import com.hedera.node.app.tss.TssCryptographyManager;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -48,14 +50,23 @@ public class TssMessageHandler implements TransactionHandler {
     private final AppContext.Gossip gossip;
     private final TssCryptographyManager tssCryptographyManager;
 
+    private static final String TSS_MESSAGE_COUNTER_METRIC = "tss_message_total";
+    private static final String TSS_MESSAGE_COUNTER_METRIC_DESC = "total numbers of tss message transactions";
+    private static final Counter.Config TSS_MESSAGE_TX_COUNTER =
+            new Counter.Config("app", TSS_MESSAGE_COUNTER_METRIC).withDescription(TSS_MESSAGE_COUNTER_METRIC_DESC);
+    private final Counter tssMessageTxCounter;
+
     @Inject
     public TssMessageHandler(
             @NonNull final TssSubmissions submissionManager,
             @NonNull final AppContext.Gossip gossip,
-            @NonNull final TssCryptographyManager tssCryptographyManager) {
+            @NonNull final TssCryptographyManager tssCryptographyManager,
+            @NonNull final Metrics metrics) {
         this.submissionManager = requireNonNull(submissionManager);
         this.gossip = requireNonNull(gossip);
         this.tssCryptographyManager = requireNonNull(tssCryptographyManager);
+        requireNonNull(metrics);
+        tssMessageTxCounter = metrics.getOrCreate(TSS_MESSAGE_TX_COUNTER);
     }
 
     @Override
@@ -93,7 +104,7 @@ public class TssMessageHandler implements TransactionHandler {
                 computeTssParticipantDirectory(rosterStore.getActiveRoster(), maxSharesPerNode, (int)
                         context.networkInfo().selfNodeInfo().nodeId());
         final var result = tssCryptographyManager.handleTssMessageTransaction(op, tssParticipantDirectory, context);
-
+        // tss aggregation end
         result.thenAccept(ledgerIdAndSignature -> {
             if (ledgerIdAndSignature != null) {
                 final var signature =

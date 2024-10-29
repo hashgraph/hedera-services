@@ -51,6 +51,7 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -216,6 +217,9 @@ public class ServicesMain implements SwirldMain {
         final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
 
+        // Register the metrics related to TSS functionalities
+        hedera.registerTssMetrics(metrics);
+
         // Create the platform context
         final var platformContext = PlatformContext.create(
                 configuration,
@@ -376,6 +380,7 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
-                        ForkJoinPool.commonPool()));
+                        ForkJoinPool.commonPool(),
+                        new NoOpMetrics()));
     }
 }

@@ -30,6 +30,8 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -42,9 +44,15 @@ import javax.inject.Singleton;
 @Singleton
 public class TssVoteHandler implements TransactionHandler {
 
+    private static final String TSS_VOTE_COUNTER_METRIC = "tss_vote_total";
+    private static final String TSS_VOTE_COUNTER_METRIC_DESC = "total numbers of tss vote transactions";
+    private static final Counter.Config TSS_VOTE_TX_COUNTER =
+            new Counter.Config("app", TSS_VOTE_COUNTER_METRIC).withDescription(TSS_VOTE_COUNTER_METRIC_DESC);
+    private final Counter tssVoteTxCounter;
+
     @Inject
-    public TssVoteHandler() {
-        // Dagger2
+    public TssVoteHandler(@NonNull final Metrics metrics) {
+        tssVoteTxCounter = metrics.getOrCreate(TSS_VOTE_TX_COUNTER);
     }
 
     @Override

@@ -36,6 +36,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.util.HashMap;
@@ -73,6 +74,9 @@ class TssVoteHandlerTest {
     @Mock
     private StoreFactory storeFactory;
 
+    @Mock
+    private Metrics metrics;
+
     @Mock(strictness = LENIENT)
     private NodeInfo nodeInfo;
 
@@ -81,7 +85,7 @@ class TssVoteHandlerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        tssVoteHandler = new TssVoteHandler();
+        tssVoteHandler = new TssVoteHandler(metrics);
         when(handleContext.creatorInfo()).thenReturn(nodeInfo);
         when(nodeInfo.nodeId()).thenReturn(1L);
     }

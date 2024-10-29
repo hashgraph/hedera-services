@@ -21,6 +21,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
@@ -54,6 +55,11 @@ public interface TssBaseService extends Service {
     default String getServiceName() {
         return NAME;
     }
+
+    /**
+     * @param metrics the metrics object being used to report tss performance
+     */
+    void registerMetrics(@NonNull Metrics metrics);
 
     /**
      * Returns the status of the TSS service relative to the given roster, ledger id, and given TSS base state.

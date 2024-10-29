@@ -19,6 +19,7 @@ package com.hedera.node.app.tss;
 import static com.hedera.node.app.tss.handlers.TssUtils.getThresholdForTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
@@ -30,6 +31,7 @@ import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.BitSet;
 import java.util.List;
@@ -54,10 +56,11 @@ public class TssCryptographyManager {
     public TssCryptographyManager(
             @NonNull final TssLibrary tssLibrary,
             @NonNull final AppContext.Gossip gossip,
-            @NonNull @TssLibraryExecutor final Executor libraryExecutor) {
-        this.tssLibrary = tssLibrary;
-        this.gossip = gossip;
-        this.libraryExecutor = libraryExecutor;
+            @NonNull @TssLibraryExecutor final Executor libraryExecutor,
+            @NonNull final Metrics metrics) {
+        this.tssLibrary = requireNonNull(tssLibrary);
+        this.gossip = requireNonNull(gossip);
+        this.libraryExecutor = requireNonNull(libraryExecutor);
     }
 
     /**
@@ -120,6 +123,7 @@ public class TssCryptographyManager {
                     if (!tssMessageThresholdMet) {
                         return null;
                     }
+                    // tss aggregation start
                     final var validTssMessages = getTssMessages(validTssOps);
                     final var computedPublicShares =
                             tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);

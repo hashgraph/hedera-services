@@ -865,6 +865,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         initialStateHashFuture = completedFuture(stateHash.getBytes());
     }
 
+    /**
+     * @param metrics the metrics object being used to report tss performance
+     */
+    public void registerTssMetrics(@NonNull final Metrics metrics) {
+        requireNonNull(metrics);
+        tssBaseService.registerMetrics(metrics);
+    }
+
     /*==================================================================================================================
     *
     * Exposed for use by embedded Hedera
