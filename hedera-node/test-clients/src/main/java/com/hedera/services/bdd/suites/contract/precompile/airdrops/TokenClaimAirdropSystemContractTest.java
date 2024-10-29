@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.support.translators.impl;
+package com.hedera.services.bdd.suites.contract.precompile.airdrops;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -27,6 +27,13 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.checkForBalances;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareAirdrops;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareNftAddresses;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareReceiverAddresses;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareSenderAddresses;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareTokenAddresses;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareTokensAndBalances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -34,8 +41,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
@@ -44,12 +49,8 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
-import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -146,7 +147,7 @@ class TokenClaimAirdropSystemContractTest {
         final var nftList = List.of(nft1, nft2, nft3, nft4, nft5);
         return hapiTest(withOpContext((spec, opLog) -> {
             allRunFor(spec, prepareTokensAndBalances(sender, receiver, tokenList, nftList));
-            prepareAirdrops(tokenList, nftList, spec);
+            prepareAirdrops(sender, receiver, tokenList, nftList, spec);
             final var senders = prepareSenderAddresses(
                     spec, sender, sender, sender, sender, sender, sender, sender, sender, sender, sender);
             final var receivers = prepareReceiverAddresses(
@@ -177,7 +178,7 @@ class TokenClaimAirdropSystemContractTest {
         final var tokenList = List.of(token1, token2, token3);
         return hapiTest(withOpContext((spec, opLog) -> {
             allRunFor(spec, prepareTokensAndBalances(sender, receiver, tokenList, List.of()));
-            prepareAirdrops(tokenList, List.of(), spec);
+            prepareAirdrops(sender, receiver, tokenList, List.of(), spec);
             final var senders = prepareSenderAddresses(spec, sender, sender, sender);
             final var receivers = prepareReceiverAddresses(spec, receiver, receiver, receiver);
             final var tokens = prepareTokenAddresses(spec, token1, token2, token3);
@@ -212,9 +213,9 @@ class TokenClaimAirdropSystemContractTest {
         return hapiTest(withOpContext((spec, opLog) -> {
             allRunFor(spec, prepareTokensAndBalances(sender, receiver, tokenList, nftList));
             // Spread transactions to avoid hitting the max airdrops limit
-            prepareAirdrops(List.of(token1, token2, token3), List.of(), spec);
-            prepareAirdrops(List.of(token4, token5, token6), List.of(), spec);
-            prepareAirdrops(List.of(), nftList, spec);
+            prepareAirdrops(sender, receiver, List.of(token1, token2, token3), List.of(), spec);
+            prepareAirdrops(sender, receiver, List.of(token4, token5, token6), List.of(), spec);
+            prepareAirdrops(sender, receiver, List.of(), nftList, spec);
             final var senders = prepareSenderAddresses(
                     spec, sender, sender, sender, sender, sender, sender, sender, sender, sender, sender, sender);
             final var receivers = prepareReceiverAddresses(
@@ -300,104 +301,5 @@ class TokenClaimAirdropSystemContractTest {
                         .payingWith(sender)
                         .via("claimAirdrop")
                         .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
-    }
-
-    @Order(11)
-    @HapiTest
-    private void prepareAirdrops(
-            @NonNull List<SpecFungibleToken> tokens, @NonNull List<SpecNonFungibleToken> nfts, @NonNull HapiSpec spec) {
-        var tokenMovements = prepareFTAirdrops(sender, receiver, tokens);
-        var nftMovements = prepareNFTAirdrops(sender, receiver, nfts);
-        allRunFor(
-                spec,
-                tokenAirdrop(Stream.of(tokenMovements, nftMovements)
-                                .flatMap(Collection::stream)
-                                .toArray(TokenMovement[]::new))
-                        .payingWith(sender.name())
-                        .via("tokenAirdrop"),
-                getTxnRecord("tokenAirdrop")
-                        .hasPriority(recordWith()
-                                .pendingAirdrops(
-                                        includingFungiblePendingAirdrop(tokenMovements.toArray(TokenMovement[]::new)))
-                                .pendingAirdrops(
-                                        includingNftPendingAirdrop(nftMovements.toArray(TokenMovement[]::new)))));
-    }
-
-    private SpecOperation[] prepareTokensAndBalances(
-            final SpecAccount sender,
-            final SpecAccount receiver,
-            final List<SpecFungibleToken> tokens,
-            final List<SpecNonFungibleToken> nfts) {
-        ArrayList<SpecOperation> specOperations = new ArrayList<>();
-        specOperations.addAll(List.of(
-                sender.associateTokens(tokens.toArray(SpecFungibleToken[]::new)),
-                sender.associateTokens(nfts.toArray(SpecNonFungibleToken[]::new)),
-                checkForEmptyBalance(receiver, tokens, nfts)));
-        specOperations.addAll(tokens.stream()
-                .map(token -> token.treasury().transferUnitsTo(sender, 1_000L, token))
-                .toList());
-        specOperations.addAll(nfts.stream()
-                .map(nft -> nft.treasury().transferNFTsTo(sender, nft, 1L))
-                .toList());
-
-        return specOperations.toArray(SpecOperation[]::new);
-    }
-
-    private GetBalanceOperation checkForEmptyBalance(
-            final SpecAccount receiver, final List<SpecFungibleToken> tokens, final List<SpecNonFungibleToken> nfts) {
-        return receiver.getBalance().andAssert(balance -> {
-            tokens.forEach(token -> balance.hasTokenBalance(token.name(), 0L));
-            nfts.forEach(nft -> balance.hasTokenBalance(nft.name(), 0L));
-        });
-    }
-
-    private GetBalanceOperation checkForBalances(
-            final SpecAccount receiver, final List<SpecFungibleToken> tokens, final List<SpecNonFungibleToken> nfts) {
-        return receiver.getBalance().andAssert(balance -> {
-            tokens.forEach(token -> balance.hasTokenBalance(token.name(), 10L));
-            nfts.forEach(nft -> balance.hasTokenBalance(nft.name(), 1L));
-        });
-    }
-
-    private Address[] prepareSenderAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... senders) {
-        return Arrays.stream(senders)
-                .map(sender -> sender.addressOn(spec.targetNetworkOrThrow()))
-                .toArray(Address[]::new);
-    }
-
-    private Address[] prepareReceiverAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... receivers) {
-        return Arrays.stream(receivers)
-                .map(receiver -> receiver.addressOn(spec.targetNetworkOrThrow()))
-                .toArray(Address[]::new);
-    }
-
-    private Address[] prepareTokenAddresses(@NonNull HapiSpec spec, @NonNull SpecFungibleToken... tokens) {
-        return Arrays.stream(tokens)
-                .map(token -> token.addressOn(spec.targetNetworkOrThrow()))
-                .toArray(Address[]::new);
-    }
-
-    private Address[] prepareNftAddresses(@NonNull HapiSpec spec, @NonNull SpecNonFungibleToken... nfts) {
-        return Arrays.stream(nfts)
-                .map(nft -> nft.addressOn(spec.targetNetworkOrThrow()))
-                .toArray(Address[]::new);
-    }
-
-    private List<TokenMovement> prepareFTAirdrops(
-            @NonNull final SpecAccount sender,
-            @NonNull final SpecAccount receiver,
-            @NonNull final List<SpecFungibleToken> tokens) {
-        return tokens.stream()
-                .map(token -> moving(10, token.name()).between(sender.name(), receiver.name()))
-                .toList();
-    }
-
-    private List<TokenMovement> prepareNFTAirdrops(
-            @NonNull final SpecAccount sender,
-            @NonNull final SpecAccount receiver,
-            @NonNull final List<SpecNonFungibleToken> nfts) {
-        return nfts.stream()
-                .map(nft -> movingUnique(nft.name(), 1L).between(sender.name(), receiver.name()))
-                .toList();
     }
 }
