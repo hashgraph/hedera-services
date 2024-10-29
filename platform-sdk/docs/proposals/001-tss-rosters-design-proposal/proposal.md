@@ -76,8 +76,7 @@ The roster data has been reduced to the bare essentials required by the platform
    1. nodeId
    2. consensus weight
    3. gossip_ca_certificate - containing the gossip signing public key
-   4. tss_encryption_key - not used until TSS is implemented
-   5. list of gossip network endpoints
+   4. list of gossip network endpoints
 
 The following `Address` data has been dropped:
 
@@ -115,9 +114,9 @@ file on disk would pose risks of introducing errors.
 ## Changes
 
 The platform `AddressBook` lifecycle is being replaced with a new `roster` lifecycle. A new feature flag
-`addressbook.useLegacyConfigTxt` will be used to toggle between the current `config.txt` based address book
-lifecycle and the new `roster` lifecycle. The feature flag will be set to `true` by default. The new `roster`
-lifecycle will be enabled by setting the flag to `false`.
+`addressbook.useRosterLifecycle` will be used to toggle between the current `config.txt` based address book
+lifecycle and the new `roster` lifecycle. The feature flag will be set to `fakse` by default. The new roster
+lifecycle will be enabled by setting the flag to `true`.
 
 ### Architecture and/or Components
 
@@ -317,7 +316,7 @@ Cleanup Tasks:
 
 The [current implementation](https://github.com/hashgraph/hedera-services/blob/9cc0ab85e50337000a406aeb51d00dfb523f8034/hedera-node/hedera-network-admin-service-impl/src/main/java/com/hedera/node/app/service/networkadmin/impl/handlers/ReadableFreezeUpgradeActions.java#L275)
 writes the new config.txt and cryptography to disk during a freeze upgrade transaction. At this code location, the
-`addressBook.useLegacyConfigTxt` flag will be used to toggle between the old method of writing config.txt and gossip
+`addressBook.useRosterLifecycle` flag will be used to toggle between the old method of writing config.txt and gossip
 certificate PEM files to disk, and the new method to set the candidate roster in the state to be adopted at the
 software upgrade taking place in the next startup.
 
@@ -352,11 +351,10 @@ A Roster is considered valid if it satisfies the following conditions:
 1. The roster must have at least one RosterEntry.
 2. At least one RosterEntry/ies must have a non-zero weight.
 3. All RosterEntry/ies must have a valid gossip_ca_certificate.
-4. All RosterEntry/ies must have a valid tss_encryption_key.
-5. All RosterEntry/ies must have at least one gossip Endpoint.
-6. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
-7. The roster must have a unique NodeId for each RosterEntry.
-8. RosterEntries must be sorted in the ascending order of their node ids.
+4. All RosterEntry/ies must have at least one gossip Endpoint.
+5. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
+6. The roster must have a unique NodeId for each RosterEntry.
+7. RosterEntries must be sorted in the ascending order of their node ids.
 
 ### Roster Public API
 
@@ -388,8 +386,6 @@ message Roster {
 /**
  * A single roster entry in the network state.
  *
- * Each roster entry in SHALL encapsulate the elements required
- * to manage node participation in the Threshold Signature Scheme (TSS).<br/>
  * All fields are REQUIRED.
  */
 message RosterEntry {
@@ -583,45 +579,93 @@ public class WritableRosterStore extends ReadableRosterStore {
 
 ### Configuration
 
-The `addressbook.useLegacyConfigTxt` feature flag will be used to toggle between the current use of `config.txt`
+The `addressbook.useRosterLifecycle` feature flag will be used to toggle between the current use of `config.txt`
 based address book updates and the new roster based updates on software upgrades.
 
 ## Test Plan
 
-Some of the obvious test cases to be covered in the plan include validating one or more of the following scenarios:
+### Basic Unit Tests
 
-1. New valid Candidate Roster created with no subsequent one sent by App. Verify accept.
-2. New valid Candidate Roster created with a subsequent one sent by App. Verify accept.
-3. Invalid roster(s) sent by the App. Verify reject.
-4. Node Failures During Roster Change: What happens if nodes fail or disconnect during a roster change? Verify valid
-   node successfully reconnects.
-5. Concurrent Roster Updates: What if we make multiple roster updates concurrently? Verify no effect on adoption.
-6. Roster recovery? The Node receives a candidate roster, crashes. Wake up, reconnect. Verify recovery.
-7. What end-to-end testing do we need for a brand-new network that uses the TSS signature scheme to sign its blocks?
-8. A node goes offline and skips a software version upgrade but remains in the active roster used by the network. Comes
-   back online. Verify it can still successfully rejoin the network.
-9. A node goes offline and skips a bunch of software version upgrades but remains in the active roster.
-   Comes back online, but The old version of the roster that was preserved when it died still contains at least one node
-   that is still active on the network when the node comes back online. Verify it can still successfully rejoin the
-   network.
+The platform `AddressBook` will be replaced by the `Roster` data structure in all platform unit tests.
+
+It is difficult to perform basic unit tests of startup logic. HAPI or JRS tests will need to be created to cover
+all startup scenarios:
+
+1. Genesis
+2. Normal Restart
+3. Software Upgrade - All DAB tests
+4. Network Transplant
+
+### HAPI Unit Tests
+
+Duplicate and modify the Dynamic Address Book tests to exercise the new roster life-cycle.
+
+Develop new HAPI tests to exercise the new startup logic that is not exercised through other tests.
+
+### JRS Tests
+
+If the Dynamic Address Book HAPI tests are sufficient, then retire the platform's nightly DAB JRS tests.
+
+Duplicate and modify the DAB JRS tests in the PR CI/CD pipeline.
+
+Develop new JRS tests to exercise the new startup logic that is not exercised through other tests.
 
 ## Implementation and Delivery Plan
 
-- Define Roster Data Structure in protobuf: Design and implement the Roster class and the associated child classes.
-- Develop the API: Method added and implemented in `PlatformState` to set a candidate roster.
-- Modify State Storage: Implement specified data structures and candidate roster logic.
-- Update Components: Modify all current platform components that currently use `AddressBook` to use `Rosters` instead,
-  if any.
-- Testing: Conduct thorough testing as specified in this proposal.
-- Deployment: Work with DevOps and Release Engineering to deploy the changes.
+The long pole in the tent is the lifecycle changes that impact DevOps practices. A schedule of work to minimize
+the long pole is the following implementation priority:
 
-### DevOps Changes, in summary
+1. Roster Data Structure and State Management
+2. Roster Lifecycle gated behind a feature flag
+3. Documentation of the new roster life-cycle API for genesis and network transplant.
+4. Duplication and modification of existing DAB tests to use Roster Lifecycle.
+5. Development of new HAPI and JRS Tests
+6. Refactor of the platform to use `Roster` instead of `AddressBook`.
+7. Code Cleanup and Implementation Documentation
 
-1. DevOps will decide whether to keep the `config.txt` model and if so, work with Services on its translation into a
-   Roster.
-2. DevOps will be responsible for providing the `config.txt`, `genesis-config.txt` or `override-config.txt` as files in
-   the desired location.
-3. DevOps will be responsible for managing the lifecycle of the files on disk that are used in creating the Roster,
-   including the new TSS encryption key.
-4. DevOps will be responsible for cleaning up the `override-config.txt` file after the network transplant process is
-   complete.
+Manual Testing Plan:
+
+* Once `3.` is completed above, it becomes possible to add testing labor to manually test the new startup logic on our
+  test networks.
+
+### DevOps Process Changes, in summary
+
+#### Genesis Network
+
+1. There must be no state present on disk to load.
+2. Provide a `genesis-config.txt` file on disk in the same directory that `config.txt` is normally provided. The
+   file format is the same as config.txt.
+3. After startup, the `genesis-config.txt` file will be moved to a subdirectory `archive/yyyy-MM-dd_HH-mm-ss/`
+   to indicate that it has been used.
+
+#### Normal Restart
+
+1. There must be a loadable state present on disk in the standard location.
+2. There must not be a software upgrade happening.
+3. Ensure that `config.txt`, `genesis-config.txt`, and `override-config.txt` are not present on disk to avoid a
+   warnings in the log files. These files will be ignored.
+
+#### Software Upgrade (No Transplant, First Upgrade With New Roster Lifecycle)
+
+1. There must be a loadable state present on disk in the standard location.
+2. There must be a software upgrade happening.
+3. Provide the last `config.txt` file on disk in the same directory that `config.txt` is normally provided.
+   * Following the existing DAB procedure is expected here.
+4. Do not provide a `genesis-config.txt` or `override-config.txt` file on disk.
+5. After startup the `config.txt` file will be moved to a subdirectory `archive/yyyy-MM-dd_HH-mm-ss/`.
+6. After this release there will no longer be a `config.txt` generated on freeze upgrade shutdown.
+
+#### Software Upgrade (No Transplant, Subsequent Upgrades)
+
+1. There must be a loadable state present on disk in the standard location.
+2. There must be a software upgrade happening.
+3. Ensure that `config.txt`, `genesis-config.txt`, and `override-config.txt` are not present on disk.
+
+#### Software Upgrade Network Transplant
+
+1. Copy the PCES files from a single node in the source network and replicate to all nodes in the target network.
+2. There must be a loadable state present on disk in the standard location.
+3. There must be a software upgrade happening.
+4. Provide a `override-config.txt` file on disk in the same directory that `config.txt` is normally provided.
+5. Do not provide a `genesis-config.txt` or `config.txt` file on disk.
+6. After startup the `override-config.txt` file will be moved to a subdirectory `archive/yyyy-MM-dd_HH-mm-ss/`.
