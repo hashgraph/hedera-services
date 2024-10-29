@@ -56,7 +56,7 @@ public final class V0570ScheduleSchema extends Schema {
     public static final String SCHEDULE_ID_BY_EQUALITY_KEY = "SCHEDULE_ID_BY_EQUALITY";
 
     /**
-     * Instantiates a new V0560 (version 0.56.0) schedule schema.
+     * Instantiates a new V0570 (version 0.57.0) schedule schema.
      */
     public V0570ScheduleSchema() {
 
@@ -68,6 +68,12 @@ public final class V0570ScheduleSchema extends Schema {
     @Override
     public Set<StateDefinition> statesToCreate() {
         return Set.of(scheduleIdsByExpirySec(), schedulesByEquality());
+    }
+
+    @NonNull
+    @Override
+    public Set<String> statesToRemove() {
+        return Set.of(SCHEDULES_BY_EXPIRY_SEC_KEY, SCHEDULES_BY_EQUALITY_KEY);
     }
 
     @Override
