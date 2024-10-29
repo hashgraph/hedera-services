@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.airdrops;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops.TokenAirdropTranslator.TOKEN_AIRDROP;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
@@ -154,7 +156,7 @@ public class TokenAirdropDecoderTest {
                 .willReturn(AccountID.newBuilder().accountNum(750).build());
         assertThatExceptionOfType(HandleException.class)
                 .isThrownBy(() -> subject.decodeAirdrop(attempt))
-                .withMessage("");
+                .withMessage(INVALID_RECEIVING_NODE_ACCOUNT.protoName());
     }
 
     @Test
@@ -247,7 +249,7 @@ public class TokenAirdropDecoderTest {
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
         assertThatExceptionOfType(HandleException.class)
                 .isThrownBy(() -> subject.decodeAirdrop(attempt))
-                .withMessage("");
+                .withMessage(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED.protoName());
     }
 
     @Test
@@ -297,6 +299,6 @@ public class TokenAirdropDecoderTest {
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
         assertThatExceptionOfType(HandleException.class)
                 .isThrownBy(() -> subject.decodeAirdrop(attempt))
-                .withMessage("");
+                .withMessage(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED.protoName());
     }
 }
