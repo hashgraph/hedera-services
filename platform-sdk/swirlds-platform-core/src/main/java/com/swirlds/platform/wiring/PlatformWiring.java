@@ -109,7 +109,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
-import org.hiero.event.creator.impl.rules.EventCreationConfig;
+import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.

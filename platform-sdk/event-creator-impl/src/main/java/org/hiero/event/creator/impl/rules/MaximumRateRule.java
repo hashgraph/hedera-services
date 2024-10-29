@@ -23,6 +23,7 @@ import com.swirlds.common.utility.throttle.RateLimiter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hiero.event.creator.EventCreationRule;
 import org.hiero.event.creator.EventCreationStatus;
+import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Throttles event creation rate over time.

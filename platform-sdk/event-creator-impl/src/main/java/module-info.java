@@ -1,5 +1,6 @@
 module org.hiero.event.creator.impl {
     exports org.hiero.event.creator.impl.rules;
+    exports org.hiero.event.creator.impl;
 
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;

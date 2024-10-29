@@ -44,7 +44,7 @@ import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
-import org.hiero.event.creator.impl.rules.EventCreationConfig;
+import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Registers configuration types for the platform.

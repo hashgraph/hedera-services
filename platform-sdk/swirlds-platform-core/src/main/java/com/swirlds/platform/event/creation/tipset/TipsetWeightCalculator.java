@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.event.creator.impl.rules.EventCreationConfig;
+import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Calculates tipset advancement weights for events created by a node.

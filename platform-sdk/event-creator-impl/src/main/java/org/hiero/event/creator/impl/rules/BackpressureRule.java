@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.function.LongSupplier;
 import org.hiero.event.creator.EventCreationRule;
 import org.hiero.event.creator.EventCreationStatus;
+import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Prevents event creations when the system is stressed and unable to keep up with its work load.

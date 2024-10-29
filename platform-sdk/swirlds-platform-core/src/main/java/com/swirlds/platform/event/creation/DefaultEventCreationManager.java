@@ -38,8 +38,8 @@ import java.util.List;
 import java.util.Objects;
 import org.hiero.event.creator.EventCreationRule;
 import org.hiero.event.creator.EventCreationStatus;
+import org.hiero.event.creator.impl.EventCreationConfig;
 import org.hiero.event.creator.impl.rules.AggregateEventCreationRules;
-import org.hiero.event.creator.impl.rules.EventCreationConfig;
 import org.hiero.event.creator.impl.rules.MaximumRateRule;
 import org.hiero.event.creator.impl.rules.PlatformHealthRule;
 
