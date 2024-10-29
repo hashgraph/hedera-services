@@ -189,6 +189,9 @@ public class KVStateChangeListener implements StateChangeListener {
             case Schedule schedule -> MapChangeValue.newBuilder()
                     .scheduleValue(schedule)
                     .build();
+            case ScheduleID scheduleID -> MapChangeValue.newBuilder()
+                    .scheduleIdValue(scheduleID)
+                    .build();
             case ScheduleList scheduleList -> MapChangeValue.newBuilder()
                     .scheduleListValue(scheduleList)
                     .build();

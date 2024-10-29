@@ -810,6 +810,11 @@ message MapChangeValue {
          * A list of scheduled ids.
          */
         proto.ScheduleIdList schedule_id_list_value = 17;
+
+        /**
+         * A scheduled id value.
+         */
+        proto.ScheduleID schedule_id_value = 18;
     }
 }
 
