@@ -101,6 +101,7 @@ import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
@@ -202,6 +203,20 @@ public class PlatformComponentBuilder {
     @NonNull
     private Roster getInitialRoster() {
         return RosterRetriever.buildRoster(blocks.initialAddressBook());
+    }
+
+    /**
+     * Get the previous roster from the initial state in PlatformBuildingBlocks.
+     *
+     * @return the previous roster, or null
+     */
+    @Nullable
+    private Roster getPreviousRoster() {
+        return RosterRetriever.buildRoster(blocks.initialState()
+                .get()
+                .getState()
+                .getReadablePlatformState()
+                .getPreviousAddressBook());
     }
 
     /**
@@ -372,12 +387,8 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     CryptoStatic::verifySignature,
                     blocks.appVersion().getPbjSemanticVersion(),
-                    blocks.initialState()
-                            .get()
-                            .getState()
-                            .getReadablePlatformState()
-                            .getPreviousAddressBook(),
-                    blocks.initialAddressBook(),
+                    getPreviousRoster(),
+                    getInitialRoster(),
                     blocks.intakeEventCounter());
         }
         return eventSignatureValidator;
