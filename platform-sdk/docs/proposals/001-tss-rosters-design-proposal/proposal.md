@@ -356,6 +356,7 @@ A Roster is considered valid if it satisfies the following conditions:
 5. All RosterEntry/ies must have at least one gossip Endpoint.
 6. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
 7. The roster must have a unique NodeId for each RosterEntry.
+8. RosterEntries must be sorted in the ascending order of their node ids.
 
 ### Roster Public API
 
