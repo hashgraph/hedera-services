@@ -42,8 +42,6 @@ import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
-import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -155,16 +153,10 @@ public class TssBaseServiceImpl implements TssBaseService {
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster();
         final var activeRosterHash = RosterUtils.hash(sourceRoster).getBytes();
         final var candidateRosterHash = RosterUtils.hash(roster).getBytes();
-
-        final var aggregationCalculationStart = InstantSource.system().instant();
         final var tssPrivateShares =
                 getTssPrivateShares(sourceRoster, maxSharesPerNode, tssStore, candidateRosterHash, context);
         final var candidateRosterParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int)
                 context.networkInfo().selfNodeInfo().nodeId());
-        final var aggregationCalculationEnd = InstantSource.system().instant();
-        final var durationOfAggregation = Duration.between(aggregationCalculationStart, aggregationCalculationEnd)
-                .toSeconds();
-        tssMetrics.updateAggregationTime(durationOfAggregation);
 
         final AtomicInteger shareIndex = new AtomicInteger(0);
         for (final var tssPrivateShare : tssPrivateShares) {

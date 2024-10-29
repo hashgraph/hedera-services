@@ -32,6 +32,7 @@ import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.time.InstantSource;
 import java.util.BitSet;
 import java.util.List;
@@ -125,8 +126,8 @@ public class TssCryptographyManager {
                     if (!tssMessageThresholdMet) {
                         return null;
                     }
-                    tssMetrics.trackSharesAggregationStartTime(
-                            InstantSource.system().instant().getEpochSecond());
+                    final var aggregationCalculationStart =
+                            InstantSource.system().instant();
                     final var validTssMessages = getTssMessages(validTssOps);
                     final var computedPublicShares =
                             tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
@@ -136,6 +137,13 @@ public class TssCryptographyManager {
                     final var signature = gossip.sign(ledgerId.publicKey().toBytes());
 
                     final BitSet tssVoteBitSet = computeTssVoteBitSet(validTssOps);
+
+                    final var aggregationCalculationEnd = InstantSource.system().instant();
+                    final var durationOfAggregation = Duration.between(
+                                    aggregationCalculationStart, aggregationCalculationEnd)
+                            .toSeconds();
+                    tssMetrics.updateAggregationTime(durationOfAggregation);
+
                     return new LedgerIdWithSignature(ledgerId, signature, tssVoteBitSet);
                 },
                 libraryExecutor);

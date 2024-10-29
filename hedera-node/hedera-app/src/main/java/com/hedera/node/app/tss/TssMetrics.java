@@ -58,7 +58,7 @@ public class TssMetrics {
     private final LongGauge tssSharesAggregationTime;
 
     // store the start
-    private long tssSharesAggregationStart = 0L;
+    private long candidateRosterLifecycleStart = 0L;
 
     /**
      * Constructor for the TssMetrics.
@@ -129,6 +129,10 @@ public class TssMetrics {
         tssCandidateRosterLifecycle.set(lifecycle);
     }
 
+    public void trackCandidateRosterLifecycleStart(final long aggregationStartTime) {
+        this.candidateRosterLifecycleStart = aggregationStartTime;
+    }
+
     /**
      * The time it takes to aggregate private shares from the key material.
      *
@@ -138,9 +142,5 @@ public class TssMetrics {
         if (aggregationTime <= 0)
             throw new IllegalArgumentException("Private shares aggregation time must be positive");
         tssSharesAggregationTime.set(aggregationTime);
-    }
-
-    public void trackSharesAggregationStartTime(final long aggregationStartTime) {
-        this.tssSharesAggregationStart = aggregationStartTime;
     }
 }
