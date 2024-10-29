@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetricsImpl;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ExampleContractMetricsImpl;
 import com.hedera.node.app.service.contract.impl.exec.scope.DefaultVerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
@@ -75,6 +75,6 @@ public class ContractServiceImpl implements ContractService {
 
     @Override
     public @NonNull ServiceMetrics initMetrics(@NonNull final Metrics metrics) {
-        return new ContractMetricsImpl(metrics);
+        return new ExampleContractMetricsImpl(metrics);
     }
 }

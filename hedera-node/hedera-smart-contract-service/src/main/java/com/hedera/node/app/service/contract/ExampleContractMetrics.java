@@ -19,31 +19,15 @@ package com.hedera.node.app.service.contract;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.spi.metrics.ServiceMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
-import java.util.Map;
 
-public interface ContractMetrics extends ServiceMetrics {
-    void incrementRejectedTx(@NonNull final HederaFunctionality txKind);
-
-    void bumpRejectedTx(@NonNull final HederaFunctionality txKind, final long bumpBy);
-
-    void incrementRejectedForGasTx(@NonNull final HederaFunctionality txKind);
-
-    void bumpRejectedForGasTx(@NonNull final HederaFunctionality txKind, final long bumpBy);
-
-    void incrementRejectedType3EthTx();
-
-    void bumpRejectedType3EthTx(final long bumpBy);
-
-    @NonNull
-    Map<String, Long> getAllCounters();
-
-    @NonNull
-    List<String> getAllCounterNames();
-
-    @NonNull
-    List<String> getAllCounterDescriptions();
-
-    @NonNull
-    String allCountersToString();
+/**
+ * Interface defining metrics managed by the {@link ContractService}
+ */
+public interface ExampleContractMetrics extends ServiceMetrics {
+    /**
+     * Method representing an invocation of an example counter for a given transaction type
+     *
+     * @param txnType the transaction type to increment the counter fosr
+     */
+    void incrementExampleCounter(@NonNull final HederaFunctionality txnType);
 }

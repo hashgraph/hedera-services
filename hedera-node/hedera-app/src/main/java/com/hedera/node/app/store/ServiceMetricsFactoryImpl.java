@@ -19,8 +19,8 @@ package com.hedera.node.app.store;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.ContractMetrics;
 import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.ExampleContractMetrics;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.metrics.ServiceMetrics;
@@ -40,15 +40,16 @@ import javax.inject.Singleton;
 @Singleton
 public class ServiceMetricsFactoryImpl implements ServiceMetricsFactory {
     // todo the lookups in this class are wonky. I'd like to find a different way..
-    private static final Map<String, Class<? extends ServiceMetrics>>
-            METRICS_NAME_TO_INTERFACE_MAPPINGS = new HashMap<>();
+    private static final Map<String, Class<? extends ServiceMetrics>> METRICS_NAME_TO_INTERFACE_MAPPINGS =
+            new HashMap<>();
+
     static {
-        METRICS_NAME_TO_INTERFACE_MAPPINGS.put(ContractService.NAME, ContractMetrics.class);
+        METRICS_NAME_TO_INTERFACE_MAPPINGS.put(ContractService.NAME, ExampleContractMetrics.class);
     }
 
     private final ServiceScopeLookup serviceScopeLookup;
-    private final Map<Class<? extends ServiceMetrics>, ServiceMetrics>
-            metricsInterfaceToInstanceMappings = new HashMap<>();
+    private final Map<Class<? extends ServiceMetrics>, ServiceMetrics> metricsInterfaceToInstanceMappings =
+            new HashMap<>();
 
     @Inject
     public ServiceMetricsFactoryImpl(@NonNull final ServiceScopeLookup serviceScopeLookup) {
@@ -74,7 +75,7 @@ public class ServiceMetricsFactoryImpl implements ServiceMetricsFactory {
             var instance = metricsInterface.cast(metricsInterfaceToInstanceMappings.get(serviceInterface));
             return instance != null
                     ? instance
-                    //todo figure out this cast
+                    // todo figure out this cast
                     : metricsInterface.cast(new RpcService.NoOpServiceMetrics().cast(metricsInterface));
         }
 
