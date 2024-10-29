@@ -33,15 +33,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Metrics collection management for Smart Contracts service
  */
-@Singleton
 public class ContractMetricsImpl implements ContractMetrics {
 
     // Rejected transactions counters: Failed `pureCheck` for one reason or another
@@ -72,7 +69,6 @@ public class ContractMetricsImpl implements ContractMetrics {
 
     private static final String REJECTED_TYPE3_FUNCTIONALITY = "ethType3BlobTransaction";
 
-    @Inject
     public ContractMetricsImpl(@NonNull final Metrics metrics) {
         // Rejected transactions counters
         for (final var txKind : POSSIBLE_FAILING_TX_TYPES.keySet()) {
