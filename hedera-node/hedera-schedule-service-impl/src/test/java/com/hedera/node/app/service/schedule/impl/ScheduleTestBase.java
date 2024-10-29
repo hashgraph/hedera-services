@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
-import static com.hedera.node.app.service.schedule.impl.schemas.V0560ScheduleSchema.SCHEDULE_BY_EQUALITY_KEY;
-import static com.hedera.node.app.service.schedule.impl.schemas.V0560ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -188,10 +188,10 @@ public class ScheduleTestBase {
     protected WritableKVState<ProtoBytes, AccountID> accountAliases;
     protected Map<AccountID, Account> accountsMapById;
     protected Map<ScheduleID, Schedule> scheduleMapById;
-    protected Map<ProtoBytes, Schedule> scheduleMapByEquality;
+    protected Map<ProtoBytes, ScheduleID> scheduleMapByEquality;
     protected Map<ProtoLong, ScheduleIdList> scheduleMapByExpiration;
     protected WritableKVState<ScheduleID, Schedule> writableById;
-    protected WritableKVState<ProtoBytes, Schedule> writableByEquality;
+    protected WritableKVState<ProtoBytes, ScheduleID> writableByEquality;
     protected WritableKVState<ProtoLong, ScheduleIdList> writableByExpiration;
     protected Map<String, WritableKVState<?, ?>> writableStatesMap;
     protected ReadableStates states;
@@ -448,13 +448,13 @@ public class ScheduleTestBase {
         scheduleMapByExpiration = new HashMap<>(0);
         accountsMapById = new HashMap<>(0);
         writableById = new MapWritableKVState<>(SCHEDULES_BY_ID_KEY, scheduleMapById);
-        writableByEquality = new MapWritableKVState<>(SCHEDULE_BY_EQUALITY_KEY, scheduleMapByEquality);
+        writableByEquality = new MapWritableKVState<>(SCHEDULE_ID_BY_EQUALITY_KEY, scheduleMapByEquality);
         writableByExpiration = new MapWritableKVState<>(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY, scheduleMapByExpiration);
         accountById = new MapWritableKVState<>(ACCOUNT_STATE_KEY, accountsMapById);
         accountAliases = new MapWritableKVState<>(ACCOUNT_ALIAS_STATE_KEY, new HashMap<>(0));
         writableStatesMap = new TreeMap<>();
         writableStatesMap.put(SCHEDULES_BY_ID_KEY, writableById);
-        writableStatesMap.put(SCHEDULE_BY_EQUALITY_KEY, writableByEquality);
+        writableStatesMap.put(SCHEDULE_ID_BY_EQUALITY_KEY, writableByEquality);
         writableStatesMap.put(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY, writableByExpiration);
         writableStatesMap.put(ACCOUNT_STATE_KEY, accountById);
         writableStatesMap.put(ACCOUNT_ALIAS_STATE_KEY, accountAliases);

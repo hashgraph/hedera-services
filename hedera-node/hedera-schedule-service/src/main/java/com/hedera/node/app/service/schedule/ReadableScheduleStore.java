@@ -45,7 +45,7 @@ public interface ReadableScheduleStore {
     Schedule get(@Nullable ScheduleID id);
 
     /**
-     * Get a schedule that is "hash equal" to the provided Schedule.
+     * Get a scheduleID that its Schedule is "hash equal" to the provided Schedule.
      * Two schedules are "hash equal" if the hash of the original create transaction for one schedule
      * is identical to the hash of the create transaction for the other schedule.  This is primarily
      * used to ensure that we do not permit duplicate schedules to be created. Note that hash equality
@@ -56,7 +56,7 @@ public interface ReadableScheduleStore {
      * @return a {@code List<Schedule>} of entries that have the same hash as the provided schedule
      */
     @Nullable
-    Schedule getByEquality(@NonNull Schedule scheduleToMatch);
+    ScheduleID getByEquality(@NonNull Schedule scheduleToMatch);
 
     /**
      * Given a time as seconds since the epoch, find all ScheduleID currently in state that expire at that time.

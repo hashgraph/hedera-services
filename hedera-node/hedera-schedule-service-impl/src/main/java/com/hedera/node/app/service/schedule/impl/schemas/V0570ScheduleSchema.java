@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSch
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
 
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
@@ -41,23 +42,23 @@ import org.apache.logging.log4j.Logger;
 /**
  * General schema for the schedule service.
  */
-public final class V0560ScheduleSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(V0560ScheduleSchema.class);
+public final class V0570ScheduleSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(V0570ScheduleSchema.class);
     private static final long MAX_SCHEDULE_IDS_BY_EXPIRY_SEC_KEY = 50_000_000L;
-    private static final long MAX_SCHEDULE_BY_EQUALITY = 50_000_000L;
+    private static final long MAX_SCHEDULE_ID_BY_EQUALITY = 50_000_000L;
     /**
      * The version of the schema.
      */
     private static final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(56).patch(0).build();
+            SemanticVersion.newBuilder().major(0).minor(57).patch(0).build();
 
     public static final String SCHEDULE_IDS_BY_EXPIRY_SEC_KEY = "SCHEDULE_IDS_BY_EXPIRY_SEC";
-    public static final String SCHEDULE_BY_EQUALITY_KEY = "SCHEDULE_BY_EQUALITY";
+    public static final String SCHEDULE_ID_BY_EQUALITY_KEY = "SCHEDULE_ID_BY_EQUALITY";
 
     /**
      * Instantiates a new V0560 (version 0.56.0) schedule schema.
      */
-    public V0560ScheduleSchema() {
+    public V0570ScheduleSchema() {
 
         super(VERSION);
     }
@@ -73,7 +74,7 @@ public final class V0560ScheduleSchema extends Schema {
     public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
 
-        log.info("Started migrating Schedule Schema from 0.49.0 to 0.56.0");
+        log.info("Started migrating Schedule Schema from 0.49.0 to 0.57.0");
         final WritableKVState<ProtoLong, ScheduleIdList> writableScheduleIdsByExpirySec =
                 ctx.newStates().get(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
         final WritableKVState<ProtoLong, ScheduleList> readableSchedulesByExpirySec =
@@ -90,8 +91,8 @@ public final class V0560ScheduleSchema extends Schema {
                 });
         log.info("Migrated {} Schedules from SCHEDULES_BY_EXPIRY_SEC_KEY", readableSchedulesByExpirySec.size());
 
-        final WritableKVState<ProtoBytes, Schedule> writableScheduleByEquality =
-                ctx.newStates().get(SCHEDULE_BY_EQUALITY_KEY);
+        final WritableKVState<ProtoBytes, ScheduleID> writableScheduleByEquality =
+                ctx.newStates().get(SCHEDULE_ID_BY_EQUALITY_KEY);
         final WritableKVState<ProtoBytes, ScheduleList> readableSchedulesByEquality =
                 ctx.newStates().get(SCHEDULES_BY_EQUALITY_KEY);
         StreamSupport.stream(
@@ -102,7 +103,9 @@ public final class V0560ScheduleSchema extends Schema {
                     final var scheduleList = readableSchedulesByEquality.get(key);
                     if (scheduleList != null) {
                         writableScheduleByEquality.put(
-                                key, scheduleList.schedules().getFirst());
+                                key,
+                                requireNonNull(
+                                        scheduleList.schedules().getFirst().scheduleId()));
                     }
                 });
         log.info("Migrated {} Schedules from SCHEDULES_BY_EQUALITY_KEY", readableSchedulesByEquality.size());
@@ -124,8 +127,8 @@ public final class V0560ScheduleSchema extends Schema {
                 MAX_SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
     }
 
-    private static StateDefinition<ProtoBytes, Schedule> schedulesByEquality() {
+    private static StateDefinition<ProtoBytes, ScheduleID> schedulesByEquality() {
         return StateDefinition.onDisk(
-                SCHEDULE_BY_EQUALITY_KEY, ProtoBytes.PROTOBUF, Schedule.PROTOBUF, MAX_SCHEDULE_BY_EQUALITY);
+                SCHEDULE_ID_BY_EQUALITY_KEY, ProtoBytes.PROTOBUF, ScheduleID.PROTOBUF, MAX_SCHEDULE_ID_BY_EQUALITY);
     }
 }

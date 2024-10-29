@@ -159,8 +159,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         // we can compare those bytes to any new ScheduleCreate transaction for detecting duplicate
         // ScheduleCreate transactions. SchedulesByEquality is the virtual map for that task.
         final var scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
-        final var possibleDuplicates = scheduleStore.getByEquality(provisionalSchedule);
-        final var duplicate = maybeDuplicate(provisionalSchedule, possibleDuplicates);
+        final var possibleDuplicateId = scheduleStore.getByEquality(provisionalSchedule);
+        final var possibleDuplicate = possibleDuplicateId == null ? null : scheduleStore.get(possibleDuplicateId);
+        final var duplicate = maybeDuplicate(provisionalSchedule, possibleDuplicate);
         if (duplicate != null) {
             final var scheduledTxnId = duplicate
                     .originalCreateTransactionOrThrow()

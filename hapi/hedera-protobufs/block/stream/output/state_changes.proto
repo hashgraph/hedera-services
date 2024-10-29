@@ -361,7 +361,7 @@ enum StateIdentifier {
     /**
      * A state identifier for scheduled transaction deduplication.
      */
-    STATE_ID_SCHEDULE_BY_EQUALITY = 30;
+    STATE_ID_SCHEDULE_ID_BY_EQUALITY = 30;
 
     /**
      * A state identifier for the round receipts queue.

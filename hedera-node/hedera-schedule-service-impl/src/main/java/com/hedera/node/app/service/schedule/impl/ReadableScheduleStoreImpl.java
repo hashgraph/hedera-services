@@ -23,7 +23,7 @@ import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
-import com.hedera.node.app.service.schedule.impl.schemas.V0560ScheduleSchema;
+import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
@@ -43,7 +43,7 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
 
     private final ReadableKVState<ScheduleID, Schedule> schedulesById;
     private final ReadableKVState<ProtoLong, ScheduleIdList> scheduleIdsByExpirationSecond;
-    private final ReadableKVState<ProtoBytes, Schedule> schedulesByStringHash;
+    private final ReadableKVState<ProtoBytes, ScheduleID> scheduleIdByStringHash;
 
     /**
      * Create a new {@link ReadableScheduleStore} instance.
@@ -53,8 +53,8 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
     public ReadableScheduleStoreImpl(@NonNull final ReadableStates states) {
         Objects.requireNonNull(states, NULL_STATE_IN_CONSTRUCTOR_MESSAGE);
         schedulesById = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
-        scheduleIdsByExpirationSecond = states.get(V0560ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
-        schedulesByStringHash = states.get(V0560ScheduleSchema.SCHEDULE_BY_EQUALITY_KEY);
+        scheduleIdsByExpirationSecond = states.get(V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
+        scheduleIdByStringHash = states.get(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
     }
 
     /**
@@ -73,9 +73,9 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
 
     @Override
     @Nullable
-    public Schedule getByEquality(final @NonNull Schedule scheduleToMatch) {
+    public ScheduleID getByEquality(final @NonNull Schedule scheduleToMatch) {
         Bytes bytesHash = ScheduleStoreUtility.calculateBytesHash(scheduleToMatch);
-        return schedulesByStringHash.get(new ProtoBytes(bytesHash));
+        return scheduleIdByStringHash.get(new ProtoBytes(bytesHash));
     }
 
     @Nullable

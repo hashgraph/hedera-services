@@ -21,7 +21,7 @@ import static org.mockito.Mockito.times;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
-import com.hedera.node.app.service.schedule.impl.schemas.V0560ScheduleSchema;
+import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.StateDefinition;
@@ -59,7 +59,7 @@ class ScheduleServiceImplTest {
         final var schemas = schemaCaptor.getAllValues();
         assertThat(schemas).hasSize(2);
         assertThat(schemas.getFirst()).isInstanceOf(V0490ScheduleSchema.class);
-        assertThat(schemas.get(1)).isInstanceOf(V0560ScheduleSchema.class);
+        assertThat(schemas.get(1)).isInstanceOf(V0570ScheduleSchema.class);
 
         Set<StateDefinition> statesToCreate = schemas.getFirst().statesToCreate();
         BDDAssertions.assertThat(statesToCreate).isNotNull();
@@ -75,7 +75,7 @@ class ScheduleServiceImplTest {
         statesList =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().toList();
         BDDAssertions.assertThat(statesToCreate.size()).isEqualTo(2);
-        BDDAssertions.assertThat(statesList.get(0)).isEqualTo(V0560ScheduleSchema.SCHEDULE_BY_EQUALITY_KEY);
-        BDDAssertions.assertThat(statesList.get(1)).isEqualTo(V0560ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
+        BDDAssertions.assertThat(statesList.get(0)).isEqualTo(V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
+        BDDAssertions.assertThat(statesList.get(1)).isEqualTo(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
     }
 }

@@ -18,12 +18,13 @@ package com.hedera.node.app.service.schedule.impl.schemas;
 
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY;
-import static com.hedera.node.app.service.schedule.impl.schemas.V0560ScheduleSchema.SCHEDULE_BY_EQUALITY_KEY;
-import static com.hedera.node.app.service.schedule.impl.schemas.V0560ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
@@ -54,12 +55,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
-class V0560ScheduleSchemaTest extends ScheduleTestBase {
+class V0570ScheduleSchemaTest extends ScheduleTestBase {
     @LoggingTarget
     private LogCaptor logCaptor;
 
     @LoggingSubject
-    private V0560ScheduleSchema subject;
+    private V0570ScheduleSchema subject;
 
     @Mock
     private MigrationContext migrationContext;
@@ -79,14 +80,14 @@ class V0560ScheduleSchemaTest extends ScheduleTestBase {
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
         setUpBase();
-        subject = new V0560ScheduleSchema();
+        subject = new V0570ScheduleSchema();
     }
 
     @Test
     void constructorHappyPath() {
         Assertions.assertThat(subject.getVersion())
                 .isEqualTo(
-                        SemanticVersion.newBuilder().major(0).minor(56).patch(0).build());
+                        SemanticVersion.newBuilder().major(0).minor(57).patch(0).build());
     }
 
     @Test
@@ -96,14 +97,14 @@ class V0560ScheduleSchemaTest extends ScheduleTestBase {
                 .toList();
 
         final var stateDef1 = sortedResult.getFirst();
-        Assertions.assertThat(stateDef1.stateKey()).isEqualTo(SCHEDULE_BY_EQUALITY_KEY);
-        Assertions.assertThat(stateDef1.keyCodec()).isEqualTo(ProtoBytes.PROTOBUF);
-        Assertions.assertThat(stateDef1.valueCodec()).isEqualTo(Schedule.PROTOBUF);
+        Assertions.assertThat(stateDef1.stateKey()).isEqualTo(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
+        Assertions.assertThat(stateDef1.keyCodec()).isEqualTo(ProtoLong.PROTOBUF);
+        Assertions.assertThat(stateDef1.valueCodec()).isEqualTo(ScheduleIdList.PROTOBUF);
 
         final var stateDef2 = sortedResult.get(1);
-        Assertions.assertThat(stateDef2.stateKey()).isEqualTo(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
-        Assertions.assertThat(stateDef2.keyCodec()).isEqualTo(ProtoLong.PROTOBUF);
-        Assertions.assertThat(stateDef2.valueCodec()).isEqualTo(ScheduleIdList.PROTOBUF);
+        Assertions.assertThat(stateDef2.stateKey()).isEqualTo(SCHEDULE_ID_BY_EQUALITY_KEY);
+        Assertions.assertThat(stateDef2.keyCodec()).isEqualTo(ProtoBytes.PROTOBUF);
+        Assertions.assertThat(stateDef2.valueCodec()).isEqualTo(ScheduleID.PROTOBUF);
     }
 
     @Test
@@ -127,7 +128,7 @@ class V0560ScheduleSchemaTest extends ScheduleTestBase {
         setupMigrationContext();
 
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
-        assertThat(logCaptor.infoLogs()).contains("Started migrating Schedule Schema from 0.49.0 to 0.56.0");
+        assertThat(logCaptor.infoLogs()).contains("Started migrating Schedule Schema from 0.49.0 to 0.57.0");
         assertThat(logCaptor.infoLogs()).contains("Migrated 1 Schedules from SCHEDULES_BY_EXPIRY_SEC_KEY");
         assertThat(logCaptor.infoLogs()).contains("Migrated 2 Schedules from SCHEDULES_BY_EQUALITY_KEY");
 
@@ -158,7 +159,7 @@ class V0560ScheduleSchemaTest extends ScheduleTestBase {
                         .schedules(List.of(otherScheduleInState))
                         .build());
         writableSchedulesByEquality = new MapWritableKVState<>(SCHEDULES_BY_EQUALITY_KEY, schedulesByEquality);
-        writableScheduleByEquality = new MapWritableKVState<>(SCHEDULE_BY_EQUALITY_KEY, scheduleByEquality);
+        writableScheduleByEquality = new MapWritableKVState<>(SCHEDULE_ID_BY_EQUALITY_KEY, scheduleByEquality);
 
         writableStates = MapWritableStates.builder()
                 .state(writableSchedulesByEquality)
