@@ -22,6 +22,9 @@ import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSch
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ScheduleID;
@@ -47,6 +50,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,8 +112,11 @@ class V0570ScheduleSchemaTest extends ScheduleTestBase {
     }
 
     @Test
-    void statesToRemoveIsEmpty() {
-        Assertions.assertThat(subject.statesToRemove()).isEmpty();
+    void testStatesToRemove() {
+        Set<String> statesToRemove = subject.statesToRemove();
+        assertNotNull(statesToRemove);
+        assertEquals(2, statesToRemove.size());
+        assertTrue(statesToRemove.containsAll(Set.of(SCHEDULES_BY_EXPIRY_SEC_KEY, SCHEDULES_BY_EQUALITY_KEY)));
     }
 
     @SuppressWarnings("DataFlowIssue")
