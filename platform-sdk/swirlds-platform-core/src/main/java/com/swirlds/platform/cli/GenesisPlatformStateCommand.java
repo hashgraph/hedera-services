@@ -33,7 +33,6 @@ import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -74,7 +73,7 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
 
         System.out.printf("Reading from %s %n", statePath.toAbsolutePath());
         final DeserializedSignedState deserializedSignedState =
-                SignedStateFileReader.readStateFile(platformContext, statePath, SignedStateFileUtils::readState);
+                SignedStateFileReader.readStateFile(platformContext, statePath);
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             final PlatformStateModifier platformState =
                     reservedSignedState.get().getState().getWritablePlatformState();

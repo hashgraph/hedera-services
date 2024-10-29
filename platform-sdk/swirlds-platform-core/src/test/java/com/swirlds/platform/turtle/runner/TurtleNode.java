@@ -33,7 +33,6 @@ import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.AddressBook;
@@ -97,15 +96,8 @@ public class TurtleNode {
                 .build();
         final Supplier<MerkleRoot> genesisStateSupplier = TurtleTestingToolState::getStateRootNode;
         final var version = new BasicSoftwareVersion(1);
-        final var reservedState = getInitialState(
-                platformContext,
-                version,
-                genesisStateSupplier,
-                SignedStateFileUtils::readState,
-                "foo",
-                "bar",
-                nodeId,
-                addressBook);
+        final var reservedState =
+                getInitialState(platformContext, version, genesisStateSupplier, "foo", "bar", nodeId, addressBook);
         final var initialState = reservedState.state();
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
                         "foo", "bar", new BasicSoftwareVersion(1), initialState, nodeId)

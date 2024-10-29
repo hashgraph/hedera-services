@@ -64,7 +64,6 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -230,7 +229,6 @@ public class ServicesMain implements SwirldMain {
                 platformContext,
                 version,
                 hedera::newMerkleStateRoot,
-                SignedStateFileUtils::readState,
                 Hedera.APP_NAME,
                 Hedera.SWIRLD_NAME,
                 selfId,
