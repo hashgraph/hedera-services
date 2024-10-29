@@ -23,7 +23,7 @@ on:
 
 permissions:
   id-token: write
-  actions: read
+  actions: write
   pull-requests: write
   statuses: write
   checks: write
@@ -88,7 +88,7 @@ jobs:
           if [[ "${BRANCH_ON_DEVELOP}" -eq 0 ]]; then
             echo "xts-tag-exists=true" >> $GITHUB_OUTPUT
             echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_OUTPUT
-            echo "### Commit has been tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
+            echo "### XTS-Candidate commit found" >>  $GITHUB_STEP_SUMMARY
             echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_STEP_SUMMARY
 
             git push --delete origin "${XTS_CANDIDATE_TAG}"
