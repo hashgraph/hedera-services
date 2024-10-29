@@ -31,8 +31,8 @@ import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.BitSet;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -51,16 +51,18 @@ public class TssCryptographyManager {
     private final TssLibrary tssLibrary;
     private AppContext.Gossip gossip;
     private Executor libraryExecutor;
+    private TssMetrics tssMetrics;
 
     @Inject
     public TssCryptographyManager(
             @NonNull final TssLibrary tssLibrary,
             @NonNull final AppContext.Gossip gossip,
             @NonNull @TssLibraryExecutor final Executor libraryExecutor,
-            @NonNull final Metrics metrics) {
+            @NonNull final TssMetrics tssMetrics) {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.gossip = requireNonNull(gossip);
         this.libraryExecutor = requireNonNull(libraryExecutor);
+        this.tssMetrics = requireNonNull(tssMetrics);
     }
 
     /**
@@ -123,7 +125,8 @@ public class TssCryptographyManager {
                     if (!tssMessageThresholdMet) {
                         return null;
                     }
-                    // tss aggregation start
+                    tssMetrics.trackSharesAggregationStartTime(
+                            InstantSource.system().instant().getEpochSecond());
                     final var validTssMessages = getTssMessages(validTssOps);
                     final var computedPublicShares =
                             tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);

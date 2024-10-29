@@ -102,6 +102,7 @@ import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -870,7 +871,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      */
     public void registerTssMetrics(@NonNull final Metrics metrics) {
         requireNonNull(metrics);
-        tssBaseService.registerMetrics(metrics);
+        tssBaseService.registerMetrics(new TssMetrics(metrics));
     }
 
     /*==================================================================================================================

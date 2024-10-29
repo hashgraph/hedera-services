@@ -38,7 +38,7 @@ public interface TssBaseServiceComponent {
                 @BindsInstance Metrics metrics);
     }
 
-    Metrics tssMetrics(Metrics metrics);
+    TssMetrics tssMetrics(TssMetrics metrics);
 
     TssMessageHandler tssMessageHandler();
 

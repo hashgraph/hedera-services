@@ -52,7 +52,6 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
@@ -118,9 +117,6 @@ class NodeStakeUpdatesTest {
     private StoreMetricsService storeMetricsService;
 
     @Mock
-    private TssMetrics tssMetrics;
-
-    @Mock
     private WritableSingletonState<RosterState> rosterState;
 
     private NodeStakeUpdates subject;
@@ -161,7 +157,7 @@ class NodeStakeUpdatesTest {
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
 
-        subject.process(dispatch, stack, context, RECORDS, true, Instant.EPOCH, tssMetrics);
+        subject.process(dispatch, stack, context, RECORDS, true, Instant.EPOCH);
 
         verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
         verify(exchangeRateManager).updateMidnightRates(stack);
@@ -178,7 +174,7 @@ class NodeStakeUpdatesTest {
                                 .nanos(CONSENSUS_TIME_1234567.getNano()))
                         .build());
 
-        subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH, tssMetrics);
+        subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH);
 
         verifyNoInteractions(stakingPeriodCalculator);
         verifyNoInteractions(exchangeRateManager);
@@ -203,7 +199,7 @@ class NodeStakeUpdatesTest {
                 .isTrue();
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
 
-        subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH, tssMetrics);
+        subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH);
 
         verify(stakingPeriodCalculator)
                 .updateNodes(
@@ -225,7 +221,7 @@ class NodeStakeUpdatesTest {
                 .isTrue();
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
 
-        subject.process(dispatch, stack, context, BLOCKS, false, CONSENSUS_TIME_1234567, tssMetrics);
+        subject.process(dispatch, stack, context, BLOCKS, false, CONSENSUS_TIME_1234567);
 
         verify(stakingPeriodCalculator)
                 .updateNodes(
@@ -248,7 +244,7 @@ class NodeStakeUpdatesTest {
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
 
         Assertions.assertThatNoException()
-                .isThrownBy(() -> subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH, tssMetrics));
+                .isThrownBy(() -> subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH));
         verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
@@ -321,7 +317,7 @@ class NodeStakeUpdatesTest {
                         .build());
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
 
-        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH, tssMetrics);
+        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
         verifyNoInteractions(tssBaseService);
     }
 
@@ -338,8 +334,8 @@ class NodeStakeUpdatesTest {
         // Simulate disabled `keyCandidateRoster` property
         given(context.configuration()).willReturn(newConfig(990, false));
 
-        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH, tssMetrics);
-        verify(tssBaseService, never()).setCandidateRoster(any(), any(), any());
+        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
+        verify(tssBaseService, never()).setCandidateRoster(any(), any());
     }
 
     @Test
@@ -364,8 +360,8 @@ class NodeStakeUpdatesTest {
         simulateCandidateAndActiveRosters();
 
         // Attempt to set the (equivalent) active roster as the new candidate roster
-        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH, tssMetrics);
-        verify(tssBaseService, never()).setCandidateRoster(any(), any(), any());
+        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
+        verify(tssBaseService, never()).setCandidateRoster(any(), any());
     }
 
     @Test
@@ -388,8 +384,8 @@ class NodeStakeUpdatesTest {
         given(stack.getWritableStates(notNull())).willReturn(writableStates);
         simulateCandidateAndActiveRosters();
 
-        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH, tssMetrics);
-        verify(tssBaseService).setCandidateRoster(notNull(), notNull(), notNull());
+        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
+        verify(tssBaseService).setCandidateRoster(notNull(), notNull());
     }
 
     private ReadableNodeStore simulateNodes(Node... nodes) {

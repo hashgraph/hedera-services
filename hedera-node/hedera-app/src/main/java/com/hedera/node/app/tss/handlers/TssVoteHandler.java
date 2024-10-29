@@ -28,10 +28,9 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.metrics.api.Counter;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -43,16 +42,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TssVoteHandler implements TransactionHandler {
-
-    private static final String TSS_VOTE_COUNTER_METRIC = "tss_vote_total";
-    private static final String TSS_VOTE_COUNTER_METRIC_DESC = "total numbers of tss vote transactions";
-    private static final Counter.Config TSS_VOTE_TX_COUNTER =
-            new Counter.Config("app", TSS_VOTE_COUNTER_METRIC).withDescription(TSS_VOTE_COUNTER_METRIC_DESC);
-    private final Counter tssVoteTxCounter;
+    private final TssMetrics tssMetrics;
 
     @Inject
-    public TssVoteHandler(@NonNull final Metrics metrics) {
-        tssVoteTxCounter = metrics.getOrCreate(TSS_VOTE_TX_COUNTER);
+    public TssVoteHandler(@NonNull final TssMetrics tssMetrics) {
+        this.tssMetrics = requireNonNull(tssMetrics);
     }
 
     @Override
@@ -70,8 +64,9 @@ public class TssVoteHandler implements TransactionHandler {
         requireNonNull(context);
         final var txBody = context.body().tssVoteOrThrow();
         final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
-        final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(
-                txBody.targetRosterHash(), context.creatorInfo().nodeId());
+        final var candidateRosterHash = txBody.targetRosterHash();
+        final TssVoteMapKey tssVoteMapKey =
+                new TssVoteMapKey(candidateRosterHash, context.creatorInfo().nodeId());
         if (tssBaseStore.exists(tssVoteMapKey)) {
             // Duplicate vote
             return;
@@ -79,6 +74,9 @@ public class TssVoteHandler implements TransactionHandler {
 
         if (!TssVoteHandler.hasReachedThreshold(txBody, context)) {
             tssBaseStore.put(tssVoteMapKey, txBody);
+            final int numberOfAlreadyExistingVotes =
+                    tssBaseStore.getTssVotes(candidateRosterHash).size();
+            tssMetrics.updateVotesPerCandidateRoster(candidateRosterHash, numberOfAlreadyExistingVotes);
         }
     }
 

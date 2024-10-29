@@ -37,6 +37,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.tss.TssCryptographyManager;
 import com.hedera.node.app.tss.TssCryptographyManager.LedgerIdWithSignature;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.FakeGroupElement;
 import com.hedera.node.app.tss.pairings.PairingPrivateKey;
@@ -44,7 +45,6 @@ import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
@@ -105,7 +105,7 @@ class TssMessageHandlerTest {
     private PairingPrivateKey pairingPrivateKey;
 
     @Mock
-    private Metrics metrics;
+    private TssMetrics tssMetrics;
 
     private Roster roster;
     private TssMessageHandler subject;
@@ -125,7 +125,7 @@ class TssMessageHandlerTest {
                 .withParticipant(1, 10, pairingPublicKey)
                 .build(SIGNATURE_SCHEMA);
 
-        subject = new TssMessageHandler(submissionManager, gossip, tssCryptographyManager, metrics);
+        subject = new TssMessageHandler(submissionManager, gossip, tssCryptographyManager, tssMetrics);
     }
 
     @Test

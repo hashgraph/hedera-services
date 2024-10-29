@@ -32,7 +32,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
@@ -196,11 +195,10 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void setCandidateRoster(
-            @NonNull final Roster roster, @NonNull final HandleContext context, @NonNull final TssMetrics tssMetrics) {
+    public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
         requireNonNull(context);
-        delegate.setCandidateRoster(roster, context, tssMetrics);
+        delegate.setCandidateRoster(roster, context);
     }
 
     @Override
@@ -209,7 +207,7 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void registerMetrics(@NonNull final Metrics metrics) {
+    public void registerMetrics(@NonNull final TssMetrics metrics) {
         delegate.registerMetrics(metrics);
     }
 

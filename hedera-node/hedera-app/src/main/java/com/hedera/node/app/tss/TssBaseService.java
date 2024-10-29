@@ -21,7 +21,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
@@ -59,7 +58,7 @@ public interface TssBaseService extends Service {
     /**
      * @param metrics the metrics object being used to report tss performance
      */
-    void registerMetrics(@NonNull Metrics metrics);
+    void registerMetrics(@NonNull TssMetrics metrics);
 
     /**
      * Returns the status of the TSS service relative to the given roster, ledger id, and given TSS base state.
@@ -93,7 +92,7 @@ public interface TssBaseService extends Service {
      * @param roster the candidate roster to key
      * @param context the TSS context
      */
-    void setCandidateRoster(@NonNull Roster roster, @NonNull HandleContext context, @NonNull TssMetrics tssMetrics);
+    void setCandidateRoster(@NonNull Roster roster, @NonNull HandleContext context);
 
     /**
      * Requests a ledger signature on a message hash.  The ledger signature is computed asynchronously and returned

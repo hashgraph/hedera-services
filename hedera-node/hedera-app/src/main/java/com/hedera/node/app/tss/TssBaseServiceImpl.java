@@ -70,6 +70,7 @@ public class TssBaseServiceImpl implements TssBaseService {
 
     private final TssHandlers tssHandlers;
     private final TssSubmissions tssSubmissions;
+    private TssMetrics tssMetrics;
     private final ExecutorService signingExecutor;
     private final TssLibrary tssLibrary;
     private final Executor tssLibraryExecutor;
@@ -91,8 +92,8 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.signingExecutor = requireNonNull(signingExecutor);
         this.component = DaggerTssBaseServiceComponent.factory()
                 .create(appContext.gossip(), submissionExecutor, tssLibraryExecutor, metrics);
-        tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
-        tssSubmissions = component.tssSubmissions();
+        tssHandlers = new TssHandlers(this.component.tssMessageHandler(), this.component.tssVoteHandler());
+        tssSubmissions = this.component.tssSubmissions();
         this.tssLibrary = requireNonNull(tssLibrary);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
     }
@@ -104,9 +105,9 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void registerMetrics(@NonNull final Metrics metrics) {
+    public void registerMetrics(@NonNull final TssMetrics metrics) {
         requireNonNull(metrics);
-        this.component.tssMetrics(metrics);
+        this.tssMetrics = this.component.tssMetrics(metrics);
     }
 
     @Override
@@ -140,8 +141,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void setCandidateRoster(
-            @NonNull final Roster roster, @NonNull final HandleContext context, @NonNull final TssMetrics tssMetrics) {
+    public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
 
         // (TSS-FUTURE) Implement `keyActiveRoster`
