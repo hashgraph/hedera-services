@@ -340,8 +340,8 @@ Invariants and Allowances:
    than all round numbers in the history.
    * If setting a new active roster would increase the history length to 3, the roster with the lowest round number
      is removed.
-   * Removing a roster from the history also removes it from the roster map if no other remaining roster has the same
-     hash.
+   * Removing a roster from the history also removes it from the roster map **if no other remaining roster has the same
+     hash**.
 6. The roster hash is calculated through our normal protobuf hashing mechanism.
 7. All candidate and active rosters set must be valid.
 
