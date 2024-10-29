@@ -390,6 +390,10 @@ message Roster {
  */
 message RosterEntry {
 
+    // The tssEncryptionKey is no longer in the roster.
+    reserved 4;
+    reserved "tssEncryptionKey";
+
     /**
      * A consensus node identifier.
      * <p>
@@ -429,7 +433,10 @@ message RosterEntry {
      * SHALL NOT supply both values for the same endpoint.<br/>
      * This list SHALL NOT be empty.<br/>
      */
-    repeated proto.ServiceEndpoint gossip_endpoint = 4;
+    repeated proto.ServiceEndpoint gossip_endpoint = 5;
+
+    reserved 4;
+    reserved "tssEncryptionKey";
 }
 ```
 
