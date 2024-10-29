@@ -58,7 +58,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 public class ParallelSyncTraversalOrder implements NodeTraversalOrder {
 
     // FUTURE WORK: make it configurable
-    private static final int DEFAULT_CHUNK_ROOT_RANK = 14;
+    private static final int DEFAULT_CHUNK_ROOT_RANK = 16;
 
     private final ReconnectNodeCount nodeCount;
 
