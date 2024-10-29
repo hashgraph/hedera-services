@@ -103,11 +103,8 @@ public class DefaultPcesWriter implements PcesWriter {
 
         try {
             final boolean fileClosed = commonPcesWriter.prepareOutputStream(event);
-            if (fileClosed) {
-                lastFlushedEvent = lastWrittenEvent;
-            }
             commonPcesWriter.getCurrentMutableFile().writeEvent(event);
-            lastFlushedEvent = event.getStreamSequenceNumber();
+            lastWrittenEvent = event.getStreamSequenceNumber();
 
             final boolean flushPerformed = processFlushRequests();
 
