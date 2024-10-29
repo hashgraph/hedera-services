@@ -122,6 +122,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -691,6 +692,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             }
             throw new IllegalStateException("" + reason);
         }
+    }
+
+    @Override
+    public Signature sign(final byte[] ledgerId) {
+        return platform.sign(ledgerId);
     }
 
     /**
