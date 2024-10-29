@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -57,6 +58,7 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DESIGNATING_
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ENTITY_MEMO;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.FIRST_PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.NEVER_TO_BE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ONLY_BODY;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ONLY_BODY_AND_ADMIN_KEY;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ONLY_BODY_AND_MEMO;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ONLY_BODY_AND_PAYER;
@@ -65,6 +67,7 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SECOND_PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
@@ -83,6 +86,7 @@ import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import java.security.SecureRandom;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -128,36 +132,35 @@ public class ScheduleCreateTest {
         return hapiTest(getScheduleInfo("0.0.0").hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 
-    // TODO: what to do with this?
-    //    @HapiTest
-    //    final Stream<DynamicTest> bodyOnlyCreation() {
-    //        return customHapiSpec("bodyOnlyCreation")
-    //                .withProperties(Map.of("default.keyAlgorithm", "SECP256K1"))
-    //                .given(cryptoCreate(SENDER))
-    //                .when(
-    //                        scheduleCreate(ONLY_BODY, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
-    //                                .recordingScheduledTxn(),
-    //                        scheduleSign(ONLY_BODY).alsoSigningWith(SENDER))
-    //                .then(getScheduleInfo(ONLY_BODY)
-    //                        .hasScheduleId(ONLY_BODY)
-    //                        .hasRecordedScheduledTxn()
-    //                        .logged());
-    //    }
-    //
-    //    @HapiTest
-    //    final Stream<DynamicTest> validateSignersInInfo() {
-    //        return customHapiSpec(VALID_SCHEDULE)
-    //                .withProperties(Map.of("default.keyAlgorithm", "SECP256K1"))
-    //                .given(cryptoCreate(SENDER))
-    //                .when(
-    //                        scheduleCreate(VALID_SCHEDULE, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
-    //                                .recordingScheduledTxn(),
-    //                        scheduleSign(VALID_SCHEDULE).alsoSigningWith(SENDER))
-    //                .then(getScheduleInfo(VALID_SCHEDULE)
-    //                        .hasScheduleId(VALID_SCHEDULE)
-    //                        .hasRecordedScheduledTxn()
-    //                        .hasSignatories(DEFAULT_PAYER, SENDER));
-    //    }
+    @HapiTest
+    final Stream<DynamicTest> bodyOnlyCreation() {
+        return customHapiSpec("bodyOnlyCreation")
+                .withProperties(Map.of("default.keyAlgorithm", "SECP256K1"))
+                .given(cryptoCreate(SENDER))
+                .when(
+                        scheduleCreate(ONLY_BODY, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
+                                .recordingScheduledTxn(),
+                        scheduleSign(ONLY_BODY).alsoSigningWith(SENDER))
+                .then(getScheduleInfo(ONLY_BODY)
+                        .hasScheduleId(ONLY_BODY)
+                        .hasRecordedScheduledTxn()
+                        .logged());
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> validateSignersInInfo() {
+        return customHapiSpec(VALID_SCHEDULE)
+                .withProperties(Map.of("default.keyAlgorithm", "SECP256K1"))
+                .given(cryptoCreate(SENDER))
+                .when(
+                        scheduleCreate(VALID_SCHEDULE, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
+                                .recordingScheduledTxn(),
+                        scheduleSign(VALID_SCHEDULE).alsoSigningWith(SENDER))
+                .then(getScheduleInfo(VALID_SCHEDULE)
+                        .hasScheduleId(VALID_SCHEDULE)
+                        .hasRecordedScheduledTxn()
+                        .hasSignatories(DEFAULT_PAYER, SENDER));
+    }
 
     @HapiTest
     final Stream<DynamicTest> onlyBodyAndAdminCreation() {

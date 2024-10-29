@@ -559,11 +559,10 @@ public class HapiSpec implements Runnable, Executable {
 
         /**
          * Handling special prefix cases:
-         * If the class name is prefixed with ETH_SUFFIX we convert all
+         * 1. If the class name is prefixed with ETH_SUFFIX we convert all
          * HapiContractCall and HapiContractCreate transactions into HapiEthereumCall and HapiEthereumContractCreate.
-         *
-         * If the class name is prefixed with WITH_LONG_TERM_SCHEDULE_TURNED_ON_SUFFIX we turn on the
-         * long term flag(scheduling.longTermEnabled) and... TODO: add what else will be done here
+         * 2. If the class name is prefixed with WITH_LONG_TERM_SCHEDULE_TURNED_ON_SUFFIX we enabled the
+         * long term scheduling flag(scheduling.longTermEnabled) before the test execution.
          */
         var className = name.split("\\.")[0];
         if (className.endsWith(ETH_SUFFIX)) {
@@ -602,9 +601,9 @@ public class HapiSpec implements Runnable, Executable {
 
     private static HapiFileUpdate turnLongTermScheduleOnOperation() {
         return fileUpdate(HapiSuite.APP_PROPERTIES)
-            .fee(ONE_HUNDRED_HBARS)
-            .payingWith(EXCHANGE_RATE_CONTROL)
-            .overridingProps(Map.of(LONG_TERM_FLAG, "true"));
+                .fee(ONE_HUNDRED_HBARS)
+                .payingWith(EXCHANGE_RATE_CONTROL)
+                .overridingProps(Map.of(LONG_TERM_FLAG, "true"));
     }
 
     @Nullable
