@@ -22,7 +22,7 @@ on:
     - cron: '0 20 * * *'
 
 permissions:
-  actions: read
+  actions: write
   contents: read
   statuses: write
 
