@@ -50,7 +50,7 @@ public class FungibleTokenInfoTranslator extends AbstractCallTranslator<HtsCallA
         final var v2Enabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractTokenInfoV2Enabled();
         return attempt.isSelector(FUNGIBLE_TOKEN_INFO)
-                || attempt.isSelectorIfConfigEnabled(FUNGIBLE_TOKEN_INFO_V2, v2Enabled);
+                || attempt.isSelectorIfConfigEnabled(v2Enabled, FUNGIBLE_TOKEN_INFO_V2);
     }
 
     /**
