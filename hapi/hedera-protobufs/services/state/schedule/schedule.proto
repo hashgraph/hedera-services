@@ -149,7 +149,7 @@ message ScheduleList {
 
 /**
  * A message for storing a list of schedule identifiers in state.<br/>
- * TThis is used to store lists of `ScheduleID` values.
+ * This is used to store lists of `ScheduleID` values.
  * One example is all schedules that expire at a particular time.
  */
 message ScheduleIdList {
