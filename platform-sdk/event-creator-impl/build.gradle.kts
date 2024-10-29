@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.service.gossip;
+plugins {
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.services-publish")
+}
 
-/**
- * Mock gossip service.
- */
-public interface GossipService {}
+description = "Default Event Creator Implementation"

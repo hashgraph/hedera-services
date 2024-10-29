@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.hiero.consensus.gossip.FallenBehindManager;
 
 /**
  * A thread-safe implementation of {@link FallenBehindManager}

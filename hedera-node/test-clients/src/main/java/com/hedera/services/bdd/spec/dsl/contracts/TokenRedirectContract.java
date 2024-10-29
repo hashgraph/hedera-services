@@ -24,6 +24,8 @@ public enum TokenRedirectContract {
     HRC("HRC"),
     // TODO: Update this to HRC904 once all tests are merged
     HRC904CLAIM("HRC904TokenClaim"),
+    HRC904CANCEL("HRC904TokenCancel"),
+    HRC904REJECT("HRC904Reject"),
     ERC20("ERC20ABI"),
     ERC721("ERC721ABI");
 

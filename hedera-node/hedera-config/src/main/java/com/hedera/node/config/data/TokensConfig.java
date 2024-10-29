@@ -31,7 +31,7 @@ public record TokensConfig(
         @ConfigProperty(defaultValue = "100") @NetworkProperty int maxTokenNameUtf8Bytes,
         @ConfigProperty(defaultValue = "10") @NetworkProperty int maxCustomFeesAllowed,
         @ConfigProperty(defaultValue = "2") @NetworkProperty int maxCustomFeeDepth,
-        @ConfigProperty(defaultValue = "1000") @NetworkProperty long maxRelsPerInfoQuery,
+        @ConfigProperty(defaultValue = "1000") @NetworkProperty int maxRelsPerInfoQuery,
         @ConfigProperty(value = "reject.enabled", defaultValue = "true") @NetworkProperty boolean tokenRejectEnabled,
         @ConfigProperty(value = "nfts.areEnabled", defaultValue = "true") @NetworkProperty boolean nftsAreEnabled,
         @ConfigProperty(value = "nfts.maxMetadataBytes", defaultValue = "100") @NetworkProperty
@@ -66,4 +66,5 @@ public record TokensConfig(
         @ConfigProperty(value = "airdrops.claim.enabled", defaultValue = "true") @NetworkProperty
                 boolean airdropsClaimEnabled,
         @ConfigProperty(value = "nfts.maxBatchSizeUpdate", defaultValue = "10") @NetworkProperty
-                int nftsMaxBatchSizeUpdate) {}
+                int nftsMaxBatchSizeUpdate,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean countingGetBalanceThrottleEnabled) {}
