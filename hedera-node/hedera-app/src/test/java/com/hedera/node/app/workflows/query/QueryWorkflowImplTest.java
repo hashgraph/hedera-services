@@ -465,6 +465,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         null,
                         true))
                 .isInstanceOf(NullPointerException.class);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -477,6 +478,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         // then
         assertThatThrownBy(() -> workflow.handleQuery(null, responseBuffer)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, null)).isInstanceOf(NullPointerException.class);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @ParameterizedTest
@@ -510,6 +512,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isZero();
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @ParameterizedTest
@@ -552,6 +555,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isZero();
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -585,6 +589,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isZero();
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -622,6 +627,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(COST_ANSWER);
         assertThat(header.cost()).isEqualTo(fees.totalFee());
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -635,6 +641,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
                 .isInstanceOf(StatusRuntimeException.class)
                 .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -648,6 +655,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
                 .isInstanceOf(StatusRuntimeException.class)
                 .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -659,6 +667,7 @@ class QueryWorkflowImplTest extends AppTestBase {
 
         // then
         assertThrows(StatusRuntimeException.class, () -> workflow.handleQuery(requestBuffer, responseBuffer));
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -677,6 +686,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isZero();
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -705,12 +715,13 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(ANSWER_STATE_PROOF);
         assertThat(header.cost()).isZero();
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
     void testThrottleFails() throws ParseException {
         // given
-        when(synchronizedThrottleAccumulator.shouldThrottle(eq(HederaFunctionality.FILE_GET_INFO), any(), any()))
+        when(synchronizedThrottleAccumulator.shouldThrottle(eq(HederaFunctionality.FILE_GET_INFO), any(), any(), any()))
                 .thenReturn(true);
         final var responseBuffer = newEmptyBuffer();
 
@@ -724,6 +735,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isZero();
         verifyMetricsSent();
+        verify(opWorkflowMetrics).incrementThrottled(FILE_GET_INFO);
     }
 
     @Test
@@ -745,7 +757,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 instantSource,
                 opWorkflowMetrics,
                 false);
-        when(synchronizedThrottleAccumulator.shouldThrottle(eq(HederaFunctionality.FILE_GET_INFO), any(), any()))
+        when(synchronizedThrottleAccumulator.shouldThrottle(eq(HederaFunctionality.FILE_GET_INFO), any(), any(), any()))
                 .thenReturn(true);
         final var responseBuffer = newEmptyBuffer();
 
@@ -758,6 +770,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(OK);
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isZero();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -779,6 +792,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isZero();
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -798,6 +812,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isZero();
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -826,6 +841,7 @@ class QueryWorkflowImplTest extends AppTestBase {
 
         verify(submissionManager, never()).submit(any(), any());
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -847,6 +863,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isZero();
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -872,6 +889,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isEqualTo(12345L);
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -912,6 +930,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(COST_ANSWER);
         assertThat(header.cost()).isZero();
         verify(opWorkflowMetrics).updateDuration(eq(NETWORK_GET_EXECUTION_TIME), anyInt());
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -935,6 +954,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var queryContext = captor.getValue();
         assertThat(queryContext.payer()).isNull();
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     @Test
@@ -957,6 +977,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.cost()).isZero();
         verifyMetricsSent();
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
 
     private void verifyMetricsSent() {
