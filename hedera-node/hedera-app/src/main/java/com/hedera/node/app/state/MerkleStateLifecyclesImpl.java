@@ -27,6 +27,7 @@ import com.hedera.node.app.service.token.TokenService;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
@@ -92,8 +93,9 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
     }
 
     @Override
-    public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
-        return hedera.initPlatformState(state);
+    public List<StateChanges.Builder> initPlatformState(
+            @NonNull final State state, @NonNull final Configuration platformConfiguration) {
+        return hedera.initPlatformState(state, platformConfiguration);
     }
 
     @Override

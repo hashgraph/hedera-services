@@ -180,7 +180,7 @@ public final class StartupStateUtils {
                 false,
                 false,
                 false);
-        signedStateCopy.setSigSet(initialSignedState.getSigSet());
+        signedStateCopy.setSigSet(initialSignedState.getSigSet(), platformContext.getConfiguration());
 
         final var hash = MerkleCryptoFactory.getInstance().digestTreeSync(initialSignedState.getState());
         return new HashedReservedSignedState(signedStateCopy.reserve("Copied initial state"), hash);

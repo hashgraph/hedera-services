@@ -24,8 +24,10 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -74,7 +76,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
 
     public State() {
         registryRecord = RuntimeObjectRegistry.createRecord(getClass());
-        updatePlatformState(new PlatformState());
+        updatePlatformState(new PlatformState(), null);
     }
 
     private State(final State that) {
@@ -85,8 +87,8 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
         if (that.getSwirldState() != null) {
             this.setSwirldState(that.getSwirldState().copy());
         }
-        if (that.getWritablePlatformState() != null) {
-            this.updatePlatformState(that.getWritablePlatformState().copy());
+        if (that.getWritablePlatformState(null) != null) {
+            this.updatePlatformState(that.getWritablePlatformState(null).copy(), null);
         }
     }
 
@@ -102,9 +104,9 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
 
         if (version < ClassVersion.MIGRATE_PLATFORM_STATE
                 && getSwirldState() instanceof MerkleStateRoot merkleStateRoot) {
-            PlatformState platformState = getWritablePlatformState().copy();
+            PlatformState platformState = getWritablePlatformState(null).copy();
             setChild(ChildIndices.PLATFORM_STATE, null);
-            merkleStateRoot.updatePlatformState(platformState);
+            merkleStateRoot.updatePlatformState(platformState, null);
             merkleStateRoot.setRoute(MerkleRouteFactory.getEmptyRoute());
             return merkleStateRoot.copy();
         }
@@ -113,7 +115,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     }
 
     @Override
-    public void initPlatformState() {
+    public void initPlatformState(@NonNull final Configuration platformConfiguration) {
         // no initialization required
     }
 
@@ -160,7 +162,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @NonNull
     @Override
-    public PlatformState getWritablePlatformState() {
+    public PlatformState getWritablePlatformState(@Nullable Configuration platformConfiguration) {
         return getChild(ChildIndices.PLATFORM_STATE);
     }
 
@@ -170,7 +172,8 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      * @param modifier the platform state
      */
     @Override
-    public void updatePlatformState(@NonNull final PlatformStateModifier modifier) {
+    public void updatePlatformState(
+            @NonNull final PlatformStateModifier modifier, @NonNull final Configuration platformConfiguration) {
         if (modifier instanceof PlatformState platformState) {
             setChild(ChildIndices.PLATFORM_STATE, platformState);
         } else {

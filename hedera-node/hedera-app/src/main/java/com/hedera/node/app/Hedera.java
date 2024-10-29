@@ -324,8 +324,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @Nullable
     private CompletableFuture<Bytes> initialStateHashFuture;
 
-    private Configuration platformConfig;
-
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -483,10 +481,13 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * Invoked by {@link MerkleStateRoot} when it needs to ensure the {@link PlatformStateService} is initialized.
      *
      * @param state the root state to be initialized
+     * @param platformConfiguration platform configuration
      * @return the state changes after initialization
      */
-    public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
+    public List<StateChanges.Builder> initPlatformState(
+            @NonNull final State state, @NonNull Configuration platformConfiguration) {
         requireNonNull(state);
+        requireNonNull(platformConfiguration);
         logger.info("Initializing Hedera platform state");
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         return serviceMigrator.doMigrations(
@@ -495,7 +496,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
                 version,
                 bootstrapConfigProvider.getConfiguration(),
-                platformConfig,
+                platformConfiguration,
                 UNAVAILABLE_NETWORK_INFO,
                 UNAVAILABLE_METRICS);
     }
@@ -1132,10 +1133,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      */
     private boolean isNotEmbedded() {
         return instantSource == InstantSource.system();
-    }
-
-    public void setPlatformConfig(Configuration configuration) {
-        this.platformConfig = configuration;
     }
 
     private class ReadReconnectStartingStateHash implements ReconnectCompleteListener {

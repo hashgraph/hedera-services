@@ -17,6 +17,7 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -108,7 +109,7 @@ class StateRegistryTests {
         // Deserialize a state
         final MerkleStateRoot stateToSerialize =
                 new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
-        final var platformState = stateToSerialize.getWritablePlatformState();
+        final var platformState = stateToSerialize.getWritablePlatformState(CONFIGURATION);
         platformState.bulkUpdate(v -> {
             v.setCreationSoftwareVersion(new BasicSoftwareVersion(version.minor()));
             v.setLegacyRunningEventHash(new Hash());

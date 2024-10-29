@@ -32,6 +32,7 @@ import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.MerkleRoot;
@@ -237,11 +238,12 @@ public class SignedState implements SignedStateInfo {
      * Attach signatures to this state.
      *
      * @param sigSet the signatures to be attached to this signed state
+     * @param platformConfiguration platform configuration
      */
-    public void setSigSet(@NonNull final SigSet sigSet) {
+    public void setSigSet(@NonNull final SigSet sigSet, @NonNull final Configuration platformConfiguration) {
         this.sigSet = Objects.requireNonNull(sigSet);
         signingWeight = 0;
-        state.initPlatformState();
+        state.initPlatformState(platformConfiguration);
         if (!isGenesisState()) {
             // Only non-genesis states will have signing weight
             final AddressBook addressBook = getAddressBook();

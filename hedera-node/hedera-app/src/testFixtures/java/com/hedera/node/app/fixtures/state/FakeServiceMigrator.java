@@ -50,13 +50,14 @@ public class FakeServiceMigrator implements ServiceMigrator {
             @Nullable final SoftwareVersion previousVersion,
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration nodeConfiguration,
-            @Nullable final Configuration platformConfiguration,
+            @NonNull final Configuration platformConfiguration,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(servicesRegistry);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);
+        requireNonNull(platformConfiguration);
         requireNonNull(networkInfo);
         requireNonNull(metrics);
 

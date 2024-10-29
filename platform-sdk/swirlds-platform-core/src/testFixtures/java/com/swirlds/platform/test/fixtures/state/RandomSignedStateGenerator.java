@@ -19,6 +19,7 @@ package com.swirlds.platform.test.fixtures.state;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
@@ -188,7 +189,7 @@ public class RandomSignedStateGenerator {
             consensusSnapshotInstance = consensusSnapshot;
         }
 
-        final PlatformStateModifier platformState = stateInstance.getWritablePlatformState();
+        final PlatformStateModifier platformState = stateInstance.getWritablePlatformState(CONFIGURATION);
 
         platformState.bulkUpdate(v -> {
             v.setSnapshot(consensusSnapshotInstance);

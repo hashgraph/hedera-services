@@ -194,7 +194,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @Nullable final SemanticVersion previousVersion,
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration nodeConfiguration,
-            @Nullable final Configuration platformConfiguration,
+            @NonNull final Configuration platformConfiguration,
             @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore,
@@ -203,6 +203,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);
+        requireNonNull(platformConfiguration);
         requireNonNull(metrics);
         requireNonNull(sharedValues);
         requireNonNull(migrationStateChanges);

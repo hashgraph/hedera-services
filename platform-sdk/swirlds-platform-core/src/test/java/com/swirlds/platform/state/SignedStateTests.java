@@ -17,6 +17,7 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -66,7 +67,7 @@ class SignedStateTests {
 
         final PlatformStateModifier platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
-        when(state.getWritablePlatformState()).thenReturn(platformState);
+        when(state.getWritablePlatformState(CONFIGURATION)).thenReturn(platformState);
         if (reserveCallback != null) {
             doAnswer(invocation -> {
                         reserveCallback.run();
@@ -209,7 +210,7 @@ class SignedStateTests {
         final MerkleRoot state = spy(new MerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
-        state.initPlatformState();
+        state.initPlatformState(CONFIGURATION);
         when(state.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState = new SignedState(

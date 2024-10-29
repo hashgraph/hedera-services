@@ -255,16 +255,14 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var fakePlatformContext =
                 new FakePlatformContext(NodeId.of(0), Executors.newSingleThreadScheduledExecutor());
         final var metrics = new NoOpMetrics();
-        final var lifecycles = newPlatformInitLifecycle(
-                bootstrapConfig,
-                fakePlatformContext.getConfiguration(),
-                currentVersion,
-                migrator,
-                servicesRegistry,
-                metrics);
+        final var lifecycles =
+                newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry, metrics);
         this.state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
         initGenesisPlatformState(
-                fakePlatformContext, this.state.getWritablePlatformState(), addressBook, currentVersion);
+                fakePlatformContext,
+                this.state.getWritablePlatformState(fakePlatformContext.getConfiguration()),
+                addressBook,
+                currentVersion);
         final var stateToBeCopied = state;
         state = state.copy();
         // get the state hash before applying the state changes from current block
@@ -659,14 +657,14 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     private static MerkleStateLifecycles newPlatformInitLifecycle(
             @NonNull final Configuration bootstrapConfig,
-            @NonNull final Configuration platformConfig,
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final OrderedServiceMigrator serviceMigrator,
             @NonNull final ServicesRegistryImpl servicesRegistry,
             @NonNull final NoOpMetrics metrics) {
         return new MerkleStateLifecycles() {
             @Override
-            public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
+            public List<StateChanges.Builder> initPlatformState(
+                    @NonNull final State state, @NonNull final Configuration platformConfiguration) {
                 final var deserializedVersion = serviceMigrator.creationVersionOf(state);
                 return serviceMigrator.doMigrations(
                         state,
@@ -675,7 +673,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                         deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
                         currentVersion,
                         bootstrapConfig,
-                        platformConfig,
+                        platformConfiguration,
                         UNAVAILABLE_NETWORK_INFO,
                         metrics);
             }

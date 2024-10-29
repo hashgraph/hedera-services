@@ -211,7 +211,7 @@ public class ReconnectLearner {
                 false,
                 false,
                 false);
-        newSignedState.setSigSet(sigSet);
+        newSignedState.setSigSet(sigSet, platformContext.getConfiguration());
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();
         logger.info(
