@@ -26,7 +26,9 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkAdminHandle
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.store.ServiceMetricsFactoryImpl;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
@@ -34,6 +36,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.CacheConfig;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.state.State;
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,6 +48,9 @@ import javax.inject.Singleton;
 
 @Module
 public interface HandleWorkflowModule {
+    @Binds
+    ServiceMetricsFactory bindServiceMetricsFactory(@NonNull ServiceMetricsFactoryImpl serviceMetricsFactory);
+
     @Provides
     @Singleton
     static Supplier<ContractHandlers> provideContractHandlers(@NonNull final ContractServiceImpl contractService) {

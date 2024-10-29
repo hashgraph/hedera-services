@@ -29,16 +29,19 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.contract.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.metrics.ServiceMetricsContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -82,13 +85,27 @@ public class ContractCallHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
-        final var op = txn.contractCallOrThrow();
-        mustExist(op.contractID(), INVALID_CONTRACT_ID);
+    public void pureChecks(@NonNull TransactionBody txn, @Nullable final ServiceMetricsContext context)
+            throws PreCheckException {
+        try {
+            final var op = txn.contractCallOrThrow();
+            mustExist(op.contractID(), INVALID_CONTRACT_ID);
 
-        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(
-                Bytes.wrap(op.functionParameters().toByteArray()), false);
-        validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
+            // Invoking here even though it's not a failure, to prove it gets invoked
+            final var serviceMetrics = context.serviceMetrics(txn, ContractMetrics.class);
+            serviceMetrics.incrementRejectedTx(CONTRACT_CALL);
+
+            final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(
+                    Bytes.wrap(op.functionParameters().toByteArray()), false);
+            validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
+        } catch (@NonNull final Exception e) {
+            final var serviceMetrics = context.serviceMetrics(txn, ContractMetrics.class);
+            serviceMetrics.incrementRejectedTx(CONTRACT_CALL);
+            if (e instanceof PreCheckException pce && pce.responseCode() == INSUFFICIENT_GAS) {
+                serviceMetrics.incrementRejectedForGasTx(CONTRACT_CALL);
+            }
+            throw e;
+        }
     }
 
     @NonNull

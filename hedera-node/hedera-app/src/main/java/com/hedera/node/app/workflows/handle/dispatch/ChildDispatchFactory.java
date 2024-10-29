@@ -43,6 +43,7 @@ import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.services.ServiceMetricsContextImpl;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
@@ -50,6 +51,7 @@ import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -105,6 +107,7 @@ public class ChildDispatchFactory {
     private final ServiceScopeLookup serviceScopeLookup;
     private final StoreMetricsService storeMetricsService;
     private final ExchangeRateManager exchangeRateManager;
+    private final ServiceMetricsFactory serviceMetricsFactory;
 
     @Inject
     public ChildDispatchFactory(
@@ -115,7 +118,8 @@ public class ChildDispatchFactory {
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final ServiceMetricsFactory serviceMetricsFactory) {
         this.dispatcher = requireNonNull(dispatcher);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
@@ -124,6 +128,7 @@ public class ChildDispatchFactory {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.serviceMetricsFactory = requireNonNull(serviceMetricsFactory);
     }
 
     /**
@@ -255,7 +260,9 @@ public class ChildDispatchFactory {
                 this,
                 dispatchProcessor,
                 throttleAdviser,
-                childFeeAccumulator);
+                childFeeAccumulator,
+                serviceScopeLookup,
+                serviceMetricsFactory);
         final var childFees =
                 computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(
@@ -323,9 +330,17 @@ public class ChildDispatchFactory {
             @NonNull final Configuration config,
             @NonNull final ReadableStoreFactory readableStoreFactory) {
         try {
-            dispatcher.dispatchPureChecks(txBody);
-            final var preHandleContext =
-                    new PreHandleContextImpl(readableStoreFactory, txBody, syntheticPayerId, config, dispatcher);
+            final var serviceName = serviceScopeLookup.getServiceName(txBody);
+            final var metricsContext = new ServiceMetricsContextImpl(serviceName, serviceMetricsFactory);
+            dispatcher.dispatchPureChecks(txBody, metricsContext);
+            final var preHandleContext = new PreHandleContextImpl(
+                    readableStoreFactory,
+                    txBody,
+                    syntheticPayerId,
+                    config,
+                    dispatcher,
+                    serviceScopeLookup,
+                    serviceMetricsFactory);
             dispatcher.dispatchPreHandle(preHandleContext);
             return new PreHandleResult(
                     null,

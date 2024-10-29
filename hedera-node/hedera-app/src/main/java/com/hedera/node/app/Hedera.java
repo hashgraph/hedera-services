@@ -94,6 +94,7 @@ import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.MetricsService;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.MerkleStateLifecyclesImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
@@ -147,6 +148,7 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -329,7 +331,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     * Hedera Object Construction.
     *
     =================================================================================================================*/
-
+    private Set<Service> services;
     /**
      * Creates a Hedera node and registers its own and its services' {@link RuntimeConstructable} factories
      * with the given {@link ConstructableRegistry}.
@@ -385,26 +387,26 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         contractServiceImpl = new ContractServiceImpl(appContext);
         blockStreamService = new BlockStreamService();
         // Register all service schema RuntimeConstructable factories before platform init
-        Set.of(
-                        new EntityIdService(),
-                        new ConsensusServiceImpl(),
-                        contractServiceImpl,
-                        fileServiceImpl,
-                        tssBaseService,
-                        new FreezeServiceImpl(),
-                        new ScheduleServiceImpl(),
-                        new TokenServiceImpl(),
-                        new UtilServiceImpl(),
-                        new RecordCacheService(),
-                        new BlockRecordService(),
-                        blockStreamService,
-                        new FeeService(),
-                        new CongestionThrottleService(),
-                        new NetworkServiceImpl(),
-                        new AddressBookServiceImpl(),
-                        new RosterService(),
-                        PLATFORM_STATE_SERVICE)
-                .forEach(servicesRegistry::register);
+        services = Set.of(
+                new EntityIdService(),
+                new ConsensusServiceImpl(),
+                contractServiceImpl,
+                fileServiceImpl,
+                tssBaseService,
+                new FreezeServiceImpl(),
+                new ScheduleServiceImpl(),
+                new TokenServiceImpl(),
+                new UtilServiceImpl(),
+                new RecordCacheService(),
+                new BlockRecordService(),
+                blockStreamService,
+                new FeeService(),
+                new CongestionThrottleService(),
+                new NetworkServiceImpl(),
+                new AddressBookServiceImpl(),
+                new RosterService(),
+                PLATFORM_STATE_SERVICE);
+        services.forEach(servicesRegistry::register);
         try {
             final Supplier<MerkleStateRoot> baseSupplier =
                     () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), ServicesSoftwareVersion::new);
@@ -660,6 +662,18 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
         Locale.setDefault(Locale.US);
         logger.info("Locale to set to US en");
+
+        // Now that the graph is created, create service-specific metric injections
+        var factory = daggerApp.serviceMetricsFactory();
+        services.forEach(service -> {
+            if (service instanceof MetricsService ms) {
+                var inited = ms.initMetrics(metrics);
+                factory.register(service.getServiceName(), inited);
+            } else {
+                factory.register(service.getServiceName(), new MetricsService.NoOpServiceMetrics());
+            }
+        });
+        logger.info("Per-service metrics initialized");
     }
 
     @Override

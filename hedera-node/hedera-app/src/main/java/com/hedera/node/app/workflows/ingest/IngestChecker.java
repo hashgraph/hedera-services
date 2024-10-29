@@ -44,12 +44,15 @@ import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.node.app.info.CurrentPlatformStatus;
+import com.hedera.node.app.services.ServiceMetricsContextImpl;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
@@ -99,6 +102,8 @@ public final class IngestChecker {
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private final InstantSource instantSource;
     private final OpWorkflowMetrics workflowMetrics;
+    private final ServiceScopeLookup serviceScopeLookup;
+    private final ServiceMetricsFactory serviceMetricsFactory;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -130,7 +135,9 @@ public final class IngestChecker {
             @NonNull final Authorizer authorizer,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
             @NonNull final InstantSource instantSource,
-            @NonNull final OpWorkflowMetrics workflowMetrics) {
+            @NonNull final OpWorkflowMetrics workflowMetrics,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final ServiceMetricsFactory serviceMetricsFactory) {
         this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
@@ -144,6 +151,8 @@ public final class IngestChecker {
         this.synchronizedThrottleAccumulator = requireNonNull(synchronizedThrottleAccumulator);
         this.instantSource = requireNonNull(instantSource);
         this.workflowMetrics = requireNonNull(workflowMetrics);
+        this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
+        this.serviceMetricsFactory = requireNonNull(serviceMetricsFactory);
     }
 
     /**
@@ -204,7 +213,9 @@ public final class IngestChecker {
         }
 
         // 4a. Run pure checks
-        dispatcher.dispatchPureChecks(txBody);
+        final var serviceName = serviceScopeLookup.getServiceName(txBody);
+        final var metricsContext = new ServiceMetricsContextImpl(serviceName, serviceMetricsFactory);
+        dispatcher.dispatchPureChecks(txBody, metricsContext);
 
         // 5. Get payer account
         final var storeFactory = new ReadableStoreFactory(state);

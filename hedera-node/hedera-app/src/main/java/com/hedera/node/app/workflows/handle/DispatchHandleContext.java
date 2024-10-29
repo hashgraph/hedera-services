@@ -36,6 +36,8 @@ import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.services.ServiceMetricsContextImpl;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
@@ -47,6 +49,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyVerifier;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
@@ -106,6 +109,9 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final DispatchProcessor dispatchProcessor;
     private final ThrottleAdviser throttleAdviser;
     private final FeeAccumulator feeAccumulator;
+    private final ServiceScopeLookup serviceScopeLookup;
+    private final ServiceMetricsFactory serviceMetricsFactory;
+
     private Map<AccountID, Long> dispatchPaidRewards;
 
     public DispatchHandleContext(
@@ -130,7 +136,9 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ThrottleAdviser throttleAdviser,
-            @NonNull final FeeAccumulator feeAccumulator) {
+            @NonNull final FeeAccumulator feeAccumulator,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final ServiceMetricsFactory serviceMetricsFactory) {
         this.consensusNow = requireNonNull(consensusNow);
         this.creatorInfo = requireNonNull(creatorInfo);
         this.txnInfo = requireNonNull(transactionInfo);
@@ -155,6 +163,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.expiryValidator = new ExpiryValidatorImpl(this);
         this.dispatcher = requireNonNull(dispatcher);
         this.networkInfo = requireNonNull(networkInfo);
+        this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
+        this.serviceMetricsFactory = requireNonNull(serviceMetricsFactory);
     }
 
     @NonNull
@@ -265,9 +275,17 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     public TransactionKeys allKeysForTransaction(
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
-        dispatcher.dispatchPureChecks(nestedTxn);
+        final var serviceName = serviceScopeLookup.getServiceName(nestedTxn);
+        final var metricsContext = new ServiceMetricsContextImpl(serviceName, serviceMetricsFactory);
+        dispatcher.dispatchPureChecks(nestedTxn, metricsContext);
         final var nestedContext = new PreHandleContextImpl(
-                storeFactory.asReadOnly(), nestedTxn, payerForNested, configuration(), dispatcher);
+                storeFactory.asReadOnly(),
+                nestedTxn,
+                payerForNested,
+                configuration(),
+                dispatcher,
+                serviceScopeLookup,
+                serviceMetricsFactory);
         try {
             dispatcher.dispatchPreHandle(nestedContext);
         } catch (final PreCheckException ignored) {

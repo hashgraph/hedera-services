@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.metrics.ServiceMetricsContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -65,11 +66,12 @@ public class TransactionDispatcher {
      * @param txBody the {@link TransactionBody} to be validated
      * @throws NullPointerException if {@code txBody} is {@code null}
      */
-    public void dispatchPureChecks(@NonNull final TransactionBody txBody) throws PreCheckException {
+    public void dispatchPureChecks(@NonNull final TransactionBody txBody, @NonNull final ServiceMetricsContext context)
+            throws PreCheckException {
         requireNonNull(txBody, "The supplied argument 'txBody' cannot be null!");
         try {
             final var handler = getHandler(txBody);
-            handler.pureChecks(txBody);
+            handler.pureChecks(txBody, context);
         } catch (UnsupportedOperationException ex) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }

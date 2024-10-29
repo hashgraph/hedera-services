@@ -81,4 +81,5 @@ module com.hedera.node.app.service.contract.impl {
             com.hedera.node.app.service.contract.impl.test;
 
     exports com.hedera.node.app.service.contract.impl.annotations;
+    exports com.hedera.node.app.service.contract.impl.exec.metrics;
 }

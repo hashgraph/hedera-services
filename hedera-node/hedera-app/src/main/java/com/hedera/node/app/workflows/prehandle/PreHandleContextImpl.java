@@ -34,6 +34,9 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.services.ServiceMetricsContextImpl;
+import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
@@ -95,6 +98,8 @@ public class PreHandleContextImpl implements PreHandleContext {
     private PreHandleContext innerContext;
 
     private final ReadableStoreFactory storeFactory;
+    private final ServiceScopeLookup serviceScopeLookup;
+    private final ServiceMetricsFactory serviceMetricsFactory;
 
     /**
      * Configuration to be used during pre-handle
@@ -108,12 +113,16 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
             @NonNull final Configuration configuration,
-            @NonNull final TransactionDispatcher dispatcher)
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final ServiceMetricsFactory serviceMetricsFactory,
+            @NonNull final ServiceScopeLookup serviceScopeLookup)
             throws PreCheckException {
         this(
                 storeFactory,
                 txn,
                 txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                serviceScopeLookup,
+                serviceMetricsFactory,
                 configuration,
                 dispatcher,
                 true);
@@ -124,9 +133,11 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
             @NonNull final Configuration configuration,
-            @NonNull final TransactionDispatcher dispatcher)
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final ServiceMetricsFactory serviceMetricsFactory)
             throws PreCheckException {
-        this(storeFactory, txn, payer, configuration, dispatcher, false);
+        this(storeFactory, txn, payer, serviceScopeLookup, serviceMetricsFactory, configuration, dispatcher, false);
     }
 
     /**
@@ -137,6 +148,8 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payerId,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final ServiceMetricsFactory serviceMetricsFactory,
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher,
             final boolean isUserTx)
@@ -148,6 +161,8 @@ public class PreHandleContextImpl implements PreHandleContext {
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null!");
         this.isUserTx = isUserTx;
         this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
+        this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
+        this.serviceMetricsFactory = requireNonNull(serviceMetricsFactory);
         // Find the account, which must exist or throw on construction
         final var payer = mustExist(accountStore.getAccountById(payerId), INVALID_PAYER_ACCOUNT_ID);
         // It would be a catastrophic invariant failure if an account in state didn't have a key
@@ -479,9 +494,12 @@ public class PreHandleContextImpl implements PreHandleContext {
     public TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull final AccountID payerId)
             throws PreCheckException {
         // Throws PreCheckException if the transaction body is structurally invalid
-        dispatcher.dispatchPureChecks(body);
+        final var serviceName = serviceScopeLookup.getServiceName(body);
+        final var metricsContext = new ServiceMetricsContextImpl(serviceName, serviceMetricsFactory);
+        dispatcher.dispatchPureChecks(body, metricsContext);
         // Throws PreCheckException if the payer account does not exist
-        final var context = new PreHandleContextImpl(storeFactory, body, payerId, configuration, dispatcher);
+        final var context = new PreHandleContextImpl(
+                storeFactory, body, payerId, configuration, dispatcher, serviceScopeLookup, serviceMetricsFactory);
         try {
             // Accumulate all required keys in the context
             dispatcher.dispatchPreHandle(context);
@@ -497,8 +515,14 @@ public class PreHandleContextImpl implements PreHandleContext {
     public PreHandleContext createNestedContext(
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
-        this.innerContext =
-                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher);
+        this.innerContext = new PreHandleContextImpl(
+                storeFactory,
+                nestedTxn,
+                payerForNested,
+                configuration,
+                dispatcher,
+                serviceScopeLookup,
+                serviceMetricsFactory);
         return this.innerContext;
     }
 

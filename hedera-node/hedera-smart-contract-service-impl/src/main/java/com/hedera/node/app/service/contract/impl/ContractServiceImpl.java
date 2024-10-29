@@ -19,12 +19,15 @@ package com.hedera.node.app.service.contract.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetricsImpl;
 import com.hedera.node.app.service.contract.impl.exec.scope.DefaultVerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.metrics.ServiceMetrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -68,5 +71,10 @@ public class ContractServiceImpl implements ContractService {
 
     public ContractHandlers handlers() {
         return component.handlers();
+    }
+
+    @Override
+    public @NonNull ServiceMetrics initMetrics(@NonNull final Metrics metrics) {
+        return new ContractMetricsImpl(metrics);
     }
 }

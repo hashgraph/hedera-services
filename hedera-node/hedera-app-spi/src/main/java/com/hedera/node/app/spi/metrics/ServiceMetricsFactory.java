@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi;
+package com.hedera.node.app.spi.metrics;
 
-import com.hedera.pbj.runtime.RpcServiceDefinition;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
-/**
- * This interface defines the contract for a service that can expose RPC endpoints.
- */
-public interface RpcService extends MetricsService {
+public interface ServiceMetricsFactory {
 
-    /**
-     * If this service exposes RPC endpoints, then this method returns the RPC service definitions.
-     *
-     * @return The RPC service definitions if this service is exposed via RPC.
-     */
+    <T extends ServiceMetrics> void register(String serviceName, T metricsInstance);
+
     @NonNull
-    Set<RpcServiceDefinition> rpcDefinitions();
+    <T> T metrics(TransactionBody txBody, @NonNull final Class<T> metricsInterface);
 }
