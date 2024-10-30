@@ -21,6 +21,9 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * todo
+ */
 public interface MetricsService extends Service {
     @NonNull
     default ServiceMetrics initMetrics(@NonNull final Metrics metrics) {

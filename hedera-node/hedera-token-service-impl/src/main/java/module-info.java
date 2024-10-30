@@ -2,7 +2,6 @@
  * Module that provides the implementation of the Hedera Token Service.
  */
 module com.hedera.node.app.service.token.impl {
-    requires com.hedera.node.app.service.contract;
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.token;
@@ -15,6 +14,7 @@ module com.hedera.node.app.service.token.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
+    requires com.hedera.node.app.service.contract; // only to show cross-service metrics request failures
     requires com.swirlds.base;
     requires com.swirlds.common;
     requires com.google.common;

@@ -19,6 +19,9 @@ package com.hedera.node.app.spi.metrics;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * todo
+ */
 public interface ServiceMetricsFactory {
 
     <T extends ServiceMetrics> void register(String serviceName, T metricsInstance);

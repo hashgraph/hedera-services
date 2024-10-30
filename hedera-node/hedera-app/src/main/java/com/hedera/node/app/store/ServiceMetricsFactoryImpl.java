@@ -27,7 +27,6 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.metrics.ServiceMetrics;
 import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
-import com.hedera.node.app.spi.store.StoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,8 +35,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * TODO!!!
- * Factory for creating stores and service APIs. Default implementation of {@link StoreFactory}.
+ * Factory for obtaining {@link ServiceMetrics} instances. Default implementation of {@link ServiceMetricsFactory}.
  */
 @Singleton
 public class ServiceMetricsFactoryImpl implements ServiceMetricsFactory {

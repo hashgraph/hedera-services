@@ -137,7 +137,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ThrottleAdviser throttleAdviser,
             @NonNull final FeeAccumulator feeAccumulator,
-            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final ServiceScopeLookup serviceScopeLookup, // todo inject into serviceMetricsFactory
             @NonNull final ServiceMetricsFactory serviceMetricsFactory) {
         this.consensusNow = requireNonNull(consensusNow);
         this.creatorInfo = requireNonNull(creatorInfo);

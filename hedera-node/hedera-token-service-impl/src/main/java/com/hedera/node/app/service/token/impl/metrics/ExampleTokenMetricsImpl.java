@@ -27,7 +27,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Metrics collection management for Smart Contracts service
+ * Metrics collection management for Token service
  */
 public class ExampleTokenMetricsImpl implements ExampleTokenMetrics {
     private static final Logger log = LogManager.getLogger(ExampleTokenMetricsImpl.class);
