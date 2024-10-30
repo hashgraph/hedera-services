@@ -484,7 +484,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final State state,
             @NonNull final Metrics metrics,
             @NonNull final InitTrigger trigger,
-            @Nullable AddressBook genesisAddressBook) {
+            @Nullable final AddressBook genesisAddressBook) {
         requireNonNull(state);
         this.metrics = requireNonNull(metrics);
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
