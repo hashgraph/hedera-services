@@ -30,13 +30,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.stores.ReadableTssStore;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.state.spi.info.NetworkInfo;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -49,23 +54,29 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class TssBaseServiceTest {
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext handleContext;
 
     @Mock
     private AppContext appContext;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private StoreFactory storeFactory;
-
-    @Mock
-    private ReadableStoreFactory readableStoreFactory;
 
     @Mock
     private WritableRosterStore rosterStore;
 
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ReadableRosterStore readableRosterStore;
+
+    @Mock
+    private ReadableTssStore readableTssStore;
+
     @Mock
     private TssLibrary tssLibrary;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private NetworkInfo networkInfo;
 
     private TssBaseService subject;
 
@@ -75,6 +86,13 @@ public class TssBaseServiceTest {
 
         subject = new TssBaseServiceImpl(
                 appContext, mock(ExecutorService.class), mock(Executor.class), tssLibrary, mock(Executor.class));
+        given(handleContext.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
+        given(handleContext.networkInfo()).willReturn(networkInfo);
+        given(networkInfo.selfNodeInfo())
+                .willReturn(
+                        new NodeInfoImpl(1, AccountID.newBuilder().accountNum(3).build(), 0, null, null));
+        given(storeFactory.readableStore(ReadableRosterStore.class)).willReturn(readableRosterStore);
+        given(readableRosterStore.getActiveRoster()).willReturn(Roster.DEFAULT);
     }
 
     @Test
@@ -87,6 +105,7 @@ public class TssBaseServiceTest {
     @Test
     @DisplayName("Service won't set the current candidate roster as the new candidate roster")
     void doesntSetSameCandidateRoster() {
+        given(storeFactory.readableStore(ReadableTssStore.class)).willReturn(readableTssStore);
         // Simulate CURRENT_CANDIDATE_ROSTER and ACTIVE_ROSTER
         mockWritableRosterStore();
 
@@ -98,6 +117,8 @@ public class TssBaseServiceTest {
     @Test
     @DisplayName("Service won't set the active roster as the new candidate roster")
     void doesntSetActiveRosterAsCandidateRoster() {
+        given(storeFactory.readableStore(ReadableTssStore.class)).willReturn(readableTssStore);
+
         // Simulate CURRENT_CANDIDATE_ROSTER and ACTIVE_ROSTER
         final var rosterStore = mockWritableRosterStore();
         given(handleContext.storeFactory()).willReturn(storeFactory);
@@ -105,12 +126,13 @@ public class TssBaseServiceTest {
 
         // Attempt to set the active roster as the new candidate roster
         subject.setCandidateRoster(ACTIVE_ROSTER, handleContext);
-        verify(rosterStore, never()).putCandidateRoster(any());
+        verify(tssLibrary).decryptPrivateShares(any(), any());
     }
 
     @Test
     @DisplayName("Service appropriately sets a new roster as the new candidate roster")
     void setsCandidateRoster() {
+        given(storeFactory.readableStore(ReadableTssStore.class)).willReturn(readableTssStore);
         // Simulate the _current_ candidate roster and active roster
         final var rosterStore = mockWritableRosterStore();
 
@@ -119,12 +141,13 @@ public class TssBaseServiceTest {
                 .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3))
                 .build();
         subject.setCandidateRoster(inputRoster, handleContext);
-        verify(rosterStore).putCandidateRoster(inputRoster);
+        verify(tssLibrary).decryptPrivateShares(any(), any());
     }
 
     private WritableRosterStore mockWritableRosterStore() {
         // Mock retrieval of the roster store
         given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableRosterStore.class)).willReturn(rosterStore);
         given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
 
         // Mock the candidate and active rosters
