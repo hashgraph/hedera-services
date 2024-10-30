@@ -242,6 +242,11 @@ ADD entrypoint.sh /opt/hgcapp/services-hedera/HapiApp2.0/
 RUN chmod -R +x /opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh && \
     chown -R 2000:2000 /opt/hgcapp/services-hedera/HapiApp2.0
 
+# Patch the Java DNS Cache settings
+RUN sed -e '/networkaddress.cache.ttl/c networkaddress.cache.ttl=10' -i "${JAVA_HOME}/conf/security/java.security" && \
+    sed -e '/networkaddress.cache.stale.ttl/c networkaddress.cache.stale.ttl=0' -i "${JAVA_HOME}/conf/security/java.security" && \
+    sed -e '/networkaddress.cache.negative.ttl/c networkaddress.cache.negative.ttl=0' -i "${JAVA_HOME}/conf/security/java.security"
+
 ########################################
 ####    Deterministic Build Hack    ####
 ########################################
