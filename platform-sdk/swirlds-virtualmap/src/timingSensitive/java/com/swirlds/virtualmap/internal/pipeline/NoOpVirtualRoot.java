@@ -31,8 +31,7 @@ import java.nio.file.Path;
  * A bare-bones implementation of {@link VirtualRoot} that doesn't do much of anything.
  */
 @ConstructableIgnored
-public final class NoOpVirtualRoot<K extends VirtualKey, V extends VirtualValue>
-        extends PartialMerkleLeaf
+public final class NoOpVirtualRoot<K extends VirtualKey, V extends VirtualValue> extends PartialMerkleLeaf
         implements VirtualRoot<K, V>, MerkleLeaf {
 
     /**
@@ -96,9 +95,12 @@ public final class NoOpVirtualRoot<K extends VirtualKey, V extends VirtualValue>
     public void computeHash() {}
 
     @Override
-    public RecordAccessor<K, V> detach(final Path destination) {
+    public RecordAccessor<K, V> detach() {
         return null;
     }
+
+    @Override
+    public void snapshot(final Path destination) {}
 
     @Override
     public boolean isDetached() {

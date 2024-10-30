@@ -38,6 +38,7 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode.ClassVersion;
 import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
@@ -332,11 +333,10 @@ class VirtualRootNodeTest extends VirtualTestBase {
     }
 
     @Test
-    @DisplayName("Detach Test")
-    void detachTest() throws IOException {
+    @DisplayName("Snapshot Test")
+    void snapshotTest() throws IOException {
         final List<Path> paths = new LinkedList<>();
         paths.add(Path.of("asdf"));
-        paths.add(null);
         for (final Path destination : paths) {
             final VirtualMap<TestKey, TestValue> original =
                     new VirtualMap<>("test", new TestKeySerializer(), new TestValueSerializer(), new InMemoryBuilder());
@@ -344,12 +344,34 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
             final VirtualRootNode<TestKey, TestValue> root = original.getChild(1);
             root.getHash(); // forces copy to become hashed
-            root.getPipeline().detachCopy(root, destination);
+            root.getPipeline().pausePipelineAndRun("snapshot", () -> {
+                root.snapshot(destination);
+                return null;
+            });
             assertTrue(root.isDetached(), "root should be detached");
 
             original.release();
             copy.release();
         }
+    }
+
+    @Test
+    @DisplayName("Detach Test")
+    void detachTest() throws IOException {
+        final VirtualMap<TestKey, TestValue> original =
+                new VirtualMap<>("test", new TestKeySerializer(), new TestValueSerializer(), new InMemoryBuilder());
+        final VirtualMap<TestKey, TestValue> copy = original.copy();
+
+        final VirtualRootNode<TestKey, TestValue> root = original.getChild(1);
+        root.getHash(); // forces copy to become hashed
+        final RecordAccessor<TestKey, TestValue> detachedCopy =
+                root.getPipeline().pausePipelineAndRun("copy", root::detach);
+        assertTrue(root.isDetached(), "root should be detached");
+        assertNotNull(detachedCopy);
+
+        original.release();
+        copy.release();
+        detachedCopy.getDataSource().close();
     }
 
     @Test

@@ -57,8 +57,7 @@ class VirtualMerkleLeafHasherTest {
         valueSerializer = new SmartContractByteCodeMapValueSerializer();
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
                 .maxNumberOfKeys(50_000_000)
-                .hashesRamToDiskThreshold(0)
-                .preferDiskIndices(false);
+                .hashesRamToDiskThreshold(0);
         dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig);
     }
 

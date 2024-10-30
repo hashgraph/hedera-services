@@ -111,10 +111,16 @@ public abstract class AbstractLongList<C> implements LongList {
      */
     protected final long maxLongs;
 
-    /** Min valid index of the list. All indices to the left of this index have {@code IMPERMISSIBLE_VALUE}-s */
+    /**
+     * Min valid index of the list. All indices to the left of this index have {@code IMPERMISSIBLE_VALUE}-s.
+     * If the list is empty, both min and max valid indices are -1.
+     */
     protected final AtomicLong minValidIndex = new AtomicLong(-1);
 
-    /** Max valid index of the list. All indices to the right of this index have {@code IMPERMISSIBLE_VALUE}-s */
+    /**
+     * Max valid index of the list. All indices to the right of this index have {@code IMPERMISSIBLE_VALUE}-s.
+     * If the list is empty, both min and max valid indices are -1.
+     */
     protected final AtomicLong maxValidIndex = new AtomicLong(-1);
 
     /** Atomic reference array of our memory chunks */
@@ -407,8 +413,10 @@ public abstract class AbstractLongList<C> implements LongList {
         try (final FileChannel fc = FileChannel.open(file, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             // write header
             writeHeader(fc);
-            // write data
-            writeLongsData(fc);
+            if (size() > 0) {
+                // write data
+                writeLongsData(fc);
+            }
             fc.force(true);
         }
     }

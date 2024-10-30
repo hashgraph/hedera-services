@@ -106,19 +106,17 @@ class MerkleDbBuilderTest {
     @DisplayName("Test data source config overrides")
     public void testBuilderOverrides() throws IOException {
         final MerkleDbTableConfig tableConfig = createTableConfig();
-        tableConfig.preferDiskIndices(true).maxNumberOfKeys(1999).hashesRamToDiskThreshold(Integer.MAX_VALUE >> 4);
+        tableConfig.maxNumberOfKeys(1999).hashesRamToDiskThreshold(Integer.MAX_VALUE >> 4);
         final MerkleDbDataSourceBuilder builder = new MerkleDbDataSourceBuilder(tableConfig);
         final Path defaultDbPath = testDirectory.resolve("defaultDatabasePath");
         MerkleDb.setDefaultPath(defaultDbPath);
         VirtualDataSource dataSource = null;
         try {
             dataSource = builder.build("test3", true);
-            assertTrue(dataSource instanceof MerkleDbDataSource);
             MerkleDbDataSource merkleDbDataSource = (MerkleDbDataSource) dataSource;
             assertEquals(
                     defaultDbPath.resolve("tables").resolve("test3-" + merkleDbDataSource.getTableId()),
                     merkleDbDataSource.getStorageDir());
-            assertTrue(merkleDbDataSource.isPreferDiskBasedIndexes());
             assertEquals(1999, merkleDbDataSource.getMaxNumberOfKeys());
             assertEquals(Integer.MAX_VALUE >> 4, merkleDbDataSource.getHashesRamToDiskThreshold());
             // set explicitly above

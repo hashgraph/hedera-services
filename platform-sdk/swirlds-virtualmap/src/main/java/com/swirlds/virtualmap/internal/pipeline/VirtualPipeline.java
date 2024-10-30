@@ -21,9 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.hedera.pbj.runtime.test.UncheckedThrowingFunction;
-import com.hedera.pbj.runtime.test.UncheckedThrowingFunction.ThrowingFunction;
-import com.swirlds.base.function.CheckedConsumer;
+import com.swirlds.base.function.CheckedSupplier;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.metrics.api.Metrics;
@@ -369,7 +367,10 @@ public class VirtualPipeline<K extends VirtualKey, V extends VirtualValue> {
             return;
         }
 
-        pausePipelineAndExecute("terminate", ignored -> shutdown(false));
+        pausePipelineAndExecute("terminate", () -> {
+            shutdown(false);
+            return null;
+        });
     }
 
     /**
@@ -433,39 +434,57 @@ public class VirtualPipeline<K extends VirtualKey, V extends VirtualValue> {
         }
     }
 
+    public <T, E extends Exception> T pausePipelineAndRun(final String label, final CheckedSupplier<T, E> action)
+            throws E {
+        final T ret = pausePipelineAndExecute(label, action);
+        if (alive) {
+            scheduleWork();
+        }
+        return ret;
+    }
+
     /**
-     * Put a copy into a detached state. A detached copy will split off from the regular chain of caches. This allows
-     * for merges and flushes to continue even if this copy is long-lived.
+     * Put a copy into a detached state. A detached copy will split off from the regular chain of caches. This
+     * allows for merges and flushes to continue even if this copy is long-lived.
+     *
+     * <p>This method waits for the current pipeline job to complete, then puts the pipeline on hold, and
+     * calls copy's {@link VirtualRoot#detach()} method on the current thread. It prevents any merging of
+     * flushing while the snapshot is being taken. Then the pipeline is resumed.
      *
      * @param copy
      * 		the copy to detach
      * @return a reference to the detached state
      */
-    public RecordAccessor<K, V> detachCopy(final VirtualRoot<K, V> copy) throws IOException {
-        return detachCopy(copy, null);
+    public RecordAccessor<K, V> detachCopy(final VirtualRoot<K, V> copy) {
+        validatePipelineRegistration(copy);
+        final RecordAccessor<K, V> ret = pausePipelineAndExecute("detach", copy::detach);
+        if (alive) {
+            scheduleWork();
+        }
+        return ret;
     }
 
     /**
-     * Given some {@link VirtualRoot}, wait until any current merge or flush operations complete
-     * and then call the copy's {@link VirtualRoot#detach(Path)} method on the same thread this
-     * method was called on. Prevents any merging or flushing during the
-     * {@link VirtualRoot#detach(Path)} callback.
+     * Takes a snapshot of the given copy to the specified directory.
+     *
+     * <p>This method waits for the current pipeline job to complete, then puts the pipeline on hold, and
+     * calls copy's {@link VirtualRoot#detach()} method on the current thread. It prevents any merging of
+     * flushing while the snapshot is being taken. Then the pipeline is resumed.
      *
      * @param copy
      * 		The copy. Cannot be null. Should be a member of this pipeline, but technically doesn't need to be.
      * @param targetDirectory
      * 		the location where detached files are written. If null then default location is used.
-     * @return a reference to the detached state
      */
-    public RecordAccessor<K, V> detachCopy(final VirtualRoot<K, V> copy, final Path targetDirectory)
-            throws IOException {
+    public void snapshot(final VirtualRoot<K, V> copy, final Path targetDirectory) throws IOException {
         validatePipelineRegistration(copy);
-        final AtomicReference<RecordAccessor<K, V>> ret = new AtomicReference<>();
-        pausePipelineAndExecute("detach", ignored -> ret.set(copy.detach(targetDirectory)));
+        pausePipelineAndExecute("snapshot", () -> {
+            copy.snapshot(targetDirectory);
+            return null;
+        });
         if (alive) {
             scheduleWork();
         }
-        return ret.get();
     }
 
     /**
@@ -640,17 +659,17 @@ public class VirtualPipeline<K extends VirtualKey, V extends VirtualValue> {
 
     /**
      * Waits for any pending flushes or merges to complete and then pauses the pipeline while the
-     * given {@link Runnable} executes, and then resumes pipeline operation. Fatal errors happen
+     * given supplier provides a value, and then resumes pipeline operation. Fatal errors happen
      * if the background thread is interrupted.
      *
      * @param label
      * 		A log/error friendly label to describe the runnable
-     * @param runnable
-     * 		The runnable. Cannot be null.
+     * @param supplier
+     * 		The supplier. Cannot be null.
      */
-    <E extends Exception> void pausePipelineAndExecute(final String label, final CheckedConsumer<Void, E> runnable)
-            throws E{
-        Objects.requireNonNull(runnable);
+    <V, E extends Exception> V pausePipelineAndExecute(final String label, final CheckedSupplier<V, E> supplier)
+            throws E {
+        Objects.requireNonNull(supplier);
         final CountDownLatch waitForBackgroundThreadToStart = new CountDownLatch(1);
         final CountDownLatch waitForRunnableToFinish = new CountDownLatch(1);
         executorService.execute(() -> {
@@ -673,7 +692,7 @@ public class VirtualPipeline<K extends VirtualKey, V extends VirtualValue> {
         }
 
         try {
-            runnable.accept(null);
+            return supplier.get();
         } finally {
             waitForRunnableToFinish.countDown();
         }

@@ -135,8 +135,7 @@ import org.apache.logging.log4j.Logger;
  * 		The value
  */
 @DebugIterationEndpoint
-public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
-        extends PartialBinaryMerkleInternal
+public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue> extends PartialBinaryMerkleInternal
         implements CustomReconnectRoot<Long, Long>, ExternalSelfSerializable, VirtualRoot<K, V>, MerkleInternal {
 
     private static final String NO_NULL_KEYS_ALLOWED_MESSAGE = "Null keys are not allowed";
@@ -1252,14 +1251,21 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     @Override
     public void serialize(final SerializableDataOutputStream out, final Path outputDirectory) throws IOException {
         final long start = System.currentTimeMillis();
-        final RecordAccessor<K, V> detachedRecords = pipeline.detachCopy(this, outputDirectory);
-        assert detachedRecords == null : "Detached records should not be created.";
+        //        pipeline.snapshot(this, outputDirectory);
+        pipeline.pausePipelineAndRun("detach", () -> {
+            snapshot(outputDirectory);
+            return null;
+        });
         out.writeNormalisedString(state.getLabel());
         out.writeSerializable(dataSourceBuilder, true);
         out.writeSerializable(keySerializer, true);
         out.writeSerializable(valueSerializer, true);
-//        out.writeSerializable(detachedRecords.getCache(), true);
-        logger.info(VIRTUAL_MERKLE_STATS.getMarker(), "VRN serialize {} took {} ms", getFastCopyVersion(), System.currentTimeMillis() - start);
+        //        out.writeSerializable(detachedRecords.getCache(), true);
+        logger.info(
+                VIRTUAL_MERKLE_STATS.getMarker(),
+                "VRN serialize {} took {} ms",
+                getFastCopyVersion(),
+                System.currentTimeMillis() - start);
     }
 
     /**
@@ -1402,7 +1408,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public RecordAccessor<K, V> detach(final Path destination) throws IOException {
+    public RecordAccessor<K, V> detach() {
         if (isDestroyed()) {
             throw new IllegalStateException("detach is illegal on already destroyed copies");
         }
@@ -1418,22 +1424,37 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // The pipeline is paused while this runs, so I can go ahead and call snapshot on the data
         // source, and also snapshot the cache. I will create a new "RecordAccessor" for the detached
         // record state.
-        long start = System.currentTimeMillis();
-        final VirtualDataSource dataSourceCopy = dataSourceBuilder.copy(dataSource, false);
-        logger.info(VIRTUAL_MERKLE_STATS.getMarker(), "VRN DS copy {} took {} ms", getFastCopyVersion(), System.currentTimeMillis() - start);
-        if (destination == null) {
-            final VirtualNodeCache<K, V> cacheSnapshot = cache.snapshot();
-            return new RecordAccessorImpl<>(state, cacheSnapshot, keySerializer, valueSerializer, dataSourceCopy);
-        } else {
-            try {
-                start = System.currentTimeMillis();
-                flush(cache, state, dataSourceCopy);
-                logger.info(VIRTUAL_MERKLE_STATS.getMarker(), "VRN cache flush {} took {} ms", getFastCopyVersion(), System.currentTimeMillis() - start);
-                dataSourceBuilder.snapshot(destination, dataSourceCopy);
-            } finally {
-                dataSourceCopy.close();
-            }
-            return null;
+        final VirtualDataSource dataSourceCopy = dataSourceBuilder.copy(dataSource, false, false);
+        final VirtualNodeCache<K, V> cacheSnapshot = cache.snapshot();
+        return new RecordAccessorImpl<>(state, cacheSnapshot, keySerializer, valueSerializer, dataSourceCopy);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void snapshot(final Path destination) throws IOException {
+        if (isDestroyed()) {
+            throw new IllegalStateException("snapshot is illegal on already destroyed copies");
+        }
+        if (!isImmutable()) {
+            throw new IllegalStateException("snapshot is only allowed on immutable copies");
+        }
+        if (!isHashed()) {
+            throw new IllegalStateException("copy must be hashed before snapshot");
+        }
+
+        detached.set(true);
+
+        // The pipeline is paused while this runs, so I can go ahead and call snapshot on the data
+        // source, and also snapshot the cache. I will create a new "RecordAccessor" for the detached
+        // record state.
+        final VirtualDataSource dataSourceCopy = dataSourceBuilder.copy(dataSource, false, true);
+        try {
+            flush(cache, state, dataSourceCopy);
+            dataSourceBuilder.snapshot(destination, dataSourceCopy);
+        } finally {
+            dataSourceCopy.close();
         }
     }
 
@@ -1484,29 +1505,31 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         this.keySerializer = originalMap.keySerializer;
         this.valueSerializer = originalMap.valueSerializer;
 
-        // shutdown background compaction on original data source as it is no longer needed to be running as all data
-        // in that data source is only there as a starting point for reconnect now. So compacting it further is not
-        // helpful and will just burn resources.
-        originalMap.dataSource.stopAndDisableBackgroundCompaction();
+        reconnectState = new ReconnectState(-1, -1);
+        reconnectRecords = originalMap.pipeline.pausePipelineAndRun("copy", () -> {
+            // shutdown background compaction on original data source as it is no longer needed to be running as all
+            // data
+            // in that data source is only there as a starting point for reconnect now. So compacting it further is not
+            // helpful and will just burn resources.
+            originalMap.dataSource.stopAndDisableBackgroundCompaction();
 
-        // Take a snapshot, and use the snapshot database as my data source
-        this.dataSource = dataSourceBuilder.copy(originalMap.dataSource, true);
+            // Take a snapshot, and use the snapshot database as my data source
+            this.dataSource = dataSourceBuilder.copy(originalMap.dataSource, true, false);
 
-        // The old map's cache is going to become immutable, but that's OK, because the old map
-        // will NEVER be updated again.
-        assert originalMap.isHashed() : "The system should have made sure this was hashed by this point!";
-        final VirtualNodeCache<K, V> snapshotCache = originalMap.cache.snapshot();
-        flush(snapshotCache, originalMap.state, this.dataSource);
+            // The old map's cache is going to become immutable, but that's OK, because the old map
+            // will NEVER be updated again.
+            assert originalMap.isHashed() : "The system should have made sure this was hashed by this point!";
+            final VirtualNodeCache<K, V> snapshotCache = originalMap.cache.snapshot();
+            flush(snapshotCache, originalMap.state, this.dataSource);
+
+            return new RecordAccessorImpl<>(reconnectState, snapshotCache, keySerializer, valueSerializer, dataSource);
+        });
 
         // Set up the VirtualHasher which we will use during reconnect.
         // Initial timeout is intentionally very long, timeout is reduced once we receive the first leaf in the tree.
         reconnectIterator = new ConcurrentBlockingIterator<>(MAX_RECONNECT_HASHING_BUFFER_SIZE);
         reconnectHashingFuture = new CompletableFuture<>();
         reconnectHashingStarted = new AtomicBoolean(false);
-
-        reconnectState = new ReconnectState(-1, -1);
-        reconnectRecords =
-                new RecordAccessorImpl<>(reconnectState, snapshotCache, keySerializer, valueSerializer, dataSource);
 
         // Current statistics can only be registered when the node boots, requiring statistics
         // objects to be passed from version to version of the state.

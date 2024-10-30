@@ -35,8 +35,7 @@ import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Predicate;
 
-class DummyVirtualRoot<K extends VirtualKey, V extends VirtualValue>
-        extends PartialMerkleLeaf
+class DummyVirtualRoot<K extends VirtualKey, V extends VirtualValue> extends PartialMerkleLeaf
         implements VirtualRoot<K, V>, MerkleLeaf {
 
     private static final long CLASS_ID = 0x37cc269627e18eb6L;
@@ -404,9 +403,17 @@ class DummyVirtualRoot<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public RecordAccessor<K, V> detach(final Path destination) {
+    public RecordAccessor<K, V> detach() {
         this.detached = true;
         return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void snapshot(final Path destination) {
+        this.detached = true;
     }
 
     /**

@@ -50,7 +50,6 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -168,13 +167,8 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
         this.reconnectConfig = reconnectConfig;
         new ThreadConfiguration(threadManager)
                 .setRunnable(() -> {
-                    try {
-                        records = pipeline.detachCopy(root);
-                    } catch (final IOException z) {
-                        throw new UncheckedIOException(z);
-                    } finally {
-                        ready.countDown();
-                    }
+                    records = pipeline.pausePipelineAndRun("copy", root::detach);
+                    ready.countDown();
                 })
                 .setComponent("virtualmap")
                 .setThreadName("detacher")

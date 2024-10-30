@@ -259,7 +259,7 @@ class MerkleDbSnapshotTest {
         final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
         final VirtualDataSource original = dsBuilder.build("vm", false);
         // Simulate reconnect as a learner
-        final VirtualDataSource copy = dsBuilder.copy(original, true);
+        final VirtualDataSource copy = dsBuilder.copy(original, true, false);
 
         try {
             final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot");

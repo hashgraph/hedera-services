@@ -836,7 +836,7 @@ class VirtualMapTests extends VirtualTestBase {
 
         // Detach, and then make another copy which should cause it to flush.
         map1.getRoot().enableFlush();
-        map1.getRoot().detach(Path.of("tmp"));
+        map1.getRoot().detach();
         map0.release();
 
         map1.release();

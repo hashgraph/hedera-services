@@ -173,7 +173,7 @@ public class MerkleDbTest {
 
         // create datasource reusing existing metadata
         MerkleDbDataSource dataSource =
-                new MerkleDbDataSource(instance, tableName, instance.getNextTableId() - 1, tableConfig, false);
+                new MerkleDbDataSource(instance, tableName, instance.getNextTableId() - 1, tableConfig, false, false);
         // This datasource cannot be properly closed because MerkleDb instance is not aware of this.
         // Assertion error is expected
         assertThrows(AssertionError.class, dataSource::close);
@@ -304,7 +304,7 @@ public class MerkleDbTest {
         final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName2, tableConfig, false);
         Assertions.assertNotNull(dataSource2);
 
-        final MerkleDbDataSource activeCopy = instance.copyDataSource(dataSource2, true);
+        final MerkleDbDataSource activeCopy = instance.copyDataSource(dataSource2, true, false);
         dataSource1.close();
         dataSource2.close();
 
@@ -326,8 +326,8 @@ public class MerkleDbTest {
         final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName2, tableConfig, false);
         Assertions.assertNotNull(dataSource2);
 
-        final MerkleDbDataSource inactiveCopy1 = instance.copyDataSource(dataSource1, false);
-        final MerkleDbDataSource activeCopy2 = instance.copyDataSource(dataSource2, true);
+        final MerkleDbDataSource inactiveCopy1 = instance.copyDataSource(dataSource1, false, false);
+        final MerkleDbDataSource activeCopy2 = instance.copyDataSource(dataSource2, true, false);
 
         final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile("testSnapshotCopiedTables");
         // Make a snapshot of original table 1
@@ -443,8 +443,8 @@ public class MerkleDbTest {
         final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName2, tableConfig2, false);
         Assertions.assertNotNull(dataSource2);
 
-        final MerkleDbDataSource inactiveCopy1 = instance.copyDataSource(dataSource1, false);
-        final MerkleDbDataSource activeCopy2 = instance.copyDataSource(dataSource2, true);
+        final MerkleDbDataSource inactiveCopy1 = instance.copyDataSource(dataSource1, false, false);
+        final MerkleDbDataSource activeCopy2 = instance.copyDataSource(dataSource2, true, false);
 
         dataSource1.close();
         dataSource2.close();
@@ -465,7 +465,7 @@ public class MerkleDbTest {
         final MerkleDbTableConfig tableConfig = fixedConfig();
         final MerkleDbDataSource dataSource = instance.createDataSource(tableName + "1", tableConfig, true);
         Assertions.assertNotNull(dataSource);
-        final MerkleDbDataSource dataSourceCopy = instance.copyDataSource(dataSource, false);
+        final MerkleDbDataSource dataSourceCopy = instance.copyDataSource(dataSource, false, false);
         Assertions.assertNotNull(dataSourceCopy);
 
         Assertions.assertTrue(dataSource.isCompactionEnabled());

@@ -228,6 +228,25 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                         + "MB");
     }
 
+    @Test
+    void writeReadEmptyList(@TempDir final Path tempDir) throws IOException {
+        try (final AbstractLongList<?> list = createLongList()) {
+            final Path file = tempDir.resolve("writeReadEmptyList.ll");
+            // write longList data
+            list.writeToFile(file);
+            // check file exists and contains some data
+            assertTrue(Files.exists(file), "file does not exist");
+            // now try and construct a new LongList reading from the file
+            try (final LongList list2 = createLongListFromFile(file)) {
+                // now check data and other attributes
+                assertEquals(list2.capacity(), list.capacity(), "Unexpected value for list2.capacity()");
+                assertEquals(list2.size(), list2.size(), "Unexpected value for list2.size()");
+            }
+            // delete file as we are done with it
+            Files.delete(file);
+        }
+    }
+
     private void checkRange() {
         for (int i = 0; i < getSampleSize(); i++) {
             final long readValue = longList.get(i, 0);

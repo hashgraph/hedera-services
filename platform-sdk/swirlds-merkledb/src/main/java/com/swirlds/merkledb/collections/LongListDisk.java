@@ -133,6 +133,10 @@ public class LongListDisk extends AbstractLongList<Long> {
     protected void readBodyFromFileChannelOnInit(final String sourceFileName, final FileChannel fileChannel)
             throws IOException {
         tempFile = createTempFile(sourceFileName);
+        if (minValidIndex.get() < 0) {
+            // Nothing to read
+            return;
+        }
         // create temporary file for writing
         // the warning is suppressed because the file is not supposed to be closed
         // as this implementation uses a file channel from it.

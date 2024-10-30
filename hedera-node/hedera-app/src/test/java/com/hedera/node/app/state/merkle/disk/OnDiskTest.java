@@ -95,7 +95,6 @@ class OnDiskTest extends MerkleTestBase {
         // serialization paths we can
         tableConfig.hashesRamToDiskThreshold(0);
         tableConfig.maxNumberOfKeys(100);
-        tableConfig.preferDiskIndices(true);
 
         final var builder = new MerkleDbDataSourceBuilder(storageDir, tableConfig);
         virtualMap = new VirtualMap<>(
