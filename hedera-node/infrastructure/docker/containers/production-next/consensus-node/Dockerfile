@@ -226,8 +226,6 @@ ENV JAVA_VERSION "jdk-21.0.4+7"
 ENV JAVA_HOME /usr/local/java
 ENV PATH ${JAVA_HOME}/bin:${PATH}
 
-ENV CONTAINER_TSR_ENABLED "true"
-
 # Install Java
 COPY --from=java-builder ${JAVA_HOME}/ ${JAVA_HOME}/
 
@@ -282,6 +280,10 @@ ENV MALLOC_ARENA_MAX 4
 
 # Log Folder Name Override
 ENV LOG_DIR_NAME ""
+
+# If "true" or an integer between 1 & 2^63-1 after running consensus entrypoint.sh will block indefinitely.
+# Otherwise entrypoint.sh will return the exit code from consensus.
+ENV CONTAINER_TSR_ENABLED "false"
 
 # Define Volume Bindpoints
 VOLUME "/opt/hgcapp/accountBalances"
