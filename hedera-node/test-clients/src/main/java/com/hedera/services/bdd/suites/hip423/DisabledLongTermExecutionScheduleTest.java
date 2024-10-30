@@ -27,16 +27,24 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 
 // Enable when long term scheduling is enabled
-// @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-// @HapiTestLifecycle
+@Disabled
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@HapiTestLifecycle
 public class DisabledLongTermExecutionScheduleTest {
 
     private static final String RECEIVER = "receiver";
@@ -47,7 +55,7 @@ public class DisabledLongTermExecutionScheduleTest {
     private static final String THREE_SIG_XFER = "threeSigXfer";
     private static final String SCHEDULING_LONG_TERM_ENABLED = "scheduling.longTermEnabled";
 
-    //    @BeforeAll
+    @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
         // override and preserve old values
         lifecycle.overrideInClass(Map.of(
@@ -57,8 +65,8 @@ public class DisabledLongTermExecutionScheduleTest {
                 "CryptoTransfer,ConsensusSubmitMessage,TokenBurn,TokenMint,CryptoApproveAllowance"));
     }
 
-    //    @HapiTest
-    //    @Order(1)
+    @HapiTest
+    @Order(1)
     public Stream<DynamicTest> waitForExpiryIgnoredWhenLongTermDisabled() {
 
         return defaultHapiSpec("WaitForExpiryIgnoredWhenLongTermDisabled")
@@ -85,8 +93,8 @@ public class DisabledLongTermExecutionScheduleTest {
                                 .isExecuted());
     }
 
-    //    @HapiTest
-    //    @Order(2)
+    @HapiTest
+    @Order(2)
     public Stream<DynamicTest> expiryIgnoredWhenLongTermDisabled() {
         return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabled")
                 .given(
@@ -108,8 +116,8 @@ public class DisabledLongTermExecutionScheduleTest {
                         getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
-    //    @HapiTest
-    //    @Order(3)
+    @HapiTest
+    @Order(3)
     public Stream<DynamicTest> waitForExpiryIgnoredWhenLongTermDisabledThenEnabled() {
 
         return defaultHapiSpec("WaitForExpiryIgnoredWhenLongTermDisabledThenEnabled")
@@ -139,8 +147,8 @@ public class DisabledLongTermExecutionScheduleTest {
                         overriding(SCHEDULING_LONG_TERM_ENABLED, "false"));
     }
 
-    //    @HapiTest
-    //    @Order(4)
+    @HapiTest
+    @Order(4)
     public Stream<DynamicTest> expiryIgnoredWhenLongTermDisabledThenEnabled() {
         return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabledThenEnabled")
                 .given(

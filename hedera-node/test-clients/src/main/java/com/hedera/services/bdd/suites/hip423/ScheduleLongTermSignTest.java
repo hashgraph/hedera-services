@@ -70,6 +70,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
@@ -79,13 +81,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 
 // Enable when long term scheduling is enabled
-// @HapiTestLifecycle
+@Disabled
+@HapiTestLifecycle
 public class ScheduleLongTermSignTest {
 
-    //    @BeforeAll
+    @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
         // override and preserve old values
         lifecycle.overrideInClass(Map.of(
@@ -97,7 +102,7 @@ public class ScheduleLongTermSignTest {
                         + "Freeze,ContractCall,ContractCreate,ContractUpdate,ContractDelete"));
     }
 
-    //    @HapiTest
+    @HapiTest
     final Stream<DynamicTest> changeInNestedSigningReqsRespected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -146,16 +151,7 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private Key bumpThirdNestedThresholdSigningReq(Key source) {
-        var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
-        newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(2));
-        var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
-        return source.toBuilder()
-                .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
-                .build();
-    }
-
-    //    @HapiTest
+    @HapiTest
     final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -205,7 +201,7 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    //    @HapiTest
+    @HapiTest
     final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -252,7 +248,7 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    //    @HapiTest
+    @HapiTest
     final Stream<DynamicTest> nestedSigningReqsWorkAsExpected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -292,7 +288,7 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    //    @HapiTest
+    @HapiTest
     final Stream<DynamicTest> receiverSigRequiredNotConfusedByOrder() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -330,7 +326,7 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    //    @HapiTest
+    @HapiTest
     final Stream<DynamicTest> extraSigsDontMatterAtExpiry() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -424,7 +420,7 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    //    @HapiTest
+    @HapiTest
     final Stream<DynamicTest> receiverSigRequiredNotConfusedByMultiSigSender() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -466,7 +462,7 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    //    @HapiTest
+    @HapiTest
     final Stream<DynamicTest> receiverSigRequiredUpdateIsRecognized() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -513,7 +509,7 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(receiver).hasTinyBars(1));
     }
 
-    //    @HapiTest
+    @HapiTest
     final Stream<DynamicTest> basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
@@ -529,7 +525,7 @@ public class ScheduleLongTermSignTest {
                 .then(getScheduleInfo(BASIC_XFER).hasSignatories(RECEIVER, SENDER));
     }
 
-    //    @HapiTest
+    @HapiTest
     final Stream<DynamicTest> signalsIrrelevantSig() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
@@ -545,7 +541,7 @@ public class ScheduleLongTermSignTest {
                         .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID));
     }
 
-    //    @HapiTest
+    @HapiTest
     final Stream<DynamicTest> signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
         var txnBody = mintToken(TOKEN_A, 50000000L);
 
@@ -571,7 +567,7 @@ public class ScheduleLongTermSignTest {
                         .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID));
     }
 
-    //    @HapiTest
+    @HapiTest
     public Stream<DynamicTest> triggersUponFinishingPayerSig() {
         return defaultHapiSpec("TriggersUponFinishingPayerSigAtExpiry")
                 .given(
@@ -605,7 +601,7 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
-    //    @HapiTest
+    @HapiTest
     public Stream<DynamicTest> triggersUponAdditionalNeededSig() {
         return defaultHapiSpec("TriggersUponAdditionalNeededSigAtExpiry")
                 .given(
@@ -637,7 +633,7 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
-    //    @HapiTest
+    @HapiTest
     public Stream<DynamicTest> sharedKeyWorksAsExpected() {
         return defaultHapiSpec("RequiresSharedKeyToSignBothSchedulingAndScheduledTxnsAtExpiry")
                 .given(
@@ -671,7 +667,7 @@ public class ScheduleLongTermSignTest {
                         getTxnRecord(CREATION).scheduled());
     }
 
-    //    @HapiTest
+    @HapiTest
     public Stream<DynamicTest> overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 
@@ -723,7 +719,7 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(ADDRESS_BOOK_CONTROL).hasTinyBars(changeFromSnapshot(BEFORE, +2)));
     }
 
-    //    @HapiTest
+    @HapiTest
     public Stream<DynamicTest> retestsActivationOnSignWithEmptySigMap() {
         return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMapAtExpiry")
                 .given(newKeyNamed("a"), newKeyNamed("b"), newKeyListNamed("ab", List.of("a", "b")), newKeyNamed(ADMIN))
@@ -758,6 +754,15 @@ public class ScheduleLongTermSignTest {
     private Key lowerThirdNestedThresholdSigningReq(Key source) {
         var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
         newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(1));
+        var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
+        return source.toBuilder()
+                .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
+                .build();
+    }
+
+    private Key bumpThirdNestedThresholdSigningReq(Key source) {
+        var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
+        newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(2));
         var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
         return source.toBuilder()
                 .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
