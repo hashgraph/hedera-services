@@ -117,7 +117,7 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(loader).isNotNull();
         assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
-        assertThatCode(loader::generateIfNecessary).doesNotThrowAnyException();
+        assertThatCode(loader::generate).doesNotThrowAnyException();
         assertThatCode(loader::verify).doesNotThrowAnyException();
         assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
 
@@ -189,13 +189,9 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(loader).isNotNull();
         assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
-        assertThatCode(loader::generateIfNecessary).isInstanceOf(KeyGeneratingException.class);
+        assertThatCode(loader::generate).isInstanceOf(KeyGeneratingException.class);
         assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
-        if (directoryName.equals("hybrid-invalid-case-2") || directoryName.equals("enhanced-invalid-case-2")) {
-            assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
-        } else {
-            assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
-        }
+        assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
     }
 
