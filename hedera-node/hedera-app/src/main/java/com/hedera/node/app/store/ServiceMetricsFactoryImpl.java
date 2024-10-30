@@ -21,6 +21,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.ExampleContractMetrics;
+import com.hedera.node.app.service.token.ExampleTokenMetrics;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.metrics.ServiceMetrics;
@@ -45,6 +47,7 @@ public class ServiceMetricsFactoryImpl implements ServiceMetricsFactory {
 
     static {
         METRICS_NAME_TO_INTERFACE_MAPPINGS.put(ContractService.NAME, ExampleContractMetrics.class);
+        METRICS_NAME_TO_INTERFACE_MAPPINGS.put(TokenService.NAME, ExampleTokenMetrics.class);
     }
 
     private final ServiceScopeLookup serviceScopeLookup;

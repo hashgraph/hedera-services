@@ -566,4 +566,14 @@ public interface HandleContext {
         ON,
         OFF
     }
+
+    /**
+     * See docs of {@link com.hedera.node.app.spi.metrics.ServiceMetricsContext#serviceMetrics(TransactionBody, Class)}
+     * todo
+     * @param txBody
+     * @param metricsInterface
+     * @return
+     * @param <T>
+     */
+    <T> T metrics(@NonNull final TransactionBody txBody, @NonNull Class<T> metricsInterface);
 }

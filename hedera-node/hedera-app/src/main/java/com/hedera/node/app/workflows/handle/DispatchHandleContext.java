@@ -526,4 +526,9 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         }
         return castBuilder(childDispatch.recordBuilder(), recordBuilderClass);
     }
+
+    @Override
+    public <T> T metrics(@NonNull final TransactionBody txBody, @NonNull Class<T> metricsInterface) {
+        return serviceMetricsFactory.metrics(txBody, metricsInterface);
+    }
 }
