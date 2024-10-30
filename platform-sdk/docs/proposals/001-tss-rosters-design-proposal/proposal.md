@@ -234,9 +234,9 @@ Startup Tasks:
 3. previousRoster := translateToRoster(currentAddressBook)
 4. currentRoster := translateToRoster(configAddressBook)
 5. currentRound := state round +1
-6. rosterHistory := `[(currentRoster, currentRound), (previousRoster, 0)]`
-7. set (previousRoster, 0) as the active roster in the roster state.
-8. set (currentRoster, currentRound) as the active roster in the roster state.
+6. set (previousRoster, 0) as the active roster in the roster state.
+7. set (currentRoster, currentRound) as the active roster in the roster state.
+8. rosterHistory := `[(currentRoster, currentRound), (previousRoster, 0)]`
 9. Start the platform with the new rosterHistory.
 
 Cleanup Tasks:
@@ -686,4 +686,4 @@ Manual Testing Plan:
 2. There must be a loadable state present on disk in the standard location.
 3. Provide a `override-config.txt` file on disk in the same directory that `config.txt` is normally provided.
 4. Do not provide a `genesis-config.txt` or `config.txt` file on disk.
-5. After startup the `override-config.txt` file will be moved to a subdirectory `archive/yyyy-MM-dd_HH-mm-ss/`.
+5. After startup the `override-config.txt` file will be moved to a subdirectory `.archive/yyyy-MM-dd_HH-mm-ss/`.
