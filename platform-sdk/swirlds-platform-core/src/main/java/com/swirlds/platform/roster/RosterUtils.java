@@ -74,7 +74,7 @@ public final class RosterUtils {
      * Build a map from a long nodeId to a RosterEntry for a given Roster.
      *
      * @param roster a roster
-     * @return Map&lt;Long, RosterEntry&gt;
+     * @return {@code Map<Long, RosterEntry>}
      */
     @Nullable
     public static Map<Long, RosterEntry> toMap(@Nullable final Roster roster) {
