@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.junit.TestBase.extractAllTestAnnotatedMethods;
+import static com.hedera.services.bdd.suites.utils.DynamicTestUtils.extractAllTestAnnotatedMethods;
 
 import com.hedera.services.bdd.junit.ContextRequirement;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.DynamicTest;
 @HapiTestLifecycle
 public class AllLeakyTestsWithLongTermFlagEnabledTest {
 
-    private static final Supplier<?>[] ALL_TESTS = new Supplier<?>[]{
+    private static final Supplier<?>[] ALL_TESTS = new Supplier<?>[] {
         FutureSchedulableOpsTest::new,
         ScheduleCreateTest::new,
         ScheduleDeleteTest::new,
@@ -49,20 +49,22 @@ public class AllLeakyTestsWithLongTermFlagEnabledTest {
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.overrideInClass(Map.of(
-            "scheduling.whitelist",
-            "ContractCall,CryptoCreate,CryptoTransfer,FileDelete,FileUpdate,"
-                + "SystemDelete,ConsensusSubmitMessage,TokenBurn,TokenMint,CryptoApproveAllowance",
-            "scheduling.longTermEnabled",
-            "true"));
+                "scheduling.whitelist",
+                "ContractCall,CryptoCreate,CryptoTransfer,FileDelete,FileUpdate,"
+                        + "SystemDelete,ConsensusSubmitMessage,TokenBurn,TokenMint,CryptoApproveAllowance",
+                "scheduling.longTermEnabled",
+                "true"));
     }
 
-    @LeakyHapiTest(overrides = {
-        "tokens.nfts.areEnabled",
-        "tokens.nfts.maxBatchSizeMint",
-        "ledger.schedule.txExpiryTimeSecs",
-        "ledger.transfers.maxLen",
-        "ledger.tokenTransfers.maxLen",
-    }, requirement = ContextRequirement.FEE_SCHEDULE_OVERRIDES)
+    @LeakyHapiTest(
+            overrides = {
+                "tokens.nfts.areEnabled",
+                "tokens.nfts.maxBatchSizeMint",
+                "ledger.schedule.txExpiryTimeSecs",
+                "ledger.transfers.maxLen",
+                "ledger.tokenTransfers.maxLen",
+            },
+            requirement = ContextRequirement.FEE_SCHEDULE_OVERRIDES)
     final Stream<DynamicTest> runAllTests() {
         var allDynamicTests = extractAllTestAnnotatedMethods(ALL_TESTS, IGNORED_TESTS, LeakyHapiTest.class);
         return allDynamicTests.stream().flatMap(s -> s);

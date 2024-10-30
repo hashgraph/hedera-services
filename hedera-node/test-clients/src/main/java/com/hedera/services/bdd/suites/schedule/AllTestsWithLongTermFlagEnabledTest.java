@@ -16,9 +16,10 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
+import static com.hedera.services.bdd.suites.utils.DynamicTestUtils.extractAllTestAnnotatedMethods;
+
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.junit.TestBase;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -30,9 +31,9 @@ import org.junit.jupiter.api.DynamicTest;
 
 // Running all test methods that are specified in ALL_TESTS constant with scheduling.longTermEnabled enabled
 @HapiTestLifecycle
-public class AllTestsWithLongTermFlagEnabledTest extends TestBase {
+public class AllTestsWithLongTermFlagEnabledTest {
 
-    private static final Supplier<?>[] ALL_TESTS = new Supplier<?>[]{
+    private static final Supplier<?>[] ALL_TESTS = new Supplier<?>[] {
         FutureSchedulableOpsTest::new,
         ScheduleCreateTest::new,
         ScheduleDeleteTest::new,
@@ -45,11 +46,11 @@ public class AllTestsWithLongTermFlagEnabledTest extends TestBase {
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.overrideInClass(Map.of(
-            "scheduling.whitelist",
-            "ContractCall,CryptoCreate,CryptoTransfer,FileDelete,FileUpdate,"
-                + "SystemDelete,ConsensusSubmitMessage,TokenBurn,TokenMint,CryptoApproveAllowance",
-            "scheduling.longTermEnabled",
-            "true"));
+                "scheduling.whitelist",
+                "ContractCall,CryptoCreate,CryptoTransfer,FileDelete,FileUpdate,"
+                        + "SystemDelete,ConsensusSubmitMessage,TokenBurn,TokenMint,CryptoApproveAllowance",
+                "scheduling.longTermEnabled",
+                "true"));
     }
 
     @HapiTest
