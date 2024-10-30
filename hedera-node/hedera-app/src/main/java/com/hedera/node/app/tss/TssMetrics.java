@@ -18,10 +18,14 @@ package com.hedera.node.app.tss;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -44,11 +48,11 @@ public class TssMetrics {
     private static final String TSS_MESSAGE_COUNTER_METRIC = "tss_message_total";
     private static final String TSS_MESSAGE_COUNTER_METRIC_DESC =
             "total numbers of tss message transactions for roster ";
-    private final Map<Bytes, LongGauge> messagesPerCandidateRoster = new HashMap<>();
+    private final Map<Bytes, Counter> messagesPerCandidateRoster = new HashMap<>();
 
     private static final String TSS_VOTE_COUNTER_METRIC = "tss_vote_total";
     private static final String TSS_VOTE_COUNTER_METRIC_DESC = "total numbers of tss vote transactions for roster ";
-    private final Map<Bytes, LongGauge> votesPerCandidateRoster = new HashMap<>();
+    private final Map<Bytes, Counter> votesPerCandidateRoster = new HashMap<>();
 
     private static final String TSS_SHARES_AGGREGATION_TIME = "tss_shares_aggregation_time";
     private static final String TSS_SHARES_AGGREGATION_TIME_DESC =
@@ -57,8 +61,7 @@ public class TssMetrics {
             new LongGauge.Config("app", TSS_SHARES_AGGREGATION_TIME).withDescription(TSS_SHARES_AGGREGATION_TIME_DESC);
     private final LongGauge tssSharesAggregationTime;
 
-    // store the start
-    private long candidateRosterLifecycleStart = 0L;
+    private Instant candidateRosterLifecycleStart = null;
 
     /**
      * Constructor for the TssMetrics.
@@ -77,22 +80,19 @@ public class TssMetrics {
      * Track the count of messages per candidate roster.
      *
      * @param targetRosterHash the {@link Bytes} of the candidate roster
-     * @param count the count of messages for this particular candidate roster
      */
-    public void updateMessagesPerCandidateRoster(@NonNull final Bytes targetRosterHash, final long count) {
+    public void updateMessagesPerCandidateRoster(@NonNull final Bytes targetRosterHash) {
         requireNonNull(targetRosterHash, "targetRosterHash must not be null");
 
         //
         if (!messagesPerCandidateRoster.containsKey(targetRosterHash)) {
-            final LongGauge.Config TSS_MESSAGE_TX_COUNTER = new LongGauge.Config("app", TSS_MESSAGE_COUNTER_METRIC)
+            final Counter.Config TSS_MESSAGE_TX_COUNTER = new Counter.Config("app", TSS_MESSAGE_COUNTER_METRIC)
                     .withDescription(TSS_MESSAGE_COUNTER_METRIC_DESC + targetRosterHash);
-            final LongGauge tssMessageTxCounter = metrics.getOrCreate(TSS_MESSAGE_TX_COUNTER);
+            final Counter tssMessageTxCounter = metrics.getOrCreate(TSS_MESSAGE_TX_COUNTER);
+            tssMessageTxCounter.increment();
             messagesPerCandidateRoster.put(targetRosterHash, tssMessageTxCounter);
         } else {
-            final var candidateRosterMessages = messagesPerCandidateRoster.get(targetRosterHash);
-            if (candidateRosterMessages != null) {
-                candidateRosterMessages.set(count);
-            }
+            getMessagesPerCandidateRoster(targetRosterHash).increment();
         }
     }
 
@@ -100,37 +100,42 @@ public class TssMetrics {
      * Track the count of votes per candidate roster.
      *
      * @param targetRosterHash the {@link Bytes} of the candidate roster
-     * @param count the count of votes for this particular candidate roster
      */
-    public void updateVotesPerCandidateRoster(@NonNull final Bytes targetRosterHash, final long count) {
+    public void updateVotesPerCandidateRoster(@NonNull final Bytes targetRosterHash) {
         requireNonNull(targetRosterHash, "targetRosterHash must not be null");
 
         //
         if (!votesPerCandidateRoster.containsKey(targetRosterHash)) {
-            final LongGauge.Config TSS_VOTE_TX_COUNTER = new LongGauge.Config("app", TSS_VOTE_COUNTER_METRIC)
+            final Counter.Config TSS_VOTE_TX_COUNTER = new Counter.Config("app", TSS_VOTE_COUNTER_METRIC)
                     .withDescription(TSS_VOTE_COUNTER_METRIC_DESC + targetRosterHash);
-            final LongGauge tssVoteTxCounter = metrics.getOrCreate(TSS_VOTE_TX_COUNTER);
+            final Counter tssVoteTxCounter = metrics.getOrCreate(TSS_VOTE_TX_COUNTER);
+            tssVoteTxCounter.increment();
             votesPerCandidateRoster.put(targetRosterHash, tssVoteTxCounter);
         } else {
-            final var candidateRosterVotes = votesPerCandidateRoster.get(targetRosterHash);
-            if (candidateRosterVotes != null) {
-                candidateRosterVotes.set(count);
-            }
+            getVotesPerCandidateRoster(targetRosterHash).increment();
         }
+    }
+
+    /**
+     * Track when the vote for candidate roster is closed.
+     *
+     * @param rosterLifecycleEndTime the time at which the candidate roster is set
+     */
+    public void updateCandidateRosterLifecycle(@NonNull final Instant rosterLifecycleEndTime) {
+        requireNonNull(rosterLifecycleEndTime, "rosterLifecycleEndTime must not be null");
+        final long lifecycle = Duration.between(this.candidateRosterLifecycleStart, rosterLifecycleEndTime)
+                .toMillis();
+        tssCandidateRosterLifecycle.set(lifecycle);
     }
 
     /**
      * Track when the candidate roster is set.
      *
-     * @param lifecycle the time at which the candidate roster is set
+     * @param rosterLifecycleStartTime the time at which the candidate roster was set
      */
-    public void updateCandidateRosterLifecycle(final long lifecycle) {
-        if (lifecycle <= 0) throw new IllegalArgumentException("Candidate roster lifecycle must be positive");
-        tssCandidateRosterLifecycle.set(lifecycle);
-    }
-
-    public void trackCandidateRosterLifecycleStart(final long aggregationStartTime) {
-        this.candidateRosterLifecycleStart = aggregationStartTime;
+    public void trackCandidateRosterLifecycleStart(@NonNull final Instant rosterLifecycleStartTime) {
+        requireNonNull(rosterLifecycleStartTime, "rosterLifecycleStartTime must not be null");
+        this.candidateRosterLifecycleStart = rosterLifecycleStartTime;
     }
 
     /**
@@ -142,5 +147,37 @@ public class TssMetrics {
         if (aggregationTime <= 0)
             throw new IllegalArgumentException("Private shares aggregation time must be positive");
         tssSharesAggregationTime.set(aggregationTime);
+    }
+
+    /**
+     * @param targetRosterHash the {@link Bytes} of the candidate roster
+     * @return the metric which contains how many votes are registered for candidate roster
+     */
+    public @NonNull Counter getMessagesPerCandidateRoster(@NonNull Bytes targetRosterHash) {
+        return messagesPerCandidateRoster.get(targetRosterHash);
+    }
+
+    /**
+     * @param targetRosterHash the {@link Bytes} of the candidate roster
+     * @return the metric which contains how many votes are registered for candidate roster
+     */
+    public @NonNull Counter getVotesPerCandidateRoster(@NonNull Bytes targetRosterHash) {
+        return votesPerCandidateRoster.get(targetRosterHash);
+    }
+
+    /**
+     * @return the aggregation time from the metric
+     */
+    @VisibleForTesting
+    public long getAggregationTime() {
+        return tssSharesAggregationTime.get();
+    }
+
+    /**
+     * @return the candidate roster lifecycle from the metric
+     */
+    @VisibleForTesting
+    public long getCandidateRosterLifecycle() {
+        return tssCandidateRosterLifecycle.get();
     }
 }

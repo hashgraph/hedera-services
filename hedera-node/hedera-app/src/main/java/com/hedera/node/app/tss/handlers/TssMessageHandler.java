@@ -98,7 +98,6 @@ public class TssMessageHandler implements TransactionHandler {
                 computeTssParticipantDirectory(rosterStore.getActiveRoster(), maxSharesPerNode, (int)
                         context.networkInfo().selfNodeInfo().nodeId());
         final var result = tssCryptographyManager.handleTssMessageTransaction(op, tssParticipantDirectory, context);
-        // tss aggregation end
         result.thenAccept(ledgerIdAndSignature -> {
             if (ledgerIdAndSignature != null) {
                 final var signature =
@@ -115,6 +114,6 @@ public class TssMessageHandler implements TransactionHandler {
                 submissionManager.submitTssVote(tssVote, context);
             }
         });
-        tssMetrics.updateMessagesPerCandidateRoster(candidateRosterHash, numberOfAlreadyExistingMessages);
+        tssMetrics.updateMessagesPerCandidateRoster(candidateRosterHash);
     }
 }

@@ -50,9 +50,9 @@ import org.apache.logging.log4j.Logger;
 public class TssCryptographyManager {
     private static final Logger log = LogManager.getLogger(TssCryptographyManager.class);
     private final TssLibrary tssLibrary;
-    private AppContext.Gossip gossip;
-    private Executor libraryExecutor;
-    private TssMetrics tssMetrics;
+    private final AppContext.Gossip gossip;
+    private final Executor libraryExecutor;
+    private final TssMetrics tssMetrics;
 
     @Inject
     public TssCryptographyManager(
@@ -126,6 +126,8 @@ public class TssCryptographyManager {
                     if (!tssMessageThresholdMet) {
                         return null;
                     }
+
+                    // track the time before calls to TSS-Library
                     final var aggregationCalculationStart =
                             InstantSource.system().instant();
                     final var validTssMessages = getTssMessages(validTssOps);
@@ -138,10 +140,11 @@ public class TssCryptographyManager {
 
                     final BitSet tssVoteBitSet = computeTssVoteBitSet(validTssOps);
 
+                    // calculate the time it took to aggregate and compute ledger id, public shares and private shares
                     final var aggregationCalculationEnd = InstantSource.system().instant();
                     final var durationOfAggregation = Duration.between(
                                     aggregationCalculationStart, aggregationCalculationEnd)
-                            .toSeconds();
+                            .toMillis();
                     tssMetrics.updateAggregationTime(durationOfAggregation);
 
                     return new LedgerIdWithSignature(ledgerId, signature, tssVoteBitSet);

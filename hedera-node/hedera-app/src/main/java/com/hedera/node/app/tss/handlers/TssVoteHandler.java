@@ -33,6 +33,8 @@ import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.time.InstantSource;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -74,9 +76,11 @@ public class TssVoteHandler implements TransactionHandler {
 
         if (!TssVoteHandler.hasReachedThreshold(txBody, context)) {
             tssBaseStore.put(tssVoteMapKey, txBody);
-            final int numberOfAlreadyExistingVotes =
-                    tssBaseStore.getTssVotes(candidateRosterHash).size();
-            tssMetrics.updateVotesPerCandidateRoster(candidateRosterHash, numberOfAlreadyExistingVotes);
+            tssMetrics.updateVotesPerCandidateRoster(candidateRosterHash);
+        } else {
+            // the voting is closed for this candidate roster, hence we calculate its lifecycle
+            final Instant candidateRosterLifecycleEnd = InstantSource.system().instant();
+            tssMetrics.updateCandidateRosterLifecycle(candidateRosterLifecycleEnd);
         }
     }
 

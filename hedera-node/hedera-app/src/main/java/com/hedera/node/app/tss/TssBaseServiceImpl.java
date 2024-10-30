@@ -42,6 +42,8 @@ import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -90,8 +92,8 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.signingExecutor = requireNonNull(signingExecutor);
         this.component = DaggerTssBaseServiceComponent.factory()
                 .create(appContext.gossip(), submissionExecutor, tssLibraryExecutor, metrics);
-        tssHandlers = new TssHandlers(this.component.tssMessageHandler(), this.component.tssVoteHandler());
-        tssSubmissions = this.component.tssSubmissions();
+        this.tssHandlers = new TssHandlers(this.component.tssMessageHandler(), this.component.tssVoteHandler());
+        this.tssSubmissions = this.component.tssSubmissions();
         this.tssLibrary = requireNonNull(tssLibrary);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
     }
@@ -142,6 +144,9 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
 
+        // we keep track of the starting point of the candidate roster's lifecycle
+        final Instant candidateRosterLifecycleStart = InstantSource.system().instant();
+        tssMetrics.trackCandidateRosterLifecycleStart(candidateRosterLifecycleStart);
         // (TSS-FUTURE) Implement `keyActiveRoster`
         // https://github.com/hashgraph/hedera-services/issues/16166
 
