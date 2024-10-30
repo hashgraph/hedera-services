@@ -59,31 +59,11 @@ public class MerkleTreeSnapshotReader {
      * @param state the Merkle tree state
      * @param hash the hash of the state
      * @param sigSet the signature set
-     *
      */
-    public record StateFileData(@NonNull MerkleRoot state, @NonNull Hash hash, @Nullable SigSet sigSet) {
-
-        @Override
-        @NonNull
-        public MerkleRoot state() {
-            return state;
-        }
-
-        @Override
-        @NonNull
-        public Hash hash() {
-            return hash;
-        }
-
-        @Override
-        @Nullable
-        public SigSet sigSet() {
-            return sigSet;
-        }
-    }
+    public record StateFileData(@NonNull MerkleRoot state, @NonNull Hash hash, @Nullable SigSet sigSet){}
 
     /**
-     * Reads a SignedState from disk using the provided snapshot reader function.
+     * Reads a state file from disk
      * @param stateFile the file to read from
      * @return a signed state with it's associated hash (as computed when the state was serialized)
      * @throws IOException if there is any problems with reading from a file
