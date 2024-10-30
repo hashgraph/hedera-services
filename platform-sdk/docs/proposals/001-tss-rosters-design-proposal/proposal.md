@@ -210,47 +210,39 @@ Startup Tasks:
 
 Cleanup Tasks:
 
-1. Once the first saved state is created, All `config.txt` related files are moved to subdirectory `.
-   archive/yyyy-MM-dd_HH-mm-ss/`.
+1. Once the first saved state is created, All `config.txt` related files are moved to subdirectory
+   `.archive/yyyy-MM-dd_HH-mm-ss/`.
 
-##### MODE: Software Upgrade
+##### MODE: Migration Software Upgrade
 
 Conditions:
 
 1. A state is loaded from disk
 2. A software upgrade is happening
-3. No `override-config.txt` file is present on disk
+3. A `config.txt` file is present on disk
+4. The roster state is empty (no candidate roster and no active rosters)
+5. No `override-config.txt` file is present on disk
 
 Ignored Files: (Log warning if present)
 
 1. `genesis-config.txt`
-2. `config.txt` - if a candidate roster is present in the state
 
 Startup Tasks:
 
-1. If there is a candidate roster in the state (Non-Migration Software Upgrade)
-   1. candidateRoster := read the candidate roster from the roster state.
-   2. currentRound := state round +1
-   3. (previousRoster, previousRound) := read the latest (current) active roster and round from the roster state.
-   4. new rosterHistory := `[(candidateRoster, currentRound), (previousRoster, previousRound)]`
-   5. clear the candidate roster from the roster state.
-   6. set (candidateRoster, currentRound) as the new active roster in the roster state.
-   7. Start the platform with the new rosterHistory.
-2. If the roster state is empty: no candidate roster and no active rosters. (Migration Software Upgrade)
-   1. Read the current AddressBooks from the platform state.
-   2. configAddressBook := Read the address book in config.txt
-   3. previousRoster := translateToRoster(currentAddressBook)
-   4. currentRoster := translateToRoster(configAddressBook)
-   5. currentRound := state round +1
-   6. rosterHistory := `[(currentRoster, currentRound), (previousRoster, 0)]`
-   7. set (previousRoster, 0) as the active roster in the roster state.
-   8. set (currentRoster, currentRound) as the active roster in the roster state.
-   9. Start the platform with the new rosterHistory.
+1. Read the current AddressBooks from the platform state.
+2. configAddressBook := Read the address book in config.txt
+3. previousRoster := translateToRoster(currentAddressBook)
+4. currentRoster := translateToRoster(configAddressBook)
+5. currentRound := state round +1
+6. rosterHistory := `[(currentRoster, currentRound), (previousRoster, 0)]`
+7. set (previousRoster, 0) as the active roster in the roster state.
+8. set (currentRoster, currentRound) as the active roster in the roster state.
+9. Start the platform with the new rosterHistory.
 
 Cleanup Tasks:
 
-1. Once the first saved state is created, All `config.txt` related files are moved to subdirectory `.
-   archive/yyyy-MM-dd_HH-mm-ss/`.
+1. Once the first saved state is created, All `config.txt` related files are moved to subdirectory
+   `.archive/yyyy-MM-dd_HH-mm-ss/`.
 
 ##### MODE: Normal Restart
 
@@ -258,12 +250,12 @@ Conditions:
 
 1. A state is loaded from disk
 2. No software upgrade is happening
+3. No `override-config.txt` file is present on disk
 
 Ignored Files: (Log warning if present)
 
 1. `config.txt`
 2. `genesis-config.txt`
-3. `override-config.txt`
 
 Startup Tasks:
 
@@ -272,13 +264,41 @@ Startup Tasks:
    2. Start the platform with the existing rosterHistory.
 2. If there is no roster state content, this is a fatal error: The migration did not happen on software upgrade.
 
-##### MODE: Network Transplant
+##### MODE: Subsequent Software Upgrades
 
 Conditions:
 
 1. A state is loaded from disk
 2. A software upgrade is happening
-3. An `override-config.txt` file is present on disk
+3. There is a candidate roster in the roster state
+4. No `override-config.txt` file is present on disk
+
+Ignored Files: (Log warning if present)
+
+1. `genesis-config.txt`
+2. `config.txt`
+
+Startup Tasks:
+
+1. candidateRoster := read the candidate roster from the roster state.
+2. currentRound := state round +1
+3. (previousRoster, previousRound) := read the latest (current) active roster and round from the roster state.
+4. new rosterHistory := `[(candidateRoster, currentRound), (previousRoster, previousRound)]`
+5. clear the candidate roster from the roster state.
+6. set (candidateRoster, currentRound) as the new active roster in the roster state.
+7. Start the platform with the new rosterHistory.
+
+Cleanup Tasks:
+
+1. Once the first saved state is created, All `config.txt` related files are moved to subdirectory
+   `.archive/yyyy-MM-dd_HH-mm-ss/`.
+
+##### MODE: Network Transplant
+
+Conditions:
+
+1. A state is loaded from disk
+2. An `override-config.txt` file is present on disk
 
 Ignored Files: (Log warning if present)
 
@@ -286,26 +306,20 @@ Ignored Files: (Log warning if present)
 
 Startup Tasks:
 
-1. If there is a candidate roster in the state (Non-Migration Software Upgrade)
-   1. candidateRoster := read the candidate roster from the roster state.
-   2. overrideAddressBook := read the address book from override-config.txt
-   3. overrideRoster := translateToRoster(overrideRoster).
-   4. currentRound := state round +1
-   5. (previousRoster, previousRound) := read the latest (current) active roster and round from the roster state.
-   6. new rosterHistory := `[(overrideRoster, currentRound), (previousRoster, previousRound)]`
-   7. clear the candidate roster from the roster state.
-   8. set (overrideRoster, currentRound) as the new active roster in the roster state.
-   9. Start the platform with the new rosterHistory.
-2. If the roster state is empty: no candidate roster and no active rosters. (Migration Software Upgrade)
-   1. Read the current and previous AddressBooks from the platform state.
-   2. overrideAddressBook := Read the address book from override-config.txt
-   3. overrideRoster := translateToRoster(overrideAddressBook)
-   4. previousRoster := translateToRoster(currentAddressBook)
-   5. currentRound := state round +1
-   6. rosterHistory := `[(overrideRoster, currentRound), (previousRoster, 0)]`
-   7. set (previousRoster, 0) as the active roster in the roster state.
-   8. set (overrideRoster, currentRound) as the active roster in the roster state.
-   9. Start the platform with the new rosterHistory.
+1. overrideAddressBook := read the address book from override-config.txt
+2. overrideRoster := translateToRoster(overrideRoster).
+3. currentRound := state round +1
+4. If there is an active roster in the roster state.
+   1. (previousRoster, previousRound) := read the latest (current) active roster and round from the roster state.
+   2. clear the candidate roster from the roster state.
+5. If there is no active roster in the roster state.
+   1. Read the current AddressBooks from the platform state.
+   2. previousRoster := translateToRoster(currentAddressBook)
+   3. (previousRoster, previousRound) := (previousRoster, 0)
+   4. set (previousRoster, 0) as the active roster in the roster state.
+6. set (overrideRoster, currentRound) as the active roster in the roster state.
+7. new rosterHistory := `[(overrideRoster, currentRound), (previousRoster, previousRound)]`
+8. Start the platform with the new rosterHistory.
 
 Cleanup Tasks:
 
@@ -434,9 +448,6 @@ message RosterEntry {
      * This list SHALL NOT be empty.<br/>
      */
     repeated proto.ServiceEndpoint gossip_endpoint = 5;
-
-    reserved 4;
-    reserved "tssEncryptionKey";
 }
 ```
 
@@ -668,12 +679,11 @@ Manual Testing Plan:
 2. There must be a software upgrade happening.
 3. Ensure that `config.txt`, `genesis-config.txt`, and `override-config.txt` are not present on disk.
 
-#### Software Upgrade Network Transplant
+#### Network Transplant
 
 1. Copy the state and PCES files from a single node in the source network and replicate them to all nodes in the target
    network.
 2. There must be a loadable state present on disk in the standard location.
-3. There must be a software upgrade happening.
-4. Provide a `override-config.txt` file on disk in the same directory that `config.txt` is normally provided.
-5. Do not provide a `genesis-config.txt` or `config.txt` file on disk.
-6. After startup the `override-config.txt` file will be moved to a subdirectory `archive/yyyy-MM-dd_HH-mm-ss/`.
+3. Provide a `override-config.txt` file on disk in the same directory that `config.txt` is normally provided.
+4. Do not provide a `genesis-config.txt` or `config.txt` file on disk.
+5. After startup the `override-config.txt` file will be moved to a subdirectory `archive/yyyy-MM-dd_HH-mm-ss/`.
