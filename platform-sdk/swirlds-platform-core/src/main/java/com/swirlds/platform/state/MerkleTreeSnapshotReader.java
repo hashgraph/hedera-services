@@ -60,7 +60,7 @@ public class MerkleTreeSnapshotReader {
      * @param hash the hash of the state
      * @param sigSet the signature set
      */
-    public record StateFileData(@NonNull MerkleRoot state, @NonNull Hash hash, @Nullable SigSet sigSet){}
+    public record StateFileData(@NonNull MerkleRoot state, @NonNull Hash hash, @Nullable SigSet sigSet) {}
 
     /**
      * Reads a state file from disk
