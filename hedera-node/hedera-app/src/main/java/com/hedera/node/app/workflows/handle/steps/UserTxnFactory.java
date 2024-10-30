@@ -17,12 +17,13 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
+import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.functionOfTxn;
 import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.getKeyVerifier;
+import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.getTxnInfoFrom;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.standalone.impl.StandaloneDispatchFactory.getTxnCategory;
@@ -30,15 +31,9 @@ import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -66,7 +61,6 @@ import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.AppThrottleAdviser;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
-import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
@@ -264,7 +258,9 @@ public class UserTxnFactory {
      * @return the new dispatch instance
      */
     public Dispatch createDispatch(
-            @NonNull final UserTxn userTxn, @NonNull final StreamBuilder baseBuilder, Schedule schedule) {
+            @NonNull final UserTxn userTxn,
+            @NonNull final StreamBuilder baseBuilder,
+            @NonNull final Schedule schedule) {
         final var config = userTxn.config();
         // use key verifier with a callback, that checks if a given key is in the schedule signatures list
         final var signatories = new HashSet<>(schedule.signatories());
@@ -275,8 +271,8 @@ public class UserTxnFactory {
     private Dispatch createDispatch(
             @NonNull final UserTxn userTxn,
             @NonNull final StreamBuilder baseBuilder,
-            AppKeyVerifier keyVerifier,
-            HandleContext.TransactionCategory transactionCategory) {
+            @NonNull final AppKeyVerifier keyVerifier,
+            @NonNull final HandleContext.TransactionCategory transactionCategory) {
         final var config = userTxn.config();
         final var txnInfo = userTxn.txnInfo();
         final var preHandleResult = userTxn.preHandleResult();
@@ -350,7 +346,8 @@ public class UserTxnFactory {
                 HandleContext.ConsensusThrottling.ON);
     }
 
-    private SavepointStackImpl createRootSavepointStack(State state, TransactionType txnType) {
+    private SavepointStackImpl createRootSavepointStack(
+            @NonNull final State state, @NonNull final TransactionType txnType) {
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
@@ -402,46 +399,6 @@ public class UserTxnFactory {
                     null,
                     null,
                     0);
-        }
-    }
-
-    /**
-     * Provides the transaction information for the given dispatched transaction body.
-     *
-     * @param payerId the payer id
-     * @param txBody the transaction body
-     * @return the transaction information
-     */
-    private TransactionInfo getTxnInfoFrom(@NonNull final AccountID payerId, @NonNull final TransactionBody txBody) {
-        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
-        final var signedTransaction =
-                SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
-        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
-        final var transaction = Transaction.newBuilder()
-                .signedTransactionBytes(signedTransactionBytes)
-                .build();
-        return new TransactionInfo(
-                transaction,
-                txBody,
-                TransactionID.DEFAULT,
-                payerId,
-                SignatureMap.DEFAULT,
-                signedTransactionBytes,
-                functionOfTxn(txBody),
-                null);
-    }
-
-    /**
-     * Provides the functionality of the transaction body.
-     *
-     * @param txBody the transaction body
-     * @return the functionality
-     */
-    private static HederaFunctionality functionOfTxn(final TransactionBody txBody) {
-        try {
-            return functionOf(txBody);
-        } catch (final UnknownHederaFunctionality e) {
-            throw new IllegalArgumentException("Unknown Hedera Functionality", e);
         }
     }
 }
