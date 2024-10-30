@@ -29,11 +29,11 @@ public class DynamicTestUtils {
 
     /**
      * Loops all the suppliers and their methods. If the method is annotated with the annotationClass annotation
-     * we invoke the method get the Stream<DynamicTest> and collect it to a list.
-     * @param suppliers Test class suppliers that contain tests methods returning Stream<DynamicTest>
+     * we invoke the method get the {@code Stream<DynamicTest>} and collect it to a list.
+     * @param suppliers Test class suppliers that contain tests methods returning {@code Stream<DynamicTest>}
      * @param ignoredTests The test methods that are ignored
      * @param annotationClass The target annotation
-     * @return list of all Stream<DynamicTest> collected from all found methods
+     * @return list of all {@code Stream<DynamicTest>} collected from all found methods
      */
     public static List<Stream<DynamicTest>> extractAllTestAnnotatedMethods(
             @NonNull Supplier<?>[] suppliers,
