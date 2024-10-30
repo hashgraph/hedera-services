@@ -34,6 +34,7 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
@@ -71,11 +72,11 @@ public final class V0570ScheduleSchema extends Schema {
         return Set.of(scheduleIdsByExpirySec(), schedulesByEquality());
     }
 
-    @NonNull
-    @Override
-    public Set<String> statesToRemove() {
-        return Set.of(SCHEDULES_BY_EXPIRY_SEC_KEY, SCHEDULES_BY_EQUALITY_KEY);
-    }
+    //    @NonNull
+    //    @Override
+    //    public Set<String> statesToRemove() {
+    //        return Set.of(SCHEDULES_BY_EXPIRY_SEC_KEY, SCHEDULES_BY_EQUALITY_KEY);
+    //    }
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
@@ -109,10 +110,10 @@ public final class V0570ScheduleSchema extends Schema {
                 .forEach(key -> {
                     final var scheduleList = readableSchedulesByEquality.get(key);
                     if (scheduleList != null) {
-                        writableScheduleByEquality.put(
-                                key,
-                                requireNonNull(
-                                        scheduleList.schedules().getFirst().scheduleId()));
+                        final var schedulerId = requireNonNull(
+                                scheduleList.schedules().getFirst().scheduleId());
+                        final var newScheduleId = schedulerId.copyBuilder().build();
+                        writableScheduleByEquality.put(key, newScheduleId);
                     }
                 });
         log.info("Migrated {} Schedules from SCHEDULES_BY_EQUALITY_KEY", readableSchedulesByEquality.size());
@@ -122,6 +123,8 @@ public final class V0570ScheduleSchema extends Schema {
         return ScheduleIdList.newBuilder()
                 .scheduleIds(scheduleList.schedules().stream()
                         .map(Schedule::scheduleId)
+                        .filter(Objects::nonNull)
+                        .map(id -> id.copyBuilder().build())
                         .toList())
                 .build();
     }
