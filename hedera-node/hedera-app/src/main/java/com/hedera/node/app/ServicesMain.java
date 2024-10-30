@@ -208,7 +208,7 @@ public class ServicesMain implements SwirldMain {
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
 
         // Create initial state for the platform
-        final AtomicBoolean isGenesis = new AtomicBoolean(false);
+        final var isGenesis = new AtomicBoolean(false);
         final var reservedState = getInitialState(
                 configuration,
                 recycleBin,

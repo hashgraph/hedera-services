@@ -61,8 +61,10 @@ class SignedStateTests {
      * @param releaseCallback this method is called when the State is released
      */
     private MerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
-        final MerkleStateRoot state = spy(new MerkleStateRoot(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
+        final var real =
+                new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(real);
+        final MerkleStateRoot state = spy(real);
 
         final PlatformStateModifier platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));

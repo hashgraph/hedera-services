@@ -18,7 +18,6 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeSignedStateToDisk;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +38,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -303,7 +303,7 @@ public class StartupStateUtilsTests {
     }
 
     private RecycleBin initializeRecycleBin(PlatformContext platformContext, NodeId selfId) {
-        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final var metrics = new NoOpMetrics();
         final var configuration = platformContext.getConfiguration();
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var time = Time.getCurrent();
