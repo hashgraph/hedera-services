@@ -18,6 +18,7 @@ package com.hedera.node.app;
 
 import static com.hedera.node.app.tss.TssCryptographyManager.isThresholdMet;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeTssParticipantDirectory;
+import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
@@ -42,15 +43,14 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.LedgerId;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
+import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.config.data.TssConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -91,6 +91,7 @@ import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
@@ -350,8 +351,13 @@ public class ServicesMain implements SwirldMain {
             return activeRoster;
         }
 
-        final boolean activeRosterKeyed = hasEnoughKeyMaterial(activeRoster, state, selfId, maxSharesPerNode);
-        final boolean candidateRosterKeyed = hasEnoughKeyMaterial(candidateRoster, state, selfId, maxSharesPerNode);
+        // FUTURE: get the same TssLibrary instance that we use for the Hedera instance
+        final var tssLibrary = new PlaceholderTssLibrary();
+
+        final boolean activeRosterKeyed =
+                hasEnoughKeyMaterial(activeRoster, state, selfId, maxSharesPerNode, tssLibrary);
+        final boolean candidateRosterKeyed =
+                hasEnoughKeyMaterial(candidateRoster, state, selfId, maxSharesPerNode, tssLibrary);
         final var ledgerId = getLedgerId(loadedSignedState);
 
         // If the existing active roster and candidate roster do not have complete key material and the network does not
@@ -366,8 +372,10 @@ public class ServicesMain implements SwirldMain {
         // Validation Check: if the state already has a ledger id set, the ledger
         // id recovered from the key material must match the ledger id in the state.
         if (candidateRosterKeyed && ledgerId != null) {
-            final var candidateLedgerId = recoverLedgerId(candidateRoster);
-            if (ledgerId.equals(candidateLedgerId)) {
+            final var candidateLedgerIdBytes =
+                    recoverLedgerId(candidateRoster, state, selfId, maxSharesPerNode, tssLibrary);
+            final var ledgerIdBytes = ledgerId.ledgerId().toByteArray();
+            if (Arrays.equals(ledgerIdBytes, candidateLedgerIdBytes)) {
                 return candidateRoster;
             }
 
@@ -382,14 +390,15 @@ public class ServicesMain implements SwirldMain {
     }
 
     private static boolean hasEnoughKeyMaterial(
-            final Roster roster, final State state, final NodeId selfId, final long maxSharesPerNode) {
+            final Roster roster,
+            final State state,
+            final NodeId selfId,
+            final long maxSharesPerNode,
+            final TssLibrary tssLibrary) {
         final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStoreImpl.class);
         final var rosterHash = RosterUtils.hash(roster).getBytes();
         final var tssMessageBodies = tssStore.getTssMessages(rosterHash);
         final var tssParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int) selfId.id());
-
-        // FUTURE: get the same TssLibrary instance that we use for the Hedera instance
-        final var tssLibrary = new PlaceholderTssLibrary();
         final var validTssOps = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
         return isThresholdMet(validTssOps, tssParticipantDirectory);
     }
@@ -400,12 +409,21 @@ public class ServicesMain implements SwirldMain {
         return LedgerId.DEFAULT;
     }
 
-    private static @NonNull LedgerId recoverLedgerId(Roster roster) {
-        final List<Bytes> tssEncryptionKeys = roster.rosterEntries().stream()
-                .map(RosterEntry::tssEncryptionKey)
-                .toList();
-        // TODO: if enough keys, aggregate them to produce the ledger id, otherwise return null
-        return null;
+    private static @NonNull byte[] recoverLedgerId(
+            final Roster roster,
+            final State state,
+            final NodeId selfId,
+            final long maxSharesPerNode,
+            final TssLibrary tssLibrary) {
+        final var tssParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int) selfId.id());
+        final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStoreImpl.class);
+        final var rosterHash = RosterUtils.hash(roster).getBytes();
+        final var tssMessageBodies = tssStore.getTssMessages(rosterHash);
+        final var validTssOps = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
+        final var validTssMessages = getTssMessages(validTssOps);
+        final var computedPublicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
+        final var ledgerId = tssLibrary.aggregatePublicShares(computedPublicShares);
+        return ledgerId.publicKey().toBytes();
     }
 
     /**
