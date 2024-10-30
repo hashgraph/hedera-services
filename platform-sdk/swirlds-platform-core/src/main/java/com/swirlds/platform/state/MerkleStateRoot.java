@@ -1051,7 +1051,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        return createInfoString(hashDepth, readablePlatformStateStore(), getHash(), this);
+        return createInfoString(hashDepth, getReadablePlatformState(), getHash(), this);
     }
 
     private ReadablePlatformStateStore readablePlatformStateStore() {
