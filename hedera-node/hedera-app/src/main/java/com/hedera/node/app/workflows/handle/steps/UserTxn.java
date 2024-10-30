@@ -26,7 +26,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,7 +37,6 @@ public record UserTxn(
         @NonNull Instant consensusNow,
         @NonNull State state,
         @NonNull ConsensusEvent event,
-        @NonNull ConsensusTransaction platformTxn,
         @NonNull TransactionInfo txnInfo,
         @NonNull TokenContextImpl tokenContextImpl,
         @NonNull SavepointStackImpl stack,

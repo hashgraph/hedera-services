@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOP
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
+import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,13 +37,11 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.EventTransaction;
-import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -155,12 +154,6 @@ class UserTxnTest {
     private NetworkUtilizationManager networkUtilizationManager;
 
     @Mock
-    private BlockRecordManager blockRecordManager;
-
-    @Mock
-    private BlockStreamManager blockStreamManager;
-
-    @Mock
     private WritableStates writableStates;
 
     @Mock
@@ -181,9 +174,18 @@ class UserTxnTest {
     void usesPairedStreamBuilderWithDefaultConfig() {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1));
 
-        final var factory = createUserTxnFactory();
-        final var subject =
-                factory.createUserTxn(state, event, creatorInfo, PLATFORM_TXN, CONSENSUS_NOW, GENESIS_TRANSACTION);
+        final var subject = UserTxn.from(
+                state,
+                event,
+                creatorInfo,
+                PLATFORM_TXN,
+                CONSENSUS_NOW,
+                GENESIS_TRANSACTION,
+                configProvider,
+                storeMetricsService,
+                kvStateChangeListener,
+                boundaryStateChangeListener,
+                preHandleWorkflow);
 
         assertSame(GENESIS_TRANSACTION, subject.type());
         assertSame(CONSENSUS_CREATE_TOPIC, subject.functionality());
@@ -220,11 +222,33 @@ class UserTxnTest {
         given(accountState.getStateKey()).willReturn(ACCOUNTS_KEY);
         given(dispatcher.dispatchComputeFees(any())).willReturn(Fees.FREE);
 
-        final var factory = createUserTxnFactory();
-        final var subject =
-                factory.createUserTxn(state, event, creatorInfo, PLATFORM_TXN, CONSENSUS_NOW, GENESIS_TRANSACTION);
+        final var subject = UserTxn.from(
+                state,
+                event,
+                creatorInfo,
+                PLATFORM_TXN,
+                CONSENSUS_NOW,
+                GENESIS_TRANSACTION,
+                configProvider,
+                storeMetricsService,
+                kvStateChangeListener,
+                boundaryStateChangeListener,
+                preHandleWorkflow);
 
-        final var dispatch = factory.createDispatch(subject, baseBuilder);
+        final var dispatch = subject.newDispatch(
+                authorizer,
+                networkInfo,
+                feeManager,
+                dispatchProcessor,
+                blockRecordInfo,
+                serviceScopeLookup,
+                storeMetricsService,
+                exchangeRateManager,
+                childDispatchFactory,
+                dispatcher,
+                networkUtilizationManager,
+                baseBuilder,
+                BLOCKS);
 
         assertSame(PAYER_ID, dispatch.payerId());
         verify(baseBuilder).congestionMultiplier(CONGESTION_MULTIPLIER);
@@ -247,33 +271,35 @@ class UserTxnTest {
         given(accountState.getStateKey()).willReturn(ACCOUNTS_KEY);
         given(dispatcher.dispatchComputeFees(any())).willReturn(Fees.FREE);
 
-        final var factory = createUserTxnFactory();
-        final var subject =
-                factory.createUserTxn(state, event, creatorInfo, PLATFORM_TXN, CONSENSUS_NOW, GENESIS_TRANSACTION);
-
-        final var dispatch = factory.createDispatch(subject, baseBuilder);
-
-        assertSame(PAYER_ID, dispatch.payerId());
-        verify(baseBuilder, never()).congestionMultiplier(1);
-    }
-
-    private UserTxnFactory createUserTxnFactory() {
-        return new UserTxnFactory(
+        final var subject = UserTxn.from(
+                state,
+                event,
+                creatorInfo,
+                PLATFORM_TXN,
+                CONSENSUS_NOW,
+                GENESIS_TRANSACTION,
                 configProvider,
                 storeMetricsService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                preHandleWorkflow,
+                preHandleWorkflow);
+
+        final var dispatch = subject.newDispatch(
                 authorizer,
                 networkInfo,
                 feeManager,
                 dispatchProcessor,
+                blockRecordInfo,
                 serviceScopeLookup,
+                storeMetricsService,
                 exchangeRateManager,
+                childDispatchFactory,
                 dispatcher,
                 networkUtilizationManager,
-                blockRecordManager,
-                blockStreamManager,
-                childDispatchFactory);
+                baseBuilder,
+                BLOCKS);
+
+        assertSame(PAYER_ID, dispatch.payerId());
+        verify(baseBuilder, never()).congestionMultiplier(1);
     }
 }

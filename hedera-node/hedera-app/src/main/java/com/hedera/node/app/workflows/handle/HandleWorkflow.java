@@ -550,7 +550,7 @@ public class HandleWorkflow {
     private static void logPreDispatch(@NonNull final UserTxn userTxn) {
         if (logger.isDebugEnabled()) {
             logStartUserTransaction(
-                    userTxn.platformTxn(),
+                    userTxn.consensusNow(),
                     userTxn.txnInfo().txBody(),
                     requireNonNull(userTxn.txnInfo().payerID()));
             logStartUserTransactionPreHandleResultP2(userTxn.preHandleResult());

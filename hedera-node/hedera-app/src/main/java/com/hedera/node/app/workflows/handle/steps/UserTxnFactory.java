@@ -16,13 +16,29 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
+import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.getKeyVerifier;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.standalone.impl.StandaloneDispatchFactory.getTxnCategory;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -37,10 +53,12 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -48,6 +66,7 @@ import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.AppThrottleAdviser;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
@@ -57,12 +76,15 @@ import com.hedera.node.app.workflows.handle.TransactionType;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.types.StreamMode;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
@@ -70,6 +92,8 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -152,18 +176,7 @@ public class UserTxnFactory {
             @NonNull final Instant consensusNow,
             @NonNull final TransactionType type) {
         final var config = configProvider.getConfiguration();
-        final var consensusConfig = config.getConfigData(ConsensusConfig.class);
-        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
-        final var maxPrecedingRecords = (type == GENESIS_TRANSACTION || type == POST_UPGRADE_TRANSACTION)
-                ? Integer.MAX_VALUE
-                : consensusConfig.handleMaxPrecedingRecords();
-        final var stack = SavepointStackImpl.newRootStack(
-                state,
-                maxPrecedingRecords,
-                consensusConfig.handleMaxFollowingRecords(),
-                boundaryStateChangeListener,
-                kvStateChangeListener,
-                blockStreamConfig.streamMode());
+        final var stack = createRootSavepointStack(state, type);
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var preHandleResult =
                 preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
@@ -175,8 +188,47 @@ public class UserTxnFactory {
                 consensusNow,
                 state,
                 event,
-                platformTxn,
                 txnInfo,
+                tokenContext,
+                stack,
+                preHandleResult,
+                readableStoreFactory,
+                config,
+                creatorInfo);
+    }
+
+    /**
+     * Creates a new {@link UserTxn} for schedules.
+     * @param state the state the transaction will be applied to
+     * @param event the consensus event containing the transaction
+     * @param creatorInfo the node information of the creator
+     * @param consensusNow the current consensus time
+     * @param type the type of the transaction
+     * @param schedule the schedule entity
+     * @return the new user transaction
+     */
+    public UserTxn createUserTxn(
+            @NonNull final State state,
+            @NonNull final ConsensusEvent event,
+            @NonNull final NodeInfo creatorInfo,
+            @NonNull final Instant consensusNow,
+            @NonNull final TransactionType type,
+            @NonNull final Schedule schedule) {
+        final var config = configProvider.getConfiguration();
+        final var stack = createRootSavepointStack(state, type);
+        final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var txBody = childAsOrdinary(schedule);
+        final var functionality = functionOfTxn(txBody);
+        final var preHandleResult = preHandleSchedule(txBody, schedule.payerAccountId(), config, readableStoreFactory);
+        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
+
+        return new UserTxn(
+                type,
+                functionality,
+                consensusNow,
+                state,
+                event,
+                preHandleResult.txInfo(),
                 tokenContext,
                 stack,
                 preHandleResult,
@@ -196,15 +248,43 @@ public class UserTxnFactory {
         final var config = userTxn.config();
         final var txnInfo = userTxn.txnInfo();
         final var preHandleResult = userTxn.preHandleResult();
+        final var keyVerifier = new DefaultKeyVerifier(
+                txnInfo.signatureMap().sigPair().size(),
+                config.getConfigData(HederaConfig.class),
+                preHandleResult.getVerificationResults());
+        final var category = getTxnCategory(preHandleResult);
+        return createDispatch(userTxn, baseBuilder, keyVerifier, category);
+    }
+
+    /**
+     * Creates a new {@link Dispatch} instance for schedule {@link UserTxn} in the given context.
+     *
+     * @param userTxn user transaction
+     * @param baseBuilder the base record builder
+     * @return the new dispatch instance
+     */
+    public Dispatch createDispatch(
+            @NonNull final UserTxn userTxn, @NonNull final StreamBuilder baseBuilder, Schedule schedule) {
+        final var config = userTxn.config();
+        // use key verifier with a callback, that checks if a given key is in the schedule signatures list
+        final var signatories = new HashSet<>(schedule.signatories());
+        final var keyVerifier = getKeyVerifier(signatories::contains, config);
+        return createDispatch(userTxn, baseBuilder, keyVerifier, SCHEDULED);
+    }
+
+    private Dispatch createDispatch(
+            @NonNull final UserTxn userTxn,
+            @NonNull final StreamBuilder baseBuilder,
+            AppKeyVerifier keyVerifier,
+            HandleContext.TransactionCategory transactionCategory) {
+        final var config = userTxn.config();
+        final var txnInfo = userTxn.txnInfo();
+        final var preHandleResult = userTxn.preHandleResult();
         final var stack = userTxn.stack();
         final var consensusNow = userTxn.consensusNow();
         final var creatorInfo = userTxn.creatorInfo();
         final var tokenContextImpl = userTxn.tokenContextImpl();
 
-        final var keyVerifier = new DefaultKeyVerifier(
-                txnInfo.signatureMap().sigPair().size(),
-                config.getConfigData(HederaConfig.class),
-                preHandleResult.getVerificationResults());
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var writableStoreFactory = new WritableStoreFactory(
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
@@ -264,9 +344,104 @@ public class UserTxnFactory {
                 preHandleResult.getHollowAccounts(),
                 dispatchHandleContext,
                 stack,
-                getTxnCategory(preHandleResult),
+                transactionCategory,
                 tokenContextImpl,
                 preHandleResult,
                 HandleContext.ConsensusThrottling.ON);
+    }
+
+    private SavepointStackImpl createRootSavepointStack(State state, TransactionType txnType) {
+        final var config = configProvider.getConfiguration();
+        final var consensusConfig = config.getConfigData(ConsensusConfig.class);
+        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
+        final var maxPrecedingRecords = (txnType == GENESIS_TRANSACTION || txnType == POST_UPGRADE_TRANSACTION)
+                ? Integer.MAX_VALUE
+                : consensusConfig.handleMaxPrecedingRecords();
+        return SavepointStackImpl.newRootStack(
+                state,
+                maxPrecedingRecords,
+                consensusConfig.handleMaxFollowingRecords(),
+                boundaryStateChangeListener,
+                kvStateChangeListener,
+                blockStreamConfig.streamMode());
+    }
+
+    private PreHandleResult preHandleSchedule(
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final Configuration config,
+            @NonNull final ReadableStoreFactory readableStoreFactory) {
+        try {
+            dispatcher.dispatchPureChecks(txBody);
+            final var preHandleContext =
+                    new PreHandleContextImpl(readableStoreFactory, txBody, syntheticPayerId, config, dispatcher);
+            dispatcher.dispatchPreHandle(preHandleContext);
+            final var txInfo = getTxnInfoFrom(syntheticPayerId, txBody);
+            return new PreHandleResult(
+                    null,
+                    null,
+                    SO_FAR_SO_GOOD,
+                    OK,
+                    txInfo,
+                    preHandleContext.requiredNonPayerKeys(),
+                    null,
+                    preHandleContext.requiredHollowAccounts(),
+                    null,
+                    null,
+                    0);
+        } catch (final PreCheckException e) {
+            return new PreHandleResult(
+                    null,
+                    null,
+                    PRE_HANDLE_FAILURE,
+                    e.responseCode(),
+                    null,
+                    Collections.emptySet(),
+                    null,
+                    Collections.emptySet(),
+                    null,
+                    null,
+                    0);
+        }
+    }
+
+    /**
+     * Provides the transaction information for the given dispatched transaction body.
+     *
+     * @param payerId the payer id
+     * @param txBody the transaction body
+     * @return the transaction information
+     */
+    private TransactionInfo getTxnInfoFrom(@NonNull final AccountID payerId, @NonNull final TransactionBody txBody) {
+        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
+        final var signedTransaction =
+                SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
+        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
+        final var transaction = Transaction.newBuilder()
+                .signedTransactionBytes(signedTransactionBytes)
+                .build();
+        return new TransactionInfo(
+                transaction,
+                txBody,
+                TransactionID.DEFAULT,
+                payerId,
+                SignatureMap.DEFAULT,
+                signedTransactionBytes,
+                functionOfTxn(txBody),
+                null);
+    }
+
+    /**
+     * Provides the functionality of the transaction body.
+     *
+     * @param txBody the transaction body
+     * @return the functionality
+     */
+    private static HederaFunctionality functionOfTxn(final TransactionBody txBody) {
+        try {
+            return functionOf(txBody);
+        } catch (final UnknownHederaFunctionality e) {
+            throw new IllegalArgumentException("Unknown Hedera Functionality", e);
+        }
     }
 }
