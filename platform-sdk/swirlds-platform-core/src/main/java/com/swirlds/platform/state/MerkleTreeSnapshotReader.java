@@ -50,7 +50,7 @@ public class MerkleTreeSnapshotReader {
     public static final Set<Integer> SUPPORTED_STATE_FILE_VERSIONS =
             Set.of(INIT_STATE_FILE_VERSION, SIG_SET_SEPARATE_STATE_FILE_VERSION);
     /**
-     * The signed state file was not versioned before, this byte was introduced to mark a versioned file
+     * Prior to v1, the signed state file was not versioned. This byte was introduced in v1 to mark a versioned file.
      */
     public static final byte VERSIONED_FILE_BYTE = Byte.MAX_VALUE;
 
