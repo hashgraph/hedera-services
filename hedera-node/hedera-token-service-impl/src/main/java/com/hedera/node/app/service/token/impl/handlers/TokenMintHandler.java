@@ -47,6 +47,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.service.token.ExampleTokenMetrics;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -170,6 +171,14 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                     context.expiryValidator());
             recordBuilder.newTotalSupply(tokenStore.get(tokenId).totalSupply());
             recordBuilder.serialNumbers(mintedSerials);
+
+            // Attempt to get an external service's metrics. The following line will fail because contracts are not the
+            // domain of the token service
+            // context.metrics(context.body(), ExampleContractMetrics.class);
+
+            // Notify Token Service metrics of the created serials
+            final var tokenMetrics = context.metrics(context.body(), ExampleTokenMetrics.class);
+            tokenMetrics.incrementBySerialsCreated(tokenId, mintedSerials);
         }
         recordBuilder.tokenType(token.tokenType());
     }

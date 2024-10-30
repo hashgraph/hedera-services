@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi;
+package com.hedera.node.app.service.contract;
 
-import com.hedera.pbj.runtime.RpcServiceDefinition;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.spi.metrics.ServiceMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /**
- * This interface defines the contract for a service that can expose RPC endpoints.
+ * Interface defining metrics managed by the {@link ContractService}
  */
-// todo fix!
-public interface RpcService extends MetricsService {
-
+public interface ExampleContractMetrics extends ServiceMetrics {
     /**
-     * If this service exposes RPC endpoints, then this method returns the RPC service definitions.
+     * Method representing an invocation of an example counter for a given transaction type
      *
-     * @return The RPC service definitions if this service is exposed via RPC.
+     * @param txnType the transaction type to increment the counter fosr
      */
-    @NonNull
-    Set<RpcServiceDefinition> rpcDefinitions();
+    void incrementExampleCounter(@NonNull final HederaFunctionality txnType);
 }

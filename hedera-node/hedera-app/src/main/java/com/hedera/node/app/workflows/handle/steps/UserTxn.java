@@ -38,6 +38,7 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -87,7 +88,8 @@ public record UserTxn(
         @NonNull PreHandleResult preHandleResult,
         @NonNull ReadableStoreFactory readableStoreFactory,
         @NonNull Configuration config,
-        @NonNull NodeInfo creatorInfo) {
+        @NonNull NodeInfo creatorInfo,
+        @NonNull ServiceMetricsFactory serviceMetricsFactory) {
 
     /**
      * Creates a new {@link UserTxn} instance from the given parameters.
@@ -117,7 +119,8 @@ public record UserTxn(
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final PreHandleWorkflow preHandleWorkflow) {
+            @NonNull final PreHandleWorkflow preHandleWorkflow,
+            @NonNull final ServiceMetricsFactory serviceMetricsFactory) {
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
@@ -149,7 +152,8 @@ public record UserTxn(
                 preHandleResult,
                 readableStoreFactory,
                 config,
-                creatorInfo);
+                creatorInfo,
+                serviceMetricsFactory);
     }
 
     /**
@@ -225,7 +229,9 @@ public record UserTxn(
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdvisor,
-                feeAccumulator);
+                feeAccumulator,
+                serviceScopeLookup,
+                serviceMetricsFactory);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
         if (streamMode != RECORDS) {
             final var congestionMultiplier = feeManager.congestionMultiplierFor(

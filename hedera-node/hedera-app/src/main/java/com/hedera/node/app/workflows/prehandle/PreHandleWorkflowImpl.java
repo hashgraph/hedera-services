@@ -33,10 +33,13 @@ import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.services.ServiceMetricsContextImpl;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -95,6 +98,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * Used for registering notice of transactionIDs seen by this node
      */
     private final DeduplicationCache deduplicationCache;
+    /** todo
+     *
+     */
+    private final ServiceScopeLookup serviceScopeLookup;
+    /** todo
+     *
+     */
+    private final ServiceMetricsFactory serviceMetricsFactory;
 
     /**
      * Creates a new instance of {@code PreHandleWorkflowImpl}.
@@ -112,13 +123,17 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SignatureExpander signatureExpander,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final DeduplicationCache deduplicationCache) {
+            @NonNull final DeduplicationCache deduplicationCache,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final ServiceMetricsFactory serviceMetricsFactory) {
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.signatureVerifier = requireNonNull(signatureVerifier);
         this.signatureExpander = requireNonNull(signatureExpander);
         this.configProvider = requireNonNull(configProvider);
         this.deduplicationCache = requireNonNull(deduplicationCache);
+        this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
+        this.serviceMetricsFactory = requireNonNull(serviceMetricsFactory);
     }
 
     /**
@@ -264,7 +279,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // implementation pair, with the implementation in `hedera-app`, then we will change the constructor,
             // so I can pass the payer account in directly, since I've already looked it up. But I don't really want
             // that as a public API in the SPI, so for now, we do a double lookup. Boo.
-            context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
+            context = new PreHandleContextImpl(
+                    storeFactory, txBody, configuration, dispatcher, serviceMetricsFactory, serviceScopeLookup);
         } catch (PreCheckException preCheck) {
             // This should NEVER happen. The only way an exception is thrown from the PreHandleContext constructor
             // is if the payer account doesn't exist, but by the time we reach this line of code, we already know
@@ -291,7 +307,9 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // 2b. Call Pre-Transaction Handlers
         try {
             // First, perform semantic checks on the transaction
-            dispatcher.dispatchPureChecks(txBody);
+            final var serviceName = serviceScopeLookup.getServiceName(txBody);
+            final var metricsContext = new ServiceMetricsContextImpl(serviceName, serviceMetricsFactory);
+            dispatcher.dispatchPureChecks(txBody, metricsContext);
             // Then gather the signatures from the transaction handler
             dispatcher.dispatchPreHandle(context);
         } catch (PreCheckException preCheck) {

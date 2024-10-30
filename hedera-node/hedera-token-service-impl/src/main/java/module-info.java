@@ -14,6 +14,7 @@ module com.hedera.node.app.service.token.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
+    requires com.hedera.node.app.service.contract; // only to show cross-service metrics request failures
     requires com.swirlds.base;
     requires com.swirlds.common;
     requires com.google.common;

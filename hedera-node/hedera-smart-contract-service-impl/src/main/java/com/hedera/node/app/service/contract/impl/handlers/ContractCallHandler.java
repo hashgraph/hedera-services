@@ -29,16 +29,19 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.contract.ExampleContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.metrics.ServiceMetricsContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -82,7 +85,13 @@ public class ContractCallHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
+    public void pureChecks(@NonNull TransactionBody txn, @Nullable final ServiceMetricsContext context)
+            throws PreCheckException {
+        // Call metric invocation
+        final var contractMetrics = context.serviceMetrics(txn, ExampleContractMetrics.class);
+        contractMetrics.incrementExampleCounter(CONTRACT_CALL);
+
+        // Proceed as normal
         final var op = txn.contractCallOrThrow();
         mustExist(op.contractID(), INVALID_CONTRACT_ID);
 

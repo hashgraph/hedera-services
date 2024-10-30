@@ -19,7 +19,9 @@ package com.hedera.node.app.spi.workflows;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.metrics.ServiceMetricsContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
@@ -36,6 +38,17 @@ public interface TransactionHandler {
     void preHandle(@NonNull final PreHandleContext context) throws PreCheckException;
 
     /**
+     * Overload of {@link #pureChecks(TransactionBody, ServiceMetricsContext)}; should only be
+     * invoked by services that do _not_ have service-specific metrics to publish.
+     *
+     * @param txn
+     * @throws PreCheckException
+     */
+    default void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        pureChecks(txn, null);
+    }
+
+    /**
      * Validate the transaction body, without involving state or dynamic properties.
      * This method is called as first step of preHandle. If there is any failure,
      * throws a {@link PreCheckException}.
@@ -45,10 +58,14 @@ public interface TransactionHandler {
      * in handle workflow.
      *
      * @param txn the transaction body
+     * @param context TODO
      * @throws NullPointerException if {@code txBody} is {@code null}
      * @throws PreCheckException if the transaction is invalid
      */
-    void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException;
+    default void pureChecks(@NonNull final TransactionBody txn, @Nullable final ServiceMetricsContext context)
+            throws PreCheckException {
+        pureChecks(txn);
+    }
 
     /**
      * This method can be used to perform any warm up, e.g. loading data into memory that is needed
