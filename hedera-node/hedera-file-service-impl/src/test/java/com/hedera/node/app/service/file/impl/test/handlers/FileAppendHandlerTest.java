@@ -48,10 +48,12 @@ import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -150,8 +152,13 @@ class FileAppendHandlerTest extends FileTestBase {
                 .transactionID(txnId)
                 .build();
 
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, txBody, testConfig, mockDispatcher);
+        PreHandleContext realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                txBody,
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
 
         subject.preHandle(realPreContext);
 
@@ -175,8 +182,13 @@ class FileAppendHandlerTest extends FileTestBase {
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()))
                 .transactionID(txnId)
                 .build();
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, txBody, testConfig, mockDispatcher);
+        PreHandleContext realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                txBody,
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
 
         subject.preHandle(realPreContext);
 

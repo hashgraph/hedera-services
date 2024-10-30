@@ -18,6 +18,7 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static org.assertj.core.api.BDDAssertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -26,8 +27,10 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.key.KeyComparator;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -59,7 +62,13 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     @Test
     void vanillaNoExplicitPayer() throws PreCheckException {
         final TransactionBody testTransaction = scheduleSignTransaction(null);
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, testTransaction, testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                testTransaction,
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
 
         subject.preHandle(realPreContext);
         assertThat(realPreContext.payer()).isEqualTo(scheduler);
@@ -71,14 +80,26 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     void failsIfScheduleMissing() throws PreCheckException {
         final ScheduleID badScheduleID = ScheduleID.newBuilder().scheduleNum(1L).build();
         final TransactionBody testTransaction = scheduleSignTransaction(badScheduleID);
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, testTransaction, testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                testTransaction,
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
         Assertions.assertThrowsPreCheck(() -> subject.preHandle(realPreContext), ResponseCodeEnum.INVALID_SCHEDULE_ID);
     }
 
     @Test
     void vanillaWithOptionalPayerSet() throws PreCheckException {
         final TransactionBody testTransaction = scheduleSignTransaction(null);
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, testTransaction, testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                testTransaction,
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
         subject.preHandle(realPreContext);
         assertThat(realPreContext.payer()).isEqualTo(scheduler);
         assertThat(realPreContext.payerKey()).isEqualTo(schedulerKey);

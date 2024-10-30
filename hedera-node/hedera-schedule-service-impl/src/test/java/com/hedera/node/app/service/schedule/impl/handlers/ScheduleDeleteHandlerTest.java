@@ -19,6 +19,7 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.BDDAssertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -28,8 +29,10 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.fixtures.Assertions;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -59,7 +62,13 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     @Test
     void preHandleHappyPath() throws InvalidKeyException, PreCheckException {
         final TransactionBody deleteBody = scheduleDeleteTransaction(testScheduleID);
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, deleteBody, testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                deleteBody,
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
 
         subject.preHandle(realPreContext);
         assertThat(scheduleDeleter).isEqualTo(realPreContext.payer());
@@ -70,7 +79,13 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     // when schedule id to delete is not found, fail with INVALID_SCHEDULE_ID
     void failsIfScheduleMissing() throws PreCheckException {
         final TransactionBody deleteBody = scheduleDeleteTransaction(testScheduleID);
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, deleteBody, testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                deleteBody,
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
         scheduleMapById.put(testScheduleID, null);
 
         Assertions.assertThrowsPreCheck(() -> subject.preHandle(realPreContext), ResponseCodeEnum.INVALID_SCHEDULE_ID);
@@ -80,7 +95,13 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     // when admin key not set in scheduled tx, fail with SCHEDULE_IS_IMMUTABLE
     void failsIfScheduleIsImmutable() throws PreCheckException {
         final TransactionBody deleteBody = scheduleDeleteTransaction(testScheduleID);
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, deleteBody, testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                deleteBody,
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
 
         final Schedule noAdmin = scheduleInState.copyBuilder().adminKey(nullKey).build();
         reset(writableById);

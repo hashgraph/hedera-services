@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -46,6 +47,7 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
@@ -172,7 +174,8 @@ class ChildDispatchFactoryTest {
                 dispatchProcessor,
                 serviceScopeLookup,
                 storeMetricsService,
-                exchangeRateManager);
+                exchangeRateManager,
+                mock(ServiceMetricsFactory.class));
     }
 
     @Test

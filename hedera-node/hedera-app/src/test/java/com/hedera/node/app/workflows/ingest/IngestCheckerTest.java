@@ -62,11 +62,13 @@ import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.info.CurrentPlatformStatus;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -194,7 +196,9 @@ class IngestCheckerTest extends AppTestBase {
                 authorizer,
                 synchronizedThrottleAccumulator,
                 instantSource,
-                opWorkflowMetrics);
+                opWorkflowMetrics,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
     }
 
     @Nested
@@ -246,7 +250,9 @@ class IngestCheckerTest extends AppTestBase {
                 authorizer,
                 synchronizedThrottleAccumulator,
                 instantSource,
-                opWorkflowMetrics);
+                opWorkflowMetrics,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
 
         // Then the checker should throw a PreCheckException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))

@@ -114,8 +114,8 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final TransactionBody txn,
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final ServiceMetricsFactory serviceMetricsFactory,
-            @NonNull final ServiceScopeLookup serviceScopeLookup)
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final ServiceMetricsFactory serviceMetricsFactory)
             throws PreCheckException {
         this(
                 storeFactory,

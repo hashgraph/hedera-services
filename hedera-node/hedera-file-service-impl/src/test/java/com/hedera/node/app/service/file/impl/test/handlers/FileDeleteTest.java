@@ -47,9 +47,11 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -159,7 +161,13 @@ class FileDeleteTest extends FileTestBase {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
-        final var context = new PreHandleContextImpl(mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher);
+        final var context = new PreHandleContextImpl(
+                mockStoreFactory,
+                newDeleteTxn(),
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
 
         // when:
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
@@ -181,8 +189,13 @@ class FileDeleteTest extends FileTestBase {
                 .transactionID(txnId)
                 .fileDelete(deleteFileBuilder.build())
                 .build();
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, transactionBody, testConfig, mockDispatcher);
+        PreHandleContext realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                transactionBody,
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
 
         subject.preHandle(realPreContext);
 
@@ -198,8 +211,13 @@ class FileDeleteTest extends FileTestBase {
         BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
 
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher);
+        PreHandleContext realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                newDeleteTxn(),
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
 
         subject.preHandle(realPreContext);
 

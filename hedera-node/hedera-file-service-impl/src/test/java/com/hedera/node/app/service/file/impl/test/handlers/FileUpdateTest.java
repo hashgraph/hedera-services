@@ -48,6 +48,8 @@ import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -129,8 +131,13 @@ class FileUpdateTest extends FileTestBase {
         BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
 
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, txnWith(), testConfig, mockDispatcher);
+        PreHandleContext realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                txnWith(),
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
 
         subject.preHandle(realPreContext);
 
@@ -154,8 +161,13 @@ class FileUpdateTest extends FileTestBase {
                 .transactionID(txnId)
                 .fileUpdate(updateFileBuilder.build())
                 .build();
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, txBody, testConfig, mockDispatcher);
+        PreHandleContext realPreContext = new PreHandleContextImpl(
+                mockStoreFactory,
+                txBody,
+                testConfig,
+                mockDispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
 
         subject.preHandle(realPreContext);
 

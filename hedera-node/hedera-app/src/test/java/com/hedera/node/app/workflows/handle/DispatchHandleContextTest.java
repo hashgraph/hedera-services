@@ -47,6 +47,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -89,6 +90,8 @@ import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.metrics.ServiceMetricsContext;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
@@ -470,7 +473,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         void testAllKeysForTransactionWithFailingPureCheck() throws PreCheckException {
             doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
                     .when(dispatcher)
-                    .dispatchPureChecks(any());
+                    .dispatchPureChecks(any(), any());
             assertThatThrownBy(() -> subject.allKeysForTransaction(txBody, ERIN.accountID()))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_TRANSACTION_BODY));
@@ -627,7 +630,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     .build();
             doThrow(new PreCheckException(ResponseCodeEnum.INVALID_TOPIC_ID))
                     .when(dispatcher)
-                    .dispatchPureChecks(txBody);
+                    .dispatchPureChecks(txBody, mock(ServiceMetricsContext.class));
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
 
             contextDispatcher.accept(context);
@@ -776,7 +779,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdviser,
-                feeAccumulator);
+                feeAccumulator,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
     }
 
     private void mockNeeded() {

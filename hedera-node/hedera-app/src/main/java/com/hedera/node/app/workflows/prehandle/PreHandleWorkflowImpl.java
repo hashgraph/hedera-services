@@ -280,7 +280,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // so I can pass the payer account in directly, since I've already looked it up. But I don't really want
             // that as a public API in the SPI, so for now, we do a double lookup. Boo.
             context = new PreHandleContextImpl(
-                    storeFactory, txBody, configuration, dispatcher, serviceMetricsFactory, serviceScopeLookup);
+                    storeFactory, txBody, configuration, dispatcher, serviceScopeLookup, serviceMetricsFactory);
         } catch (PreCheckException preCheck) {
             // This should NEVER happen. The only way an exception is thrown from the PreHandleContext constructor
             // is if the payer account doesn't exist, but by the time we reach this line of code, we already know

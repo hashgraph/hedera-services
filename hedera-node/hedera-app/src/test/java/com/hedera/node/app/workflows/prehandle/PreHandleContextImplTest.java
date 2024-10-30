@@ -28,6 +28,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -40,7 +41,9 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.fixtures.Scenarios;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -98,7 +101,13 @@ class PreHandleContextImplTest implements Scenarios {
         given(account.keyOrThrow()).willReturn(payerKey);
 
         final var txn = createAccountTransaction();
-        subject = new PreHandleContextImpl(storeFactory, txn, configuration, dispatcher);
+        subject = new PreHandleContextImpl(
+                storeFactory,
+                txn,
+                configuration,
+                dispatcher,
+                mock(ServiceScopeLookup.class),
+                mock(ServiceMetricsFactory.class));
     }
 
     @Test
@@ -175,7 +184,7 @@ class PreHandleContextImplTest implements Scenarios {
             // given
             doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
                     .when(dispatcher)
-                    .dispatchPureChecks(any());
+                    .dispatchPureChecks(any(), any());
 
             // then
             assertThatThrownBy(() -> subject.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID()))

@@ -33,6 +33,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -186,7 +187,8 @@ class HandleWorkflowTest {
                 stakePeriodManager,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                List.of());
+                List.of(),
+                mock(ServiceMetricsFactory.class));
     }
 
     @Test

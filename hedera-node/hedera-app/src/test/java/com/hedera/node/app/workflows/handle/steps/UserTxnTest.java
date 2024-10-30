@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.withSettings;
@@ -47,6 +48,7 @@ import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.metrics.ServiceMetricsFactory;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -185,7 +187,8 @@ class UserTxnTest {
                 storeMetricsService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                preHandleWorkflow);
+                preHandleWorkflow,
+                mock(ServiceMetricsFactory.class));
 
         assertSame(GENESIS_TRANSACTION, subject.type());
         assertSame(CONSENSUS_CREATE_TOPIC, subject.functionality());
@@ -233,7 +236,8 @@ class UserTxnTest {
                 storeMetricsService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                preHandleWorkflow);
+                preHandleWorkflow,
+                mock(ServiceMetricsFactory.class));
 
         final var dispatch = subject.newDispatch(
                 authorizer,
@@ -282,7 +286,8 @@ class UserTxnTest {
                 storeMetricsService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                preHandleWorkflow);
+                preHandleWorkflow,
+                mock(ServiceMetricsFactory.class));
 
         final var dispatch = subject.newDispatch(
                 authorizer,
