@@ -28,7 +28,6 @@ import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableIgnored;
@@ -183,13 +182,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private final List<StateChangeListener> listeners = new ArrayList<>();
 
     /**
-     * Once set, the possibly empty list of builders for state changes that occurred when initializing
-     * the platform state.
-     */
-    @Nullable
-    private List<StateChanges.Builder> platformStateInitChanges;
-
-    /**
      * Used to track the lifespan of this state.
      */
     private final RuntimeObjectRecord registryRecord;
@@ -282,7 +274,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
         this.versionFactory = from.versionFactory;
         this.preV054PlatformState = from.preV054PlatformState;
-        this.platformStateInitChanges = from.platformStateInitChanges;
         this.listeners.addAll(from.listeners);
 
         // Copy over the metadata

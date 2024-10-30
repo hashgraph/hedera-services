@@ -34,20 +34,17 @@ import java.time.Instant;
 import java.util.function.Function;
 
 /**
- * Gives read-only access to the platform state, encapsulating conversion from PBJ types to the current types
- * in use by the platform.
+ * Provides access to a snapshot of the platform state.
  */
 public class SnapshotPlatformStateAccessor implements PlatformStateAccessor {
-    public static final Function<SemanticVersion, SoftwareVersion> UNKNOWN_VERSION_FACTORY = version -> {
-        throw new IllegalStateException("State store was not initialized with a version factory");
-    };
-
     private final PlatformState state;
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
 
     /**
-     * Constructor that supports getting full {@link SoftwareVersion} information from the platform state. Must
-     * be used from within {@link PlatformState}.
+     * Constructs a new accessor for the given state.
+     *
+     * @param state the state to access
+     * @param versionFactory a factory for creating software versions
      */
     public SnapshotPlatformStateAccessor(
             @NonNull final PlatformState state,

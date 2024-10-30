@@ -151,7 +151,6 @@ import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -165,7 +164,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -359,12 +357,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         this.instantSource = requireNonNull(instantSource);
         logger.info(
                 """
-                        
+
                         {}
-                        
+
                         Welcome to Hedera! Developed with ❤\uFE0F by the Open Source Community.
                         https://github.com/hashgraph/hedera-services
-                        
+
                         """,
                 HEDERA);
         bootstrapConfigProvider = new BootstrapConfigProviderImpl();
@@ -415,8 +413,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                     () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), ServicesSoftwareVersion::new);
             final var blockStreamsEnabled = isBlockStreamEnabled();
             stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
-            onSealConsensusRound = blockStreamsEnabled ? this::manageBlockEndRound : (round, state) -> {
-            };
+            onSealConsensusRound = blockStreamsEnabled ? this::manageBlockEndRound : (round, state) -> {};
             // And the factory for the MerkleStateRoot class id must be our constructor
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(MerkleStateRoot.class, stateRootSupplier));
@@ -941,8 +938,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         // For other triggers the initial state hash must have been set already
         requireNonNull(initialStateHashFuture);
         final var roundNum = requireNonNull(state.getReadableStates(PlatformStateService.NAME)
-                .<PlatformState>getSingleton(PLATFORM_STATE_KEY)
-                .get())
+                        .<PlatformState>getSingleton(PLATFORM_STATE_KEY)
+                        .get())
                 .consensusSnapshotOrThrow()
                 .round();
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
