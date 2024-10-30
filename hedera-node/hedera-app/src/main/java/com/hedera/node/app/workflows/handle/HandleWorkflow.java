@@ -309,7 +309,6 @@ public class HandleWorkflow {
                 case POST_UPGRADE_WORK -> POST_UPGRADE_TRANSACTION;
                 default -> ORDINARY_TRANSACTION;};
         }
-        //        final var userTxn = newUserTxn(state, event, creator, txn, consensusNow, type);
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
         final var handleOutput = execute(userTxn);
         if (streamMode != BLOCKS) {
