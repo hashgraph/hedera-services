@@ -26,9 +26,11 @@ import static com.hedera.node.app.service.addressbook.impl.validators.AddressBoo
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.addressbook.NodeUpdateTransactionBody;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.addressbook.Node;
@@ -43,6 +45,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -85,10 +89,11 @@ public class NodeUpdateHandler implements TransactionHandler {
         final var config = context.configuration().getConfigData(NodesConfig.class);
 
         final var existingNode = nodeStore.get(op.nodeId());
-        validateFalsePreCheck(existingNode == null, INVALID_NODE_ID);
+        validateTruePreCheck(existingNode != null, INVALID_NODE_ID);
         validateFalsePreCheck(existingNode.deleted(), INVALID_NODE_ID);
-
-        context.requireKeyOrThrow(existingNode.adminKey(), INVALID_ADMIN_KEY);
+        if (!adminSigWaivedIn(context)) {
+            context.requireKeyOrThrow(existingNode.adminKey(), INVALID_ADMIN_KEY);
+        }
         if (op.hasAdminKey()) {
             context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
         }
@@ -170,5 +175,17 @@ public class NodeUpdateHandler implements TransactionHandler {
             nodeBuilder.adminKey(op.adminKey());
         }
         return nodeBuilder;
+    }
+
+    private boolean adminSigWaivedIn(@NonNull final PreHandleContext context) {
+        final var config = context.configuration();
+        final var hederaConfig = config.getConfigData(HederaConfig.class);
+        final var accountsConfig = config.getConfigData(AccountsConfig.class);
+        return context.payer()
+                .equals(AccountID.newBuilder()
+                        .shardNum(hederaConfig.shard())
+                        .realmNum(hederaConfig.realm())
+                        .accountNum(accountsConfig.addressBookAdmin())
+                        .build());
     }
 }

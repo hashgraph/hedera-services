@@ -58,10 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.junit.support.TestLifecycle;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -71,12 +68,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
 @DisplayName("updateNode")
-@HapiTestLifecycle
 public class NodeUpdateTest {
     private static List<X509Certificate> gossipCertificates;
 
     @BeforeAll
-    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+    static void beforeAll() {
         gossipCertificates = generateX509Certificates(2);
     }
 
@@ -129,13 +125,22 @@ public class NodeUpdateTest {
     }
 
     @HapiTest
-    final Stream<DynamicTest> updateAccountIdNotAllowed() throws CertificateEncodingException {
+    final Stream<DynamicTest> adminKeySigWaivedForAddressBookAdmin() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
                 nodeCreate("testNode")
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
-                nodeUpdate("testNode").accountId("0.0.100").hasPrecheck(UPDATE_NODE_ACCOUNT_NOT_ALLOWED));
+                // Unless the payer is the address book admin, the admin key must sign the transaction
+                nodeUpdate("testNode")
+                        .gossipCaCertificate(gossipCertificates.getLast().getEncoded())
+                        .payingWith(GENESIS)
+                        .signedBy(GENESIS)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                nodeUpdate("testNode")
+                        .gossipCaCertificate(gossipCertificates.getLast().getEncoded())
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .signedBy(ADDRESS_BOOK_CONTROL));
     }
 
     @HapiTest
@@ -224,7 +229,7 @@ public class NodeUpdateTest {
 
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
     @LeakyHapiTest(overrides = {"nodes.updateAccountIdAllowed"})
-    final Stream<DynamicTest> updateAccountIdWork() throws CertificateEncodingException {
+    final Stream<DynamicTest> updateAccountIdWorksOnlyWhenFlagEnabled() throws CertificateEncodingException {
         final var updateOp = nodeUpdate("testNode")
                 .adminKey("adminKey2")
                 .signedBy(DEFAULT_PAYER, "adminKey", "adminKey2")
@@ -238,13 +243,14 @@ public class NodeUpdateTest {
                 .gossipCaCertificate(gossipCertificates.getLast().getEncoded())
                 .grpcCertificateHash("grpcCert".getBytes());
         return hapiTest(
-                overriding("nodes.updateAccountIdAllowed", "true"),
                 newKeyNamed("adminKey"),
                 newKeyNamed("adminKey2"),
                 nodeCreate("testNode")
                         .description("description to be changed")
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                nodeUpdate("testNode").accountId("0.0.3").hasKnownStatus(UPDATE_NODE_ACCOUNT_NOT_ALLOWED),
+                overriding("nodes.updateAccountIdAllowed", "true"),
                 updateOp,
                 viewNode("testNode", node -> {
                     assertEquals("updated description", node.description(), "Node description should be updated");
@@ -273,8 +279,7 @@ public class NodeUpdateTest {
                             "Node grpcCertificateHash should be updated");
                     assertEquals(toPbj(updateOp.getAdminKey()), node.adminKey(), "Node adminKey should be updated");
                     assertEquals(toPbj(asAccount("0.0.100")), node.accountId());
-                }),
-                overriding("nodes.updateAccountIdAllowed", "false"));
+                }));
     }
 
     @HapiTest
