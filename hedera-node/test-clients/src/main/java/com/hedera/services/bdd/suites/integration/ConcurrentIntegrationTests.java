@@ -112,7 +112,7 @@ public class ConcurrentIntegrationTests {
     }
 
     @EmbeddedHapiTest(MANIPULATES_EVENT_VERSION)
-    @DisplayName("only warns of missing creator if event version is current")
+    @DisplayName("completely skips transaction from unknown node")
     final Stream<DynamicTest> completelySkipsTransactionFromUnknownNode() {
         return hapiTest(
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))

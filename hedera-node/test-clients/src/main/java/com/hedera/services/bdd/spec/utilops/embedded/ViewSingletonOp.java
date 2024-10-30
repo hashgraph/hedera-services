@@ -24,8 +24,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 
 /**
- * An operation that allows the test author to view a singleton record in an embedded state.
- * @param <T> the type of the record
+ * An operation that allows the test author to view a singleton value in an embedded state.
+ * @param <T> the type of the singleton
  */
 public class ViewSingletonOp<T extends Record> extends UtilOp {
     private final String serviceName;

@@ -66,6 +66,7 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
             embedding = embeddingMode();
             final HederaNetwork network =
                     switch (embedding) {
+                            // Embedding is not applicable for a subprocess network
                         case NA -> {
                             final var initialPortProperty = System.getProperty("hapi.spec.initial.port");
                             if (!initialPortProperty.isBlank()) {
@@ -75,6 +76,9 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
                             }
                             yield SubProcessNetwork.newSharedNetwork(CLASSIC_HAPI_TEST_NETWORK_SIZE);
                         }
+                            // For the default Test task, we need to run some tests in concurrent embedded mode and
+                            // some in repeatable embedded mode, depending on the value of their @TargetEmbeddedMode
+                            // annotation; this PER_CLASS value supports that requirement
                         case PER_CLASS -> null;
                         case CONCURRENT -> EmbeddedNetwork.newSharedNetwork(EmbeddedMode.CONCURRENT);
                         case REPEATABLE -> EmbeddedNetwork.newSharedNetwork(EmbeddedMode.REPEATABLE);
