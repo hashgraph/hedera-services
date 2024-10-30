@@ -16,12 +16,21 @@
 
 package com.hedera.node.app.service.schedule;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.RpcServiceFactory;
+import com.hedera.node.app.spi.key.KeyVerifier;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
+import java.util.Iterator;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Implements the HAPI <a
@@ -58,4 +67,21 @@ public interface ScheduleService extends RpcService {
     static ScheduleService getInstance() {
         return RpcServiceFactory.loadService(ScheduleService.class, ServiceLoader.load(ScheduleService.class));
     }
+
+    /**
+     * An executable transaction with the verifier to use for child signature verifications. If set,
+     * "not before" (nbf) time is the earliest consensus time at which the transaction could be executed.
+     */
+    record ExecutableTxn(TransactionBody body, KeyVerifier verifier, @Nullable Instant nbf) {}
+
+    /**
+     * Given a [start, end) interval and a supplier of a StoreFactory that can be used in the returned
+     * iterator's remove() implementation to get a StoreFactory to purge a successfully executed txn,
+     * returns an iterator over all ExecutableTxn this service wants to execute in the interval.
+     */
+    Iterator<ExecutableTxn> iterTxnsForInterval(
+            Instant start,
+            Instant end,
+            Supplier<StoreFactory> cleanupStoreFactory,
+            Function<TransactionBody, Set<Key>> transactionBodySetFunction);
 }
