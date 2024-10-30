@@ -55,10 +55,10 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
@@ -69,6 +69,7 @@ import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -168,6 +169,8 @@ public class ConcurrentIntegrationTests {
     @DisplayName("fail invalid outside dispatch does not attempt to charge fees")
     final Stream<DynamicTest> failInvalidOutsideDispatchDoesNotAttemptToChargeFees() {
         final AtomicReference<BlockStreamInfo> blockStreamInfo = new AtomicReference<>();
+        final List<ScheduleID> corruptedScheduleIds = new ArrayList<>();
+        corruptedScheduleIds.add(null);
         return hapiTest(
                 blockStreamMustIncludePassFrom(spec -> blockWithResultOf(FAIL_INVALID)),
                 cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
@@ -183,7 +186,7 @@ public class ConcurrentIntegrationTests {
                                 .get()
                                 .lastIntervalProcessTimeOrThrow()
                                 .seconds()),
-                        new ScheduleList(List.of(Schedule.DEFAULT))))),
+                        new ScheduleIdList(corruptedScheduleIds)))),
                 cryptoTransfer(tinyBarsFromTo("civilian", FUNDING, 1))
                         .fee(ONE_HBAR)
                         .hasKnownStatus(com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID),
