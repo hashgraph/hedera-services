@@ -16,6 +16,9 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.tss.TssCryptographyManager.isThresholdMet;
+import static com.hedera.node.app.tss.handlers.TssUtils.computeTssParticipantDirectory;
+import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -45,6 +48,8 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
+import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -68,6 +73,7 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.ReadableRosterStore;
@@ -81,6 +87,7 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
@@ -251,7 +258,10 @@ public class ServicesMain implements SwirldMain {
 
         // Initialize the address book and set on platform builder
         final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
-        final var roster = chooseRoster(version, initialState);
+
+        final long maxSharesPerNode =
+                configuration.getConfigData(TssConfig.class).maxSharesPerNode();
+        final var roster = chooseRoster(version, initialState, selfId, maxSharesPerNode);
 
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
         final var platformBuilder = PlatformBuilder.create(
@@ -303,12 +313,18 @@ public class ServicesMain implements SwirldMain {
      *
      * @param version              the software version of the current node
      * @param initialState         the initial state of the platform
+     * @param selfId               the node id of the current node
+     * @param maxSharesPerNode     the maximum number of shares per node
      * @return the roster
      */
     private static @NotNull Roster chooseRoster(
-            @NonNull final SoftwareVersion version, @NonNull final ReservedSignedState initialState) {
+            @NonNull final SoftwareVersion version,
+            @NonNull final ReservedSignedState initialState,
+            @NonNull final NodeId selfId,
+            final long maxSharesPerNode) {
         requireNonNull(version);
         requireNonNull(initialState);
+        requireNonNull(selfId);
 
         final SignedState loadedSignedState = initialState.get();
         if (loadedSignedState.isGenesisState()) {
@@ -334,8 +350,8 @@ public class ServicesMain implements SwirldMain {
             return activeRoster;
         }
 
-        final boolean activeRosterKeyed = hasEnoughKeyMaterial(activeRoster);
-        final boolean candidateRosterKeyed = hasEnoughKeyMaterial(candidateRoster);
+        final boolean activeRosterKeyed = hasEnoughKeyMaterial(activeRoster, state, selfId, maxSharesPerNode);
+        final boolean candidateRosterKeyed = hasEnoughKeyMaterial(candidateRoster, state, selfId, maxSharesPerNode);
         final var ledgerId = getLedgerId(loadedSignedState);
 
         // If the existing active roster and candidate roster do not have complete key material and the network does not
@@ -365,10 +381,17 @@ public class ServicesMain implements SwirldMain {
         return activeRoster;
     }
 
-    // TODO: Check that we have enough key material, i.e. check that there are enough votes and that the TSS messages in
-    // the votes were the ones used to generate the key material
-    private static boolean hasEnoughKeyMaterial(Roster candidateRoster) {
-        return false;
+    private static boolean hasEnoughKeyMaterial(
+            final Roster roster, final State state, final NodeId selfId, final long maxSharesPerNode) {
+        final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStoreImpl.class);
+        final var rosterHash = RosterUtils.hash(roster).getBytes();
+        final var tssMessageBodies = tssStore.getTssMessages(rosterHash);
+        final var tssParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int) selfId.id());
+
+        // FUTURE: get the same TssLibrary instance that we use for the Hedera instance
+        final var tssLibrary = new PlaceholderTssLibrary();
+        final var validTssOps = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
+        return isThresholdMet(validTssOps, tssParticipantDirectory);
     }
 
     private static @Nullable LedgerId getLedgerId(SignedState loadedSignedState) {
