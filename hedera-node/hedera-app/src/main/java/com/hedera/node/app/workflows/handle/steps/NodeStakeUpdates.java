@@ -16,24 +16,33 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TssConfig;
+import com.hedera.node.config.types.StreamMode;
+import com.swirlds.common.RosterStateId;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -52,15 +61,18 @@ public class NodeStakeUpdates {
     private final EndOfStakingPeriodUpdater stakingCalculator;
     private final ExchangeRateManager exchangeRateManager;
     private final TssBaseService tssBaseService;
+    private final StoreMetricsService storeMetricsService;
 
     @Inject
     public NodeStakeUpdates(
             @NonNull final EndOfStakingPeriodUpdater stakingPeriodCalculator,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TssBaseService tssBaseService) {
+            @NonNull final TssBaseService tssBaseService,
+            @NonNull final StoreMetricsService storeMetricsService) {
         this.stakingCalculator = requireNonNull(stakingPeriodCalculator);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.tssBaseService = requireNonNull(tssBaseService);
+        this.storeMetricsService = requireNonNull(storeMetricsService);
     }
 
     /**
@@ -68,32 +80,45 @@ public class NodeStakeUpdates {
      * rewards. This should only be done during handling of the first transaction of each new staking
      * period, which staking period usually starts at midnight UTC.
      *
-     * <p>The only exception to this rule is when {@code consensusTimeOfLastHandledTxn} is null,
-     * <b>which should only happen on node startup.</b> The node should therefore run this process
-     * to catch up on updates and distributions when first coming online.
+     * <p>Given successful processing of staking updates, and keying candidate TSS rosters is enabled,
+     * this time hook also signals to the {@link TssBaseService} that a new candidate roster – constructed
+     * from the new weights calculated herein for staking – is available.
      *
-     * @param stack        the savepoint stack
-     * @param tokenContext the token context
-     * @param isGenesis    whether the current transaction is the genesis transaction
      * @param dispatch     the dispatch
+     * @param stack the savepoint stack
+     * @param tokenContext the token context
+     * @param streamMode the stream mode
+     * @param isGenesis whether the current transaction is the genesis transaction
+     * @param lastIntervalProcessTime if known, the last instant when time-based events were processed
      */
     public void process(
+            @NonNull final Dispatch dispatch,
             @NonNull final SavepointStackImpl stack,
             @NonNull final TokenContext tokenContext,
+            @NonNull final StreamMode streamMode,
             final boolean isGenesis,
-            final Dispatch dispatch) {
-        requireNonNull(stack, "stack must not be null");
-        requireNonNull(tokenContext, "tokenContext must not be null");
-        final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
+            @NonNull final Instant lastIntervalProcessTime) {
+        requireNonNull(stack);
+        requireNonNull(dispatch);
+        requireNonNull(tokenContext);
+        requireNonNull(streamMode);
+        requireNonNull(lastIntervalProcessTime);
         var shouldExport = isGenesis;
         if (!shouldExport) {
             final var consensusTime = tokenContext.consensusTime();
-            final var lastHandleTime = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
-            if (consensusTime.getEpochSecond() > lastHandleTime.seconds()) {
-                shouldExport = isNextStakingPeriod(
-                        consensusTime,
-                        Instant.ofEpochSecond(lastHandleTime.seconds(), lastHandleTime.nanos()),
-                        tokenContext);
+            if (streamMode == RECORDS) {
+                final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
+                final var lastHandleTime = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
+                if (consensusTime.getEpochSecond() > lastHandleTime.seconds()) {
+                    shouldExport = isNextStakingPeriod(
+                            consensusTime,
+                            Instant.ofEpochSecond(lastHandleTime.seconds(), lastHandleTime.nanos()),
+                            tokenContext);
+                }
+            } else {
+                if (consensusTime.getEpochSecond() > lastIntervalProcessTime.getEpochSecond()) {
+                    shouldExport = isNextStakingPeriod(consensusTime, lastIntervalProcessTime, tokenContext);
+                }
             }
         }
         if (shouldExport) {
@@ -118,12 +143,16 @@ public class NodeStakeUpdates {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
             }
+
+            // If enabled, initialize a new candidate roster
             final var config = tokenContext.configuration();
             final var tssConfig = config.getConfigData(TssConfig.class);
             if (tssConfig.keyCandidateRoster()) {
-                final var context = dispatch.handleContext();
-                // C.f. https://github.com/hashgraph/hedera-services/issues/14748
-                tssBaseService.setCandidateRoster(Roster.DEFAULT, context);
+                // We can't use the handle context to retrieve a WritableRosterStore object because
+                // the handle context is only scoped to the token service, so we use the
+                // `newWritableRosterStore` method here instead
+                final var rosterStore = newWritableRosterStore(stack, config);
+                keyNewRoster(dispatch.handleContext(), rosterStore);
             }
         }
     }
@@ -141,6 +170,24 @@ public class NodeStakeUpdates {
             return getPeriod(currentConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
                     > getPeriod(previousConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
         }
+    }
+
+    private void keyNewRoster(
+            @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
+        final var nodeStore = handleContext.storeFactory().readableStore(ReadableNodeStore.class);
+        final var newCandidateRoster = nodeStore.newRosterFromNodes();
+
+        if (!Objects.equals(newCandidateRoster, rosterStore.getCandidateRoster())
+                && !Objects.equals(newCandidateRoster, rosterStore.getActiveRoster())) {
+            rosterStore.putCandidateRoster(newCandidateRoster);
+            tssBaseService.setCandidateRoster(newCandidateRoster, handleContext);
+        }
+    }
+
+    private WritableRosterStore newWritableRosterStore(
+            @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
+        final var writableFactory = new WritableStoreFactory(stack, RosterStateId.NAME, config, storeMetricsService);
+        return writableFactory.getStore(WritableRosterStore.class);
     }
 
     private static boolean isLaterUtcDay(@NonNull final Instant now, @NonNull final Instant then) {

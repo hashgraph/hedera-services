@@ -56,7 +56,7 @@ public final class LegacyConfigPropertiesLoader {
     public static final String ERROR_MORE_THAN_ONE_APP =
             "config.txt had more than one line starting with 'app'. All but the last will be ignored.";
     public static final String ERROR_NO_PARAMETER = "%s needs a parameter";
-    public static final String ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS = "'address' needs a minimum of 7 parameters";
+    public static final String ERROR_ADDRESS_COULD_NOT_BE_PARSED = "'address' could not be parsed";
     public static final String ERROR_PROPERTY_NOT_KNOWN =
             "'%s' in config.txt isn't a recognized first parameter for a line";
     public static final String ERROR_NEXT_NODE_NOT_GREATER_THAN_HIGHEST_ADDRESS =
@@ -115,15 +115,19 @@ public final class LegacyConfigPropertiesLoader {
                                     addressBook.add(address);
                                 }
                             } catch (final ParseException ex) {
-                                logger.error(
-                                        EXCEPTION.getMarker(),
-                                        "file {}, line {}, offset {}: {}",
-                                        configPath,
-                                        lineNumber,
-                                        ex.getErrorOffset(),
-                                        ex.getMessage());
-                                onError(ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS);
+                                // if we fail to parse address, we must abort since otherwise node starts with subset
+                                // of node keys and fails to join the network eventually.
+                                throw new ConfigurationException(
+                                        String.format(
+                                                "%s [line: %d]: %s",
+                                                ERROR_ADDRESS_COULD_NOT_BE_PARSED, lineNumber, line),
+                                        ex);
                             }
+                        }
+                        case "nextnodeid" -> {
+                            // As of release 0.56, nextNodeId is not used and ignored.
+                            // CI/CD pipelines need to be updated to remove this field from files.
+                            // Future Work: remove this case when nextNodeId is no longer present in CI/CD pipelines.
                         }
                         default -> onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
                     }

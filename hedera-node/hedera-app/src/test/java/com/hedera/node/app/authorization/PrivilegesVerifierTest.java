@@ -46,6 +46,7 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -361,17 +362,25 @@ class PrivilegesVerifierTest {
     }
 
     @Test
-    void nodeAdminCanCreate() throws InvalidProtocolBufferException {
+    void addressBookAdminCanCreate() throws InvalidProtocolBufferException {
         // given:
-        var txn = nodeAdminTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
+        var txn = addressBookAdminTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
         // expect:
         assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
-    void nodeAdminCanDelete() throws InvalidProtocolBufferException {
+    void addressBookAdminCanUpdate() throws InvalidProtocolBufferException {
         // given:
-        var txn = nodeAdminTxn().setNodeDelete(NodeDeleteTransactionBody.getDefaultInstance());
+        var txn = addressBookAdminTxn().setNodeUpdate(NodeUpdateTransactionBody.getDefaultInstance());
+        // expect:
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
+    }
+
+    @Test
+    void addressBookAdminCanDelete() throws InvalidProtocolBufferException {
+        // given:
+        var txn = addressBookAdminTxn().setNodeDelete(NodeDeleteTransactionBody.getDefaultInstance());
         // expect:
         assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
@@ -672,7 +681,7 @@ class PrivilegesVerifierTest {
         return txnWithPayer(57);
     }
 
-    private TransactionBody.Builder nodeAdminTxn() {
+    private TransactionBody.Builder addressBookAdminTxn() {
         return txnWithPayer(55);
     }
 

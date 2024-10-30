@@ -19,8 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.AUTO_MEMO;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.LAZY_MEMO;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
@@ -75,7 +73,6 @@ public class AutoAccountCreator {
                 ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         final TransactionBody.Builder syntheticCreation;
-        String memo;
 
         final var isAliasEVMAddress = isOfEvmAddressSize(alias);
         final var entitiesConfig = handleContext.configuration().getConfigData(EntitiesConfig.class);
@@ -83,12 +80,10 @@ public class AutoAccountCreator {
                 ? UNLIMITED_AUTOMATIC_ASSOCIATIONS
                 : requiredAutoAssociations;
         if (isAliasEVMAddress) {
-            syntheticCreation = createHollowAccount(alias, 0L, autoAssociations, LAZY_MEMO);
-            memo = LAZY_MEMO;
+            syntheticCreation = createHollowAccount(alias, 0L, autoAssociations);
         } else {
             final var key = asKeyFromAlias(alias);
             syntheticCreation = createZeroBalanceAccount(alias, key, autoAssociations);
-            memo = AUTO_MEMO;
         }
 
         // Dispatch the auto-creation record as a preceding record; note we pass null for the
@@ -99,7 +94,6 @@ public class AutoAccountCreator {
                 null,
                 handleContext.payer(),
                 HandleContext.ConsensusThrottling.ON);
-        childRecord.memo(memo);
 
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.
         validateTrue(childRecord.status() == ResponseCodeEnum.SUCCESS, childRecord.status());
@@ -118,16 +112,14 @@ public class AutoAccountCreator {
      * @param alias alias of the account
      * @param balance initial balance of the account
      * @param maxAutoAssociations maxAutoAssociations of the account
-     * @param memo the memo to set on the transaction body
      * @return transaction body for new hollow-account
      */
     public TransactionBody.Builder createHollowAccount(
-            @NonNull final Bytes alias, final long balance, final int maxAutoAssociations, @NonNull final String memo) {
+            @NonNull final Bytes alias, final long balance, final int maxAutoAssociations) {
         requireNonNull(alias);
-        requireNonNull(memo);
         final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
-        baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias).memo(LAZY_MEMO);
-        return TransactionBody.newBuilder().memo(memo).cryptoCreateAccount(baseBuilder.build());
+        baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias);
+        return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 
     /**
@@ -154,7 +146,7 @@ public class AutoAccountCreator {
     private TransactionBody.Builder createZeroBalanceAccount(
             @NonNull final Bytes alias, @NonNull final Key key, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(0L, maxAutoAssociations);
-        baseBuilder.key(key).alias(alias).memo(AUTO_MEMO).receiverSigRequired(false);
-        return TransactionBody.newBuilder().memo(AUTO_MEMO).cryptoCreateAccount(baseBuilder.build());
+        baseBuilder.key(key).alias(alias).receiverSigRequired(false);
+        return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 }

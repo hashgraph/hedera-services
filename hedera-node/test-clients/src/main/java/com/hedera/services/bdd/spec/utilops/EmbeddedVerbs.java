@@ -16,16 +16,32 @@
 
 package com.hedera.services.bdd.spec.utilops;
 
+import static com.hedera.node.config.types.StreamMode.RECORDS;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
+import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateScheduleExpiries;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateTokenOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewPendingAirdropOp;
+import com.hedera.services.bdd.spec.utilops.embedded.ViewSingletonOp;
+import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.function.Consumer;
 
 /**
@@ -49,6 +65,29 @@ public final class EmbeddedVerbs {
     }
 
     /**
+     * Returns an operation that allows the test author to directly mutate a token.
+     *
+     * @param name the identifier of the token to mutate
+     * @param mutation the mutation to apply to the token
+     * @return the operation that will mutate the token
+     */
+    public static MutateTokenOp mutateToken(
+            @NonNull final String name, @NonNull final Consumer<Token.Builder> mutation) {
+        return new MutateTokenOp(name, mutation);
+    }
+
+    /**
+     * Returns an operation that allows the test author to directly mutate the schedule expiries.
+     *
+     * @param mutation the mutation to apply to the schedule expiries
+     * @return the operation that will mutate the schedule expiries
+     */
+    public static MutateScheduleExpiries mutateScheduleExpiries(
+            @NonNull final Consumer<WritableKVState<ProtoLong, ScheduleList>> mutation) {
+        return new MutateScheduleExpiries(mutation);
+    }
+
+    /**
      * Returns an operation that allows the test author to directly mutate an account.
      *
      * @param name the name of the account to mutate
@@ -57,6 +96,22 @@ public final class EmbeddedVerbs {
      */
     public static ViewAccountOp viewAccount(@NonNull final String name, @NonNull final Consumer<Account> observer) {
         return new ViewAccountOp(name, observer);
+    }
+
+    /**
+     * Returns an operation that allows the test author to view a singleton record in an embedded state.
+     * @param serviceName the name of the service that manages the record
+     * @param stateKey the key of the record in the state
+     * @param observer the observer that will receive the record
+     * @return the operation that will expose the record to the observer
+     * @param <T> the type of the record
+     */
+    public static <T extends Record> ViewSingletonOp<T> viewSingleton(
+            @NonNull final String serviceName, @NonNull final String stateKey, @NonNull final Consumer<T> observer) {
+        requireNonNull(serviceName);
+        requireNonNull(stateKey);
+        requireNonNull(observer);
+        return new ViewSingletonOp<T>(serviceName, stateKey, observer);
     }
 
     /**
@@ -95,5 +150,48 @@ public final class EmbeddedVerbs {
             @NonNull final String receiverName,
             @NonNull final Consumer<AccountPendingAirdrop> observer) {
         return new ViewPendingAirdropOp(tokenName, senderName, receiverName, observer);
+    }
+
+    /**
+     * Returns an operation that changes the state of an embedded network to appear to be handling
+     * the first transaction after an upgrade.
+     *
+     * @return the operation that simulates the first transaction after an upgrade
+     */
+    public static SpecOperation simulatePostUpgradeTransaction() {
+        return withOpContext((spec, opLog) -> {
+            if (spec.targetNetworkOrThrow() instanceof EmbeddedNetwork embeddedNetwork) {
+                // Ensure there are no in-flight transactions that will overwrite our state changes
+                spec.sleepConsensusTime(Duration.ofSeconds(1));
+                final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
+                final var fakeState = embeddedHedera.state();
+                final var streamMode = spec.startupProperties().getStreamMode("blockStream.streamMode");
+                if (streamMode == RECORDS) {
+                    // Mark the migration records as not streamed
+                    final var writableStates = fakeState.getWritableStates("BlockRecordService");
+                    final var blockInfo = writableStates.<BlockInfo>getSingleton("BLOCKS");
+                    blockInfo.put(requireNonNull(blockInfo.get())
+                            .copyBuilder()
+                            .migrationRecordsStreamed(false)
+                            .build());
+                    ((CommittableWritableStates) writableStates).commit();
+                    // Ensure the next transaction is in a new round with ConcurrentEmbeddedHedera
+                    spec.sleepConsensusTime(Duration.ofMillis(10L));
+                } else {
+                    final var writableStates = fakeState.getWritableStates("BlockStreamService");
+                    final var state = writableStates.<BlockStreamInfo>getSingleton("BLOCK_STREAM_INFO");
+                    final var blockStreamInfo = requireNonNull(state.get());
+                    state.put(blockStreamInfo
+                            .copyBuilder()
+                            .postUpgradeWorkDone(false)
+                            .build());
+                    ((CommittableWritableStates) writableStates).commit();
+                }
+                // Ensure the next transaction is in a new block period
+                spec.sleepConsensusTime(Duration.ofSeconds(2L));
+            } else {
+                throw new IllegalStateException("Cannot simulate post-upgrade transaction on non-embedded network");
+            }
+        });
     }
 }

@@ -22,7 +22,6 @@ import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubK
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -95,7 +94,6 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.addressbook.Node;
-import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -194,9 +192,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -219,7 +215,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -531,40 +529,38 @@ public class UtilVerbs {
         };
     }
 
-    /**
-     * Returns an operation that changes the state of an embedded network to appear to be handling
-     * the first transaction after an upgrade.
-     *
-     * @return the operation that simulates the first transaction after an upgrade
-     */
-    public static SpecOperation simulatePostUpgradeTransaction() {
-        return withOpContext((spec, opLog) -> {
-            if (spec.targetNetworkOrThrow() instanceof EmbeddedNetwork embeddedNetwork) {
-                final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
-                final var fakeState = embeddedHedera.state();
-                // First make the freeze and last freeze times non-null and identical
-                final var aTime = spec.consensusTime();
-                // This store immediately commits mutations, hence no cast and call to commit
-                final var writablePlatformStateStore =
-                        new WritablePlatformStateStore(fakeState.getWritableStates("PlatformStateService"));
-                writablePlatformStateStore.setLastFrozenTime(aTime);
-                writablePlatformStateStore.setFreezeTime(aTime);
-                // Next mark the migration records as not streamed
-                final var writableBlockStates = fakeState.getWritableStates("BlockRecordService");
-                final var blockInfo = writableBlockStates.<BlockInfo>getSingleton("BLOCKS");
-                blockInfo.put(requireNonNull(blockInfo.get())
-                        .copyBuilder()
-                        .migrationRecordsStreamed(false)
-                        .build());
-                ((CommittableWritableStates) writableBlockStates).commit();
-            } else {
-                throw new IllegalStateException("Cannot simulate post-upgrade transaction on non-embedded network");
-            }
-        });
-    }
-
     public static WaitForStatusOp waitForFrozenNetwork(@NonNull final Duration timeout) {
         return new WaitForStatusOp(NodeSelector.allNodes(), FREEZE_COMPLETE, timeout);
+    }
+
+    /**
+     * Returns an operation that initiates background traffic running until the target network's
+     * first node has reached {@link com.swirlds.platform.system.status.PlatformStatus#FREEZE_COMPLETE}.
+     * @return the operation
+     */
+    public static SpecOperation runBackgroundTrafficUntilFreezeComplete() {
+        return withOpContext((spec, opLog) -> {
+            opLog.info("Starting background traffic until freeze complete");
+            final var stopTraffic = new AtomicBoolean();
+            CompletableFuture.runAsync(() -> {
+                while (!stopTraffic.get()) {
+                    allRunFor(
+                            spec,
+                            cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, 1))
+                                    .fireAndForget()
+                                    .noLogging());
+                    spec.sleepConsensusTime(Duration.ofMillis(1L));
+                }
+            });
+            spec.targetNetworkOrThrow()
+                    .nodes()
+                    .getFirst()
+                    .statusFuture(FREEZE_COMPLETE, (status) -> {})
+                    .thenRun(() -> {
+                        stopTraffic.set(true);
+                        opLog.info("Stopping background traffic after freeze complete");
+                    });
+        });
     }
 
     public static HapiSpecSleep sleepFor(long timeMs) {
@@ -734,7 +730,9 @@ public class UtilVerbs {
      * @return the operation that runs the sub-operations in parallel
      */
     public static GroupedOps<?> inParallel(@NonNull final SpecOperation... subs) {
-        return repeatableModeRequested() ? blockingOrder(subs) : new ParallelSpecOps(subs);
+        return "repeatable".equalsIgnoreCase(System.getProperty("hapi.spec.embedded.mode"))
+                ? blockingOrder(subs)
+                : new ParallelSpecOps(subs);
     }
 
     public static CustomSpecAssert assertionsHold(CustomSpecAssert.ThrowingConsumer custom) {
