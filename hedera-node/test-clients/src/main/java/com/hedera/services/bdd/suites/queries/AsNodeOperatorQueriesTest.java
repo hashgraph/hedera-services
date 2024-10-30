@@ -26,14 +26,19 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -259,8 +264,8 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                     .given(
                             cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
                             cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                            fileCreate(FILE))
-                    .when(getContractInfo(FILE).asNodeOperator())
+                            createDefaultContract(CONTRACT))
+                    .when(getContractInfo(CONTRACT).asNodeOperator())
                     .then(
                             getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
                             getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
