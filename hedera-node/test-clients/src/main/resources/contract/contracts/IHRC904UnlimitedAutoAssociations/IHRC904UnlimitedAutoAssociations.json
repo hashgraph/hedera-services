@@ -1,0 +1,21 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "bool",
+        "name": "enableAutoAssociations",
+        "type": "bool"
+      }
+    ],
+    "name": "setUnlimitedAutomaticAssociations",
+    "outputs": [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.validation;
-
-import com.swirlds.platform.system.address.AddressBook;
-import edu.umd.cs.findbugs.annotations.NonNull;
+package org.hiero.consensus.gossip;
 
 /**
- * A record representing an update to the address book.
- *
- * @param previousAddressBook the previous address book
- * @param currentAddressBook  the new current address book
+ * Mock gossip.
  */
-public record AddressBookUpdate(@NonNull AddressBook previousAddressBook, @NonNull AddressBook currentAddressBook) {}
+public interface Gossip {}

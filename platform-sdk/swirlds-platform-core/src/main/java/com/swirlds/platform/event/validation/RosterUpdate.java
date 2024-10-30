@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.service.gossip.impl;
+package com.swirlds.platform.event.validation;
 
-import com.hedera.service.gossip.GossipService;
+import com.hedera.hapi.node.state.roster.Roster;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Implementation for the mock gossip service.
+ * A record representing an update to the roster.
+ *
+ * @param previousRoster the previous roster
+ * @param currentRoster  the new current roster
  */
-public final class GossipServiceImpl implements GossipService {}
+public record RosterUpdate(@NonNull Roster previousRoster, @NonNull Roster currentRoster) {}
