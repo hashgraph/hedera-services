@@ -83,8 +83,6 @@ module com.hedera.node.test.clients {
     requires transitive net.i2p.crypto.eddsa;
     requires transitive org.apache.commons.io;
     requires transitive org.apache.logging.log4j;
-    requires transitive org.hiero.event.creator.impl;
-    requires transitive org.hiero.event.creator;
     requires transitive org.junit.jupiter.api;
     requires transitive org.junit.platform.launcher;
     requires transitive org.testcontainers;

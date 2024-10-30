@@ -26,6 +26,8 @@ description = "Hedera Services Test Clients for End to End Tests (EET)"
 mainModuleInfo {
     runtimeOnly("org.junit.jupiter.engine")
     runtimeOnly("org.junit.platform.launcher")
+    runtimeOnly("org.hiero.event.creator")
+    runtimeOnly("org.hiero.event.creator.impl")
 }
 
 testModuleInfo { runtimeOnly("org.junit.jupiter.api") }
