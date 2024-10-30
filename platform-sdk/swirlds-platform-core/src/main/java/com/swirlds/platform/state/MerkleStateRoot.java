@@ -227,15 +227,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     /**
-     * Returns the list of builders for state changes that occurred during the initialization of the platform state.
-     * Must only be called after platform state is initialized.
-     * @throws NullPointerException if the platform state initialization changes have not been set
-     */
-    public @NonNull List<StateChanges.Builder> platformStateInitChangesOrThrow() {
-        return requireNonNull(platformStateInitChanges);
-    }
-
-    /**
      * {@inheritDoc}
      * <p>
      * Called by the platform whenever the state should be initialized. This can happen at genesis startup,

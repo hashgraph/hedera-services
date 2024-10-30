@@ -214,7 +214,10 @@ public class ServicesMain implements SwirldMain {
                 version,
                 () -> {
                     isGenesis.set(true);
-                    return hedera.newMerkleStateRoot();
+                    final var genesisState = hedera.newMerkleStateRoot();
+                    hedera.initializeStatesApi(
+                            (MerkleStateRoot) genesisState, metrics, InitTrigger.GENESIS, diskAddressBook);
+                    return genesisState;
                 },
                 SignedStateFileUtils::readState,
                 Hedera.APP_NAME,
@@ -222,11 +225,13 @@ public class ServicesMain implements SwirldMain {
                 selfId,
                 diskAddressBook);
         final var initialState = reservedState.state();
-        hedera.initializeStatesApi(
-                (MerkleStateRoot) initialState.get().getState().getSwirldState(),
-                metrics,
-                isGenesis.get() ? InitTrigger.GENESIS : InitTrigger.RESTART,
-                isGenesis.get() ? diskAddressBook : null);
+        if (!isGenesis.get()) {
+            hedera.initializeStatesApi(
+                    (MerkleStateRoot) initialState.get().getState().getSwirldState(),
+                    metrics,
+                    InitTrigger.RESTART,
+                    null);
+        }
 
         final var cryptography = CryptographyFactory.create();
         CryptographyHolder.set(cryptography);

@@ -597,12 +597,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
-        if (isNotEmbedded()) {
-            if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
-                throw new IllegalStateException("State must be a MerkleStateRoot");
-            }
-            migrationStateChanges.addAll(merkleStateRoot.platformStateInitChangesOrThrow());
-        }
         // (FUTURE) In principle, the FileService could actually change the active configuration during a
         // migration, which implies we should be passing the config provider and not a static configuration
         // here; but this is a currently unneeded affordance
