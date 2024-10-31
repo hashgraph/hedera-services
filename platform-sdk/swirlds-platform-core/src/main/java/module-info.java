@@ -140,7 +140,6 @@ module com.swirlds.platform.core {
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
     requires transitive org.hiero.consensus.gossip;
-    requires transitive org.hiero.event.creator;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
@@ -156,6 +155,7 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
     requires org.hiero.event.creator.impl;
+    requires org.hiero.event.creator;
     requires static transitive com.github.spotbugs.annotations;
     requires static transitive com.google.auto.service;
 

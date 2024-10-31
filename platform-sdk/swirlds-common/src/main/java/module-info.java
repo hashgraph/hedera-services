@@ -144,6 +144,7 @@ module com.swirlds.common {
     exports com.swirlds.common.concurrent;
     exports com.swirlds.common.merkle.synchronization.stats;
 
+    requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.logging;
@@ -155,7 +156,6 @@ module com.swirlds.common {
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;
-    requires com.hedera.node.hapi;
     requires com.sun.jna;
     requires io.github.classgraph;
     requires io.prometheus.simpleclient.httpserver;
