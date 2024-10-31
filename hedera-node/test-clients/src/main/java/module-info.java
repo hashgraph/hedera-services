@@ -89,8 +89,6 @@ module com.hedera.node.test.clients {
     requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.contract.impl;
-    requires com.hedera.node.app.service.file.impl;
-    requires com.hedera.node.app.service.network.admin.impl;
     requires com.hedera.node.app.service.schedule.impl;
     requires com.hedera.node.app.service.schedule;
     requires com.hedera.node.app.service.token.impl;
