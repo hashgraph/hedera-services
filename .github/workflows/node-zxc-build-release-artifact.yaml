@@ -336,7 +336,9 @@ jobs:
 
   local-node-images:
     name: Publish Local Node Images
-    needs: [determine-version, build-artifact]
+    needs: 
+      - determine-version
+      - build-artifact
     runs-on: network-node-linux-large
     steps:
       - name: Harden Runner
@@ -473,7 +475,9 @@ jobs:
   gcp-production-image:
     name: Publish Production Image
     uses: ./.github/workflows/zxc-publish-production-image.yaml
-    needs: [determine-version, build-artifact]
+    needs: 
+      - determine-version
+      - build-artifact
     with:
       version: ${{ needs.determine-version.outputs.version }}
       dry-run-enabled: ${{ inputs.dry-run-enabled }}
@@ -488,7 +492,9 @@ jobs:
   jfr-production-image:
     name: Publish Production Image
     uses: ./.github/workflows/zxc-publish-production-image.yaml
-    needs: [determine-version, build-artifact]
+    needs: 
+      - determine-version
+      - build-artifact
     with:
       version: ${{ needs.determine-version.outputs.version }}
       dry-run-enabled: ${{ inputs.dry-run-enabled }}
@@ -503,7 +509,10 @@ jobs:
   validate-production-image:
     name: Validate Production Image
     runs-on: network-node-linux-large
-    needs: [determine-version, gcp-production-image, jfr-production-image]
+    needs: 
+      - determine-version
+      - gcp-production-image
+      - jfr-production-image
     if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
     steps:
       - name: Harden Runner
@@ -793,7 +802,11 @@ jobs:
   send-notifications:
     name: Send Release Notifications
     runs-on: network-node-linux-large
-    needs: [determine-version, local-node-images, validate-production-image, publish]
+    needs: 
+      - determine-version
+      - local-node-images
+      - validate-production-image
+      - publish
     if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
     steps:
       - name: Harden Runner

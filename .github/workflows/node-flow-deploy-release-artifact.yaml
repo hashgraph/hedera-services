@@ -73,6 +73,34 @@ jobs:
           echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
 
   release-tag:
+    name: Release [Tag]
+    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
+    needs:
+      - prepare-tag-release
+    with:
+      version-policy: specified
+      new-version: ${{ needs.prepare-tag-release.outputs.version }}
+      trigger-env-deploy: none
+      release-profile: ${{ needs.prepare-tag-release.outputs.prerelease == 'true' && 'PrereleaseChannel' || 'MavenCentral' }}
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
+      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
+      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
+      jf-url: ${{ vars.JF_URL }}
+      jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
+      jf-user-name: ${{ vars.JF_USER_NAME }}
+      jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
+
+  release-branch:
     name: Release [Branch]
     runs-on: network-node-linux-large
     outputs:
@@ -102,7 +130,7 @@ jobs:
             @semantic-release/changelog \
             @semantic-release/git \
             conventional-changelog-conventionalcommits
-            
+
       - name: Install GnuPG Tools
         if: ${{ inputs.dry-run-enabled != true }}
         run: |
@@ -128,7 +156,7 @@ jobs:
 
       - name: Semantic Release
         id: semantic
-        uses: semantic-release/semantic-release@05a2ea9a060e6508abf92087e8c8cc4a7a85604f # v24.2.0
+        uses: semantic-release/semantic-release@43df51b79ec9c8716b737804486b375459ea177e # v24.1.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -161,32 +189,6 @@ jobs:
           jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
           jf-user-name: ${{ vars.JF_USER_NAME }}
           jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
-
-  release-branch:
-    name: Release [Branch]
-    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    with:
-      version-policy: branch-commit
-      trigger-env-deploy: integration
-      release-profile: DevelopCommit
-    secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
-      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
-      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
-      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
-      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
-      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
-      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
-      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
-      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
-      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
-      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
-      jf-url: ${{ vars.JF_URL }}
-      jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
-      jf-user-name: ${{ vars.JF_USER_NAME }}
-      jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
 
   deploy-ci-trigger:
     name: Trigger CI Flows
