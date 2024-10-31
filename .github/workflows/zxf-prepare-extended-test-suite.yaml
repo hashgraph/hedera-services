@@ -29,9 +29,12 @@ defaults:
 permissions:
   actions: write
   contents: write
+  statuses: write
 
 env:
   XTS_CANDIDATE_TAG: "xts-candidate"
+  XTS_PASS_GREP_PATTERN: "xts-pass-*"
+  PROMOTED_GREP_PATTERN: "build-.{5}"
 
 jobs:
   tag-for-xts:
@@ -79,6 +82,23 @@ jobs:
           git_user_signingkey: true
           gpg_private_key: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
           passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+
+      # Check if this commit is already tagged in the XTS flow
+      - name: Check if XTS flow is required
+        env:
+          CANDIDATE_PATTERN: ${{ env.XTS_CANDIDATE_TAG }}
+          XTS_PASS_PATTERN: ${{ env.XTS_PASS_GREP_PATTERN }}
+          BUILD_PROMO_PATTERN: ${{ env.PROMOTED_GREP_PATTERN }}
+        run: |
+          # Check if the HEAD ref is already tagged in the XTS workflows
+          XTS_CANDIDATE_TAGGED=$(git tag --contains HEAD | grep -E "${CANDIDATE_PATTERN}")
+          XTS_PASS_TAGGED=$(git tag --contains HEAD | grep -E "${XTS_PASS_PATTERN}")
+          BUILD_PROMOTED_TAGGED=$(git tag --contains HEAD | grep -E "${BUILD_PROMO_PATTERN}")
+          
+          # Use -n; if the strings are not empty than the commit has been tagged.
+          if [[ -n XTS_CANDIDATE_TAGGED || -n XTS_PASS_TAGGED || -n BUILD_PROMOTED_TAGGED]]; then
+            gh run cancel ${{ github.run_id }}
+          fi
 
       # move the tag if successful
       - name: Tag Code and push

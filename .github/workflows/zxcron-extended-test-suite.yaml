@@ -35,6 +35,8 @@ defaults:
 
 env:
   XTS_CANDIDATE_TAG: "xts-candidate"
+  XTS_PASS_GREP_PATTERN: "xts-pass-*"
+  PROMOTED_GREP_PATTERN: "build-.{5}"
 
 jobs:
   fetch-xts-candidate:

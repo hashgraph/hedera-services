@@ -23,12 +23,17 @@ on:
 
 permissions:
   actions: write
-  contents: read
+  contents: write
   statuses: write
 
 defaults:
   run:
     shell: bash
+
+env:
+  XTS_CANDIDATE_TAG: "xts-candidate"
+  XTS_PASS_GREP_PATTERN: "xts-pass-*"
+  PROMOTED_GREP_PATTERN: "build-.{5}"
 
 jobs:
   determine-build-candidate:
@@ -55,8 +60,8 @@ jobs:
         id: find-build-candidates
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG_PATTERN: ${{ env.XTS_PASS_GREP_PATTERN }}
         run: |
-          TAG_PATTERN="xts-pass-*"
           CANDIDATE_TAG="$(git tag --list --sort=-version:refname "${TAG_PATTERN}" | head --lines 1)"
           if [[ -n "${CANDIDATE_TAG}" ]]; then
             CANDIDATE_COMMIT=$(git rev-list --max-count 1 ${CANDIDATE_TAG})
