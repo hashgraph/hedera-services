@@ -56,22 +56,20 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
-@Singleton
-public class ScheduleManager {
+abstract class AbstractScheduleHandler {
 
     @Inject
-    public ScheduleManager() {}
+    public AbstractScheduleHandler() {}
 
     private static final Comparator<Key> KEY_COMPARATOR = new KeyComparator();
 
     @FunctionalInterface
-    public interface TransactionKeysFn {
+    protected interface TransactionKeysFn {
         TransactionKeys apply(@NonNull TransactionBody body, @NonNull AccountID payerId) throws PreCheckException;
     }
 
@@ -82,7 +80,7 @@ public class ScheduleManager {
      * @return the schedule's signing requirements
      * @throws HandleException if the signing requirements cannot be determined
      */
-    public @NonNull TransactionKeys getTransactionKeysOrThrow(
+    protected @NonNull TransactionKeys getTransactionKeysOrThrow(
             @NonNull final Schedule schedule, @NonNull final TransactionKeysFn fn) throws HandleException {
         requireNonNull(schedule);
         requireNonNull(fn);
@@ -123,7 +121,7 @@ public class ScheduleManager {
      * @param keys the transaction keys
      * @return the required keys
      */
-    public @NonNull List<Key> allRequiredKeys(@NonNull final TransactionKeys keys) {
+    protected @NonNull List<Key> allRequiredKeys(@NonNull final TransactionKeys keys) {
         final var all = new ArrayList<Key>();
         all.add(keys.payerKey());
         all.addAll(keys.requiredNonPayerKeys());

@@ -184,9 +184,17 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         final var schedules = new ArrayList<Schedule>();
         for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
             final var second = new ProtoLong(i);
-            final var scheduleList = schedulesByExpirationMutable.get(second);
-            if (scheduleList != null) {
-                schedules.addAll(scheduleList.schedules());
+
+            final var scheduleIdList = scheduleIdsByExpirationMutable.get(second);
+            if (scheduleIdList != null) {
+                for (final var scheduleId : scheduleIdList.scheduleIds()) {
+                    final var schedule = schedulesByIdMutable.get(scheduleId);
+                    if (schedule != null) {
+                        schedules.add(schedule);
+                    } else {
+                        logger.error("Schedule {} not found in state schedulesByIdMutable.", scheduleId);
+                    }
+                }
             }
         }
         return schedules;
