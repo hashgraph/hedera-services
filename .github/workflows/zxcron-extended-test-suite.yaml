@@ -23,7 +23,7 @@ on:
 
 permissions:
   id-token: write
-  actions: read
+  actions: write
   pull-requests: write
   statuses: write
   checks: write
@@ -51,7 +51,7 @@ jobs:
 
       # Checkout the latest from dev
       - name: Checkout Code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: '0'
           ref: develop
@@ -63,19 +63,36 @@ jobs:
       # branch.
       - name: Check for tags
         id: check-tags-exist
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          XTS_COMMIT=$(git rev-list -n 1 ${XTS_CANDIDATE_TAG})
+          # Check if the tag exists and if so grab its commit id
           set +e
-          git branch --contains ${XTS_COMMIT} | grep --quiet develop >/dev/null 2>&1
+          XTS_COMMIT=$(git rev-list -n 1 "${XTS_CANDIDATE_TAG}") >/dev/null 2>&1
+          XTS_COMMIT_FOUND="${?}"
+          set -e
+
+          # Cancel out if the tag does not exist
+          if [[ "${XTS_COMMIT_FOUND}" -ne 0 ]]; then
+            gh run cancel ${{ github.run_id }}
+          fi
+
+          # Check if the tag exists on the develop branch
+          set +e
+          git branch --contains "${XTS_COMMIT}" | grep --quiet develop >/dev/null 2>&1
           BRANCH_ON_DEVELOP="${?}"
           set -e
-          if [[ -n "${XTS_COMMIT}" && "${BRANCH_ON_DEVELOP}" -eq 0 ]]; then
+
+          # If the tag exists on the Develop Branch set the output variables as appropriate
+          # Otherwise cancel out
+          if [[ "${BRANCH_ON_DEVELOP}" -eq 0 ]]; then
             echo "xts-tag-exists=true" >> $GITHUB_OUTPUT
             echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_OUTPUT
-            echo "### Commit has been tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
+            echo "### XTS-Candidate commit found" >>  $GITHUB_STEP_SUMMARY
             echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_STEP_SUMMARY
-            git push --delete origin ${XTS_CANDIDATE_TAG}
-            git tag -d ${XTS_CANDIDATE_TAG}
+
+            git push --delete origin "${XTS_CANDIDATE_TAG}"
+            git tag -d "${XTS_CANDIDATE_TAG}"
           else
             gh run cancel ${{ github.run_id }}
           fi
@@ -152,14 +169,13 @@ jobs:
     name: Tag as XTS-Passing
     runs-on: network-node-linux-medium
     needs:
-#      - abbreviated-panel
+      - abbreviated-panel
       - extended-test-suite
       - fetch-xts-candidate
-#      - hedera-node-jrs-panel
-#    if: ${{ needs.abbreviated-panel.result == 'success' ||
-#            needs.extended-test-suite.result == 'success' ||
-#            needs.hedera-node-jrs-panel.result == 'success' }}
-    if: ${{ needs.extended-test-suite.result == 'success' }}
+      - hedera-node-jrs-panel
+    if: ${{ needs.abbreviated-panel.result == 'success' ||
+            needs.extended-test-suite.result == 'success' ||
+            needs.hedera-node-jrs-panel.result == 'success' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -169,7 +185,7 @@ jobs:
       - name: Checkout Tagged Code
         id: checkout_tagged_code
         if: ${{ needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' }}
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: '0'
           ref: ${{ needs.fetch-xts-candidate.outputs.xts-tag-commit }}

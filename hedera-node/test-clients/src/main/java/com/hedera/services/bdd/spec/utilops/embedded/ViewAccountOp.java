@@ -17,11 +17,11 @@
 package com.hedera.services.bdd.spec.utilops.embedded;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
-import static com.hedera.node.app.service.token.TokenService.NAME;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -42,7 +42,7 @@ public class ViewAccountOp extends UtilOp {
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         final var state = spec.embeddedStateOrThrow();
-        final var readableStates = state.getReadableStates(NAME);
+        final var readableStates = state.getReadableStates(TokenService.NAME);
         final ReadableKVState<AccountID, Account> accounts = readableStates.get(V0490TokenSchema.ACCOUNTS_KEY);
         final var accountId = toPbj(TxnUtils.asId(account, spec));
         final var account = accounts.get(accountId);

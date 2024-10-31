@@ -21,6 +21,7 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.SwirldsPlatform;
@@ -72,6 +73,7 @@ import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.pool.DefaultTransactionPool;
 import com.swirlds.platform.pool.TransactionPool;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.hasher.DefaultStateHasher;
 import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.hashlogger.DefaultHashLogger;
@@ -99,6 +101,7 @@ import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
@@ -190,6 +193,30 @@ public class PlatformComponentBuilder {
         if (used) {
             throw new IllegalStateException("PlatformBuilder has already been used");
         }
+    }
+
+    /**
+     * Get the roster from the initial state in PlatformBuildingBlocks.
+     *
+     * @return the initial roster
+     */
+    @NonNull
+    private Roster getInitialRoster() {
+        return RosterRetriever.buildRoster(blocks.initialAddressBook());
+    }
+
+    /**
+     * Get the previous roster from the initial state in PlatformBuildingBlocks.
+     *
+     * @return the previous roster, or null
+     */
+    @Nullable
+    private Roster getPreviousRoster() {
+        return RosterRetriever.buildRoster(blocks.initialState()
+                .get()
+                .getState()
+                .getReadablePlatformState()
+                .getPreviousAddressBook());
     }
 
     /**
@@ -360,12 +387,8 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     CryptoStatic::verifySignature,
                     blocks.appVersion().getPbjSemanticVersion(),
-                    blocks.initialState()
-                            .get()
-                            .getState()
-                            .getReadablePlatformState()
-                            .getPreviousAddressBook(),
-                    blocks.initialAddressBook(),
+                    getPreviousRoster(),
+                    getInitialRoster(),
                     blocks.intakeEventCounter());
         }
         return eventSignatureValidator;
@@ -499,7 +522,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     blocks.randomBuilder().buildNonCryptographicRandom(),
                     data -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
-                    blocks.initialAddressBook(),
+                    getInitialRoster(),
                     blocks.selfId(),
                     blocks.appVersion(),
                     blocks.transactionPoolNexus());
@@ -1176,7 +1199,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public BranchDetector buildBranchDetector() {
         if (branchDetector == null) {
-            branchDetector = new DefaultBranchDetector(blocks.initialAddressBook());
+            branchDetector = new DefaultBranchDetector(getInitialRoster());
         }
         return branchDetector;
     }
@@ -1208,7 +1231,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public BranchReporter buildBranchReporter() {
         if (branchReporter == null) {
-            branchReporter = new DefaultBranchReporter(blocks.platformContext(), blocks.initialAddressBook());
+            branchReporter = new DefaultBranchReporter(blocks.platformContext(), getInitialRoster());
         }
         return branchReporter;
     }

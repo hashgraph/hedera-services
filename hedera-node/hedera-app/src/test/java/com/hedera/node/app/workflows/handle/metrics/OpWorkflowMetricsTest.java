@@ -27,6 +27,7 @@ import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,8 +55,11 @@ class OpWorkflowMetricsTest {
         new OpWorkflowMetrics(metrics, configProvider);
 
         // then
-        final int transactionMetricsCount = (HederaFunctionality.values().length - 1) * 2;
-        assertThat(metrics.findMetricsByCategory("app")).hasSize(transactionMetricsCount + 1);
+        // subtract 1 to exclude HederaFunctionality.NONE
+        // multiply by 3 to account for max, avg, and throttle metrics which are created for each functionality
+        // add 1 to account for gasPerConsSec metric which is not functionality specific
+        final int transactionMetricsCount = ((HederaFunctionality.values().length - 1) * 3) + 1;
+        assertThat(metrics.findMetricsByCategory("app")).hasSize(transactionMetricsCount);
     }
 
     @Test
@@ -68,6 +72,8 @@ class OpWorkflowMetricsTest {
                 .isEqualTo(0);
         assertThat(metrics.getMetric("app", "cryptoCreateDurationAvg").get(VALUE))
                 .isEqualTo(0);
+        assertThat(metrics.getMetric("app", "cryptoCreateThrottledTxns").get(VALUE))
+                .isSameAs(0L);
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -78,6 +84,16 @@ class OpWorkflowMetricsTest {
 
         // when
         assertThatThrownBy(() -> handleWorkflowMetrics.updateDuration(null, 0))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testIncrementThrottledWithInvalidArguments() {
+        // given
+        final var handleWorkflowMetrics = new OpWorkflowMetrics(metrics, configProvider);
+
+        // when
+        assertThatThrownBy(() -> handleWorkflowMetrics.incrementThrottled(null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -127,6 +143,19 @@ class OpWorkflowMetricsTest {
                 .isEqualTo(13);
         assertThat(metrics.getMetric("app", "cryptoCreateDurationAvg").get(VALUE))
                 .isEqualTo(7);
+    }
+
+    @Test
+    void testIncrementThrottled() {
+        // given
+        final var handleWorkflowMetrics = new OpWorkflowMetrics(metrics, configProvider);
+
+        // when
+        handleWorkflowMetrics.incrementThrottled(HederaFunctionality.CRYPTO_CREATE);
+
+        // then
+        final var throttledMetric = (Counter) metrics.getMetric("app", "cryptoCreateThrottledTxns");
+        assertThat(throttledMetric.get()).isSameAs(1L);
     }
 
     @Test
