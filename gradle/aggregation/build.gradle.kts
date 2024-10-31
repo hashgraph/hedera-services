@@ -29,6 +29,9 @@ dependencies {
     implementation(project(":test-clients"))
 }
 
-// As the standard 'src/test' folder of 'test-clients' does not contain unit tests,
-// do not include it in the aggregated code coverage report.
-configurations.aggregateCodeCoverageReportResults { exclude(module = "test-clients") }
+tasks.named<JacocoReport>("testCodeCoverageReport") {
+    val exclusions = listOf("test-clients", "testFixtures", "statedumpers", "example-apps")
+    classDirectories.setFrom(
+        classDirectories.files.filterNot { file -> exclusions.any { file.path.contains(it) } }
+    )
+}
