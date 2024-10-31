@@ -49,7 +49,7 @@ public final class TestKey implements VirtualKey {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return 1;
     }
 

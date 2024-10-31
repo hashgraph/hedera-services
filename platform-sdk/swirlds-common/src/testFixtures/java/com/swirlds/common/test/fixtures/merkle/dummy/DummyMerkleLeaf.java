@@ -114,7 +114,7 @@ public class DummyMerkleLeaf extends PartialMerkleLeaf implements DummyMerkleNod
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         if (overridingClassVersion != null) {
             return overridingClassVersion;
         } else {

@@ -95,7 +95,7 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

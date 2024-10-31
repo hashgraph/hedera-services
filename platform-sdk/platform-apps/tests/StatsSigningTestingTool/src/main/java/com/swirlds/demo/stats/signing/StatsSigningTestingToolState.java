@@ -200,7 +200,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        if (getVersion() >= ClassVersion.KEEP_STATE) {
+        if (getClassVersion() >= ClassVersion.KEEP_STATE) {
             out.writeLong(runningSum);
         }
     }
@@ -215,7 +215,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
             in.readSerializable();
         }
 
-        if (getVersion() >= ClassVersion.KEEP_STATE) {
+        if (getClassVersion() >= ClassVersion.KEEP_STATE) {
             runningSum = in.readLong();
         }
     }
@@ -232,7 +232,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.NO_ADDRESS_BOOK_IN_STATE;
     }
 

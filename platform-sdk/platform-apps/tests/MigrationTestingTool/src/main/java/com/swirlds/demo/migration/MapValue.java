@@ -255,7 +255,7 @@ public class MapValue extends PartialNaryMerkleInternal implements Keyed<Account
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.NO_BLOBS;
     }
 

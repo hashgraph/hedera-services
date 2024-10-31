@@ -509,7 +509,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
     @Test
     void getVersion() {
-        assertEquals(2, createRoot().getVersion());
+        assertEquals(2, createRoot().getClassVersion());
     }
 
     @Test

@@ -121,7 +121,7 @@ public abstract class AbstractListLeaf<T extends FastCopyable & SelfSerializable
      * {@inheritDoc}
      */
     @Override
-    public final int getVersion() {
+    public final int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

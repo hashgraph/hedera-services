@@ -100,7 +100,7 @@ public class DummyMerkleInternal extends PartialNaryMerkleInternal implements Du
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         if (overridingClassVersion != null) {
             return overridingClassVersion;
         } else {

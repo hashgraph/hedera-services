@@ -146,7 +146,7 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
                 }
 
                 message = messageFactory.get();
-                message.deserialize(inputStream, message.getVersion());
+                message.deserialize(inputStream, message.getClassVersion());
 
                 final boolean accepted = receivedMessages.offer(message, pollTimeout.toMillis(), MILLISECONDS);
                 if (!accepted) {

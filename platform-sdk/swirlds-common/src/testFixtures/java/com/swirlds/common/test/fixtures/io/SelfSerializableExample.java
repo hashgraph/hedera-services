@@ -50,7 +50,7 @@ public class SelfSerializableExample implements SelfSerializable {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 

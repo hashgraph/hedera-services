@@ -148,7 +148,7 @@ public class QuorumResult<S extends SelfSerializable> extends PartialMerkleLeaf 
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

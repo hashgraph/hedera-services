@@ -247,7 +247,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf, Plat
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.REMOVED_UPTIME_DATA;
     }
 

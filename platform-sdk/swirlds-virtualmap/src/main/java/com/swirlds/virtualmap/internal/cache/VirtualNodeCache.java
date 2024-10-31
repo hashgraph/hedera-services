@@ -1043,7 +1043,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.NO_LEAF_HASHES;
     }
 

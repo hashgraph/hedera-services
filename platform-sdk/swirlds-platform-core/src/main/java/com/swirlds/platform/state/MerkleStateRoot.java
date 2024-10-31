@@ -313,7 +313,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CURRENT_VERSION;
     }
 

@@ -65,7 +65,7 @@ public final class ExampleFixedSizeVirtualValue extends ExampleByteArrayVirtualV
 
     @Override
     public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        assert dataVersion == getClassVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getClassVersion();
         id = inputStream.readInt();
         data = new byte[RANDOM_BYTES];
         inputStream.read(data);
@@ -83,7 +83,7 @@ public final class ExampleFixedSizeVirtualValue extends ExampleByteArrayVirtualV
     }
 
     void deserialize(final ByteBuffer buffer, final int dataVersion) {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        assert dataVersion == getClassVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getClassVersion();
         id = buffer.getInt();
         data = new byte[RANDOM_BYTES];
         buffer.get(data);
@@ -105,7 +105,7 @@ public final class ExampleFixedSizeVirtualValue extends ExampleByteArrayVirtualV
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return SERIALIZATION_VERSION;
     }
 

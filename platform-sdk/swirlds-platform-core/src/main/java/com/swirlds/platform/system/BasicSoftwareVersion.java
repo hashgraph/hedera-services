@@ -54,7 +54,7 @@ public class BasicSoftwareVersion implements SoftwareVersion {
     }
 
     /**
-     * Get the software version number. Distinct from {@link #getVersion()}, which returns the serialization version
+     * Get the software version number. Distinct from {@link #getClassVersion()}, which returns the serialization version
      * for this object.
      *
      * @return the software version number
@@ -97,7 +97,7 @@ public class BasicSoftwareVersion implements SoftwareVersion {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

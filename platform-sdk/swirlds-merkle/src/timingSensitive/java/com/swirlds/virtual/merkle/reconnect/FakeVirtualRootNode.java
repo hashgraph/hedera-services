@@ -53,7 +53,7 @@ public class FakeVirtualRootNode extends PartialBinaryMerkleInternal
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VirtualRootNode.ClassVersion.CURRENT_VERSION;
     }
 

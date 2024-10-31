@@ -64,7 +64,7 @@ public class SerializablePublicKey implements SelfSerializable {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 

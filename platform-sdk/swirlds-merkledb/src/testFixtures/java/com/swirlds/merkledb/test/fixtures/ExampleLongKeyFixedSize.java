@@ -65,7 +65,7 @@ public class ExampleLongKeyFixedSize implements VirtualKey, FastCopyable {
     }
 
     public void deserialize(final SerializableDataInputStream in, final int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        assert dataVersion == getClassVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getClassVersion();
         setValue(in.readLong());
     }
 
@@ -73,7 +73,7 @@ public class ExampleLongKeyFixedSize implements VirtualKey, FastCopyable {
         return CLASS_ID;
     }
 
-    public int getVersion() {
+    public int getClassVersion() {
         return CURRENT_SERIALIZATION_VERSION;
     }
 
@@ -153,7 +153,7 @@ public class ExampleLongKeyFixedSize implements VirtualKey, FastCopyable {
 
         /** {@inheritDoc} */
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return ClassVersion.ORIGINAL;
         }
 

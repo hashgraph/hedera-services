@@ -59,7 +59,7 @@ public final class MerkleTreeInternalNode extends PartialBinaryMerkleInternal im
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 }

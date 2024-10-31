@@ -80,7 +80,7 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION;
     }
 

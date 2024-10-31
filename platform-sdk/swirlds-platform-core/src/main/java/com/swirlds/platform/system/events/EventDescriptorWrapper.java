@@ -82,7 +82,7 @@ public record EventDescriptorWrapper(
      * Get the version of the class.
      * @return the version of the class
      */
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.BIRTH_ROUND;
     }
 
@@ -147,7 +147,7 @@ public record EventDescriptorWrapper(
                     if (!classIdVersionWritten) {
                         // this is the first non-null member, so we write the ID and version
 
-                        out.writeInt(serializable.getVersion());
+                        out.writeInt(serializable.getClassVersion());
                         classIdVersionWritten = true;
                     }
                     serializeObject(out, serializable);

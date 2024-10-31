@@ -191,7 +191,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.MIGRATE_PLATFORM_STATE;
     }
 

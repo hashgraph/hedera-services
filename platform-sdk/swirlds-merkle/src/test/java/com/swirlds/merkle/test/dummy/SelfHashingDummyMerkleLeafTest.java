@@ -50,7 +50,7 @@ class SelfHashingDummyMerkleLeafTest {
             leaf.serialize(io.getOutput());
             io.startReading();
             final SelfHashingDummyMerkleLeaf deserializedLeaf = new SelfHashingDummyMerkleLeaf();
-            deserializedLeaf.deserialize(io.getInput(), deserializedLeaf.getVersion());
+            deserializedLeaf.deserialize(io.getInput(), deserializedLeaf.getClassVersion());
             assertEquals(leaf, deserializedLeaf, "Deserialized object should match serialized one");
         }
     }

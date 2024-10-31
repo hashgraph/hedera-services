@@ -142,7 +142,7 @@ public class MerkleMapEntry<K extends FastCopyable & SelfSerializable, V extends
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return MerkleMapEntry.ClassVersion.ORIGINAL;
     }
 

@@ -82,7 +82,7 @@ public class BenchmarkMerkleInternal extends PartialNaryMerkleInternal implement
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 

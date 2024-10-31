@@ -124,7 +124,7 @@ public class SerializableLong implements Comparable<SerializableLong>, FastCopya
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

@@ -68,7 +68,7 @@ public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtu
 
     @Override
     public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        assert dataVersion == getClassVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getClassVersion();
         id = inputStream.readInt();
         final int dataLength = inputStream.readInt();
         data = new byte[dataLength];
@@ -89,7 +89,7 @@ public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtu
     }
 
     void deserialize(final ByteBuffer buffer, final int dataVersion) {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        assert dataVersion == getClassVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getClassVersion();
         id = buffer.getInt();
         final int dataLength = buffer.getInt();
         assert dataLength > 0 : "DataLength[" + dataLength + "] should never be 0 or less";
@@ -113,7 +113,7 @@ public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtu
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return SERIALIZATION_VERSION;
     }
 

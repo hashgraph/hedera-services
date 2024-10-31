@@ -76,7 +76,7 @@ public class NftLedger extends PartialBinaryMerkleInternal implements MerkleInte
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.VERSION_ORIGINAL;
     }
 

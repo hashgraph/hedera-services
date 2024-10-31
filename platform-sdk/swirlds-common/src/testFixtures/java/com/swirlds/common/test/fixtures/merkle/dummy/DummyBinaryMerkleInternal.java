@@ -53,7 +53,7 @@ public class DummyBinaryMerkleInternal extends PartialBinaryMerkleInternal imple
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION;
     }
 }

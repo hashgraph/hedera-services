@@ -94,7 +94,7 @@ public class Generations implements GraphGenerations, SelfSerializable {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

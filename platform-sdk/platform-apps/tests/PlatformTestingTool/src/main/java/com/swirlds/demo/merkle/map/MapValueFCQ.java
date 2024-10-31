@@ -253,7 +253,7 @@ public class MapValueFCQ<T extends FastCopyable & SerializableHashable> extends 
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

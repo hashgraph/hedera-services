@@ -41,7 +41,7 @@ public final class SmartContractByteCodeMapValueSerializer implements ValueSeria
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

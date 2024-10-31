@@ -132,7 +132,7 @@ public class TransactionRecord extends AbstractSerializableHashable implements F
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ADD_EXPIRATION_TIME;
     }
 

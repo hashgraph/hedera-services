@@ -71,7 +71,7 @@ public final class SmartContractByteCodeMapKey implements VirtualKey {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

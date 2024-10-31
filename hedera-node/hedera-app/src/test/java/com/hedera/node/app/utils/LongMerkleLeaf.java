@@ -83,7 +83,7 @@ public class LongMerkleLeaf extends LongLeaf implements Keyed<Long> {
 
     /** {@inheritDoc} */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CURRENT_VERSION;
     }
 

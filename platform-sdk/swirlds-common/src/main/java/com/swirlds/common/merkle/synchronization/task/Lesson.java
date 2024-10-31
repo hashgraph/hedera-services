@@ -107,7 +107,7 @@ public class Lesson<T> implements Releasable, SelfSerializable {
             default:
                 throw new IllegalStateException("unsupported lesson type " + lessonType);
         }
-        subLesson.deserialize(in, subLesson.getVersion());
+        subLesson.deserialize(in, subLesson.getClassVersion());
     }
 
     /**
@@ -213,7 +213,7 @@ public class Lesson<T> implements Releasable, SelfSerializable {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 }

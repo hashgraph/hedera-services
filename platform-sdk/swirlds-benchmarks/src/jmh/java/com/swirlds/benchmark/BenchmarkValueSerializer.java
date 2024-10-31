@@ -43,7 +43,7 @@ public class BenchmarkValueSerializer implements ValueSerializer<BenchmarkValue>
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 
