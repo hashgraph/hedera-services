@@ -29,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
- * A {@code StreamBuilder} specialization for tracking the side effects of any transaction that can delete accounts or contracts.
+ * A {@code StreamBuilder} specialization for tracking the side effects of any transaction that can access contracts.
  * These include:
  * <ol>
  *     <li>{@link HederaFunctionality#CRYPTO_DELETE}</li>

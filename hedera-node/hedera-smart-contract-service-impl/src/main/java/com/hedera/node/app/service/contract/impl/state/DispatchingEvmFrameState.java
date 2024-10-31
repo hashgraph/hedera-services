@@ -109,6 +109,10 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     private final HederaNativeOperations nativeOperations;
     private final ContractStateStore contractStateStore;
 
+    /**
+     * @param nativeOperations the Hedera native operation
+     * @param contractStateStore the contract store that manages the key/value states
+     */
     public DispatchingEvmFrameState(
             @NonNull final HederaNativeOperations nativeOperations,
             @NonNull final ContractStateStore contractStateStore) {
