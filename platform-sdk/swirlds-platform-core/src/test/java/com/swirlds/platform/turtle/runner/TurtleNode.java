@@ -16,11 +16,15 @@
 
 package com.swirlds.platform.turtle.runner;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -97,8 +101,16 @@ public class TurtleNode {
                 .build();
         final Supplier<MerkleRoot> genesisStateSupplier = TurtleTestingToolState::getStateRootNode;
         final var version = new BasicSoftwareVersion(1);
+
+        final NodeId selfId = null;
+        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final var fileSystemManager = FileSystemManager.create(configuration);
+        final var recycleBin =
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+
         final var reservedState = getInitialState(
-                platformContext,
+                configuration,
+                recycleBin,
                 version,
                 genesisStateSupplier,
                 SignedStateFileUtils::readState,
