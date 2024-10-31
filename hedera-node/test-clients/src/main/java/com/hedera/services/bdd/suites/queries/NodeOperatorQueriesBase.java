@@ -21,8 +21,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.spec.SpecOperation;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A class with setup for Node Operator Queries tests
@@ -43,11 +41,11 @@ public class NodeOperatorQueriesBase {
      */
     protected static SpecOperation[] createAllAccountsAndTokens() {
         return new SpecOperation[] {
-                cryptoCreate(OWNER).balance(0L),
-                tokenCreate(FUNGIBLE_QUERY_TOKEN)
-                        .treasury(OWNER)
-                        .tokenType(FUNGIBLE_COMMON)
-                        .initialSupply(100L)
+            cryptoCreate(OWNER).balance(0L),
+            tokenCreate(FUNGIBLE_QUERY_TOKEN)
+                    .treasury(OWNER)
+                    .tokenType(FUNGIBLE_COMMON)
+                    .initialSupply(100L)
         };
     }
 }
