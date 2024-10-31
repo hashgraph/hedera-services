@@ -41,7 +41,10 @@ After this proposal is implemented, new rosters will be created and stored in th
 upgrade boundary. It has been common practice in testing to use manually created config.txt files to start new
 networks from genesis and transplant merkle state to a different new network from an existing network. To continue to
 allow these processes, alternate mechanisms of providing a genesis roster and a network overriding roster will be
-introduced.
+introduced. After migration, the `config.txt` file will never be used again and all restarts and software upgrades
+will obtain the next roster to use from state. The data format remains the same in `genesis-config.txt` and
+`override-config.txt` as in `config.txt`. It is the domain of a future proposal for changing the on-disk file
+formats for genesis and network transplant.
 
 ### Dependencies, Interactions, and Implications
 
@@ -51,7 +54,9 @@ before TSS-Ledger-ID.
 This change in the mechanics of how the roster is updated, new networks are started, and how merkle state is
 transplanted will impact current DevOps practices significantly. SOLO and all testing environments will need to be
 updated as well. This change includes the inversion of control of the startup process where in the responsibility
-for reading the state, address book, and configuration from disk is moved from the platform to `ServicesMain`.
+for reading the state, address book, and configuration from disk is moved from the platform to `ServicesMain`. Most of
+the material code changes related to life-cycle are in the `Services` code base. Switching from  `AddressBook` to
+`Roster` in consensus and the rest of the platform are straight forward substitutions.
 
 This roster life-cycle change has been carved off from the TSS effort as a separate proposal to reduce the size and
 scope of changes per release and allow the changes entailed by TSS to be more incremental.
@@ -60,7 +65,7 @@ scope of changes per release and allow the changes entailed by TSS to be more in
 
 1. Immutability: Rosters must be immutable to protect the integrity of its computed hash.
 2. Efficient Storage: Roster data stored in the state should minimize overhead and unnecessary data copying.
-3. Clear API: To create and submit candidate rosters, and to manage the lifecycle of submitted rosters.
+3. Clear API: For the application to manage the new roster lifecycle and submit new candidate rosters.
 4. Components update: Components that currently rely on the use of the Address book (such as Reconnect, Network, Event
    Validation, etc.) must be adapted to use the new `Roster` object instead.
 5. Address book paradigm discontinued within the current platform side of the codebase in favor of `Roster`s.
@@ -100,7 +105,8 @@ merkle state to a new network. Initiating these scenarios through distinct files
 determining which roster to use at startup more straightforward.
 
 To be consistent with future consensus design, the running platform code will not directly read from or write to the
-merkle state. The appropriate roster data will be provided to the platform during platform construction.
+merkle state with respect to roster data. The appropriate roster data will be provided to the platform during platform
+construction.
 
 #### Alternatives Considered
 
@@ -134,7 +140,8 @@ Updating the roster is now performed through writing a `candidate` roster in the
 This proposal introduces four types of `Roster` - `active`, `candidate`, `genesis`, and `override`.
 
 1. `Active Rosters` are paired with the round numbers for when they became active and are used to validate event
-   signatures. The active roster with latest round number is used to determine consensus
+   signatures. The term `Active` refers to their continued relevancy for the system to operate, including restarts. The
+   active roster with the latest round number is used to determine consensus.
    * The `Roster History` is a list of active rosters paired with the rounds they became active. At this time the
      history length is at most 2.
      * `currentRoster` - the active roster in the history paired with the highest round number.
@@ -144,7 +151,8 @@ This proposal introduces four types of `Roster` - `active`, `candidate`, `genesi
 2. A `Genesis Roster` is loaded from disk at the genesis of a new network and becomes the first active roster.
 3. The `Candidate Roster` is a roster that will become active at the next software upgrade.
 4. An `Override Roster` is loaded from disk and unconditionally set as the latest active roster. This is used to
-   transplant the state to a different network.
+   transplant the state to a different network.  Until the TSS effort is delivered and the network is given a ledger
+   id, this override mechanism can be used to manually correct the roster / address book on the current network.
 
 ### Core Behaviors: Roster Lifecycle
 
