@@ -31,7 +31,6 @@ defaults:
     shell: bash
 
 env:
-  XTS_CANDIDATE_TAG: "xts-candidate"
   XTS_PASS_GREP_PATTERN: "xts-pass-*"
   PROMOTED_GREP_PATTERN: "build-.{5}"
 
@@ -61,10 +60,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_PATTERN: ${{ env.XTS_PASS_GREP_PATTERN }}
+          BUILD_PROMO_PATTERN: ${{ env.PROMOTED_GREP_PATTERN }}
         run: |
           CANDIDATE_TAG="$(git tag --list --sort=-version:refname "${TAG_PATTERN}" | head --lines 1)"
           if [[ -n "${CANDIDATE_TAG}" ]]; then
             CANDIDATE_COMMIT=$(git rev-list --max-count 1 ${CANDIDATE_TAG})
+            BUILD_PROMOTED_TAGGED=$(git tag --contains HEAD | grep -E "${BUILD_PROMO_PATTERN}")
+
+            # Use -n; if the BUILD_PROMOTED_TAGGED flag is not empty than the commit has been tagged.
+            if [[ -n BUILD_PROMOTED_TAGGED]]; then
+              gh run cancel ${{ github.run_id }}
+            fi
+
+            # Verify the commit is on develop and continue
             if git branch --contains "${CANDIDATE_COMMIT}" | grep --quiet develop >/dev/null 2>&1; then
               git push --delete origin $(git tag --list "${TAG_PATTERN}")
               git tag --delete $(git tag --list "${TAG_PATTERN}")
