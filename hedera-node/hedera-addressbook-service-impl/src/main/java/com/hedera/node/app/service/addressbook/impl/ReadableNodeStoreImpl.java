@@ -89,16 +89,16 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
 
     private Roster constructFromNodesState(@NonNull final ReadableKVState<EntityNumber, Node> nodesState) {
         final var rosterEntries = new ArrayList<RosterEntry>();
-        for (final Iterator<EntityNumber> it = nodesState.keys(); it.hasNext(); ) {
+        for (final var it = nodesState.keys(); it.hasNext(); ) {
             final var nodeNumber = it.next();
-            final var nodeDetail = nodesState.get(nodeNumber);
-            if (!nodeDetail.deleted()) {
+            final var node = requireNonNull(nodesState.get(nodeNumber));
+            if (!node.deleted()) {
                 final var entry = RosterEntry.newBuilder()
-                        .nodeId(nodeDetail.nodeId())
-                        .weight(nodeDetail.weight())
-                        .gossipCaCertificate(nodeDetail.gossipCaCertificate())
-                        .gossipEndpoint(nodeDetail.gossipEndpoint())
-                        .tssEncryptionKey(nodeDetail.tssEncryptionKey())
+                        .nodeId(node.nodeId())
+                        .weight(node.weight())
+                        .gossipCaCertificate(node.gossipCaCertificate())
+                        .gossipEndpoint(node.gossipEndpoint())
+                        .tssEncryptionKey(node.tssEncryptionKey())
                         .build();
                 rosterEntries.add(entry);
             }

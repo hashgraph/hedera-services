@@ -18,8 +18,6 @@ package com.hedera.node.app.tss.handlers;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
@@ -29,7 +27,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.stores.WritableTssStore;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -86,20 +83,19 @@ public class TssVoteHandler implements TransactionHandler {
             @NonNull final TssVoteTransactionBody tssVoteTransaction, @NonNull final HandleContext context) {
         final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
 
-        final Roster activeRoster = rosterStore.getActiveRoster();
+        final var activeRoster = rosterStore.getActiveRoster();
         if (activeRoster == null) {
             throw new IllegalArgumentException("No active roster found");
         }
         // Get the target roster from the TssVoteTransactionBody
-        final Bytes targetRosterHash = tssVoteTransaction.targetRosterHash();
-
+        final var targetRosterHash = tssVoteTransaction.targetRosterHash();
         // Also get the total active roster weight
         long activeRosterTotalWeight = 0;
         // Initialize a counter for the total weight of votes with the same vote byte array
         long voteWeight = 0L;
         final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
         // For every node in the active roster, check if there is a vote for the target roster hash
-        for (final RosterEntry rosterEntry : activeRoster.rosterEntries()) {
+        for (final var rosterEntry : activeRoster.rosterEntries()) {
             activeRosterTotalWeight += rosterEntry.weight();
             final var tssVoteMapKey = new TssVoteMapKey(targetRosterHash, rosterEntry.nodeId());
             if (tssBaseStore.exists(tssVoteMapKey)) {
@@ -118,7 +114,14 @@ public class TssVoteHandler implements TransactionHandler {
         return hasMetThreshold(voteWeight, activeRosterTotalWeight);
     }
 
-    public static boolean hasMetThreshold(final long voteWeight, final long activeRosterTotalWeight) {
-        return voteWeight >= (activeRosterTotalWeight / 3) + ((activeRosterTotalWeight % 3) == 0 ? 0 : 1);
+    /**
+     * Returns whether a vote bitset with the given weight has met the threshold for a roster with the given
+     * total weight.
+     * @param voteWeight the weight of the vote bitset
+     * @param totalWeight the total weight of the roster
+     * @return true if the threshold has been met, false otherwise
+     */
+    public static boolean hasMetThreshold(final long voteWeight, final long totalWeight) {
+        return voteWeight >= (totalWeight + 2) / 3;
     }
 }

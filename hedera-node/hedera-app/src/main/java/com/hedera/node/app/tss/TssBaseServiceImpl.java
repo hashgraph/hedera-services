@@ -23,18 +23,15 @@ import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static com.hedera.node.app.tss.handlers.TssVoteHandler.hasMetThreshold;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
-import static com.swirlds.platform.roster.RosterRetriever.retrieve;
+import static com.swirlds.platform.roster.RosterRetriever.getCandidateRosterHash;
+import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
-import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -62,7 +59,6 @@ import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -72,7 +68,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -241,45 +236,51 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull ServiceMigrator serviceMigrator,
             @NonNull ServicesSoftwareVersion version,
             @NonNull final Configuration configuration) {
-        final Roster currentActiveRoster = new Roster(retrieve(state).rosterEntries());
         if (!configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
-            final ReadablePlatformStateStore readablePlatformStateStore =
+            final var readablePlatformStateStore =
                     new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
             return buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
         }
+        final var activeRoster = retrieveActiveOrGenesisRoster(state);
         if (trigger != GENESIS) {
-            final var creatorVersion = serviceMigrator.creationVersionOf(state);
-            if (creatorVersion != null) {
-                final var isUpgrade = version.compareTo(new ServicesSoftwareVersion(creatorVersion)) > 0;
-                // If we are not at genesis and the software version is newer than the state version, then we need to
-                // pick the active roster or candidate roster based on votes in the state
-                if (isUpgrade) {
-                    final var candidateRosterHash = requireNonNull(state.getReadableStates(RosterStateId.NAME)
-                            .<RosterState>getSingleton(RosterStateId.ROSTER_STATES_KEY)
-                            .get())
-                            .candidateRosterHash();
-                    final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStore.class);
-                    if (hasEnoughWeight(currentActiveRoster, candidateRosterHash, tssStore)) {
-                        final ReadableKVState<ProtoBytes, Roster> rosters = requireNonNull(
-                                state.getReadableStates(RosterStateId.NAME).get(RosterStateId.ROSTER_KEY));
-                        return requireNonNull(rosters.get(new ProtoBytes(candidateRosterHash)));
-                    }
+            final var creatorVersion = requireNonNull(serviceMigrator.creationVersionOf(state));
+            final var isUpgrade = version.compareTo(new ServicesSoftwareVersion(creatorVersion)) > 0;
+            // If we are not at genesis and the software version is newer than the state version, then we need to
+            // pick the active roster or candidate roster based on votes in the state
+            if (isUpgrade) {
+                final var candidateRosterHash = getCandidateRosterHash(state);
+                final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStore.class);
+                if (hasEnoughWeight(activeRoster, candidateRosterHash, tssStore)) {
+                    final ReadableKVState<ProtoBytes, Roster> rosters = requireNonNull(
+                            state.getReadableStates(RosterStateId.NAME).get(RosterStateId.ROSTER_KEY));
+                    // It should be impossible to set a candidate roster hash that doesn't exist
+                    return requireNonNull(rosters.get(new ProtoBytes(candidateRosterHash)));
                 }
             }
         }
-        return currentActiveRoster;
+        return activeRoster;
     }
 
+    /**
+     * Returns true if there exists a vote bitset for the given candidate roster hash whose received weight
+     * is at least 1/3 of the total weight of the active roster.
+     * @param activeRoster the active roster
+     * @param rosterHash the candidate roster hash
+     * @param tssBaseStore the TSS store
+     * @return true if the threshold has been reached, false otherwise
+     */
     private static boolean hasEnoughWeight(
-            @NonNull Roster activeRoster, @NonNull Bytes rosterHash, @NonNull ReadableTssStore tssBaseStore) {
+            @NonNull final Roster activeRoster,
+            @NonNull final Bytes rosterHash,
+            @NonNull final ReadableTssStore tssBaseStore) {
         // Also get the total active roster weight
         long activeRosterTotalWeight = 0;
         final var voteWeightMap = new LinkedHashMap<Bytes, Long>();
-        for (final RosterEntry rosterEntry : activeRoster.rosterEntries()) {
+        for (final var rosterEntry : activeRoster.rosterEntries()) {
             activeRosterTotalWeight += rosterEntry.weight();
             final var tssVoteMapKey = new TssVoteMapKey(rosterHash, rosterEntry.nodeId());
             if (tssBaseStore.exists(tssVoteMapKey)) {
-                final TssVoteTransactionBody voteBody = tssBaseStore.getVote(tssVoteMapKey);
+                final var voteBody = tssBaseStore.getVote(tssVoteMapKey);
                 voteWeightMap.merge(voteBody.tssVote(), rosterEntry.weight(), Long::sum);
             }
         }

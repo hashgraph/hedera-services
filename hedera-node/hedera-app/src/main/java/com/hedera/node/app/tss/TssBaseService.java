@@ -17,7 +17,6 @@
 package com.hedera.node.app.tss;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
