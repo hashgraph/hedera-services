@@ -55,17 +55,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
-import javax.inject.Inject;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
-
-    @Inject
-    public AbstractScheduleHandler() {}
-
     private static final Comparator<Key> KEY_COMPARATOR = new KeyComparator();
 
     @FunctionalInterface
@@ -193,7 +188,7 @@ abstract class AbstractScheduleHandler {
      * @return the validation result
      */
     @NonNull
-    public ResponseCodeEnum validate(
+    protected ResponseCodeEnum validate(
             @Nullable final Schedule schedule, @Nullable final Instant consensusNow, final boolean isLongTermEnabled) {
         if (schedule == null) {
             return INVALID_SCHEDULE_ID;
@@ -236,7 +231,7 @@ abstract class AbstractScheduleHandler {
      * @param isLongTermEnabled the is long term enabled
      * @return if the schedule was executed
      */
-    public boolean tryToExecuteSchedule(
+    protected boolean tryToExecuteSchedule(
             @NonNull final HandleContext context,
             @NonNull final Schedule schedule,
             @NonNull final List<Key> requiredKeys,

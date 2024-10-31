@@ -59,7 +59,7 @@ import javax.inject.Singleton;
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_DELETE}.
  */
 @Singleton
-public class ScheduleDeleteHandler extends ScheduleManager implements TransactionHandler {
+public class ScheduleDeleteHandler extends AbstractScheduleHandler implements TransactionHandler {
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 
     @Inject
@@ -108,7 +108,7 @@ public class ScheduleDeleteHandler extends ScheduleManager implements Transactio
 
     /**
      * Verify that the transaction and schedule still meet the validation criteria expressed in the
-     * {@link ScheduleManager#getValidated(ScheduleID, ReadableScheduleStore, boolean)} method.
+     * {@link AbstractScheduleHandler#getValidated(ScheduleID, ReadableScheduleStore, boolean)} method.
      *
      * @param scheduleId the Schedule ID of the item to mark as deleted.
      * @param scheduleStore a Readable source of Schedule data from state
