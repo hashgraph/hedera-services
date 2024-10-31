@@ -219,7 +219,6 @@ public class ServicesMain implements SwirldMain {
                             (MerkleStateRoot) genesisState, metrics, InitTrigger.GENESIS, diskAddressBook);
                     return genesisState;
                 },
-                SignedStateFileUtils::readState,
                 Hedera.APP_NAME,
                 Hedera.SWIRLD_NAME,
                 selfId,

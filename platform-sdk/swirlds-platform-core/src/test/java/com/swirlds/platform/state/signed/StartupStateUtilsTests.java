@@ -167,7 +167,11 @@ public class StartupStateUtilsTests {
         final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext.getConfiguration(),
-                        recycleBin, selfId, mainClassName, swirldName, new BasicSoftwareVersion(1))
+                        recycleBin,
+                        selfId,
+                        mainClassName,
+                        swirldName,
+                        new BasicSoftwareVersion(1))
                 .getNullable();
 
         assertNull(loadedState);
@@ -191,7 +195,11 @@ public class StartupStateUtilsTests {
         final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext.getConfiguration(),
-                        recycleBin, selfId, mainClassName, swirldName, new BasicSoftwareVersion(1))
+                        recycleBin,
+                        selfId,
+                        mainClassName,
+                        swirldName,
+                        new BasicSoftwareVersion(1))
                 .get();
 
         loadedState.getState().throwIfImmutable();
@@ -219,7 +227,11 @@ public class StartupStateUtilsTests {
 
         assertThrows(SignedStateLoadingException.class, () -> StartupStateUtils.loadStateFile(
                         platformContext.getConfiguration(),
-                        recycleBin, selfId, mainClassName, swirldName, new BasicSoftwareVersion(1))
+                        recycleBin,
+                        selfId,
+                        mainClassName,
+                        swirldName,
+                        new BasicSoftwareVersion(1))
                 .get());
     }
 
@@ -258,7 +270,11 @@ public class StartupStateUtilsTests {
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext.getConfiguration(),
-                        recycleBin, selfId, mainClassName, swirldName, new BasicSoftwareVersion(1))
+                        recycleBin,
+                        selfId,
+                        mainClassName,
+                        swirldName,
+                        new BasicSoftwareVersion(1))
                 .getNullable();
 
         if (latestUncorruptedState != null) {

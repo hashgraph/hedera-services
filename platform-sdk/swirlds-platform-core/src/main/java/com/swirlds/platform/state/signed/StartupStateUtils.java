@@ -91,8 +91,8 @@ public final class StartupStateUtils {
         requireNonNull(selfId);
         requireNonNull(configAddressBook);
 
-        final ReservedSignedState loadedState =
-                StartupStateUtils.loadStateFile(configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion);
+        final ReservedSignedState loadedState = StartupStateUtils.loadStateFile(
+                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion);
 
         try (loadedState) {
             if (loadedState.isNotNull()) {
@@ -147,8 +147,8 @@ public final class StartupStateUtils {
             return createNullReservation();
         }
 
-        final ReservedSignedState state = loadLatestState(
-                configuration, recycleBin, currentSoftwareVersion, savedStateFiles);
+        final ReservedSignedState state =
+                loadLatestState(configuration, recycleBin, currentSoftwareVersion, savedStateFiles);
         return state;
     }
 
@@ -202,7 +202,6 @@ public final class StartupStateUtils {
      * Load the latest state. If the latest state is invalid, try to load the next latest state. Repeat until a valid
      * state is found or there are no more states to try.
      *
-     * @param platformContext        the platform context
      * @param currentSoftwareVersion the current software version
      * @param savedStateFiles        the saved states to try
      * @return the loaded state
@@ -217,8 +216,8 @@ public final class StartupStateUtils {
         logger.info(STARTUP.getMarker(), "Loading latest state from disk.");
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            final ReservedSignedState state = loadStateFile(
-                    configuration, recycleBin, currentSoftwareVersion, savedStateFile);
+            final ReservedSignedState state =
+                    loadStateFile(configuration, recycleBin, currentSoftwareVersion, savedStateFile);
             if (state != null) {
                 return state;
             }
@@ -231,7 +230,6 @@ public final class StartupStateUtils {
     /**
      * Load the requested state from file. If state can not be loaded, recycle the file and return null.
      *
-     * @param platformContext        the platform context
      * @param currentSoftwareVersion the current software version
      * @param savedStateFile         the state to load
      * @return the loaded state, or null if the state could not be loaded. Will be fully hashed if non-null.
