@@ -17,12 +17,14 @@
 package com.hedera.node.app.tss;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.Service;
@@ -117,15 +119,18 @@ public interface TssBaseService extends Service {
      * Returns the active roster for the given network state.
      * If the network is not at genesis and is an upgrade, then the active roster is determined based on the
      * votes in the state. If the network is at genesis, then the active roster is the genesis roster.
-     * @param state the network state
-     * @param trigger the initialization trigger
+     *
+     * @param state           the network state
+     * @param trigger         the initialization trigger
      * @param serviceMigrator the service migrator
-     * @param version the services software version
+     * @param version         the services software version
+     * @param configuration  the configuration
      * @return the active roster
      */
     Roster chooseRosterForNetwork(
             @NonNull State state,
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
-            @NonNull ServicesSoftwareVersion version);
+            @NonNull ServicesSoftwareVersion version,
+            @NonNull final Configuration configuration);
 }

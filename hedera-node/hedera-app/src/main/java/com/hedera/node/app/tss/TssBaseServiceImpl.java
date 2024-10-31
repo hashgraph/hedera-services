@@ -22,6 +22,7 @@ import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirect
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static com.hedera.node.app.tss.handlers.TssVoteHandler.hasMetThreshold;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.roster.RosterRetriever.retrieve;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
@@ -33,6 +34,7 @@ import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -50,13 +52,17 @@ import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -66,6 +72,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -232,8 +239,14 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull State state,
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
-            @NonNull ServicesSoftwareVersion version) {
+            @NonNull ServicesSoftwareVersion version,
+            @NonNull final Configuration configuration) {
         final Roster currentActiveRoster = new Roster(retrieve(state).rosterEntries());
+        if (!configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
+            final ReadablePlatformStateStore readablePlatformStateStore =
+                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+            return buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
+        }
         if (trigger != GENESIS) {
             final var creatorVersion = serviceMigrator.creationVersionOf(state);
             if (creatorVersion != null) {
@@ -242,8 +255,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                 // pick the active roster or candidate roster based on votes in the state
                 if (isUpgrade) {
                     final var candidateRosterHash = requireNonNull(state.getReadableStates(RosterStateId.NAME)
-                                    .<RosterState>getSingleton(RosterStateId.ROSTER_STATES_KEY)
-                                    .get())
+                            .<RosterState>getSingleton(RosterStateId.ROSTER_STATES_KEY)
+                            .get())
                             .candidateRosterHash();
                     final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStore.class);
                     if (hasEnoughWeight(currentActiveRoster, candidateRosterHash, tssStore)) {
