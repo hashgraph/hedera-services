@@ -108,8 +108,7 @@ public class ScheduleServiceApiImpl implements ScheduleServiceApi {
         final var requiredKeys = requiredKeysFn.apply(transactionBody);
         final VerificationAssistant callback = (k, ignore) -> signatories.contains(k);
         final var remainingKeys = new HashSet<>(requiredKeys);
-        remainingKeys.removeIf(
-                k -> keyVerifier.verificationFor(k, callback).passed());
+        remainingKeys.removeIf(k -> keyVerifier.verificationFor(k, callback).passed());
         return remainingKeys.isEmpty();
     }
 }
