@@ -354,6 +354,16 @@ enum StateIdentifier {
     STATE_ID_ROSTERS = 28;
 
     /**
+    * A state identifier for scheduled transaction expiration.
+    */
+    STATE_ID_SCHEDULE_IDS_BY_EXPIRY = 29;
+
+    /**
+     * A state identifier for scheduled transaction deduplication.
+     */
+    STATE_ID_SCHEDULE_ID_BY_EQUALITY = 30;
+
+    /**
      * A state identifier for the round receipts queue.
      */
     STATE_ID_TRANSACTION_RECEIPTS_QUEUE = 126;
@@ -795,6 +805,16 @@ message MapChangeValue {
          * A roster value.
          */
         com.hedera.hapi.node.state.roster.Roster roster_value = 16;
+
+        /**
+         * A list of scheduled ids.
+         */
+        proto.ScheduleIdList schedule_id_list_value = 17;
+
+        /**
+         * A scheduled id value.
+         */
+        proto.ScheduleID schedule_id_value = 18;
     }
 }
 
