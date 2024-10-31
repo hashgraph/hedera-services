@@ -151,7 +151,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
 
         try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
-                        platformContext, signedStateFile, SignedStateFileUtils::readState)
+                        platformContext.getConfiguration(), signedStateFile, SignedStateFileUtils::readState)
                 .reservedSignedState()) {
             StaticSoftwareVersion.setSoftwareVersion(
                     initialState.get().getState().getReadablePlatformState().getCreationSoftwareVersion());
@@ -410,7 +410,7 @@ public final class EventRecoveryWorkflow {
         }
 
         final ReservedSignedState signedState = new SignedState(
-                        platformContext,
+                        platformContext.getConfiguration(),
                         CryptoStatic::verifySignature,
                         newState,
                         "EventRecoveryWorkflow.handleNextRound()",
