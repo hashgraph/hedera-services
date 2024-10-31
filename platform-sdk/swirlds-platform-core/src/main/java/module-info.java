@@ -101,7 +101,6 @@ module com.swirlds.platform.core {
     opens com.swirlds.platform.cli to
             info.picocli;
 
-    exports com.swirlds.platform.components.transaction;
     exports com.swirlds.platform.components.transaction.system;
     exports com.swirlds.platform.event.preconsensus;
     exports com.swirlds.platform.gossip.sync.protocol;

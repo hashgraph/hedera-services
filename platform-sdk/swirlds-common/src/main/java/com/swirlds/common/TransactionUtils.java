@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.util;
+package com.swirlds.common;
 
 import static com.swirlds.common.io.streams.SerializableStreamConstants.BOOLEAN_BYTES;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.CLASS_ID_BYTES;

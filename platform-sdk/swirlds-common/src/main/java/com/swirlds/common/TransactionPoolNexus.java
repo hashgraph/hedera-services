@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.pool;
+package com.swirlds.common;
 
 import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.APPLICATION_TRANSACTION;
 import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.STATE_SIGNATURE_TRANSACTION;
@@ -24,13 +24,10 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.config.EventCreationConfig;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.config.TransactionConfig;
-import com.swirlds.platform.eventhandling.TransactionPoolMetrics;
-import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -41,7 +38,6 @@ import java.util.Objects;
 import java.util.Queue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Store a list of transactions created by self, both system and non-system, for wrapping in the next event to be
@@ -310,7 +306,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
     /**
      * Clear all the transactions
      */
-    synchronized void clear() {
+    public synchronized void clear() {
         bufferedTransactions.clear();
         priorityBufferedTransactions.clear();
         bufferedSignatureTransactionCount = 0;

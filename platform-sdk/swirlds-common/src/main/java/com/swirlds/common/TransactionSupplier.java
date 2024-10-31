@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.transaction;
+package com.swirlds.common;
 
 import com.hedera.hapi.platform.event.EventTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;

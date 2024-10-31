@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.creation.rules;
+package org.hiero.event.creator.impl.rules;
 
 import static org.hiero.event.creator.EventCreationStatus.PLATFORM_STATUS;
 
-import com.swirlds.platform.pool.TransactionPoolNexus;
-import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.common.PlatformStatus;
+import com.swirlds.common.TransactionPoolNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Supplier;

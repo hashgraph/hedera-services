@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.TransactionPoolNexus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;

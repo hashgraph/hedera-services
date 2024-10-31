@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.swirlds.common.config.EventCreationConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
@@ -36,7 +37,6 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Calculates tipset advancement weights for events created by a node.

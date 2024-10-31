@@ -27,6 +27,7 @@ import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseD
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.swirlds.common.TransactionPoolNexus;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
@@ -47,7 +48,6 @@ import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;

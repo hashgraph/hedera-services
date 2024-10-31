@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components;
 
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.platform.components.appcomm.CompleteStateNotificationWithCleanup;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
@@ -29,7 +30,6 @@ import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
-import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

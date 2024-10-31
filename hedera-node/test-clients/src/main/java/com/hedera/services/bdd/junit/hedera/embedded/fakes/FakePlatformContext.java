@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -37,7 +38,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.config.TransactionConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ScheduledExecutorService;
 import org.jetbrains.annotations.NotNull;

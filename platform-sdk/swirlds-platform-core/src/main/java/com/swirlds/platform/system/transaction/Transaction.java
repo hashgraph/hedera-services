@@ -18,8 +18,8 @@ package com.swirlds.platform.system.transaction;
 
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.TransactionUtils;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 

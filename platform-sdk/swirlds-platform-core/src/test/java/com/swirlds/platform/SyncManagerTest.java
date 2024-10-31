@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
+import com.swirlds.common.TransactionPoolNexus;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
@@ -36,7 +37,6 @@ import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
-import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;

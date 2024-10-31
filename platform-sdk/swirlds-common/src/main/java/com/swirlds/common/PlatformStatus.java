@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.status;
-
-import com.swirlds.common.UniqueId;
+package com.swirlds.common;
 
 /**
  * The status of the Platform

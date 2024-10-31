@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
 import com.swirlds.base.state.Startable;
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
@@ -77,7 +78,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;

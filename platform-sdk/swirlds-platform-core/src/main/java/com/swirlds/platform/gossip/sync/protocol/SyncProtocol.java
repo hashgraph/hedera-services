@@ -18,6 +18,7 @@ package com.swirlds.platform.gossip.sync.protocol;
 
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
@@ -30,7 +31,6 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
-import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;

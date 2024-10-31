@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.turtle.gossip;
 
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
@@ -23,7 +24,6 @@ import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;

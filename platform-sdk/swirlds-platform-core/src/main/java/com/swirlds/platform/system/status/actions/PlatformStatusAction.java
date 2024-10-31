@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system.status.actions;
 
-import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.common.PlatformStatus;
 
 /**
  * An interface for platform status actions.
