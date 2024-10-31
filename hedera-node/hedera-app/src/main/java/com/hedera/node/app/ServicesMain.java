@@ -262,7 +262,7 @@ public class ServicesMain implements SwirldMain {
 
         final long maxSharesPerNode =
                 configuration.getConfigData(TssConfig.class).maxSharesPerNode();
-        final var roster = chooseRoster(version, initialState, selfId, maxSharesPerNode);
+        final var roster = chooseRoster(version, initialState, selfId, maxSharesPerNode, addressBook);
 
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
         final var platformBuilder = PlatformBuilder.create(
@@ -322,10 +322,12 @@ public class ServicesMain implements SwirldMain {
             @NonNull final SoftwareVersion version,
             @NonNull final ReservedSignedState initialState,
             @NonNull final NodeId selfId,
-            final long maxSharesPerNode) {
+            final long maxSharesPerNode,
+            @NonNull final AddressBook addressBook) {
         requireNonNull(version);
         requireNonNull(initialState);
         requireNonNull(selfId);
+        requireNonNull(addressBook);
 
         final SignedState loadedSignedState = initialState.get();
         if (loadedSignedState.isGenesisState()) {
@@ -337,7 +339,12 @@ public class ServicesMain implements SwirldMain {
 
         final var state = ((MerkleStateRoot) loadedSignedState.getState());
         final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
-        final var activeRoster = requireNonNull(rosterStore.getActiveRoster());
+        var activeRoster = rosterStore.getActiveRoster();
+        // If active roster is null (e.g. DabEnabledUpgradeTest), create the roster from the existing address book
+        if (activeRoster == null) {
+            activeRoster = createRoster(addressBook);
+        }
+
         final boolean softwareUpgrade = detectSoftwareUpgrade(version, loadedSignedState);
         if (!softwareUpgrade) { // if not an upgrade and just a restart, return the active roster
             return activeRoster;
