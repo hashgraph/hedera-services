@@ -26,16 +26,13 @@ on:
         description: "The github branch or tag that triggered the workflow"
       author:
         required: true
-        description: "The author name of the commit"
+        description: "The author of the commit"
       message:
         required: true
         description: "The message on the head commit"
       headSha:
         required: true
         description: "The commit ID of the commit that triggered the workflow"
-#      event:
-#        required: true
-#        description: "The github event of the triggering workflow"
 
 defaults:
   run:
@@ -172,8 +169,8 @@ jobs:
           ref: develop # ensure we are always using the workflow definition from the develop branch
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{
-                      "ref": "${{ inputs.ref }}",
-                      "author": "${{ inputs.author }}",
-                      "message": "${{ inputs.message }}",
-                      "headSha": "${{ inputs.headSha }}"
-                    }'
+            "ref": "${{ inputs.ref }}",
+            "author": "${{ inputs.author }}",
+            "message": "${{ inputs.message }}",
+            "headSha": "${{ inputs.headSha }}"
+          }'

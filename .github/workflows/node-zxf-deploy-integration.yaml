@@ -30,9 +30,6 @@ on:
       headSha:
         required: true
         description: "The commit ID of the commit that triggered the workflow"
-#      event:
-#        description: JSON representation of the triggering GitHub event
-#        required: true
 
 permissions:
   contents: read

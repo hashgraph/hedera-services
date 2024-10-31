@@ -102,11 +102,9 @@ jobs:
           repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
           ref: develop # ensure we are always using the workflow definition from the develop branch
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          #inputs: '{ "ref": "${{ github.ref }}" }'
           inputs: '{
             "ref": "${{ github.ref }}",
             "author": "${{ github.event.head_commit.author.name }}",
             "message": "${{ github.event.head_commit.message }}",
             "headSha": "${{ github.sha }}"
           }'
-          #inputs: '{ "event": "${{ toJSON(github.event) }}", "ref": "${{ github.ref }}" }'
