@@ -1199,7 +1199,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public BranchDetector buildBranchDetector() {
         if (branchDetector == null) {
-            branchDetector = new DefaultBranchDetector(blocks.initialAddressBook());
+            branchDetector = new DefaultBranchDetector(getInitialRoster());
         }
         return branchDetector;
     }
@@ -1231,7 +1231,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public BranchReporter buildBranchReporter() {
         if (branchReporter == null) {
-            branchReporter = new DefaultBranchReporter(blocks.platformContext(), blocks.initialAddressBook());
+            branchReporter = new DefaultBranchReporter(blocks.platformContext(), getInitialRoster());
         }
         return branchReporter;
     }
