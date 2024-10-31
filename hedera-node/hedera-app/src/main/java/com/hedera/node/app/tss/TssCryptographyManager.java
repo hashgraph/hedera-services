@@ -140,7 +140,7 @@ public class TssCryptographyManager {
 
                     final BitSet tssVoteBitSet = computeTssVoteBitSet(validTssOps);
 
-                    // calculate the time it took to aggregate and compute ledger id, public shares and private shares
+                    // calculate the time it took to aggregate and compute ledger id and public shares
                     final var aggregationCalculationEnd = InstantSource.system().instant();
                     final var durationOfAggregation = Duration.between(
                                     aggregationCalculationStart, aggregationCalculationEnd)
