@@ -23,6 +23,7 @@ import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
+import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -45,6 +46,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490ScheduleSchema());
+        registry.register(new V0570ScheduleSchema());
     }
 
     @Override
