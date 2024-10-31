@@ -58,6 +58,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.types.BlockStreamWriterMode;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -95,6 +96,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
     private final int roundsPerBlock;
+    private final BlockStreamWriterMode streamWriterType;
     private final int hashCombineBatchSize;
     private final int serializationBatchSize;
     private final TssBaseService tssBaseService;
@@ -174,6 +176,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.hapiVersion = hapiVersionFrom(config);
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         this.roundsPerBlock = blockStreamConfig.roundsPerBlock();
+        this.streamWriterType = blockStreamConfig.writerMode();
         this.hashCombineBatchSize = blockStreamConfig.hashCombineBatchSize();
         this.serializationBatchSize = blockStreamConfig.serializationBatchSize();
         this.blockHashManager = new BlockHashManager(config);
@@ -394,7 +397,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     .blockSignature(blockSignature)
                     .siblingHashes(siblingHashes.stream().flatMap(List::stream).toList());
             final var proofItem = BlockItem.newBuilder().blockProof(proof).build();
-            block.writer().writePbjItem(BlockItem.PROTOBUF.toBytes(proofItem)).closeBlock();
+            block.writer().writePbjItem(BlockItem.PROTOBUF.toBytes(proofItem));
+            if (streamWriterType == BlockStreamWriterMode.FILE) {
+                block.writer().closeBlock();
+            }
             if (block.number() != blockNumber) {
                 siblingHashes.removeFirst();
             }
