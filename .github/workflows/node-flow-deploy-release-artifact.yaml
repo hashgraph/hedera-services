@@ -17,9 +17,6 @@
 name: "ZXF: Deploy Production Release"
 on:
   push:
-    branches:
-      - main
-      - develop
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+-?*"
   workflow_dispatch:
@@ -36,19 +33,62 @@ defaults:
     shell: bash
 
 jobs:
-  release:
-    name: Release
+  prepare-tag-release:
+    name: Prepare Release [Tag]
     runs-on: network-node-linux-medium
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      prerelease: ${{ steps.tag.outputs.prerelease }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
         with:
           egress-policy: audit
 
-      - name: Checkout
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+      - name: Install Semantic Version Tools
+        run: |
+          echo "::group::Download SemVer Binary"
+          sudo curl -L -o /usr/local/bin/semver https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
+          echo "::endgroup::"
+          echo "::group::Change SemVer Binary Permissions"
+          sudo chmod -v +x /usr/local/bin/semver
+          echo "::endgroup::"
+          echo "::group::Show SemVer Binary Version Info"
+          semver --version
+          echo "::endgroup::"
+
+      - name: Extract Tag Version
+        id: tag
+        run: |
+          RELEASE_VERSION="$(semver get release "${{ github.ref_name }}")"
+          PRERELEASE_VERSION="$(semver get prerel "${{ github.ref_name }}")"
+
+          FINAL_VERSION="${RELEASE_VERSION}"
+          PRERELEASE_FLAG="false"
+          [[ -n "${PRERELEASE_VERSION}" ]] && FINAL_VERSION="${RELEASE_VERSION}-${PRERELEASE_VERSION}"
+          [[ -n "${PRERELEASE_VERSION}" ]] && PRERELEASE_FLAG="true"
+
+          echo "version=${FINAL_VERSION}" >>"${GITHUB_OUTPUT}"
+          echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
+
+  release-tag:
+    name: Release [Branch]
+    runs-on: network-node-linux-large
+    outputs:
+      new_version: ${{ steps.semantic.outputs.new_release_version }}
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.4
@@ -62,7 +102,7 @@ jobs:
             @semantic-release/changelog \
             @semantic-release/git \
             conventional-changelog-conventionalcommits
-
+            
       - name: Install GnuPG Tools
         if: ${{ inputs.dry-run-enabled != true }}
         run: |
@@ -86,28 +126,50 @@ jobs:
           git_commit_gpgsign: true
           git_tag_gpgsign: true
 
-      - name: Release
+      - name: Semantic Release
+        id: semantic
+        uses: semantic-release/semantic-release@05a2ea9a060e6508abf92087e8c8cc4a7a85604f # v24.2.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: semantic-release/semantic-release@43df51b79ec9c8716b737804486b375459ea177e # v24.1.2
-        id: semantic
         with:
-          branches: [ 'main', 'develop' ]
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
 
-    outputs:
-      new-release-published: ${{ steps.semantic.outputs.new_release_published }}
-      new-release-version: ${{ steps.semantic.outputs.new_release_version }}
+      - name: Call Build Release Artifact
+        if: ${{ steps.semantic.outputs.new_release_published == 'true' }}
+        uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
+        with:
+          version-policy: branch-commit
+          trigger-env-deploy: integration
+          release-profile: DevelopCommit
+          new-version: ${{ steps.semantic.outputs.new_release_version }}
+        secrets:
+          access-token: ${{ secrets.GITHUB_TOKEN }}
+          bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+          cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
+          svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+          svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
+          svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+          svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+          sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+          sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+          sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+          sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+          slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
+          jf-url: ${{ vars.JF_URL }}
+          jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
+          jf-user-name: ${{ vars.JF_USER_NAME }}
+          jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
 
-  deploy-release:
-    name: Deploy Release
-    needs: release
-    if: needs.release.outputs.new-release-published == 'true'
+  release-branch:
+    name: Release [Branch]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     with:
-      version-policy: specified
-      new-version: ${{ needs.release.outputs.new-release-version }}
-      trigger-env-deploy: ${{ github.ref == 'refs/heads/main' && 'production' || 'integration' }}
-      release-profile: ${{ github.ref == 'refs/heads/main' && contains(needs.release.outputs.new-release-version, '-') && 'PrereleaseChannel' || github.ref == 'refs/heads/main' && 'MavenCentral' || 'DevelopCommit' }}
+      version-policy: branch-commit
+      trigger-env-deploy: integration
+      release-profile: DevelopCommit
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
@@ -130,7 +192,7 @@ jobs:
     name: Trigger CI Flows
     runs-on: network-node-linux-medium
     needs:
-      - deploy-release
+      - release-branch
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
