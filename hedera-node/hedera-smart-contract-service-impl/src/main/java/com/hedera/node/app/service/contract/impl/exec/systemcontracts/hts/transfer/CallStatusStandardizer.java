@@ -38,7 +38,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  */
 public class CallStatusStandardizer {
     /**
-     *
+     * Default CallStatusStandardizer to use.
      */
     public static final CallStatusStandardizer CALL_STATUS_STANDARDIZER = new CallStatusStandardizer();
 
