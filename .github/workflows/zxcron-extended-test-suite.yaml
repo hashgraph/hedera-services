@@ -67,6 +67,8 @@ jobs:
         id: check-tags-exist
         env:
           GH_TOKEN: ${{ github.token }}
+          XTS_PASS_PATTERN: ${{ env.XTS_PASS_GREP_PATTERN }}
+          BUILD_PROMO_PATTERN: ${{ env.PROMOTED_GREP_PATTERN }}
         run: |
           # Check if the tag exists and if so grab its commit id
           set +e
@@ -76,6 +78,15 @@ jobs:
 
           # Cancel out if the tag does not exist
           if [[ "${XTS_COMMIT_FOUND}" -ne 0 ]]; then
+            gh run cancel ${{ github.run_id }}
+          fi
+
+          # Check if this commit has already been tagged xts-pass-* or build-*
+          XTS_PASS_TAGGED=$(git tag --contains ${XTS_COMMIT} | grep -E "${XTS_PASS_PATTERN}")
+          BUILD_PROMOTED_TAGGED=$(git tag --contains ${XTS_COMMIT} | grep -E "${BUILD_PROMO_PATTERN}")
+
+          # Use -n; if the BUILD_PROMOTED_TAGGED/XTS_PASS_TAGGED flags are not empty than the commit has been tagged.
+          if [[ -n XTS_PASS_TAGGED || -n BUILD_PROMOTED_TAGGED ]]; then
             gh run cancel ${{ github.run_id }}
           fi
 

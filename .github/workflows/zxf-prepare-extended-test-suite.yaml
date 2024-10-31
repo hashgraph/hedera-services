@@ -96,7 +96,7 @@ jobs:
           BUILD_PROMOTED_TAGGED=$(git tag --contains HEAD | grep -E "${BUILD_PROMO_PATTERN}")
 
           # Use -n; if the strings are not empty than the commit has been tagged.
-          if [[ -n XTS_CANDIDATE_TAGGED || -n XTS_PASS_TAGGED || -n BUILD_PROMOTED_TAGGED]]; then
+          if [[ -n XTS_CANDIDATE_TAGGED || -n XTS_PASS_TAGGED || -n BUILD_PROMOTED_TAGGED ]]; then
             gh run cancel ${{ github.run_id }}
           fi
 
