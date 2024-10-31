@@ -105,6 +105,6 @@ jobs:
           inputs: '{
             "ref": "${{ github.ref }}",
             "author": "${{ github.event.head_commit.author.name }}",
-            "message": "${{ github.event.head_commit.message }}",
-            "headSha": "${{ github.sha }}"
+            "msg": "${{ github.event.head_commit.message }}",
+            "sha": "${{ github.sha }}"
           }'

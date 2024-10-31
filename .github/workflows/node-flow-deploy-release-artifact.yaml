@@ -25,14 +25,17 @@ on:
         required: true
         description: "The github branch or tag that triggered the workflow"
       author:
-        required: true
+        required: false
         description: "The author of the commit"
-      message:
-        required: true
+        default: ""
+      msg:
+        required: false
         description: "The message on the head commit"
-      headSha:
-        required: true
+        default: ""
+      sha:
+        required: false
         description: "The commit ID of the commit that triggered the workflow"
+        default: ""
 
 defaults:
   run:
@@ -171,6 +174,6 @@ jobs:
           inputs: '{
             "ref": "${{ inputs.ref }}",
             "author": "${{ inputs.author }}",
-            "message": "${{ inputs.message }}",
-            "headSha": "${{ inputs.headSha }}"
+            "message": "${{ inputs.msg }}",
+            "headSha": "${{ inputs.sha }}"
           }'
