@@ -462,7 +462,7 @@ public class ThrottleAccumulator {
             }
             return !manager.allReqsMetAt(now);
         } else {
-            log.debug("Long term scheduling is enabled, but throttling of long term schedules is not yet implemented.");
+            log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet implemented.");
             if (!manager.allReqsMetAt(now)) {
                 return true;
             }
@@ -504,7 +504,7 @@ public class ThrottleAccumulator {
         if (!areLongTermSchedulesEnabled) {
             return false;
         } else {
-            log.debug("Long term scheduling is enabled, but throttling of long term schedules is not yet implemented.");
+            log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet implemented.");
             // deeply check throttle only in the frontend throttle
             if (throttleType != FRONTEND_THROTTLE) {
                 return false;
