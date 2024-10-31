@@ -86,6 +86,7 @@ jobs:
       # Check if this commit is already tagged in the XTS flow
       - name: Check if XTS flow is required
         env:
+          GH_TOKEN: ${{ github.token }}
           CANDIDATE_PATTERN: ${{ env.XTS_CANDIDATE_TAG }}
           XTS_PASS_PATTERN: ${{ env.XTS_PASS_GREP_PATTERN }}
           BUILD_PROMO_PATTERN: ${{ env.PROMOTED_GREP_PATTERN }}
