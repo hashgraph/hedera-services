@@ -133,7 +133,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     @Override
     public void start() {
-        hedera.initPlatformState(state);
+        hedera.initializeStatesApi(state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook);
+
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
         final WritableSingletonState<PlatformState> platformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
         final var currentState = requireNonNull(platformState.get());
@@ -144,7 +145,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         ((CommittableWritableStates) writableStates).commit();
 
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
-        hedera.onStateInitialized(state, fakePlatform(), GENESIS, null);
+        hedera.onStateInitialized(state, fakePlatform(), GENESIS);
         hedera.init(fakePlatform(), defaultNodeId);
         fakePlatform().start();
         fakePlatform().notifyListeners(ACTIVE_NOTIFICATION);
