@@ -46,6 +46,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.N
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo.NftTokenInfoTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.pauses.PausesTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.rejecttokens.RejectTokensTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenexpiry.TokenExpiryTranslator;
@@ -466,6 +467,15 @@ public interface HtsTranslatorsModule {
     @Named("HtsTranslators")
     static CallTranslator<HtsCallAttempt> provideTokenCancelAirdropTranslator(
             @NonNull final TokenCancelAirdropTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @Named("HtsTranslators")
+    static CallTranslator<HtsCallAttempt> provideTokenRejectsTranslator(
+            @NonNull final RejectTokensTranslator translator) {
         return translator;
     }
 }
