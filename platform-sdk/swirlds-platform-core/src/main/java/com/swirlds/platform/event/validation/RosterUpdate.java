@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.event.validation;
 
-import com.swirlds.platform.system.address.AddressBook;
+import com.hedera.hapi.node.state.roster.Roster;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A record representing an update to the address book.
+ * A record representing an update to the roster.
  *
- * @param previousAddressBook the previous address book
- * @param currentAddressBook  the new current address book
+ * @param previousRoster the previous roster
+ * @param currentRoster  the new current roster
  */
-public record AddressBookUpdate(@NonNull AddressBook previousAddressBook, @NonNull AddressBook currentAddressBook) {}
+public record RosterUpdate(@NonNull Roster previousRoster, @NonNull Roster currentRoster) {}
