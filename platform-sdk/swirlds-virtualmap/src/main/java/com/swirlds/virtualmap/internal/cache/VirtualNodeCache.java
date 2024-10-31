@@ -317,11 +317,16 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * fastCopyVersion of zero, and create the shared data structures.
      */
     public VirtualNodeCache() {
+        this(0);
+    }
+
+    public VirtualNodeCache(long fastCopyVersion) {
         this.keyToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyHashIndex = new ConcurrentHashMap<>();
         this.releaseLock = new ReentrantLock();
         this.lastReleased = new AtomicLong(-1L);
+        this.fastCopyVersion.set(fastCopyVersion);
     }
 
     /**

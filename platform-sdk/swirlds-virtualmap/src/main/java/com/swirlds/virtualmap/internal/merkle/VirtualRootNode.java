@@ -1260,7 +1260,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         out.writeSerializable(dataSourceBuilder, true);
         out.writeSerializable(keySerializer, true);
         out.writeSerializable(valueSerializer, true);
-        //        out.writeSerializable(detachedRecords.getCache(), true);
+        out.writeLong(cache.getFastCopyVersion());
         logger.info(
                 VIRTUAL_MERKLE_STATS.getMarker(),
                 "VRN serialize {} took {} ms",
@@ -1297,6 +1297,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             // Future work: once all states are version 3 or later, this code branch can be
             // removed alltogether, and cache may be a final field
             cache = in.readSerializable();
+        } else {
+            cache = new VirtualNodeCache<>(in.readLong());
         }
     }
 
