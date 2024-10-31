@@ -85,11 +85,12 @@ public class MerkleDbTest {
     void testChangeDefaultPath() {
         final MerkleDb instance1 = MerkleDb.getDefaultInstance(CONFIGURATION);
         Assertions.assertNotNull(instance1);
-        testFileSystemManager.resetMerkleDb(null);
+        final Path tmpDir = testFileSystemManager.resolveNewTemp(null);
+        MerkleDb.setDefaultPath(tmpDir);
         final MerkleDb instance2 = MerkleDb.getDefaultInstance(CONFIGURATION);
         Assertions.assertNotNull(instance2);
         Assertions.assertNotEquals(instance2, instance1);
-        Assertions.assertEquals(tempDir, instance2.getStorageDir());
+        Assertions.assertEquals(tmpDir, instance2.getStorageDir());
     }
 
     @Test
