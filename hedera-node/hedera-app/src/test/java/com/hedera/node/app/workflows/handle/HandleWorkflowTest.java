@@ -84,25 +84,7 @@ class HandleWorkflowTest {
     private NodeStakeUpdates nodeStakeUpdates;
 
     @Mock
-    private Authorizer authorizer;
-
-    @Mock
-    private FeeManager feeManager;
-
-    @Mock
     private DispatchProcessor dispatchProcessor;
-
-    @Mock
-    private ServiceScopeLookup serviceScopeLookup;
-
-    @Mock
-    private ChildDispatchFactory childDispatchFactory;
-
-    @Mock
-    private TransactionDispatcher dispatcher;
-
-    @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
 
     @Mock
     private StakePeriodManager stakePeriodManager;
@@ -147,22 +129,13 @@ class HandleWorkflowTest {
     private ExchangeRateManager exchangeRateManager;
 
     @Mock
-    private PreHandleWorkflow preHandleWorkflow;
-
-    @Mock
     private State state;
 
     @Mock
     private Round round;
 
     @Mock
-    private KVStateChangeListener kvStateChangeListener;
-
-    @Mock
     private StakeInfoHelper stakeInfoHelper;
-
-    @Mock
-    private BoundaryStateChangeListener boundaryStateChangeListener;
 
     @Mock
     private UserTxnFactory userTxnFactory;
