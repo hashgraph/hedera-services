@@ -17,8 +17,6 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.functionOfTxn;
@@ -32,7 +30,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
@@ -87,7 +84,7 @@ import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -154,6 +151,7 @@ public class UserTxnFactory {
 
     /**
      * Creates a new {@link UserTxn} instance from the given parameters.
+     *
      * @param state the state the transaction will be applied to
      * @param event the consensus event containing the transaction
      * @param creatorInfo the node information of the creator
@@ -192,13 +190,14 @@ public class UserTxnFactory {
     }
 
     /**
-     * Creates a new {@link UserTxn} for schedules.
+     * Creates a new {@link UserTxn} for synthetic transaction body.
+     *
      * @param state the state the transaction will be applied to
      * @param event the consensus event containing the transaction
      * @param creatorInfo the node information of the creator
      * @param consensusNow the current consensus time
      * @param type the type of the transaction
-     * @param schedule the schedule entity
+     * @param txBody synthetic transaction body
      * @return the new user transaction
      */
     public UserTxn createUserTxn(
@@ -207,13 +206,13 @@ public class UserTxnFactory {
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Instant consensusNow,
             @NonNull final TransactionType type,
-            @NonNull final Schedule schedule) {
+            @NonNull final TransactionBody txBody) {
         final var config = configProvider.getConfiguration();
         final var stack = createRootSavepointStack(state, type);
         final var readableStoreFactory = new ReadableStoreFactory(stack);
-        final var txBody = childAsOrdinary(schedule);
         final var functionality = functionOfTxn(txBody);
-        final var preHandleResult = preHandleSchedule(txBody, schedule.payerAccountId(), config, readableStoreFactory);
+        final var preHandleResult = preHandleSyntheticTransaction(
+                txBody, txBody.transactionIDOrThrow().accountIDOrThrow(), config, readableStoreFactory);
         final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
 
         return new UserTxn(
@@ -251,21 +250,22 @@ public class UserTxnFactory {
     }
 
     /**
-     * Creates a new {@link Dispatch} instance for schedule {@link UserTxn} in the given context.
+     * Creates a new {@link Dispatch} instance for this user transaction in the given context.
      *
      * @param userTxn user transaction
      * @param baseBuilder the base record builder
+     * @param keyVerifierCallback key verifier callback
+     * @param category transaction category
      * @return the new dispatch instance
      */
     public Dispatch createDispatch(
             @NonNull final UserTxn userTxn,
             @NonNull final StreamBuilder baseBuilder,
-            @NonNull final Schedule schedule) {
+            @NonNull final Predicate<Key> keyVerifierCallback,
+            @NonNull final HandleContext.TransactionCategory category) {
         final var config = userTxn.config();
-        // use key verifier with a callback, that checks if a given key is in the schedule signatures list
-        final var signatories = new HashSet<>(schedule.signatories());
-        final var keyVerifier = getKeyVerifier(signatories::contains, config);
-        return createDispatch(userTxn, baseBuilder, keyVerifier, SCHEDULED);
+        final var keyVerifier = getKeyVerifier(keyVerifierCallback, config);
+        return createDispatch(userTxn, baseBuilder, keyVerifier, category);
     }
 
     private Dispatch createDispatch(
@@ -363,7 +363,7 @@ public class UserTxnFactory {
                 blockStreamConfig.streamMode());
     }
 
-    private PreHandleResult preHandleSchedule(
+    private PreHandleResult preHandleSyntheticTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final AccountID syntheticPayerId,
             @NonNull final Configuration config,
