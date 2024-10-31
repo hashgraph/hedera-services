@@ -40,6 +40,7 @@ public class NodeOperatorQueriesBase {
     protected static final String PAYER = "payer";
     protected static final String FILE = "file";
     protected static final String CONTRACT = "contract";
+    protected static final String SCHEDULE = "schedule";
     protected static final String TOPIC = "topic";
 
     /**

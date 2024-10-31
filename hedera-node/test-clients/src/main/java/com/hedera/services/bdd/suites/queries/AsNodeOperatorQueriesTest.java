@@ -19,23 +19,34 @@ package com.hedera.services.bdd.suites.queries;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.HBAR_TOKEN_SENTINEL;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
@@ -45,6 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
@@ -142,26 +154,37 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
         final Stream<DynamicTest> nodeOperatorAccountBalanceQueryNotCharged() {
             return defaultHapiSpec("nodeOperatorAccountBalanceQueryNotCharged")
                     .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
-                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS))
-                    .when(getAccountBalance(NODE_OPERATOR).asNodeOperator())
+                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
+                    .when(getAccountBalance(NODE_OPERATOR).payingWith(NODE_OPERATOR).asNodeOperator())
                     .then(
-                            getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
                             getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
         }
 
         /**
-         * FREE-QUERY_02 - A test that verifies the payer balance is not charged when a node operator AccountInfoQuery is performed
+         * FREE-QUERY_02 / 25 Not Charged - A test that verifies the payer balance is not charged when a node operator AccountInfoQuery is performed
          */
         @HapiTest
         final Stream<DynamicTest> nodeOperatorAccountInfoQueryNotCharged() {
             return defaultHapiSpec("nodeOperatorAccountInfoQueryNotCharged")
                     .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
-                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS))
-                    .when(getAccountInfo(NODE_OPERATOR).asNodeOperator())
+                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
+                    .when(
+                            getAccountInfo(NODE_OPERATOR).payingWith(NODE_OPERATOR).asNodeOperator())
                     .then(
-                            getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
+                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+        }
+
+        /**
+         * FREE-QUERY_02 / 25 Charged - A test that verifies the payer balance is not charged when a node operator AccountInfoQuery is performed
+         */
+        @HapiTest
+        final Stream<DynamicTest> nodeOperatorAccountInfoQueryCharged() {
+            return defaultHapiSpec("nodeOperatorAccountInfoQueryCharged")
+                    .given(
+                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
+                    .when(
+                            getAccountInfo(NODE_OPERATOR).payingWith(NODE_OPERATOR))
+                    .then(
                             getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
         }
 
@@ -268,6 +291,43 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                     .when(getContractInfo(CONTRACT).asNodeOperator())
                     .then(
                             getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
+                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+        }
+
+        /**
+         * FREE-QUERY_11 - A test that verifies the payer balance is not charged when a node operator ContractByteCodeQuery is performed
+         */
+        @HapiTest
+        final Stream<DynamicTest> nodeOperatorContractByteCodeQueryNotCharged() {
+            return defaultHapiSpec("nodeOperatorContractByteCodeQueryNotCharged")
+                    .given(
+                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                            createDefaultContract(CONTRACT))
+                    .when(getContractBytecode(CONTRACT).asNodeOperator())
+                    .then(
+                            getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
+                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+        }
+
+        /**
+         * FREE-QUERY_12 - A test that verifies the payer balance is not charged when a node operator ScheduleInfoQuery is performed
+         */
+        @HapiTest
+        final Stream<DynamicTest> nodeOperatorScheduleInfoQueryNotCharged() {
+            return defaultHapiSpec("nodeOperatorScheduleInfoQueryNotCharged")
+                    .given(
+                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                            scheduleCreate(
+                                    SCHEDULE,
+                                    cryptoTransfer(tinyBarsFromTo(PAYER, NODE_OPERATOR, 1L))
+                                            .memo("")
+                                            .fee(ONE_HBAR))
+                                    .payingWith(PAYER)
+                                    .adminKey(PAYER))
+                    .when(getScheduleInfo(SCHEDULE).asNodeOperator())
+                    .then(
                             getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
         }
     }
