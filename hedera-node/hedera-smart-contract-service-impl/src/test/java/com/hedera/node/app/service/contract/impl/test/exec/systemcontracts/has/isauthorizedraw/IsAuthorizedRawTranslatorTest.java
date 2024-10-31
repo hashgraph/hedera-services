@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauth
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.v051.Version051FeatureFlags;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -72,6 +73,9 @@ public class IsAuthorizedRawTranslatorTest {
     private VerificationStrategies verificationStrategies;
 
     @Mock
+    private SignatureVerifier signatureVerifier;
+
+    @Mock
     private HederaNativeOperations nativeOperations;
 
     private IsAuthorizedRawTranslator subject;
@@ -87,7 +91,13 @@ public class IsAuthorizedRawTranslatorTest {
         given(attempt.configuration()).willReturn(getTestConfiguration(true));
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         attempt = prepareHasAttemptWithSelector(
-                IS_AUTHORIZED_RAW, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+                IS_AUTHORIZED_RAW,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator);
         assertTrue(subject.matches(attempt));
     }
 
@@ -104,7 +114,13 @@ public class IsAuthorizedRawTranslatorTest {
         given(attempt.configuration()).willReturn(getTestConfiguration(true));
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         attempt = prepareHasAttemptWithSelector(
-                HBAR_ALLOWANCE_PROXY, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+                HBAR_ALLOWANCE_PROXY,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator);
         assertFalse(subject.matches(attempt));
     }
 
