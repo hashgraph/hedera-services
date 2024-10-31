@@ -570,6 +570,7 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     @Override
+    // dummy change
     public void run() {
         if (!init()) {
             return;
