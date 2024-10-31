@@ -22,7 +22,11 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.util.PbjRecordHasher;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.X509Certificate;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * A utility class to help use Rooster and RosterEntry instances.
@@ -64,6 +68,20 @@ public final class RosterUtils {
     @NonNull
     public static Hash hash(@NonNull final Roster roster) {
         return PBJ_RECORD_HASHER.hash(roster, Roster.PROTOBUF);
+    }
+
+    /**
+     * Build a map from a long nodeId to a RosterEntry for a given Roster.
+     *
+     * @param roster a roster
+     * @return {@code Map<Long, RosterEntry>}
+     */
+    @Nullable
+    public static Map<Long, RosterEntry> toMap(@Nullable final Roster roster) {
+        if (roster == null) {
+            return null;
+        }
+        return roster.rosterEntries().stream().collect(Collectors.toMap(RosterEntry::nodeId, Function.identity()));
     }
 
     /**

@@ -78,7 +78,7 @@ public class UnifiedConsTimeTest {
      */
     @DisplayName("provides BUSY record if transaction reaches consensus after upgrade")
     @RepeatableHapiTest(NEEDS_SYNCHRONOUS_HANDLE_WORKFLOW)
-    final Stream<DynamicTest> onlyWarnsOfMissingCreatorIfCurrentVersion() {
+    final Stream<DynamicTest> providesBusyRecordIfTransactionReachesAfterUpgrade() {
         return hapiTest(
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
                         .memo("From a better time")
