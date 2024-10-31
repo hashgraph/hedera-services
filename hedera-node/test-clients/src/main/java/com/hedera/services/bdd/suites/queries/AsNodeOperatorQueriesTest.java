@@ -126,7 +126,7 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
 
         // the tests but without the atomic long variables
         @HapiTest
-        final Stream<DynamicTest> nodeOperatorQueryVerifyPayerBalanceForAccountBalance_WithoutAtomicLong() {
+        final Stream<DynamicTest> nodeOperatorQueryVerifyPayerBalanceForAccountBalance_NoAtomicLong() {
             return hapiTest(
                     cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
                     cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
@@ -144,7 +144,7 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
         }
 
         @HapiTest
-        final Stream<DynamicTest> nodeOperatorQueryVerifyPayerBalanceForAccountInfo_WithoutAtomicLong() {
+        final Stream<DynamicTest> nodeOperatorQueryVerifyPayerBalanceForAccountInfo_NoAtomicLong() {
             return hapiTest(
                     cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
                     cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
