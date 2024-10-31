@@ -38,13 +38,6 @@ import javax.inject.Singleton;
 public class TssMetrics {
     private final Metrics metrics;
 
-    private static final String TSS_CANDIDATE_ROSTER_LIFECYCLE = "tss_candidate_roster_lifecycle";
-    private static final String TSS_CANDIDATE_ROSTER_LIFECYCLE_DESC = "the lifecycle of the current candidate roster";
-    private static final LongGauge.Config TSS_ROSTER_LIFECYCLE_CONFIG = new LongGauge.Config(
-                    "app", TSS_CANDIDATE_ROSTER_LIFECYCLE)
-            .withDescription(TSS_CANDIDATE_ROSTER_LIFECYCLE_DESC);
-    private final LongGauge tssCandidateRosterLifecycle;
-
     private static final String TSS_MESSAGE_COUNTER_METRIC = "tss_message_total";
     private static final String TSS_MESSAGE_COUNTER_METRIC_DESC =
             "total numbers of tss message transactions for roster ";
@@ -61,6 +54,14 @@ public class TssMetrics {
             new LongGauge.Config("app", TSS_SHARES_AGGREGATION_TIME).withDescription(TSS_SHARES_AGGREGATION_TIME_DESC);
     private final LongGauge tssSharesAggregationTime;
 
+    private static final String TSS_CANDIDATE_ROSTER_LIFECYCLE = "tss_candidate_roster_lifecycle";
+    private static final String TSS_CANDIDATE_ROSTER_LIFECYCLE_DESC = "the lifecycle of the current candidate roster";
+    private static final LongGauge.Config TSS_ROSTER_LIFECYCLE_CONFIG = new LongGauge.Config(
+                    "app", TSS_CANDIDATE_ROSTER_LIFECYCLE)
+            .withDescription(TSS_CANDIDATE_ROSTER_LIFECYCLE_DESC);
+    private final LongGauge tssCandidateRosterLifecycle;
+
+    // local variable to track the start of candidate roster's lifecycle
     private Instant candidateRosterLifecycleStart = null;
 
     /**
@@ -84,7 +85,7 @@ public class TssMetrics {
     public void updateMessagesPerCandidateRoster(@NonNull final Bytes targetRosterHash) {
         requireNonNull(targetRosterHash, "targetRosterHash must not be null");
 
-        //
+        // if this is the first message for this candidate roster, initialize new metric to track occurrences
         if (!messagesPerCandidateRoster.containsKey(targetRosterHash)) {
             final Counter.Config TSS_MESSAGE_TX_COUNTER = new Counter.Config("app", TSS_MESSAGE_COUNTER_METRIC)
                     .withDescription(TSS_MESSAGE_COUNTER_METRIC_DESC + targetRosterHash);
@@ -92,6 +93,7 @@ public class TssMetrics {
             tssMessageTxCounter.increment();
             messagesPerCandidateRoster.put(targetRosterHash, tssMessageTxCounter);
         } else {
+            // if the metric is already present, just increment
             getMessagesPerCandidateRoster(targetRosterHash).increment();
         }
     }
@@ -104,7 +106,7 @@ public class TssMetrics {
     public void updateVotesPerCandidateRoster(@NonNull final Bytes targetRosterHash) {
         requireNonNull(targetRosterHash, "targetRosterHash must not be null");
 
-        //
+        // if this is the first vote for this candidate roster, initialize new metric to track occurrences
         if (!votesPerCandidateRoster.containsKey(targetRosterHash)) {
             final Counter.Config TSS_VOTE_TX_COUNTER = new Counter.Config("app", TSS_VOTE_COUNTER_METRIC)
                     .withDescription(TSS_VOTE_COUNTER_METRIC_DESC + targetRosterHash);
@@ -112,6 +114,7 @@ public class TssMetrics {
             tssVoteTxCounter.increment();
             votesPerCandidateRoster.put(targetRosterHash, tssVoteTxCounter);
         } else {
+            // if the metric is already present, just increment
             getVotesPerCandidateRoster(targetRosterHash).increment();
         }
     }

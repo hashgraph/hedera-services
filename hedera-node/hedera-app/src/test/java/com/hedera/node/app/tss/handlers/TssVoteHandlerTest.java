@@ -96,7 +96,6 @@ class TssVoteHandlerTest {
         when(transactionBody.tssVoteOrThrow()).thenReturn(tssVoteTransactionBody);
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssBaseStore);
-        ;
 
         when(tssVoteTransactionBody.targetRosterHash()).thenReturn(Bytes.EMPTY);
         when(tssBaseStore.exists(any(TssVoteMapKey.class))).thenReturn(false);
