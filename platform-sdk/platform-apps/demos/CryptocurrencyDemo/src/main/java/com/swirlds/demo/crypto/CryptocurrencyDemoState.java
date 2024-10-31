@@ -26,25 +26,22 @@ package com.swirlds.demo.crypto;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 /**
  * This holds the current state of a swirld representing both a cryptocurrency and a stock market.
@@ -62,7 +60,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * entirely new cryptocurrency is created every time all the computers start the program over again, so
  * these cryptocurrencies won't have any actual value.
  */
-public class CryptocurrencyDemoState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+public class CryptocurrencyDemoState extends MerkleStateRoot {
 
     /**
      * The version history of this class.
@@ -134,7 +132,11 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
 
     ////////////////////////////////////////////////////
 
-    public CryptocurrencyDemoState() {}
+    public CryptocurrencyDemoState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(lifecycles, versionFactory);
+    }
 
     private CryptocurrencyDemoState(final CryptocurrencyDemoState sourceState) {
         super(sourceState);
@@ -196,6 +198,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
     @Override
     public synchronized CryptocurrencyDemoState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new CryptocurrencyDemoState(this);
     }
 
@@ -380,74 +383,12 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
-        this.platform = (SwirldsPlatform) platform;
+        super.init(platform, trigger, previousSoftwareVersion);
 
+        this.platform = (SwirldsPlatform) platform;
         if (trigger == InitTrigger.GENESIS) {
             genesisInit();
         }
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeStringArray(tickerSymbol);
-
-        out.writeInt(wallet.size());
-        for (Map.Entry<NodeId, AtomicLong> entry : wallet.entrySet()) {
-            out.writeSerializable(entry.getKey(), false);
-            out.writeLong(entry.getValue().get());
-        }
-
-        out.writeInt(shares.size());
-        for (Map.Entry<NodeId, List<AtomicLong>> entry : shares.entrySet()) {
-            out.writeSerializable(entry.getKey(), false);
-            out.writeInt(entry.getValue().size());
-            for (int i = 0; i < entry.getValue().size(); i++) {
-                out.writeLong(entry.getValue().get(i).get());
-            }
-        }
-
-        out.writeStringArray(trades);
-        out.writeInt(numTradesStored);
-        out.writeInt(lastTradeIndex);
-        out.writeLong(numTrades);
-        out.writeByteArray(ask);
-        out.writeByteArray(bid);
-        out.writeSerializableArray(askId, false, true);
-        out.writeSerializableArray(bidId, false, true);
-        out.writeByteArray(price);
-    }
-
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        tickerSymbol = in.readStringArray(DEFAULT_MAX_ARRAY_SIZE, DEFAULT_MAX_STRING_SIZE);
-
-        int walletSize = in.readInt();
-        for (int i = 0; i < walletSize; i++) {
-            final NodeId id = in.readSerializable(false, NodeId::new);
-            final AtomicLong amount = new AtomicLong(in.readLong());
-            wallet.put(id, amount);
-        }
-
-        final int sharesSize = in.readInt();
-        for (int i = 0; i < sharesSize; i++) {
-            final NodeId id = in.readSerializable(false, NodeId::new);
-            final int numShares = in.readInt();
-            final List<AtomicLong> sharesForID = new ArrayList<>(numShares);
-            for (int j = 0; j < numShares; j++) {
-                sharesForID.add(new AtomicLong(in.readLong()));
-            }
-            shares.put(id, sharesForID);
-        }
-
-        trades = in.readStringArray(DEFAULT_MAX_ARRAY_SIZE, DEFAULT_MAX_STRING_SIZE);
-        numTradesStored = in.readInt();
-        lastTradeIndex = in.readInt();
-        numTrades = in.readLong();
-        ask = in.readByteArray(DEFAULT_MAX_ARRAY_SIZE);
-        bid = in.readByteArray(DEFAULT_MAX_ARRAY_SIZE);
-        askId = in.readSerializableArray(NodeId[]::new, DEFAULT_MAX_ARRAY_SIZE, false, NodeId::new);
-        bidId = in.readSerializableArray(NodeId[]::new, DEFAULT_MAX_ARRAY_SIZE, false, NodeId::new);
-        price = in.readByteArray(DEFAULT_MAX_ARRAY_SIZE);
     }
 
     @Override

@@ -44,6 +44,7 @@ timingSensitiveModuleInfo {
     requires("com.swirlds.merkle")
     requires("com.swirlds.merkle.test.fixtures")
     requires("com.swirlds.platform.core")
+    requires("com.hedera.node.hapi")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")

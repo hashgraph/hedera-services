@@ -23,6 +23,7 @@ module com.swirlds.demo.platform {
     exports com.swirlds.demo.virtualmerkle.config to
             com.fasterxml.jackson.databind;
 
+    requires com.hedera.node.hapi;
     requires com.swirlds.base;
     requires com.swirlds.common.test.fixtures;
     requires com.swirlds.common;
@@ -34,6 +35,7 @@ module com.swirlds.demo.platform {
     requires com.swirlds.merkledb;
     requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core;
+    requires com.swirlds.state.api;
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.core;
