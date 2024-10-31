@@ -127,6 +127,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                 touchBalanceOf(NODE0_STAKER, NODE1_STAKER, NODE2_STAKER, NODE3_STAKER),
                 waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
                 given(() -> gossipCertificates = generateX509Certificates(4)));
+        testLifecycle.overrideInClass(Map.of("tss.keyCandidateRoster", "true"));
     }
 
     @Nested

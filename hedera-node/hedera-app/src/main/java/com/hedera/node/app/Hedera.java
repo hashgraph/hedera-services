@@ -337,9 +337,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * <p>This registration is a critical side effect that must happen called before any Platform initialization
      * steps that try to create or deserialize a {@link MerkleStateRoot}.
      *
-     * @param constructableRegistry  the registry to register {@link RuntimeConstructable} factories with
-     * @param registryFactory        the factory to use for creating the services registry
-     * @param migrator               the migrator to use with the services
+     * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
+     * @param registryFactory       the factory to use for creating the services registry
+     * @param migrator              the migrator to use with the services
      * @param tssBaseServiceFactory the factory for the TSS base service
      */
     public Hedera(
@@ -955,7 +955,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .consensusSnapshotOrThrow()
                 .round();
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
-        final var networkInfo = new StateNetworkInfo(state, platform.getSelfId().id(), configProvider);
+
+        final var activeRoster = tssBaseService.chooseRosterForNetwork(state, trigger, serviceMigrator, version);
+        final var networkInfo =
+                new StateNetworkInfo(state, activeRoster, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)

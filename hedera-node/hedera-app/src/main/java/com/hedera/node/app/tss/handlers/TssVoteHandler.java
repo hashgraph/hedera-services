@@ -115,6 +115,10 @@ public class TssVoteHandler implements TransactionHandler {
         // Check if the total weight of votes with the same vote byte array is at least 1/3 of the
         // total weight of the network
         // Adding a +1 to the threshold to account for rounding errors.
+        return hasMetThreshold(voteWeight, activeRosterTotalWeight);
+    }
+
+    public static boolean hasMetThreshold(final long voteWeight, final long activeRosterTotalWeight) {
         return voteWeight >= (activeRosterTotalWeight / 3) + ((activeRosterTotalWeight % 3) == 0 ? 0 : 1);
     }
 }

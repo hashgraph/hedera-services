@@ -19,6 +19,7 @@ package com.hedera.node.app.info;
 import static com.hedera.node.app.info.NodeInfoImpl.fromRosterEntry;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.swirlds.platform.roster.RosterRetriever.retrieve;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -50,10 +51,21 @@ public class StateNetworkInfo implements NetworkInfo {
     private final long selfId;
     private Roster activeRoster;
 
+    /**
+     * Constructs a new network information provider from the given state, roster, selfID, and configuration provider.
+     *
+     * @param state          the state to retrieve the network information from
+     * @param roster         the roster to retrieve the network information from
+     * @param selfId         the ID of the node
+     * @param configProvider the configuration provider to retrieve the ledger ID from
+     */
     public StateNetworkInfo(
-            @NonNull final State state, final long selfId, @NonNull final ConfigProvider configProvider) {
+            @NonNull final State state,
+            @NonNull final Roster roster,
+            final long selfId,
+            @NonNull final ConfigProvider configProvider) {
         this.selfId = selfId;
-        this.activeRoster = new Roster(retrieve(state).rosterEntries());
+        this.activeRoster = requireNonNull(roster);
         this.nodeInfos = buildNodeInfoMap(state);
         // Load the ledger ID from configuration
         final var config = configProvider.getConfiguration();
@@ -113,7 +125,7 @@ public class StateNetworkInfo implements NetworkInfo {
         for (final var rosterEntry : rosterEntries) {
             final var node = nodeState.get(
                     EntityNumber.newBuilder().number(rosterEntry.nodeId()).build());
-            if (node != null) {
+            if (node != null && !node.deleted()) {
                 nodeInfos.put(rosterEntry.nodeId(), fromRosterEntry(rosterEntry, node));
             }
         }

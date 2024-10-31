@@ -21,12 +21,22 @@ import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
+import static com.hedera.node.app.tss.handlers.TssVoteHandler.hasMetThreshold;
+import static com.swirlds.platform.roster.RosterRetriever.retrieve;
+import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.state.roster.RosterState;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
+import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.api.TssPrivateShare;
@@ -35,13 +45,19 @@ import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.state.State;
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -135,11 +151,10 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
 
         final var activeDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, selfId);
-        final var tssPrivateShares = getTssPrivateShares(activeDirectory, tssStore, activeRosterHash);
-
         final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
 
+        final var tssPrivateShares = getTssPrivateShares(activeDirectory, tssStore, activeRosterHash);
         final AtomicInteger shareIndex = new AtomicInteger(0);
         for (final var tssPrivateShare : tssPrivateShares) {
             CompletableFuture.runAsync(
@@ -209,5 +224,58 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public TssHandlers tssHandlers() {
         return tssHandlers;
+    }
+
+    @Override
+    @NonNull
+    public Roster chooseRosterForNetwork(
+            @NonNull State state,
+            @NonNull InitTrigger trigger,
+            @NonNull ServiceMigrator serviceMigrator,
+            @NonNull ServicesSoftwareVersion version) {
+        final Roster currentActiveRoster = new Roster(retrieve(state).rosterEntries());
+        if (trigger != GENESIS) {
+            final var creatorVersion = serviceMigrator.creationVersionOf(state);
+            if (creatorVersion != null) {
+                final var isUpgrade = version.compareTo(new ServicesSoftwareVersion(creatorVersion)) > 0;
+                // If we are not at genesis and the software version is newer than the state version, then we need to
+                // pick the active roster or candidate roster based on votes in the state
+                if (isUpgrade) {
+                    final var candidateRosterHash = requireNonNull(state.getReadableStates(RosterStateId.NAME)
+                                    .<RosterState>getSingleton(RosterStateId.ROSTER_STATES_KEY)
+                                    .get())
+                            .candidateRosterHash();
+                    final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStore.class);
+                    if (hasEnoughWeight(currentActiveRoster, candidateRosterHash, tssStore)) {
+                        final ReadableKVState<ProtoBytes, Roster> rosters = requireNonNull(
+                                state.getReadableStates(RosterStateId.NAME).get(RosterStateId.ROSTER_KEY));
+                        return requireNonNull(rosters.get(new ProtoBytes(candidateRosterHash)));
+                    }
+                }
+            }
+        }
+        return currentActiveRoster;
+    }
+
+    private static boolean hasEnoughWeight(
+            @NonNull Roster activeRoster, @NonNull Bytes rosterHash, @NonNull ReadableTssStore tssBaseStore) {
+        // Also get the total active roster weight
+        long activeRosterTotalWeight = 0;
+        final var voteWeightMap = new LinkedHashMap<Bytes, Long>();
+        for (final RosterEntry rosterEntry : activeRoster.rosterEntries()) {
+            activeRosterTotalWeight += rosterEntry.weight();
+            final var tssVoteMapKey = new TssVoteMapKey(rosterHash, rosterEntry.nodeId());
+            if (tssBaseStore.exists(tssVoteMapKey)) {
+                final TssVoteTransactionBody voteBody = tssBaseStore.getVote(tssVoteMapKey);
+                voteWeightMap.merge(voteBody.tssVote(), rosterEntry.weight(), Long::sum);
+            }
+        }
+        // Use hasMetThreshold to check if any of the votes have met the threshold
+        for (final var voteWeight : voteWeightMap.values()) {
+            if (hasMetThreshold(voteWeight, activeRosterTotalWeight)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

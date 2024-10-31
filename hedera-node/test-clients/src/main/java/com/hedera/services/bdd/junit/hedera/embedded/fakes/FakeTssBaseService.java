@@ -20,15 +20,19 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
@@ -213,5 +217,15 @@ public class FakeTssBaseService implements TssBaseService {
     @Override
     public TssHandlers tssHandlers() {
         return delegate.tssHandlers();
+    }
+
+    @Override
+    @NonNull
+    public Roster chooseRosterForNetwork(
+            @NonNull State state,
+            @NonNull InitTrigger trigger,
+            @NonNull ServiceMigrator serviceMigrator,
+            @NonNull ServicesSoftwareVersion version) {
+        return delegate.chooseRosterForNetwork(state, trigger, serviceMigrator, version);
     }
 }
