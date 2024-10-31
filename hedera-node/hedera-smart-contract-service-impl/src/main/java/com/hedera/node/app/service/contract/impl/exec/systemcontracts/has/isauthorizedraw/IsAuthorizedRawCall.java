@@ -83,6 +83,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
         this.messageHash = requireNonNull(messageHash);
         this.signature = requireNonNull(signature);
         this.customGasCalculator = requireNonNull(customGasCalculator);
+        requireNonNull(attempt.signatureVerifier());
     }
 
     @NonNull

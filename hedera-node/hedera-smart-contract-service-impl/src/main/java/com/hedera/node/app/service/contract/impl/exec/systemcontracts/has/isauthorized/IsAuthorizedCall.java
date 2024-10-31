@@ -1,0 +1,109 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorized;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
+import static com.hedera.pbj.runtime.io.buffer.Bytes.wrap;
+import static java.util.Objects.requireNonNull;
+
+import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType;
+import com.hedera.node.app.spi.signatures.SignatureVerifier.SimpleKeyStatus;
+import com.hedera.pbj.runtime.ParseException;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Function;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+
+public class IsAuthorizedCall extends AbstractCall {
+
+    private final Address address;
+    private final byte[] message;
+    private final byte[] signatureBlob;
+
+    private final CustomGasCalculator customGasCalculator;
+
+    private final SignatureVerifier signatureVerifier;
+
+    protected IsAuthorizedCall(
+            @NonNull final HasCallAttempt attempt,
+            final Address address,
+            @NonNull final byte[] message,
+            @NonNull final byte[] signatureBlob,
+            @NonNull CustomGasCalculator gasCalculator) {
+        super(attempt.systemContractGasCalculator(), attempt.enhancement(), true);
+        this.address = requireNonNull(address, "address");
+        this.message = requireNonNull(message, "message");
+        this.signatureBlob = requireNonNull(signatureBlob, "signatureBlob");
+        this.customGasCalculator = requireNonNull(gasCalculator, "gasCalculator");
+        this.signatureVerifier = requireNonNull(attempt.signatureVerifier());
+    }
+
+    @Override
+    public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
+
+        final Function<ResponseCodeEnum, PricedResult> bail = rce -> encodedOutput(rce, false, frame.getRemainingGas());
+
+        final long accountNum = accountNumberForEvmReference(address, nativeOperations());
+        if (!isValidAccount(accountNum)) return bail.apply(INVALID_ACCOUNT_ID);
+        final var account = requireNonNull(enhancement.nativeOperations().getAccount(accountNum));
+
+        // Q: Do we get a key for hollow accounts and auto-created accounts?
+        final var key = account.key();
+        if (key == null) return bail.apply(INVALID_TRANSACTION_BODY);
+
+        SignatureMap sigMap;
+        try {
+            sigMap = requireNonNull(SignatureMap.PROTOBUF.parse(wrap(signatureBlob)));
+        } catch (@NonNull final ParseException | NullPointerException ex) {
+            return bail.apply(INVALID_TRANSACTION_BODY);
+        }
+
+        final var keyCounts = signatureVerifier.countSimpleKeys(key);
+        long gasRequirement = keyCounts.numEcdsaKeys() * customGasCalculator.getEcrecPrecompiledContractGasCost()
+                + keyCounts.numEddsaKeys() * customGasCalculator.getEdSignatureVerificationSystemContractGasCost();
+
+        final var authorized = signatureVerifier.verifySignature(
+                key, wrap(message), MessageType.RAW, sigMap, ky -> SimpleKeyStatus.ONLY_IF_CRYPTO_SIG_VALID);
+
+        final var result = encodedOutput(SUCCESS, authorized, gasRequirement);
+        return result;
+    }
+
+    @NonNull
+    PricedResult encodedOutput(final ResponseCodeEnum rce, final boolean authorized, final long gasRequirement) {
+        final var output = IsAuthorizedTranslator.IS_AUTHORIZED.getOutputs().encodeElements(rce, authorized);
+        final var result = gasOnly(successResult(output, gasRequirement), SUCCESS, true);
+        return result;
+    }
+
+    public boolean isValidAccount(final long accountNum) {
+        // invalid if accountNum is negative
+        if (accountNum < 0) return false;
+        return true;
+    }
+}

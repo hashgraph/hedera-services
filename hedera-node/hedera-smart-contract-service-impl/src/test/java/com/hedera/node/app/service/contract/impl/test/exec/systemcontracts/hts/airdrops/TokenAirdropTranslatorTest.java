@@ -19,6 +19,8 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops.TokenAirdropTranslator.TOKEN_AIRDROP;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
@@ -88,11 +90,11 @@ class TokenAirdropTranslatorTest extends CallTestBase {
         when(attempt.configuration()).thenReturn(configuration);
         when(configuration.getConfigData(ContractsConfig.class)).thenReturn(contractsConfig);
         when(contractsConfig.systemContractAirdropTokensEnabled()).thenReturn(true);
-        when(attempt.isSelectorIfConfigEnabled(TOKEN_AIRDROP, true)).thenReturn(true);
+        when(attempt.isSelectorIfConfigEnabled(true, TOKEN_AIRDROP)).thenReturn(true);
 
         boolean result = translator.matches(attempt);
 
-        assertEquals(true, result);
+        assertTrue(result);
     }
 
     @Test
@@ -100,11 +102,11 @@ class TokenAirdropTranslatorTest extends CallTestBase {
         when(attempt.configuration()).thenReturn(configuration);
         when(configuration.getConfigData(ContractsConfig.class)).thenReturn(contractsConfig);
         when(contractsConfig.systemContractAirdropTokensEnabled()).thenReturn(false);
-        when(attempt.isSelectorIfConfigEnabled(TOKEN_AIRDROP, false)).thenReturn(false);
+        when(attempt.isSelectorIfConfigEnabled(true, TOKEN_AIRDROP)).thenReturn(false);
 
         boolean result = translator.matches(attempt);
 
-        assertEquals(false, result);
+        assertFalse(result);
     }
 
     @Test
