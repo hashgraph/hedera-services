@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
-import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
@@ -69,7 +69,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.fixtures.state.FakeState;
@@ -522,9 +522,9 @@ public class HapiSpec implements Runnable, Executable {
      * @return the embedded schedule expiries state
      * @throws IllegalStateException if this spec is not targeting an embedded network
      */
-    public @NonNull WritableKVState<ProtoLong, ScheduleList> embeddedScheduleExpiriesOrThrow() {
+    public @NonNull WritableKVState<ProtoLong, ScheduleIdList> embeddedScheduleExpiriesOrThrow() {
         final var state = embeddedStateOrThrow();
-        return state.getWritableStates(ScheduleService.NAME).get(SCHEDULES_BY_EXPIRY_SEC_KEY);
+        return state.getWritableStates(ScheduleService.NAME).get(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
     }
 
     /**

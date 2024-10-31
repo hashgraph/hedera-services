@@ -24,7 +24,7 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Token;
@@ -83,7 +83,7 @@ public final class EmbeddedVerbs {
      * @return the operation that will mutate the schedule expiries
      */
     public static MutateScheduleExpiries mutateScheduleExpiries(
-            @NonNull final Consumer<WritableKVState<ProtoLong, ScheduleList>> mutation) {
+            @NonNull final Consumer<WritableKVState<ProtoLong, ScheduleIdList>> mutation) {
         return new MutateScheduleExpiries(mutation);
     }
 
