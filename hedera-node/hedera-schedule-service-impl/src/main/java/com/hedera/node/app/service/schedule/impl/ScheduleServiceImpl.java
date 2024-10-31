@@ -26,6 +26,7 @@ import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -51,13 +52,13 @@ public final class ScheduleServiceImpl implements ScheduleService {
             Instant start,
             Instant end,
             Supplier<StoreFactory> cleanupStoreFactory,
-            Function<TransactionBody, Set<Key>> txnToRequiredKeysFn) {
+            Function<TransactionBody, Set<Key>> requiredKeysFn,
+            HandleContext context) {
         var store = cleanupStoreFactory.get().writableStore(WritableScheduleStoreImpl.class);
         // Filter transactions that are not executed/deleted and have all the required keys
         var executableTxns = store.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()).stream()
-                .filter(schedule -> new HashSet<>(schedule.signatories())
-                        .containsAll(txnToRequiredKeysFn.apply(childAsOrdinary(schedule))))
                 .filter(schedule -> !schedule.executed() && !schedule.deleted())
+                .filter(schedule -> hasAllRequiredKeys(schedule, requiredKeysFn, context))
                 .toList();
 
         // Return a custom iterator that supports the remove() method
@@ -97,65 +98,21 @@ public final class ScheduleServiceImpl implements ScheduleService {
             }
 
             private ExecutableTxn toExecutableTxn(Schedule schedule) {
-                final var signatories = new HashSet<>(schedule.signatories());
-                final VerificationAssistant callback = (k, ignore) -> signatories.contains(k);
-                //                var keyVerifier = new KeyVerifier(){
-                //
-                //                    @Override
-                //                    public @NonNull SignatureVerification verificationFor(@NonNull Key key) {
-                //                        return verificationFor(key, callback);
-                //                    }
-                //
-                //                    @Override
-                //                    public @NonNull SignatureVerification verificationFor(@NonNull Key key, @NonNull
-                // VerificationAssistant callback) {
-                //                        requireNonNull(key, "key must not be null");
-                //                        requireNonNull(callback, "callback must not be null");
-                //
-                //                        return switch (key.key().kind()) {
-                //                            case ED25519, ECDSA_SECP256K1 -> {
-                //                                final var result = resolveFuture(keyVerifications.get(key), () ->
-                // failedVerification(key));
-                //                                yield callback.test(key, result) ? passedVerification(key) :
-                // failedVerification(key);
-                //                            }
-                //                            case KEY_LIST -> {
-                //                                final var keys = key.keyListOrThrow().keys();
-                //                                var failed = keys.isEmpty();
-                //                                for (final var childKey : keys) {
-                //                                    failed |= verificationFor(childKey, callback).failed();
-                //                                }
-                //                                yield failed ? failedVerification(key) : passedVerification(key);
-                //                            }
-                //                            case THRESHOLD_KEY -> {
-                //                                final var thresholdKey = key.thresholdKeyOrThrow();
-                //                                final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
-                //                                final var keys = keyList.keys();
-                //                                final var threshold = thresholdKey.threshold();
-                //                                final var clampedThreshold = Math.max(1, Math.min(threshold,
-                // keys.size()));
-                //                                var passed = 0;
-                //                                for (final var childKey : keys) {
-                //                                    if (verificationFor(childKey, callback).passed()) {
-                //                                        passed++;
-                //                                    }
-                //                                }
-                //                                yield passed >= clampedThreshold ? passedVerification(key) :
-                // failedVerification(key);
-                //                            }
-                //                            case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, ECDSA_384, RSA_3072, UNSET -> {
-                //                                final var failure = failedVerification(key);
-                //                                yield callback.test(key, failure) ? passedVerification(key) : failure;
-                //                            }
-                //                        };
-                //                    }
-                //                };
-                //                return new ExecutableTxn(
-                //                        childAsOrdinary(schedule),
-                //                        keyVerifier,
-                //                        Instant.ofEpochSecond(schedule.calculatedExpirationSecond()));
-                return null;
+                return new ExecutableTxn(
+                        childAsOrdinary(schedule), Instant.ofEpochSecond(schedule.calculatedExpirationSecond()));
             }
         };
+    }
+
+    private boolean hasAllRequiredKeys(
+            Schedule schedule, Function<TransactionBody, Set<Key>> requiredKeysFn, HandleContext context) {
+        final var signatories = new HashSet<>(schedule.signatories());
+        final var transactionBody = childAsOrdinary(schedule);
+        final var requiredKeys = requiredKeysFn.apply(transactionBody);
+        final VerificationAssistant callback = (k, ignore) -> signatories.contains(k);
+        final var remainingKeys = new HashSet<>(requiredKeys);
+        remainingKeys.removeIf(
+                k -> context.keyVerifier().verificationFor(k, callback).passed());
+        return remainingKeys.isEmpty();
     }
 }

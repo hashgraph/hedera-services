@@ -20,8 +20,8 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.RpcServiceFactory;
-import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -72,16 +72,20 @@ public interface ScheduleService extends RpcService {
      * An executable transaction with the verifier to use for child signature verifications. If set,
      * "not before" (nbf) time is the earliest consensus time at which the transaction could be executed.
      */
-    record ExecutableTxn(TransactionBody body, KeyVerifier verifier, @Nullable Instant nbf) {}
+    record ExecutableTxn(TransactionBody body, @Nullable Instant nbf) {}
 
     /**
      * Given a [start, end) interval and a supplier of a StoreFactory that can be used in the returned
      * iterator's remove() implementation to get a StoreFactory to purge a successfully executed txn,
      * returns an iterator over all ExecutableTxn this service wants to execute in the interval.
      */
-    Iterator<ExecutableTxn> iterTxnsForInterval(
+    default Iterator<ExecutableTxn> iterTxnsForInterval(
             Instant start,
             Instant end,
             Supplier<StoreFactory> cleanupStoreFactory,
-            Function<TransactionBody, Set<Key>> transactionBodySetFunction);
+            Function<TransactionBody, Set<Key>> requiredKeysFn,
+            HandleContext context) {
+        // Default implementation returns an empty iterator
+        return null;
+    }
 }
