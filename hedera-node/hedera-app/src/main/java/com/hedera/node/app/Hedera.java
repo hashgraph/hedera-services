@@ -500,7 +500,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 deserializedVersion == null ? "<NONE>" : deserializedVersion);
 
         logger.info("Initializing Hedera platform state");
-        final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
         final var platformStateMigrations = serviceMigrator.doMigrations(
                 state,
                 servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME, RosterStateId.NAME),
@@ -509,6 +508,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 bootstrapConfigProvider.getConfiguration(),
                 UNAVAILABLE_NETWORK_INFO,
                 UNAVAILABLE_METRICS);
+        migrationStateChanges = new ArrayList<>();
         migrationStateChanges.addAll(platformStateMigrations);
 
         final var readableStore = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
@@ -901,7 +901,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         // the States API, even if it already has all its children in the Merkle tree, as it will lack
         // state definitions for those children. (And note services may even require migrations for
         // those children to be usable with the current version of the software.)
-        migrationStateChanges = onMigrate(state, deserializedVersion, trigger, metrics, genesisAddressBook);
+        final var changes = onMigrate(state, deserializedVersion, trigger, metrics, genesisAddressBook);
+        requireNonNull(migrationStateChanges).addAll(changes);
         // Log the active configuration
         logConfiguration();
     }
