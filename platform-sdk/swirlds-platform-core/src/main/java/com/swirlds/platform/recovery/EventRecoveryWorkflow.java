@@ -51,6 +51,7 @@ import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.recovery.internal.StreamedRound;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.PlatformStateModifier;
@@ -150,7 +151,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
 
         try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
-                        platformContext, signedStateFile)
+                        platformContext.getConfiguration(), signedStateFile)
                 .reservedSignedState()) {
             StaticSoftwareVersion.setSoftwareVersion(
                     initialState.get().getState().getReadablePlatformState().getCreationSoftwareVersion());
@@ -162,7 +163,7 @@ public final class EventRecoveryWorkflow {
             logger.info(STARTUP.getMarker(), "Loading event stream at {}", eventStreamDirectory);
 
             final IOIterator<StreamedRound> roundIterator = new EventStreamRoundIterator(
-                    initialState.get().getAddressBook(),
+                    RosterRetriever.buildRoster(initialState.get().getAddressBook()),
                     eventStreamDirectory,
                     initialState.get().getRound() + 1,
                     allowPartialRounds);
@@ -409,7 +410,7 @@ public final class EventRecoveryWorkflow {
         }
 
         final ReservedSignedState signedState = new SignedState(
-                        platformContext,
+                        platformContext.getConfiguration(),
                         CryptoStatic::verifySignature,
                         newState,
                         "EventRecoveryWorkflow.handleNextRound()",

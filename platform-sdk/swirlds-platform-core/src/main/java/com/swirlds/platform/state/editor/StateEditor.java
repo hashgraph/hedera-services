@@ -66,7 +66,7 @@ public class StateEditor {
         platformContext = PlatformContext.create(configuration);
 
         final DeserializedSignedState deserializedSignedState =
-                SignedStateFileReader.readStateFile(platformContext, statePath);
+                SignedStateFileReader.readStateFile(configuration, statePath);
 
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             System.out.println("\nLoading state from " + statePath);
@@ -202,7 +202,7 @@ public class StateEditor {
         try (final ReservedSignedState reservedSignedState =
                 signedState.getAndReserve("StateEditor.getSignedStateCopy() 1")) {
             final SignedState newSignedState = new SignedState(
-                    platformContext,
+                    platformContext.getConfiguration(),
                     CryptoStatic::verifySignature,
                     reservedSignedState.get().getState().copy(),
                     "StateEditor.getSignedStateCopy()",

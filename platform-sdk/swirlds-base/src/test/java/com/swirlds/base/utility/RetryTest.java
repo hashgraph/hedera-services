@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,6 +47,11 @@ class RetryTest {
         assertThatThrownBy(() -> Retry.check(value -> true, null, 1, 0))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("value must not be null");
+
+        //noinspection DataFlowIssue
+        assertThatThrownBy(() -> Retry.resolve(value -> true, null, 1, 0))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("value must not be null");
     }
 
     @Test
@@ -54,6 +60,11 @@ class RetryTest {
         assertThatThrownBy(() -> Retry.check(null, 1, 1, 0))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("checkFn must not be null");
+
+        //noinspection DataFlowIssue
+        assertThatThrownBy(() -> Retry.resolve(null, 1, 1, 0))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("resolveFn must not be null");
     }
 
     @Test
@@ -66,6 +77,18 @@ class RetryTest {
                         1,
                         0))
                 .isInstanceOf(RuntimeException.class)
+                .hasMessage("Test exception");
+
+        assertThatThrownBy(() -> Retry.resolve(
+                        value -> {
+                            throw new IOException("Test exception");
+                        },
+                        1,
+                        1,
+                        0))
+                .isInstanceOf(ExecutionException.class)
+                .cause()
+                .isInstanceOf(IOException.class)
                 .hasMessage("Test exception");
     }
 
@@ -80,7 +103,7 @@ class RetryTest {
     }
 
     @Test
-    void checkResolvesWithinThresholdWithDelay() throws ExecutionException, InterruptedException {
+    void checkResolvesWithinThresholdWithDelay() {
         final AtomicInteger counter = new AtomicInteger(0);
 
         final Function<Integer, Boolean> checkFn = spyLambda(value -> {
@@ -113,11 +136,19 @@ class RetryTest {
         assertThatThrownBy(() -> Retry.check(value -> true, 1, 5, -1))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("The delay must be greater than or equal to zero (0)");
+
+        assertThatThrownBy(() -> Retry.resolve(value -> true, 1, 5, -1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The delay must be greater than or equal to zero (0)");
     }
 
     @Test
     void invalidMaxAttemptsShouldThrow() {
         assertThatThrownBy(() -> Retry.check(value -> true, 1, 0, 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The maximum number of attempts must be greater than zero (0)");
+
+        assertThatThrownBy(() -> Retry.resolve(value -> true, 1, 0, 0))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("The maximum number of attempts must be greater than zero (0)");
     }

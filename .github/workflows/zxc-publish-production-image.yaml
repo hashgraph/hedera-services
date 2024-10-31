@@ -92,7 +92,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout Code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Restore Build Artifacts
         uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
@@ -103,7 +103,7 @@ jobs:
 
       - name: Authenticate to Google Cloud
         id: google-auth
-        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
         if: ${{ inputs.dry-run-enabled != true && inputs.registry-name == 'gcp' && !cancelled() && !failure() }}
         with:
           token_format: "access_token"
@@ -111,7 +111,7 @@ jobs:
           service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
 
       - name: Setup JFrog CLI
-        uses: jfrog/setup-jfrog-cli@d82fe26823e1f25529250895d5673f65b02af085 # v4.0.1
+        uses: jfrog/setup-jfrog-cli@9fe0f98bd45b19e6e931d457f4e98f8f84461fb5 # v4.4.1
         if: ${{ inputs.dry-run-enabled != true && inputs.registry-name == 'jfrog' && !cancelled() && !failure() }}
         env:
           JF_URL: ${{ secrets.jf-url }}
@@ -154,7 +154,7 @@ jobs:
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Setup Docker Buildx Support
-        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
         with:
           version: v0.16.2
           driver-opts: network=host
@@ -167,7 +167,7 @@ jobs:
         run: docker run -d -p 5000:5000 --restart=always --name registry registry:latest
 
       - name: Docker Login (GCP)
-        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         if: ${{ inputs.dry-run-enabled != true && inputs.registry-name == 'gcp' && !cancelled() && !failure() }}
         with:
           registry: ${{ steps.set-registry.outputs.docker-registry }}
@@ -175,7 +175,7 @@ jobs:
           password: ${{ steps.google-auth.outputs.access_token }}
 
       - name: Docker Login (JFrog)
-        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         if: ${{ inputs.dry-run-enabled != true && inputs.registry-name == 'jfrog' && !cancelled() && !failure() }}
         with:
           registry: ${{ steps.set-registry.outputs.docker-registry }}
@@ -188,7 +188,7 @@ jobs:
           cp -rvf ~/artifact-build/* hedera-node/infrastructure/docker/containers/production-next/consensus-node/sdk/
 
       - name: Build Consensus Node Image
-        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
         env:
           SOURCE_DATE_EPOCH: ${{ steps.commit.outputs.source-date }}
         with:

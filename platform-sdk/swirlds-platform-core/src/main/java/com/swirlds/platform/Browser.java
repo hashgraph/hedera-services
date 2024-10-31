@@ -266,7 +266,8 @@ public class Browser {
                     MerkleCryptographyFactory.create(configuration, CryptographyHolder.get()));
             // Create the initial state for the platform
             final HashedReservedSignedState reservedState = getInitialState(
-                    platformContext,
+                    configuration,
+                    recycleBin,
                     appMain.getSoftwareVersion(),
                     appMain::newMerkleStateRoot,
                     appMain.getClass().getName(),

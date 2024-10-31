@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -86,6 +87,10 @@ public final class ScheduleStoreUtility {
                 .anyMatch(s -> s.scheduleIdOrThrow().equals(scheduleId));
     }
 
+    private static boolean isScheduleIdInList(final ScheduleID scheduleId, final ScheduleIdList scheduleIdList) {
+        return scheduleIdList.scheduleIds().stream().anyMatch(id -> id.equals(scheduleId));
+    }
+
     /**
      * Adds a {@link Schedule} to a {@link ScheduleList}, replacing it if it already exists.
      *
@@ -119,5 +124,31 @@ public final class ScheduleStoreUtility {
             }
         }
         return newScheduleList.schedules(schedules).build();
+    }
+
+    /**
+     * Adds a {@link ScheduleID} to a {@link ScheduleIdList}.
+     *
+     * <p>This method checks if the provided {@code ScheduleID} is already present in the {@code ScheduleIdList}.
+     * If it isn't, the {@code ScheduleID} is added to the list. This allows for updating entries within a {@code ScheduleIdList} without needing to
+     * manually manage duplicates.
+     *
+     * @param scheduleId The {@link ScheduleID} to add in the {@code ScheduleList}. Must not be {@code null},
+     *     unless the {@code ScheduleList} is also {@code null}.
+     * @param scheduleIdList The {@link ScheduleIdList} to which the {@code Schedule} will be added. May be
+     *     {@code null}, in which case a new {@link ScheduleIdList} containing only the provided
+     *     {@code Schedule} is returned.
+     * @return A new {@link ScheduleIdList} containing the {@link ScheduleID} either added if it's not in the list
+     */
+    static @NonNull ScheduleIdList add(final ScheduleID scheduleId, @Nullable final ScheduleIdList scheduleIdList) {
+        if (scheduleIdList == null) {
+            return new ScheduleIdList(Collections.singletonList(scheduleId));
+        }
+        final var newScheduleIdList = scheduleIdList.copyBuilder();
+        final var scheduleIds = new ArrayList<>(scheduleIdList.scheduleIds());
+        if (!isScheduleIdInList(scheduleId, scheduleIdList)) {
+            scheduleIds.add(scheduleId);
+        }
+        return newScheduleIdList.scheduleIds(scheduleIds).build();
     }
 }
