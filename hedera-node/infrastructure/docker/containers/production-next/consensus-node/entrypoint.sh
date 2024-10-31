@@ -176,6 +176,8 @@ while true; do
     printf "\n\n############# Retrying system initialization - DNS or Address Book Failure (Exit Code: %s) #############\n\n" "${EC}"
     ATTEMPTS=$(( ATTEMPTS + 1 ))
     sleep 6
+  else
+    break
   fi
 done
 echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< END NODE OUTPUT   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"

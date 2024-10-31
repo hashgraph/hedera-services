@@ -146,8 +146,11 @@ public final class RosterRetriever {
      * @param addressBook an AddressBook
      * @return a Roster
      */
-    @NonNull
-    public static Roster buildRoster(@NonNull final AddressBook addressBook) {
+    @Nullable
+    public static Roster buildRoster(@Nullable final AddressBook addressBook) {
+        if (addressBook == null) {
+            return null;
+        }
         return Roster.newBuilder()
                 .rosterEntries(addressBook.getNodeIdSet().stream()
                         .map(addressBook::getAddress)

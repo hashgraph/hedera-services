@@ -16,8 +16,12 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
+import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.StateDefinition;
@@ -50,16 +54,28 @@ class ScheduleServiceImplTest {
         final ScheduleServiceImpl subject = new ScheduleServiceImpl();
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
         subject.registerSchemas(registry);
-        Mockito.verify(registry).register(schemaCaptor.capture());
+        Mockito.verify(registry, times(2)).register(schemaCaptor.capture());
 
-        final Schema schema = schemaCaptor.getValue();
-        final Set<StateDefinition> statesToCreate = schema.statesToCreate();
+        final var schemas = schemaCaptor.getAllValues();
+        assertThat(schemas).hasSize(2);
+        assertThat(schemas.getFirst()).isInstanceOf(V0490ScheduleSchema.class);
+        assertThat(schemas.get(1)).isInstanceOf(V0570ScheduleSchema.class);
+
+        Set<StateDefinition> statesToCreate = schemas.getFirst().statesToCreate();
         BDDAssertions.assertThat(statesToCreate).isNotNull();
-        final List<String> statesList =
+        List<String> statesList =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().toList();
         BDDAssertions.assertThat(statesToCreate.size()).isEqualTo(3);
         BDDAssertions.assertThat(statesList.get(0)).isEqualTo(V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY);
         BDDAssertions.assertThat(statesList.get(1)).isEqualTo(V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY);
         BDDAssertions.assertThat(statesList.get(2)).isEqualTo(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
+
+        statesToCreate = schemas.get(1).statesToCreate();
+        BDDAssertions.assertThat(statesToCreate).isNotNull();
+        statesList =
+                statesToCreate.stream().map(StateDefinition::stateKey).sorted().toList();
+        BDDAssertions.assertThat(statesToCreate.size()).isEqualTo(2);
+        BDDAssertions.assertThat(statesList.get(0)).isEqualTo(V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
+        BDDAssertions.assertThat(statesList.get(1)).isEqualTo(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
     }
 }

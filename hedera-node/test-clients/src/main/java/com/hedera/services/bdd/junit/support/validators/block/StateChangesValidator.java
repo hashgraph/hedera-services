@@ -774,7 +774,9 @@ public class StateChangesValidator implements BlockStreamValidator {
             case NFT_VALUE -> mapChangeValue.nftValueOrThrow();
             case PROTO_STRING_VALUE -> new ProtoString(mapChangeValue.protoStringValueOrThrow());
             case SCHEDULE_VALUE -> mapChangeValue.scheduleValueOrThrow();
+            case SCHEDULE_ID_VALUE -> mapChangeValue.scheduleIdValueOrThrow();
             case SCHEDULE_LIST_VALUE -> mapChangeValue.scheduleListValueOrThrow();
+            case SCHEDULE_ID_LIST_VALUE -> mapChangeValue.scheduleIdListValueOrThrow();
             case SLOT_VALUE_VALUE -> mapChangeValue.slotValueValueOrThrow();
             case STAKING_NODE_INFO_VALUE -> mapChangeValue.stakingNodeInfoValueOrThrow();
             case TOKEN_VALUE -> mapChangeValue.tokenValueOrThrow();

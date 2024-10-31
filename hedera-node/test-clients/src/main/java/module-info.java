@@ -95,6 +95,7 @@ module com.hedera.node.test.clients {
     requires com.hedera.node.app.service.file.impl;
     requires com.hedera.node.app.service.network.admin.impl;
     requires com.hedera.node.app.service.schedule.impl;
+    requires com.hedera.node.app.service.schedule;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.service.util.impl;
