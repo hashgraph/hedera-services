@@ -176,6 +176,6 @@ jobs:
           inputs: '{
             "ref": "${{ inputs.ref }}",
             "author": "${{ inputs.author }}",
-            "message": "${{ inputs.msg }}",
-            "headSha": "${{ inputs.sha }}"
+            "msg": "${{ inputs.msg }}",
+            "sha": "${{ inputs.sha }}"
           }'
