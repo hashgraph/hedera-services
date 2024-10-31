@@ -298,16 +298,11 @@ public class EnhancedKeyStoreLoader {
                 localNodes.add(nodeId);
                 sigPrivateKeys.compute(
                         nodeId, (k, v) -> resolveNodePrivateKey(nodeId, nodeAlias, KeyCertPurpose.SIGNING));
-                agrPrivateKeys.compute(
-                        nodeId, (k, v) -> resolveNodePrivateKey(nodeId, nodeAlias, KeyCertPurpose.AGREEMENT));
             }
 
             sigCertificates.compute(
                     nodeId,
                     (k, v) -> resolveNodeCertificate(nodeId, nodeAlias, KeyCertPurpose.SIGNING, legacyPublicStore));
-            agrCertificates.compute(
-                    nodeId,
-                    (k, v) -> resolveNodeCertificate(nodeId, nodeAlias, KeyCertPurpose.AGREEMENT, legacyPublicStore));
         });
 
         logger.trace(STARTUP.getMarker(), "Completed key store enumeration");
@@ -315,16 +310,15 @@ public class EnhancedKeyStoreLoader {
     }
 
     /**
-     * Iterates over the local nodes and creates the agreement key and certificate for each if they do not exist.  This
-     * method should be called after {@link #scan()} and before {@link #verify()} in order to generate any missing
-     * agreement keys for local nodes to pass verification.
+     * Iterates over the local nodes and creates the agreement key and certificate for each.  This
+     * method should be called after {@link #scan()} and before {@link #verify()}.
      *
      * @return this {@link EnhancedKeyStoreLoader} instance.
      * @throws NoSuchAlgorithmException if the algorithm required to generate the key pair is not available.
      * @throws NoSuchProviderException  if the security provider required to generate the key pair is not available.
      * @throws KeyGeneratingException   if an error occurred while generating the agreement key pair.
      */
-    public EnhancedKeyStoreLoader generateIfNecessary()
+    public EnhancedKeyStoreLoader generate()
             throws NoSuchAlgorithmException, NoSuchProviderException, KeyGeneratingException {
 
         for (final NodeId node : localNodes) {
