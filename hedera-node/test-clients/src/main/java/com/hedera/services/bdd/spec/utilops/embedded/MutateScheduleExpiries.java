@@ -19,7 +19,7 @@ package com.hedera.services.bdd.spec.utilops.embedded;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.swirlds.state.spi.WritableKVState;
@@ -30,9 +30,9 @@ import java.util.function.Consumer;
  * An operation that allows the test author to directly mutate the schedule experies in an embedded state.
  */
 public class MutateScheduleExpiries extends UtilOp {
-    private final Consumer<WritableKVState<ProtoLong, ScheduleList>> mutation;
+    private final Consumer<WritableKVState<ProtoLong, ScheduleIdList>> mutation;
 
-    public MutateScheduleExpiries(@NonNull final Consumer<WritableKVState<ProtoLong, ScheduleList>> mutation) {
+    public MutateScheduleExpiries(@NonNull final Consumer<WritableKVState<ProtoLong, ScheduleIdList>> mutation) {
         this.mutation = requireNonNull(mutation);
     }
 
