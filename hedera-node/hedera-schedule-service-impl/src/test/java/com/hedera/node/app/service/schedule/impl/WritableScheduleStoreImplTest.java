@@ -103,11 +103,11 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
         final Schedule modified = replaceSignatoriesAndMarkExecuted(actual, modifiedSignatories, testConsensusTime);
         final var hash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(actual));
 
-        final var equalityList = writableByEquality.get(hash);
-        assertThat(equalityList.schedules().size()).isEqualTo(1);
+        final var equality = writableByEquality.get(hash);
+        assertThat(equality).isNotNull();
 
         final var expiryList = writableByExpiration.get(new ProtoLong(actual.calculatedExpirationSecond()));
-        assertThat(expiryList.schedules().size()).isEqualTo(1);
+        assertThat(expiryList.scheduleIds().size()).isEqualTo(1);
 
         writableSchedules.put(modified);
         writableSchedules.put(modified);
@@ -120,11 +120,11 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
         assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(modifiedSignatories);
 
         // size doesn't increase when same element is put multiple times
-        final var equalityListAfter = writableByEquality.get(hash);
-        assertThat(equalityListAfter.schedules().size()).isEqualTo(1);
+        final var equalitAfter = writableByEquality.get(hash);
+        assertThat(equalitAfter).isNotNull();
 
         final var expiryListAfter = writableByExpiration.get(new ProtoLong(actual.calculatedExpirationSecond()));
-        assertThat(expiryListAfter.schedules().size()).isEqualTo(1);
+        assertThat(expiryListAfter.scheduleIds().size()).isEqualTo(1);
     }
 
     @Test

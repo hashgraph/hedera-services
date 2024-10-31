@@ -167,7 +167,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout Code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.ref || '' }}
 
@@ -176,7 +176,7 @@ jobs:
         run: git fetch --unshallow --no-recurse-submodules
 
       - name: Setup Java
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
+        uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
@@ -206,7 +206,7 @@ jobs:
       - name: Unit Testing
         id: gradle-test
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} :aggregation:testCodeCoverageReport -x :test-clients:test --continue --scan
+        run: ${GRADLE_EXEC} :aggregation:testCodeCoverageReport --continue --scan
 
 
       - name: Publish Unit Test Report
@@ -307,7 +307,7 @@ jobs:
         with:
           check_name: 'Node: HAPI Test (Misc) Results'
           json_thousands_separator: ','
-          junit_files: "**/test-clients/build/test-results/test/TEST-*.xml"
+          junit_files: "**/test-clients/build/test-results/**/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Misc) Report Artifacts
@@ -315,7 +315,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-misc && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Misc) Reports
-          path: "**/test-clients/build/test-results/test/TEST-*.xml"
+          path: "**/test-clients/build/test-results/**/TEST-*.xml"
           retention-days: 7
 
       - name: Upload HAPI Test (Misc) Network Logs
@@ -341,7 +341,7 @@ jobs:
         with:
           check_name: 'Node: HAPI Test (Crypto) Results'
           json_thousands_separator: ','
-          junit_files: "**/test-clients/build/test-results/test/TEST-*.xml"
+          junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Crypto) Report Artifacts
@@ -349,7 +349,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-crypto && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Crypto) Report
-          path: "**/test-clients/build/test-results/test/TEST-*.xml"
+          path: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           retention-days: 7
 
       - name: Upload HAPI Test (crypto) Network Logs
@@ -375,7 +375,7 @@ jobs:
         with:
           check_name: 'Node: HAPI Test (Token) Results'
           json_thousands_separator: ','
-          junit_files: "**/test-clients/build/test-results/test/TEST-*.xml"
+          junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Token) Report Artifacts
@@ -383,7 +383,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-token && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Token) Report
-          path: "**/test-clients/build/test-results/test/TEST-*.xml"
+          path: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           retention-days: 7
 
       - name: Upload HAPI Test (Token) Network Logs
@@ -409,7 +409,7 @@ jobs:
         with:
           check_name: 'Node: HAPI Test (Smart Contract) Results'
           json_thousands_separator: ','
-          junit_files: "**/test-clients/build/test-results/test/TEST-*.xml"
+          junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Smart Contract) Report Artifacts
@@ -417,7 +417,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-smart-contract && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Smart Contract) Report
-          path: "**/test-clients/build/test-results/test/TEST-*.xml"
+          path: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           retention-days: 7
 
       - name: Upload HAPI Test (Smart Contract) Network Logs
@@ -443,7 +443,7 @@ jobs:
         with:
           check_name: 'Node: HAPI Test (Time Consuming) Results'
           json_thousands_separator: ','
-          junit_files: "**/test-clients/build/test-results/test/TEST-*.xml"
+          junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Time Consuming) Report Artifacts
@@ -451,7 +451,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Time Consuming) Report
-          path: "**/test-clients/build/test-results/test/TEST-*.xml"
+          path: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           retention-days: 7
 
       - name: Upload HAPI Test (Time Consuming) Network Logs
@@ -477,7 +477,7 @@ jobs:
         with:
           check_name: 'Node: HAPI Test (Restart) Results'
           json_thousands_separator: ','
-          junit_files: "**/test-clients/build/test-results/test/TEST-*.xml"
+          junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Restart) Report Artifacts
@@ -485,7 +485,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-restart && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Restart) Report
-          path: "**/test-clients/build/test-results/test/TEST-*.xml"
+          path: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           retention-days: 7
 
       - name: Upload HAPI Test (Restart) Network Logs
@@ -512,7 +512,7 @@ jobs:
         with:
           check_name: 'Node: HAPI Test (Node Death Reconnect) Results'
           json_thousands_separator: ','
-          junit_files: "**/test-clients/build/test-results/test/TEST-*.xml"
+          junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Node Death Reconnect) Report Artifacts
@@ -520,7 +520,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-nd-reconnect && steps.gradle-build.conclusion == 'failure' && !cancelled() }}
         with:
           name: HAPI Test (Node Death Reconnect) Report
-          path: "**/test-clients/build/test-results/test/TEST-*.xml"
+          path: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           retention-days: 7
 
       - name: Upload HAPI Test (Node Death Reconnect) Network Logs
@@ -543,7 +543,7 @@ jobs:
       - name: Publish to Codacy
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.codacy-project-token }}
-        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        if: ${{ inputs.enable-unit-tests && !cancelled() && !github.event.pull_request.head.repo.fork }}
         run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r gradle/aggregation/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
 
       - name: Upload Test Reports

@@ -63,7 +63,9 @@ public enum DispatchType {
     UPDATE_TOKEN_CUSTOM_FEES(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, DEFAULT),
     TOKEN_AIRDROP(HederaFunctionality.TOKEN_AIRDROP, DEFAULT),
     TOKEN_CLAIM_AIRDROP(HederaFunctionality.TOKEN_CLAIM_AIRDROP, DEFAULT),
-    TOKEN_CANCEL_AIRDROP(HederaFunctionality.TOKEN_CANCEL_AIRDROP, DEFAULT);
+    TOKEN_CANCEL_AIRDROP(HederaFunctionality.TOKEN_CANCEL_AIRDROP, DEFAULT),
+    TOKEN_REJECT_FT(HederaFunctionality.TOKEN_REJECT, TOKEN_FUNGIBLE_COMMON),
+    TOKEN_REJECT_NFT(HederaFunctionality.TOKEN_REJECT, TOKEN_NON_FUNGIBLE_UNIQUE);
 
     private final HederaFunctionality functionality;
     private final SubType subtype;
