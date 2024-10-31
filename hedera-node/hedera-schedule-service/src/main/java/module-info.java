@@ -6,6 +6,7 @@ module com.hedera.node.app.service.schedule {
     requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.service.schedule;
+    exports com.hedera.node.app.service.schedule.api;
 
     uses com.hedera.node.app.service.schedule.ScheduleService;
 }
