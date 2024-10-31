@@ -82,8 +82,10 @@ jobs:
           fi
 
           # Check if this commit has already been tagged xts-pass-* or build-*
+          set +e
           XTS_PASS_TAGGED=$(git tag --contains "${XTS_COMMIT}" | grep -E "${XTS_PASS_PATTERN}")
           BUILD_PROMOTED_TAGGED=$(git tag --contains "${XTS_COMMIT}" | grep -E "${BUILD_PROMO_PATTERN}")
+          set -e
 
           # Use -n; if the BUILD_PROMOTED_TAGGED/XTS_PASS_TAGGED flags are not empty than the commit has been tagged.
           if [[ -n "${XTS_PASS_TAGGED}" || -n "${BUILD_PROMOTED_TAGGED}" ]]; then

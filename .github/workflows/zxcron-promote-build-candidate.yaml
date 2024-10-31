@@ -64,8 +64,10 @@ jobs:
         run: |
           CANDIDATE_TAG="$(git tag --list --sort=-version:refname "${TAG_PATTERN}" | head --lines 1)"
           if [[ -n "${CANDIDATE_TAG}" ]]; then
+            set +e
             CANDIDATE_COMMIT=$(git rev-list --max-count 1 ${CANDIDATE_TAG})
             BUILD_PROMOTED_TAGGED=$(git tag --contains "${CANDIDATE_COMMIT}" | grep -E "${BUILD_PROMO_PATTERN}")
+            set -e
 
             # Use -n; if the BUILD_PROMOTED_TAGGED flag is not empty than the commit has been tagged.
             if [[ -n "${BUILD_PROMOTED_TAGGED}" ]]; then
