@@ -27,6 +27,7 @@ package com.swirlds.demo.hello;
  */
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
@@ -44,6 +45,7 @@ import java.util.function.Function;
  * a string, and the state is just a list of the strings in all the transactions handled so far, in the
  * order that they were handled.
  */
+@ConstructableIgnored
 public class HelloSwirldDemoState extends MerkleStateRoot {
 
     /**

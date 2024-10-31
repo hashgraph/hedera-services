@@ -28,6 +28,7 @@ package com.swirlds.demo.crypto;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.state.MerkleStateLifecycles;
@@ -60,6 +61,7 @@ import java.util.function.Function;
  * entirely new cryptocurrency is created every time all the computers start the program over again, so
  * these cryptocurrencies won't have any actual value.
  */
+@ConstructableIgnored
 public class CryptocurrencyDemoState extends MerkleStateRoot {
 
     /**

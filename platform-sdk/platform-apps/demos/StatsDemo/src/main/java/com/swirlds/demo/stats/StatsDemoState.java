@@ -27,6 +27,7 @@ package com.swirlds.demo.stats;
  */
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
@@ -42,6 +43,7 @@ import java.util.function.Function;
  * is 100 random bytes. So StatsDemoState.handleTransaction doesn't actually do anything, other than the
  * optional sequence number check.
  */
+@ConstructableIgnored
 public class StatsDemoState extends MerkleStateRoot {
 
     /**

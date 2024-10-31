@@ -22,6 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -49,6 +50,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * State for the Consistency Testing Tool
  */
+@ConstructableIgnored
 public class ConsistencyTestingToolState extends MerkleStateRoot {
     private static final Logger logger = LogManager.getLogger(ConsistencyTestingToolState.class);
     private static final long CLASS_ID = 0xda03bb07eb897d82L;

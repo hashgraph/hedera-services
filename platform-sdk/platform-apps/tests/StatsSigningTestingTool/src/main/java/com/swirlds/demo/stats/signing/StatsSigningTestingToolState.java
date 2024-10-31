@@ -31,6 +31,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
@@ -60,6 +61,7 @@ import org.apache.logging.log4j.Logger;
  * is 100 random bytes. So StatsSigningDemoState.handleTransaction doesn't actually do anything, other than the
  * optional sequence number check.
  */
+@ConstructableIgnored
 public class StatsSigningTestingToolState extends MerkleStateRoot {
 
     private static final long CLASS_ID = 0x79900efa3127b6eL;

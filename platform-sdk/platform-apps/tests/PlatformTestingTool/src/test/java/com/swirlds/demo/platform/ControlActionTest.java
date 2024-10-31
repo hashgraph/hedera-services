@@ -18,7 +18,6 @@ package com.swirlds.demo.platform;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
@@ -33,10 +32,7 @@ import org.junit.jupiter.api.Test;
 public class ControlActionTest {
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(QuorumResult.class, QuorumResult::new));
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(ControlAction.class, ControlAction::new));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
     }
 
     @Test

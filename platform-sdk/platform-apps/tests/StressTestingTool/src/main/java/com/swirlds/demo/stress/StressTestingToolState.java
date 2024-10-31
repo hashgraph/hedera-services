@@ -27,6 +27,7 @@ package com.swirlds.demo.stress;
  */
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -46,6 +47,7 @@ import java.util.function.Function;
  * This testing tool simulates configurable processing times for both preHandling and handling for stress testing
  * purposes.
  */
+@ConstructableIgnored
 public class StressTestingToolState extends MerkleStateRoot {
     private static final long CLASS_ID = 0x79900efa3127b6eL;
 

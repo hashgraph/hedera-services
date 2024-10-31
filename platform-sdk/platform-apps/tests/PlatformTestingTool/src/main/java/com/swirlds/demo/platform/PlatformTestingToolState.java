@@ -32,6 +32,7 @@ import static com.swirlds.metrics.api.FloatFormats.FORMAT_11_0;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -127,6 +128,7 @@ import org.apache.logging.log4j.MarkerManager;
  * writes them to the screen, and also saves them to disk in a comma separated value (.csv) file. Each transaction
  * consists of an optional sequence number and random bytes.
  */
+@ConstructableIgnored
 public class PlatformTestingToolState extends MerkleStateRoot {
 
     private static final long CLASS_ID = 0xc0900cfa7a24db76L;

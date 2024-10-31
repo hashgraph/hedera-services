@@ -33,6 +33,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
@@ -66,6 +67,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * State for the ISSTestingTool.
  */
+@ConstructableIgnored
 public class ISSTestingToolState extends MerkleStateRoot {
 
     private static final Logger logger = LogManager.getLogger(ISSTestingToolState.class);

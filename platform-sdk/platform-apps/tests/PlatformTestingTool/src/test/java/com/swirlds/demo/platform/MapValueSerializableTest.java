@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -37,7 +36,6 @@ import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
 import com.swirlds.demo.merkle.map.internal.DummyExpectedFCMFamily;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
-import com.swirlds.demo.platform.actions.QuorumResult;
 import com.swirlds.demo.platform.expiration.ExpirationRecordEntry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
@@ -80,10 +78,7 @@ class MapValueSerializableTest {
 
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(QuorumResult.class, QuorumResult::new));
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(ControlAction.class, ControlAction::new));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         cryptography = MerkleCryptoFactory.getInstance();
     }
 

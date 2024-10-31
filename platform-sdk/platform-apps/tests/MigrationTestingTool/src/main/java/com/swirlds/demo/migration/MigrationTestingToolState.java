@@ -20,6 +20,7 @@ import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTW
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.platform.NodeId;
@@ -51,6 +52,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@ConstructableIgnored
 public class MigrationTestingToolState extends MerkleStateRoot {
     private static final Logger logger = LogManager.getLogger(MigrationTestingToolState.class);
 

@@ -36,6 +36,7 @@ import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_AD
 import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
@@ -72,6 +73,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * State for the AddressBookTestingTool.
  */
+@ConstructableIgnored
 public class AddressBookTestingToolState extends MerkleStateRoot {
 
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
