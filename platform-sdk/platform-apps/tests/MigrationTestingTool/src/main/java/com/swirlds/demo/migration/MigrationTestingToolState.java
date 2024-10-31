@@ -99,6 +99,7 @@ public class MigrationTestingToolState extends MerkleStateRoot {
             @NonNull final MerkleStateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
+        allocateSpaceForChild(ChildIndices.CHILD_COUNT);
     }
 
     private MigrationTestingToolState(final MigrationTestingToolState that) {
