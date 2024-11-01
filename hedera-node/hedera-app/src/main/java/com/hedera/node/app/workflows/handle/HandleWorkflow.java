@@ -20,6 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
@@ -56,6 +58,7 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
@@ -132,6 +135,7 @@ public class HandleWorkflow {
     private final StakePeriodManager stakePeriodManager;
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
+    private final ConfigProvider configProvider;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -177,6 +181,7 @@ public class HandleWorkflow {
         this.stakePeriodManager = requireNonNull(stakePeriodManager);
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
         this.userTxnFactory = requireNonNull(userTxnFactory);
+        this.configProvider = requireNonNull(configProvider);
         this.streamMode = configProvider
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
@@ -581,9 +586,40 @@ public class HandleWorkflow {
             if (scheduleConfig.longTermEnabled()) {
                 // try to execute expired
                 final var schedules = scheduleStore.getByExpirationBetween(startSecond, endSecond);
-                for (final var schedule : schedules) {
+                for (int i = 0; i < schedules.size(); i++) {
+                    // get schedule
+                    final var schedule = schedules.get(i);
+                    // update schedule consensus
+                    final var scheduleConsensus =
+                            Instant.from(userTxn.consensusNow().plusNanos(i + 1));
                     if (schedule.waitForExpiry()) {
-                        // todo use UserTxnFactory to build new root stack, and dispatch the transaction!
+                        final var txnBody = childAsOrdinary(schedule);
+                        final var scheduleUserTnx = userTxnFactory.createUserTxn(
+                                userTxn.state(),
+                                userTxn.event(),
+                                userTxn.creatorInfo(),
+                                scheduleConsensus,
+                                userTxn.type(),
+                                schedule.payerAccountId(),
+                                txnBody);
+                        final var baseBuilder = initializeBuilderInfo(
+                                scheduleUserTnx.baseBuilder(),
+                                scheduleUserTnx.txnInfo(),
+                                exchangeRateManager.exchangeRates());
+                        ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
+                        final var signatures = schedule.signatories();
+                        final var scheduleDispatch = userTxnFactory.createDispatch(
+                                scheduleUserTnx, baseBuilder, signatures::contains, SCHEDULED);
+                        dispatchProcessor.processDispatch(scheduleDispatch);
+                        // add record to the record cache
+                        final var handleOutput = scheduleUserTnx
+                                .stack()
+                                .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
+                        recordCache.addRecordSource(
+                                scheduleUserTnx.creatorInfo().nodeId(),
+                                scheduleUserTnx.txnInfo().transactionID(),
+                                DueDiligenceFailure.NO,
+                                handleOutput.preferringBlockRecordSource());
                     }
                 }
             }

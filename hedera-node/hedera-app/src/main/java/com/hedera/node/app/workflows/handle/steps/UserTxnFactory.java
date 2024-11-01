@@ -206,13 +206,13 @@ public class UserTxnFactory {
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Instant consensusNow,
             @NonNull final TransactionType type,
+            @NonNull final AccountID payerId,
             @NonNull final TransactionBody txBody) {
         final var config = configProvider.getConfiguration();
         final var stack = createRootSavepointStack(state, type);
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var functionality = functionOfTxn(txBody);
-        final var preHandleResult = preHandleSyntheticTransaction(
-                txBody, txBody.transactionIDOrThrow().accountIDOrThrow(), config, readableStoreFactory);
+        final var preHandleResult = preHandleSyntheticTransaction(txBody, payerId, config, readableStoreFactory);
         final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
 
         return new UserTxn(
