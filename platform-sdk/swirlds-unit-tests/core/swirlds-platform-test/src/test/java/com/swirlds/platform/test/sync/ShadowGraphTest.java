@@ -26,8 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -40,11 +40,11 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -76,7 +76,7 @@ class ShadowgraphTest {
     private Map<Long, Set<ShadowEvent>> genToShadows;
     private long maxGen;
     private StandardEventEmitter emitter;
-    private AddressBook addressBook;
+    private Roster roster;
 
     private static Stream<Arguments> graphSizes() {
         return Stream.of(
@@ -96,14 +96,14 @@ class ShadowgraphTest {
     }
 
     private void initShadowgraph(final Random random, final int numEvents, final int numNodes) {
-        addressBook = RandomAddressBookBuilder.create(random).withSize(numNodes).build();
+        roster = RandomRosterBuilder.create(random).withSize(numNodes).build();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
+        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, RosterUtils.buildAddressBook(roster));
         emitter = factory.newStandardEmitter();
-        shadowgraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
+        shadowgraph = new Shadowgraph(platformContext, roster.rosterEntries().size(), new NoOpIntakeEventCounter());
         shadowgraph.updateEventWindow(EventWindow.getGenesisEventWindow(GENERATION_THRESHOLD));
 
         for (int i = 0; i < numEvents; i++) {
@@ -715,14 +715,14 @@ class ShadowgraphTest {
         final int numRuns = 10;
 
         final Random random = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(numNodes).build();
+        final Roster roster =
+                RandomRosterBuilder.create(random).withSize(numNodes).build();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
+        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, RosterUtils.buildAddressBook(roster));
         emitter = factory.newStandardEmitter();
-        shadowgraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
+        shadowgraph = new Shadowgraph(platformContext, roster.rosterEntries().size(), new NoOpIntakeEventCounter());
         for (int i = 0; i < numEvents; i++) {
             shadowgraph.addEvent(emitter.emitEvent().getBaseEvent());
         }

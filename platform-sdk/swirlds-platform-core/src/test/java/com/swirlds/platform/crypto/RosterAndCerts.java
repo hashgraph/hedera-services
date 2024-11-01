@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.crypto;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 /**
- * A record representing an address book with the keys and certificates associated with each node.
+ * A record representing a roster with the keys and certificates associated with each node.
  *
- * @param addressBook           the address book
+ * @param roster                the roster
  * @param nodeIdKeysAndCertsMap the keys and certificates associated with each node
  */
-public record AddressBookAndCerts(
-        @NonNull AddressBook addressBook, @NonNull Map<NodeId, KeysAndCerts> nodeIdKeysAndCertsMap) {}
+public record RosterAndCerts(
+        @NonNull Roster roster, @NonNull Map<NodeId, KeysAndCerts> nodeIdKeysAndCertsMap) {}

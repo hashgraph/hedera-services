@@ -16,10 +16,15 @@
 
 package com.swirlds.platform.roster;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.PbjRecordHasher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -60,6 +65,47 @@ public final class RosterUtils {
         return CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray());
     }
 
+    /**
+     * Fetch a hostname (or a string with an IPv4 address) of a ServiceEndpoint
+     * at a given index in a given RosterEntry.
+     *
+     * @param entry a RosterEntry
+     * @param index an index of the ServiceEndpoint
+     * @return a string with a hostname or ip address
+     */
+    public static String fetchHostname(@NonNull final RosterEntry entry, final int index) {
+        final ServiceEndpoint serviceEndpoint = entry.gossipEndpoint().get(index);
+        final Bytes ipAddressV4 = serviceEndpoint.ipAddressV4();
+        final long length = ipAddressV4.length();
+        if (length == 0) {
+            return serviceEndpoint.domainName();
+        }
+        if (length == 4) {
+            return "%d.%d.%d.%d"
+                    .formatted(
+                            // Java expands a byte into an int, and the "sign bit" of the byte gets extended,
+                            // making it possibly a negative integer for values > 0x7F. So we AND 0xFF
+                            // to get rid of the extended "sign bits" to keep this an actual, positive byte.
+                            ipAddressV4.getByte(0) & 0xFF,
+                            ipAddressV4.getByte(1) & 0xFF,
+                            ipAddressV4.getByte(2) & 0xFF,
+                            ipAddressV4.getByte(3) & 0xFF);
+        }
+        throw new IllegalArgumentException("Invalid IP address: " + ipAddressV4 + " in RosterEntry: " + entry);
+    }
+
+    /**
+     * Fetch a port number of a ServiceEndpoint
+     * at a given index in a given RosterEntry.
+     *
+     * @param entry a RosterEntry
+     * @param index an index of the ServiceEndpoint
+     * @return a port number
+     */
+    public static int fetchPort(@NonNull final RosterEntry entry, final int index) {
+        final ServiceEndpoint serviceEndpoint = entry.gossipEndpoint().get(index);
+        return serviceEndpoint.port();
+    }
     /**
      * Create a Hash object for a given Roster instance.
      *
@@ -145,5 +191,61 @@ public final class RosterUtils {
             }
         }
         throw new RosterEntryNotFoundException("No RosterEntry with nodeId: " + nodeId + " in Roster: " + roster);
+    }
+
+    /**
+     * Build an Address object out of a given RosterEntry object.
+     * @param entry a RosterEntry
+     * @return an Address
+     */
+    @NonNull
+    public static Address buildAddress(@NonNull final RosterEntry entry) {
+        Address address = new Address();
+
+        address = address.copySetNodeId(NodeId.of(entry.nodeId()));
+        address = address.copySetWeight(entry.weight());
+        address = address.copySetSigCert(
+                CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray()));
+
+        if (entry.gossipEndpoint().size() > 0) {
+            address = address.copySetHostnameExternal(RosterUtils.fetchHostname(entry, 0));
+            address = address.copySetPortExternal(RosterUtils.fetchPort(entry, 0));
+
+            if (entry.gossipEndpoint().size() > 1) {
+                address = address.copySetHostnameInternal(RosterUtils.fetchHostname(entry, 1));
+                address = address.copySetPortInternal(RosterUtils.fetchPort(entry, 1));
+            } else {
+                // There's code in the app implementation that relies on both the external and internal endpoints at
+                // once.
+                // That code used to fetch the AddressBook from the Platform for some reason.
+                // Since Platform only knows about the Roster now, we have to support both the endpoints
+                // in this reverse conversion here.
+                // Ideally, the app code should manage its AddressBook on its own and should never fetch it from
+                // Platform directly.
+                address = address.copySetHostnameInternal(RosterUtils.fetchHostname(entry, 0));
+                address = address.copySetPortInternal(RosterUtils.fetchPort(entry, 0));
+            }
+        }
+
+        final String name = RosterUtils.formatNodeName(entry.nodeId());
+        address = address.copySetSelfName(name).copySetNickname(name);
+
+        return address;
+    }
+
+    /**
+     * Build an AddressBook object out of a given Roster object.
+     * @param roster a Roster
+     * @return an AddressBook
+     */
+    @NonNull
+    public static AddressBook buildAddressBook(@NonNull final Roster roster) {
+        AddressBook addressBook = new AddressBook();
+
+        for (final RosterEntry entry : roster.rosterEntries()) {
+            addressBook = addressBook.add(buildAddress(entry));
+        }
+
+        return addressBook;
     }
 }
