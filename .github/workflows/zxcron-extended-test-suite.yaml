@@ -63,6 +63,8 @@ jobs:
       # branch.
       - name: Check for tags
         id: check-tags-exist
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # Check if the tag exists and if so grab its commit id
           set +e
