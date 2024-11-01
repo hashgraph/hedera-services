@@ -281,6 +281,11 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         return CURRENT_VERSION;
     }
 
+    @Override
+    public int getMinimumSupportedVersion() {
+        return CURRENT_VERSION;
+    }
+
     /**
      * To be called ONLY at node shutdown. Attempts to gracefully close any virtual maps. This method is a bit of a
      * hack, ideally there would be something more generic at the platform level that virtual maps could hook into
@@ -383,6 +388,15 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @Override
     public void preHandle(@NonNull final Event event) {
         lifecycles.onPreHandle(event, this);
+    }
+
+    @Override
+    public MerkleNode migrate(int version) {
+        if (version < getMinimumSupportedVersion()) {
+            throw new UnsupportedOperationException("State migration from version " + version + " is not supported."
+                    + " The minimum supported version is " + getMinimumSupportedVersion());
+        }
+        return this;
     }
 
     /**
