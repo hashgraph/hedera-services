@@ -95,6 +95,30 @@ jobs:
         with:
           egress-policy: audit
 
+      - name: Configure Workflow Inputs
+        id: workflow-inputs
+        env:
+          REFERENCE: ${{ github.ref }}
+          AUTHOR: ${{ github.event.head_commit.author.name }}
+          MESSAGE: ${{ github.event.head_commit.message }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          # massage the message to remove invalid control characters
+          MASSAGED_MESSAGE="${MESSAGE//[$'\t\r\n ']}"
+
+          # Assign github step outputs
+          echo "input-ref=${REFERENCE}" >> $GITHUB_OUTPUT
+          echo "input-author=${AUTHOR}" >> $GITHUB_OUTPUT
+          echo "input-msg=${MASSAGED_MESSAGE}" >> $GITHUB_OUTPUT
+          echo "input-sha=${COMMIT_SHA}" >> $GITHUB_OUTPUT
+
+          # Preview the input values
+          echo "### Workflow Dispatch Inputs" >> $GITHUB_STEP_SUMMARY
+          echo "input-ref=${REFERENCE}" >> $GITHUB_STEP_SUMMARY
+          echo "input-author=${AUTHOR}" >> $GITHUB_STEP_SUMMARY
+          echo "input-msg=${MASSAGED_MESSAGE}" >> $GITHUB_STEP_SUMMARY
+          echo "input-sha=${COMMIT_SHA}" >> $GITHUB_STEP_SUMMARY
+
       - name: Trigger ZXF Deploy Production Release
         uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
         with:
@@ -102,5 +126,9 @@ jobs:
           repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
           ref: develop # ensure we are always using the workflow definition from the develop branch
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          inputs: '{ "ref": "${{ github.ref }}" }'
-          #inputs: '{ "event": "${{ toJSON(github.event) }}", "ref": "${{ github.ref }}" }'
+          inputs: '{
+            "ref": "${{ steps.workflow-inputs.outputs.input-ref }}",
+            "author": "${{ steps.workflow-inputs.outputs.input-author }}",
+            "msg": "${{ steps.workflow-inputs.outputs.input-msg }}",
+            "sha": "${{ steps.workflow-inputs.outputs.input-sha }}"
+          }'

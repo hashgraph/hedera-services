@@ -25,11 +25,13 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.InitTrigger;
@@ -93,7 +95,8 @@ public class FakeTssBaseService implements TssBaseService {
                 ForkJoinPool.commonPool(),
                 pendingTssSubmission::offer,
                 new FakeTssLibrary(),
-                pendingTssSubmission::offer);
+                pendingTssSubmission::offer,
+                new NoOpMetrics());
     }
 
     /**
@@ -199,6 +202,11 @@ public class FakeTssBaseService implements TssBaseService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         delegate.registerSchemas(registry);
+    }
+
+    @Override
+    public void registerMetrics(@NonNull final TssMetrics metrics) {
+        delegate.registerMetrics(metrics);
     }
 
     @Override

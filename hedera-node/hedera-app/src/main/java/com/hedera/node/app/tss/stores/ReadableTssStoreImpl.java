@@ -100,4 +100,15 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
         });
         return tssMessages;
     }
+
+    @Override
+    public List<TssVoteTransactionBody> getTssVoteBodies(final Bytes rosterHash) {
+        final List<TssVoteTransactionBody> tssMessages = new ArrayList<>();
+        readableTssVoteState.keys().forEachRemaining(key -> {
+            if (key.rosterHash().equals(rosterHash)) {
+                tssMessages.add(readableTssVoteState.get(key));
+            }
+        });
+        return tssMessages;
+    }
 }

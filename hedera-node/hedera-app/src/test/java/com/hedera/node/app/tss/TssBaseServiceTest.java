@@ -39,6 +39,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -85,7 +86,12 @@ public class TssBaseServiceTest {
         given(appContext.gossip()).willReturn(mock(AppContext.Gossip.class));
 
         subject = new TssBaseServiceImpl(
-                appContext, mock(ExecutorService.class), mock(Executor.class), tssLibrary, mock(Executor.class));
+                appContext,
+                mock(ExecutorService.class),
+                mock(Executor.class),
+                tssLibrary,
+                mock(Executor.class),
+                mock(Metrics.class));
         given(handleContext.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
         given(handleContext.networkInfo()).willReturn(networkInfo);
         given(networkInfo.selfNodeInfo())

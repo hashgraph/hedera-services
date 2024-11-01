@@ -70,4 +70,11 @@ public interface ReadableTssStore {
      * @return The list of Tss messages, or an empty list if not found.
      */
     List<TssMessageTransactionBody> getTssMessageBodies(Bytes rosterHash);
+
+    /**
+     * Get the list of Tss votes for the given roster hash.
+     * @param rosterHash The roster hash to look up.
+     * @return The list of Tss votes, or an empty list if not found.
+     */
+    List<TssVoteTransactionBody> getTssVoteBodies(Bytes rosterHash);
 }
