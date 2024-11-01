@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -93,7 +94,7 @@ class UptimeTests {
     private static ConsensusRound mockRound(@NonNull final List<PlatformEvent> events, final long roundNum) {
         final ConsensusSnapshot snapshot = mock(ConsensusSnapshot.class);
         final ConsensusRound round = new ConsensusRound(
-                mock(AddressBook.class),
+                mock(Roster.class),
                 events,
                 mock(PlatformEvent.class),
                 mock(GraphGenerations.class),

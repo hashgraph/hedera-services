@@ -32,6 +32,8 @@ import static com.swirlds.common.utility.NonCryptographicHashing.hash64;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -46,8 +48,6 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -302,12 +302,12 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
      *
      * @return the index of the largest hash partition
      */
-    private int findLargestPartition(@NonNull final AddressBook addresses, @NonNull final PlannedIss plannedIss) {
+    private int findLargestPartition(@NonNull final Roster roster, @NonNull final PlannedIss plannedIss) {
 
         final Map<Integer, Long> partitionWeights = new HashMap<>();
-        for (final Address address : addresses) {
-            final int partition = plannedIss.getPartitionOfNode(address.getNodeId());
-            final long newWeight = partitionWeights.getOrDefault(partition, 0L) + address.getWeight();
+        for (final RosterEntry entry : roster.rosterEntries()) {
+            final int partition = plannedIss.getPartitionOfNode(NodeId.of(entry.nodeId()));
+            final long newWeight = partitionWeights.getOrDefault(partition, 0L) + entry.weight();
             partitionWeights.put(partition, newWeight);
         }
 
@@ -326,13 +326,13 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     /**
      * Trigger an ISS
      *
-     * @param addressBook         the address book for this round
+     * @param roster         the address book for this round
      * @param plannedIss          the planned ISS to trigger
      * @param elapsedSinceGenesis the amount of time that has elapsed since genesis
      * @param currentTimestamp    the current consensus timestamp
      */
     private void triggerISS(
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final PlannedIss plannedIss,
             @NonNull final Duration elapsedSinceGenesis,
             @NonNull final Instant currentTimestamp) {
@@ -342,7 +342,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         Objects.requireNonNull(currentTimestamp);
 
         final int hashPartitionIndex = plannedIss.getPartitionOfNode(selfId);
-        if (hashPartitionIndex == findLargestPartition(addressBook, plannedIss)) {
+        if (hashPartitionIndex == findLargestPartition(roster, plannedIss)) {
             // If we are in the largest partition then don't bother modifying the state.
             return;
         }

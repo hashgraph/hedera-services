@@ -32,6 +32,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SigSet;
@@ -86,19 +87,19 @@ public final class SignedStateFileReader {
      * Reads a SignedState from disk using the provided snapshot reader function. If the reader throws
      * an exception, it is propagated by this method to the caller.
      *
-     * @param platformContext               the platform context
+     * @param configuration                 the configuration for this node
      * @param stateFile                     the file to read from
      * @param snapshotStateReader           state snapshot reading function
      * @return a signed state with it's associated hash (as computed when the state was serialized)
      * @throws IOException if there is any problems with reading from a file
      */
     public static @NonNull DeserializedSignedState readStateFile(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
             @NonNull final Path stateFile,
             @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
             throws IOException {
 
-        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(configuration);
         Objects.requireNonNull(stateFile);
 
         checkSignedStatePath(stateFile);
@@ -122,7 +123,7 @@ public final class SignedStateFileReader {
         }
 
         final SignedState newSignedState = new SignedState(
-                platformContext,
+                configuration,
                 CryptoStatic::verifySignature,
                 normalizedData.state,
                 "SignedStateFileReader.readStateFile()",
