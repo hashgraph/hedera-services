@@ -38,6 +38,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -47,10 +48,29 @@ import org.apache.logging.log4j.Logger;
 public class TssSubmissions {
     private static final Logger log = LogManager.getLogger(TssSubmissions.class);
 
+    private static final int NANOS_TO_SKIP_ON_DUPLICATE = 13;
     private static final String DUPLICATE_TRANSACTION_REASON = "" + DUPLICATE_TRANSACTION;
 
-    private final AppContext.Gossip gossip;
+    /**
+     * The executor to use for scheduling the work of submitting transactions.
+     */
     private final Executor submissionExecutor;
+    /**
+     * The next offset to use for the transaction valid start time within the current {@link HandleContext}.
+     */
+    private final AtomicInteger nextOffset = new AtomicInteger(0);
+    /**
+     * The {@link AppContext.Gossip} to use for submitting transactions.
+     */
+    private final AppContext.Gossip gossip;
+
+    /**
+     * Tracks which {@link HandleContext} we are currently submitting TSS transactions within, to
+     * avoid duplicate transaction ids; even if we do somehow get a duplicate, we still retry up
+     * to the configured limit of {@link TssConfig#distinctTxnIdsToTry()}.
+     */
+    @Nullable
+    private HandleContext lastContextUsed;
 
     @Inject
     public TssSubmissions(@NonNull final AppContext.Gossip gossip, @NonNull final Executor submissionExecutor) {
@@ -89,10 +109,11 @@ public class TssSubmissions {
     private CompletableFuture<Void> submit(
             @NonNull final Consumer<TransactionBody.Builder> spec, @NonNull final HandleContext context) {
         final var config = context.configuration();
+        final var selfId = context.networkInfo().selfNodeInfo().accountId();
         final var tssConfig = config.getConfigData(TssConfig.class);
         final var hederaConfig = config.getConfigData(HederaConfig.class);
         final var validDuration = new Duration(hederaConfig.transactionMaxValidDuration());
-        final var validStartTime = new AtomicReference<>(context.consensusNow());
+        final var validStartTime = new AtomicReference<>(nextValidStartFor(context));
         final var attemptsLeft = new AtomicInteger(tssConfig.timesToTrySubmission());
         return CompletableFuture.runAsync(
                 () -> {
@@ -102,10 +123,7 @@ public class TssSubmissions {
                     do {
                         int txnIdsLeft = tssConfig.distinctTxnIdsToTry();
                         do {
-                            final var builder = builderWith(
-                                    validStartTime.get(),
-                                    context.networkInfo().selfNodeInfo().accountId(),
-                                    validDuration);
+                            final var builder = builderWith(validStartTime.get(), selfId, validDuration);
                             spec.accept(builder);
                             body = builder.build();
                             try {
@@ -114,7 +132,7 @@ public class TssSubmissions {
                             } catch (IllegalArgumentException iae) {
                                 failureReason = iae.getMessage();
                                 if (DUPLICATE_TRANSACTION_REASON.equals(failureReason)) {
-                                    validStartTime.set(validStartTime.get().plusNanos(1));
+                                    validStartTime.set(validStartTime.get().plusNanos(NANOS_TO_SKIP_ON_DUPLICATE));
                                 } else {
                                     fatalFailure = true;
                                     break;
@@ -136,6 +154,16 @@ public class TssSubmissions {
                     throw new IllegalStateException(failureReason);
                 },
                 submissionExecutor);
+    }
+
+    private Instant nextValidStartFor(@NonNull final HandleContext context) {
+        if (lastContextUsed != context) {
+            lastContextUsed = context;
+            nextOffset.set(0);
+        } else {
+            nextOffset.incrementAndGet();
+        }
+        return context.consensusNow().plusNanos(nextOffset.get());
     }
 
     private TransactionBody.Builder builderWith(
