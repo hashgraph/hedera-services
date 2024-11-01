@@ -23,6 +23,12 @@ plugins {
 testModuleInfo {
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
+    requires("com.swirlds.state.api.test.fixtures")
+    requires("com.swirlds.state.impl.test.fixtures")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
     runtimeOnly("com.swirlds.config.api")
     runtimeOnly("com.swirlds.config.impl")
     requiresStatic("com.github.spotbugs.annotations")
