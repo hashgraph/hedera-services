@@ -107,7 +107,8 @@ class ShadowgraphByBirthRoundTests {
                 .withConfiguration(configuration)
                 .build();
 
-        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, RosterUtils.buildAddressBook(roster));
+        final EventEmitterFactory factory =
+                new EventEmitterFactory(platformContext, random, RosterUtils.buildAddressBook(roster));
         emitter = factory.newStandardEmitter();
 
         shadowGraph = new Shadowgraph(platformContext, roster.rosterEntries().size(), new NoOpIntakeEventCounter());

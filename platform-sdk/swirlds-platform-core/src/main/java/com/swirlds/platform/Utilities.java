@@ -25,7 +25,6 @@ import com.swirlds.platform.internal.Deserializer;
 import com.swirlds.platform.internal.Serializer;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -33,10 +32,7 @@ import java.net.SocketException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.function.Supplier;
-import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

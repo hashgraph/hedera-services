@@ -27,5 +27,4 @@ import java.util.Map;
  * @param roster                the roster
  * @param nodeIdKeysAndCertsMap the keys and certificates associated with each node
  */
-public record RosterAndCerts(
-        @NonNull Roster roster, @NonNull Map<NodeId, KeysAndCerts> nodeIdKeysAndCertsMap) {}
+public record RosterAndCerts(@NonNull Roster roster, @NonNull Map<NodeId, KeysAndCerts> nodeIdKeysAndCertsMap) {}

@@ -101,7 +101,8 @@ class ShadowgraphTest {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, RosterUtils.buildAddressBook(roster));
+        final EventEmitterFactory factory =
+                new EventEmitterFactory(platformContext, random, RosterUtils.buildAddressBook(roster));
         emitter = factory.newStandardEmitter();
         shadowgraph = new Shadowgraph(platformContext, roster.rosterEntries().size(), new NoOpIntakeEventCounter());
         shadowgraph.updateEventWindow(EventWindow.getGenesisEventWindow(GENERATION_THRESHOLD));
@@ -720,7 +721,8 @@ class ShadowgraphTest {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, RosterUtils.buildAddressBook(roster));
+        final EventEmitterFactory factory =
+                new EventEmitterFactory(platformContext, random, RosterUtils.buildAddressBook(roster));
         emitter = factory.newStandardEmitter();
         shadowgraph = new Shadowgraph(platformContext, roster.rosterEntries().size(), new NoOpIntakeEventCounter());
         for (int i = 0; i < numEvents; i++) {
