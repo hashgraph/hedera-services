@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.system.address;
 
-import static com.swirlds.base.utility.NetworkUtils.isNameResolvable;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -120,6 +119,10 @@ public class AddressBookUtils {
                 if (address != null) {
                     addressBook.add(address);
                 }
+            } else if (trimmedLine.startsWith("nextNodeId")) {
+                // As of release 0.56, nextNodeId is not used and ignored.
+                // CI/CD pipelines need to be updated to remove this field from files.
+                // Future Work: remove this case and hard fail when nextNodeId is no longer present in CI/CD pipelines.
             } else {
                 throw new ParseException(
                         "The line [%s] does not start with `%s`."
@@ -177,9 +180,6 @@ public class AddressBookUtils {
         }
         // FQDN Support: The original string value is preserved, whether it is an IP Address or a FQDN.
         final String internalHostname = parts[5];
-        if (!isNameResolvable(internalHostname)) {
-            throw new ParseException("Cannot parse ip address from '" + internalHostname + "'", 5);
-        }
         final int internalPort;
         try {
             internalPort = Integer.parseInt(parts[6]);
@@ -188,9 +188,6 @@ public class AddressBookUtils {
         }
         // FQDN Support: The original string value is preserved, whether it is an IP Address or a FQDN.
         final String externalHostname = parts[7];
-        if (!isNameResolvable(externalHostname)) {
-            throw new ParseException("Cannot parse ip address from '" + externalHostname + "'", 7);
-        }
         final int externalPort;
         try {
             externalPort = Integer.parseInt(parts[8]);

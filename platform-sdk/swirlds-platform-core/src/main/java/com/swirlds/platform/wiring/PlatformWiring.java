@@ -69,9 +69,9 @@ import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stale.StaleEventDetector;
 import com.swirlds.platform.event.stale.StaleEventDetectorOutput;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
-import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.event.validation.RosterUpdate;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
@@ -224,7 +224,13 @@ public class PlatformWiring {
         stateSnapshotManagerWiring =
                 new ComponentWiring<>(model, StateSnapshotManager.class, config.stateSnapshotManager());
         stateSignerWiring = new ComponentWiring<>(model, StateSigner.class, config.stateSigner());
-        transactionHandlerWiring = new ComponentWiring<>(model, TransactionHandler.class, config.transactionHandler());
+        transactionHandlerWiring = new ComponentWiring<>(
+                model,
+                TransactionHandler.class,
+                config.transactionHandler(),
+                data -> data instanceof ConsensusRound consensusRound
+                        ? Math.max(consensusRound.getNumAppTransactions(), 1)
+                        : 1);
         consensusEventStreamWiring =
                 new ComponentWiring<>(model, ConsensusEventStream.class, config.consensusEventStream());
         runningEventHashOverrideWiring = RunningEventHashOverrideWiring.create(model);
@@ -729,7 +735,7 @@ public class PlatformWiring {
         eventCreationManagerWiring.getInputWire(EventCreationManager::clear);
         notifierWiring.getInputWire(AppNotifier::sendReconnectCompleteNotification);
         notifierWiring.getInputWire(AppNotifier::sendPlatformStatusChangeNotification);
-        eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateAddressBooks);
+        eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateRosters);
         eventWindowManagerWiring.getInputWire(EventWindowManager::updateEventWindow);
         orphanBufferWiring.getInputWire(OrphanBuffer::clear);
         if (inlinePces) {
@@ -838,8 +844,8 @@ public class PlatformWiring {
      * @return the input method for the address book update
      */
     @NonNull
-    public InputWire<AddressBookUpdate> getAddressBookUpdateInput() {
-        return eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateAddressBooks);
+    public InputWire<RosterUpdate> getRosterUpdateInput() {
+        return eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateRosters);
     }
 
     /**

@@ -463,6 +463,11 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return dispatchPaidRewards == null ? emptyMap() : dispatchPaidRewards;
     }
 
+    @Override
+    public NodeInfo creatorInfo() {
+        return creatorInfo;
+    }
+
     private <T> T dispatchForRecord(
             @NonNull final TransactionBody childTxBody,
             @NonNull final Class<T> recordBuilderClass,

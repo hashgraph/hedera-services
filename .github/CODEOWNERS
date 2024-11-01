@@ -15,8 +15,8 @@
 ##### HAPI protobuf #####
 #########################
 
-/hapi/                                          @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
-/hapi/hedera-protobufs/services                 @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @jsync-swirlds
+/hapi/                                          @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
+/hapi/hedera-protobufs/services                 @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @jsync-swirlds
 
 
 #########################
@@ -24,31 +24,31 @@
 #########################
 
 # Hedera Node Root Protections
-/hedera-node/                                   @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/README.md                          @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/devops-ci @hashgraph/release-engineering-managers
+/hedera-node/                                   @hashgraph/hedera-services
+/hedera-node/README.md                          @hashgraph/hedera-services @hashgraph/devops-ci @hashgraph/release-engineering-managers
 
 # Hedera Node Deployments - Configuration & Grafana Dashboards
 /hedera-node/configuration/**                   @rbair23 @dalvizu @poulok @netopyr @Nana-EC @SimiHunjan @steven-sheehy @nathanklick
-/hedera-node/configuration/dev/**               @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/infrastructure/**                  @hashgraph/release-engineering-managers @hashgraph/devops-ci @hashgraph/devops @hashgraph/hedera-base @hashgraph/hedera-services
+/hedera-node/configuration/dev/**               @hashgraph/hedera-services
+/hedera-node/infrastructure/**                  @hashgraph/release-engineering-managers @hashgraph/devops-ci @hashgraph/devops @hashgraph/hedera-services
 
 # Hedera Node Docker Definitions
-/hedera-node/docker/                            @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/devops-ci @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/hedera-node/docker/                            @hashgraph/hedera-services @hashgraph/devops-ci @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Modules
-/hedera-node/hapi*/                             @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-admin*/                     @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-app*/                       @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-consensus*/                 @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-file*/                      @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-network*/                   @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-schedule*/                  @hashgraph/hedera-base @hashgraph/hedera-services
+/hedera-node/hapi*/                             @hashgraph/hedera-services
+/hedera-node/hedera-admin*/                     @hashgraph/hedera-services
+/hedera-node/hedera-app*/                       @hashgraph/hedera-services
+/hedera-node/hedera-consensus*/                 @hashgraph/hedera-services
+/hedera-node/hedera-file*/                      @hashgraph/hedera-services
+/hedera-node/hedera-network*/                   @hashgraph/hedera-services
+/hedera-node/hedera-schedule*/                  @hashgraph/hedera-services
 /hedera-node/hedera-smart-contract*/            @hashgraph/hedera-smart-contracts-core @tinker-michaelj
-/hedera-node/hedera-token*/                     @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-util*/                      @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-staking*/                   @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/test-clients/                      @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
-/hedera-node/**/module-info.java                @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/devops-ci
+/hedera-node/hedera-token*/                     @hashgraph/hedera-services
+/hedera-node/hedera-util*/                      @hashgraph/hedera-services
+/hedera-node/hedera-staking*/                   @hashgraph/hedera-services
+/hedera-node/test-clients/                      @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
+/hedera-node/**/module-info.java                @hashgraph/hedera-services @hashgraph/devops-ci
 
 ###############################
 ##### Hedera Cryptography #####

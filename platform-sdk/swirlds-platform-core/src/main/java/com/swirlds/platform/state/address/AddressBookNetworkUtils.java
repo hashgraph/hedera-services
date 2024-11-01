@@ -16,11 +16,12 @@
 
 package com.swirlds.platform.state.address;
 
+import static com.swirlds.base.utility.NetworkUtils.resolveName;
+
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Objects;
 
@@ -41,7 +42,8 @@ public final class AddressBookNetworkUtils {
     public static boolean isLocal(@NonNull final Address address) {
         Objects.requireNonNull(address, "The address must not be null.");
         try {
-            return Network.isOwn(InetAddress.getByName(address.getHostnameInternal()));
+            assert address.getHostnameInternal() != null;
+            return Network.isOwn(resolveName(address.getHostnameInternal()));
         } catch (final UnknownHostException e) {
             throw new IllegalStateException(
                     "Not able to determine locality of address [%s] for node [%s]"
