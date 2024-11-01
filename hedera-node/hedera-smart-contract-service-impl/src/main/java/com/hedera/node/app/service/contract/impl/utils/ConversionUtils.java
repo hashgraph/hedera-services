@@ -174,16 +174,6 @@ public class ConversionUtils {
     }
 
     /**
-     * Given an entity number, returns it as a headlong address.
-     *
-     * @param anEntityNum a number (typically, last element of a shard.realm.num triplet)
-     * @return the argument represented as a Headlong address
-     */
-    public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(final long anEntityNum) {
-        return asHeadlongAddress(asEvmAddress(anEntityNum));
-    }
-
-    /**
      * Given an account, returns its "priority" address as a Besu address.
      *
      * @param account the account
