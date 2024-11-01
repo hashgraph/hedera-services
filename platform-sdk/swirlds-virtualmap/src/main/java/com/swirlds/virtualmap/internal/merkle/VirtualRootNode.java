@@ -376,13 +376,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             final @NonNull ValueSerializer<V> valueSerializer,
             final @NonNull VirtualDataSourceBuilder dataSourceBuilder,
             final @NonNull VirtualMapConfig virtualMapConfig) {
-        requireNonNull(keySerializer);
-        requireNonNull(valueSerializer);
-        requireNonNull(dataSourceBuilder);
-        requireNonNull(virtualMapConfig);
         this.fastCopyVersion = 0;
         this.hasher = new VirtualHasher<>();
-        this.virtualMapConfig = virtualMapConfig;
+        this.virtualMapConfig = requireNonNull(virtualMapConfig);
         this.flushThreshold.set(virtualMapConfig.copyFlushThreshold());
         this.keySerializer = requireNonNull(keySerializer);
         this.valueSerializer = requireNonNull(valueSerializer);
