@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import com.hedera.hapi.block.stream.output.StateChanges;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -27,7 +26,6 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 
 /**
  * Implements the major lifecycle events for the Merkle state.
@@ -36,15 +34,6 @@ import java.util.List;
  * interface; but in the future will be callbacks registered with a platform builder.
  */
 public interface MerkleStateLifecycles {
-    /**
-     * Called when a {@link MerkleStateRoot} needs to ensure its {@link PlatformStateModifier} implementation
-     * is initialized.
-     *
-     * @param state the root of the state to be initialized
-     * @return the list of builders for state changes that occurred during the initialization
-     */
-    List<StateChanges.Builder> initPlatformState(@NonNull State state);
-
     /**
      * Called when an event is added to the hashgraph used to compute consensus ordering
      * for this node.

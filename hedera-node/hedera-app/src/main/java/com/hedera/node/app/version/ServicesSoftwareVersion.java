@@ -72,7 +72,7 @@ public final class ServicesSoftwareVersion implements SoftwareVersion {
 
     @Override
     public int compareTo(@Nullable final SoftwareVersion other) {
-        if (other == null || other instanceof HederaSoftwareVersion) {
+        if (other == null) {
             return 1;
         } else if (other instanceof ServicesSoftwareVersion that) {
             return SEMANTIC_VERSION_COMPARATOR.compare(this.stateSemVer, that.stateSemVer);

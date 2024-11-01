@@ -31,28 +31,20 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.blocks.BlockStreamManager;
-import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
-import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
-import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
-import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
-import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
-import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
+import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -84,25 +76,7 @@ class HandleWorkflowTest {
     private NodeStakeUpdates nodeStakeUpdates;
 
     @Mock
-    private Authorizer authorizer;
-
-    @Mock
-    private FeeManager feeManager;
-
-    @Mock
     private DispatchProcessor dispatchProcessor;
-
-    @Mock
-    private ServiceScopeLookup serviceScopeLookup;
-
-    @Mock
-    private ChildDispatchFactory childDispatchFactory;
-
-    @Mock
-    private TransactionDispatcher dispatcher;
-
-    @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
 
     @Mock
     private StakePeriodManager stakePeriodManager;
@@ -147,22 +121,16 @@ class HandleWorkflowTest {
     private ExchangeRateManager exchangeRateManager;
 
     @Mock
-    private PreHandleWorkflow preHandleWorkflow;
-
-    @Mock
     private State state;
 
     @Mock
     private Round round;
 
     @Mock
-    private KVStateChangeListener kvStateChangeListener;
-
-    @Mock
     private StakeInfoHelper stakeInfoHelper;
 
     @Mock
-    private BoundaryStateChangeListener boundaryStateChangeListener;
+    private UserTxnFactory userTxnFactory;
 
     @Mock
     private TssBaseService tssBaseService;
@@ -224,13 +192,7 @@ class HandleWorkflowTest {
         subject = new HandleWorkflow(
                 networkInfo,
                 nodeStakeUpdates,
-                authorizer,
-                feeManager,
                 dispatchProcessor,
-                serviceScopeLookup,
-                childDispatchFactory,
-                dispatcher,
-                networkUtilizationManager,
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
@@ -245,11 +207,9 @@ class HandleWorkflowTest {
                 stakeInfoHelper,
                 recordCache,
                 exchangeRateManager,
-                preHandleWorkflow,
                 stakePeriodManager,
-                kvStateChangeListener,
-                boundaryStateChangeListener,
                 migrationStateChanges,
+                userTxnFactory,
                 tssBaseService);
     }
 }
