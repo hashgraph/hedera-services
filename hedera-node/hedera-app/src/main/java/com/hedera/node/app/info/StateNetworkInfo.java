@@ -116,6 +116,8 @@ public class StateNetworkInfo implements NetworkInfo {
             activeRoster = retrieveActiveOrGenesisRoster(state);
         } else {
             // When the feature flag is disabled, the rosters in RosterService state are not up-to-date
+            // FUTURE: Once TSS Roster is implemented in the future, this will be removed and use roster state
+            // instead of the address book
             final var readablePlatformStateStore =
                     new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
             activeRoster = buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));

@@ -254,6 +254,8 @@ public class TssBaseServiceImpl implements TssBaseService {
         if (!configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
             final var readablePlatformStateStore =
                     new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+            // FUTURE: Once TSS Roster is implemented in the future, this will be removed and use roster state
+            // instead of the address book
             return buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
         }
         final var activeRoster = retrieveActiveOrGenesisRoster(state);
