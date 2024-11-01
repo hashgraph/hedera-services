@@ -222,7 +222,7 @@ public class UtilStateChange {
     }
 
     /**
-     * Like {@link #createEthereumAccountsWithECKeysAllDifferentWays(Map)} but with all default account names.
+     * Like {@link #createEthereumAccountsWithECKeysAllDifferentWays(Map)} but with all defaulted account names.
      */
     public static @NonNull List<SpecOperation> createEthereumAccountsWithECKeysAllDifferentWays() {
         return createEthereumAccountsWithECKeysAllDifferentWays(Map.of());
