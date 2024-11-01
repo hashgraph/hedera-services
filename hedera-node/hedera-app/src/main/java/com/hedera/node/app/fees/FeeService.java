@@ -17,8 +17,8 @@
 package com.hedera.node.app.fees;
 
 import com.hedera.node.app.fees.schemas.V0490FeeSchema;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
+import com.swirlds.state.merkle.SchemaRegistry;
+import com.swirlds.state.merkle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class FeeService implements Service {

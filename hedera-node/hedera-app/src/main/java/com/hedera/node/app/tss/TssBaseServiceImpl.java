@@ -39,7 +39,7 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.merkle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

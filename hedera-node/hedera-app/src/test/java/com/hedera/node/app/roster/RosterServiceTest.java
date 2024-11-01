@@ -23,8 +23,8 @@ import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.merkle.Schema;
+import com.swirlds.state.merkle.SchemaRegistry;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

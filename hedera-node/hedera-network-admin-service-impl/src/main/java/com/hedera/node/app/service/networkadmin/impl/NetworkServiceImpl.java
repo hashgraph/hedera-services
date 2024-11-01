@@ -19,7 +19,7 @@ package com.hedera.node.app.service.networkadmin.impl;
 import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.networkadmin.impl.schemas.V0490NetworkSchema;
 import com.hedera.node.app.spi.RpcService;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.merkle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

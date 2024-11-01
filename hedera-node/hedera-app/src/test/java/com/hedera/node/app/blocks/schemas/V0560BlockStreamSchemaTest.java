@@ -30,7 +30,7 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.merkle.MigrationContext;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import java.util.List;

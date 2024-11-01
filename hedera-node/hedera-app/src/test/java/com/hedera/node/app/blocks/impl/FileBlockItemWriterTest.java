@@ -28,7 +28,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.merkle.info.NodeInfo;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;

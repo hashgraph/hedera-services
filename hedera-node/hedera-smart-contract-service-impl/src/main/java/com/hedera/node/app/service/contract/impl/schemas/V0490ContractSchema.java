@@ -21,9 +21,9 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.merkle.MigrationContext;
+import com.swirlds.state.merkle.Schema;
+import com.swirlds.state.merkle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

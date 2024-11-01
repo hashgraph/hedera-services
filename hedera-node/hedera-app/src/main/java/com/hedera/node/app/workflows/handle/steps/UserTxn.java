@@ -27,7 +27,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.merkle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 

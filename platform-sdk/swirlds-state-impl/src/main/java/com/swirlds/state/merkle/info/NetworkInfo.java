@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.state.spi.info;
+package com.swirlds.state.merkle.info;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;

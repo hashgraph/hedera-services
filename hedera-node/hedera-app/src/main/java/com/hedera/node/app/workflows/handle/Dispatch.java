@@ -32,8 +32,8 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.merkle.Service;
+import com.swirlds.state.merkle.info.NodeInfo;
 import java.time.Instant;
 import java.util.Set;
 

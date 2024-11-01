@@ -22,7 +22,7 @@ plugins {
 description = "Hedera Schedule Service API"
 
 testModuleInfo {
-    requires("com.swirlds.state.api")
+    requires("com.swirlds.state.impl")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
 }

@@ -38,7 +38,7 @@ import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.merkle.info.NodeInfo;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

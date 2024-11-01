@@ -28,7 +28,7 @@ import com.hedera.node.app.spi.fixtures.TestService;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.merkle.StateDefinition;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -17,8 +17,8 @@
 package com.hedera.node.app.throttle;
 
 import com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
+import com.swirlds.state.merkle.SchemaRegistry;
+import com.swirlds.state.merkle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 

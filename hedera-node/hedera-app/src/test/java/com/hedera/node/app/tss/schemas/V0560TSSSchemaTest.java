@@ -19,7 +19,7 @@ package com.hedera.node.app.tss.schemas;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.merkle.StateDefinition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

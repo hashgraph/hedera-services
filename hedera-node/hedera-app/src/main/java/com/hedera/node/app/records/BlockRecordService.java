@@ -20,8 +20,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.records.schemas.V0560BlockRecordSchema;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
+import com.swirlds.state.merkle.SchemaRegistry;
+import com.swirlds.state.merkle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 

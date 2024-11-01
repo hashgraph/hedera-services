@@ -6,6 +6,7 @@ open module com.swirlds.platform.core.test.fixtures {
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api.test.fixtures;
     requires transitive com.swirlds.state.api;
+    requires transitive com.swirlds.state.impl;
     requires transitive com.swirlds.virtualmap;
     requires com.swirlds.base;
     requires com.swirlds.config.api;

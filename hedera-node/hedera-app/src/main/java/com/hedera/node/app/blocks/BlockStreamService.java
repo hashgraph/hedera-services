@@ -20,8 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
+import com.swirlds.state.merkle.SchemaRegistry;
+import com.swirlds.state.merkle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;

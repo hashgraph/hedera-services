@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.blocks.impl;
 
-import static com.swirlds.state.spi.HapiUtils.asAccountString;
+import static com.swirlds.state.merkle.HapiUtils.asAccountString;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.schema.BlockSchema;
@@ -27,7 +27,7 @@ import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.merkle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.IOException;

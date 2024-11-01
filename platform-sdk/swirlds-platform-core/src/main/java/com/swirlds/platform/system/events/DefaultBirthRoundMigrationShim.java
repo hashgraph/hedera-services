@@ -23,7 +23,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.state.spi.HapiUtils;
+import com.swirlds.state.merkle.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

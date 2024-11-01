@@ -19,7 +19,7 @@ package com.hedera.node.app.spi.state;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.pbj.runtime.Codec;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.merkle.StateDefinition;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
