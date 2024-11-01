@@ -221,7 +221,8 @@ public class StateChangesValidator implements BlockStreamValidator {
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
-                        ForkJoinPool.commonPool()));
+                        ForkJoinPool.commonPool(),
+                        metrics));
         this.state = (MerkleStateRoot) hedera.newMerkleStateRoot();
         hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, addressBook);
         final Configuration platformConfig = ConfigurationBuilder.create()
