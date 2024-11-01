@@ -27,6 +27,7 @@ import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * A utility class to help use Rooster and RosterEntry instances.
@@ -74,7 +75,7 @@ public final class RosterUtils {
      * Build a map from a long nodeId to a RosterEntry for a given Roster.
      *
      * @param roster a roster
-     * @return Map&lt;Long, RosterEntry&gt;
+     * @return {@code Map<Long, RosterEntry>}
      */
     @Nullable
     public static Map<Long, RosterEntry> toMap(@Nullable final Roster roster) {
@@ -85,7 +86,21 @@ public final class RosterUtils {
     }
 
     /**
+     * Build a map from a long nodeId to an index of the node in the roster entries list.
+     * If code needs to perform this lookup only once, then use the getIndex() instead.
+     *
+     * @param roster a roster
+     * @return {@code Map<Long, Integer>}
+     */
+    public static Map<Long, Integer> toIndicesMap(@NonNull final Roster roster) {
+        return IntStream.range(0, roster.rosterEntries().size())
+                .boxed()
+                .collect(Collectors.toMap(i -> roster.rosterEntries().get(i).nodeId(), Function.identity()));
+    }
+
+    /**
      * Return an index of a RosterEntry with a given node id.
+     * If code needs to perform this operation often, then use the toIndicesMap() instead.
      *
      * @param roster a Roster
      * @param nodeId a node id

@@ -103,7 +103,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.parallel.Isolated;
 
 /**
  * Asserts the synthetic file creations stipulated by HIP-993 match the file contents returned by the gRPC
@@ -111,9 +110,7 @@ import org.junit.jupiter.api.parallel.Isolated;
  * and tests if they needed to ensure a transaction was handled before issuing any {@code FileGetContents} queries
  * or submitting {@code FileUpdate} transactions.)
  */
-@Isolated
 public class SystemFileExportsTest {
-    private static final int ACCOUNT_ID_OFFSET = 13;
     private static final String DESCRIPTION_PREFIX = "Revision #";
 
     @GenesisHapiTest

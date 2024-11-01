@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
@@ -31,6 +32,7 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
@@ -50,6 +52,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class DefaultTransactionHandlerTests {
     private Randotron random;
     private AddressBook addressBook;
+    private Roster roster;
 
     @BeforeEach
     void setUp() {
@@ -58,6 +61,7 @@ class DefaultTransactionHandlerTests {
                 .withRealKeysEnabled(false)
                 .withSize(4)
                 .build();
+        roster = RosterRetriever.buildRoster(addressBook);
     }
 
     /**
@@ -88,7 +92,7 @@ class DefaultTransactionHandlerTests {
         final PlatformEvent keystone = new TestingEventBuilder(random).build();
         keystone.signalPrehandleCompletion();
         final ConsensusRound round = new ConsensusRound(
-                addressBook,
+                roster,
                 events,
                 keystone,
                 new Generations(),

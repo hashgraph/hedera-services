@@ -16,11 +16,15 @@
 
 package com.swirlds.platform.turtle.runner;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -33,7 +37,6 @@ import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.AddressBook;
@@ -97,15 +100,15 @@ public class TurtleNode {
                 .build();
         final Supplier<MerkleRoot> genesisStateSupplier = TurtleTestingToolState::getStateRootNode;
         final var version = new BasicSoftwareVersion(1);
+
+        final NodeId selfId = null;
+        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final var fileSystemManager = FileSystemManager.create(configuration);
+        final var recycleBin =
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+
         final var reservedState = getInitialState(
-                platformContext,
-                version,
-                genesisStateSupplier,
-                SignedStateFileUtils::readState,
-                "foo",
-                "bar",
-                nodeId,
-                addressBook);
+                configuration, recycleBin, version, genesisStateSupplier, "foo", "bar", nodeId, addressBook);
         final var initialState = reservedState.state();
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
                         "foo", "bar", new BasicSoftwareVersion(1), initialState, nodeId)

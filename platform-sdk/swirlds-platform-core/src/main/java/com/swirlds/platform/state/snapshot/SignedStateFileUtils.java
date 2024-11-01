@@ -16,11 +16,6 @@
 
 package com.swirlds.platform.state.snapshot;
 
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.platform.state.MerkleRoot;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Set;
 
 /**
@@ -43,31 +38,9 @@ public final class SignedStateFileUtils {
     public static final String CURRENT_ADDRESS_BOOK_FILE_NAME = "currentAddressBook.txt";
 
     /**
-     * The signed state file was not versioned before, this byte was introduced to mark a versioned file
-     */
-    public static final byte VERSIONED_FILE_BYTE = Byte.MAX_VALUE;
-
-    /**
-     * The previous version of the signed state file
-     */
-    public static final int INIT_STATE_FILE_VERSION = 1;
-
-    /**
-     * The current version of the signed state file. A file of this version no longer contains the signature set,
-     * instead the signature set is stored in a separate file.
-     */
-    public static final int SIG_SET_SEPARATE_STATE_FILE_VERSION = 2;
-
-    /**
      * The initial version of the signature set file
      */
     public static final int INIT_SIG_SET_FILE_VERSION = 1;
-
-    /**
-     * The supported versions of the signed state file
-     */
-    public static final Set<Integer> SUPPORTED_STATE_FILE_VERSIONS =
-            Set.of(INIT_STATE_FILE_VERSION, SIG_SET_SEPARATE_STATE_FILE_VERSION);
 
     /**
      * The supported versions of the signature set file
@@ -77,15 +50,4 @@ public final class SignedStateFileUtils {
     public static final int MAX_MERKLE_NODES_IN_STATE = Integer.MAX_VALUE;
 
     private SignedStateFileUtils() {}
-
-    /**
-     * A helper function to read state snapshots, assuming the merkle tree was serialized using
-     * {@link com.swirlds.common.io.SelfSerializable} mechanism. Used in {@link
-     * com.swirlds.platform.builder.PlatformBuilder}
-     */
-    @NonNull
-    public static MerkleRoot readState(@NonNull final MerkleDataInputStream in, @NonNull final Path dir)
-            throws IOException {
-        return in.readMerkleTree(dir, MAX_MERKLE_NODES_IN_STATE);
-    }
 }

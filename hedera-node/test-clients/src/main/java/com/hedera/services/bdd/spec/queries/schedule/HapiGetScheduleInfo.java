@@ -22,7 +22,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.getRelativeExpiry;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -36,6 +38,8 @@ import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -46,6 +50,9 @@ import org.junit.jupiter.api.Assertions;
 
 public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     private static final Logger LOG = LogManager.getLogger(HapiGetScheduleInfo.class);
+
+    private static final Comparator<Key> KEY_COMPARATOR =
+            (a, b) -> ByteString.unsignedLexicographicalComparator().compare(a.toByteString(), b.toByteString());
 
     String schedule;
 
@@ -154,21 +161,21 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     protected void assertExpectationsGiven(HapiSpec spec) {
         var actualInfo = response.getScheduleGetInfo().getScheduleInfo();
 
-        expectedScheduledTxnId.ifPresent(n -> Assertions.assertEquals(
+        expectedScheduledTxnId.ifPresent(n -> assertEquals(
                 spec.registry().getTxnId(correspondingScheduledTxnId(n)),
                 actualInfo.getScheduledTransactionID(),
                 "Wrong scheduled transaction id!"));
 
-        expectedCreatorAccountID.ifPresent(s -> Assertions.assertEquals(
+        expectedCreatorAccountID.ifPresent(s -> assertEquals(
                 TxnUtils.asId(s, spec), actualInfo.getCreatorAccountID(), "Wrong schedule creator account ID!"));
 
-        expectedPayerAccountID.ifPresent(s -> Assertions.assertEquals(
+        expectedPayerAccountID.ifPresent(s -> assertEquals(
                 TxnUtils.asId(s, spec), actualInfo.getPayerAccountID(), "Wrong schedule payer account ID!"));
 
-        expectedEntityMemo.ifPresent(s -> Assertions.assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
+        expectedEntityMemo.ifPresent(s -> assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
 
         if (checkForRecordedScheduledTxn) {
-            Assertions.assertEquals(
+            assertEquals(
                     spec.registry().getScheduledTxn(schedule),
                     actualInfo.getScheduledTransactionBody(),
                     "Wrong scheduled txn!");
@@ -198,19 +205,20 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
             for (final var signatory : signatories) {
                 accumulateSimple(registry.getKey(signatory), expect);
             }
-            Assertions.assertArrayEquals(
-                    expect.build().getKeysList().toArray(),
-                    actualInfo.getSigners().getKeysList().toArray(),
-                    "Wrong signatories!");
+            final List<Key> expectedKeys = new ArrayList<>(expect.getKeysList());
+            expectedKeys.sort(KEY_COMPARATOR);
+            final var actualKeys = new ArrayList<>(actualInfo.getSigners().getKeysList());
+            actualKeys.sort(KEY_COMPARATOR);
+            assertEquals(expectedKeys, actualKeys, "Wrong signatories");
         });
 
-        expectedExpirationTimeRelativeTo.ifPresent(stringLongPair -> Assertions.assertEquals(
+        expectedExpirationTimeRelativeTo.ifPresent(stringLongPair -> assertEquals(
                 getRelativeExpiry(spec, stringLongPair.getKey(), stringLongPair.getValue()),
                 actualInfo.getExpirationTime(),
                 "Wrong Expiration Time!"));
 
-        expectedWaitForExpiry.ifPresent(aBoolean ->
-                Assertions.assertEquals(aBoolean, actualInfo.getWaitForExpiry(), "waitForExpiry was wrong!"));
+        expectedWaitForExpiry.ifPresent(
+                aBoolean -> assertEquals(aBoolean, actualInfo.getWaitForExpiry(), "waitForExpiry was wrong!"));
 
         assertFor(
                 actualInfo.getAdminKey(),
@@ -219,7 +227,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
                 "Wrong schedule admin key!",
                 registry);
 
-        expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, actualInfo.getLedgerId()));
+        expectedLedgerId.ifPresent(id -> assertEquals(id, actualInfo.getLedgerId()));
     }
 
     private static void accumulateSimple(@NonNull final Key key, @NonNull final KeyList.Builder builder) {
@@ -240,7 +248,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
                 .setSeconds(actual.getSeconds())
                 .setNanos(consensusTime.getNanos() + nanoOffset)
                 .build();
-        Assertions.assertEquals(expected, actual, errMsg);
+        assertEquals(expected, actual, errMsg);
     }
 
     private <T, R> void assertFor(
@@ -251,7 +259,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
             HapiSpecRegistry registry) {
         if (possible.isPresent()) {
             var expected = expectedFn.apply(possible.get(), registry);
-            Assertions.assertEquals(expected, actual, error);
+            assertEquals(expected, actual, error);
         }
     }
 
