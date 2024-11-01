@@ -96,7 +96,8 @@ public class IsAuthorizedCall extends AbstractCall {
 
     @NonNull
     PricedResult encodedOutput(final ResponseCodeEnum rce, final boolean authorized, final long gasRequirement) {
-        final var output = IsAuthorizedTranslator.IS_AUTHORIZED.getOutputs().encodeElements(rce, authorized);
+        final var output =
+                IsAuthorizedTranslator.IS_AUTHORIZED.getOutputs().encodeElements((long) rce.protoOrdinal(), authorized);
         final var result = gasOnly(successResult(output, gasRequirement), SUCCESS, true);
         return result;
     }

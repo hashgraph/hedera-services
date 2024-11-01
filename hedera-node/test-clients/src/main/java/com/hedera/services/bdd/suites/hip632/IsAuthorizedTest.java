@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEd25519PrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -46,6 +47,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -55,12 +57,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.node.app.hapi.utils.SignatureGenerator;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import com.hedera.services.bdd.suites.utils.contracts.BoolResult;
 import com.hedera.services.bdd.utils.Signing;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayList;
 import java.util.List;
@@ -727,5 +733,89 @@ public class IsAuthorizedTest {
 
     @Nested
     @DisplayName("IsAuthorizedLukeTests")
-    class IsAuthorizedLukeTests {}
+    class IsAuthorizedLukeTests {
+        @HapiTest
+        final Stream<DynamicTest> isAuthorizedECDSAHappyPath() {
+            return hapiTest(
+                    newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
+                    cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                    uploadInitCode(HRC632_CONTRACT),
+                    contractCreate(HRC632_CONTRACT),
+                    withOpContext((spec, opLog) -> {
+                        final var message = "submit".getBytes();
+                        final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
+                        final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                        final var publicKey = spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1();
+                        final var addressBytes = recoverAddressFromPrivateKey(privateKey);
+                        final var signedBytes = Signing.signMessage64(messageHash, privateKey);
+
+                        final var signatureMap = SignatureMap.newBuilder()
+                                .sigPair(SignaturePair.newBuilder()
+                                        .ecdsaSecp256k1(Bytes.wrap(signedBytes))
+                                        .pubKeyPrefix(Bytes.wrap(publicKey.toByteArray()))
+                                        .build())
+                                .build();
+                        final var signatureMapBytes =
+                                SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
+
+                        final var call = contractCall(
+                                        HRC632_CONTRACT,
+                                        "isAuthorizedCall",
+                                        asHeadlongAddress(addressBytes),
+                                        message,
+                                        signatureMapBytes)
+                                .via("authorizeCall")
+                                .gas(2_000_000L);
+                        allRunFor(spec, call);
+                    }),
+                    getTxnRecord("authorizeCall")
+                            .hasPriority(recordWith()
+                                    .status(SUCCESS)
+                                    .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))));
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> isAuthorizedED25519HappyPath() {
+            final AtomicReference<AccountID> accountNum = new AtomicReference<>();
+            return hapiTest(
+                    newKeyNamed(ED25519_KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
+                    cryptoCreate(ACCOUNT)
+                            .balance(ONE_MILLION_HBARS)
+                            .key(ED25519_KEY)
+                            .exposingCreatedIdTo(accountNum::set),
+                    cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ED25519_KEY, ONE_HUNDRED_HBARS)),
+                    uploadInitCode(HRC632_CONTRACT),
+                    contractCreate(HRC632_CONTRACT),
+                    withOpContext((spec, opLog) -> {
+                        final var message = "submit".getBytes();
+                        final var privateKey = getEd25519PrivateKeyFromSpec(spec, ED25519_KEY);
+                        final var publicKey =
+                                spec.registry().getKey(ED25519_KEY).getEd25519();
+                        final var signedBytes = Signing.signMessageEd25519(message, privateKey);
+
+                        final var signatureMap = SignatureMap.newBuilder()
+                                .sigPair(SignaturePair.newBuilder()
+                                        .ed25519(Bytes.wrap(signedBytes))
+                                        .pubKeyPrefix(Bytes.wrap(publicKey.toByteArray()))
+                                        .build())
+                                .build();
+                        final var signatureMapBytes =
+                                SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
+
+                        final var call = contractCall(
+                                        HRC632_CONTRACT,
+                                        "isAuthorizedCall",
+                                        asHeadlongAddress(asAddress(accountNum.get())),
+                                        message,
+                                        signatureMapBytes)
+                                .via("authorizeCall")
+                                .gas(2_000_000L);
+                        allRunFor(spec, call);
+                    }),
+                    getTxnRecord("authorizeCall")
+                            .hasPriority(recordWith()
+                                    .status(SUCCESS)
+                                    .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))));
+        }
+    }
 }

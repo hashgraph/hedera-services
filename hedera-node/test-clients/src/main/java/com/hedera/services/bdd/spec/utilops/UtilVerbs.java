@@ -2306,6 +2306,14 @@ public class UtilVerbs {
         return privateKeyByteArray;
     }
 
+    public static byte[] getEd25519PrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
+        var key = spec.registry().getKey(privateKeyRef);
+        final var privateKey = spec.keys()
+                .getEd25519PrivateKey(com.swirlds.common.utility.CommonUtils.hex(
+                        key.getEd25519().toByteArray()));
+        return privateKey.getEncoded();
+    }
+
     private static double getChargedUsed(@NonNull final HapiSpec spec, @NonNull final String txn) {
         requireNonNull(spec);
         requireNonNull(txn);
