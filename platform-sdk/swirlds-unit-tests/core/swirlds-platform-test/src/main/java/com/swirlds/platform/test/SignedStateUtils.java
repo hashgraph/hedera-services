@@ -43,7 +43,7 @@ public class SignedStateUtils {
         randomPlatformState(random, root.getWritablePlatformState(configuration));
         boolean shouldSaveToDisk = random.nextBoolean();
         SignedState signedState = new SignedState(
-                TestPlatformContextBuilder.create().build(),
+                TestPlatformContextBuilder.create().build().getConfiguration(),
                 CryptoStatic::verifySignature,
                 root,
                 "test",

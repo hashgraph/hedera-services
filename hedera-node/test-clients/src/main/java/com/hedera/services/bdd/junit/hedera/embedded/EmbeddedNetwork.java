@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
-import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
+import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
 import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
@@ -49,12 +49,13 @@ public class EmbeddedNetwork extends AbstractNetwork {
     private static final Logger log = LogManager.getLogger(EmbeddedNetwork.class);
 
     private static final String FAKE_HOST = "127.0.0.1";
-    public static final String EMBEDDED_WORKING_DIR = "embedded";
-    private static final String EMBEDDED_NAME = EMBEDDED_WORKING_DIR.toUpperCase();
+    public static final String CONCURRENT_WORKING_DIR = "concurrent";
+    private static final String CONCURRENT_NAME = CONCURRENT_WORKING_DIR.toUpperCase();
     public static final String REPEATABLE_WORKING_DIR = "repeatable";
     private static final String REPEATABLE_NAME = REPEATABLE_WORKING_DIR.toUpperCase();
 
     private final String configTxt;
+    private final EmbeddedMode mode;
     private final EmbeddedNode embeddedNode;
 
     @Nullable
@@ -65,14 +66,18 @@ public class EmbeddedNetwork extends AbstractNetwork {
      *
      * @return the embedded network
      */
-    public static HederaNetwork newSharedNetwork() {
-        return repeatableModeRequested()
-                ? new EmbeddedNetwork(REPEATABLE_NAME, REPEATABLE_WORKING_DIR)
-                : new EmbeddedNetwork(EMBEDDED_NAME, EMBEDDED_WORKING_DIR);
+    public static HederaNetwork newSharedNetwork(@NonNull final EmbeddedMode mode) {
+        requireNonNull(mode);
+        return switch (mode) {
+            case CONCURRENT -> new EmbeddedNetwork(CONCURRENT_NAME, CONCURRENT_WORKING_DIR, mode);
+            case REPEATABLE -> new EmbeddedNetwork(REPEATABLE_NAME, REPEATABLE_WORKING_DIR, mode);
+        };
     }
 
-    public EmbeddedNetwork(@NonNull final String name, @NonNull final String workingDir) {
+    public EmbeddedNetwork(
+            @NonNull final String name, @NonNull final String workingDir, @NonNull final EmbeddedMode mode) {
         super(name, List.of(new EmbeddedNode(classicMetadataFor(0, name, FAKE_HOST, workingDir, 0, 0, 0, 0, 0))));
+        this.mode = requireNonNull(mode);
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
         // Even though we are only embedding node0, we generate an address book
         // for a "classic" HapiTest network with 4 nodes so that tests can still
@@ -94,9 +99,9 @@ public class EmbeddedNetwork extends AbstractNetwork {
         embeddedNode.initWorkingDir(configTxt);
         embeddedNode.start();
         // Start the embedded Hedera "network"
-        embeddedHedera = repeatableModeRequested()
-                ? new RepeatableEmbeddedHedera(embeddedNode)
-                : new ConcurrentEmbeddedHedera(embeddedNode);
+        embeddedHedera = switch (mode) {
+            case REPEATABLE -> new RepeatableEmbeddedHedera(embeddedNode);
+            case CONCURRENT -> new ConcurrentEmbeddedHedera(embeddedNode);};
         embeddedHedera.start();
     }
 
@@ -104,7 +109,7 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public void terminate() {
         if (embeddedHedera != null) {
             embeddedHedera.stop();
-            if (repeatableModeRequested()) {
+            if (mode == REPEATABLE) {
                 final var runningHashes = embeddedHedera
                         .state()
                         .getReadableStates("BlockRecordService")
@@ -131,7 +136,8 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public Response send(
             @NonNull final Query query,
             @NonNull final HederaFunctionality functionality,
-            @NonNull final AccountID nodeAccountId) {
+            @NonNull final AccountID nodeAccountId,
+            final boolean asNodeOperator) {
         return requireNonNull(embeddedHedera).send(query, nodeAccountId);
     }
 
@@ -151,6 +157,20 @@ public class EmbeddedNetwork extends AbstractNetwork {
 
     public @NonNull EmbeddedHedera embeddedHederaOrThrow() {
         return requireNonNull(embeddedHedera);
+    }
+
+    /**
+     * Returns whether the embedded network is in repeatable mode.
+     */
+    public boolean inRepeatableMode() {
+        return mode == REPEATABLE;
+    }
+
+    /**
+     * Returns the embedded mode of the network.
+     */
+    public EmbeddedMode mode() {
+        return mode;
     }
 
     @Override

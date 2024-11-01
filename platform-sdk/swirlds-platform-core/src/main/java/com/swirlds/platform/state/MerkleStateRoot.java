@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
+import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
@@ -27,7 +28,6 @@ import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableIgnored;
@@ -39,12 +39,13 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.SnapshotPlatformStateAccessor;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -181,13 +182,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private final List<StateChangeListener> listeners = new ArrayList<>();
 
     /**
-     * Once set, the possibly empty list of builders for state changes that occurred when initializing
-     * the platform state.
-     */
-    @Nullable
-    private List<StateChanges.Builder> platformStateInitChanges;
-
-    /**
      * Used to track the lifespan of this state.
      */
     private final RuntimeObjectRecord registryRecord;
@@ -222,15 +216,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     public @Nullable PlatformState getPreV054PlatformState() {
         return preV054PlatformState;
-    }
-
-    /**
-     * Returns the list of builders for state changes that occurred during the initialization of the platform state.
-     * Must only be called after platform state is initialized.
-     * @throws NullPointerException if the platform state initialization changes have not been set
-     */
-    public @NonNull List<StateChanges.Builder> platformStateInitChangesOrThrow() {
-        return requireNonNull(platformStateInitChanges);
     }
 
     /**
@@ -289,7 +274,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
         this.versionFactory = from.versionFactory;
         this.preV054PlatformState = from.preV054PlatformState;
-        this.platformStateInitChanges = from.platformStateInitChanges;
         this.listeners.addAll(from.listeners);
 
         // Copy over the metadata
@@ -1018,7 +1002,16 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public PlatformStateAccessor getReadablePlatformState() {
-        return readablePlatformStateStore();
+        return services.isEmpty()
+                ? new SnapshotPlatformStateAccessor(getPlatformState(), versionFactory)
+                : readablePlatformStateStore();
+    }
+
+    private com.hedera.hapi.platform.state.PlatformState getPlatformState() {
+        final var index = findNodeIndex(PlatformStateService.NAME, PLATFORM_STATE_KEY);
+        return index == -1
+                ? V0540PlatformStateSchema.GENESIS_PLATFORM_STATE
+                : ((SingletonNode<com.hedera.hapi.platform.state.PlatformState>) getChild(index)).getValue();
     }
 
     /**
@@ -1035,22 +1028,11 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @NonNull
     @Override
-    public PlatformStateModifier getWritablePlatformState(@NonNull final Configuration platformConfiguration) {
-        requireNonNull(platformConfiguration);
+    public PlatformStateModifier getWritablePlatformState() {
         if (isImmutable()) {
             throw new IllegalStateException("Cannot get writable platform state when state is immutable");
         }
-        return writablePlatformStateStore(platformConfiguration);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void initPlatformState(@NonNull final Configuration platformConfiguration) {
-        if (!services.containsKey(PlatformStateService.NAME)) {
-            platformStateInitChanges = lifecycles.initPlatformState(this, platformConfiguration);
-        }
+        return writablePlatformStateStore();
     }
 
     /**
@@ -1059,9 +1041,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * @param accessor a source of values
      */
     @Override
-    public void updatePlatformState(
-            @NonNull final PlatformStateModifier accessor, @NonNull final Configuration platformConfiguration) {
-        writablePlatformStateStore(platformConfiguration).setAllFrom(accessor);
+    public void updatePlatformState(@NonNull final PlatformStateModifier accessor) {
+        writablePlatformStateStore().setAllFrom(accessor);
     }
 
     /**
@@ -1070,17 +1051,14 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        return createInfoString(hashDepth, readablePlatformStateStore(), getHash(), this);
+        return createInfoString(hashDepth, getReadablePlatformState(), getHash(), this);
     }
 
     private ReadablePlatformStateStore readablePlatformStateStore() {
         return new ReadablePlatformStateStore(getReadableStates(PlatformStateService.NAME), versionFactory);
     }
 
-    private WritablePlatformStateStore writablePlatformStateStore(@NonNull final Configuration platformConfiguration) {
-        if (!services.containsKey(PlatformStateService.NAME)) {
-            platformStateInitChanges = lifecycles.initPlatformState(this, platformConfiguration);
-        }
+    private WritablePlatformStateStore writablePlatformStateStore() {
         final var store = new WritablePlatformStateStore(getWritableStates(PlatformStateService.NAME), versionFactory);
         if (preV054PlatformState != null) {
             store.setAllFrom(preV054PlatformState);
@@ -1128,5 +1106,14 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         final long startTime = time.currentTimeMillis();
         MerkleTreeSnapshotWriter.createSnapshot(this, targetPath);
         snapshotMetrics.updateWriteStateToDiskTimeMetric(time.currentTimeMillis() - startTime);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public MerkleStateRoot loadSnapshot(@NonNull Path targetPath) throws IOException {
+        return (MerkleStateRoot)
+                MerkleTreeSnapshotReader.readStateFileData(targetPath).state();
     }
 }

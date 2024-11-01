@@ -27,8 +27,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -124,13 +122,12 @@ class SwirldStateManagerTests {
     private static MerkleRoot newState() {
         final MerkleStateRoot state =
                 new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-        final Configuration configuration =
-                ConfigurationBuilder.create().autoDiscoverExtensions().build();
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
 
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
         when(platformState.getCreationSoftwareVersion()).thenReturn(new BasicSoftwareVersion(nextInt(1, 100)));
 
-        state.updatePlatformState(platformState, configuration);
+        state.updatePlatformState(platformState);
 
         assertEquals(0, state.getReservationCount(), "A brand new state should have no references.");
         return state;

@@ -17,7 +17,6 @@
 package com.hedera.node.app.state.merkle;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFileData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -45,7 +44,6 @@ import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -197,7 +195,7 @@ class SerializationTest extends MerkleTestBase {
     @ValueSource(booleans = {true, false})
     void simpleReadAndWrite(boolean forceFlush) throws IOException, ConstructableRegistryException {
         final var schemaV1 = createV1Schema();
-        final var originalTree = (MerkleStateRoot) createMerkleHederaState(schemaV1);
+        final var originalTree = createMerkleHederaState(schemaV1);
 
         // When we serialize it to bytes and deserialize it back into a tree
         MerkleStateRoot copy = originalTree.copy(); // make a copy to make VM flushable
@@ -244,10 +242,7 @@ class SerializationTest extends MerkleTestBase {
         originalTree.computeHash();
         originalTree.createSnapshot(tempDir);
 
-        final SignedStateFileReader.StateFileData deserializedSignedState = readStateFileData(
-                tempDir.resolve(SignedStateFileUtils.SIGNED_STATE_FILE_NAME), SignedStateFileUtils::readState);
-
-        MerkleStateRoot state = (MerkleStateRoot) deserializedSignedState.state();
+        MerkleStateRoot state = originalTree.loadSnapshot(tempDir.resolve(SignedStateFileUtils.SIGNED_STATE_FILE_NAME));
         initServices(schemaV1, state);
         assertTree(state);
     }
