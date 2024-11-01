@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -40,8 +39,7 @@ public class SwirldStateManagerUtilsTests {
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         state.reserve();
         final SwirldStateMetrics stats = mock(SwirldStateMetrics.class);
-        final MerkleRoot result =
-                SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1), CONFIGURATION);
+        final MerkleRoot result = SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));
 
         assertFalse(result.isImmutable(), "The copy state should be mutable.");
         assertEquals(

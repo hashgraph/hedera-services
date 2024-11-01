@@ -19,7 +19,6 @@ package com.swirlds.platform.state;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.signed.SignedState;
@@ -47,13 +46,11 @@ public final class BirthRoundStateMigration {
      * @param initialState the initial state the platform is starting with
      * @param ancientMode  the current ancient mode
      * @param appVersion   the current application version
-     * @param platformConfiguration the platform configuration
      */
     public static void modifyStateForBirthRoundMigration(
             @NonNull final SignedState initialState,
             @NonNull final AncientMode ancientMode,
-            @NonNull final SoftwareVersion appVersion,
-            @NonNull final Configuration platformConfiguration) {
+            @NonNull final SoftwareVersion appVersion) {
 
         if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
             if (initialState.getState().getReadablePlatformState().getFirstVersionInBirthRoundMode() != null) {
@@ -67,7 +64,7 @@ public final class BirthRoundStateMigration {
         }
 
         final MerkleRoot state = initialState.getState();
-        final PlatformStateModifier writablePlatformState = state.getWritablePlatformState(platformConfiguration);
+        final PlatformStateModifier writablePlatformState = state.getWritablePlatformState();
 
         final boolean alreadyMigrated = writablePlatformState.getFirstVersionInBirthRoundMode() != null;
         if (alreadyMigrated) {

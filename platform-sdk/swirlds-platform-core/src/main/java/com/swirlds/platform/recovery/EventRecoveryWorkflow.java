@@ -381,8 +381,7 @@ public final class EventRecoveryWorkflow {
         new DefaultEventHasher().hashEvent(lastEvent);
 
         final PlatformStateAccessor newReadablePlatformState = newState.getReadablePlatformState();
-        final PlatformStateModifier newWritablePlatformState =
-                newState.getWritablePlatformState(platformContext.getConfiguration());
+        final PlatformStateModifier newWritablePlatformState = newState.getWritablePlatformState();
         final PlatformStateAccessor previousReadablePlatformState =
                 previousState.get().getState().getReadablePlatformState();
 
@@ -399,7 +398,7 @@ public final class EventRecoveryWorkflow {
         applyTransactions(
                 previousState.get().getSwirldState().cast(),
                 newState.getSwirldState().cast(),
-                newState.getWritablePlatformState(platformContext.getConfiguration()),
+                newState.getWritablePlatformState(),
                 round);
 
         final boolean isFreezeState = isFreezeState(

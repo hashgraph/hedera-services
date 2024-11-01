@@ -197,6 +197,10 @@ public class ServicesMain implements SwirldMain {
         logger.info("Starting node {} with version {}", selfId, version);
 
         final var configuration = buildConfiguration();
+
+        // Register with the ConstructableRegistry classes which need configuration.
+        BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
+
         final var keysAndCerts =
                 initNodeSecurity(diskAddressBook, configuration).get(selfId);
 
@@ -217,7 +221,11 @@ public class ServicesMain implements SwirldMain {
                     isGenesis.set(true);
                     final var genesisState = hedera.newMerkleStateRoot();
                     hedera.initializeStatesApi(
-                            (MerkleStateRoot) genesisState, metrics, InitTrigger.GENESIS, diskAddressBook);
+                            (MerkleStateRoot) genesisState,
+                            metrics,
+                            InitTrigger.GENESIS,
+                            diskAddressBook,
+                            configuration);
                     return genesisState;
                 },
                 Hedera.APP_NAME,
@@ -230,7 +238,8 @@ public class ServicesMain implements SwirldMain {
                     (MerkleStateRoot) initialState.get().getState().getSwirldState(),
                     metrics,
                     InitTrigger.RESTART,
-                    null);
+                    null,
+                    configuration);
         }
 
         final var cryptography = CryptographyFactory.create();
@@ -244,10 +253,6 @@ public class ServicesMain implements SwirldMain {
 
         // Register the metrics related to TSS functionalities
         hedera.registerTssMetrics(metrics);
-
-        // maybe it should be above
-        // Register with the ConstructableRegistry classes which need configuration.
-        BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
 
         // Create the platform context
         final var platformContext = PlatformContext.create(

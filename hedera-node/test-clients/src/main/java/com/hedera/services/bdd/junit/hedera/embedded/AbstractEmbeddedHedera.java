@@ -139,10 +139,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     @Override
     public void start() {
-//        final Configuration configuration =
-//                ConfigurationBuilder.create().autoDiscoverExtensions().build();
+        final Configuration configuration =
+                ConfigurationBuilder.create().autoDiscoverExtensions().build();
 
-        hedera.initializeStatesApi(state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook);
+        hedera.initializeStatesApi(
+                state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
         final WritableSingletonState<PlatformState> platformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
         final var currentState = requireNonNull(platformState.get());

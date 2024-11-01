@@ -18,7 +18,6 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,14 +39,12 @@ public final class SwirldStateManagerUtils {
      * @param state           the state object to fast copy
      * @param stats           object to record stats in
      * @param softwareVersion the current software version
-     * @param platformConfiguration platform configuration
      * @return the newly created state copy
      */
     public static MerkleRoot fastCopy(
             @NonNull final MerkleRoot state,
             @NonNull final SwirldStateMetrics stats,
-            @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Configuration platformConfiguration) {
+            @NonNull final SoftwareVersion softwareVersion) {
 
         Objects.requireNonNull(softwareVersion);
 
@@ -55,7 +52,7 @@ public final class SwirldStateManagerUtils {
 
         // Create a fast copy
         final MerkleRoot copy = state.copy();
-        final var platformState = copy.getWritablePlatformState(platformConfiguration);
+        final var platformState = copy.getWritablePlatformState();
         platformState.setCreationSoftwareVersion(softwareVersion);
 
         // Increment the reference count because this reference becomes the new value

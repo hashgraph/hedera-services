@@ -71,11 +71,6 @@ public class SwirldStateManager implements FreezePeriodChecker {
     private final SoftwareVersion softwareVersion;
 
     /**
-     * The platform context.
-     */
-    private final PlatformContext platformContext;
-
-    /**
      * Constructor.
      *
      * @param platformContext       the platform context
@@ -96,9 +91,8 @@ public class SwirldStateManager implements FreezePeriodChecker {
         Objects.requireNonNull(selfId);
         this.stats = new SwirldStateMetrics(platformContext.getMetrics());
         Objects.requireNonNull(statusActionSubmitter);
-        this.platformContext = platformContext;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
-        this.transactionHandler = new TransactionHandler(selfId, stats, platformContext.getConfiguration());
+        this.transactionHandler = new TransactionHandler(selfId, stats);
         this.uptimeTracker = new UptimeTracker(
                 platformContext, addressBook, statusActionSubmitter, selfId, platformContext.getTime());
     }
@@ -163,7 +157,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
     public void savedStateInFreezePeriod() {
         // set current DualState's lastFrozenTime to be current freezeTime
         stateRef.get()
-                .getWritablePlatformState(platformContext.getConfiguration())
+                .getWritablePlatformState()
                 .setLastFrozenTime(stateRef.get().getReadablePlatformState().getFreezeTime());
     }
 
@@ -182,7 +176,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
     }
 
     private void fastCopyAndUpdateRefs(final MerkleRoot state) {
-        final MerkleRoot consState = fastCopy(state, stats, softwareVersion, platformContext.getConfiguration());
+        final MerkleRoot consState = fastCopy(state, stats, softwareVersion);
 
         // Set latest immutable first to prevent the newly immutable state from being deleted between setting the
         // stateRef and the latestImmutableState

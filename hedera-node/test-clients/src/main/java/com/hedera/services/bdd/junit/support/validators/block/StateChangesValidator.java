@@ -224,13 +224,13 @@ public class StateChangesValidator implements BlockStreamValidator {
                         ForkJoinPool.commonPool(),
                         metrics));
         this.state = (MerkleStateRoot) hedera.newMerkleStateRoot();
-        hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, addressBook);
         final Configuration platformConfig = ConfigurationBuilder.create()
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(TransactionConfig.class)
                 .withConfigDataType(CryptoConfig.class)
                 .withConfigDataType(BasicConfig.class)
                 .build();
+        hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, addressBook, platformConfig);
         initGenesisPlatformState(platformConfig, this.state.getWritablePlatformState(), addressBook, currentVersion);
         final var stateToBeCopied = state;
         state = state.copy();
