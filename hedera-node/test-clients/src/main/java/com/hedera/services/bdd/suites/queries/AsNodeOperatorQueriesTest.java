@@ -19,7 +19,7 @@ package com.hedera.services.bdd.suites.queries;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.lessThan;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
@@ -35,28 +35,23 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.HBAR_TOKEN_SENTINEL;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,20 +62,20 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 
-@Tag(CRYPTO)
-@HapiTestLifecycle
-@DisplayName("Node Operator Queries")
 /**
  * A class with Node Operator Queries tests
  */
+@Tag(CRYPTO)
+@HapiTestLifecycle
+@DisplayName("Node Operator Queries")
 public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
 
-    @Nested
-    @DisplayName("verify payer balance")
     /**
      * A class with Node Operator tests that verify the payer balance
      */
-    class PerformNodeOperatorQueryAndVerifyPayerBalance {
+    @Nested
+    @DisplayName("verify payer balance")
+    public class PerformNodeOperatorQueryAndVerifyPayerBalance {
 
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -153,11 +148,11 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
         @HapiTest
         final Stream<DynamicTest> nodeOperatorAccountBalanceQueryNotCharged() {
             return defaultHapiSpec("nodeOperatorAccountBalanceQueryNotCharged")
-                    .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
-                    .when(getAccountBalance(NODE_OPERATOR).payingWith(NODE_OPERATOR).asNodeOperator())
-                    .then(
-                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+                    .given(cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
+                    .when(getAccountBalance(NODE_OPERATOR)
+                            .payingWith(NODE_OPERATOR)
+                            .asNodeOperator())
+                    .then(getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
         }
 
         /**
@@ -166,12 +161,11 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
         @HapiTest
         final Stream<DynamicTest> nodeOperatorAccountInfoQueryNotCharged() {
             return defaultHapiSpec("nodeOperatorAccountInfoQueryNotCharged")
-                    .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
-                    .when(
-                            getAccountInfo(NODE_OPERATOR).payingWith(NODE_OPERATOR).asNodeOperator())
-                    .then(
-                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+                    .given(cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
+                    .when(getAccountInfo(NODE_OPERATOR)
+                            .payingWith(NODE_OPERATOR)
+                            .asNodeOperator())
+                    .then(getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
         }
 
         /**
@@ -180,12 +174,9 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
         @HapiTest
         final Stream<DynamicTest> nodeOperatorAccountInfoQueryCharged() {
             return defaultHapiSpec("nodeOperatorAccountInfoQueryCharged")
-                    .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
-                    .when(
-                            getAccountInfo(NODE_OPERATOR).payingWith(NODE_OPERATOR))
-                    .then(
-                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+                    .given(cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
+                    .when(getAccountInfo(NODE_OPERATOR).payingWith(NODE_OPERATOR))
+                    .then(getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
         }
 
         /**
@@ -320,15 +311,244 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
                             cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
                             scheduleCreate(
-                                    SCHEDULE,
-                                    cryptoTransfer(tinyBarsFromTo(PAYER, NODE_OPERATOR, 1L))
-                                            .memo("")
-                                            .fee(ONE_HBAR))
+                                            SCHEDULE,
+                                            cryptoTransfer(tinyBarsFromTo(PAYER, NODE_OPERATOR, 1L))
+                                                    .memo("")
+                                                    .fee(ONE_HBAR))
                                     .payingWith(PAYER)
                                     .adminKey(PAYER))
                     .when(getScheduleInfo(SCHEDULE).asNodeOperator())
-                    .then(
-                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+                    .then(getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+        }
+
+        /**
+         * Get File Contents tests
+         */
+        @HapiTest
+        @DisplayName("Only node operators aren't charged for file contents queries")
+        final Stream<DynamicTest> fileGetContentsQueryNodeOperatorNotCharged() {
+            final var filename = "anyFile.txt";
+            return hapiTest(
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                    fileCreate(filename).contents("anyContent"),
+                    getFileContents(filename).payingWith(NODE_OPERATOR).asNodeOperator(),
+                    getFileContents(filename).payingWith(PAYER),
+                    sleepFor(1_000),
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS),
+                    getAccountBalance(PAYER).hasTinyBars(lessThan(ONE_HUNDRED_HBARS)));
+        }
+
+        @HapiTest
+        @DisplayName("Only node operators don't need to sign file contents queries")
+        final Stream<DynamicTest> fileGetContentsNoSigRequired() {
+            final var filename = "anyFile.txt";
+            final var someoneElse = "someoneElse";
+            return hapiTest(
+                    newKeyNamed(someoneElse),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                    fileCreate(filename).contents("anyContent"),
+                    // Sign the node operator query request with a totally unrelated key, to show that there is no
+                    // signature check
+                    getFileContents(filename)
+                            .payingWith(NODE_OPERATOR)
+                            .signedBy(someoneElse)
+                            .asNodeOperator()
+                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.OK),
+                    // But the non-node operator submitter must still sign
+                    getFileContents(filename)
+                            .payingWith(PAYER)
+                            .signedBy(someoneElse)
+                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_SIGNATURE));
+        }
+
+        /**
+         * Get File Info tests
+         */
+        @HapiTest
+        @DisplayName("Only node operators aren't charged for file info queries")
+        final Stream<DynamicTest> getFileInfoQueryNodeOperatorNotCharged() {
+            final var filename = "anyFile.txt";
+            return hapiTest(
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                    fileCreate(filename).contents("anyContentAgain").payingWith(PAYER),
+                    // Both the node operator and payer submit queries
+                    getFileInfo(filename).payingWith(NODE_OPERATOR).asNodeOperator(),
+                    getFileInfo(filename).payingWith(PAYER),
+                    sleepFor(1_000),
+                    // The node operator wasn't charged
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS),
+                    // But the payer was charged
+                    getAccountBalance(PAYER).hasTinyBars(lessThan(ONE_HUNDRED_HBARS)));
+        }
+
+        @HapiTest
+        @DisplayName("Only node operators don't need to sign file info queries")
+        final Stream<DynamicTest> getFileInfoQueryNoSigRequired() {
+            final var filename = "anyFile.json";
+            String someoneElse = "someoneElse";
+            return hapiTest(
+                    newKeyNamed(someoneElse),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                    fileCreate(filename).contents("anyContentAgain"),
+                    // Sign the node operator query request with a totally unrelated key, to show that there is no
+                    // signature check
+                    getFileInfo(filename)
+                            .payingWith(NODE_OPERATOR)
+                            .signedBy(someoneElse)
+                            .asNodeOperator()
+                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.OK),
+                    // But the non-node operator submitter must still sign
+                    getFileInfo(filename)
+                            .payingWith(PAYER)
+                            .signedBy(someoneElse)
+                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_SIGNATURE));
+        }
+
+        /**
+         * Get a Smart Contract Function tests
+         */
+        @HapiTest
+        @DisplayName("Only node operators aren't charged for contract info queries")
+        final Stream<DynamicTest> getSmartContractQueryNodeOperatorNotCharged() {
+            final var contract = "PretendPair"; // any contract, nothing special about this one
+            return hapiTest(
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                    uploadInitCode(contract),
+                    contractCreate(contract),
+                    // Both the node operator and payer submit queries
+                    getContractInfo(contract).payingWith(NODE_OPERATOR).asNodeOperator(),
+                    getContractInfo(contract).payingWith(PAYER),
+                    sleepFor(1_000),
+                    // The node operator wasn't charged
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS),
+                    // But the payer was charged
+                    getAccountBalance(PAYER).hasTinyBars(lessThan(ONE_HUNDRED_HBARS)));
+        }
+
+        @HapiTest
+        @DisplayName("Only node operators don't need to sign contract info queries")
+        final Stream<DynamicTest> getSmartContractQuerySigNotRequired() {
+            final var contract = "PretendPair"; // any contract, nothing special about this one
+            final var someoneElse = "someoneElse";
+            return hapiTest(
+                    newKeyNamed(someoneElse),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                    uploadInitCode(contract),
+                    contractCreate(contract),
+                    // Sign the node operator query request with a totally unrelated key, to show that there is no
+                    // signature check
+                    getContractInfo(contract)
+                            .payingWith(NODE_OPERATOR)
+                            .signedBy(someoneElse)
+                            .asNodeOperator()
+                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.OK),
+                    // But the non-node operator submitter must still sign
+                    getContractInfo(contract)
+                            .payingWith(PAYER)
+                            .signedBy(someoneElse)
+                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_SIGNATURE));
+        }
+
+        /**
+         * Get a Smart Contract Bytecode tests
+         */
+        @HapiTest
+        @DisplayName("Only node operators aren't charged for contract bytecode queries")
+        final Stream<DynamicTest> getContractBytecodeQueryNodeOperatorNotCharged() {
+            final var contract = "PretendPair"; // any contract, nothing special about this one
+            return hapiTest(
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                    uploadInitCode(contract),
+                    contractCreate(contract),
+                    // Both the node operator and payer submit queries
+                    getContractBytecode(contract).payingWith(NODE_OPERATOR).asNodeOperator(),
+                    getContractBytecode(contract).payingWith(PAYER),
+                    sleepFor(1_000),
+                    // The node operator wasn't charged
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS),
+                    // But the payer was charged
+                    getAccountBalance(PAYER).hasTinyBars(lessThan(ONE_HUNDRED_HBARS)));
+        }
+
+        @HapiTest
+        @DisplayName("Only node operators don't need to sign contract bytecode queries")
+        final Stream<DynamicTest> getContractBytecodeQueryNoSigRequired() {
+            final var contract = "PretendPair"; // any contract, nothing special about this one
+            final var someoneElse = "someoneElse";
+            return hapiTest(
+                    newKeyNamed(someoneElse),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                    uploadInitCode(contract),
+                    contractCreate(contract),
+                    // Sign the node operator query request with a totally unrelated key, to show that there is no
+                    // signature check
+                    getContractBytecode(contract)
+                            .payingWith(NODE_OPERATOR)
+                            .signedBy(someoneElse)
+                            .asNodeOperator()
+                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.OK),
+                    // But the non-node operator submitter must still sign
+                    getContractBytecode(contract)
+                            .payingWith(PAYER)
+                            .signedBy(someoneElse)
+                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_SIGNATURE));
+        }
+
+        /**
+         * Get Schedule Info tests
+         */
+        @HapiTest
+        @DisplayName("Only node operators aren't charged for schedule info queries")
+        final Stream<DynamicTest> getScheduleInfoQueryNodeOperatorNotCharged() {
+            final var txnToSchedule =
+                    cryptoTransfer(tinyBarsFromTo(PAYER, DEFAULT_PAYER, 1)); // any txn, nothing special here
+            final var schedule = "anySchedule";
+            return hapiTest(
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                    scheduleCreate(schedule, txnToSchedule),
+                    // Both the node operator and payer submit queries
+                    getScheduleInfo(schedule).payingWith(NODE_OPERATOR).asNodeOperator(),
+                    getScheduleInfo(schedule).payingWith(PAYER),
+                    sleepFor(1_000),
+                    // The node operator wasn't charged
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS),
+                    // But the payer was charged
+                    getAccountBalance(PAYER).hasTinyBars(lessThan(ONE_HUNDRED_HBARS)));
+        }
+
+        @HapiTest
+        @DisplayName("Only node operators don't need to sign schedule info queries")
+        final Stream<DynamicTest> getScheduleInfoQueryNoSigRequired() {
+            final var txnToSchedule =
+                    cryptoTransfer(tinyBarsFromTo(PAYER, DEFAULT_PAYER, 1)); // any txn, nothing special here
+            final var schedule = "anySchedule";
+            final var someoneElse = "someoneElse";
+            return hapiTest(
+                    newKeyNamed(someoneElse),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                    scheduleCreate(schedule, txnToSchedule),
+                    // Sign the node operator query request with a totally unrelated key, to show that there is no
+                    // signature check
+                    getScheduleInfo(schedule)
+                            .payingWith(NODE_OPERATOR)
+                            .signedBy(someoneElse)
+                            .asNodeOperator()
+                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.OK),
+                    // But the non-node operator submitter must still sign
+                    getScheduleInfo(schedule)
+                            .payingWith(PAYER)
+                            .signedBy(someoneElse)
+                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_SIGNATURE));
         }
     }
 }
