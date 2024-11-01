@@ -101,10 +101,6 @@ class IsAuthorizedRawCallTest extends CallTestBase {
     }
 
     @ParameterizedTest
-    @CsvSource({})
-    void noLongZeroAddressesValidIfEC(final long account, final boolean expected) {}
-
-    @ParameterizedTest
     @CsvSource({"0,27", "1,28", "27,27", "28,28", "45,27", "46,28", "18,"})
     void reverseVTest(final byte fromV, final Byte expectedV) {
         subject = getSubject(APPROVED_HEADLONG_ADDRESS);
