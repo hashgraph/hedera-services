@@ -197,7 +197,7 @@ class SerializationTest extends MerkleTestBase {
     @ValueSource(booleans = {true, false})
     void simpleReadAndWrite(boolean forceFlush) throws IOException, ConstructableRegistryException {
         final var schemaV1 = createV1Schema();
-        final var originalTree = (MerkleStateRoot) createMerkleHederaState(schemaV1);
+        final var originalTree = createMerkleHederaState(schemaV1);
 
         // When we serialize it to bytes and deserialize it back into a tree
         MerkleStateRoot copy = originalTree.copy(); // make a copy to make VM flushable

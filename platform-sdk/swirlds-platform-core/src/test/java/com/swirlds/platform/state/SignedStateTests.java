@@ -61,8 +61,10 @@ class SignedStateTests {
      * @param releaseCallback this method is called when the State is released
      */
     private MerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
-        final MerkleStateRoot state = spy(new MerkleStateRoot(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
+        final var real =
+                new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(real);
+        final MerkleStateRoot state = spy(real);
 
         final PlatformStateModifier platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
@@ -206,14 +208,14 @@ class SignedStateTests {
     @Test
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
-        final MerkleRoot state = spy(new MerkleStateRoot(
+        final MerkleStateRoot state = spy(new MerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
-        state.initPlatformState();
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         when(state.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState = new SignedState(
-                TestPlatformContextBuilder.create().build(),
+                TestPlatformContextBuilder.create().build().getConfiguration(),
                 mock(SignatureVerifier.class),
                 state,
                 "test",

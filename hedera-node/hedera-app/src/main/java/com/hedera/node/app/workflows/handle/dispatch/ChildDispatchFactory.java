@@ -447,7 +447,8 @@ public class ChildDispatchFactory {
      * @param txBody the transaction body
      * @return the transaction information
      */
-    private TransactionInfo getTxnInfoFrom(@NonNull final AccountID payerId, @NonNull final TransactionBody txBody) {
+    public static TransactionInfo getTxnInfoFrom(
+            @NonNull final AccountID payerId, @NonNull final TransactionBody txBody) {
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
         final var signedTransaction =
                 SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
@@ -472,7 +473,7 @@ public class ChildDispatchFactory {
      * @param txBody the transaction body
      * @return the functionality
      */
-    private static HederaFunctionality functionOfTxn(final TransactionBody txBody) {
+    public static HederaFunctionality functionOfTxn(final TransactionBody txBody) {
         try {
             return functionOf(txBody);
         } catch (final UnknownHederaFunctionality e) {

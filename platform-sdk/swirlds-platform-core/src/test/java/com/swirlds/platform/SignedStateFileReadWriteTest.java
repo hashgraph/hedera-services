@@ -144,8 +144,10 @@ class SignedStateFileReadWriteTest {
         assertTrue(exists(stateFile), "signed state file should be present");
         assertTrue(exists(signatureSetFile), "signature set file should be present");
 
-        final DeserializedSignedState deserializedSignedState =
-                readStateFile(TestPlatformContextBuilder.create().build(), stateFile, SignedStateFileUtils::readState);
+        final DeserializedSignedState deserializedSignedState = readStateFile(
+                TestPlatformContextBuilder.create().build().getConfiguration(),
+                stateFile,
+                SignedStateFileUtils::readState);
         MerkleCryptoFactory.getInstance()
                 .digestTreeSync(
                         deserializedSignedState.reservedSignedState().get().getState());
@@ -191,8 +193,10 @@ class SignedStateFileReadWriteTest {
 
         assertTrue(exists(stateFile), "signed state file should be present");
 
-        final DeserializedSignedState deserializedSignedState =
-                readStateFile(TestPlatformContextBuilder.create().build(), stateFile, SignedStateFileUtils::readState);
+        final DeserializedSignedState deserializedSignedState = readStateFile(
+                TestPlatformContextBuilder.create().build().getConfiguration(),
+                stateFile,
+                SignedStateFileUtils::readState);
         MerkleCryptoFactory.getInstance()
                 .digestTreeSync(
                         deserializedSignedState.reservedSignedState().get().getState());
