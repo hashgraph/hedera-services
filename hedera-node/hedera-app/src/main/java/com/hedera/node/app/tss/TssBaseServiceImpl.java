@@ -157,15 +157,15 @@ public class TssBaseServiceImpl implements TssBaseService {
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
 
-        final var activeRoster =
-                storeFactory.readableStore(ReadableRosterStore.class).getActiveRoster();
-        final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
+        final var activeRoster = requireNonNull(
+                storeFactory.readableStore(ReadableRosterStore.class).getActiveRoster());
 
         final var activeDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, selfId);
         final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
-        final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
 
+        final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
         final var tssPrivateShares = getTssPrivateShares(activeDirectory, tssStore, activeRosterHash);
+        final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
         // FUTURE - instead of an arbitrary counter here, use the share index from the private share
         final var shareIndex = new AtomicInteger(0);
         for (final var tssPrivateShare : tssPrivateShares) {

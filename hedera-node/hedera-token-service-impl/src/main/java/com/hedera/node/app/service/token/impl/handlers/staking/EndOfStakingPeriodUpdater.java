@@ -297,35 +297,32 @@ public class EndOfStakingPeriodUpdater {
     }
 
     /**
-     * Calculates consensus weight of the node. The network normalizes the weights of nodes above minStake so that the
-     * total sum of weight is approximately as described by {@code StakingConfig#sumOfConsensusWeights}.
-     * The stake field in {@code StakingNodeInfo} is already clamped to [minStake, maxStake].
-     * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake,
-     * the weight of a node A will be computed so that every node above minStake has weight at least 1;
-     * but any node that has staked at least 1 out of every 250 whole hbars staked will have weight >= 2.
-     *
-     * @param stake the stake of current node, includes stake rewarded and non-rewarded
-     * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
-     * @param sumOfConsensusWeights the sum of consensus weights of all nodes
-     * @return calculated consensus weight of the node
+     * Scales a single node's hbar stake in tinybars to a consensus weight based on the total stake of all nodes
+     * and the desired total weight.
+     * <p>
+     * The result are normalized weights whose sum will be approximately the given total weight. That is, any node
+     * with a non-zero amount of stake will have a weight of at least {@code 1}; any node with a stake of at least one
+     * out of every 250 whole hbars staked will have weight at least {@code 2}; and so on.
+     * @param nodeStake the stake of a single node, both rewarded and non-rewarded
+     * @param totalStake the total stake of all nodes
+     * @param totalWeight the desired approximate total weight of all nodes
+     * @return the scaled consensus weight for the node
      */
     @VisibleForTesting
-    public static int scaleStakeToWeight(
-            final long stake, final long totalStakeOfAllNodes, final int sumOfConsensusWeights) {
-        // if node's total stake is less than minStake, the StakingNodeInfo stake will be zero
-        if (stake == 0) return 0;
-
-        // If a node's stake is not zero then totalStakeOfAllNodes can't be zero. This error should never happen. It is
-        // added to avoid divide by zero exception, in case of any bug.
-        if (totalStakeOfAllNodes <= 0L) {
-            log.warn("Total stake of all nodes should be greater than 0. But got {}", totalStakeOfAllNodes);
+    public static int scaleStakeToWeight(final long nodeStake, final long totalStake, final int totalWeight) {
+        if (nodeStake == 0) {
             return 0;
         }
-        final var weight = BigInteger.valueOf(stake)
-                .multiply(BigInteger.valueOf(sumOfConsensusWeights))
-                .divide(BigInteger.valueOf(totalStakeOfAllNodes))
-                .longValue();
-        return (int) Math.max(weight, 1);
+        if (totalStake <= 0L) {
+            log.error("Scaling {} to zero weight because total stake is {}", nodeStake, totalStake);
+            return 0;
+        }
+        return Math.max(
+                1,
+                BigInteger.valueOf(nodeStake)
+                        .multiply(BigInteger.valueOf(totalWeight))
+                        .divide(BigInteger.valueOf(totalStake))
+                        .intValueExact());
     }
 
     /**
