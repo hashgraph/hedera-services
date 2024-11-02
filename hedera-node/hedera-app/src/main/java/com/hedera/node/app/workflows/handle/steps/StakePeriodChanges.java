@@ -49,27 +49,27 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Handles the daily staking period updates
+ * Orchestrates changes associated to the beginning of a new staking period.
  */
 @Singleton
-public class NodeStakeUpdates {
-    private static final Logger logger = LogManager.getLogger(NodeStakeUpdates.class);
+public class StakePeriodChanges {
+    private static final Logger logger = LogManager.getLogger(StakePeriodChanges.class);
 
     private static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
     private static final long MINUTES_TO_MILLISECONDS = 60_000L;
 
-    private final EndOfStakingPeriodUpdater stakingCalculator;
+    private final EndOfStakingPeriodUpdater endOfStakingPeriodUpdater;
     private final ExchangeRateManager exchangeRateManager;
     private final TssBaseService tssBaseService;
     private final StoreMetricsService storeMetricsService;
 
     @Inject
-    public NodeStakeUpdates(
-            @NonNull final EndOfStakingPeriodUpdater stakingPeriodCalculator,
+    public StakePeriodChanges(
+            @NonNull final EndOfStakingPeriodUpdater endOfStakingPeriodUpdater,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TssBaseService tssBaseService,
             @NonNull final StoreMetricsService storeMetricsService) {
-        this.stakingCalculator = requireNonNull(stakingPeriodCalculator);
+        this.endOfStakingPeriodUpdater = requireNonNull(endOfStakingPeriodUpdater);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.tssBaseService = requireNonNull(tssBaseService);
         this.storeMetricsService = requireNonNull(storeMetricsService);
@@ -134,7 +134,7 @@ public class NodeStakeUpdates {
             try {
                 // handle staking updates
                 final var streamBuilder =
-                        stakingCalculator.updateNodes(tokenContext, exchangeRateManager.exchangeRates());
+                        endOfStakingPeriodUpdater.updateNodes(tokenContext, exchangeRateManager.exchangeRates());
                 if (streamBuilder != null) {
                     stack.commitTransaction(streamBuilder);
                 }
