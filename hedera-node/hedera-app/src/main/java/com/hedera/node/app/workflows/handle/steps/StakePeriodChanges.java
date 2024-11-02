@@ -49,7 +49,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Orchestrates changes associated to the beginning of a new staking period.
+ * Orchestrates changes that happen before the first transaction in a new staking period. See
+ * {@link StakePeriodChanges#process(Dispatch, SavepointStackImpl, TokenContext, StreamMode, boolean, Instant)}
+ * for details.
  */
 @Singleton
 public class StakePeriodChanges {
@@ -76,15 +78,18 @@ public class StakePeriodChanges {
     }
 
     /**
-     * This time hook is responsible for performing necessary staking updates and distributing staking
-     * rewards. This should only be done during handling of the first transaction of each new staking
-     * period, which staking period usually starts at midnight UTC.
+     * Orchestrates changes that happen before the first transaction in a new staking period, as follows:
+     * <ol>
+     *     <li>Saves the current exchange rates as the "midnight rates" that tether the rates within the
+     *     following period to a bounded interval, barring an explicit admin override.</li>
+     *     <li>Updates node staking metadata (in particular, the nodes' reward rates earned for the just-ending
+     *     period and their weight for the just-starting period); and exports this to the block stream.</li>
+     *     <li>If appropriate, triggers rekeying a new candidate roster based on a snapshot of the node
+     *     information computed in the previous step, and all dynamic address book (DAB) transactions
+     *     handled up to this consensus time.</li>
+     * </ol>
      *
-     * <p>Given successful processing of staking updates, and keying candidate TSS rosters is enabled,
-     * this time hook also signals to the {@link TssBaseService} that a new candidate roster – constructed
-     * from the new weights calculated herein for staking – is available.
-     *
-     * @param dispatch     the dispatch
+     * @param dispatch the dispatch
      * @param stack the savepoint stack
      * @param tokenContext the token context
      * @param streamMode the stream mode
@@ -103,58 +108,51 @@ public class StakePeriodChanges {
         requireNonNull(tokenContext);
         requireNonNull(streamMode);
         requireNonNull(lastIntervalProcessTime);
-        var shouldExport = isGenesis;
-        if (!shouldExport) {
-            final var consensusTime = tokenContext.consensusTime();
-            if (streamMode == RECORDS) {
-                final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
-                final var lastHandleTime = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
-                if (consensusTime.getEpochSecond() > lastHandleTime.seconds()) {
-                    shouldExport = isNextStakingPeriod(
-                            consensusTime,
-                            Instant.ofEpochSecond(lastHandleTime.seconds(), lastHandleTime.nanos()),
-                            tokenContext);
-                }
-            } else {
-                if (consensusTime.getEpochSecond() > lastIntervalProcessTime.getEpochSecond()) {
-                    shouldExport = isNextStakingPeriod(consensusTime, lastIntervalProcessTime, tokenContext);
-                }
-            }
-        }
-        if (shouldExport) {
+        if (isGenesis || isStakingPeriodBoundary(streamMode, tokenContext, lastIntervalProcessTime)) {
             try {
-                // Update the exchange rate
                 exchangeRateManager.updateMidnightRates(stack);
                 stack.commitSystemStateChanges();
-            } catch (final Exception e) {
-                // If anything goes wrong, we log the error and continue
+            } catch (Exception e) {
                 logger.error("CATASTROPHIC failure updating midnight rates", e);
                 stack.rollbackFullStack();
             }
             try {
-                // handle staking updates
                 final var streamBuilder =
                         endOfStakingPeriodUpdater.updateNodes(tokenContext, exchangeRateManager.exchangeRates());
                 if (streamBuilder != null) {
                     stack.commitTransaction(streamBuilder);
                 }
-            } catch (final Exception e) {
-                // If anything goes wrong, we log the error and continue
+            } catch (Exception e) {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
             }
-
-            // If enabled, initialize a new candidate roster
             final var config = tokenContext.configuration();
-            final var tssConfig = config.getConfigData(TssConfig.class);
-            if (tssConfig.keyCandidateRoster()) {
-                // We can't use the handle context to retrieve a WritableRosterStore object because
-                // the handle context is only scoped to the token service, so we use the
-                // `newWritableRosterStore` method here instead
-                final var rosterStore = newWritableRosterStore(stack, config);
-                keyNewRoster(dispatch.handleContext(), rosterStore);
+            if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
+                startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
             }
         }
+    }
+
+    private boolean isStakingPeriodBoundary(
+            @NonNull final StreamMode streamMode,
+            @NonNull final TokenContext tokenContext,
+            @NonNull final Instant lastIntervalProcessTime) {
+        final var consensusTime = tokenContext.consensusTime();
+        if (streamMode == RECORDS) {
+            final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
+            final var lastHandleTime = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
+            if (consensusTime.getEpochSecond() > lastHandleTime.seconds()) {
+                return isNextStakingPeriod(
+                        consensusTime,
+                        Instant.ofEpochSecond(lastHandleTime.seconds(), lastHandleTime.nanos()),
+                        tokenContext);
+            }
+        } else {
+            if (consensusTime.getEpochSecond() > lastIntervalProcessTime.getEpochSecond()) {
+                return isNextStakingPeriod(consensusTime, lastIntervalProcessTime, tokenContext);
+            }
+        }
+        return false;
     }
 
     @VisibleForTesting
@@ -172,15 +170,14 @@ public class StakePeriodChanges {
         }
     }
 
-    private void keyNewRoster(
+    private void startKeyingCandidateRoster(
             @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
         final var nodeStore = handleContext.storeFactory().readableStore(ReadableNodeStore.class);
-        final var newCandidateRoster = nodeStore.newRosterFromNodes();
-
-        if (!Objects.equals(newCandidateRoster, rosterStore.getCandidateRoster())
-                && !Objects.equals(newCandidateRoster, rosterStore.getActiveRoster())) {
-            rosterStore.putCandidateRoster(newCandidateRoster);
-            tssBaseService.setCandidateRoster(newCandidateRoster, handleContext);
+        final var roster = nodeStore.snapshotOfFutureRoster();
+        if (!Objects.equals(roster, rosterStore.getCandidateRoster())
+                && !Objects.equals(roster, rosterStore.getActiveRoster())) {
+            rosterStore.putCandidateRoster(roster);
+            tssBaseService.setCandidateRoster(roster, handleContext);
         }
     }
 
