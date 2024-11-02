@@ -166,7 +166,8 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
 
         final var tssPrivateShares = getTssPrivateShares(activeDirectory, tssStore, activeRosterHash);
-        final AtomicInteger shareIndex = new AtomicInteger(0);
+        // FUTURE - instead of an arbitrary counter here, use the share index from the private share
+        final var shareIndex = new AtomicInteger(0);
         for (final var tssPrivateShare : tssPrivateShares) {
             CompletableFuture.runAsync(
                             () -> {
@@ -177,7 +178,6 @@ public class TssBaseServiceImpl implements TssBaseService {
                                         .shareIndex(shareIndex.getAndAdd(1))
                                         .tssMessage(Bytes.wrap(msg.bytes()))
                                         .build();
-                                // FUTURE : Remove handleContext and provide configuration and networkInfo
                                 tssSubmissions.submitTssMessage(tssMessage, context);
                             },
                             tssLibraryExecutor)

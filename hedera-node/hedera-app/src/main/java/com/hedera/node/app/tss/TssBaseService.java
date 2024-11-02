@@ -131,5 +131,5 @@ public interface TssBaseService extends Service {
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
             @NonNull ServicesSoftwareVersion version,
-            @NonNull final Configuration configuration);
+            @NonNull Configuration configuration);
 }
