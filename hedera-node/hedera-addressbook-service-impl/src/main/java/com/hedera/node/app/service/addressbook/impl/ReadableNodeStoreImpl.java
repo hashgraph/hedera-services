@@ -103,7 +103,6 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
                 rosterEntries.add(entry);
             }
         }
-
         rosterEntries.sort(Comparator.comparingLong(RosterEntry::nodeId));
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }

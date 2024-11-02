@@ -119,30 +119,30 @@ public class NodeStakeUpdatesTest {
     @Mock
     private WritableSingletonState<RosterState> rosterState;
 
-    private NodeStakeUpdates subject;
+    private StakePeriodChanges subject;
 
     @BeforeEach
     void setUp() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 
-        subject =
-                new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService, storeMetricsService);
+        subject = new StakePeriodChanges(
+                stakingPeriodCalculator, exchangeRateManager, tssBaseService, storeMetricsService);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void nullArgConstructor() {
         Assertions.assertThatThrownBy(
-                        () -> new NodeStakeUpdates(null, exchangeRateManager, tssBaseService, storeMetricsService))
-                .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(
-                        () -> new NodeStakeUpdates(stakingPeriodCalculator, null, tssBaseService, storeMetricsService))
+                        () -> new StakePeriodChanges(null, exchangeRateManager, tssBaseService, storeMetricsService))
                 .isInstanceOf(NullPointerException.class);
         Assertions.assertThatThrownBy(() ->
-                        new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, null, storeMetricsService))
+                        new StakePeriodChanges(stakingPeriodCalculator, null, tssBaseService, storeMetricsService))
                 .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(
-                        () -> new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService, null))
+        Assertions.assertThatThrownBy(() ->
+                        new StakePeriodChanges(stakingPeriodCalculator, exchangeRateManager, null, storeMetricsService))
+                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() ->
+                        new StakePeriodChanges(stakingPeriodCalculator, exchangeRateManager, tssBaseService, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -195,7 +195,7 @@ public class NodeStakeUpdatesTest {
 
         // Pre-condition check
         Assertions.assertThat(
-                        NodeStakeUpdates.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
+                        StakePeriodChanges.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
 
@@ -217,7 +217,7 @@ public class NodeStakeUpdatesTest {
 
         // Pre-condition check
         Assertions.assertThat(
-                        NodeStakeUpdates.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
+                        StakePeriodChanges.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
 
@@ -255,7 +255,7 @@ public class NodeStakeUpdatesTest {
 
         final var earlierNowConsensus =
                 CONSENSUS_TIME_1234567.minusSeconds(Duration.ofDays(1).toSeconds());
-        final var result = NodeStakeUpdates.isNextStakingPeriod(earlierNowConsensus, CONSENSUS_TIME_1234567, context);
+        final var result = StakePeriodChanges.isNextStakingPeriod(earlierNowConsensus, CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isFalse();
     }
@@ -265,7 +265,7 @@ public class NodeStakeUpdatesTest {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
 
         final var result =
-                NodeStakeUpdates.isNextStakingPeriod(CONSENSUS_TIME_1234567, CONSENSUS_TIME_1234567, context);
+                StakePeriodChanges.isNextStakingPeriod(CONSENSUS_TIME_1234567, CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isFalse();
     }
@@ -276,7 +276,7 @@ public class NodeStakeUpdatesTest {
 
         final var laterNowConsensus =
                 CONSENSUS_TIME_1234567.plusSeconds(Duration.ofDays(1).toSeconds());
-        final var result = NodeStakeUpdates.isNextStakingPeriod(laterNowConsensus, CONSENSUS_TIME_1234567, context);
+        final var result = StakePeriodChanges.isNextStakingPeriod(laterNowConsensus, CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isTrue();
     }
@@ -290,7 +290,7 @@ public class NodeStakeUpdatesTest {
                 // 1000 min * 60 seconds/min
                 1000 * 60);
         final var result =
-                NodeStakeUpdates.isNextStakingPeriod(earlierStakingPeriodTime, CONSENSUS_TIME_1234567, context);
+                StakePeriodChanges.isNextStakingPeriod(earlierStakingPeriodTime, CONSENSUS_TIME_1234567, context);
         Assertions.assertThat(result).isFalse();
     }
 
@@ -303,7 +303,7 @@ public class NodeStakeUpdatesTest {
                 // 1000 min * 60 seconds/min
                 1000 * 60);
         final var result =
-                NodeStakeUpdates.isNextStakingPeriod(laterStakingPeriodTime, CONSENSUS_TIME_1234567, context);
+                StakePeriodChanges.isNextStakingPeriod(laterStakingPeriodTime, CONSENSUS_TIME_1234567, context);
         Assertions.assertThat(result).isTrue();
     }
 
