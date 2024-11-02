@@ -54,7 +54,7 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
     }
 
     @Override
-    public Roster newRosterFromNodes() {
+    public Roster snapshotOfFutureRoster() {
         return constructFromNodesState(nodesState());
     }
 

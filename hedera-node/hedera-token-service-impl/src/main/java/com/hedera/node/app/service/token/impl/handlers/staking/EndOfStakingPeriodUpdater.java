@@ -124,7 +124,7 @@ public class EndOfStakingPeriodUpdater {
         // Tracks the maximum stake of any node, used to scale the recomputed consensus weights
         long newMaxNodeStake = 0;
         // Accumulates the new total hbar staked to all nodes, whether rewarded or not
-        long newTotalStaked = 0;
+        long newTotalStake = 0;
         // Accumulates the new total hbar staked to all nodes that will be rewarded
         long newStakeToReward = 0;
         // Records the new staking node info for each node
@@ -174,62 +174,51 @@ public class EndOfStakingPeriodUpdater {
             nodeInfo = stakeRewardsHelper.increasePendingRewardsBy(stakingRewardsStore, pendingRewards, nodeInfo);
 
             newStakeToReward += newStakes.stakeRewardStart();
-            newTotalStaked += nodeInfo.stake();
+            newTotalStake += nodeInfo.stake();
             // Update the max stake of all nodes
             newMaxNodeStake = Math.max(newMaxNodeStake, nodeInfo.stake());
-            // Keep the staking node info objects because we'll need them for more calculations
+            // We can't finalize the new node weights until we have the final stake tallies, so just record
+            // the in-progress node info for now
             newNodeInfos.put(nodeId, nodeInfo);
         }
 
-        // Accumulates the NodeStakeUpdate summaries for each node
+        // Accumulates the node stakes for externalization
         final var nodeStakes = new ArrayList<NodeStake>();
-        // Configuration determines the the total consensus weight to be distributed among nodes
+        // Configuration determines the total consensus weight to be distributed among nodes
         final int totalWeight = stakingConfig.sumOfConsensusWeights();
-        for (final Map.Entry<Long, StakingNodeInfo> entry : newNodeInfos.entrySet()) {
-            final var nodeNum = entry.getKey();
-            var stakingInfo = entry.getValue();
-
+        // Final for reference in lambda
+        final long maxStake = newMaxNodeStake;
+        final long totalStake = newTotalStake;
+        newNodeInfos.forEach((nodeId, nodeInfo) -> {
+            var newNodeInfo = nodeInfo;
             // If the total stake(rewarded + non-rewarded) of a node is less than minStake, stakingInfo's stake field
             // represents 0, as per calculation done in reviewElectionsAndRecomputeStakes. Similarly, the total
             // stake(rewarded + non-rewarded) of the node is greater than maxStake, stakingInfo's stake field is set to
             // maxStake.So, there is no need to clamp the stake value here. Sum of all stakes can be used to calculate
             // the weight.
-            final int updatedWeight;
-            if (!stakingInfo.deleted()) {
-                updatedWeight = calculateWeightFromStake(stakingInfo.stake(), newTotalStaked, totalWeight);
-            } else {
-                updatedWeight = 0;
-            }
-            final var oldWeight = stakingInfo.weight();
-            stakingInfo = stakingInfo.copyBuilder().weight(updatedWeight).build();
-            log.info(
-                    "Node {} weight is calculated. Old weight {}, updated weight {}",
-                    nodeNum,
-                    oldWeight,
-                    updatedWeight);
+            final int newWeight =
+                    nodeInfo.deleted() ? 0 : scaleStakeToWeight(nodeInfo.stake(), totalStake, totalWeight);
+            log.info("Node{} weight changed from {} to {}", nodeId, nodeInfo.weight(), newWeight);
+            newNodeInfo = nodeInfo.copyBuilder().weight(newWeight).build();
 
-            // Scale the consensus weight range [0, sumOfConsensusWeights] to [minStake, trueMaxStakeOfAllNodes] range
-            // and export to mirror node. We need to consider the true maxStakeOfAllNodes instead of maxStake becausefor
-            // a one node network, whose stake < maxStake, we assign a weight of sumOfConsensusWeights to the node. When
-            // we scale it back to stake, we need to give back the real stake of the node instead of maxStake set on the
-            // node.
-            final var scaledWeightToStake = scaleUpWeightToStake(
-                    updatedWeight, stakingInfo.minStake(), newMaxNodeStake, newTotalStaked, totalWeight);
+            // We rescale the weight range [0, sumOfConsensusWeights] back to [minStake, maxStake] before
+            // externalizing the node stake metadata to stream consumers like mirror nodes
+            final var rescaledWeight = rescaleWeight(newWeight, nodeInfo.minStake(), maxStake, totalStake, totalWeight);
             nodeStakes.add(EndOfStakingPeriodUtils.fromStakingInfo(
-                    nodeRewardRates.get(nodeNum),
-                    entry.getValue().copyBuilder().stake(scaledWeightToStake).build()));
+                    nodeRewardRates.get(nodeId),
+                    nodeInfo.copyBuilder().stake(rescaledWeight).build()));
             // Persist the updated staking info
-            stakingInfoStore.put(nodeNum, stakingInfo);
-        }
+            stakingInfoStore.put(nodeId, newNodeInfo);
+        });
         // Update the staking reward values for the network
         stakingRewardsStore.put(asStakingRewardBuilder(stakingRewardsStore)
                 .totalStakedRewardStart(newStakeToReward)
-                .totalStakedStart(newTotalStaked)
+                .totalStakedStart(newTotalStake)
                 .build());
         final long rewardAccountBalance = getRewardsBalance(accountStore);
         log.info(
                 "Total stake start is now {} ({} rewarded), pending rewards are {} vs 0.0.800" + " balance {}",
-                newTotalStaked,
+                newTotalStake,
                 newStakeToReward,
                 stakingRewardsStore.pendingRewards(),
                 rewardAccountBalance);
@@ -267,7 +256,7 @@ public class EndOfStakingPeriodUpdater {
      * @return scaled weight of the node
      */
     @VisibleForTesting
-    public static long scaleUpWeightToStake(
+    public static long rescaleWeight(
             final int weight,
             final long newMinStake,
             final long newMaxStake,
@@ -321,7 +310,7 @@ public class EndOfStakingPeriodUpdater {
      * @return calculated consensus weight of the node
      */
     @VisibleForTesting
-    public static int calculateWeightFromStake(
+    public static int scaleStakeToWeight(
             final long stake, final long totalStakeOfAllNodes, final int sumOfConsensusWeights) {
         // if node's total stake is less than minStake, the StakingNodeInfo stake will be zero
         if (stake == 0) return 0;
