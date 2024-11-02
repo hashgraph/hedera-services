@@ -38,9 +38,9 @@ public class TssUtils {
     /**
      * Compute the TSS participant directory from the roster.
      *
-     * @param roster           the roster
+     * @param roster the roster
      * @param maxSharesPerNode the maximum number of shares per node
-     * @param selfNodeId       the node ID of the current node
+     * @param selfNodeId the node ID of the current node
      * @return the TSS participant directory
      */
     public static TssParticipantDirectory computeParticipantDirectory(
