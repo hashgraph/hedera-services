@@ -79,7 +79,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class TssBaseServiceImpl implements TssBaseService {
     private static final Logger log = LogManager.getLogger(TssBaseServiceImpl.class);
-    private final TssBaseServiceComponent component;
 
     /**
      * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
@@ -87,12 +86,12 @@ public class TssBaseServiceImpl implements TssBaseService {
      */
     private final List<BiConsumer<byte[], byte[]>> consumers = new CopyOnWriteArrayList<>();
 
+    private final TssMetrics tssMetrics;
+    private final TssLibrary tssLibrary;
     private final TssHandlers tssHandlers;
     private final TssSubmissions tssSubmissions;
-    private TssMetrics tssMetrics;
-    private final ExecutorService signingExecutor;
-    private final TssLibrary tssLibrary;
     private final Executor tssLibraryExecutor;
+    private final ExecutorService signingExecutor;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
@@ -102,25 +101,20 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final Executor tssLibraryExecutor,
             @NonNull final Metrics metrics) {
         requireNonNull(appContext);
-        this.signingExecutor = requireNonNull(signingExecutor);
-        this.component = DaggerTssBaseServiceComponent.factory()
-                .create(appContext.gossip(), submissionExecutor, tssLibraryExecutor, metrics);
-        this.tssHandlers = new TssHandlers(this.component.tssMessageHandler(), this.component.tssVoteHandler());
-        this.tssSubmissions = this.component.tssSubmissions();
         this.tssLibrary = requireNonNull(tssLibrary);
+        this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
+        final var component = DaggerTssBaseServiceComponent.factory()
+                .create(tssLibrary, appContext.gossip(), submissionExecutor, tssLibraryExecutor, metrics);
+        this.tssMetrics = component.tssMetrics();
+        this.tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
+        this.tssSubmissions = component.tssSubmissions();
     }
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0560TssBaseSchema());
-    }
-
-    @Override
-    public void registerMetrics(@NonNull final TssMetrics metrics) {
-        requireNonNull(metrics);
-        this.tssMetrics = this.component.tssMetrics(metrics);
     }
 
     @Override

@@ -25,7 +25,6 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -202,11 +201,6 @@ public class FakeTssBaseService implements TssBaseService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         delegate.registerSchemas(registry);
-    }
-
-    @Override
-    public void registerMetrics(@NonNull final TssMetrics metrics) {
-        delegate.registerMetrics(metrics);
     }
 
     @Override

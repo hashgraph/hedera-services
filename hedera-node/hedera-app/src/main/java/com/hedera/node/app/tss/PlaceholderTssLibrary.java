@@ -30,10 +30,10 @@ import com.hedera.node.app.tss.pairings.PairingPrivateKey;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.pairings.PairingSignature;
 import com.hedera.node.app.tss.pairings.SignatureSchema;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.List;
-import org.jetbrains.annotations.NotNull;
 
 public class PlaceholderTssLibrary implements TssLibrary {
     public static final int DEFAULT_THRESHOLD = 10;
@@ -46,72 +46,71 @@ public class PlaceholderTssLibrary implements TssLibrary {
     private final int threshold;
     private byte[] message = new byte[0];
 
-    public PlaceholderTssLibrary(int threshold) {
-        if (threshold <= 0) {
-            throw new IllegalArgumentException("Invalid threshold: " + threshold);
-        }
-
-        this.threshold = threshold;
-    }
-
     public PlaceholderTssLibrary() {
         this(DEFAULT_THRESHOLD);
     }
 
-    @NotNull
-    @Override
-    public TssMessage generateTssMessage(@NotNull TssParticipantDirectory tssParticipantDirectory) {
-        return null;
+    public PlaceholderTssLibrary(final int threshold) {
+        if (threshold <= 0) {
+            throw new IllegalArgumentException("Invalid threshold: " + threshold);
+        }
+        this.threshold = threshold;
     }
 
-    @NotNull
+    @NonNull
+    @Override
+    public TssMessage generateTssMessage(@NonNull final TssParticipantDirectory tssParticipantDirectory) {
+        return new TssMessage(new byte[0]);
+    }
+
+    @NonNull
     @Override
     public TssMessage generateTssMessage(
-            @NotNull TssParticipantDirectory tssParticipantDirectory, @NotNull TssPrivateShare privateShare) {
+            @NonNull TssParticipantDirectory tssParticipantDirectory, @NonNull TssPrivateShare privateShare) {
         return new TssMessage(new byte[0]);
     }
 
     @Override
     public boolean verifyTssMessage(
-            @NotNull TssParticipantDirectory participantDirectory, @NotNull TssMessage tssMessage) {
+            @NonNull TssParticipantDirectory participantDirectory, @NonNull TssMessage tssMessage) {
         return true;
     }
 
-    @NotNull
+    @NonNull
     @Override
     public List<TssPrivateShare> decryptPrivateShares(
-            @NotNull TssParticipantDirectory participantDirectory, @NotNull List<TssMessage> validTssMessages) {
+            @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> validTssMessages) {
         return List.of();
     }
 
-    @NotNull
+    @NonNull
     @Override
-    public PairingPrivateKey aggregatePrivateShares(@NotNull List<TssPrivateShare> privateShares) {
+    public PairingPrivateKey aggregatePrivateShares(@NonNull List<TssPrivateShare> privateShares) {
         if (privateShares.size() < threshold) {
             throw new IllegalStateException("Not enough shares to aggregate");
         }
         return AGGREGATED_PRIVATE_KEY;
     }
 
-    @NotNull
+    @NonNull
     @Override
     public List<TssPublicShare> computePublicShares(
-            @NotNull TssParticipantDirectory participantDirectory, @NotNull List<TssMessage> validTssMessages) {
+            @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> validTssMessages) {
         return List.of();
     }
 
-    @NotNull
+    @NonNull
     @Override
-    public PairingPublicKey aggregatePublicShares(@NotNull List<TssPublicShare> publicShares) {
+    public PairingPublicKey aggregatePublicShares(@NonNull List<TssPublicShare> publicShares) {
         if (publicShares.size() < threshold) {
             return new PairingPublicKey(new FakeGroupElement(BigInteger.valueOf(RANDOM.nextLong())), SIGNATURE_SCHEMA);
         }
         return LEDGER_ID;
     }
 
-    @NotNull
+    @NonNull
     @Override
-    public PairingSignature aggregateSignatures(@NotNull List<TssShareSignature> partialSignatures) {
+    public PairingSignature aggregateSignatures(@NonNull List<TssShareSignature> partialSignatures) {
         if (partialSignatures.size() < threshold) {
             return new PairingSignature(new FakeGroupElement(BigInteger.valueOf(RANDOM.nextLong())), SIGNATURE_SCHEMA);
         }
@@ -123,9 +122,9 @@ public class PlaceholderTssLibrary implements TssLibrary {
         return new PairingSignature(signatureGroupElement, SIGNATURE_SCHEMA);
     }
 
-    @NotNull
+    @NonNull
     @Override
-    public TssShareSignature sign(@NotNull TssPrivateShare privateShare, @NotNull byte[] message) {
+    public TssShareSignature sign(@NonNull TssPrivateShare privateShare, @NonNull byte[] message) {
         final var messageHash = noThrowSha384HashOf(message);
         final var messageGroupElement = new BigInteger(1, messageHash);
         final var privateKeyFieldElement =
@@ -137,9 +136,9 @@ public class PlaceholderTssLibrary implements TssLibrary {
 
     @Override
     public boolean verifySignature(
-            @NotNull TssParticipantDirectory participantDirectory,
-            @NotNull List<TssPublicShare> publicShares,
-            @NotNull TssShareSignature signature) {
+            @NonNull final TssParticipantDirectory participantDirectory,
+            @NonNull final List<TssPublicShare> publicShares,
+            @NonNull final TssShareSignature signature) {
         if (participantDirectory.getThreshold() != this.threshold) {
             throw new IllegalArgumentException("Invalid threshold");
         }
