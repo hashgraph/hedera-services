@@ -182,7 +182,8 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                     .given(cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
                     .when(getAccountInfo(NODE_OPERATOR)
                             .payingWith(NODE_OPERATOR)
-                            .via("accountInfoQueryTxn"))
+                            .via("accountInfoQueryTxn"),
+                            sleepFor(1000))
                     .then(getAccountBalance(NODE_OPERATOR).exposingBalanceTo(balance::set), doAdhoc(() -> {
                         assertThat(balance.get()).isLessThan(ONE_HUNDRED_HBARS);
                     }));
