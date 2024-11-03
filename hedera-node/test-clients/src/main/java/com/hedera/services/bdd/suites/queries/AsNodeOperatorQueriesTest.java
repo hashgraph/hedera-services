@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -42,8 +41,8 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verify;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,20 +61,20 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 
-/**
- * A class with Node Operator Queries tests
- */
 @Tag(CRYPTO)
 @HapiTestLifecycle
 @DisplayName("Node Operator Queries")
+/**
+ * A class with Node Operator Queries tests
+ */
 public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
 
+    @Nested
+    @DisplayName("verify payer balance")
     /**
      * A class with Node Operator tests that verify the payer balance
      */
-    @Nested
-    @DisplayName("verify payer balance")
-    public class PerformNodeOperatorQueryAndVerifyPayerBalance {
+    class PerformNodeOperatorQueryAndVerifyPayerBalance {
 
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -143,70 +142,167 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
         }
 
         /**
-         * FREE-QUERY_01 - A test that verifies the payer balance is not charged when a node operator AccountBalanceQuery is performed
-         */
-        @HapiTest
-        final Stream<DynamicTest> nodeOperatorAccountBalanceQueryNotCharged() {
-            return defaultHapiSpec("nodeOperatorAccountBalanceQueryNotCharged")
-                    .given(cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
-                    .when(getAccountBalance(NODE_OPERATOR)
-                            .payingWith(NODE_OPERATOR)
-                            .asNodeOperator())
-                    .then(getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
-        }
-
-        /**
-         * FREE-QUERY_02 / 25 Not Charged - A test that verifies the payer balance is not charged when a node operator AccountInfoQuery is performed
+         * AccountInfoQuery
+         *  1.) Tests that verifies the payer balance is not charged when a node operator AccountInfoQuery is performed.
          */
         @HapiTest
         final Stream<DynamicTest> nodeOperatorAccountInfoQueryNotCharged() {
-            return defaultHapiSpec("nodeOperatorAccountInfoQueryNotCharged")
-                    .given(cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
-                    .when(getAccountInfo(NODE_OPERATOR)
-                            .payingWith(NODE_OPERATOR)
-                            .asNodeOperator())
-                    .then(getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+            return hapiTest(
+                    newKeyNamed("NODE_OPERATOR_KEY"),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS).key("NODE_OPERATOR_KEY"),
+                    getAccountInfo(NODE_OPERATOR).payingWith(NODE_OPERATOR).asNodeOperator(),
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
         }
 
         /**
-         * FREE-QUERY_02 / 25 Charged - A test that verifies the payer balance is not charged when a node operator AccountInfoQuery is performed
+         * AccountInfoQuery
+         *  2.)  Tests that a signed transaction is not required for the query if it is performed as node operator.
+         */
+        @HapiTest
+        final Stream<DynamicTest> nodeOperatorAccountInfoQueryNotSigned() {
+            return hapiTest(
+                    newKeyNamed("NODE_OPERATOR_KEY"),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS).key("NODE_OPERATOR_KEY"),
+                    getAccountInfo(NODE_OPERATOR)
+                            .payingWith(NODE_OPERATOR)
+                            .signedBy(DEFAULT_PAYER)
+                            .asNodeOperator(),
+                    sleepFor(3000),
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+        }
+
+        /**
+         * AccountInfoQuery
+         *  3.) Tests that verifies the payer balance is charged when a AccountInfoQuery is performed.
          */
         @HapiTest
         final Stream<DynamicTest> nodeOperatorAccountInfoQueryCharged() {
+            final var balance = new AtomicLong();
             return defaultHapiSpec("nodeOperatorAccountInfoQueryCharged")
                     .given(cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
-                    .when(getAccountInfo(NODE_OPERATOR).payingWith(NODE_OPERATOR))
-                    .then(getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+                    .when(getAccountInfo(NODE_OPERATOR)
+                            .payingWith(NODE_OPERATOR)
+                            .via("accountInfoQueryTxn"))
+                    .then(getAccountBalance(NODE_OPERATOR).exposingBalanceTo(balance::set), doAdhoc(() -> {
+                        assertThat(balance.get()).isLessThan(ONE_HUNDRED_HBARS);
+                    }));
         }
 
         /**
-         * FREE-QUERY_04 - A test that verifies the payer balance is not charged when a node operator TokeInfoQuery is performed
+         * AccountBalanceQuery
+         *  1.) Tests that verifies the payer balance is not charged(free query) when a node operator AccountBalanceQuery is performed.
+         */
+        @HapiTest
+        final Stream<DynamicTest> nodeOperatorAccountBalanceQueryNotCharged() {
+            return hapiTest(
+                    newKeyNamed("NODE_OPERATOR_KEY"),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS).key("NODE_OPERATOR_KEY"),
+                    getAccountBalance(NODE_OPERATOR).payingWith(NODE_OPERATOR).asNodeOperator(),
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+        }
+
+        /**
+         * AccountBalanceQuery
+         *  2.)  Tests that a signed transaction is not required for the query if it is performed as node operator.
+         */
+        @HapiTest
+        final Stream<DynamicTest> nodeOperatorAccountBalanceQueryNotSigned() {
+            return hapiTest(
+                    newKeyNamed("NODE_OPERATOR_KEY"),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS).key("NODE_OPERATOR_KEY"),
+                    getAccountBalance(NODE_OPERATOR)
+                            .payingWith(NODE_OPERATOR)
+                            .signedBy(DEFAULT_PAYER)
+                            .asNodeOperator(),
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+        }
+
+        /**
+         * TokenInfoQuery - FT
+         *  1.) Tests that verifies the payer balance is not charged when a node operator TokenInfoQuery is performed.
          */
         @HapiTest
         final Stream<DynamicTest> nodeOperatorTokenInfoQueryNotCharged() {
-            return defaultHapiSpec("nodeOperatorTokenInfoQueryNotCharged")
-                    .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
-                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                            tokenCreate(FUNGIBLE_QUERY_TOKEN))
-                    .when(getTokenInfo(FUNGIBLE_QUERY_TOKEN).asNodeOperator())
-                    .then(
-                            getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
-                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+            return hapiTest(
+                    newKeyNamed("NODE_OPERATOR_KEY"),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS).key("NODE_OPERATOR_KEY"),
+                    tokenCreate(FUNGIBLE_QUERY_TOKEN),
+                    getTokenInfo(FUNGIBLE_QUERY_TOKEN).payingWith(NODE_OPERATOR).asNodeOperator(),
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
         }
 
         /**
-         * FREE-QUERY_05 - A test that verifies the payer balance is not charged when a node operator TokeInfoQuery NFT is performed
+         * TokenInfoQuery - FT
+         *  2.) Tests that verifies the payer balance is charged when a AccountInfoQuery is performed.
+         */
+        @HapiTest
+        final Stream<DynamicTest> nodeOperatorTokenInfoQueryCharged() {
+            final var balance = new AtomicLong();
+            return defaultHapiSpec("nodeOperatorTokenInfoQueryCharged")
+                    .given(cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS), tokenCreate(FUNGIBLE_QUERY_TOKEN))
+                    .when(getTokenInfo(FUNGIBLE_QUERY_TOKEN).payingWith(NODE_OPERATOR))
+                    .then(
+                            sleepFor(3000),
+                            getAccountBalance(NODE_OPERATOR).exposingBalanceTo(balance::set),
+                            doAdhoc(() -> {
+                                assertThat(balance.get()).isLessThan(ONE_HUNDRED_HBARS);
+                            }));
+        }
+
+        /**
+         * TokenInfoQuery - FT
+         *  3.) Tests that a signed transaction is not required for the query if it is performed as node operator.
+         */
+        @HapiTest
+        final Stream<DynamicTest> nodeOperatorTokenInfoQuerySignature() {
+            return hapiTest(
+                    newKeyNamed("NODE_OPERATOR_KEY"),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS).key("NODE_OPERATOR_KEY"),
+                    tokenCreate(FUNGIBLE_QUERY_TOKEN),
+                    getTokenInfo(FUNGIBLE_QUERY_TOKEN)
+                            .payingWith(NODE_OPERATOR)
+                            .signedBy(DEFAULT_PAYER)
+                            .asNodeOperator(),
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+        }
+
+        /**
+         * TokenInfoQuery - NFT
+         *  1.) Tests that verifies the payer balance is not charged when a node operator TokenInfoQuery is performed.
          */
         @HapiTest
         final Stream<DynamicTest> nodeOperatorTokenInfoQueryNftNotCharged() {
-            return defaultHapiSpec("nodeOperatorTokenInfoQueryNftNotCharged")
+            return hapiTest(
+                    newKeyNamed("NODE_OPERATOR_KEY"),
+                    newKeyNamed(SUPPLY_KEY),
+                    newKeyNamed(WIPE_KEY),
+                    cryptoCreate(TREASURY),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS).key("NODE_OPERATOR_KEY"),
+                    tokenCreate(NON_FUNGIBLE_TOKEN)
+                            .supplyType(TokenSupplyType.FINITE)
+                            .tokenType(NON_FUNGIBLE_UNIQUE)
+                            .treasury(TREASURY)
+                            .maxSupply(12L)
+                            .wipeKey(WIPE_KEY)
+                            .supplyKey(SUPPLY_KEY)
+                            .initialSupply(0L),
+                    getTokenInfo(NON_FUNGIBLE_TOKEN).payingWith(NODE_OPERATOR).asNodeOperator(),
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+        }
+
+        /**
+         * TokenInfoQuery - NFT
+         *  2.) Tests that verifies the payer balance is charged when a AccountInfoQuery is performed.
+         */
+        @HapiTest
+        final Stream<DynamicTest> nodeOperatorTokenInfoQueryNftCharged() {
+            final var balance = new AtomicLong();
+            return defaultHapiSpec("nodeOperatorTokenInfoQueryCharged")
                     .given(
                             newKeyNamed(SUPPLY_KEY),
                             newKeyNamed(WIPE_KEY),
                             cryptoCreate(TREASURY),
                             cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
-                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
                             tokenCreate(NON_FUNGIBLE_TOKEN)
                                     .supplyType(TokenSupplyType.FINITE)
                                     .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -215,110 +311,72 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                                     .wipeKey(WIPE_KEY)
                                     .supplyKey(SUPPLY_KEY)
                                     .initialSupply(0L))
-                    .when(getTokenInfo(NON_FUNGIBLE_TOKEN).asNodeOperator())
+                    .when(getTokenInfo(FUNGIBLE_QUERY_TOKEN).payingWith(NODE_OPERATOR))
                     .then(
-                            getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
-                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+                            sleepFor(3000),
+                            getAccountBalance(NODE_OPERATOR).exposingBalanceTo(balance::set),
+                            doAdhoc(() -> {
+                                assertThat(balance.get()).isLessThan(ONE_HUNDRED_HBARS);
+                            }));
         }
 
         /**
-         * FREE-QUERY_06 - A test that verifies the payer balance is not charged when a node operator TopicInfoQuery is performed
+         * TokenInfoQuery - NFT
+         *  3.) Tests that a signed transaction is not required for the query if it is performed as node operator.
+         */
+        @HapiTest
+        final Stream<DynamicTest> nodeOperatorTokenInfoQueryNftSignature() {
+            return hapiTest(
+                    newKeyNamed("NODE_OPERATOR_KEY"),
+                    newKeyNamed(SUPPLY_KEY),
+                    newKeyNamed(WIPE_KEY),
+                    cryptoCreate(TREASURY),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS).key("NODE_OPERATOR_KEY"),
+                    tokenCreate(NON_FUNGIBLE_TOKEN)
+                            .supplyType(TokenSupplyType.FINITE)
+                            .tokenType(NON_FUNGIBLE_UNIQUE)
+                            .treasury(TREASURY)
+                            .maxSupply(12L)
+                            .wipeKey(WIPE_KEY)
+                            .supplyKey(SUPPLY_KEY)
+                            .initialSupply(0L),
+                    getTokenInfo(FUNGIBLE_QUERY_TOKEN)
+                            .payingWith(NODE_OPERATOR)
+                            .signedBy(DEFAULT_PAYER)
+                            .asNodeOperator(),
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+        }
+
+        /**
+         * TopicInfoQuery
+         *  1.) Tests that verifies the payer balance is not charged when a node operator TopicInfoQuery is performed.
          */
         @HapiTest
         final Stream<DynamicTest> nodeOperatorTopicInfoQueryNotCharged() {
-            return defaultHapiSpec("nodeOperatorTopicInfoQueryNotCharged")
-                    .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
-                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                            createTopic(TOPIC))
-                    .when(getTopicInfo(TOPIC).asNodeOperator())
-                    .then(
-                            getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
-                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+            return hapiTest(
+                    newKeyNamed("NODE_OPERATOR_KEY"),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS).key("NODE_OPERATOR_KEY"),
+                    createTopic(TOPIC),
+                    getTopicInfo(TOPIC).payingWith(NODE_OPERATOR).asNodeOperator(),
+                    getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
         }
 
         /**
-         * FREE-QUERY_08 - A test that verifies the payer balance is not charged when a node operator FileContentsQuery is performed
+         * TopicInfoQuery
+         *  2.) Tests that verifies the payer balance is charged when a TopicInfoQuery is performed.
          */
         @HapiTest
-        final Stream<DynamicTest> nodeOperatorFileContentsQueryNotCharged() {
-            return defaultHapiSpec("nodeOperatorFileContentsQueryNotCharged")
-                    .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
-                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                            fileCreate(FILE))
-                    .when(getFileContents(FILE).asNodeOperator())
+        final Stream<DynamicTest> nodeOperatorTopicInfoQueryCharged() {
+            final var balance = new AtomicLong();
+            return defaultHapiSpec("nodeOperatorTopicInfoQueryCharged")
+                    .given(cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS), createTopic(TOPIC))
+                    .when(getTopicInfo(TOPIC).payingWith(NODE_OPERATOR))
                     .then(
-                            getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
-                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
-        }
-
-        /**
-         * FREE-QUERY_09 - A test that verifies the payer balance is not charged when a node operator FileInfoQuery is performed
-         */
-        @HapiTest
-        final Stream<DynamicTest> nodeOperatorFileInfoQueryNotCharged() {
-            return defaultHapiSpec("nodeOperatorFileInfoQueryNotCharged")
-                    .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
-                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                            fileCreate(FILE))
-                    .when(getFileInfo(FILE).asNodeOperator())
-                    .then(
-                            getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
-                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
-        }
-
-        /**
-         * FREE-QUERY_10 - A test that verifies the payer balance is not charged when a node operator ContractInfoQuery is performed
-         */
-        @HapiTest
-        final Stream<DynamicTest> nodeOperatorContractInfoQueryNotCharged() {
-            return defaultHapiSpec("nodeOperatorContractInfoQueryNotCharged")
-                    .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
-                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                            createDefaultContract(CONTRACT))
-                    .when(getContractInfo(CONTRACT).asNodeOperator())
-                    .then(
-                            getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
-                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
-        }
-
-        /**
-         * FREE-QUERY_11 - A test that verifies the payer balance is not charged when a node operator ContractByteCodeQuery is performed
-         */
-        @HapiTest
-        final Stream<DynamicTest> nodeOperatorContractByteCodeQueryNotCharged() {
-            return defaultHapiSpec("nodeOperatorContractByteCodeQueryNotCharged")
-                    .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
-                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                            createDefaultContract(CONTRACT))
-                    .when(getContractBytecode(CONTRACT).asNodeOperator())
-                    .then(
-                            getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
-                            getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
-        }
-
-        /**
-         * FREE-QUERY_12 - A test that verifies the payer balance is not charged when a node operator ScheduleInfoQuery is performed
-         */
-        @HapiTest
-        final Stream<DynamicTest> nodeOperatorScheduleInfoQueryNotCharged() {
-            return defaultHapiSpec("nodeOperatorScheduleInfoQueryNotCharged")
-                    .given(
-                            cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
-                            cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                            scheduleCreate(
-                                            SCHEDULE,
-                                            cryptoTransfer(tinyBarsFromTo(PAYER, NODE_OPERATOR, 1L))
-                                                    .memo("")
-                                                    .fee(ONE_HBAR))
-                                    .payingWith(PAYER)
-                                    .adminKey(PAYER))
-                    .when(getScheduleInfo(SCHEDULE).asNodeOperator())
-                    .then(getAccountBalance(NODE_OPERATOR).hasTinyBars(ONE_HUNDRED_HBARS));
+                            sleepFor(4000),
+                            getAccountBalance(NODE_OPERATOR).exposingBalanceTo(balance::set),
+                            verify(() -> {
+                                assertThat(balance.get()).isLessThan(ONE_HUNDRED_HBARS);
+                            }));
         }
 
         /**
@@ -362,7 +420,6 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             .signedBy(someoneElse)
                             .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_SIGNATURE));
         }
-
         /**
          * Get File Info tests
          */
@@ -407,7 +464,6 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             .signedBy(someoneElse)
                             .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_SIGNATURE));
         }
-
         /**
          * Get a Smart Contract Function tests
          */
@@ -454,7 +510,6 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             .signedBy(someoneElse)
                             .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_SIGNATURE));
         }
-
         /**
          * Get a Smart Contract Bytecode tests
          */
@@ -501,7 +556,6 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             .signedBy(someoneElse)
                             .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_SIGNATURE));
         }
-
         /**
          * Get Schedule Info tests
          */

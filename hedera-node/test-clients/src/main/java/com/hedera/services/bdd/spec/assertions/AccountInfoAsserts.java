@@ -263,12 +263,14 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     public static Function<HapiSpec, Function<Long, Optional<String>>> lessThan(final long expected) {
         return spec -> actual -> {
             if (actual == null) {
-                return Optional.of(String.format("Expected non-null numeric value less than <%d>, was <null>!", expected));
+                return Optional.of(
+                        String.format("Expected non-null numeric value less than <%d>, was <null>!", expected));
             }
 
             final var isLessThanExpected = actual < expected;
 
-            final var msg = isLessThanExpected ? null : String.format("Expected <%d> to be less than <%d>!", actual, expected);
+            final var msg =
+                    isLessThanExpected ? null : String.format("Expected <%d> to be less than <%d>!", actual, expected);
             return Optional.ofNullable(msg);
         };
     }
