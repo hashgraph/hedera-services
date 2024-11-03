@@ -16,10 +16,12 @@
 
 package com.hedera.services.bdd.spec.utilops.tss;
 
+import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeIds;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateStakingInfos;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
@@ -29,8 +31,8 @@ import static com.hedera.services.bdd.suites.utils.validation.ValidationScenario
 import static java.lang.Long.parseLong;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.tss.api.TssMessage;
-import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
@@ -38,21 +40,21 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongFunction;
+import java.util.function.LongUnaryOperator;
 import java.util.stream.Stream;
 
 /**
  * A convenience operation to test TSS roster rekeying scenarios in repeatable embedded mode. A scenario is built
- *  by specifying,
- *  <ol>
- *      <li>The distribution of HBAR stakes (and hence the number of shares of the embedded node).</li>
- *      <li>The DAB edits that should be performed (if any) before the staking period change.</li>
- *      <li>The simulated message-submission behavior of the non-embedded nodes after the staking period change.</li>
- *  </ol>
+ * by specifying,
+ * <ol>
+ *     <li>The distribution of HBAR stakes (and hence the number of shares of the embedded node).</li>
+ *     <li>The DAB edits that should be performed (if any) before the staking period change.</li>
+ *     <li>The simulated message-submission behavior of the non-embedded nodes after the staking period change.</li>
+ * </ol>
  */
 public class RekeyScenarioOp extends UtilOp {
     private static final byte[] GOSSIP_CERTIFICATE;
@@ -85,6 +87,7 @@ public class RekeyScenarioOp extends UtilOp {
 
     /**
      * A record that encapsulates the DAB edits to be performed before the staking period change.
+     *
      * @param nodesToDelete the set of node IDs to delete
      * @param numNodesToCreate the number of nodes to create
      */
@@ -97,8 +100,7 @@ public class RekeyScenarioOp extends UtilOp {
     /**
      * A default stake distribution where all nodes have equal stakes.
      */
-    public static final Function<List<HederaNode>, List<Long>> EQUAL_NODE_STAKES =
-            nodes -> Collections.nCopies(nodes.size(), 50_000_000_000L * TINYBARS_PER_HBAR / nodes.size());
+    public static final LongUnaryOperator EQUAL_NODE_STAKES = nodeId -> 1_000_000_000L * TINYBARS_PER_HBAR;
 
     /**
      * Factory for TSS message simulations that returns the given behaviors for each non-embedded node.
@@ -108,12 +110,13 @@ public class RekeyScenarioOp extends UtilOp {
 
     private final int embeddedShares;
     private final DabEdits dabEdits;
+    private final LongUnaryOperator nodeStakes;
     private final LongFunction<TssMessageSim> tssMessageSims;
-    private final Function<List<HederaNode>, List<Long>> nodeStakes;
 
     /**
      * Constructs a {@link RekeyScenarioOp} with the given stake distribution, DAB edits, and TSS message submission
      * behaviors.
+     *
      * @param embeddedShares the current number of shares of the embedded node
      * @param dabEdits the DAB edits
      * @param nodeStakes the stake distribution
@@ -122,8 +125,8 @@ public class RekeyScenarioOp extends UtilOp {
     public RekeyScenarioOp(
             final int embeddedShares,
             @NonNull final DabEdits dabEdits,
-            @NonNull final LongFunction<TssMessageSim> tssMessageSims,
-            @NonNull final Function<List<HederaNode>, List<Long>> nodeStakes) {
+            @NonNull final LongUnaryOperator nodeStakes,
+            @NonNull final LongFunction<TssMessageSim> tssMessageSims) {
         this.embeddedShares = embeddedShares;
         this.dabEdits = requireNonNull(dabEdits);
         this.nodeStakes = requireNonNull(nodeStakes);
@@ -135,7 +138,7 @@ public class RekeyScenarioOp extends UtilOp {
         requireNonNull(spec);
         allRunFor(
                 spec,
-                Stream.of(enableTss(), submitDabOps(), setupScenarioMocks(), crossStakePeriodBoundary())
+                Stream.of(enableTss(), submitDabOps(), setupScenarioMocks(spec), crossStakePeriodBoundary())
                         .flatMap(Function.identity())
                         .toList());
         return false;
@@ -176,8 +179,8 @@ public class RekeyScenarioOp extends UtilOp {
      *     node weights implied by the stake distribution at the start of the new period.</li>
      * </ol>
      */
-    private Stream<SpecOperation> setupScenarioMocks() {
-        return Stream.of();
+    private Stream<SpecOperation> setupScenarioMocks(@NonNull final HapiSpec spec) {
+        return Stream.of(setRequestedStakes(spec));
     }
 
     /**
@@ -200,5 +203,22 @@ public class RekeyScenarioOp extends UtilOp {
      */
     private Stream<SpecOperation> simulateOtherNodeTssMessages() {
         return Stream.of();
+    }
+
+    /**
+     * Returns an operation that sets the requested node stakes in state for the given spec.
+     * @param spec the spec whose embedded state should be mutated
+     */
+    private SpecOperation setRequestedStakes(@NonNull final HapiSpec spec) {
+        return mutateStakingInfos(
+                infos -> spec.targetNetworkOrThrow().nodesFor(exceptNodeIds(0L)).forEach(node -> {
+                    final var key = new EntityNumber(node.getNodeId());
+                    final var info = requireNonNull(infos.get(key));
+                    infos.put(
+                            key,
+                            info.copyBuilder()
+                                    .stake(nodeStakes.applyAsLong(node.getNodeId()))
+                                    .build());
+                }));
     }
 }
