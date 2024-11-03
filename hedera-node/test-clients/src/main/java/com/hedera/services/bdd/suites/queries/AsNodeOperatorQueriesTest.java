@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.queries;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -39,21 +40,30 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThrottles;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verify;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -68,6 +78,13 @@ import org.junit.jupiter.api.Tag;
  * A class with Node Operator Queries tests
  */
 public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
+    private static final int BURST_SIZE = 20;
+
+    Function<String, HapiSpecOperation[]> miscTxnBurstFn = payer -> IntStream.range(0, BURST_SIZE)
+            .mapToObj(i -> cryptoCreate(String.format("Account%d", i))
+                    .payingWith(payer)
+                    .deferStatusResolution())
+            .toArray(HapiSpecOperation[]::new);
 
     @Nested
     @DisplayName("verify payer balance")
@@ -180,9 +197,10 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
             final var balance = new AtomicLong();
             return defaultHapiSpec("nodeOperatorAccountInfoQueryCharged")
                     .given(cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS))
-                    .when(getAccountInfo(NODE_OPERATOR)
-                            .payingWith(NODE_OPERATOR)
-                            .via("accountInfoQueryTxn"),
+                    .when(
+                            getAccountInfo(NODE_OPERATOR)
+                                    .payingWith(NODE_OPERATOR)
+                                    .via("accountInfoQueryTxn"),
                             sleepFor(1000))
                     .then(getAccountBalance(NODE_OPERATOR).exposingBalanceTo(balance::set), doAdhoc(() -> {
                         assertThat(balance.get()).isLessThan(ONE_HUNDRED_HBARS);
@@ -414,7 +432,7 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             .payingWith(NODE_OPERATOR)
                             .signedBy(someoneElse)
                             .asNodeOperator()
-                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.OK),
+                            .hasAnswerOnlyPrecheck(OK),
                     // But the non-node operator submitter must still sign
                     getFileContents(filename)
                             .payingWith(PAYER)
@@ -458,7 +476,7 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             .payingWith(NODE_OPERATOR)
                             .signedBy(someoneElse)
                             .asNodeOperator()
-                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.OK),
+                            .hasAnswerOnlyPrecheck(OK),
                     // But the non-node operator submitter must still sign
                     getFileInfo(filename)
                             .payingWith(PAYER)
@@ -504,7 +522,7 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             .payingWith(NODE_OPERATOR)
                             .signedBy(someoneElse)
                             .asNodeOperator()
-                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.OK),
+                            .hasAnswerOnlyPrecheck(OK),
                     // But the non-node operator submitter must still sign
                     getContractInfo(contract)
                             .payingWith(PAYER)
@@ -550,7 +568,7 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             .payingWith(NODE_OPERATOR)
                             .signedBy(someoneElse)
                             .asNodeOperator()
-                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.OK),
+                            .hasAnswerOnlyPrecheck(OK),
                     // But the non-node operator submitter must still sign
                     getContractBytecode(contract)
                             .payingWith(PAYER)
@@ -598,12 +616,33 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             .payingWith(NODE_OPERATOR)
                             .signedBy(someoneElse)
                             .asNodeOperator()
-                            .hasAnswerOnlyPrecheck(ResponseCodeEnum.OK),
+                            .hasAnswerOnlyPrecheck(OK),
                     // But the non-node operator submitter must still sign
                     getScheduleInfo(schedule)
                             .payingWith(PAYER)
                             .signedBy(someoneElse)
                             .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_SIGNATURE));
+        }
+
+        @LeakyHapiTest(requirement = THROTTLE_OVERRIDES)
+        final Stream<DynamicTest> nodeOperatorCryptoGetInfoThrottled() {
+            return hapiTest(flattened(
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    overridingThrottles("testSystemFiles/node-operator-throttles.json"),
+                    inParallel(miscTxnBurstFn.apply(DEFAULT_PAYER)),
+                    getAccountInfo(NODE_OPERATOR).payingWith(NODE_OPERATOR).hasAnswerOnlyPrecheck(BUSY)));
+        }
+
+        @LeakyHapiTest(requirement = THROTTLE_OVERRIDES)
+        final Stream<DynamicTest> nodeOperatorCryptoGetInfoNotThrottled() {
+            return hapiTest(flattened(
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    overridingThrottles("testSystemFiles/node-operator-throttles.json"),
+                    inParallel(miscTxnBurstFn.apply(DEFAULT_PAYER)),
+                    getAccountInfo(NODE_OPERATOR)
+                            .payingWith(NODE_OPERATOR)
+                            .asNodeOperator()
+                            .hasAnswerOnlyPrecheck(OK)));
         }
     }
 }
