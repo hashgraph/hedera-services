@@ -40,7 +40,7 @@ public record NodeMetadata(
      * Create a new instance with the same values as this instance, but different ports.
      *
      * @param grpcPort the new grpc port
-     *                 @param grpcNodeOperatorPort the new grpc node operator port
+     * @param grpcNodeOperatorPort the new grpc node operator port
      * @param gossipPort the new gossip port
      * @param tlsGossipPort the new tls gossip port
      * @param prometheusPort the new prometheus port
