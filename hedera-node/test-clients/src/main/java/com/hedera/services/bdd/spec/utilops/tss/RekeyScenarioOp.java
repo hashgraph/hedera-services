@@ -16,48 +16,90 @@
 
 package com.hedera.services.bdd.spec.utilops.tss;
 
+import static com.hedera.node.app.tss.handlers.TssUtils.computeNodeShares;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeIds;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateStakingInfos;
+import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateTssMessages;
+import static com.hedera.services.bdd.spec.utilops.TssVerbs.submitTssMessage;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.TINYBARS_PER_HBAR;
+import static com.swirlds.platform.roster.RosterRetriever.getActiveRosterHash;
+import static com.swirlds.platform.roster.RosterRetriever.getCandidateRosterHash;
+import static com.swirlds.platform.roster.RosterRetriever.retrieveActive;
 import static java.lang.Long.parseLong;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.tss.api.TssMessage;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.function.LongUnaryOperator;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
  * A convenience operation to test TSS roster rekeying scenarios in repeatable embedded mode. A scenario is built
  * by specifying,
  * <ol>
- *     <li>The distribution of HBAR stakes (and hence the number of shares of the embedded node).</li>
- *     <li>The DAB edits that should be performed (if any) before the staking period change.</li>
- *     <li>The simulated message-submission behavior of the non-embedded nodes after the staking period change.</li>
+ *     <li>The distribution of HBAR stakes at the stake period boundary, and hence the number of shares each
+ *     node should have in the candidate roster.</li>
+ *     <li>The DAB edits that should be performed before the staking period change.</li>
+ *     <li>The simulated message-submission behavior of the non-embedded nodes after the staking period
+ *     change; where each non-embedded node will generate up to one {@link TssMessage} per share it is implied
+ *     to own by the active roster in the embedded state, with that message being valid or invalid according
+ *     to the {@link FakeTssLibrary} as requested.</li>
  * </ol>
  */
 public class RekeyScenarioOp extends UtilOp {
     private static final byte[] GOSSIP_CERTIFICATE;
+
+    private record NonEmbeddedTssMessage(long nodeId, @NonNull TssMessage tssMessage) {}
+
+    /**
+     * The number of shares each node holds in the active roster.
+     */
+    private final Map<Long, Integer> activeShares = new TreeMap<>();
+    /**
+     * The TSS messages submitted by the non-embedded nodes, in consensus order.
+     */
+    private final List<NonEmbeddedTssMessage> nonEmbeddedTssMessages = new ArrayList<>();
+
+    @Nullable
+    private Roster activeRoster;
+
+    @Nullable
+    private Bytes sourceRosterHash;
+
+    @Nullable
+    private Bytes targetRosterHash;
 
     static {
         try {
@@ -74,15 +116,15 @@ public class RekeyScenarioOp extends UtilOp {
         /**
          * The non-embedded node skips submitting TSS messages for its private shares.
          */
-        SKIP,
+        SKIP_MESSAGES,
         /**
          * The non-embedded node submits valid TSS messages for its private shares.
          */
-        VALID,
+        VALID_MESSAGES,
         /**
          * The non-embedded node submits invalid TSS messages for its private shares.
          */
-        INVALID
+        INVALID_MESSAGES
     }
 
     /**
@@ -108,7 +150,6 @@ public class RekeyScenarioOp extends UtilOp {
     public static final Function<List<TssMessageSim>, LongFunction<TssMessageSim>> TSS_MESSAGE_SIMS =
             sims -> nodeId -> sims.get((int) ((nodeId - 1) % sims.size()));
 
-    private final int embeddedShares;
     private final DabEdits dabEdits;
     private final LongUnaryOperator nodeStakes;
     private final LongFunction<TssMessageSim> tssMessageSims;
@@ -117,17 +158,14 @@ public class RekeyScenarioOp extends UtilOp {
      * Constructs a {@link RekeyScenarioOp} with the given stake distribution, DAB edits, and TSS message submission
      * behaviors.
      *
-     * @param embeddedShares the current number of shares of the embedded node
      * @param dabEdits the DAB edits
      * @param nodeStakes the stake distribution
      * @param tssMessageSims the TSS message submission behaviors
      */
     public RekeyScenarioOp(
-            final int embeddedShares,
             @NonNull final DabEdits dabEdits,
             @NonNull final LongUnaryOperator nodeStakes,
             @NonNull final LongFunction<TssMessageSim> tssMessageSims) {
-        this.embeddedShares = embeddedShares;
         this.dabEdits = requireNonNull(dabEdits);
         this.nodeStakes = requireNonNull(nodeStakes);
         this.tssMessageSims = requireNonNull(tssMessageSims);
@@ -138,7 +176,12 @@ public class RekeyScenarioOp extends UtilOp {
         requireNonNull(spec);
         allRunFor(
                 spec,
-                Stream.of(enableTss(), submitDabOps(), setupScenarioMocks(spec), crossStakePeriodBoundary())
+                Stream.of(
+                                enableTss(),
+                                submitDabOps(),
+                                setupScenarioMocks(),
+                                crossStakePeriodBoundary(),
+                                simulateOtherNodeTssMessages())
                         .flatMap(Function.identity())
                         .toList());
         return false;
@@ -179,8 +222,8 @@ public class RekeyScenarioOp extends UtilOp {
      *     node weights implied by the stake distribution at the start of the new period.</li>
      * </ol>
      */
-    private Stream<SpecOperation> setupScenarioMocks(@NonNull final HapiSpec spec) {
-        return Stream.of(setRequestedStakes(spec));
+    private Stream<SpecOperation> setupScenarioMocks() {
+        return Stream.of(extractRosterMetadata(), setActiveRosterKeyMaterial(), setRequestedStakes());
     }
 
     /**
@@ -202,15 +245,67 @@ public class RekeyScenarioOp extends UtilOp {
      * non-embedded nodes.
      */
     private Stream<SpecOperation> simulateOtherNodeTssMessages() {
-        return Stream.of();
+        return Stream.of(doingContextual(spec -> {
+            final var nextShareId = new AtomicInteger(activeShares.get(0L));
+            spec.targetNetworkOrThrow().nodesFor(exceptNodeIds(0L)).stream()
+                    .map(HederaNode::getNodeId)
+                    .forEach(nodeId -> {
+                        final var sim = tssMessageSims.apply(nodeId);
+                        switch (sim) {
+                            case SKIP_MESSAGES -> nextShareId.getAndAdd(activeShares.get(nodeId));
+                            case VALID_MESSAGES, INVALID_MESSAGES -> {
+                                for (int i = 0, n = activeShares.get(nodeId); i < n; i++) {
+                                    final var j = nextShareId.getAndIncrement();
+                                    nonEmbeddedTssMessages.add(new NonEmbeddedTssMessage(
+                                            nodeId,
+                                            sim == TssMessageSim.VALID_MESSAGES
+                                                    ? FakeTssLibrary.validMessage(j)
+                                                    : FakeTssLibrary.invalidMessage(j)));
+                                }
+                            }
+                        }
+                    });
+            Collections.shuffle(nonEmbeddedTssMessages);
+            requireNonNull(sourceRosterHash);
+            targetRosterHash = getCandidateRosterHash(spec.embeddedStateOrThrow());
+            allRunFor(
+                    spec,
+                    nonEmbeddedTssMessages.stream()
+                            .map(m -> submitTssMessage(m.nodeId(), sourceRosterHash, targetRosterHash, m.tssMessage()))
+                            .toArray(SpecOperation[]::new));
+        }));
     }
 
     /**
-     * Returns an operation that sets the requested node stakes in state for the given spec.
-     * @param spec the spec whose embedded state should be mutated
+     * Returns an operation that extracts roster metadata from the embedded state to be used in the scenario.
      */
-    private SpecOperation setRequestedStakes(@NonNull final HapiSpec spec) {
-        return mutateStakingInfos(
+    private SpecOperation extractRosterMetadata() {
+        return doingContextual(spec -> {
+            final var state = spec.embeddedStateOrThrow();
+            final var hedera = spec.repeatableEmbeddedHederaOrThrow();
+            final var roundNo = hedera.lastRoundNo();
+            // Extract all the roster metadata for the active roster
+            activeRoster = requireNonNull(retrieveActive(state, roundNo));
+            sourceRosterHash = getActiveRosterHash(state, roundNo);
+            computeNodeShares(
+                            activeRoster.rosterEntries(),
+                            spec.startupProperties().getInteger("tss.maxSharesPerNode"))
+                    .forEach((nodeId, numShares) -> activeShares.put(nodeId, numShares.intValue()));
+            // Prepare the FakeTssLibrary to decrypt the private shares of the embedded node
+            hedera.tssBaseService()
+                    .fakeTssLibrary()
+                    .setupDecryption(
+                            directory -> {},
+                            IntStream.range(0, activeShares.get(0L)).boxed().toList());
+        });
+    }
+
+    /**
+     * Returns an operation that sets the requested node stakes in state for the given spec. These stakes
+     * should define the weights used in the participant directory derived from the candidate roster.
+     */
+    private SpecOperation setRequestedStakes() {
+        return doingContextual(spec -> mutateStakingInfos(
                 infos -> spec.targetNetworkOrThrow().nodesFor(exceptNodeIds(0L)).forEach(node -> {
                     final var key = new EntityNumber(node.getNodeId());
                     final var info = requireNonNull(infos.get(key));
@@ -219,6 +314,30 @@ public class RekeyScenarioOp extends UtilOp {
                             info.copyBuilder()
                                     .stake(nodeStakes.applyAsLong(node.getNodeId()))
                                     .build());
-                }));
+                })));
+    }
+
+    /**
+     * Returns an operation that sets the requested node stakes in state for the given spec.
+     */
+    private SpecOperation setActiveRosterKeyMaterial() {
+        final var nextShareId = new AtomicInteger(0);
+        return mutateTssMessages(tssMessages -> {
+            requireNonNull(sourceRosterHash);
+            activeShares.forEach((nodeId, numShares) -> {
+                for (int i = 0; i < numShares; i++) {
+                    final var key = new TssMessageMapKey(sourceRosterHash, nextShareId.getAndIncrement());
+                    final var tssMessage = Bytes.wrap(FakeTssLibrary.validMessage((int) key.sequenceNumber())
+                            .bytes());
+                    final var value = TssMessageTransactionBody.newBuilder()
+                            .sourceRosterHash(Bytes.EMPTY)
+                            .targetRosterHash(sourceRosterHash)
+                            .shareIndex(key.sequenceNumber())
+                            .tssMessage(tssMessage)
+                            .build();
+                    tssMessages.put(key, value);
+                }
+            });
+        });
     }
 }

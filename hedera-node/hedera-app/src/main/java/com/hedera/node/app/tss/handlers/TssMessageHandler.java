@@ -94,26 +94,25 @@ public class TssMessageHandler implements TransactionHandler {
         // processing.
         tssStore.put(key, op);
 
-        final var tssParticipantDirectory =
-                computeParticipantDirectory(rosterStore.getActiveRoster(), maxSharesPerNode, (int)
+        final var directory =
+                computeParticipantDirectory(requireNonNull(rosterStore.getActiveRoster()), maxSharesPerNode, (int)
                         context.networkInfo().selfNodeInfo().nodeId());
-        final var result = tssCryptographyManager.handleTssMessageTransaction(op, tssParticipantDirectory, context);
-        result.thenAccept(ledgerIdAndSignature -> {
-            if (ledgerIdAndSignature != null) {
-                final var signature =
-                        gossip.sign(ledgerIdAndSignature.ledgerId().publicKey().toBytes());
-                // FUTURE: Validate the ledgerId computed is same as the current ledgerId
-                final var tssVote = TssVoteTransactionBody.newBuilder()
-                        .tssVote(Bytes.wrap(ledgerIdAndSignature.tssVoteBitSet().toByteArray()))
-                        .targetRosterHash(candidateRosterHash)
-                        .sourceRosterHash(op.sourceRosterHash())
-                        .nodeSignature(signature.getBytes())
-                        .ledgerId(Bytes.wrap(
-                                ledgerIdAndSignature.ledgerId().publicKey().toBytes()))
-                        .build();
-                submissionManager.submitTssVote(tssVote, context);
-            }
-        });
+        tssCryptographyManager
+                .handleTssMessageTransaction(op, directory, context)
+                .thenAccept(result -> {
+                    if (result != null) {
+                        // FUTURE: Validate the ledgerId computed is same as the current ledgerId
+                        final var tssVote = TssVoteTransactionBody.newBuilder()
+                                .tssVote(Bytes.wrap(result.tssVoteBitSet().toByteArray()))
+                                .targetRosterHash(candidateRosterHash)
+                                .sourceRosterHash(op.sourceRosterHash())
+                                .nodeSignature(result.signature().getBytes())
+                                .ledgerId(
+                                        Bytes.wrap(result.ledgerId().publicKey().toBytes()))
+                                .build();
+                        submissionManager.submitTssVote(tssVote, context);
+                    }
+                });
         tssMetrics.updateMessagesPerCandidateRoster(candidateRosterHash);
     }
 }

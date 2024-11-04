@@ -106,16 +106,16 @@ public class TssCryptographyManager {
     }
 
     /**
-     * Compute and sign the ledger id if the threshold is met. If the threshold is not met, return null.
+     * Computes and signs the ledger id if the threshold is met. If the threshold is not met, return null.
      * The most expensive operations involving {@link TssLibrary} are executed asynchronously.
      *
-     * @param tssMessageBodies        the list of TSS messages
+     * @param tssMessageBodies the list of TSS messages
      * @param tssParticipantDirectory the TSS participant directory
-     * @return a CompletableFuture containing the ledger id and signature if the threshold is met, null otherwise
+     * @return a future resolving to the ledger id and signature if the threshold is met, null otherwise
      */
     private CompletableFuture<LedgerIdWithSignature> computeAndSignLedgerIdIfApplicable(
             @NonNull final List<TssMessageTransactionBody> tssMessageBodies,
-            final TssParticipantDirectory tssParticipantDirectory) {
+            @NonNull final TssParticipantDirectory tssParticipantDirectory) {
         return CompletableFuture.supplyAsync(
                 () -> {
                     // Validate TSS transactions and set the vote bit set.

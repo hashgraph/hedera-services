@@ -30,13 +30,16 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
-import com.hedera.services.bdd.spec.utilops.embedded.MutateScheduleExpiries;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateScheduleExpiriesOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateStakingInfosOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTokenOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateTssMessagesOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTssMsgState;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
@@ -86,9 +89,9 @@ public final class EmbeddedVerbs {
      * @param mutation the mutation to apply to the schedule expiries
      * @return the operation that will mutate the schedule expiries
      */
-    public static MutateScheduleExpiries mutateScheduleExpiries(
+    public static MutateScheduleExpiriesOp mutateScheduleExpiries(
             @NonNull final Consumer<WritableKVState<ProtoLong, ScheduleIdList>> mutation) {
-        return new MutateScheduleExpiries(mutation);
+        return new MutateScheduleExpiriesOp(mutation);
     }
 
     /**
@@ -100,6 +103,17 @@ public final class EmbeddedVerbs {
     public static MutateStakingInfosOp mutateStakingInfos(
             @NonNull final Consumer<WritableKVState<EntityNumber, StakingNodeInfo>> mutation) {
         return new MutateStakingInfosOp(mutation);
+    }
+
+    /**
+     * Returns an operation that allows the test author to directly mutate the TSS messages.
+     *
+     * @param mutation the mutation to apply to the TSS messages
+     * @return the operation that will mutate the TSS messages
+     */
+    public static MutateTssMessagesOp mutateTssMessages(
+            @NonNull final Consumer<WritableKVState<TssMessageMapKey, TssMessageTransactionBody>> mutation) {
+        return new MutateTssMessagesOp(mutation);
     }
 
     public static MutateTssMsgState mutateTssMsgState() {
