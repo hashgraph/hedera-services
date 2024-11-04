@@ -19,6 +19,7 @@ package com.hedera.node.app.tss;
 import static com.hedera.node.app.tss.handlers.TssUtils.getThresholdForTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
@@ -31,6 +32,8 @@ import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.InstantSource;
 import java.util.BitSet;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -47,17 +50,20 @@ import org.apache.logging.log4j.Logger;
 public class TssCryptographyManager {
     private static final Logger log = LogManager.getLogger(TssCryptographyManager.class);
     private final TssLibrary tssLibrary;
-    private AppContext.Gossip gossip;
-    private Executor libraryExecutor;
+    private final AppContext.Gossip gossip;
+    private final Executor libraryExecutor;
+    private final TssMetrics tssMetrics;
 
     @Inject
     public TssCryptographyManager(
             @NonNull final TssLibrary tssLibrary,
             @NonNull final AppContext.Gossip gossip,
-            @NonNull @TssLibraryExecutor final Executor libraryExecutor) {
-        this.tssLibrary = tssLibrary;
-        this.gossip = gossip;
-        this.libraryExecutor = libraryExecutor;
+            @NonNull @TssLibraryExecutor final Executor libraryExecutor,
+            @NonNull final TssMetrics tssMetrics) {
+        this.tssLibrary = requireNonNull(tssLibrary);
+        this.gossip = requireNonNull(gossip);
+        this.libraryExecutor = requireNonNull(libraryExecutor);
+        this.tssMetrics = requireNonNull(tssMetrics);
     }
 
     /**
@@ -120,6 +126,10 @@ public class TssCryptographyManager {
                     if (!tssMessageThresholdMet) {
                         return null;
                     }
+
+                    // track the time before calls to TSS-Library
+                    final var aggregationCalculationStart =
+                            InstantSource.system().instant();
                     final var validTssMessages = getTssMessages(validTssOps);
                     final var computedPublicShares =
                             tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
@@ -129,6 +139,14 @@ public class TssCryptographyManager {
                     final var signature = gossip.sign(ledgerId.publicKey().toBytes());
 
                     final BitSet tssVoteBitSet = computeTssVoteBitSet(validTssOps);
+
+                    // calculate the time it took to aggregate and compute ledger id and public shares
+                    final var aggregationCalculationEnd = InstantSource.system().instant();
+                    final var durationOfAggregation = Duration.between(
+                                    aggregationCalculationStart, aggregationCalculationEnd)
+                            .toMillis();
+                    tssMetrics.updateAggregationTime(durationOfAggregation);
+
                     return new LedgerIdWithSignature(ledgerId, signature, tssVoteBitSet);
                 },
                 libraryExecutor);

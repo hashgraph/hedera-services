@@ -36,11 +36,14 @@ import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -57,6 +60,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class TssBaseServiceImpl implements TssBaseService {
     private static final Logger log = LogManager.getLogger(TssBaseServiceImpl.class);
+    private final TssBaseServiceComponent component;
 
     /**
      * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
@@ -66,6 +70,7 @@ public class TssBaseServiceImpl implements TssBaseService {
 
     private final TssHandlers tssHandlers;
     private final TssSubmissions tssSubmissions;
+    private TssMetrics tssMetrics;
     private final ExecutorService signingExecutor;
     private final TssLibrary tssLibrary;
     private final Executor tssLibraryExecutor;
@@ -81,13 +86,14 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final ExecutorService signingExecutor,
             @NonNull final Executor submissionExecutor,
             @NonNull final TssLibrary tssLibrary,
-            @NonNull final Executor tssLibraryExecutor) {
+            @NonNull final Executor tssLibraryExecutor,
+            @NonNull final Metrics metrics) {
         requireNonNull(appContext);
         this.signingExecutor = requireNonNull(signingExecutor);
-        final var component = DaggerTssBaseServiceComponent.factory()
-                .create(appContext.gossip(), submissionExecutor, tssLibraryExecutor);
-        tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
-        tssSubmissions = component.tssSubmissions();
+        this.component = DaggerTssBaseServiceComponent.factory()
+                .create(appContext.gossip(), submissionExecutor, tssLibraryExecutor, metrics);
+        this.tssHandlers = new TssHandlers(this.component.tssMessageHandler(), this.component.tssVoteHandler());
+        this.tssSubmissions = this.component.tssSubmissions();
         this.tssLibrary = requireNonNull(tssLibrary);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
     }
@@ -96,6 +102,12 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0560TssBaseSchema());
+    }
+
+    @Override
+    public void registerMetrics(@NonNull final TssMetrics metrics) {
+        requireNonNull(metrics);
+        this.tssMetrics = this.component.tssMetrics(metrics);
     }
 
     @Override
@@ -132,6 +144,9 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
 
+        // we keep track of the starting point of the candidate roster's lifecycle
+        final Instant candidateRosterLifecycleStart = InstantSource.system().instant();
+        tssMetrics.trackCandidateRosterLifecycleStart(candidateRosterLifecycleStart);
         // (TSS-FUTURE) Implement `keyActiveRoster`
         // https://github.com/hashgraph/hedera-services/issues/16166
 

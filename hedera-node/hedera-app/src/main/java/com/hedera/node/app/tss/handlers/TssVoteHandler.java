@@ -28,10 +28,13 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.time.InstantSource;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -41,10 +44,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TssVoteHandler implements TransactionHandler {
+    private final TssMetrics tssMetrics;
 
     @Inject
-    public TssVoteHandler() {
-        // Dagger2
+    public TssVoteHandler(@NonNull final TssMetrics tssMetrics) {
+        this.tssMetrics = requireNonNull(tssMetrics);
     }
 
     @Override
@@ -62,8 +66,9 @@ public class TssVoteHandler implements TransactionHandler {
         requireNonNull(context);
         final var txBody = context.body().tssVoteOrThrow();
         final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
-        final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(
-                txBody.targetRosterHash(), context.creatorInfo().nodeId());
+        final var candidateRosterHash = txBody.targetRosterHash();
+        final TssVoteMapKey tssVoteMapKey =
+                new TssVoteMapKey(candidateRosterHash, context.creatorInfo().nodeId());
         if (tssBaseStore.exists(tssVoteMapKey)) {
             // Duplicate vote
             return;
@@ -71,6 +76,11 @@ public class TssVoteHandler implements TransactionHandler {
 
         if (!TssVoteHandler.hasReachedThreshold(txBody, context)) {
             tssBaseStore.put(tssVoteMapKey, txBody);
+            tssMetrics.updateVotesPerCandidateRoster(candidateRosterHash);
+        } else {
+            // the voting is closed for this candidate roster, hence we calculate its lifecycle
+            final Instant candidateRosterLifecycleEnd = InstantSource.system().instant();
+            tssMetrics.updateCandidateRosterLifecycle(candidateRosterLifecycleEnd);
         }
     }
 

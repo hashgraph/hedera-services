@@ -88,7 +88,6 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
         }
     }
 
-    @Override
     public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
         if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
