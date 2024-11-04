@@ -183,9 +183,11 @@ public class CryptocurrencyDemoMain implements SwirldMain {
     @Override
     @NonNull
     public MerkleStateRoot newMerkleStateRoot() {
-        return new CryptocurrencyDemoState(
+        final MerkleStateRoot state = new CryptocurrencyDemoState(
                 NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        return state;
     }
 
     /**

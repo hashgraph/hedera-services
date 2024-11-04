@@ -106,9 +106,11 @@ public class AddressBookTestingToolMain implements SwirldMain {
     @Override
     @NonNull
     public MerkleStateRoot newMerkleStateRoot() {
-        return new AddressBookTestingToolState(
+        final MerkleStateRoot state = new AddressBookTestingToolState(
                 NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        return state;
     }
 
     /**

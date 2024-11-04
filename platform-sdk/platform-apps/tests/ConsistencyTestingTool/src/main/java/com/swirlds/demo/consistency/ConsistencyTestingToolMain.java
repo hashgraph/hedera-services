@@ -89,9 +89,11 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     @Override
     @NonNull
     public MerkleStateRoot newMerkleStateRoot() {
-        return new ConsistencyTestingToolState(
+        final MerkleStateRoot state = new ConsistencyTestingToolState(
                 NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
+        NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        return state;
     }
 
     /**

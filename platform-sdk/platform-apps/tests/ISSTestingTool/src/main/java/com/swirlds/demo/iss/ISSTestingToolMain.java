@@ -90,9 +90,11 @@ public class ISSTestingToolMain implements SwirldMain {
     @Override
     @NonNull
     public MerkleStateRoot newMerkleStateRoot() {
-        return new ISSTestingToolState(
+        final MerkleStateRoot state = new ISSTestingToolState(
                 NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        return state;
     }
 
     /**

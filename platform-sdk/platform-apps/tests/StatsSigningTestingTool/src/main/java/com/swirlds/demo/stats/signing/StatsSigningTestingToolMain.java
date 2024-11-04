@@ -273,10 +273,12 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     @Override
     @NonNull
     public MerkleStateRoot newMerkleStateRoot() {
-        return new StatsSigningTestingToolState(
+        final MerkleStateRoot state = new StatsSigningTestingToolState(
                 NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()),
                 () -> sttTransactionPool);
+        NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        return state;
     }
 
     /**

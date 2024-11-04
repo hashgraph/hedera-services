@@ -232,9 +232,11 @@ public class StressTestingToolMain implements SwirldMain {
 
     @Override
     public MerkleStateRoot newMerkleStateRoot() {
-        return new StressTestingToolState(
+        final MerkleStateRoot state = new StressTestingToolState(
                 NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(SOFTWARE_VERSION.getSoftwareVersion()));
+        NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        return state;
     }
 
     /**

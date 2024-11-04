@@ -110,9 +110,11 @@ public class HelloSwirldDemoMain implements SwirldMain {
     @NonNull
     @Override
     public MerkleStateRoot newMerkleStateRoot() {
-        return new HelloSwirldDemoState(
+        final MerkleStateRoot state = new HelloSwirldDemoState(
                 NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        return state;
     }
 
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {
