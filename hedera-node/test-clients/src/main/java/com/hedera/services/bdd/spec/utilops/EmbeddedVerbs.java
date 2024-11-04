@@ -40,6 +40,7 @@ import com.hedera.services.bdd.spec.utilops.embedded.MutateScheduleExpiriesOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateStakingInfosOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTokenOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTssMessagesOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateTssMsgState;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewPendingAirdropOp;
@@ -113,6 +114,10 @@ public final class EmbeddedVerbs {
     public static MutateTssMessagesOp mutateTssMessages(
             @NonNull final Consumer<WritableKVState<TssMessageMapKey, TssMessageTransactionBody>> mutation) {
         return new MutateTssMessagesOp(mutation);
+    }
+
+    public static MutateTssMsgState mutateTssMsgState() {
+        return new MutateTssMsgState();
     }
 
     /**
