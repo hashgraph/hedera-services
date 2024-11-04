@@ -22,8 +22,8 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FIXED_FEE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_V1;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_V4;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_V3;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_WITH_METADATA;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.KEY_VALUE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE;
@@ -70,7 +70,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     public static final String ROYALTY_FEE_REPLACED_ADDRESS = ROYALTY_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String EXPIRY_REPLACED_ADDRESS = EXPIRY.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String TOKEN_INFO_REPLACED_ADDRESS = "("
-            + HEDERA_TOKEN_V1.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
+            + HEDERA_TOKEN_V3.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
             + ",int64,bool,bool,bool,"
             + FIXED_FEE_REPLACED_ADDRESS
             + ARRAY_BRACKETS
@@ -83,7 +83,7 @@ public class HTSPrecompileResult implements ContractCallResult {
             + ",string"
             + ")";
     public static final String TOKEN_INFO_V2 = "("
-            + HEDERA_TOKEN_V4.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
+            + HEDERA_TOKEN_WITH_METADATA.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
             + ",int64,bool,bool,bool,"
             + FIXED_FEE_REPLACED_ADDRESS
             + ARRAY_BRACKETS

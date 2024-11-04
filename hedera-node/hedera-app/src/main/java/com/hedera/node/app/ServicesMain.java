@@ -242,9 +242,6 @@ public class ServicesMain implements SwirldMain {
         final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
 
-        // Register the metrics related to TSS functionalities
-        hedera.registerTssMetrics(metrics);
-
         // Create the platform context
         final var platformContext = PlatformContext.create(
                 configuration,

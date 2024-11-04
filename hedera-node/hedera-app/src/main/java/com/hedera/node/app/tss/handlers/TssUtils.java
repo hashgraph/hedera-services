@@ -43,7 +43,7 @@ public class TssUtils {
      * @param selfNodeId       the node ID of the current node
      * @return the TSS participant directory
      */
-    public static TssParticipantDirectory computeTssParticipantDirectory(
+    public static TssParticipantDirectory computeParticipantDirectory(
             @NonNull final Roster roster, final long maxSharesPerNode, final int selfNodeId) {
         final var computedShares = computeNodeShares(roster.rosterEntries(), maxSharesPerNode);
         final var totalShares =
