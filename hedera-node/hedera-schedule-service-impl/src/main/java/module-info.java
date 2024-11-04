@@ -19,7 +19,6 @@ module com.hedera.node.app.service.schedule.impl {
     exports com.hedera.node.app.service.schedule.impl;
     exports com.hedera.node.app.service.schedule.impl.handlers;
     exports com.hedera.node.app.service.schedule.impl.schemas;
-    exports com.hedera.node.app.service.schedule.impl.api;
 
     provides com.hedera.node.app.service.schedule.ScheduleService with
             com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;

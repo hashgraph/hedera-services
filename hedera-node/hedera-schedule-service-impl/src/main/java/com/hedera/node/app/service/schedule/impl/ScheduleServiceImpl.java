@@ -18,25 +18,19 @@ package com.hedera.node.app.service.schedule.impl;
 
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -51,16 +45,11 @@ public final class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public Iterator<ExecutableTxn> iterTxnsForInterval(
-            Instant start,
-            Instant end,
-            Supplier<StoreFactory> cleanupStoreFactory,
-            Function<TransactionBody, Set<Key>> requiredKeysFn,
-            HandleContext context) {
+            Instant start, Instant end, Supplier<StoreFactory> cleanupStoreFactory) {
         var store = cleanupStoreFactory.get().writableStore(WritableScheduleStoreImpl.class);
         // Filter transactions that are not executed/deleted and have all the required keys
         var executableTxns = store.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()).stream()
                 .filter(schedule -> !schedule.executed() && !schedule.deleted())
-                .filter(schedule -> hasAllRequiredKeys(schedule, requiredKeysFn, context))
                 .toList();
 
         // Return a custom iterator that supports the remove() method
@@ -90,7 +79,10 @@ public final class ScheduleServiceImpl implements ScheduleService {
                 }
 
                 // Use the StoreFactory to clean up the transaction
-                store.delete(transactions.get(currentIndex).scheduleId(), Instant.now());
+                cleanupStoreFactory
+                        .get()
+                        .writableStore(WritableScheduleStoreImpl.class)
+                        .delete(transactions.get(currentIndex).scheduleId(), Instant.now());
 
                 transactions.remove(currentIndex);
                 currentIndex--; // Adjust index after removal
@@ -100,21 +92,14 @@ public final class ScheduleServiceImpl implements ScheduleService {
             }
 
             private ExecutableTxn toExecutableTxn(Schedule schedule) {
+                final var signatories = schedule.signatories();
+                final VerificationAssistant callback = (k, ignore) -> signatories.contains(k);
                 return new ExecutableTxn(
-                        childAsOrdinary(schedule), Instant.ofEpochSecond(schedule.calculatedExpirationSecond()));
+                        childAsOrdinary(schedule),
+                        callback,
+                        schedule.payerAccountId(),
+                        Instant.ofEpochSecond(schedule.calculatedExpirationSecond()));
             }
         };
-    }
-
-    private boolean hasAllRequiredKeys(
-            Schedule schedule, Function<TransactionBody, Set<Key>> requiredKeysFn, HandleContext context) {
-        final var signatories = new HashSet<>(schedule.signatories());
-        final var transactionBody = childAsOrdinary(schedule);
-        final var requiredKeys = requiredKeysFn.apply(transactionBody);
-        final VerificationAssistant callback = (k, ignore) -> signatories.contains(k);
-        final var remainingKeys = new HashSet<>(requiredKeys);
-        remainingKeys.removeIf(
-                k -> context.keyVerifier().verificationFor(k, callback).passed());
-        return remainingKeys.isEmpty();
     }
 }

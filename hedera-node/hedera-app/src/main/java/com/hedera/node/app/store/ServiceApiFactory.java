@@ -16,11 +16,9 @@
 
 package com.hedera.node.app.store;
 
-import static com.hedera.node.app.service.schedule.impl.api.ScheduleServiceApiProvider.SCHEDULE_SERVICE_API_PROVIDER;
 import static com.hedera.node.app.service.token.impl.api.TokenServiceApiProvider.TOKEN_SERVICE_API_PROVIDER;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.schedule.api.ScheduleServiceApi;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -38,8 +36,8 @@ public class ServiceApiFactory {
     private final Configuration configuration;
     private final StoreMetricsService storeMetricsService;
 
-    private static final Map<Class<?>, ServiceApiProvider<?>> API_PROVIDER = Map.of(
-            TokenServiceApi.class, TOKEN_SERVICE_API_PROVIDER, ScheduleServiceApi.class, SCHEDULE_SERVICE_API_PROVIDER);
+    private static final Map<Class<?>, ServiceApiProvider<?>> API_PROVIDER =
+            Map.of(TokenServiceApi.class, TOKEN_SERVICE_API_PROVIDER);
 
     @Inject
     public ServiceApiFactory(
