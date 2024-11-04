@@ -413,18 +413,12 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      * @param firstGrpcPort the first gRPC port
      */
     public static void initializeNextPortsForNetwork(final int size, final int firstGrpcPort) {
-        // Suppose firstGrpcPort is 10000 with 4 nodes in the network, then:
-        //   - nextGrpcPort = 10000
-        //   - nextNodeOperatorPort = 10008
-        //   - nextGossipPort = 10009
-        //   - nextGossipTlsPort = 10010
-        //   - nextPrometheusPort = 10016
-        // So for a nodeId of 2, the assigned ports are:
-        //   - grpcPort = nextGrpcPort + nodeId * 2 = 10004
-        //   - grpcNodeOperatorPort = nextNodeOperatorPort + nodeId * 2 = 10012
-        //   - gossipPort = nextGossipPort + nodeId * 2 = 10013
-        //   - gossipTlsPort = nextGossipTlsPort + nodeId * 2 = 10014
-        //   - prometheusPort = nextPrometheusPort + nodeId = 10018
+        // Suppose firstGrpcPort is 10000 with 4 nodes in the network, then the port assignments are,
+        //   - grpcPort = 10000, 10002, 10004, 10006
+        //   - nodeOperatorPort = 10008, 10009, 10010, 10011
+        //   - gossipPort = 10012, 10014, 10016, 10018
+        //   - gossipTlsPort = 10013, 10015, 10017, 10019
+        //   - prometheusPort = 10020, 10021, 10022, 10023
         nextGrpcPort = firstGrpcPort;
         nextNodeOperatorPort = nextGrpcPort + 2 * size;
         nextGossipPort = nextNodeOperatorPort + size;

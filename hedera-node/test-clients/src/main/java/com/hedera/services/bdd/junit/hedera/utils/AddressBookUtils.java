@@ -125,7 +125,7 @@ public class AddressBookUtils {
                         .build(),
                 host,
                 nextGrpcPort + nodeId * 2,
-                nextNodeOperatorPort + nodeId * 2,
+                nextNodeOperatorPort + nodeId,
                 nextGossipPort + nodeId * 2,
                 nextGossipTlsPort + nodeId * 2,
                 nextPrometheusPort + nodeId,
