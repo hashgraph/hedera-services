@@ -104,7 +104,7 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
         run: |
           # massage the message to remove invalid control characters
-          MASSAGED_MESSAGE="${MESSAGE//[$'\t\r\n ']}"
+          MASSAGED_MESSAGE="${MESSAGE//[$'\t\r\n']/' '}"
 
           # Assign github step outputs
           echo "input-ref=${REFERENCE}" >> $GITHUB_OUTPUT
