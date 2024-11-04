@@ -1437,4 +1437,42 @@ public class AtomicCryptoTransferHTSSuite {
                                         .contractCallResult(
                                                 htsPrecompileResult().withStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
     }
+
+    @HapiTest
+    final Stream<DynamicTest> nullContractAdminKeyTransfer() {
+        final var nullAdminKeyXferTxn = "nullAdminKeyXferTxn";
+        return hapiTest(
+                cryptoCreate(RECEIVER),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).omitAdminKey(),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, CONTRACT, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> {
+                    final var receiver = spec.registry().getAccountID(RECEIVER);
+                    final var contract = spec.registry().getAccountID(CONTRACT);
+                    final var amountToBeSent = 50 * ONE_HBAR;
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            CONTRACT,
+                                            TRANSFER_MULTIPLE_TOKENS,
+                                            transferList()
+                                                    .withAccountAmounts(
+                                                            accountAmount(contract, -amountToBeSent, false),
+                                                            accountAmount(receiver, amountToBeSent, false))
+                                                    .build(),
+                                            EMPTY_TUPLE_ARRAY)
+                                    .payingWith(GENESIS)
+                                    .via(nullAdminKeyXferTxn)
+                                    .gas(GAS_TO_OFFER));
+                }),
+                childRecordsCheck(
+                        nullAdminKeyXferTxn,
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(SUCCESS)))
+                                .transfers(including(tinyBarsFromTo(CONTRACT, RECEIVER, 50 * ONE_HBAR)))));
+    }
 }

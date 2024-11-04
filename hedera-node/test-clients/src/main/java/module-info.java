@@ -61,7 +61,6 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.junit.support.validators.utils;
     exports com.hedera.services.bdd.junit.support.validators.block;
     exports com.hedera.services.bdd.utils;
-    exports com.hedera.services.bdd.junit.hedera.embedded.fakes.tss;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
@@ -88,16 +87,12 @@ module com.hedera.node.test.clients {
     requires transitive org.junit.platform.launcher;
     requires transitive org.testcontainers;
     requires transitive tuweni.bytes;
-    requires com.hedera.node.app.service.addressbook.impl;
     requires com.hedera.node.app.service.addressbook;
-    requires com.hedera.node.app.service.consensus.impl;
     requires com.hedera.node.app.service.contract.impl;
-    requires com.hedera.node.app.service.file.impl;
-    requires com.hedera.node.app.service.network.admin.impl;
     requires com.hedera.node.app.service.schedule.impl;
+    requires com.hedera.node.app.service.schedule;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
-    requires com.hedera.node.app.service.util.impl;
     requires com.swirlds.base.test.fixtures;
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.platform.core.test.fixtures;
