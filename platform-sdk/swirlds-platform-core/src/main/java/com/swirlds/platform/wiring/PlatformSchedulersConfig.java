@@ -103,7 +103,7 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration latestCompleteStateNotifier,
         @ConfigProperty(
                         defaultValue =
-                                "SEQUENTIAL_THREAD CAPACITY(5) FLUSHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
+                                "SEQUENTIAL_THREAD CAPACITY(100000) FLUSHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
                 TaskSchedulerConfiguration stateHasher,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateGarbageCollector,
