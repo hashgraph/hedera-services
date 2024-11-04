@@ -51,15 +51,15 @@ public class AddressBookUtils {
      *
      * @param networkName the name of the network
      * @param nodes the nodes in the network
-     * @param nextGossipPort the next gossip port to use
-     * @param nextGossipTlsPort the next gossip TLS port to use
+     * @param nextInternalGossipPort the next gossip port to use
+     * @param nextExternalGossipPort the next gossip TLS port to use
      * @return the contents of the <i>config.txt</i> file
      */
     public static String configTxtForLocal(
             @NonNull final String networkName,
             @NonNull final List<HederaNode> nodes,
-            final int nextGossipPort,
-            final int nextGossipTlsPort) {
+            final int nextInternalGossipPort,
+            final int nextExternalGossipPort) {
         final var sb = new StringBuilder();
         sb.append("swirld, ")
                 .append(networkName)
@@ -76,9 +76,9 @@ public class AddressBookUtils {
                     .append(", ")
                     .append(node.getName())
                     .append(", 1, 127.0.0.1, ")
-                    .append(nextGossipPort + (node.getNodeId() * 2))
+                    .append(nextInternalGossipPort + (node.getNodeId() * 2))
                     .append(", 127.0.0.1, ")
-                    .append(nextGossipTlsPort + (node.getNodeId() * 2))
+                    .append(nextExternalGossipPort + (node.getNodeId() * 2))
                     .append(", ")
                     .append("0.0.")
                     .append(node.getAccountId().accountNumOrThrow())

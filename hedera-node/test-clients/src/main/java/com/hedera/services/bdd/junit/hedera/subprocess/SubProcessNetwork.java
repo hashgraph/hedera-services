@@ -368,7 +368,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 .filter(line -> line.startsWith("address, " + id))
                 .map(line -> line.substring(line.lastIndexOf(",") + 2))
                 .findFirst()
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalStateException("No metadata found for node " + id));
     }
 
     private String consensusDabConfigTxt() {
