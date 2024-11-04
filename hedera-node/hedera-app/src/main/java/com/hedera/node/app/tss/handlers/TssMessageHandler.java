@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.tss.handlers;
 
-import static com.hedera.node.app.tss.handlers.TssUtils.computeTssParticipantDirectory;
+import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
@@ -83,7 +83,7 @@ public class TssMessageHandler implements TransactionHandler {
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var numberOfAlreadyExistingMessages =
-                tssStore.getTssMessages(candidateRosterHash).size();
+                tssStore.getTssMessageBodies(candidateRosterHash).size();
 
         // The sequence number starts from 0 and increments by 1 for each new message.
         final var key = TssMessageMapKey.newBuilder()
@@ -95,7 +95,7 @@ public class TssMessageHandler implements TransactionHandler {
         tssStore.put(key, op);
 
         final var tssParticipantDirectory =
-                computeTssParticipantDirectory(rosterStore.getActiveRoster(), maxSharesPerNode, (int)
+                computeParticipantDirectory(rosterStore.getActiveRoster(), maxSharesPerNode, (int)
                         context.networkInfo().selfNodeInfo().nodeId());
         final var result = tssCryptographyManager.handleTssMessageTransaction(op, tssParticipantDirectory, context);
         result.thenAccept(ledgerIdAndSignature -> {
