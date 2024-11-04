@@ -209,6 +209,36 @@ message TokenInfo {
      * (token definition and individual NFTs).
      */
     Key metadata_key = 28;
+
+    /**
+      * A function-specific account key.<br/>
+      * This key authorizes transactions to lock tokens in an account or account
+      * partition.
+      * <p>
+      * The key SHALL be used to authorize the locking and unlocking of tokens,
+      * or the transfer of locked tokens on balances held by the user
+      * on their account, or on the partition in their account.
+      */
+    Key lock_key = 29;
+
+    /**
+     * A function-specific account key.<br/>
+     * This key authorizes transactions to partition fungible tokens and NFTs
+     * held by an account.
+     * <p>
+     * This key SHALL be used to authorize the creation, deletion, or updating
+     * of partition definitions owned by the token definition.
+     */
+    Key partition_key = 30;
+
+    /**
+     * A function-specific account key.<br/>
+     * This key authorizes transactions to move tokens between partitions.
+     * <p>
+     * This key SHALL be used to authorize the movement of tokens between
+     * partitions.
+     */
+    Key partition_move_key = 31;
 }
 
 /**
