@@ -1,6 +1,8 @@
-module com.consensus.event.intake.impl {
-    requires transitive com.consensus.event.intake;
+import org.hiero.event.intake.impl.EventIntakeImpl;
 
-    provides com.consensus.event.intake.EventIntake with
-            com.consensus.event.intake.impl.EventIntakeImpl;
+module org.hiero.event.intake.impl {
+    requires transitive org.hiero.event.intake;
+
+    provides org.hiero.event.intake.EventIntake with
+            org.hiero.event.intake.impl.EventIntakeImpl;
 }

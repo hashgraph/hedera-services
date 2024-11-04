@@ -1,3 +1,3 @@
-module com.consensus.event.intake {
-    exports com.consensus.event.intake;
+module org.hiero.event.intake {
+    exports org.hiero.event.intake;
 }

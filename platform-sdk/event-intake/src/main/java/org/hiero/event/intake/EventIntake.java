@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package com.consensus.event.intake.impl;
-
-import com.consensus.event.intake.EventIntake;
+package org.hiero.event.intake;
 
 /**
- * Implementation for the mock event intake service.
+ * Mock event intake.
  */
-public final class EventIntakeImpl implements EventIntake {}
+public interface EventIntake {}
