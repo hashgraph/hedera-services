@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.module.library") }
+plugins { id("org.hiero.gradle.module.library") }
 
 description = "Default Hedera Consensus Service Implementation"
 

@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
+    id("org.hiero.gradle.module.library")
+    id("org.hiero.gradle.feature.publish-artifactregistry")
 }
 
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }

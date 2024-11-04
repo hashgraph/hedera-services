@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.module.application") }
+plugins { id("org.hiero.gradle.module.application") }
 
 val sdkDir = layout.projectDirectory.dir("sdk")
 

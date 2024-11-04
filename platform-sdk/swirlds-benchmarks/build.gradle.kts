@@ -17,8 +17,8 @@
 import me.champeau.jmh.JMHTask
 
 plugins {
-    id("com.hedera.gradle.module.application")
-    id("com.hedera.gradle.feature.benchmark")
+    id("org.hiero.gradle.module.application")
+    id("org.hiero.gradle.feature.benchmark")
 }
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default

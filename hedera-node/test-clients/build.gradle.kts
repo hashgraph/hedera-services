@@ -18,7 +18,7 @@ import com.github.jengelman.gradle.plugins.shadow.internal.DefaultDependencyFilt
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-    id("com.hedera.gradle.module.application")
+    id("org.hiero.gradle.module.application")
     id("com.gradleup.shadow") version "8.3.0"
 }
 

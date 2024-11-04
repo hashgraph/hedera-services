@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.gradle.module.library")
-    id("com.hedera.gradle.feature.test-fixtures")
+    id("org.hiero.gradle.module.library")
+    id("org.hiero.gradle.feature.test-fixtures")
 }
 
 description = "Hedera Token Service API"

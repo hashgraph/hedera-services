@@ -15,12 +15,12 @@
  */
 
 plugins {
-    id("com.hedera.gradle.module.library")
-    id("com.hedera.gradle.feature.publish-artifactregistry")
-    id("com.hedera.gradle.feature.benchmark")
-    id("com.hedera.gradle.feature.test-fixtures")
-    id("com.hedera.gradle.feature.test-hammer")
-    id("com.hedera.gradle.feature.test-timing-sensitive")
+    id("org.hiero.gradle.module.library")
+    id("org.hiero.gradle.feature.publish-artifactregistry")
+    id("org.hiero.gradle.feature.benchmark")
+    id("org.hiero.gradle.feature.test-fixtures")
+    id("org.hiero.gradle.feature.test-hammer")
+    id("org.hiero.gradle.feature.test-timing-sensitive")
 }
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default

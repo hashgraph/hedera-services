@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.module.application") }
+plugins { id("org.hiero.gradle.module.application") }
 
 mainModuleInfo {
     runtimeOnly("com.swirlds.platform.core")

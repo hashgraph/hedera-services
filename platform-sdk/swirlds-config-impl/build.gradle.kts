@@ -15,9 +15,9 @@
  */
 
 plugins {
-    id("com.hedera.gradle.module.library")
-    id("com.hedera.gradle.feature.publish-artifactregistry")
-    id("com.hedera.gradle.feature.benchmark")
+    id("org.hiero.gradle.module.library")
+    id("org.hiero.gradle.feature.publish-artifactregistry")
+    id("org.hiero.gradle.feature.benchmark")
 }
 
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }

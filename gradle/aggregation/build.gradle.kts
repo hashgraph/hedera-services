@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.gradle.base.lifecycle")
-    id("com.hedera.gradle.report.code-coverage")
+    id("org.hiero.gradle.base.lifecycle")
+    id("org.hiero.gradle.report.code-coverage")
 }
 
 dependencies {
@@ -32,9 +32,11 @@ dependencies {
     implementation(project(":test-clients"))
 }
 
-tasks.named<JacocoReport>("testCodeCoverageReport") {
-    val exclusions = listOf("test-clients", "testFixtures", "statedumpers", "example-apps")
-    classDirectories.setFrom(
-        classDirectories.files.filterNot { file -> exclusions.any { file.path.contains(it) } }
-    )
+// As the standard 'src/test' folder of 'test-clients' does not contain unit tests,
+// do not include it in the aggregated code coverage report.
+configurations.aggregateCodeCoverageReportResults {
+    exclude(module = "test-clients")
+    exclude(module = "swirlds-platform-base-example")
+    // testFixtures ?
+    // statedumpers ?
 }

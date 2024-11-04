@@ -19,7 +19,7 @@ pluginManagement {
     repositories.maven("https://repo.onepiece.software/snapshots")
 }
 
-plugins { id("com.hedera.gradle.build") version "0.0.2" }
+plugins { id("org.hiero.gradle.build") version "0.0.3" }
 
 javaModules {
     // This "intermediate parent project" should be removed
