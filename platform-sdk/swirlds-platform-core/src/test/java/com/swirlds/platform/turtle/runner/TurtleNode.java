@@ -18,6 +18,7 @@ package com.swirlds.platform.turtle.runner;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 
@@ -90,6 +91,8 @@ public class TurtleNode {
                 .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "0")
                 .getOrCreateConfig();
 
+        setupGlobalMetrics(configuration);
+
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
@@ -101,11 +104,10 @@ public class TurtleNode {
         final Supplier<MerkleRoot> genesisStateSupplier = TurtleTestingToolState::getStateRootNode;
         final var version = new BasicSoftwareVersion(1);
 
-        final NodeId selfId = null;
-        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final var metrics = getMetricsProvider().createPlatformMetrics(nodeId);
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
-                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, nodeId);
 
         final var reservedState = getInitialState(
                 configuration, recycleBin, version, genesisStateSupplier, "foo", "bar", nodeId, addressBook);
