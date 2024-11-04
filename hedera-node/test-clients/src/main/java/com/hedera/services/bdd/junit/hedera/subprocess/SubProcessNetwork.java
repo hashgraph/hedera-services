@@ -220,7 +220,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 ((SubProcessNode) node)
                         .reassignPorts(
                                 nextGrpcPort + nodeId * 2,
-                                nextNodeOperatorPort + nodeId * 2,
+                                nextNodeOperatorPort + nodeId,
                                 nextGossipPort + nodeId * 2,
                                 nextGossipTlsPort + nodeId * 2,
                                 nextPrometheusPort + nodeId);
@@ -427,7 +427,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         //   - prometheusPort = nextPrometheusPort + nodeId = 10018
         nextGrpcPort = firstGrpcPort;
         nextNodeOperatorPort = nextGrpcPort + 2 * size;
-        nextGossipPort = nextNodeOperatorPort + 1;
+        nextGossipPort = nextNodeOperatorPort + size;
         nextGossipTlsPort = nextGossipPort + 1;
         nextPrometheusPort = nextGossipPort + 2 * size;
         nextPortsInitialized = true;
