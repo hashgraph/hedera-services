@@ -50,11 +50,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StateNetworkInfo implements NetworkInfo {
-    private final Bytes ledgerId;
-    private final Map<Long, NodeInfo> nodeInfos;
     private final long selfId;
-    private final ConfigProvider configProvider;
+    private final Bytes ledgerId;
     private Roster activeRoster;
+    private final ConfigProvider configProvider;
+    private final Map<Long, NodeInfo> nodeInfos;
 
     /**
      * Constructs a new network information provider from the given state, roster, selfID, and configuration provider.

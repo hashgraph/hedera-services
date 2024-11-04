@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -91,9 +92,12 @@ public class EndOfStakingPeriodUpdater {
      *
      * @param context the context of the transaction used to end the staking period
      * @param exchangeRates the active exchange rate set
+     * @param weightUpdates the callback to use to propagate weight changes
      */
     public @Nullable StreamBuilder updateNodes(
-            @NonNull final TokenContext context, @NonNull final ExchangeRateSet exchangeRates) {
+            @NonNull final TokenContext context,
+            @NonNull final ExchangeRateSet exchangeRates,
+            @NonNull final BiConsumer<Long, Integer> weightUpdates) {
         requireNonNull(context);
         requireNonNull(exchangeRates);
         final var consensusTime = context.consensusTime();
@@ -200,6 +204,7 @@ public class EndOfStakingPeriodUpdater {
                     nodeInfo.deleted() ? 0 : scaleStakeToWeight(nodeInfo.stake(), totalStake, totalWeight);
             log.info("Node{} weight changed from {} to {}", nodeId, nodeInfo.weight(), newWeight);
             newNodeInfo = nodeInfo.copyBuilder().weight(newWeight).build();
+            weightUpdates.accept(nodeId, newWeight);
 
             // We rescale the weight range [0, sumOfConsensusWeights] back to [minStake, maxStake] before
             // externalizing the node stake metadata to stream consumers like mirror nodes
