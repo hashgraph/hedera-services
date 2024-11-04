@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
@@ -40,6 +41,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEd25519PrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -98,7 +100,7 @@ public class IsAuthorizedTest {
     private static final String KEY_LIST = "ListKeys";
 
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, SIMPLE);
-    private static final KeyShape KEY_LIST_SHAPE = KeyShape.listOf(ED25519, SIMPLE);
+    private static final KeyShape KEY_LIST_SHAPE = listOf(ED25519, SIMPLE);
 
     private static final String HRC632_CONTRACT = "HRC632Contract";
     private static final String CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED =
@@ -735,7 +737,7 @@ public class IsAuthorizedTest {
     @DisplayName("IsAuthorizedLukeTests")
     class IsAuthorizedLukeTests {
         @HapiTest
-        final Stream<DynamicTest> isAuthorizedECDSAHappyPath() {
+        final Stream<DynamicTest> ecdsaHappyPath() {
             return hapiTest(
                     newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
                     cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
@@ -755,6 +757,7 @@ public class IsAuthorizedTest {
                                         .pubKeyPrefix(Bytes.wrap(publicKey.toByteArray()))
                                         .build())
                                 .build();
+
                         final var signatureMapBytes =
                                 SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
 
@@ -775,7 +778,7 @@ public class IsAuthorizedTest {
         }
 
         @HapiTest
-        final Stream<DynamicTest> isAuthorizedED25519HappyPath() {
+        final Stream<DynamicTest> ed25519HappyPath() {
             final AtomicReference<AccountID> accountNum = new AtomicReference<>();
             return hapiTest(
                     newKeyNamed(ED25519_KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
@@ -797,6 +800,63 @@ public class IsAuthorizedTest {
                                         .ed25519(Bytes.wrap(signedBytes))
                                         .pubKeyPrefix(Bytes.wrap(publicKey.toByteArray()))
                                         .build())
+                                .build();
+                        final var signatureMapBytes =
+                                SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
+
+                        final var call = contractCall(
+                                        HRC632_CONTRACT,
+                                        "isAuthorizedCall",
+                                        asHeadlongAddress(asAddress(accountNum.get())),
+                                        message,
+                                        signatureMapBytes)
+                                .via("authorizeCall")
+                                .gas(2_000_000L);
+                        allRunFor(spec, call);
+                    }),
+                    getTxnRecord("authorizeCall")
+                            .hasPriority(recordWith()
+                                    .status(SUCCESS)
+                                    .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))));
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> keyListHappyPath() {
+            final AtomicReference<AccountID> accountNum = new AtomicReference<>();
+            return hapiTest(
+                    newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
+                    newKeyNamed(ED25519_KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
+                    newKeyListNamed(KEY_LIST, List.of(ECDSA_KEY, ED25519_KEY)),
+                    cryptoCreate(ACCOUNT)
+                            .balance(ONE_MILLION_HBARS)
+                            .key(KEY_LIST)
+                            .exposingCreatedIdTo(accountNum::set),
+                    cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ED25519_KEY, ONE_HUNDRED_HBARS)),
+                    uploadInitCode(HRC632_CONTRACT),
+                    contractCreate(HRC632_CONTRACT),
+                    withOpContext((spec, opLog) -> {
+                        final var message = "submit".getBytes();
+                        final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
+                        final var privateKeyEcdsa = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                        final var publicKeyEcdsa =
+                                spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1();
+                        final var addressBytesEcdsa = recoverAddressFromPrivateKey(privateKeyEcdsa);
+                        final var signedBytesEcdsa = Signing.signMessage64(messageHash, privateKeyEcdsa);
+
+                        final var privateKeyEd = getEd25519PrivateKeyFromSpec(spec, ED25519_KEY);
+                        final var publicKeyEd =
+                                spec.registry().getKey(ED25519_KEY).getEd25519();
+                        final var signedBytesEd = SignatureGenerator.signBytes(message, privateKeyEd);
+                        final var signatureMap = SignatureMap.newBuilder()
+                                .sigPair(List.of(
+                                        SignaturePair.newBuilder()
+                                                .ed25519(Bytes.wrap(signedBytesEd))
+                                                .pubKeyPrefix(Bytes.wrap(publicKeyEd.toByteArray()))
+                                                .build(),
+                                        SignaturePair.newBuilder()
+                                                .ecdsaSecp256k1(Bytes.wrap(signedBytesEcdsa))
+                                                .pubKeyPrefix(Bytes.wrap(publicKeyEcdsa.toByteArray()))
+                                                .build()))
                                 .build();
                         final var signatureMapBytes =
                                 SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
