@@ -32,7 +32,10 @@ option java_package = "com.hedera.hapi.services.auxiliary.tss.legacy";
 // <<<pbj.java_package = "com.hedera.hapi.services.auxiliary.tss">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
-
+/**
+ * The body of a transaction that contains a share signature produced by a node in a TSS network.
+ * This transaction will be gossipped with highest priority.
+ */
 message TssShareSignatureTransactionBody {
   /**
    * The hash of the roster containing the node whose share produced the share signature.
