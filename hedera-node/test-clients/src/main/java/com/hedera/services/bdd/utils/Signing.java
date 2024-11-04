@@ -19,13 +19,14 @@ package com.hedera.services.bdd.utils;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
 
+import com.goterl.lazysodium.LazySodiumJava;
+import com.goterl.lazysodium.SodiumJava;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.sun.jna.ptr.IntByReference;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
-import org.bouncycastle.math.ec.rfc8032.Ed25519;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
 /**
@@ -118,11 +119,11 @@ public final class Signing {
         return sig;
     }
 
-    public static byte[] signMessageEd25519(final byte[] message, byte[] privateKey) {
-        byte[] signature = new byte[Ed25519.SIGNATURE_SIZE];
-        Ed25519.sign(privateKey, 0, message, 0, message.length, signature, 0);
+    public static boolean edVerify(final byte[] signature, final byte[] message, byte[] publickey) {
+        final SodiumJava sodiumJava = new SodiumJava();
+        final var algorithm = new LazySodiumJava(sodiumJava);
 
-        return signature;
+        return algorithm.cryptoSignVerifyDetached(signature, message, message.length, publickey);
     }
 
     private Signing() {}

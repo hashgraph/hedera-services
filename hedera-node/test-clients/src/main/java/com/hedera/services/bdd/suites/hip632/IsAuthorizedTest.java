@@ -791,8 +791,7 @@ public class IsAuthorizedTest {
                         final var privateKey = getEd25519PrivateKeyFromSpec(spec, ED25519_KEY);
                         final var publicKey =
                                 spec.registry().getKey(ED25519_KEY).getEd25519();
-                        final var signedBytes = Signing.signMessageEd25519(message, privateKey);
-
+                        final var signedBytes = SignatureGenerator.signBytes(message, privateKey);
                         final var signatureMap = SignatureMap.newBuilder()
                                 .sigPair(SignaturePair.newBuilder()
                                         .ed25519(Bytes.wrap(signedBytes))
