@@ -18,9 +18,6 @@ package com.swirlds.platform.util;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.MerkleStateLifecycles;
@@ -33,8 +30,6 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.singleton.SingletonNode;
-import com.swirlds.state.merkle.singleton.StringLeaf;
-import com.swirlds.state.merkle.singleton.ValueLeaf;
 import com.swirlds.state.spi.*;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,51 +38,20 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public enum NoOpMerkleStateLifecycles implements MerkleStateLifecycles {
     NO_OP_MERKLE_STATE_LIFECYCLES;
-    /**
-     * Register the class IDs for the {@link MerkleStateRoot} and its required children, specifically those
-     * used by the {@link PlatformStateService}.
-     */
-    public static void registerMerkleStateRootClassIds() {
-        try {
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(
-                            MerkleStateRoot.class,
-                            () -> new MerkleStateRoot(
-                                    NO_OP_MERKLE_STATE_LIFECYCLES,
-                                    version -> new BasicSoftwareVersion(version.major()))));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
-            final var schema = new V0540PlatformStateSchema();
-            schema.statesToCreate().stream()
-                    .sorted(Comparator.comparing(StateDefinition::stateKey))
-                    .forEach(def -> {
-                        final var md = new StateMetadata<>(PlatformStateService.NAME, schema, def);
-                        try {
-                            ConstructableRegistry.getInstance()
-                                    .registerConstructable(new ClassConstructorPair(
-                                            ValueLeaf.class,
-                                            () -> new ValueLeaf<>(
-                                                    md.singletonClassId(),
-                                                    md.stateDefinition().valueCodec())));
-                        } catch (ConstructableRegistryException e) {
-                            throw new IllegalStateException(e);
-                        }
-                    });
-        } catch (ConstructableRegistryException e) {
-            throw new IllegalStateException(e);
-        }
-    }
+
+    private static final Logger logger = LogManager.getLogger(NoOpMerkleStateLifecycles.class);
 
     public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
         if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
         }
         final var schema = new V0540PlatformStateSchema();
+        logger.info("schema.statesToCreate() size: {}", schema.statesToCreate().size());
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
