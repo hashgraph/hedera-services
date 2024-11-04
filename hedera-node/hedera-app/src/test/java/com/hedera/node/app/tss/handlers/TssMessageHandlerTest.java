@@ -145,7 +145,6 @@ class TssMessageHandlerTest {
         given(handleContext.body()).willReturn(getTssBody());
         given(readableRosterStore.getActiveRoster()).willReturn(roster);
         given(pairingPublicKey.publicKey()).willReturn(new FakeGroupElement(BigInteger.valueOf(10)));
-        given(gossip.sign(any())).willReturn(signature);
 
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);

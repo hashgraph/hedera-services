@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
 import static java.util.Objects.requireNonNull;
 
@@ -79,7 +80,9 @@ public class EmbeddedNetwork extends AbstractNetwork {
                 name,
                 IntStream.range(0, CLASSIC_HAPI_TEST_NETWORK_SIZE)
                         .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(
-                                classicMetadataFor(nodeId, name, FAKE_HOST, workingDir, 0, 0, 0, 0, 0)))
+                                // All non-embedded node working directories are mapped to the embedded node0
+                                classicMetadataFor(
+                                        nodeId, name, FAKE_HOST, 0, 0, 0, 0, 0, workingDirFor(0, workingDir))))
                         .toList());
         this.mode = requireNonNull(mode);
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
