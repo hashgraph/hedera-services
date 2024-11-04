@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateTssMsgState;
+import static com.hedera.services.bdd.spec.utilops.TssVerbs.rekeyingScenario;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.startIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.stopIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
@@ -36,6 +37,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.EQUAL_NODE_STAKES;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TSS_MESSAGE_SIMS;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.INVALID_MESSAGES;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.VALID_MESSAGES;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static java.lang.Long.parseLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,8 +59,11 @@ import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
+import com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntConsumer;
 import java.util.stream.Stream;
@@ -143,6 +151,20 @@ public class RepeatableIntegrationTests {
                 // in particular a successful TssMessage from the embedded node (and then a TssVote since this is our
                 // placeholder implementation of TssMessageHandler)
                 cryptoCreate("rekeyingTransaction"));
+    }
+
+    @LeakyRepeatableHapiTest(
+            value = {NEEDS_TSS_CONTROL, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
+            overrides = {"tss.keyCandidateRoster"})
+    Stream<DynamicTest> rewrite() {
+        return hapiTest(rekeyingScenario(
+                // Create one new node so the candidate roster is different from the active roster
+                new RekeyScenarioOp.DabEdits(Set.of(), 1),
+                // Give equal stake to all nodes (so each has the same number of share in the candidate directory)
+                EQUAL_NODE_STAKES,
+                // Submit invalid messages from node1, to verify the embedded node votes only for its own valid
+                // messages, plus the required complement of other valid messages to cross the threshold
+                TSS_MESSAGE_SIMS.apply(List.of(INVALID_MESSAGES, VALID_MESSAGES, VALID_MESSAGES))));
     }
 
     /**

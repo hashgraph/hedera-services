@@ -34,10 +34,9 @@ public class MutateTssMsgState extends UtilOp {
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         final var rosterSingletonState = spec.embeddedRosterStateOrThrow().get();
-
         final var activeRosterHash = Objects.requireNonNull(rosterSingletonState)
                 .roundRosterPairs()
-                .get(0)
+                .getFirst()
                 .activeRosterHash();
         final var tssMessages = spec.embeddedTssMsgStateOrThrow();
 
