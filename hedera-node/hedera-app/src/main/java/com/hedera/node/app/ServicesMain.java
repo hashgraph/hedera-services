@@ -50,12 +50,12 @@ import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
@@ -94,6 +94,11 @@ public class ServicesMain implements SwirldMain {
      * The {@link SwirldMain} to actually use, depending on whether workflows are enabled.
      */
     private final SwirldMain delegate;
+
+    /**
+     * The {@link Metrics} to use.
+     */
+    private static Metrics metrics;
 
     /**
      * Create a new instance
@@ -169,7 +174,6 @@ public class ServicesMain implements SwirldMain {
      */
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
-        final Hedera hedera = newHedera();
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
         final AddressBook diskAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
@@ -193,15 +197,17 @@ public class ServicesMain implements SwirldMain {
 
         final NodeId selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
 
-        final SoftwareVersion version = hedera.getSoftwareVersion();
-        logger.info("Starting node {} with version {}", selfId, version);
-
         final var configuration = buildConfiguration();
         final var keysAndCerts =
                 initNodeSecurity(diskAddressBook, configuration).get(selfId);
 
         setupGlobalMetrics(configuration);
-        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        metrics = getMetricsProvider().createPlatformMetrics(selfId);
+
+        final Hedera hedera = newHedera();
+        final SoftwareVersion version = hedera.getSoftwareVersion();
+        logger.info("Starting node {} with version {}", selfId, version);
+
         final var time = Time.getCurrent();
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
@@ -241,9 +247,6 @@ public class ServicesMain implements SwirldMain {
         // Initialize the Merkle cryptography
         final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
-
-        // Register the metrics related to TSS functionalities
-        hedera.registerTssMetrics(metrics);
 
         // Create the platform context
         final var platformContext = PlatformContext.create(
@@ -396,6 +399,6 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
-                        new NoOpMetrics()));
+                        metrics));
     }
 }

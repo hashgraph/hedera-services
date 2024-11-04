@@ -94,6 +94,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                 .create(appContext.gossip(), submissionExecutor, tssLibraryExecutor, metrics);
         this.tssHandlers = new TssHandlers(this.component.tssMessageHandler(), this.component.tssVoteHandler());
         this.tssSubmissions = this.component.tssSubmissions();
+        this.tssMetrics = this.component.tssMetrics();
         this.tssLibrary = requireNonNull(tssLibrary);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
     }
@@ -102,12 +103,6 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0560TssBaseSchema());
-    }
-
-    @Override
-    public void registerMetrics(@NonNull final TssMetrics metrics) {
-        requireNonNull(metrics);
-        this.tssMetrics = this.component.tssMetrics(metrics);
     }
 
     @Override
