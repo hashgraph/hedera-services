@@ -148,7 +148,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
         // Key must match signature type
         if (key.isPresent()) {
             if (!switch (signatureType) {
-                case EC -> false;
+                case EC -> key.get().hasEcdsa384();
                 case ED -> key.get().hasEd25519();
                 case INVALID -> false;
             }) return bail.apply(INVALID_SIGNATURE_TYPE_MISMATCHING_KEY);
