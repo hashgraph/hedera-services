@@ -16,10 +16,8 @@
 
 package com.hedera.services.bdd.junit.support;
 
-import static com.hedera.node.app.hapi.utils.forensics.OrderedComparison.statusHistograms;
 import static java.util.Comparator.comparing;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.MapChangeKey;
@@ -32,12 +30,8 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.impl.BlockImplUtils;
-import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
-import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -45,8 +39,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,33 +59,6 @@ public enum BlockStreamAccess {
 
     private static final String UNCOMPRESSED_FILE_EXT = ".blk";
     private static final String COMPRESSED_FILE_EXT = UNCOMPRESSED_FILE_EXT + ".gz";
-
-    public static void main(String[] args) throws IOException {
-        final var loc =
-                "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/repeatable-test/node0/data/block-streams/block-0.0.3";
-        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(loc));
-        blocks.forEach(block -> {
-            final var items = block.items();
-            final var blockNo = items.getFirst().blockHeaderOrThrow().number();
-            System.out.println("--- " + blockNo + " ---");
-            final var entries = items.stream()
-                    .filter(BlockItem::hasEventTransaction)
-                    .map(BlockItem::eventTransactionOrThrow)
-                    .map(et -> {
-                        final TransactionParts parts;
-                        try {
-                            parts = TransactionParts.from(Transaction.parseFrom(
-                                    et.applicationTransactionOrThrow().toByteArray()));
-                        } catch (InvalidProtocolBufferException e) {
-                            throw new RuntimeException(e);
-                        }
-                        return new RecordStreamEntry(parts, TransactionRecord.getDefaultInstance(), Instant.EPOCH);
-                    })
-                    .toList();
-            final var histogram = statusHistograms(entries);
-            System.out.println(histogram);
-        });
-    }
 
     /**
      * Reads all files matching the block file pattern from the given path and returns them in
