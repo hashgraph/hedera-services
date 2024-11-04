@@ -66,6 +66,10 @@ public class ReturnTypes {
     protected static final String EXPIRY_FIELDS =
             // second, autoRenewAccount, autoRenewPeriod
             "(uint32,address,uint32)";
+    // TODO: consider this expiry type for TokenV3. Might need to add another function to handle this.
+    protected static final String EXPIRY_FIELDS_V2 =
+            // second, autoRenewAccount, autoRenewPeriod
+            "(int64,address,int64)";
     protected static final String CUSTOM_FEES =
             // FixedFee array
             // amount, tokenId, useHbarsForPayment, useCurrentTokenForPayment, feeCollector
@@ -130,7 +134,7 @@ public class ReturnTypes {
                 + "("
                     + TOKEN_FIELDS
                     + TOKEN_KEYS
-                    + EXPIRY_FIELDS
+                    + EXPIRY_FIELDS_V2
                     + ",bytes" // metadata
                     + ")"
                     + STATUS_FIELDS // totalSupply, deleted, defaultKycStatus, pauseStatus
@@ -166,7 +170,7 @@ public class ReturnTypes {
                     + "("
                         + TOKEN_FIELDS
                         + TOKEN_KEYS
-                        + EXPIRY_FIELDS
+                        + EXPIRY_FIELDS_V2
                         + ",bytes" // metadata
                          + ")"
                         + STATUS_FIELDS
@@ -204,7 +208,7 @@ public class ReturnTypes {
                     + "("
                         + TOKEN_FIELDS
                         + TOKEN_KEYS
-                        + EXPIRY_FIELDS
+                        + EXPIRY_FIELDS_V2
                         + ",bytes" // metadata
                         + ")"
                         + STATUS_FIELDS // totalSupply, deleted, defaultKycStatus, pauseStatus
