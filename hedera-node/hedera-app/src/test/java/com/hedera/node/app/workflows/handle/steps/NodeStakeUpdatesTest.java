@@ -80,7 +80,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NodeStakeUpdatesTest {
+public class NodeStakeUpdatesTest {
     private static final Instant CONSENSUS_TIME_1234567 = Instant.ofEpochSecond(1_234_5670L, 1357);
 
     @Mock
@@ -436,7 +436,7 @@ class NodeStakeUpdatesTest {
                 .getOrCreateConfig();
     }
 
-    private static class RosterCase {
+    public static class RosterCase {
         static final Bytes BYTES_1_2_3 = Bytes.wrap("1, 2, 3");
         static final Node NODE_1 = Node.newBuilder()
                 .nodeId(1)
@@ -447,7 +447,7 @@ class NodeStakeUpdatesTest {
                         .port(11)
                         .build())
                 .build();
-        static final RosterEntry ROSTER_NODE_1 = RosterEntry.newBuilder()
+        public static final RosterEntry ROSTER_NODE_1 = RosterEntry.newBuilder()
                 .nodeId(NODE_1.nodeId())
                 .weight(NODE_1.weight())
                 .gossipCaCertificate(NODE_1.gossipCaCertificate())
@@ -462,7 +462,7 @@ class NodeStakeUpdatesTest {
                         .port(22)
                         .build())
                 .build();
-        static final RosterEntry ROSTER_NODE_2 = RosterEntry.newBuilder()
+        public static final RosterEntry ROSTER_NODE_2 = RosterEntry.newBuilder()
                 .nodeId(NODE_2.nodeId())
                 .weight(NODE_2.weight())
                 .gossipCaCertificate(NODE_2.gossipCaCertificate())
@@ -480,7 +480,7 @@ class NodeStakeUpdatesTest {
                         .port(33)
                         .build())
                 .build();
-        static final RosterEntry ROSTER_NODE_3 = RosterEntry.newBuilder()
+        public static final RosterEntry ROSTER_NODE_3 = RosterEntry.newBuilder()
                 .nodeId(NODE_3.nodeId())
                 .weight(NODE_3.weight())
                 .gossipCaCertificate(NODE_3.gossipCaCertificate())
@@ -502,10 +502,10 @@ class NodeStakeUpdatesTest {
                 .gossipEndpoint(NODE_4.gossipEndpoint())
                 .build();
 
-        static final Roster CURRENT_CANDIDATE_ROSTER = Roster.newBuilder()
+        public static final Roster CURRENT_CANDIDATE_ROSTER = Roster.newBuilder()
                 .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2))
                 .build();
-        static final Roster ACTIVE_ROSTER = Roster.newBuilder()
+        public static final Roster ACTIVE_ROSTER = Roster.newBuilder()
                 .rosterEntries(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3, ROSTER_NODE_4)
                 .build();
 

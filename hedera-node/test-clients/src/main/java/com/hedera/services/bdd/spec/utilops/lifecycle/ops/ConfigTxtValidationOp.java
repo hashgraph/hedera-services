@@ -66,11 +66,12 @@ public class ConfigTxtValidationOp extends AbstractLifecycleOp {
     private boolean containsLoadableAddressBook(
             @NonNull final Path configTxtPath, @NonNull final Consumer<String> lastError) {
         try {
+            log.info("Attempting to load address book from {}", configTxtPath);
             loadAddressBook(configTxtPath);
             return true;
-        } catch (Exception e) {
-            lastError.accept(e.getClass().getSimpleName() + " - '" + e.getMessage() + "'");
-            log.warn("Unable to load address book from {}", configTxtPath, e);
+        } catch (Throwable t) {
+            lastError.accept(t.getClass().getSimpleName() + " - '" + t.getMessage() + "'");
+            log.warn("Unable to load address book from {}", configTxtPath, t);
             return false;
         }
     }

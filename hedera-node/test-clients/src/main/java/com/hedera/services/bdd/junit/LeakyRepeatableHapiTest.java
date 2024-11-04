@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.junit;
 
 import static com.hedera.services.bdd.junit.TestTags.ONLY_REPEATABLE;
-import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.extensions.SpecNamingExtension;
@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Execution;
 
 /**
  * Annotation for a {@link HapiTest} that can only be run in repeatable mode, and also changes network state
@@ -39,7 +39,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
-@ResourceLock(value = "NETWORK", mode = READ)
+@Execution(SAME_THREAD)
 @Tag(ONLY_REPEATABLE)
 public @interface LeakyRepeatableHapiTest {
     /**

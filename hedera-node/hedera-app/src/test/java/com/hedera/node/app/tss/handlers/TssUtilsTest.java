@@ -35,13 +35,13 @@ import org.junit.jupiter.api.Test;
 
 public class TssUtilsTest {
     @Test
-    public void testComputeTssParticipantDirectory() {
+    public void testComputeParticipantDirectory() {
         RosterEntry rosterEntry1 = new RosterEntry(1L, 100L, null, null, null);
         RosterEntry rosterEntry2 = new RosterEntry(2L, 50L, null, null, null);
         long maxSharesPerNode = 10L;
         int selfNodeId = 1;
 
-        TssParticipantDirectory directory = TssUtils.computeTssParticipantDirectory(
+        TssParticipantDirectory directory = TssUtils.computeParticipantDirectory(
                 new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode, selfNodeId);
 
         assertNotNull(directory);
