@@ -30,8 +30,10 @@ public interface TssModule {
     @Provides
     @Singleton
     static TssCryptographyManager tssCryptographyManager(
-            @NonNull final AppContext.Gossip gossip, @NonNull @TssLibraryExecutor final Executor libraryExecutor) {
-        return new TssCryptographyManager(new PlaceholderTssLibrary(), gossip, libraryExecutor);
+            @NonNull final AppContext.Gossip gossip,
+            @NonNull @TssLibraryExecutor final Executor libraryExecutor,
+            @NonNull TssMetrics tssMetrics) {
+        return new TssCryptographyManager(new PlaceholderTssLibrary(), gossip, libraryExecutor, tssMetrics);
     }
 
     @Binds

@@ -56,6 +56,11 @@ public interface TssBaseService extends Service {
     }
 
     /**
+     * @param metrics the metrics object being used to report tss performance
+     */
+    void registerMetrics(@NonNull TssMetrics metrics);
+
+    /**
      * Returns the status of the TSS service relative to the given roster, ledger id, and given TSS base state.
      *
      * @param roster the candidate roster

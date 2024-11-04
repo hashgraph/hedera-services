@@ -1107,4 +1107,13 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         MerkleTreeSnapshotWriter.createSnapshot(this, targetPath);
         snapshotMetrics.updateWriteStateToDiskTimeMetric(time.currentTimeMillis() - startTime);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public MerkleStateRoot loadSnapshot(@NonNull Path targetPath) throws IOException {
+        return (MerkleStateRoot)
+                MerkleTreeSnapshotReader.readStateFileData(targetPath).state();
+    }
 }

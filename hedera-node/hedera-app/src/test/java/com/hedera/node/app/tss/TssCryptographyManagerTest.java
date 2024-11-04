@@ -76,12 +76,15 @@ public class TssCryptographyManagerTest {
     @Mock
     private WritableTssStore tssStore;
 
+    @Mock
+    private TssMetrics tssMetrics;
+
     @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
 
     @BeforeEach
     void setUp() {
-        subject = new TssCryptographyManager(tssLibrary, gossip, ForkJoinPool.commonPool());
+        subject = new TssCryptographyManager(tssLibrary, gossip, ForkJoinPool.commonPool(), tssMetrics);
         when(handleContext.networkInfo()).thenReturn(networkInfo);
         when(networkInfo.selfNodeInfo()).thenReturn(new NodeInfoImpl(0, AccountID.DEFAULT, 0, null, null));
     }
