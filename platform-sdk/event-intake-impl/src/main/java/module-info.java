@@ -1,5 +1,3 @@
-import org.hiero.event.intake.impl.EventIntakeImpl;
-
 module org.hiero.event.intake.impl {
     requires transitive org.hiero.event.intake;
 
