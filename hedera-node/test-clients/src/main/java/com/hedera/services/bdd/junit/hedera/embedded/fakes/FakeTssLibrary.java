@@ -52,6 +52,9 @@ public class FakeTssLibrary implements TssLibrary {
     private DirectoryAssertion decryptDirectoryAssertion;
 
     @Nullable
+    private DirectoryAssertion rekeyGenerationDirectoryAssertion;
+
+    @Nullable
     private List<TssPrivateShare> decryptedShares;
 
     /**
@@ -88,12 +91,24 @@ public class FakeTssLibrary implements TssLibrary {
         return new TssMessage(new byte[0]);
     }
 
-    @NonNull
+    /**
+     * Sets up the behavior to exhibit when receiving a call to
+     * {@link #generateTssMessage(TssParticipantDirectory, TssPrivateShare)}.
+     */
+    public void setupRekeyGeneration(@NonNull final DirectoryAssertion rekeyGenerationDirectoryAssertion) {
+        this.rekeyGenerationDirectoryAssertion = requireNonNull(rekeyGenerationDirectoryAssertion);
+    }
+
     @Override
-    public TssMessage generateTssMessage(
-            @NonNull final TssParticipantDirectory tssParticipantDirectory,
-            @NonNull final TssPrivateShare privateShare) {
-        return new TssMessage(new byte[0]);
+    public @NonNull TssMessage generateTssMessage(
+            @NonNull final TssParticipantDirectory directory, @NonNull final TssPrivateShare privateShare) {
+        requireNonNull(directory);
+        requireNonNull(privateShare);
+        if (rekeyGenerationDirectoryAssertion != null) {
+            rekeyGenerationDirectoryAssertion.assertExpected(directory);
+        }
+        // The fake always returns a valid message
+        return validMessage(privateShare.shareId().idElement());
     }
 
     @Override
@@ -133,6 +148,7 @@ public class FakeTssLibrary implements TssLibrary {
     public List<TssPublicShare> computePublicShares(
             @NonNull final TssParticipantDirectory participantDirectory,
             @NonNull final List<TssMessage> validTssMessages) {
+        System.out.println("Computing public shares from " + validTssMessages.size() + " messages");
         return List.of();
     }
 

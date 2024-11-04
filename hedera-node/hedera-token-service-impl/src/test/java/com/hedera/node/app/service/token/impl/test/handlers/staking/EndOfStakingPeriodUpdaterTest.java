@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,6 +84,9 @@ public class EndOfStakingPeriodUpdaterTest {
 
     @Mock
     private NodeStakeUpdateStreamBuilder nodeStakeUpdateRecordBuilder;
+
+    @Mock
+    private BiConsumer<Long, Integer> weightUpdates;
 
     private ReadableAccountStore accountStore;
 
@@ -115,7 +119,7 @@ public class EndOfStakingPeriodUpdaterTest {
         final var stakingInfoStore = mock(WritableStakingInfoStore.class);
         final var stakingRewardsStore = mock(WritableNetworkStakingRewardsStore.class);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         verifyNoInteractions(stakingInfoStore, stakingRewardsStore);
     }
@@ -215,7 +219,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -255,7 +259,7 @@ public class EndOfStakingPeriodUpdaterTest {
         final var stakingInfoStore = mock(WritableStakingInfoStore.class);
         final var stakingRewardsStore = mock(WritableNetworkStakingRewardsStore.class);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         verifyNoInteractions(stakingInfoStore, stakingRewardsStore);
         assertThat(logCaptor.infoLogs()).contains("Staking not enabled, nothing to do");
@@ -277,7 +281,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -317,7 +321,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -358,7 +362,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -375,7 +379,7 @@ public class EndOfStakingPeriodUpdaterTest {
     void returnsZeroWeightIfTotalStakeOfAllNodeIsZero() {
         final var weight = scaleStakeToWeight(10, 0, 500);
         assertThat(weight).isEqualTo(0);
-        assertThat(logCaptor.warnLogs()).contains("Total stake of all nodes should be greater than 0. But got 0");
+        assertThat(logCaptor.errorLogs()).contains("Scaling 10 to zero weight because total stake is 0");
     }
 
     @Test

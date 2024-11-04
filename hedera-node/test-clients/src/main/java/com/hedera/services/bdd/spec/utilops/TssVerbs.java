@@ -32,6 +32,7 @@ import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -105,6 +106,8 @@ public class TssVerbs {
                 nodeId,
                 spec,
                 b -> b.setTssMessage(TssMessageTransactionBody.newBuilder()
+                        .setSourceRosterHash(fromPbj(sourceRosterHash))
+                        .setTargetRosterHash(fromPbj(targetRosterHash))
                         .setShareIndex(FakeTssLibrary.getShareIndex(tssMessage))
                         .setTssMessage(ByteString.copyFrom(tssMessage.bytes())))));
     }
@@ -125,6 +128,7 @@ public class TssVerbs {
                         Transaction.newBuilder()
                                 .setSignedTransactionBytes(SignedTransaction.newBuilder()
                                         .setBodyBytes(builder.build().toByteString())
+                                        .setSigMap(SignatureMap.getDefaultInstance())
                                         .build()
                                         .toByteString())
                                 .build(),

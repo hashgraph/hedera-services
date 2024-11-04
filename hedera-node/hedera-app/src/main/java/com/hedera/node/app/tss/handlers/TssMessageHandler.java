@@ -33,7 +33,6 @@ import com.hedera.node.app.tss.TssCryptographyManager;
 import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.data.TssConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -76,43 +75,39 @@ public class TssMessageHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var op = context.body().tssMessageOrThrow();
-        final var candidateRosterHash = op.targetRosterHash();
+        final var targetRosterHash = op.targetRosterHash();
+        tssMetrics.updateMessagesPerCandidateRoster(targetRosterHash);
 
         final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
-        final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
-        final var maxSharesPerNode =
-                context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
-        final var numberOfAlreadyExistingMessages =
-                tssStore.getTssMessageBodies(candidateRosterHash).size();
-
-        // The sequence number starts from 0 and increments by 1 for each new message.
-        final var key = TssMessageMapKey.newBuilder()
-                .rosterHash(candidateRosterHash)
-                .sequenceNumber(numberOfAlreadyExistingMessages)
-                .build();
-        // Each tss message is stored in the tss message state and is sent to CryptographyManager for further
-        // processing.
+        final var messageSeqNo = tssStore.getTssMessageBodies(targetRosterHash).size();
+        // Nodes vote for a threshold set of TSS messages by their position in consensus order
+        final var key = new TssMessageMapKey(targetRosterHash, messageSeqNo);
+        // Store the latest message before potentially voting
         tssStore.put(key, op);
 
+        // Obtain the directory of participants for the target roster
+        final var maxShares =
+                context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
+        final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
         final var directory =
-                computeParticipantDirectory(requireNonNull(rosterStore.getActiveRoster()), maxSharesPerNode, (int)
+                computeParticipantDirectory(requireNonNull(rosterStore.getActiveRoster()), maxShares, (int)
                         context.networkInfo().selfNodeInfo().nodeId());
+        // Schedule work to potentially compute a signed vote for the new key material of the target
+        // roster, if this message was valid and passed the threshold number of messages required
         tssCryptographyManager
-                .handleTssMessageTransaction(op, directory, context)
-                .thenAccept(result -> {
-                    if (result != null) {
+                .getVoteFuture(op.targetRosterHash(), directory, context)
+                .thenAccept(vote -> {
+                    if (vote != null) {
                         // FUTURE: Validate the ledgerId computed is same as the current ledgerId
                         final var tssVote = TssVoteTransactionBody.newBuilder()
-                                .tssVote(Bytes.wrap(result.tssVoteBitSet().toByteArray()))
-                                .targetRosterHash(candidateRosterHash)
+                                .tssVote(vote.bitSet())
                                 .sourceRosterHash(op.sourceRosterHash())
-                                .nodeSignature(result.signature().getBytes())
-                                .ledgerId(
-                                        Bytes.wrap(result.ledgerId().publicKey().toBytes()))
+                                .targetRosterHash(targetRosterHash)
+                                .ledgerId(vote.ledgerId())
+                                .nodeSignature(vote.signature().getBytes())
                                 .build();
                         submissionManager.submitTssVote(tssVote, context);
                     }
                 });
-        tssMetrics.updateMessagesPerCandidateRoster(candidateRosterHash);
     }
 }

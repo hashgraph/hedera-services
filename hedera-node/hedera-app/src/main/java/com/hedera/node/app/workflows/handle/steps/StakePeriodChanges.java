@@ -24,7 +24,9 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -43,6 +45,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -116,9 +119,16 @@ public class StakePeriodChanges {
                 logger.error("CATASTROPHIC failure updating midnight rates", e);
                 stack.rollbackFullStack();
             }
+            final var config = tokenContext.configuration();
             try {
-                final var streamBuilder =
-                        endOfStakingPeriodUpdater.updateNodes(tokenContext, exchangeRateManager.exchangeRates());
+                final var nodeStore = newWritableNodeStore(stack, config);
+                final BiConsumer<Long, Integer> weightUpdates = (nodeId, weight) -> nodeStore.put(nodeStore
+                        .getForModify(nodeId)
+                        .copyBuilder()
+                        .weight(weight)
+                        .build());
+                final var streamBuilder = endOfStakingPeriodUpdater.updateNodes(
+                        tokenContext, exchangeRateManager.exchangeRates(), weightUpdates);
                 if (streamBuilder != null) {
                     stack.commitTransaction(streamBuilder);
                 }
@@ -126,7 +136,6 @@ public class StakePeriodChanges {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
             }
-            final var config = tokenContext.configuration();
             if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
                 startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
             }
@@ -185,6 +194,13 @@ public class StakePeriodChanges {
             @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
         final var writableFactory = new WritableStoreFactory(stack, RosterStateId.NAME, config, storeMetricsService);
         return writableFactory.getStore(WritableRosterStore.class);
+    }
+
+    private WritableNodeStore newWritableNodeStore(
+            @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
+        final var writableFactory =
+                new WritableStoreFactory(stack, AddressBookService.NAME, config, storeMetricsService);
+        return writableFactory.getStore(WritableNodeStore.class);
     }
 
     private static boolean isLaterUtcDay(@NonNull final Instant now, @NonNull final Instant then) {
