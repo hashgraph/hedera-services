@@ -89,8 +89,8 @@ public class EmbeddedNetwork extends AbstractNetwork {
                         .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(
                                 classicMetadataFor(nodeId, name, FAKE_HOST, workingDir, 0, 0, 0, 0, 0)))
                         .toList(),
-                0,
-                0);
+                1,
+                1);
     }
 
     @Override
@@ -136,7 +136,8 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public Response send(
             @NonNull final Query query,
             @NonNull final HederaFunctionality functionality,
-            @NonNull final AccountID nodeAccountId) {
+            @NonNull final AccountID nodeAccountId,
+            final boolean asNodeOperator) {
         return requireNonNull(embeddedHedera).send(query, nodeAccountId);
     }
 

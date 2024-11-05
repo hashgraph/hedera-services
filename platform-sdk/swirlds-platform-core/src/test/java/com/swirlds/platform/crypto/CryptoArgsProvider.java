@@ -102,7 +102,7 @@ public class CryptoArgsProvider {
         final Map<NodeId, KeysAndCerts> loadedC = EnhancedKeyStoreLoader.using(
                         createdAB, configure(ResourceLoader.getFile("preGeneratedPEMKeysAndCerts/")))
                 .scan()
-                .generateIfNecessary()
+                .generate()
                 .verify()
                 .injectInAddressBook()
                 .keysAndCerts();
