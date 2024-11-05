@@ -19,8 +19,6 @@ package com.hedera.node.app.tss;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
-import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
-import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static com.hedera.node.app.tss.handlers.TssVoteHandler.hasMetThreshold;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.roster.RosterRetriever.getCandidateRosterHash;
@@ -32,13 +30,12 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.api.TssPrivateShare;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
@@ -92,6 +89,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssSubmissions tssSubmissions;
     private final Executor tssLibraryExecutor;
     private final ExecutorService signingExecutor;
+    private final PrivateKeysAccessor privateKeysAccessor;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
@@ -104,6 +102,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
+        this.privateKeysAccessor = new PrivateKeysAccessor(tssLibrary);
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
                         tssLibrary,
@@ -111,7 +110,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                         appContext.gossip(),
                         submissionExecutor,
                         tssLibraryExecutor,
-                        metrics);
+                        metrics,
+                        privateKeysAccessor);
         this.tssMetrics = component.tssMetrics();
         this.tssHandlers = new TssHandlers(
                 component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
@@ -158,20 +158,17 @@ public class TssBaseServiceImpl implements TssBaseService {
         // (TSS-FUTURE) Implement `keyActiveRoster`
         // https://github.com/hashgraph/hedera-services/issues/16166
         final var storeFactory = context.storeFactory();
-        // generate TSS messages based on the active roster and the candidate roster
-        final var tssStore = storeFactory.readableStore(ReadableTssStore.class);
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
 
         final var activeRoster = requireNonNull(
                 storeFactory.readableStore(ReadableRosterStore.class).getActiveRoster());
-
-        final var activeDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, selfId);
         final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
 
         final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
-        final var tssPrivateShares = getTssPrivateShares(activeDirectory, tssStore, activeRosterHash);
+        final var tssPrivateShares = privateKeysAccessor.getPrivateShares(activeRosterHash);
+
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
         // FUTURE - instead of an arbitrary counter here, use the share index from the private share
         final var shareIndex = new AtomicInteger(0);
@@ -195,25 +192,29 @@ public class TssBaseServiceImpl implements TssBaseService {
         }
     }
 
-    @NonNull
-    private List<TssPrivateShare> getTssPrivateShares(
-            @NonNull final TssParticipantDirectory activeRosterParticipantDirectory,
-            @NonNull final ReadableTssStore tssStore,
-            @NonNull final Bytes activeRosterHash) {
-        final var validTssOps = validateTssMessages(
-                tssStore.getTssMessageBodies(activeRosterHash), activeRosterParticipantDirectory, tssLibrary);
-        final var validTssMessages = getTssMessages(validTssOps);
-        return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
-    }
-
     @Override
     public void requestLedgerSignature(@NonNull final byte[] messageHash) {
         requireNonNull(messageHash);
         // (TSS-FUTURE) Initiate asynchronous process of creating a ledger signature
         final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
-                () -> consumers.forEach(consumer -> {
+                () -> {
+                    final var tssPrivateShares = privateKeysAccessor.getActiveRosterShares();
+                    final var activeRoster = privateKeysAccessor.getActiveRosterHash();
+                    for(final var privateShare : tssPrivateShares) {
+                        final var signature = tssLibrary.sign(privateShare, messageHash);
+                        final var tssShareSignatureBody = TssShareSignatureTransactionBody.newBuilder()
+                                .messageHash(Bytes.wrap(messageHash))
+                                .shareSignature(Bytes.wrap(signature.signature().signature().toBytes()))
+                                .shareIndex(privateShare.shareId().idElement())
+                                .rosterHash(activeRoster)
+                                .build();
+                        // what context to use
+                        tssSubmissions.submitTssShareSignature(tssShareSignatureBody, null);
+                    }
+                    consumers.forEach(consumer -> {
                     try {
+                        // TODO: Remove this once TssShareSignatureHandler is implemented
                         consumer.accept(messageHash, mockSignature);
                     } catch (Exception e) {
                         log.error(
@@ -223,7 +224,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                                 consumer,
                                 e);
                     }
-                }),
+                });
+                    },
                 signingExecutor);
     }
 

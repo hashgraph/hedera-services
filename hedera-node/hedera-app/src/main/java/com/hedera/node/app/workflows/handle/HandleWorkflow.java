@@ -71,6 +71,7 @@ import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.PrivateKeysAccessor;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -136,6 +137,7 @@ public class HandleWorkflow {
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
+    private PrivateKeysAccessor privateKeysAccessor;
 
     @Inject
     public HandleWorkflow(
@@ -158,7 +160,8 @@ public class HandleWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
-            @NonNull final UserTxnFactory userTxnFactory) {
+            @NonNull final UserTxnFactory userTxnFactory,
+            @NonNull final PrivateKeysAccessor privateKeysAccessor) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -182,6 +185,7 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.privateKeysAccessor = requireNonNull(privateKeysAccessor);
     }
 
     /**
@@ -364,6 +368,8 @@ public class HandleWorkflow {
                             userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
                     final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
+                    privateKeysAccessor.generateKeyMaterialForActiveRoster(
+                            userTxn.state(), userTxn.config(), userTxn.creatorInfo());
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
                             userTxn.tokenContextImpl(),

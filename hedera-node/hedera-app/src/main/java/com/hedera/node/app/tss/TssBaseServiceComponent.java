@@ -40,7 +40,8 @@ public interface TssBaseServiceComponent {
                 @BindsInstance AppContext.Gossip gossip,
                 @BindsInstance Executor submissionExecutor,
                 @BindsInstance @TssLibraryExecutor Executor libraryExecutor,
-                @BindsInstance Metrics metrics);
+                @BindsInstance Metrics metrics,
+                @BindsInstance PrivateKeysAccessor privateKeysAccessor);
     }
 
     TssMetrics tssMetrics();

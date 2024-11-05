@@ -49,6 +49,7 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.TssModule;
 import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -94,6 +95,7 @@ import javax.inject.Singleton;
             PlatformModule.class,
             ThrottleServiceModule.class,
             FacilityInitModule.class,
+            TssModule.class
         })
 public interface HederaInjectionComponent {
     InitTrigger initTrigger();

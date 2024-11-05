@@ -34,6 +34,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.List;
+import javax.inject.Inject;
 
 public class PlaceholderTssLibrary implements TssLibrary {
     public static final int DEFAULT_THRESHOLD = 10;
@@ -46,6 +47,7 @@ public class PlaceholderTssLibrary implements TssLibrary {
     private final int threshold;
     private byte[] message = new byte[0];
 
+    @Inject
     public PlaceholderTssLibrary() {
         this(DEFAULT_THRESHOLD);
     }
