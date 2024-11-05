@@ -364,7 +364,7 @@ public class ServicesMain implements SwirldMain {
 
     /**
      * Determining the Roster History.
-     * There are four distinct modes that a node can start in:
+     * There are three non-genesis modes that a node can start in:
      * <ul>
      *   <li> Network Transplant - The node is started with a state on disk and an overriding roster for a different network. </li>
      *   <li> Software Upgrade - The node is restarted with the same state on disk and a software upgrade is happening. </li>
@@ -386,22 +386,42 @@ public class ServicesMain implements SwirldMain {
         requireNonNull(initialState);
         requireNonNull(selfId);
 
+        // FUTURE: Network Transplant -> An override-config.txt file is present on disk
+
         final SignedState loadedSignedState = initialState.get();
+        final boolean softwareUpgrade = detectSoftwareUpgrade(version, loadedSignedState);
         final var state = ((MerkleStateRoot) loadedSignedState.getState());
         final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
-        var activeRoster = rosterStore.getActiveRoster();
-        // If active roster is null (e.g. DabEnabledUpgradeTest), create the roster from the existing address book
-        if (activeRoster == null) {
-            // TODO: fix
-            //            activeRoster = createRoster(addressBook);
+
+        // Normal Restart, no software upgrade is happening
+        if (!softwareUpgrade) {
+            final var roundRosterPairs = rosterStore.getRoundRosterPairs();
+            // If there exists active rosters in the roster state.
+            if (!roundRosterPairs.isEmpty()) {
+                // Read the active rosters and construct the existing rosterHistory from roster state
+                final var current = roundRosterPairs.get(0);
+                final var previous = roundRosterPairs.get(1);
+                return new RosterHistory(
+                        rosterStore.get(current.activeRosterHash()),
+                        current.roundNumber(),
+                        rosterStore.get(previous.activeRosterHash()),
+                        previous.roundNumber());
+            } else {
+                // If there is no roster state content, this is a fatal error: The migration did not happen on software
+                // upgrade.
+                throw new IllegalStateException("No active rosters found in the roster state");
+            }
         }
 
-        final boolean softwareUpgrade = detectSoftwareUpgrade(version, loadedSignedState);
-        if (!softwareUpgrade) { // if not an upgrade and just a restart, return the active roster
-            //            return activeRoster;
-            // TODO: fix
-            return new RosterHistory(activeRoster, 0, null, 0);
-        }
+        // A software upgrade is happening
+
+        final var activeRoster = rosterStore.getActiveRoster();
+        // TODO: Migration Software Upgrade
+        //        A config.txt file is present on disk
+        //        The roster state is empty (no candidate roster and no active rosters)
+
+        // TODO: Subsequent Software Upgrades
+        //        There is a candidate roster in the roster state
 
         // Otherwise, we are at an upgrade boundary, see:
         // https://github.com/hashgraph/hedera-services/blob/develop/platform-sdk/docs/proposals/TSS-Ledger-Id/TSS-Ledger-Id.md?plain=1#L723
