@@ -195,9 +195,11 @@ public final class RosterUtils {
 
     /**
      * Build an Address object out of a given RosterEntry object.
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param entry a RosterEntry
      * @return an Address
      */
+    @Deprecated(forRemoval = true)
     @NonNull
     public static Address buildAddress(@NonNull final RosterEntry entry) {
         Address address = new Address();
@@ -235,9 +237,11 @@ public final class RosterUtils {
 
     /**
      * Build an AddressBook object out of a given Roster object.
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param roster a Roster
      * @return an AddressBook
      */
+    @Deprecated(forRemoval = true)
     @NonNull
     public static AddressBook buildAddressBook(@NonNull final Roster roster) {
         AddressBook addressBook = new AddressBook();
