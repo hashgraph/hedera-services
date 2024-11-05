@@ -16,11 +16,13 @@
 
 package com.hedera.services.bdd.suites.utils;
 
+import com.hedera.services.bdd.spec.HapiSpec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -38,7 +40,8 @@ public class DynamicTestUtils {
     public static List<Stream<DynamicTest>> extractAllTestAnnotatedMethods(
             @NonNull Supplier<?>[] suppliers,
             @NonNull List<String> ignoredTests,
-            @NonNull Class<? extends Annotation> annotationClass) {
+            @NonNull Class<? extends Annotation> annotationClass,
+            @NonNull Map<String, String> overrideProperties) {
         var allDynamicTests = new ArrayList<Stream<DynamicTest>>();
         for (Supplier<?> supplier : suppliers) {
             Object instance = supplier.get();
@@ -54,8 +57,15 @@ public class DynamicTestUtils {
                     } catch (Exception e) {
                         throw new RuntimeException(e); // no handle for now
                     }
-                    var dynamicTest = DynamicTest.dynamicTest(
-                            method.getName(), testInvokeResult.toList().get(0).getExecutable());
+
+                    // Getting the HapiSpec and overriding the properties in order to add the supported values for
+                    // spec.autoScheduledTxns. We need to override them directly into the HapiSpec instead of using
+                    // the current TestLifecycle.overrideInClass method because the logic related to this config
+                    // is using directly the props from the HapiSpec. See HapiSpecSetup#txnTypesToSchedule.
+                    var spec = (HapiSpec) testInvokeResult.toList().get(0).getExecutable();
+                    spec.addOverrideProperties(overrideProperties);
+
+                    var dynamicTest = DynamicTest.dynamicTest(method.getName(), spec);
                     allDynamicTests.add(Stream.of(dynamicTest));
                 }
             }

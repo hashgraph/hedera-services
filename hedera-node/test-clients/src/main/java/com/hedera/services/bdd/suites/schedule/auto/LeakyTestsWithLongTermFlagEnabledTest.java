@@ -14,13 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.schedule;
+package com.hedera.services.bdd.suites.schedule.auto;
 
 import static com.hedera.services.bdd.suites.utils.DynamicTestUtils.extractAllTestAnnotatedMethods;
 
-import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.ContextRequirement;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.suites.schedule.FutureSchedulableOpsTest;
+import com.hedera.services.bdd.suites.schedule.ScheduleCreateTest;
+import com.hedera.services.bdd.suites.schedule.ScheduleDeleteTest;
+import com.hedera.services.bdd.suites.schedule.ScheduleExecutionTest;
+import com.hedera.services.bdd.suites.schedule.ScheduleRecordTest;
+import com.hedera.services.bdd.suites.schedule.ScheduleSignTest;
+import com.hedera.services.bdd.suites.schedule.StatefulScheduleExecutionTest;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
@@ -29,9 +37,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 
-// Running all test methods that are specified in ALL_TESTS constant with scheduling.longTermEnabled enabled
+// Running all leaky test methods that are specified in ALL_TESTS constant with scheduling.longTermEnabled enabled
 @HapiTestLifecycle
-public class AllTestsWithLongTermFlagEnabledTest {
+public class LeakyTestsWithLongTermFlagEnabledTest {
 
     private static final Supplier<?>[] ALL_TESTS = new Supplier<?>[] {
         FutureSchedulableOpsTest::new,
@@ -43,6 +51,8 @@ public class AllTestsWithLongTermFlagEnabledTest {
         StatefulScheduleExecutionTest::new
     };
 
+    private static final List<String> IGNORED_TESTS = List.of("whitelistWorks");
+
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.overrideInClass(Map.of(
@@ -53,9 +63,17 @@ public class AllTestsWithLongTermFlagEnabledTest {
                 "true"));
     }
 
-    @HapiTest
+    @LeakyHapiTest(
+            overrides = {
+                "tokens.nfts.areEnabled",
+                "tokens.nfts.maxBatchSizeMint",
+                "ledger.schedule.txExpiryTimeSecs",
+                "ledger.transfers.maxLen",
+                "ledger.tokenTransfers.maxLen",
+            },
+            requirement = ContextRequirement.FEE_SCHEDULE_OVERRIDES)
     final Stream<DynamicTest> runAllTests() {
-        var allDynamicTests = extractAllTestAnnotatedMethods(ALL_TESTS, List.of(), HapiTest.class);
+        var allDynamicTests = extractAllTestAnnotatedMethods(ALL_TESTS, IGNORED_TESTS, LeakyHapiTest.class, Map.of());
         return allDynamicTests.stream().flatMap(s -> s);
     }
 }
