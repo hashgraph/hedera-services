@@ -136,6 +136,7 @@ import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
+import com.hedera.services.bdd.spec.utilops.inventory.NewSpecThresholdKey;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromEcdsaFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
@@ -718,6 +719,10 @@ public class UtilVerbs {
 
     public static NewSpecKeyList newKeyListNamed(String key, List<String> childKeys) {
         return new NewSpecKeyList(key, childKeys);
+    }
+
+    public static NewSpecThresholdKey newThresholdKeyNamed(String key, int nRequired, List<String> childKeys) {
+        return new NewSpecThresholdKey(key, nRequired, childKeys);
     }
 
     /**
