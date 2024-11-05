@@ -24,6 +24,7 @@ import com.hedera.node.app.tss.handlers.TssVoteHandler;
 import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
 import dagger.Component;
+import java.time.InstantSource;
 import java.util.concurrent.Executor;
 import javax.inject.Singleton;
 
@@ -34,6 +35,7 @@ public interface TssBaseServiceComponent {
     interface Factory {
         TssBaseServiceComponent create(
                 @BindsInstance TssLibrary tssLibrary,
+                @BindsInstance InstantSource instantSource,
                 @BindsInstance AppContext.Gossip gossip,
                 @BindsInstance Executor submissionExecutor,
                 @BindsInstance @TssLibraryExecutor Executor libraryExecutor,

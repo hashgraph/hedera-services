@@ -30,6 +30,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -92,7 +93,8 @@ public class AddressBookUtils {
     /**
      * Returns the "classic" metadata for a node in the network, matching the names
      * used by {@link #configTxtForLocal(String, List, int, int)} to generate the
-     * <i>config.txt</i> file.
+     * <i>config.txt</i> file. The working directory is inferred from the node id
+     * and the network scope.
      *
      * @param nodeId the ID of the node
      * @param networkName the name of the network
@@ -131,6 +133,49 @@ public class AddressBookUtils {
     }
 
     /**
+     * Returns the "classic" metadata for a node in the network, matching the names
+     * used by {@link #configTxtForLocal(String, List, int, int)} to generate the
+     * <i>config.txt</i> file.
+     * @param nodeId the ID of the node
+     * @param networkName the name of the network
+     * @param host the host name or IP address
+     * @param nextGrpcPort the next gRPC port to use
+     * @param nextNodeOperatorPort the next node operator port to use
+     * @param nextGossipPort the next gossip port to use
+     * @param nextGossipTlsPort the next gossip TLS port to use
+     * @param nextPrometheusPort the next Prometheus port to use
+     * @param workingDir the working directory for the node
+     * @return the metadata for the node
+     */
+    public static NodeMetadata classicMetadataFor(
+            final int nodeId,
+            @NonNull final String networkName,
+            @NonNull final String host,
+            final int nextGrpcPort,
+            final int nextNodeOperatorPort,
+            final int nextGossipPort,
+            final int nextGossipTlsPort,
+            final int nextPrometheusPort,
+            @NonNull final Path workingDir) {
+        requireNonNull(host);
+        requireNonNull(networkName);
+        requireNonNull(workingDir);
+        return new NodeMetadata(
+                nodeId,
+                CLASSIC_NODE_NAMES[nodeId],
+                AccountID.newBuilder()
+                        .accountNum(CLASSIC_FIRST_NODE_ACCOUNT_NUM + nodeId)
+                        .build(),
+                host,
+                nextGrpcPort + nodeId * 2,
+                nextNodeOperatorPort + nodeId,
+                nextGossipPort + nodeId * 2,
+                nextGossipTlsPort + nodeId * 2,
+                nextPrometheusPort + nodeId,
+                workingDir);
+    }
+
+    /**
      * Returns a stream of numeric node ids from the given address book.
      *
      * @param addressBook the address book
@@ -144,8 +189,8 @@ public class AddressBookUtils {
      *  Returns service end point base on the host and port. - used for hapi path for ServiceEndPoint
      *
      * @param host is an ip or domain name, do not pass in an invalid ip such as "130.0.0.1", will set it as domain name otherwise.
-     * @param port
-     * @return ServiceEndpoint
+     * @param port the port number
+     * @return the service endpoint
      */
     public static ServiceEndpoint endpointFor(@NonNull final String host, final int port) {
         final Pattern IPV4_ADDRESS_PATTERN = Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");

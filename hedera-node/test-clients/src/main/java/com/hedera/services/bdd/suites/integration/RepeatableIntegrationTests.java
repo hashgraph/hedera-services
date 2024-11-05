@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.integration;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_TSS_CONTROL;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
@@ -24,42 +23,31 @@ import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateTssMsgState;
+import static com.hedera.services.bdd.spec.utilops.TssVerbs.rekeyingScenario;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.startIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.stopIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
-import static java.lang.Long.parseLong;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.DabEdits.NO_DAB_EDITS;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TSS_MESSAGE_SIMS;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.INVALID_MESSAGES;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.VALID_MESSAGES;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.UNEQUAL_NODE_STAKES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.Block;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.transaction.SignedTransaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.blocks.BlockStreamManager;
-import com.hedera.pbj.runtime.ParseException;
 import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.cert.CertificateEncodingException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.IntConsumer;
+import java.util.List;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -105,44 +93,21 @@ public class RepeatableIntegrationTests {
     }
 
     /**
-     * Validates that after the first transaction in a staking period, the embedded node generates a
-     * {@link TssMessageTransactionBody} which then triggers a successful {@link TssVoteTransactionBody}.
-     * This is a trivial placeholder for he real TSS rekeying process that begins on the first transaction
-     * in a staking period.
-     * <p>
-     * <b>TODO:</b> Continue the rekeying happy path after the successful TSS message.
-     * <ol>
-     *     <li>(TSS-FUTURE) Initialize the roster such that the embedded node has more than one share;
-     *     verify it creates a successful {@link TssMessageTransactionBody} for each of its shares.</li>
-     *     <Li>(TSS-FUTURE) Submit valid TSS messages from other nodes in the embedded "network".</Li>
-     *     <Li>(TSS-FUTURE) Confirm the embedded node votes yes for the the first {@code t} successful
-     *     messages, where {@code t} suffices to meet the recovery threshold.</Li>
-     *     <Li>(TSS-FUTURE) Confirm the embedded node's recovered ledger id in its
-     *     {@link TssVoteTransactionBody} matches the id returned by the fake TSS library.</Li>
-     * </ol>
+     * Creates a rekeying scenario where the embedded node receives the threshold number of valid TSS messages.
      */
     @LeakyRepeatableHapiTest(
             value = {NEEDS_TSS_CONTROL, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
             overrides = {"tss.keyCandidateRoster"})
-    // Need to fix by adding Roster entries to the state before running this test. Will do in next PR
-    Stream<DynamicTest> tssMessageSubmittedForRekeyingIsSuccessful() throws CertificateEncodingException {
-        final var gossipCertificates = generateX509Certificates(1);
-        return hapiTest(
-                newKeyNamed("adminKey"),
-                blockStreamMustIncludePassFrom(spec -> successfulTssMessageThenVote()),
-                // Current TSS default is not to try to key the candidate
-                overriding("tss.keyCandidateRoster", "true"),
-                nodeCreate("testNode")
-                        .adminKey("adminKey")
-                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
-                mutateTssMsgState(),
-                doWithStartupConfig(
-                        "staking.periodMins",
-                        stakePeriodMins -> waitUntilStartOfNextStakingPeriod(parseLong(stakePeriodMins))),
-                // This transaction is now first in a new staking period and should trigger the TSS rekeying process,
-                // in particular a successful TssMessage from the embedded node (and then a TssVote since this is our
-                // placeholder implementation of TssMessageHandler)
-                cryptoCreate("rekeyingTransaction"));
+    Stream<DynamicTest> embeddedNodeVotesGivenThresholdValidMessages() {
+        final var scenario = rekeyingScenario(
+                // Changing stakes is enough to ensure the candidate roster is different from the active roster
+                NO_DAB_EDITS,
+                // Give unequal stake to all nodes (so they have different numbers of shares in the candidate roster)
+                UNEQUAL_NODE_STAKES,
+                // Submit invalid messages from node1, to verify the embedded node votes waits for the required
+                // number of threshold valid messages
+                TSS_MESSAGE_SIMS.apply(List.of(INVALID_MESSAGES, VALID_MESSAGES, VALID_MESSAGES)));
+        return hapiTest(blockStreamMustIncludePassFrom(spec -> scenario), scenario);
     }
 
     /**
@@ -194,47 +159,5 @@ public class RepeatableIntegrationTests {
                 return false;
             }
         }
-    }
-
-    /**
-     * Returns an assertion that only passes when it has seen a successful TSS message follows by a successful
-     * TSS vote in the block stream.
-     *
-     * @return the assertion
-     */
-    private static BlockStreamAssertion successfulTssMessageThenVote() {
-        final var sawTssMessage = new AtomicBoolean(false);
-        return block -> {
-            final var items = block.items();
-            final IntConsumer assertSuccessResultAt = i -> {
-                assertTrue(i < items.size(), "Missing transaction result");
-                final var resultItem = items.get(i);
-                assertTrue(resultItem.hasTransactionResult(), "Misplaced transaction result");
-                final var result = resultItem.transactionResultOrThrow();
-                assertEquals(SUCCESS, result.status());
-            };
-            for (int i = 0, n = items.size(); i < n; i++) {
-                final var item = items.get(i);
-                if (item.hasEventTransaction()) {
-                    try {
-                        final var wrapper = Transaction.PROTOBUF.parse(
-                                item.eventTransactionOrThrow().applicationTransactionOrThrow());
-                        final var signedTxn = SignedTransaction.PROTOBUF.parse(wrapper.signedTransactionBytes());
-                        final var txn = TransactionBody.PROTOBUF.parse(signedTxn.bodyBytes());
-                        if (txn.hasTssMessage()) {
-                            assertSuccessResultAt.accept(i + 1);
-                            sawTssMessage.set(true);
-                        } else if (txn.hasTssVote()) {
-                            assertTrue(sawTssMessage.get(), "Vote seen before message");
-                            assertSuccessResultAt.accept(i + 1);
-                            return true;
-                        }
-                    } catch (ParseException e) {
-                        Assertions.fail(e.getMessage());
-                    }
-                }
-            }
-            return false;
-        };
     }
 }

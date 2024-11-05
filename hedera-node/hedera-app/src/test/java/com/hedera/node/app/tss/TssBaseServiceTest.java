@@ -43,6 +43,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.spi.info.NetworkInfo;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -84,6 +85,7 @@ public class TssBaseServiceTest {
     @BeforeEach
     void setUp() {
         given(appContext.gossip()).willReturn(mock(AppContext.Gossip.class));
+        given(appContext.instantSource()).willReturn(InstantSource.system());
 
         subject = new TssBaseServiceImpl(
                 appContext,
