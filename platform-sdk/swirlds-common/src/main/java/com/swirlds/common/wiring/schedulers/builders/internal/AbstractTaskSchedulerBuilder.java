@@ -65,7 +65,7 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
     protected ForkJoinPool pool;
     protected UncaughtExceptionHandler uncaughtExceptionHandler;
     protected String hyperlink;
-    protected ToLongFunction<Object> dataCounter;
+    protected ToLongFunction<Object> dataCounter = data -> 1L;
 
     protected boolean unhandledTaskMetricEnabled = false;
     protected boolean busyFractionMetricEnabled = false;
