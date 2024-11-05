@@ -249,6 +249,37 @@ class WritableRosterStoreTest {
     }
 
     /**
+     * Tests that setting three active rosters in a row will be reflected in the roster history. The roster history
+     * will contain two round roster pairs.
+     */
+    @Test
+    @DisplayName("Test Roster History")
+    void testRosterHistory() {
+        final Roster roster1 = createValidTestRoster(3);
+        writableRosterStore.putActiveRoster(roster1, 1);
+        assertSame(
+                readableRosterStore.getActiveRoster(),
+                roster1,
+                "Returned active roster should be the same as the one set");
+
+        final Roster roster2 = createValidTestRoster(1);
+        writableRosterStore.putActiveRoster(roster2, 2);
+        assertSame(
+                readableRosterStore.getActiveRoster(),
+                roster2,
+                "Returned active roster should be the same as the one set");
+
+        writableRosterStore.putActiveRoster(roster1, 3);
+        assertSame(
+                readableRosterStore.getActiveRoster(),
+                roster1,
+                "3rd active roster with hash collision with first returns the first roster");
+
+        final List<RoundRosterPair> rosterHistory = readableRosterStore.getRosterHistory();
+        assertEquals(2, rosterHistory.size(), "Roster history should contain 2 entries");
+    }
+
+    /**
      * Creates a valid test roster with the given number of entries.
      *
      * @param entries the number of entries

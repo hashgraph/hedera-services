@@ -17,9 +17,11 @@
 package com.swirlds.platform.state.service;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 /**
  * Read-only implementation for accessing rosters states.
@@ -57,4 +59,11 @@ public interface ReadableRosterStore {
      */
     @Nullable
     Roster get(@NonNull Bytes rosterHash);
+
+    /**
+     * Get the roster history
+     * @return The list of round roster pairs
+     */
+    @NonNull
+    List<RoundRosterPair> getRosterHistory();
 }
