@@ -130,6 +130,7 @@ class ScheduleServiceImplTest {
 
         // Assert that iterator has no elements
         assertThat(iterator.hasNext()).isFalse();
+        assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
@@ -150,7 +151,7 @@ class ScheduleServiceImplTest {
         iterator.remove();
 
         // Verify that delete and purge were called on the store
-        InOrder inOrder = inOrder(store);
+        final InOrder inOrder = inOrder(store);
         inOrder.verify(store).delete(eq(schedule.scheduleId()), any());
         inOrder.verify(store).purge(eq(schedule.scheduleId()));
     }
@@ -206,7 +207,7 @@ class ScheduleServiceImplTest {
         assertThat(iterator.hasNext()).isFalse();
     }
 
-    private Schedule createMockSchedule(Instant expiration) {
+    private Schedule createMockSchedule(final Instant expiration) {
         final var schedule = mock(Schedule.class);
         final var createTransaction = mock(TransactionBody.class);
         when(createTransaction.transactionIDOrThrow()).thenReturn(TransactionID.DEFAULT);
