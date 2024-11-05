@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.PLATFORM_STATUS;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.logging.legacy.payload.PlatformStatusPayload;

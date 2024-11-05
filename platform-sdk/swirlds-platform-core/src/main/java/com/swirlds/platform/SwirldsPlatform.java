@@ -26,6 +26,7 @@ import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddr
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSavedStateFiles;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.TransactionPoolNexus;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -54,7 +55,6 @@ import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.metrics.RuntimeMetrics;
-import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.MerkleRoot;

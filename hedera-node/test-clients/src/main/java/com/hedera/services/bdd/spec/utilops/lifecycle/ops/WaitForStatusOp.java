@@ -21,13 +21,13 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.await
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.hadCorrelatedBindException;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
 import static com.hedera.services.bdd.suites.regression.system.LifecycleTest.PORT_UNBINDING_WAIT_PERIOD;
-import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.common.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
-import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.common.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;

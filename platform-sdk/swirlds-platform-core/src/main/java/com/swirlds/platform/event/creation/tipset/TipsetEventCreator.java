@@ -22,12 +22,13 @@ import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEF
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.TransactionSupplier;
+import com.swirlds.common.config.EventCreationConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -52,7 +53,6 @@ import java.util.Objects;
 import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Responsible for creating new events using the tipset algorithm.

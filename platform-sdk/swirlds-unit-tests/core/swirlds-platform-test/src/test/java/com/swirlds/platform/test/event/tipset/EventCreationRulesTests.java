@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.test.event.tipset;
 
+import static com.swirlds.common.PlatformStatus.ACTIVE;
+import static com.swirlds.common.PlatformStatus.CHECKING;
+import static com.swirlds.common.PlatformStatus.FREEZING;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static com.swirlds.platform.system.status.PlatformStatus.CHECKING;
-import static com.swirlds.platform.system.status.PlatformStatus.FREEZING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,15 +29,15 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.PlatformStatus;
+import com.swirlds.common.TransactionPoolNexus;
+import com.swirlds.common.config.EventCreationConfig_;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
-import com.swirlds.platform.pool.TransactionPoolNexus;
-import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Duration;
 import java.util.List;
 import java.util.Random;
@@ -45,10 +45,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.hiero.event.creator.EventCreationRule;
-import org.hiero.event.creator.impl.EventCreationConfig_;
 import org.hiero.event.creator.impl.rules.AggregateEventCreationRules;
 import org.hiero.event.creator.impl.rules.MaximumRateRule;
 import org.hiero.event.creator.impl.rules.PlatformHealthRule;
+import org.hiero.event.creator.impl.rules.PlatformStatusRule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

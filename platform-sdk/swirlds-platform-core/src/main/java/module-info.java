@@ -101,7 +101,6 @@ module com.swirlds.platform.core {
     opens com.swirlds.platform.cli to
             info.picocli;
 
-    exports com.swirlds.platform.components.transaction;
     exports com.swirlds.platform.components.transaction.system;
     exports com.swirlds.platform.event.preconsensus;
     exports com.swirlds.platform.gossip.sync.protocol;
@@ -141,7 +140,6 @@ module com.swirlds.platform.core {
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
     requires transitive org.hiero.consensus.gossip;
-    requires transitive org.hiero.event.creator;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
@@ -157,6 +155,7 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
     requires org.hiero.event.creator.impl;
+    requires org.hiero.event.creator;
     requires static transitive com.github.spotbugs.annotations;
     requires static transitive com.google.auto.service;
 

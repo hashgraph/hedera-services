@@ -17,8 +17,8 @@
 package com.swirlds.platform.pool;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 

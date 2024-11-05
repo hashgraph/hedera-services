@@ -20,7 +20,7 @@ import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.util.TransactionUtils;
+import com.swirlds.common.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

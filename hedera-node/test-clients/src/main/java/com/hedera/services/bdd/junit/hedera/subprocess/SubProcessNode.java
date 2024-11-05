@@ -32,7 +32,7 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.start
 import static com.hedera.services.bdd.junit.hedera.subprocess.StatusLookupAttempt.newLogAttempt;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.recreateWorkingDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
-import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.common.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
@@ -42,7 +42,7 @@ import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen;
 import com.hedera.services.bdd.suites.regression.system.LifecycleTest;
 import com.swirlds.base.function.BooleanFunction;
-import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.common.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;

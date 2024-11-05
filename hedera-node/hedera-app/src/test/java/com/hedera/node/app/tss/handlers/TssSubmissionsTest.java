@@ -19,7 +19,7 @@ package com.hedera.node.app.tss.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
-import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
+import static com.swirlds.common.PlatformStatus.BEHIND;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;

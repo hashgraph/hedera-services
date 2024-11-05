@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.eventhandling;
+package com.swirlds.common;
 
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
