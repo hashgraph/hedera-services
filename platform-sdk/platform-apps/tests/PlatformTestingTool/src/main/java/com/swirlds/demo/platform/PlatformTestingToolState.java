@@ -1684,7 +1684,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
 
         public static final int QUORUM_RESULT = 10;
 
-        public static final int CHILD_COUNT = 40;
+        public static final int CHILD_COUNT = 64;
     }
 
     @Override
