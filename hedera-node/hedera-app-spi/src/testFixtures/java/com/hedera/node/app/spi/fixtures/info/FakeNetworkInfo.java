@@ -20,6 +20,7 @@ import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.state.State;
@@ -87,6 +88,11 @@ public class FakeNetworkInfo implements NetworkInfo {
     @Override
     public void updateFrom(final State state) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public Roster roster() {
+        return Roster.DEFAULT;
     }
 
     private static NodeInfo fakeInfoWith(

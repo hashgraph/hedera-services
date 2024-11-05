@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.info;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
 import com.swirlds.state.merkle.info.NetworkInfo;
@@ -63,6 +64,11 @@ public enum UnavailableNetworkInfo implements NetworkInfo {
 
     @Override
     public void updateFrom(final State state) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public Roster roster() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

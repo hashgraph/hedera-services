@@ -65,7 +65,6 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -221,7 +220,6 @@ public class ServicesMain implements SwirldMain {
                             (MerkleStateRoot) genesisState, metrics, InitTrigger.GENESIS, diskAddressBook);
                     return genesisState;
                 },
-                SignedStateFileUtils::readState,
                 Hedera.APP_NAME,
                 Hedera.SWIRLD_NAME,
                 selfId,
@@ -243,9 +241,6 @@ public class ServicesMain implements SwirldMain {
         // Initialize the Merkle cryptography
         final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
-
-        // Register the metrics related to TSS functionalities
-        hedera.registerTssMetrics(metrics);
 
         // Create the platform context
         final var platformContext = PlatformContext.create(

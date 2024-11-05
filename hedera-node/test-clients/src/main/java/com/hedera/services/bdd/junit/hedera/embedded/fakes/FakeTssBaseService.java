@@ -20,18 +20,21 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.state.State;
 import com.swirlds.state.merkle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
@@ -90,8 +93,8 @@ public class FakeTssBaseService implements TssBaseService {
                 appContext,
                 ForkJoinPool.commonPool(),
                 pendingTssSubmission::offer,
-                new PlaceholderTssLibrary(),
-                ForkJoinPool.commonPool(),
+                new FakeTssLibrary(),
+                pendingTssSubmission::offer,
                 new NoOpMetrics());
     }
 
@@ -151,12 +154,6 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void adopt(@NonNull final Roster roster) {
-        requireNonNull(roster);
-        delegate.adopt(roster);
-    }
-
-    @Override
     public void bootstrapLedgerId(
             @NonNull final Roster roster,
             @NonNull final HandleContext context,
@@ -207,11 +204,6 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void registerMetrics(@NonNull final TssMetrics metrics) {
-        delegate.registerMetrics(metrics);
-    }
-
-    @Override
     public void registerLedgerSignatureConsumer(@NonNull final BiConsumer<byte[], byte[]> consumer) {
         requireNonNull(consumer);
         consumers.add(consumer);
@@ -228,5 +220,16 @@ public class FakeTssBaseService implements TssBaseService {
     @Override
     public TssHandlers tssHandlers() {
         return delegate.tssHandlers();
+    }
+
+    @Override
+    @NonNull
+    public Roster chooseRosterForNetwork(
+            @NonNull State state,
+            @NonNull InitTrigger trigger,
+            @NonNull ServiceMigrator serviceMigrator,
+            @NonNull ServicesSoftwareVersion version,
+            @NonNull final Configuration configuration) {
+        return delegate.chooseRosterForNetwork(state, trigger, serviceMigrator, version, configuration);
     }
 }

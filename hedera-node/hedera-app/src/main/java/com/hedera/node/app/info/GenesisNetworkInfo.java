@@ -33,12 +33,13 @@ import javax.inject.Singleton;
 
 /**
  * Provides information about the network, including the ledger ID. This is constructed from the
- * genesis roster on disk.
+ * roster provided.
  */
 @Singleton
 public class GenesisNetworkInfo implements NetworkInfo {
     private final Map<Long, NodeInfo> nodeInfos;
     private final Bytes ledgerId;
+    private final Roster genesisRoster;
 
     /**
      * Constructs a new {@link GenesisNetworkInfo} instance.
@@ -49,6 +50,7 @@ public class GenesisNetworkInfo implements NetworkInfo {
     public GenesisNetworkInfo(final Roster genesisRoster, final Bytes ledgerId) {
         this.nodeInfos = buildNodeInfoMap(genesisRoster);
         this.ledgerId = ledgerId;
+        this.genesisRoster = genesisRoster;
     }
 
     /**
@@ -98,6 +100,11 @@ public class GenesisNetworkInfo implements NetworkInfo {
     @Override
     public void updateFrom(final State state) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public Roster roster() {
+        return genesisRoster;
     }
 
     /**

@@ -16,6 +16,7 @@
 
 package com.swirlds.state.merkle.info;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,4 +60,10 @@ public interface NetworkInfo {
      * @param state the state to update from
      */
     void updateFrom(State state);
+
+    /**
+     * Returns the currently active roster used by the network.
+     * @return the currently active roster
+     */
+    Roster roster();
 }

@@ -400,11 +400,21 @@ public class ConversionUtils {
     /**
      * Given an EVM address, returns whether it is long-zero.
      *
-     * @param address the EVM address
+     * @param address the EVM address (as a BESU {@link org.hyperledger.besu.datatypes.Address})
      * @return whether it is long-zero
      */
     public static boolean isLongZero(@NonNull final Address address) {
         return isLongZeroAddress(address.toArrayUnsafe());
+    }
+
+    /**
+     * Given an EVM address, returns whether it is long-zero.
+     *
+     * @param address the EVM address (as a headlong {@link com.esaulpaugh.headlong.abi.Address})
+     * @return whether it is long-zero
+     */
+    public static boolean isLongZero(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        return isLongZeroAddress(explicitFromHeadlong(address));
     }
 
     /**

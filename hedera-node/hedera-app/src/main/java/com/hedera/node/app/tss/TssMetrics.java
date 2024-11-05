@@ -30,12 +30,16 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A class to track all the metrics related to TSS functionalities.
  */
 @Singleton
 public class TssMetrics {
+    private static final Logger log = LogManager.getLogger(TssMetrics.class);
+
     private final Metrics metrics;
 
     private static final String TSS_MESSAGE_COUNTER_METRIC = "tss_message_total";
@@ -72,7 +76,6 @@ public class TssMetrics {
     @Inject
     public TssMetrics(@NonNull final Metrics metrics) {
         this.metrics = requireNonNull(metrics, "metrics must not be null");
-
         tssCandidateRosterLifecycle = metrics.getOrCreate(TSS_ROSTER_LIFECYCLE_CONFIG);
         tssSharesAggregationTime = metrics.getOrCreate(TSS_SHARES_AGGREGATION_CONFIG);
     }
@@ -147,16 +150,19 @@ public class TssMetrics {
      * @param aggregationTime the time which it takes to compute shares from the key material
      */
     public void updateAggregationTime(final long aggregationTime) {
-        if (aggregationTime <= 0)
-            throw new IllegalArgumentException("Private shares aggregation time must be positive");
-        tssSharesAggregationTime.set(aggregationTime);
+        if (aggregationTime < 0) {
+            log.warn("Received negative aggregation time: {}", aggregationTime);
+        } else {
+            tssSharesAggregationTime.set(aggregationTime);
+        }
     }
 
     /**
      * @param targetRosterHash the {@link Bytes} of the candidate roster
      * @return the metric which contains how many votes are registered for candidate roster
      */
-    public @NonNull Counter getMessagesPerCandidateRoster(@NonNull Bytes targetRosterHash) {
+    public @NonNull Counter getMessagesPerCandidateRoster(@NonNull final Bytes targetRosterHash) {
+        requireNonNull(targetRosterHash);
         return messagesPerCandidateRoster.get(targetRosterHash);
     }
 
@@ -164,7 +170,8 @@ public class TssMetrics {
      * @param targetRosterHash the {@link Bytes} of the candidate roster
      * @return the metric which contains how many votes are registered for candidate roster
      */
-    public @NonNull Counter getVotesPerCandidateRoster(@NonNull Bytes targetRosterHash) {
+    public @NonNull Counter getVotesPerCandidateRoster(@NonNull final Bytes targetRosterHash) {
+        requireNonNull(targetRosterHash);
         return votesPerCandidateRoster.get(targetRosterHash);
     }
 
