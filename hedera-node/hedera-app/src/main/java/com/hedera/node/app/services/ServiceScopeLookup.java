@@ -26,6 +26,7 @@ import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.tss.TssBaseService;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -120,6 +121,7 @@ public class ServiceScopeLookup {
             };
 
             case NODE_CREATE, NODE_DELETE, NODE_UPDATE -> AddressBookService.NAME;
+            case TSS_MESSAGE, TSS_VOTE -> TssBaseService.NAME;
 
             default -> NON_EXISTING_SERVICE;
         };
