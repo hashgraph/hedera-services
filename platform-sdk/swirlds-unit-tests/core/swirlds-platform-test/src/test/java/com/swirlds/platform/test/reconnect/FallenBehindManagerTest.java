@@ -19,6 +19,7 @@ package com.swirlds.platform.test.reconnect;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.platform.NodeId;
@@ -29,9 +30,8 @@ import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.hiero.consensus.gossip.FallenBehindManager;
@@ -39,25 +39,19 @@ import org.junit.jupiter.api.Test;
 
 class FallenBehindManagerTest {
     private final int numNodes = 11;
-    private final AddressBook addressBook = RandomAddressBookBuilder.create(Randotron.create())
-            .withSize(numNodes)
-            .build();
+    private final Roster roster =
+            RandomRosterBuilder.create(Randotron.create()).withSize(numNodes).build();
     private final double fallenBehindThreshold = 0.5;
-    private final NodeId selfId = addressBook.getNodeId(0);
+    private final NodeId selfId = NodeId.of(roster.rosterEntries().get(0).nodeId());
     private final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
     private final ReconnectConfig config = new TestConfigBuilder()
             .withValue(ReconnectConfig_.FALLEN_BEHIND_THRESHOLD, fallenBehindThreshold)
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
-    final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+    final List<PeerInfo> peers = Utilities.createPeerInfoList(roster, selfId);
     final NetworkTopology topology = new StaticTopology(peers, selfId);
     private final FallenBehindManager manager = new FallenBehindManagerImpl(
-            addressBook,
-            selfId,
-            topology,
-            mock(StatusActionSubmitter.class),
-            fallenBehindNotification::incrementAndGet,
-            config);
+            selfId, topology, mock(StatusActionSubmitter.class), fallenBehindNotification::incrementAndGet, config);
 
     @Test
     void test() {
