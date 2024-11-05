@@ -62,7 +62,30 @@ public interface HederaNetwork {
      * @return the network's response
      */
     @NonNull
-    Response send(@NonNull Query query, @NonNull HederaFunctionality functionality, @NonNull AccountID nodeAccountId);
+    default Response send(
+            @NonNull Query query, @NonNull HederaFunctionality functionality, @NonNull AccountID nodeAccountId) {
+        return send(query, functionality, nodeAccountId, false);
+    }
+
+    /**
+     * Sends the given query to the network node with the given account id as if it
+     * was the given functionality. Blocks until the response is available.
+     *
+     * <p>For valid queries, the functionality can be inferred; but for invalid queries,
+     * the functionality must be provided.
+     *
+     * @param query the query
+     * @param functionality the functionality to use
+     * @param nodeAccountId the account id of the node to send the query to
+     * @param asNodeOperator whether to send the query to the node operator port
+     * @return the network's response
+     */
+    @NonNull
+    Response send(
+            @NonNull Query query,
+            @NonNull HederaFunctionality functionality,
+            @NonNull AccountID nodeAccountId,
+            boolean asNodeOperator);
 
     /**
      * Submits the given transaction to the network node with the given account id as if it

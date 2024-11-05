@@ -32,13 +32,6 @@ public interface MerkleRoot extends MerkleInternal {
      */
     @NonNull
     SwirldState getSwirldState();
-
-    /**
-     * This method makes sure that the platform state is initialized.
-     * If it's already initialized, it does nothing.
-     */
-    void initPlatformState();
-
     /**
      * Get readable platform state.
      * Works on both - mutable and immutable {@link MerkleRoot} and, therefore, this method should be preferred.

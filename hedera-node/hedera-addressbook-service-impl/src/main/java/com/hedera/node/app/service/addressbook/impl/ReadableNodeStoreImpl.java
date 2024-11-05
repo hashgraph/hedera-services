@@ -29,8 +29,8 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Objects;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -89,22 +89,22 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
 
     private Roster constructFromNodesState(@NonNull final ReadableKVState<EntityNumber, Node> nodesState) {
         final var rosterEntries = new ArrayList<RosterEntry>();
-        for (final Iterator<EntityNumber> it = nodesState.keys(); it.hasNext(); ) {
+        for (final var it = nodesState.keys(); it.hasNext(); ) {
             final var nodeNumber = it.next();
-            final var nodeDetail = nodesState.get(nodeNumber);
-            if (!nodeDetail.deleted()) {
+            final var node = requireNonNull(nodesState.get(nodeNumber));
+            if (!node.deleted()) {
                 final var entry = RosterEntry.newBuilder()
-                        .nodeId(nodeDetail.nodeId())
-                        .weight(nodeDetail.weight())
-                        .gossipCaCertificate(nodeDetail.gossipCaCertificate())
-                        .gossipEndpoint(nodeDetail.gossipEndpoint())
-                        .tssEncryptionKey(nodeDetail.tssEncryptionKey())
+                        .nodeId(node.nodeId())
+                        .weight(node.weight())
+                        .gossipCaCertificate(node.gossipCaCertificate())
+                        .gossipEndpoint(node.gossipEndpoint())
+                        .tssEncryptionKey(node.tssEncryptionKey())
                         .build();
                 rosterEntries.add(entry);
             }
         }
 
-        rosterEntries.sort((re1, re2) -> Objects.compare(re1.nodeId(), re2.nodeId(), Long::compareTo));
+        rosterEntries.sort(Comparator.comparingLong(RosterEntry::nodeId));
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }
 }

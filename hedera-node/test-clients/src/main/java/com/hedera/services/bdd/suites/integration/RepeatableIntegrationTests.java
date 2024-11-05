@@ -14,23 +14,29 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.tss;
+package com.hedera.services.bdd.suites.integration;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_TSS_CONTROL;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
+import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
+import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateTssMsgState;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.startIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.stopIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static java.lang.Long.parseLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,20 +51,21 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
+import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.cert.CertificateEncodingException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
-/**
- * TSS tests that require repeatable mode to run.
- */
-public class RepeatableTssTests {
+@Tag(INTEGRATION)
+@TargetEmbeddedMode(REPEATABLE)
+public class RepeatableIntegrationTests {
     /**
      * Validates behavior of the {@link BlockStreamManager} under specific conditions related to signature requests
      * and block creation.
@@ -117,13 +124,18 @@ public class RepeatableTssTests {
     @LeakyRepeatableHapiTest(
             value = {NEEDS_TSS_CONTROL, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
             overrides = {"tss.keyCandidateRoster"})
-    @Disabled
     // Need to fix by adding Roster entries to the state before running this test. Will do in next PR
-    Stream<DynamicTest> tssMessageSubmittedForRekeyingIsSuccessful() {
+    Stream<DynamicTest> tssMessageSubmittedForRekeyingIsSuccessful() throws CertificateEncodingException {
+        final var gossipCertificates = generateX509Certificates(1);
         return hapiTest(
+                newKeyNamed("adminKey"),
                 blockStreamMustIncludePassFrom(spec -> successfulTssMessageThenVote()),
                 // Current TSS default is not to try to key the candidate
                 overriding("tss.keyCandidateRoster", "true"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                mutateTssMsgState(),
                 doWithStartupConfig(
                         "staking.periodMins",
                         stakePeriodMins -> waitUntilStartOfNextStakingPeriod(parseLong(stakePeriodMins))),
@@ -131,48 +143,6 @@ public class RepeatableTssTests {
                 // in particular a successful TssMessage from the embedded node (and then a TssVote since this is our
                 // placeholder implementation of TssMessageHandler)
                 cryptoCreate("rekeyingTransaction"));
-    }
-
-    /**
-     * Returns an assertion that only passes when it has seen a successful TSS message follows by a successful
-     * TSS vote in the block stream.
-     *
-     * @return the assertion
-     */
-    private static BlockStreamAssertion successfulTssMessageThenVote() {
-        final var sawTssMessage = new AtomicBoolean(false);
-        return block -> {
-            final var items = block.items();
-            final IntConsumer assertSuccessResultAt = i -> {
-                assertTrue(i < items.size(), "Missing transaction result");
-                final var resultItem = items.get(i);
-                assertTrue(resultItem.hasTransactionResult(), "Misplaced transaction result");
-                final var result = resultItem.transactionResultOrThrow();
-                assertEquals(SUCCESS, result.status());
-            };
-            for (int i = 0, n = items.size(); i < n; i++) {
-                final var item = items.get(i);
-                if (item.hasEventTransaction()) {
-                    try {
-                        final var wrapper = Transaction.PROTOBUF.parse(
-                                item.eventTransactionOrThrow().applicationTransactionOrThrow());
-                        final var signedTxn = SignedTransaction.PROTOBUF.parse(wrapper.signedTransactionBytes());
-                        final var txn = TransactionBody.PROTOBUF.parse(signedTxn.bodyBytes());
-                        if (txn.hasTssMessage()) {
-                            assertSuccessResultAt.accept(i + 1);
-                            sawTssMessage.set(true);
-                        } else if (txn.hasTssVote()) {
-                            assertTrue(sawTssMessage.get(), "Vote seen before message");
-                            assertSuccessResultAt.accept(i + 1);
-                            return true;
-                        }
-                    } catch (ParseException e) {
-                        Assertions.fail(e.getMessage());
-                    }
-                }
-            }
-            return false;
-        };
     }
 
     /**
@@ -224,5 +194,47 @@ public class RepeatableTssTests {
                 return false;
             }
         }
+    }
+
+    /**
+     * Returns an assertion that only passes when it has seen a successful TSS message follows by a successful
+     * TSS vote in the block stream.
+     *
+     * @return the assertion
+     */
+    private static BlockStreamAssertion successfulTssMessageThenVote() {
+        final var sawTssMessage = new AtomicBoolean(false);
+        return block -> {
+            final var items = block.items();
+            final IntConsumer assertSuccessResultAt = i -> {
+                assertTrue(i < items.size(), "Missing transaction result");
+                final var resultItem = items.get(i);
+                assertTrue(resultItem.hasTransactionResult(), "Misplaced transaction result");
+                final var result = resultItem.transactionResultOrThrow();
+                assertEquals(SUCCESS, result.status());
+            };
+            for (int i = 0, n = items.size(); i < n; i++) {
+                final var item = items.get(i);
+                if (item.hasEventTransaction()) {
+                    try {
+                        final var wrapper = Transaction.PROTOBUF.parse(
+                                item.eventTransactionOrThrow().applicationTransactionOrThrow());
+                        final var signedTxn = SignedTransaction.PROTOBUF.parse(wrapper.signedTransactionBytes());
+                        final var txn = TransactionBody.PROTOBUF.parse(signedTxn.bodyBytes());
+                        if (txn.hasTssMessage()) {
+                            assertSuccessResultAt.accept(i + 1);
+                            sawTssMessage.set(true);
+                        } else if (txn.hasTssVote()) {
+                            assertTrue(sawTssMessage.get(), "Vote seen before message");
+                            assertSuccessResultAt.accept(i + 1);
+                            return true;
+                        }
+                    } catch (ParseException e) {
+                        Assertions.fail(e.getMessage());
+                    }
+                }
+            }
+            return false;
+        };
     }
 }

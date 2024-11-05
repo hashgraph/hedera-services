@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NodeAddressBook;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FilesConfig;
@@ -129,6 +130,11 @@ public class StandaloneNetworkInfo implements NetworkInfo {
 
     @Override
     public void updateFrom(final State state) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public Roster roster() {
         throw new UnsupportedOperationException("Not implemented");
     }
 

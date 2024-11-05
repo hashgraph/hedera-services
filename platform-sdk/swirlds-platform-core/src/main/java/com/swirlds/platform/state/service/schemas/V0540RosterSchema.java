@@ -63,6 +63,7 @@ public class V0540RosterSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         final var rosterState = ctx.newStates().getSingleton(ROSTER_STATES_KEY);
+        // On genesis, create a default roster state from the genesis network info
         if (rosterState.get() == null) {
             log.info("Creating default roster state");
             rosterState.put(RosterState.DEFAULT);
