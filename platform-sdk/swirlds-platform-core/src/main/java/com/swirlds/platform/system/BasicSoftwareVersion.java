@@ -17,6 +17,7 @@
 package com.swirlds.platform.system;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;

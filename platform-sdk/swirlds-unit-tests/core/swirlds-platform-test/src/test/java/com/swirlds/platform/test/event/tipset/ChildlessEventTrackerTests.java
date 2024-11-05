@@ -22,11 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.platform.event.EventDescriptor;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.EventDescriptorWrapper;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
-import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;

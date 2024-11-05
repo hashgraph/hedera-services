@@ -18,11 +18,11 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.swirlds.common.SoftwareVersion;
+import com.swirlds.common.event.AncientMode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

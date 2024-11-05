@@ -18,9 +18,9 @@ package com.swirlds.platform.publisher;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;

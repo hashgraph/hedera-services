@@ -19,9 +19,9 @@ package com.swirlds.platform.test.fixtures.event;
 import static java.lang.Integer.max;
 
 import com.hedera.hapi.platform.event.GossipEvent;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;

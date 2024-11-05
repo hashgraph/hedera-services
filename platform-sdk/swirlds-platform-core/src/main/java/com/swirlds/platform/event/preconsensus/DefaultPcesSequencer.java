@@ -16,11 +16,12 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.common.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hiero.event.intake.pces.PcesSequencer;
 
 /**
- * The default implementation of the {@link PcesSequencer}.
+ * The default implementation of the {@link org.hiero.event.intake.pces.PcesSequencer}.
  */
 public class DefaultPcesSequencer implements PcesSequencer {
 

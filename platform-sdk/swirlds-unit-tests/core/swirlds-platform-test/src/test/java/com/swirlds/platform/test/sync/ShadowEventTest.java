@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.Random;

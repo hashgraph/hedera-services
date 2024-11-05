@@ -17,11 +17,11 @@
 package com.swirlds.platform.recovery.internal;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.common.event.ConsensusEvent;
+import com.swirlds.common.event.PlatformEvent;
+import com.swirlds.common.iterator.TypedIterator;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.CesEvent;
-import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Iterator;

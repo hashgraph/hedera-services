@@ -16,12 +16,13 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.SoftwareVersion.NO_VERSION;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
-import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.config.StateConfig;
@@ -29,7 +30,6 @@ import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;

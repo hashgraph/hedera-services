@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.events;
+package com.swirlds.common.system.event;
 
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
+import com.swirlds.common.event.EventDescriptorWrapper;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.transaction.TransactionWrapper;
+import com.swirlds.common.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.system.address;
 
+import static com.swirlds.common.system.address.RosterConstants.MAX_ADDRESSES;
+
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
@@ -74,12 +76,6 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
          */
         public static final int SELF_SERIALIZABLE_NODE_ID = 5;
     }
-
-    // FUTURE WORK: remove this restriction and use other strategies to make serialization safe
-    /**
-     * The maximum number of addresses that are supported.
-     */
-    public static final int MAX_ADDRESSES = 1024;
 
     /**
      * The round number that should be used when the round number is unknown.

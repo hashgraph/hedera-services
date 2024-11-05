@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event;
 
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.wiring.NoInput;

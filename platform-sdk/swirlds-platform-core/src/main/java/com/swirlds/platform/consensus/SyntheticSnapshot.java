@@ -16,7 +16,9 @@
 
 package com.swirlds.platform.consensus;
 
-import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.common.consensus.ConsensusConstants;
+import com.swirlds.common.consensus.GraphGenerations;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;

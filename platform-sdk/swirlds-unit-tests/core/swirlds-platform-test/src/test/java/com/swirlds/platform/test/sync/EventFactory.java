@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.sync;
 
-import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -18,11 +18,11 @@ package com.swirlds.platform.state.nexus;
 
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
+import com.swirlds.common.consensus.ConsensusConstants;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;

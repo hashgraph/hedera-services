@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
+import static com.swirlds.common.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.common.event.AncientMode.BIRTH_ROUND_THRESHOLD;
+import static com.swirlds.common.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.findPcesFiles;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,6 +29,7 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
@@ -40,7 +41,6 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;

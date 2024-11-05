@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.core.jmh;
 
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.fixtures.Randotron;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;

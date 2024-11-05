@@ -19,11 +19,11 @@ package com.swirlds.platform.event.linking;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.EventDescriptorWrapper;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.LongAccumulator;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 

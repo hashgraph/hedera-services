@@ -19,8 +19,8 @@ package com.swirlds.platform.test.gui;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gui.GuiEventStorage;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.StandardGuiSource;

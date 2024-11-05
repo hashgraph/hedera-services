@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.transaction;
+package com.swirlds.common.transaction;
 
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.platform.util.TransactionUtils;
+import com.swirlds.common.utility.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 

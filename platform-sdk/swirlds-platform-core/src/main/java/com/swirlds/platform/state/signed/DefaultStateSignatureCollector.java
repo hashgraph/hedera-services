@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.common.consensus.ConsensusConstants;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
@@ -27,7 +28,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.sequence.set.SequenceSet;
 import com.swirlds.platform.sequence.set.StandardSequenceSet;
 import edu.umd.cs.findbugs.annotations.NonNull;

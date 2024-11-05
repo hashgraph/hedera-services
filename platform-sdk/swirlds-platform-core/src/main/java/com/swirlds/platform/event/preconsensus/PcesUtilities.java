@@ -21,10 +21,10 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;

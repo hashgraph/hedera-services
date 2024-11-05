@@ -19,11 +19,11 @@ package com.swirlds.platform.test.consensus;
 import static com.swirlds.common.test.fixtures.WeightGenerators.RANDOM;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.RANDOM_WEIGHT_DESC;
 
+import com.swirlds.common.event.EventConfig;
+import com.swirlds.common.event.EventConfig_;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.ConsensusImpl;
-import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.test.PlatformTest;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;

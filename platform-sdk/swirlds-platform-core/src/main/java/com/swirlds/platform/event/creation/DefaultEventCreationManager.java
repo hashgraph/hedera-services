@@ -22,17 +22,17 @@ import static com.swirlds.platform.event.creation.EventCreationStatus.NO_ELIGIBL
 import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
+import com.swirlds.common.system.event.UnsignedEvent;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.event.creation.rules.MaximumRateRule;
 import com.swirlds.platform.event.creation.rules.PlatformHealthRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.pool.TransactionPoolNexus;
-import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

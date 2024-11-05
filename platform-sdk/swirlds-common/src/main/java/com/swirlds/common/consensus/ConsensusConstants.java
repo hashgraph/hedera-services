@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.consensus;
+package com.swirlds.common.consensus;
 
 /** Constants used for consensus */
 public final class ConsensusConstants {

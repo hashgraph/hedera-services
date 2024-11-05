@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.consensus;
 
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
-import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
+import static com.swirlds.common.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.common.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
+import static com.swirlds.common.event.AncientMode.GENERATION_THRESHOLD;
+import static com.swirlds.common.event.EventConstants.FIRST_GENERATION;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.events.EventDescriptorWrapper;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.EventDescriptorWrapper;
+import com.swirlds.common.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

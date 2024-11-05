@@ -16,7 +16,8 @@
 
 package com.swirlds.platform.consensus;
 
-import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.common.consensus.GraphGenerations;
+import com.swirlds.common.event.EventConstants;
 import java.util.function.LongUnaryOperator;
 
 /**

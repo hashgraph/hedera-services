@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.components;
 
-import static com.swirlds.platform.event.EventUtils.calculateNewEventCreationTime;
+import static com.swirlds.common.utility.EventUtils.calculateNewEventCreationTime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Instant;

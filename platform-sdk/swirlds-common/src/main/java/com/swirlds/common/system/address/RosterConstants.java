@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.transaction;
+package com.swirlds.common.system.address;
 
-import java.time.Instant;
+public class RosterConstants {
 
-/**
- * A transaction that has reached consensus.
- */
-public sealed interface ConsensusTransaction extends Transaction permits TransactionWrapper {
+    // FUTURE WORK: remove this restriction and use other strategies to make serialization safe
     /**
-     * Returns the community's consensus timestamp for this item.
-     *
-     * @return the consensus timestamp
+     * The maximum number of addresses that are supported.
      */
-    Instant getConsensusTimestamp();
+    public static final int MAX_ADDRESSES = 1024;
 }

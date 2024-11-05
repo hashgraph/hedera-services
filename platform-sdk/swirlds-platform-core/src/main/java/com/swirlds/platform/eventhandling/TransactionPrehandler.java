@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.eventhandling;
 
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

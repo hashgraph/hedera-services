@@ -16,22 +16,26 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
 import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.consensus.ConsensusConstants;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.EventConfig;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.utility.EventUtils;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.consensus.AncestorSearch;
 import com.swirlds.platform.consensus.CandidateWitness;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.ConsensusRounds;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.ConsensusSorter;
@@ -41,10 +45,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.InitJudges;
 import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;

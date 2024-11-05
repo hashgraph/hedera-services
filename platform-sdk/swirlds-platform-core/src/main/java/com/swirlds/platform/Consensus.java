@@ -16,8 +16,8 @@
 
 package com.swirlds.platform;
 
+import com.swirlds.common.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.RoundNumberProvider;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system.address;
 
+import static com.swirlds.common.system.address.RosterConstants.MAX_ADDRESSES;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.system.address.AddressBookUtils.parseAddressBookText;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -380,7 +381,7 @@ class AddressBookTests {
 
         final AddressBook addressBook = new AddressBook();
 
-        for (int i = 0; i < AddressBook.MAX_ADDRESSES; i++) {
+        for (int i = 0; i < MAX_ADDRESSES; i++) {
             addressBook.add(buildNextAddress(randotron, addressBook));
         }
 

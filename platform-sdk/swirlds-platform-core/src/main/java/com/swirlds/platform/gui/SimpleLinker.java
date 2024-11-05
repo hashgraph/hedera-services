@@ -17,14 +17,14 @@
 package com.swirlds.platform.gui;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.event.AncientMode;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.EventDescriptorWrapper;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.sequence.map.SequenceMap;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
-import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

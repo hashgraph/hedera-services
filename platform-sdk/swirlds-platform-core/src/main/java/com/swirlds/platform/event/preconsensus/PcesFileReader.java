@@ -21,9 +21,9 @@ import static com.swirlds.platform.event.preconsensus.PcesUtilities.compactPreco
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.fileSanityChecks;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.AncientMode;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.utility.ValueReference;
-import com.swirlds.platform.event.AncientMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;

@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.consensus.GraphGenerations;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.test.fixtures.Randotron;
-import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.Random;

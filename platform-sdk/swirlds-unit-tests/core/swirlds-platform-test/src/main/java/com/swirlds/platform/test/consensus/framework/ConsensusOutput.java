@@ -17,14 +17,14 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.EventDescriptorWrapper;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.sequence.set.SequenceSet;
 import com.swirlds.platform.sequence.set.StandardSequenceSet;
-import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Comparator;

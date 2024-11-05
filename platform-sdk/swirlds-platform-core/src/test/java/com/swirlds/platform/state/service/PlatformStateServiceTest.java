@@ -22,10 +22,10 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;

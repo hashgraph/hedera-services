@@ -17,10 +17,10 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.consensus.GraphGenerations;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.consensus.GraphGenerations;
 import java.io.IOException;
 
 public class Generations implements GraphGenerations, SelfSerializable {

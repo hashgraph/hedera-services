@@ -17,10 +17,10 @@
 package com.swirlds.platform.event.signing;
 
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.event.PlatformEvent;
+import com.swirlds.common.system.event.UnsignedEvent;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
-import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

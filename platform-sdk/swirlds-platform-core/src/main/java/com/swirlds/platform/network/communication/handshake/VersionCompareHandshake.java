@@ -18,11 +18,11 @@ package com.swirlds.platform.network.communication.handshake;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
-import com.swirlds.platform.system.SoftwareVersion;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;

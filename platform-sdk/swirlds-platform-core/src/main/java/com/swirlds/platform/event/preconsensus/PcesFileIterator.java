@@ -17,13 +17,13 @@
 package com.swirlds.platform.event.preconsensus;
 
 import com.hedera.hapi.platform.event.GossipEvent;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventSerializationUtils;
-import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.EOFException;

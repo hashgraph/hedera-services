@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.events;
+package com.swirlds.common.event;
 
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_LIST_ARRAY_LENGTH;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_VERSION;
@@ -25,8 +25,7 @@ import com.swirlds.common.io.exceptions.InvalidVersionException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.common.system.address.RosterConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -73,8 +72,8 @@ public record EventDescriptorWrapper(
      */
     public long getAncientIndicator(@NonNull final AncientMode ancientMode) {
         return switch (ancientMode) {
-            case GENERATION_THRESHOLD -> eventDescriptor.generation();
-            case BIRTH_ROUND_THRESHOLD -> eventDescriptor.birthRound();
+            case AncientMode.GENERATION_THRESHOLD -> eventDescriptor.generation();
+            case AncientMode.BIRTH_ROUND_THRESHOLD -> eventDescriptor.birthRound();
         };
     }
 
@@ -216,11 +215,11 @@ public record EventDescriptorWrapper(
             return null;
         } else {
             final List<EventDescriptorWrapper> list = new ArrayList<>(length);
-            if (length > AddressBook.MAX_ADDRESSES) {
+            if (length > RosterConstants.MAX_ADDRESSES) {
                 throw new IOException(String.format(
                         "The input stream provided a length of %d for the list/array "
                                 + "which exceeds the maxLength of %d",
-                        length, AddressBook.MAX_ADDRESSES));
+                        length, RosterConstants.MAX_ADDRESSES));
             }
             if (length == 0) {
                 return list;

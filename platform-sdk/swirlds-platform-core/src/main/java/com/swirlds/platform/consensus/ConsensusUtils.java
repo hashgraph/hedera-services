@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.consensus;
 
-import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+import static com.swirlds.common.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;

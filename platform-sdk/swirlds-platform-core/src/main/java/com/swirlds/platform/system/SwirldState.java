@@ -16,12 +16,13 @@
 
 package com.swirlds.platform.system;
 
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.system.event.Event;
+import com.swirlds.common.transaction.Transaction;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.Event;
-import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;

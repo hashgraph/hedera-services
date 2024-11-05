@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.event.source;
 
-import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
+import static com.swirlds.common.event.EventConstants.FIRST_GENERATION;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicValue;
 

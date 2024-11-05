@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.system.events;
 
+import static com.swirlds.common.consensus.ConsensusConstants.ROUND_FIRST;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.spi.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;

@@ -18,12 +18,12 @@ package com.swirlds.demo.consistency;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

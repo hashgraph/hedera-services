@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.stale;
 
-import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.common.event.PlatformEvent;
 
 /**
  * Describes the different types of output that the stale event detector produces.

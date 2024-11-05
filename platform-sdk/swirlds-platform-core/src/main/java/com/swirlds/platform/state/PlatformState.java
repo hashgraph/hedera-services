@@ -16,14 +16,14 @@
 
 package com.swirlds.platform.state;
 
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.event.AncientMode;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

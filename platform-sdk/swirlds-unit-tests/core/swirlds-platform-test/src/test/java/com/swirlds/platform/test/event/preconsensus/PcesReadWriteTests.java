@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
+import static com.swirlds.common.event.AncientMode.BIRTH_ROUND_THRESHOLD;
+import static com.swirlds.common.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.corruptFile;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.truncateFile;
-import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.BIRTH_ROUND_PLATFORM_CONTEXT;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,11 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileIterator;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;

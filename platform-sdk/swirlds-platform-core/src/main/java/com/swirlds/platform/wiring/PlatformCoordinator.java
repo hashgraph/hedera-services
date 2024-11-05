@@ -16,10 +16,11 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.common.event.PlatformEvent;
+import com.swirlds.common.system.event.UnsignedEvent;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.branching.BranchDetector;
 import com.swirlds.platform.event.branching.BranchReporter;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -38,7 +39,6 @@ import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
-import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.wiring.components.GossipWiring;

@@ -16,12 +16,13 @@
 
 package com.swirlds.platform.test.consensus;
 
+import static com.swirlds.common.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -36,7 +37,6 @@ import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;

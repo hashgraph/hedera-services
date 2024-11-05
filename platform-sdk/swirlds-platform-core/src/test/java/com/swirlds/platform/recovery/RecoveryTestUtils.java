@@ -25,6 +25,8 @@ import static org.mockito.Mockito.spy;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.EventConfig_;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
@@ -33,9 +35,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
-import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;

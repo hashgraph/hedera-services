@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event;
+package com.swirlds.common.event;
 
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
+import static com.swirlds.common.consensus.ConsensusConstants.ROUND_FIRST;
 
+import com.swirlds.common.consensus.GraphGenerations;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.eventhandling.EventConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -73,7 +72,7 @@ public enum AncientMode {
      */
     public long getGenesisIndicator() {
         return switch (this) {
-            case GENERATION_THRESHOLD -> FIRST_GENERATION;
+            case GENERATION_THRESHOLD -> GraphGenerations.FIRST_GENERATION;
             case BIRTH_ROUND_THRESHOLD -> ROUND_FIRST;
         };
     }

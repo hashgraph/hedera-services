@@ -50,7 +50,6 @@ import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
-import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
@@ -105,6 +104,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
+import org.hiero.event.intake.pces.PcesSequencer;
 
 /**
  * The advanced platform builder is responsible for constructing platform components. This class is exposed so that
@@ -634,7 +634,7 @@ public class PlatformComponentBuilder {
 
     /**
      * Build the PCES sequencer if it has not yet been built. If one has been provided via
-     * {@link #withPcesSequencer(PcesSequencer)}, that sequencer will be used. If this method is called more than once,
+     * {@link #withPcesSequencer(org.hiero.event.intake.pces.PcesSequencer)}, that sequencer will be used. If this method is called more than once,
      * only the first call will build the PCES sequencer. Otherwise, the default sequencer will be created and
      * returned.
      *

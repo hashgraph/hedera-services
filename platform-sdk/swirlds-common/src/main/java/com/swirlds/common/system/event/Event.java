@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.events;
+package com.swirlds.common.system.event;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.common.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Iterator;

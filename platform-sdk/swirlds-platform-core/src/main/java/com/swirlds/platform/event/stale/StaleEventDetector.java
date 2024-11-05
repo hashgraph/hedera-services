@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event.stale;
 
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;

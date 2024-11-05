@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.events;
+package com.swirlds.common.event;
 
 import com.swirlds.common.platform.NodeId;
 

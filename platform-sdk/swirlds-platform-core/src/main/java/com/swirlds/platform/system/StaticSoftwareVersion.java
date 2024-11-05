@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system;
 
+import com.swirlds.common.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

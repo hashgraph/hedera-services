@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.builder;
 
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
 

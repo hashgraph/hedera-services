@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.event.creation.tipset;
 
+import com.swirlds.common.event.EventDescriptorWrapper;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;

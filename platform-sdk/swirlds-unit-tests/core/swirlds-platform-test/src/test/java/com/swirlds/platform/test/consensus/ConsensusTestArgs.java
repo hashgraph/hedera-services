@@ -25,9 +25,9 @@ import static com.swirlds.common.test.fixtures.WeightGenerators.RANDOM_REAL_WEIG
 import static com.swirlds.common.test.fixtures.WeightGenerators.SINGLE_NODE_STRONG_MINORITY;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.EventConfig_;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.eventhandling.EventConfig_;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
 

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.events;
+package com.swirlds.common.event;
 
-import com.swirlds.platform.system.ReachedConsensus;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.common.system.ReachedConsensus;
+import com.swirlds.common.system.event.Event;
+import com.swirlds.common.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 

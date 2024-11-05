@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
+import static com.swirlds.common.event.AncientMode.BIRTH_ROUND_THRESHOLD;
+import static com.swirlds.common.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.platform.event.AncientMode;
+import com.swirlds.common.event.AncientMode;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesUtilities;
 import edu.umd.cs.findbugs.annotations.NonNull;

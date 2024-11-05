@@ -19,7 +19,7 @@ package com.swirlds.platform.gui.hashgraph.internal;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants.HASHGRAPH_PICTURE_FONT;
 
-import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.common.consensus.GraphGenerations;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;

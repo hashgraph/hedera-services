@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

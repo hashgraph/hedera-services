@@ -22,11 +22,11 @@ import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.EventDescriptorWrapper;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;

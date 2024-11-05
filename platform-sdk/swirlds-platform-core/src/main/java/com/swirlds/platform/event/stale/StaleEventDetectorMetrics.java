@@ -19,10 +19,10 @@ package com.swirlds.platform.event.stale;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.PlatformEvent;
+import com.swirlds.common.transaction.Transaction;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 

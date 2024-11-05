@@ -23,10 +23,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.PlatformStateAccessor;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

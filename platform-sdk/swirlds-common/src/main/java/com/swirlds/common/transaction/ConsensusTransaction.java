@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system;
+package com.swirlds.common.transaction;
 
 import java.time.Instant;
 
 /**
- * An item that has reached consensus.
- * <p>
- * IMPORTANT: Although this interface is not sealed, it should only be implemented by internal classes. This
- * interface may be changed at any time, in any way, without notice or prior deprecation. Third parties should NOT
- * implement this interface.
+ * A transaction that has reached consensus.
  */
-public interface ReachedConsensus {
-
-    /**
-     * Returns the consensus order of the consensus item, starting at zero. Smaller values occur before higher numbers.
-     *
-     * @return the consensus order sequence number
-     */
-    long getConsensusOrder();
-
+public sealed interface ConsensusTransaction extends Transaction permits TransactionWrapper {
     /**
      * Returns the community's consensus timestamp for this item.
      *

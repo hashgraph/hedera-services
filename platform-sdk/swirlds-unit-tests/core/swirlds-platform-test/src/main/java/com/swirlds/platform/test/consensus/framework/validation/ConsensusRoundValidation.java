@@ -19,7 +19,7 @@ package com.swirlds.platform.test.consensus.framework.validation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import java.util.Iterator;

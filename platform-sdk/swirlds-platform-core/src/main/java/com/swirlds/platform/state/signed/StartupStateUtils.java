@@ -24,6 +24,7 @@ import static com.swirlds.platform.state.signed.ReservedSignedState.createNullRe
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFile;
 import static java.util.Objects.requireNonNull;
 
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.RecycleBin;
@@ -38,7 +39,6 @@ import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
 import com.swirlds.platform.state.snapshot.SignedStateFilePath;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;

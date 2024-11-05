@@ -16,20 +16,23 @@
 
 package com.swirlds.platform.test.sync;
 
+import static com.swirlds.common.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.common.event.AncientMode.BIRTH_ROUND_THRESHOLD;
+import static com.swirlds.common.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CompareTo.max;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.swirlds.common.consensus.ConsensusConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.EventConstants;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.threading.ReplaceSyncPhaseParallelExecutor;
 import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
@@ -37,13 +40,10 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;

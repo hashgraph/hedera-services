@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system;
 
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;

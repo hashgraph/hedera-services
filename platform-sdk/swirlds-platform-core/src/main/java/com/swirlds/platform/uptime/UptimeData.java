@@ -18,8 +18,8 @@ package com.swirlds.platform.uptime;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.common.event.ConsensusEvent;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

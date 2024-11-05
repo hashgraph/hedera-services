@@ -20,8 +20,8 @@ import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLAT
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.report.EventStreamReport;
 import com.swirlds.platform.event.report.EventStreamScanner;
 import com.swirlds.platform.internal.ConsensusRound;

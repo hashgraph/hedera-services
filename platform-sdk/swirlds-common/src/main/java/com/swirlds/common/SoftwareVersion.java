@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system;
+package com.swirlds.common;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.io.SelfSerializable;

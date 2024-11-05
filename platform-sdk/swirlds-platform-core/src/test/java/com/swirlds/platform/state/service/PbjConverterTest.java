@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -41,7 +42,6 @@ import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import java.security.KeyPair;

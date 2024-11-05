@@ -22,13 +22,13 @@ import static com.swirlds.platform.uptime.UptimeData.NO_ROUND;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.ConsensusEvent;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.SelfEventReachedConsensusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;

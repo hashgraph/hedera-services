@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.events;
+package com.swirlds.common.system.event;
 
 import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.event.EventTransaction;
@@ -22,8 +22,10 @@ import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.event.EventConstants;
+import com.swirlds.common.event.EventDescriptorWrapper;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.transaction.TransactionWrapper;
+import com.swirlds.common.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.test.fixtures.event.generator;
 
+import com.swirlds.common.consensus.ConsensusConstants;
+import com.swirlds.common.consensus.GraphGenerations;
+import com.swirlds.common.event.EventConstants;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;

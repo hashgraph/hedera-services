@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.nexus;
 
-import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.common.consensus.ConsensusConstants;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

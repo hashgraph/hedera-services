@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.fixtures.turtle.gossip;
 
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 

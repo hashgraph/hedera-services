@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event;
+package com.swirlds.common.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
@@ -25,18 +25,17 @@ import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.consensus.ConsensusConstants;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
+import com.swirlds.common.iterator.TypedIterator;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.EventDescriptorWrapper;
-import com.swirlds.platform.system.events.EventMetadata;
-import com.swirlds.platform.system.events.UnsignedEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.platform.system.transaction.TransactionWrapper;
-import com.swirlds.platform.util.iterator.TypedIterator;
+import com.swirlds.common.system.event.EventMetadata;
+import com.swirlds.common.system.event.UnsignedEvent;
+import com.swirlds.common.transaction.ConsensusTransaction;
+import com.swirlds.common.transaction.Transaction;
+import com.swirlds.common.transaction.TransactionWrapper;
+import com.swirlds.common.utility.EventUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -316,7 +315,7 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
 
     /**
      * @return the consensus order for this event, this will be
-     * {@link com.swirlds.platform.consensus.ConsensusConstants#NO_CONSENSUS_ORDER} if the event has not reached
+     * {@link ConsensusConstants#NO_CONSENSUS_ORDER} if the event has not reached
      * consensus
      */
     public long getConsensusOrder() {
@@ -498,8 +497,8 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
      */
     public long getAncientIndicator(@NonNull final AncientMode ancientMode) {
         return switch (ancientMode) {
-            case GENERATION_THRESHOLD -> getGeneration();
-            case BIRTH_ROUND_THRESHOLD -> getBirthRound();
+            case AncientMode.GENERATION_THRESHOLD -> getGeneration();
+            case AncientMode.BIRTH_ROUND_THRESHOLD -> getBirthRound();
         };
     }
 }

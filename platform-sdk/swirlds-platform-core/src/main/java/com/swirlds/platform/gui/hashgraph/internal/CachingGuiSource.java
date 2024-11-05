@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
+import com.swirlds.common.event.EventConstants;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.EventConstants;
 import java.util.List;
 
 /**

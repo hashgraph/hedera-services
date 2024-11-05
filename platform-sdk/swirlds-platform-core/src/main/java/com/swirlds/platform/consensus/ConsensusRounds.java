@@ -18,6 +18,7 @@ package com.swirlds.platform.consensus;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.swirlds.common.consensus.ConsensusConstants;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.roster.RosterUtils;

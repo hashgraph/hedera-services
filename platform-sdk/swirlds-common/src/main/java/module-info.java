@@ -143,6 +143,13 @@ module com.swirlds.common {
     exports com.swirlds.common.wiring.model.diagram;
     exports com.swirlds.common.concurrent;
     exports com.swirlds.common.merkle.synchronization.stats;
+    exports com.swirlds.common.event;
+    exports com.swirlds.common.system;
+    exports com.swirlds.common.system.event;
+    exports com.swirlds.common.transaction;
+    exports com.swirlds.common.consensus;
+    exports com.swirlds.common.iterator;
+    exports com.swirlds.common.system.address;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;
@@ -151,7 +158,6 @@ module com.swirlds.common {
     requires transitive com.swirlds.metrics.impl;
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;
@@ -165,4 +171,5 @@ module com.swirlds.common {
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.nativelib.secp256k1;
     requires static transitive com.github.spotbugs.annotations;
+    requires com.hedera.node.hapi;
 }

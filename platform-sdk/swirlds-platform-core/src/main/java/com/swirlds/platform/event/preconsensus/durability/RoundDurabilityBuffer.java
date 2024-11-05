@@ -33,7 +33,7 @@ public interface RoundDurabilityBuffer {
      * Specify the latest durable event, by sequence number.
      *
      * @param durableSequenceNumber the sequence number of the event (as assigned by the
-     *                              {@link com.swirlds.platform.event.preconsensus.PcesSequencer}) of the latest event
+     *                              {@link org.hiero.event.intake.pces.PcesSequencer}) of the latest event
      *                              that can be guaranteed to be durable
      * @return a list of zero or more rounds that are safe to handle from an event durability perspective
      */

@@ -19,10 +19,11 @@ package com.swirlds.platform.consensus;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.consensus.GraphGenerations;
+import com.swirlds.common.event.EventConstants;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.events.EventConstants;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;

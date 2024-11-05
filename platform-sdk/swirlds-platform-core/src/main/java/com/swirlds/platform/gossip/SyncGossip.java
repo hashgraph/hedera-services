@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.gossip;
 
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
+import static com.swirlds.common.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
 import com.swirlds.base.state.Startable;
+import com.swirlds.common.SoftwareVersion;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -36,7 +38,6 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
@@ -74,7 +75,6 @@ import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatus;

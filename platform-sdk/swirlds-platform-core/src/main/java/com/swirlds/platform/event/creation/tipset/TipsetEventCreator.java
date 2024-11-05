@@ -16,32 +16,32 @@
 
 package com.swirlds.platform.event.creation.tipset;
 
+import static com.swirlds.common.event.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
-import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.SoftwareVersion;
+import com.swirlds.common.consensus.ConsensusConstants;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.EventConfig;
+import com.swirlds.common.event.EventDescriptorWrapper;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.common.system.event.UnsignedEvent;
+import com.swirlds.common.utility.EventUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.hashing.PbjStreamHasher;
 import com.swirlds.platform.event.hashing.UnsignedEventHasher;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.EventDescriptorWrapper;
-import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;

@@ -19,6 +19,7 @@ package com.swirlds.platform.system.transaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

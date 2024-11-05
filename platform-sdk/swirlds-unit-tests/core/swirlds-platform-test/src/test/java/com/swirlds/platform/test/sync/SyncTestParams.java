@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.sync;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.platform.event.AncientMode;
+import com.swirlds.common.event.AncientMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

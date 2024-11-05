@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.util.iterator;
+package com.swirlds.common.iterator;
 
 import java.util.Iterator;
 import java.util.Objects;

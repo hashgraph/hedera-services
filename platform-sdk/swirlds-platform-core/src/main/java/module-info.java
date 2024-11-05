@@ -141,6 +141,7 @@ module com.swirlds.platform.core {
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
     requires transitive org.hiero.consensus.gossip;
+    requires transitive org.hiero.event.intake;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;

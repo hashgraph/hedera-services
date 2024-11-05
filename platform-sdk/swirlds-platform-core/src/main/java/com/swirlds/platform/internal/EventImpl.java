@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.internal;
 
+import com.swirlds.common.consensus.ConsensusConstants;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.consensus.CandidateWitness;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

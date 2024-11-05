@@ -22,12 +22,12 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.utility.ValueReference;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
-import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
+import org.hiero.event.intake.pces.PcesSequencer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

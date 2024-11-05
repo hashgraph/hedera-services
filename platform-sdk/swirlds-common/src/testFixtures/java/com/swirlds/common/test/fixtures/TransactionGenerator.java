@@ -16,8 +16,8 @@
 
 package com.swirlds.common.test.fixtures;
 
-import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.platform.system.transaction.TransactionWrapper;
+import com.swirlds.common.transaction.Transaction;
+import com.swirlds.common.transaction.TransactionWrapper;
 import java.util.Random;
 
 /**

@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
+import static com.swirlds.common.event.AncientMode.BIRTH_ROUND_THRESHOLD;
+import static com.swirlds.common.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.writeRandomBytes;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFile.EVENT_FILE_SEPARATOR;
 import static com.swirlds.platform.event.preconsensus.PcesFile.MAXIMUM_BIRTH_ROUND_PREFIX;
 import static com.swirlds.platform.event.preconsensus.PcesFile.MAXIMUM_GENERATION_PREFIX;
@@ -35,13 +35,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.event.AncientMode;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

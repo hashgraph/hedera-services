@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.consensus;
+package com.swirlds.common.consensus;
 
-import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.common.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface GraphGenerations {

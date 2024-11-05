@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event;
+package com.swirlds.common.utility;
 
-import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+import static com.swirlds.common.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
+import com.swirlds.common.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 

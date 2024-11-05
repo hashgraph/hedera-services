@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event.creation;
 
+import com.swirlds.common.event.PlatformEvent;
+import com.swirlds.common.system.event.UnsignedEvent;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

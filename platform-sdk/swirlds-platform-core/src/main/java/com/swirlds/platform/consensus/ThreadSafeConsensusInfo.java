@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.consensus;
 
+import com.swirlds.common.consensus.ConsensusConstants;
+import com.swirlds.common.consensus.GraphGenerations;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.LogMarker;

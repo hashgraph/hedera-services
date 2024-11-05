@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event.validation;
 
+import static com.swirlds.common.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
+import static com.swirlds.common.event.EventConstants.FIRST_GENERATION;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
-import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventDescriptor;
@@ -28,16 +28,16 @@ import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.SignatureType;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.EventConfig;
+import com.swirlds.common.event.EventConstants;
+import com.swirlds.common.event.EventDescriptorWrapper;
+import com.swirlds.common.event.PlatformEvent;
+import com.swirlds.common.transaction.Transaction;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.config.TransactionConfig;
-import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptorWrapper;
-import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;

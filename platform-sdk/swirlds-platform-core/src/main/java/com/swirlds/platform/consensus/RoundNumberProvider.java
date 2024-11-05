@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.consensus;
 
+import com.swirlds.common.consensus.ConsensusConstants;
+
 public interface RoundNumberProvider {
 
     /**

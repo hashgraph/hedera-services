@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
 }
 
 description = "Event Intake API"

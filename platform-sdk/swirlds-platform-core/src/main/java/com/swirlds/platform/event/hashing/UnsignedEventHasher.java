@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.hashing;
 
-import com.swirlds.platform.system.events.UnsignedEvent;
+import com.swirlds.common.system.event.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.event;
 
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.common.consensus.ConsensusConstants.ROUND_FIRST;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.event.AncientMode;
+import com.swirlds.common.event.EventConfig;
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.sequence.map.SequenceMap;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.wiring.NoInput;

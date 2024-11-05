@@ -18,8 +18,8 @@ package com.swirlds.platform.test.graph;
 
 import static com.swirlds.platform.test.fixtures.event.EventImplTestUtils.createEventImpl;
 
+import com.swirlds.common.event.PlatformEvent;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
