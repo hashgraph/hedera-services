@@ -431,7 +431,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
     }
 
     @Test
-    void inMemoryAddRemoveNoFlushTest() {
+    void inMemoryAddRemoveNoFlushTest() throws InterruptedException {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
                 .getOrCreateConfig();
@@ -478,6 +478,26 @@ class VirtualRootNodeTest extends VirtualTestBase {
         for (int i = 0; i < nCopies - 2; i++) {
             // Copies must be merged, not flushed
             assertEventuallyTrue(copies[i]::isMerged, Duration.ofSeconds(16), "copy " + i + " should be merged");
+        }
+
+        final var lcopy = root.copy();
+        lcopy.postInit(new VirtualStateAccessorImpl(state));
+        root.enableFlush();
+        root.release();
+        root.waitUntilFlushed();
+        root = lcopy;
+
+        // Values from copies 0 to nCopies - 2 should not be there (removed)
+        for (int copyNo = 0; copyNo < nCopies - 2; copyNo++) {
+            for (int i = 0; i < 100; i++) {
+                final int toCheck = copyNo * 100 + i;
+                final TestKey keyToCheck = new TestKey(toCheck);
+                final TestValue value = root.get(keyToCheck);
+                assertNull(value);
+                final VirtualLeafRecord<TestKey, TestValue> leafRec =
+                        root.getCache().lookupLeafByKey(keyToCheck, false);
+                assertNull(leafRec);
+            }
         }
     }
 
