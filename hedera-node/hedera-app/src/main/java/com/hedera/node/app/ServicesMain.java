@@ -26,6 +26,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.GENESIS_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
@@ -52,6 +53,7 @@ import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.config.data.TssConfig;
 import com.swirlds.base.time.Time;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.context.PlatformContext;
@@ -226,6 +228,9 @@ public class ServicesMain implements SwirldMain {
         final var recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
 
+        // FUTURE: use the new feature flag addressbook.useRosterLifecycle value when it is available
+        final boolean addressbookUseRosterLifecycle = false;
+
         // Create initial state for the platform
         final var isGenesis = new AtomicBoolean(false);
         final var reservedState = getInitialState(
@@ -235,8 +240,16 @@ public class ServicesMain implements SwirldMain {
                 () -> {
                     isGenesis.set(true);
                     final var genesisState = hedera.newMerkleStateRoot();
-                    hedera.initializeStatesApi(
-                            (MerkleStateRoot) genesisState, metrics, InitTrigger.GENESIS, diskAddressBook);
+                    if (addressbookUseRosterLifecycle) {
+                        // Translate genesis-config.txt to a genesisRoster.
+                        final var genesisAddressBook = loadAddressBook(GENESIS_CONFIG_FILE_NAME);
+                        // Create a genesis state with the genesisRoster.
+                        hedera.initializeStatesApi(
+                                (MerkleStateRoot) genesisState, metrics, InitTrigger.GENESIS, genesisAddressBook);
+                    } else {
+                        hedera.initializeStatesApi(
+                                (MerkleStateRoot) genesisState, metrics, InitTrigger.GENESIS, diskAddressBook);
+                    }
                     return genesisState;
                 },
                 Hedera.APP_NAME,
@@ -274,24 +287,35 @@ public class ServicesMain implements SwirldMain {
                 recycleBin,
                 merkleCryptography);
 
-        final var stateHash = reservedState.hash();
-
-        // Initialize the address book and set on platform builder
-        final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
-
-        final long maxSharesPerNode =
-                configuration.getConfigData(TssConfig.class).maxSharesPerNode();
-        final var roster = chooseRoster(version, initialState, selfId, maxSharesPerNode, addressBook);
-
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration)
-                .withAddressBook(addressBook)
-                .withRoster(roster)
                 .withKeysAndCerts(keysAndCerts);
 
+        if (addressbookUseRosterLifecycle) {
+            RosterHistory rosterHistory;
+            if (isGenesis.get()) {
+                final var genesisRoster = loadRoster(GENESIS_CONFIG_FILE_NAME);
+                rosterHistory = new RosterHistory(genesisRoster, 0, null, 0);
+            } else {
+                final long maxSharesPerNode =
+                        configuration.getConfigData(TssConfig.class).maxSharesPerNode();
+                rosterHistory = determineRosterHistory(version, initialState, selfId, maxSharesPerNode);
+            }
+
+            platformBuilder.withRoster(
+                    rosterHistory
+                            .currentRoster()); // FUTURE: pass the roster history instead of just the current roster
+        } else {
+            // Initialize the address book and set on platform builder
+            final var addressBook =
+                    initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
+            platformBuilder.withAddressBook(diskAddressBook);
+        }
+
+        final var stateHash = reservedState.hash();
         hedera.setInitialStateHash(stateHash);
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
@@ -322,13 +346,29 @@ public class ServicesMain implements SwirldMain {
         hedera.run();
     }
 
+    // The Roster History is a list of active rosters paired with the rounds they became active. At this time the
+    // history length is at most 2.
+    // - currentRoster - the active roster in the history paired with the highest round number.
+    // - previousRoster - the active roster in the history paired with the lowest round number.
+    // The roster history is an ordered list of pairs by descending round number. Example: [(currentRoster, 2),
+    // (previousRoster, 1)].
+    public record RosterHistory(Roster currentRoster, long currentRound, Roster previousRoster, long previousRound) {
+        public List<Pair<Roster, Long>> getHistory() {
+            if (previousRoster == null) {
+                return List.of(new Pair<>(currentRoster, currentRound));
+            }
+
+            return List.of(new Pair<>(currentRoster, currentRound), new Pair<>(previousRoster, previousRound));
+        }
+    }
+
     /**
-     * Choose the correct roster depending on startup mode.
-     * We need to choose the correct roster in the following cases:
+     * Determining the Roster History.
+     * There are four distinct modes that a node can start in:
      * <ul>
-     *   <li> At genesis, a roster loaded from disk.</li>
-     *   <li> At restart, the active roster in the saved state.</li>
-     *   <li> At upgrade boundary, the candidate roster in the saved state IF that state satisfies conditions (e.g. the roster has been keyed).</li>
+     *   <li> Network Transplant - The node is started with a state on disk and an overriding roster for a different network. </li>
+     *   <li> Software Upgrade - The node is restarted with the same state on disk and a software upgrade is happening. </li>
+     *   <li> Normal Restart - The node is restarted with the same state on disk and no software upgrade is happening. </li>
      * </ul>
      *
      * @param version              the software version of the current node
@@ -337,36 +377,30 @@ public class ServicesMain implements SwirldMain {
      * @param maxSharesPerNode     the maximum number of shares per node
      * @return the roster
      */
-    private static @NotNull Roster chooseRoster(
+    private static @NotNull RosterHistory determineRosterHistory(
             @NonNull final SoftwareVersion version,
             @NonNull final ReservedSignedState initialState,
             @NonNull final NodeId selfId,
-            final long maxSharesPerNode,
-            @NonNull final AddressBook addressBook) {
+            final long maxSharesPerNode) {
         requireNonNull(version);
         requireNonNull(initialState);
         requireNonNull(selfId);
-        requireNonNull(addressBook);
 
         final SignedState loadedSignedState = initialState.get();
-        if (loadedSignedState.isGenesisState()) {
-            // Not sure if we have roster defined on disk for the genesis case, so load the disk address book for now
-            // and construct the roster from it
-            final AddressBook diskAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
-            return createRoster(diskAddressBook);
-        }
-
         final var state = ((MerkleStateRoot) loadedSignedState.getState());
         final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
         var activeRoster = rosterStore.getActiveRoster();
         // If active roster is null (e.g. DabEnabledUpgradeTest), create the roster from the existing address book
         if (activeRoster == null) {
-            activeRoster = createRoster(addressBook);
+            // TODO: fix
+            //            activeRoster = createRoster(addressBook);
         }
 
         final boolean softwareUpgrade = detectSoftwareUpgrade(version, loadedSignedState);
         if (!softwareUpgrade) { // if not an upgrade and just a restart, return the active roster
-            return activeRoster;
+            //            return activeRoster;
+            // TODO: fix
+            return new RosterHistory(activeRoster, 0, null, 0);
         }
 
         // Otherwise, we are at an upgrade boundary, see:
@@ -374,7 +408,9 @@ public class ServicesMain implements SwirldMain {
         // If there is no candidate roster set in the state, the active roster continues to be used
         final var candidateRoster = rosterStore.getCandidateRoster();
         if (candidateRoster == null) {
-            return activeRoster;
+            //            return activeRoster;
+            // TODO: fix
+            return new RosterHistory(activeRoster, 0, null, 0);
         }
 
         // FUTURE: get the same TssLibrary instance that we use for the Hedera instance
@@ -389,7 +425,9 @@ public class ServicesMain implements SwirldMain {
         // If the existing active roster and candidate roster do not have complete key material and the network does not
         // yet have a ledger id, the node will adopt the candidate roster immediately on software upgrade
         if (!activeRosterKeyed && !candidateRosterKeyed && ledgerId == null) {
-            return candidateRoster;
+            //            return candidateRoster;
+            // TODO: fix
+            return new RosterHistory(candidateRoster, 0, null, 0);
         }
 
         // If the candidate roster exists, has key material, and the number of yes
@@ -402,7 +440,9 @@ public class ServicesMain implements SwirldMain {
                     recoverLedgerId(candidateRoster, state, selfId, maxSharesPerNode, tssLibrary);
             final var ledgerIdBytes = ledgerId.ledgerId().toByteArray();
             if (Arrays.equals(ledgerIdBytes, candidateLedgerIdBytes)) {
-                return candidateRoster;
+                //                return candidateRoster;
+                // TODO: fix
+                return new RosterHistory(candidateRoster, 0, null, 0);
             }
 
             // If the candidate roster key material does not match the ledger ID:
@@ -412,7 +452,9 @@ public class ServicesMain implements SwirldMain {
         }
 
         // In all other cases the existing active roster will remain the active roster.
-        return activeRoster;
+        //        return activeRoster;
+        // TODO: fix
+        return new RosterHistory(activeRoster, 0, null, 0);
     }
 
     private static boolean hasEnoughKeyMaterial(
@@ -528,6 +570,17 @@ public class ServicesMain implements SwirldMain {
             exitSystem(CONFIGURATION_ERROR);
             throw e;
         }
+    }
+
+    /**
+     * Loads the roster from the specified path.
+     *
+     * @param rosterPath the relative path and file name of the roster.
+     * @return the roster.
+     */
+    private static Roster loadRoster(@NonNull final String rosterPath) {
+        final var addressBook = loadAddressBook(rosterPath);
+        return createRoster(addressBook);
     }
 
     private static Hedera newHedera() {
