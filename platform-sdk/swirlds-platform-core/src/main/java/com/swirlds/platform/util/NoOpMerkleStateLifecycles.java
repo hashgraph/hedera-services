@@ -38,13 +38,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public enum NoOpMerkleStateLifecycles implements MerkleStateLifecycles {
     NO_OP_MERKLE_STATE_LIFECYCLES;
-
-    private static final Logger logger = LogManager.getLogger(NoOpMerkleStateLifecycles.class);
 
     public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
         if (!(state instanceof MerkleStateRoot merkleStateRoot)) {

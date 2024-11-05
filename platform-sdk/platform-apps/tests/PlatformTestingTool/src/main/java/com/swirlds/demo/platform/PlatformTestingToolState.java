@@ -419,6 +419,14 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
+    public int getNumberOfChildren() {
+        return ChildIndices.CHILD_COUNT;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int getMinimumChildCount() {
         return ChildIndices.SDK_VERSION_21_CHILD_COUNT;
     }
@@ -428,7 +436,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      */
     @Override
     public int getMaximumChildCount() {
-        return ChildIndices.CHILD_COUNT;
+        return ChildIndices.CHILD_COUNT + 1;
     }
 
     /**
@@ -1676,7 +1684,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
 
         public static final int QUORUM_RESULT = 10;
 
-        public static final int CHILD_COUNT = 64;
+        public static final int CHILD_COUNT = 11;
     }
 
     @Override
