@@ -194,6 +194,9 @@ public class TssBaseServiceImpl implements TssBaseService {
         }
     }
 
+    // FUTURE - add a singleton PrivateSharesAccessor to the TSS component that can be used to
+    // access a cached copy of the private shares; this will also be useful for BaseServiceImpl
+    // to access the private shares for signing block hashes
     @NonNull
     private List<TssPrivateShare> getTssPrivateShares(
             @NonNull final TssParticipantDirectory activeRosterParticipantDirectory,
