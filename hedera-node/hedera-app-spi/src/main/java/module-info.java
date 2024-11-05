@@ -4,7 +4,6 @@ module com.hedera.node.app.spi {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.state.api;
-    requires transitive com.swirlds.state.impl;
     requires transitive com.hedera.pbj.runtime;
     requires static com.github.spotbugs.annotations;
 

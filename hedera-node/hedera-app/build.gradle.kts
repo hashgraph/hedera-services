@@ -80,7 +80,6 @@ jmhModuleInfo {
     requires("com.swirlds.metrics.api")
     requires("com.swirlds.platform.core")
     requires("com.swirlds.state.api")
-    requires("com.swirlds.state.impl")
     requires("jmh.core")
 }
 
