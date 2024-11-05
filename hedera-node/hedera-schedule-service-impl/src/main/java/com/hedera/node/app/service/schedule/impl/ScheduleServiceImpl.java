@@ -28,6 +28,7 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -55,7 +56,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
         // Return a custom iterator that supports the remove() method
         return new Iterator<>() {
             private int currentIndex = -1; // To keep track of the current element
-            private final List<Schedule> transactions = executableTxns;
+            private final List<Schedule> transactions = new ArrayList<>(executableTxns);
             private ExecutableTxn lastReturned;
 
             @Override
