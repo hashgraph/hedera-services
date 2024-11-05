@@ -211,11 +211,10 @@ public class VirtualPipeline {
         if (sleepTimeMillis <= 0) {
             return;
         }
-        logger.info(VIRTUAL_MERKLE_STATS.getMarker(), "Total size backpressure: {} ms", sleepTimeMillis);
 
         try {
             final long sleepStartTime = System.currentTimeMillis();
-            long timeSleptSoFar = 0;
+            long timeSleptSoFar;
             do {
                 MILLISECONDS.sleep(1);
                 timeSleptSoFar = System.currentTimeMillis() - sleepStartTime;
@@ -230,7 +229,8 @@ public class VirtualPipeline {
             } while (timeSleptSoFar < sleepTimeMillis);
 
             // Record actual sleep time
-            statistics.recordFamilySizeBackpressureMs((int) (System.currentTimeMillis() - sleepStartTime));
+            logger.info(VIRTUAL_MERKLE_STATS.getMarker(), "Total size backpressure: {} ms", timeSleptSoFar);
+            statistics.recordFamilySizeBackpressureMs((int) timeSleptSoFar);
         } catch (final InterruptedException ex) {
             Thread.currentThread().interrupt();
         }

@@ -401,7 +401,7 @@ final class ConcurrentArray<T> {
         private int arrIndex = 0;
 
         ConcurrentArraySpliterator(final int size, final SubArray<T> head) {
-            super(size, Spliterator.SIZED | Spliterator.NONNULL | Spliterator.IMMUTABLE);
+            super(size, Spliterator.SIZED | Spliterator.NONNULL | Spliterator.IMMUTABLE | Spliterator.CONCURRENT);
             arr = head;
             skipEmpty();
         }
