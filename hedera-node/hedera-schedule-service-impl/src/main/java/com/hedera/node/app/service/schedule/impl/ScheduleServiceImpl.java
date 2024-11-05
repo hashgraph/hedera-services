@@ -45,10 +45,10 @@ public final class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public Iterator<ExecutableTxn> iterTxnsForInterval(
-            Instant start, Instant end, Supplier<StoreFactory> cleanupStoreFactory) {
-        var store = cleanupStoreFactory.get().writableStore(WritableScheduleStoreImpl.class);
+            final Instant start, final Instant end, final Supplier<StoreFactory> cleanupStoreFactory) {
+        final var store = cleanupStoreFactory.get().writableStore(WritableScheduleStoreImpl.class);
         // Filter transactions that are not executed/deleted and have all the required keys
-        var executableTxns = store.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()).stream()
+        final var executableTxns = store.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()).stream()
                 .filter(schedule -> !schedule.executed() && !schedule.deleted())
                 .toList();
 
@@ -56,7 +56,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
         return new Iterator<>() {
             private int currentIndex = -1; // To keep track of the current element
             private final List<Schedule> transactions = executableTxns;
-            private ExecutableTxn lastReturned = null;
+            private ExecutableTxn lastReturned;
 
             @Override
             public boolean hasNext() {
@@ -79,10 +79,10 @@ public final class ScheduleServiceImpl implements ScheduleService {
                 }
 
                 // Use the StoreFactory to clean up the transaction
-                cleanupStoreFactory
-                        .get()
-                        .writableStore(WritableScheduleStoreImpl.class)
-                        .delete(transactions.get(currentIndex).scheduleId(), Instant.now());
+                final var iteratorStore = cleanupStoreFactory.get().writableStore(WritableScheduleStoreImpl.class);
+                final var scheduleId = transactions.get(currentIndex).scheduleId();
+                iteratorStore.delete(scheduleId, Instant.now());
+                iteratorStore.purge(scheduleId);
 
                 transactions.remove(currentIndex);
                 currentIndex--; // Adjust index after removal
@@ -91,13 +91,14 @@ public final class ScheduleServiceImpl implements ScheduleService {
                 lastReturned = null;
             }
 
-            private ExecutableTxn toExecutableTxn(Schedule schedule) {
+            private ExecutableTxn toExecutableTxn(final Schedule schedule) {
                 final var signatories = schedule.signatories();
                 final VerificationAssistant callback = (k, ignore) -> signatories.contains(k);
                 return new ExecutableTxn(
                         childAsOrdinary(schedule),
                         callback,
                         schedule.payerAccountId(),
+                        schedule.originalCreateTransaction(),
                         Instant.ofEpochSecond(schedule.calculatedExpirationSecond()));
             }
         };

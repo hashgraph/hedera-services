@@ -66,6 +66,13 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
     void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire);
 
     /**
+     * Purge a schedule from the store.
+     *
+     * @param scheduleId The ID of the schedule to purge
+     */
+    void purge(ScheduleID scheduleId);
+
+    /**
      * Gets all schedules that expire between the given times.
      *
      * @param start The start time

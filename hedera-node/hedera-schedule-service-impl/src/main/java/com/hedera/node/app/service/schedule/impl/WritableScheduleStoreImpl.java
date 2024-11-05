@@ -159,22 +159,12 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
      * {@inheritDoc}
      */
     @Override
-    public void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire) {
+    public void purgeExpiredSchedulesBetween(final long firstSecondToExpire, final long lastSecondToExpire) {
         for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
             final var second = new ProtoLong(i);
             final var scheduleIdList = scheduleIdsByExpirationMutable.get(second);
             if (scheduleIdList != null) {
-                for (final var scheduleId : scheduleIdList.scheduleIds()) {
-                    final var schedule = schedulesByIdMutable.get(scheduleId);
-                    if (schedule != null) {
-                        final ProtoBytes hash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
-                        scheduleIdByEqualityMutable.remove(hash);
-                    } else {
-                        logger.error("Schedule {} not found in state schedulesByIdMutable.", scheduleId);
-                    }
-                    schedulesByIdMutable.remove(scheduleId);
-                    logger.debug("Purging expired schedule {} from state.", scheduleId);
-                }
+                scheduleIdList.scheduleIds().forEach(this::purge);
                 scheduleIdsByExpirationMutable.remove(second);
             }
         }
@@ -183,7 +173,22 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     /**
      * {@inheritDoc}
      */
-    public List<Schedule> getByExpirationBetween(long firstSecondToExpire, long lastSecondToExpire) {
+    public void purge(final ScheduleID scheduleId) {
+        final var schedule = schedulesByIdMutable.get(scheduleId);
+        if (schedule != null) {
+            final ProtoBytes hash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
+            scheduleIdByEqualityMutable.remove(hash);
+        } else {
+            logger.error("Schedule {} not found in state schedulesByIdMutable.", scheduleId);
+        }
+        schedulesByIdMutable.remove(scheduleId);
+        logger.debug("Purging expired schedule {} from state.", scheduleId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public List<Schedule> getByExpirationBetween(final long firstSecondToExpire,final long lastSecondToExpire) {
         final var schedules = new ArrayList<Schedule>();
         for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
             final var scheduleIdList = getByExpirationSecond(i);

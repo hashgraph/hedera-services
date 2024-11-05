@@ -75,12 +75,14 @@ public interface ScheduleService extends RpcService {
             TransactionBody body,
             VerificationAssistant verificationAssistant,
             AccountID payerId,
+            @Nullable TransactionBody originalTransactionBody,
             @Nullable Instant nbf) {}
 
     /**
      * Given a [start, end) interval and a supplier of a StoreFactory that can be used in the returned
      * iterator's remove() implementation to get a StoreFactory to purge a successfully executed txn,
-     * returns an iterator over all ExecutableTxn this service wants to execute in the interval.
+     *
+     * @return an iterator over all ExecutableTxn this service wants to execute in the interval.
      */
     default Iterator<ExecutableTxn> iterTxnsForInterval(
             Instant start, Instant end, Supplier<StoreFactory> cleanupStoreFactory) {
