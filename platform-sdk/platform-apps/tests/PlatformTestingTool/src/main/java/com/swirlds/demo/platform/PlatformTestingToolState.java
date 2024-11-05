@@ -436,7 +436,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      */
     @Override
     public int getMaximumChildCount() {
-        return ChildIndices.CHILD_COUNT + 1;
+        return ChildIndices.CHILD_COUNT;
     }
 
     /**
@@ -1312,7 +1312,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
-        super.init(platform, trigger, previousSoftwareVersion);
+        //        super.init(platform, trigger, previousSoftwareVersion);
 
         if (trigger == InitTrigger.RESTART) {
             rebuildExpectedMapFromState(Instant.EPOCH, true);
