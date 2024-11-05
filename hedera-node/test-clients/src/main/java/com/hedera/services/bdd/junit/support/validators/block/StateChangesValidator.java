@@ -79,7 +79,7 @@ import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.state.merkle.Service;
+import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

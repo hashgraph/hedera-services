@@ -24,7 +24,7 @@ import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordWriterV6
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.state.merkle.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import javax.inject.Inject;

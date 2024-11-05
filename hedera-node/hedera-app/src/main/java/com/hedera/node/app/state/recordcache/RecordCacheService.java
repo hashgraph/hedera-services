@@ -18,8 +18,8 @@ package com.hedera.node.app.state.recordcache;
 
 import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
 import com.hedera.node.app.state.recordcache.schemas.V0540RecordCacheSchema;
-import com.swirlds.state.merkle.SchemaRegistry;
-import com.swirlds.state.merkle.Service;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

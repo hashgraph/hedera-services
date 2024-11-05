@@ -16,6 +16,7 @@
 
 package com.swirlds.state.spi;
 
+import com.swirlds.state.lifecycle.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
@@ -35,7 +36,7 @@ import java.util.Set;
 public interface ReadableKVState<K, V> {
     /**
      * Gets the "state key" that uniquely identifies this {@link ReadableKVState} within the
-     * schema which are scoped to the service implementation. The key is therefore not globally
+     * {@link Schema} which are scoped to the service implementation. The key is therefore not globally
      * unique, only unique within the service implementation itself.
      *
      * <p>The call is idempotent, always returning the same value. It must never return null.

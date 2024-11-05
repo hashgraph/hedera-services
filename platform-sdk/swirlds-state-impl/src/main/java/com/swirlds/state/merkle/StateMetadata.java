@@ -16,6 +16,8 @@
 
 package com.swirlds.state.merkle;
 
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

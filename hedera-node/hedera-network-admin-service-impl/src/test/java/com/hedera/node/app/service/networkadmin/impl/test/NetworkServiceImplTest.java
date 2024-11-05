@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
-import com.swirlds.state.merkle.SchemaRegistry;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

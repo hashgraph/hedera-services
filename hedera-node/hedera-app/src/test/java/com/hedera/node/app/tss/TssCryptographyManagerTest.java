@@ -43,7 +43,7 @@ import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.state.merkle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import java.math.BigInteger;
 import java.time.InstantSource;
 import java.util.List;

@@ -17,8 +17,8 @@
 package com.hedera.node.app.ids;
 
 import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
-import com.swirlds.state.merkle.SchemaRegistry;
-import com.swirlds.state.merkle.Service;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

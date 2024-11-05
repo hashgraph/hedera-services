@@ -41,7 +41,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.state.merkle.SchemaRegistry;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.test.fixtures.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

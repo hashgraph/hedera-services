@@ -1,5 +1,4 @@
 module com.swirlds.state.impl {
-    exports com.swirlds.state.merkle.info;
     exports com.swirlds.state.merkle.singleton;
     exports com.swirlds.state.merkle.queue;
     exports com.swirlds.state.merkle.memory;

@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.merkle.Service;
+import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Set;

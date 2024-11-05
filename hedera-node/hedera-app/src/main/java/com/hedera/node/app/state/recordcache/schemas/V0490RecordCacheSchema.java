@@ -18,9 +18,9 @@ package com.hedera.node.app.state.recordcache.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
-import com.swirlds.state.merkle.MigrationContext;
-import com.swirlds.state.merkle.Schema;
-import com.swirlds.state.merkle.StateDefinition;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

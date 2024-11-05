@@ -19,7 +19,7 @@ package com.hedera.node.app.service.file;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.merkle.Schema;
+import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.spi.ReadableQueueState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

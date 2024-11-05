@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.state.merkle;
+package com.swirlds.state.lifecycle;
 
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.state.spi.ReadableKVState;

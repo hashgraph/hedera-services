@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.version;
 
-import static com.swirlds.state.merkle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
-import static com.swirlds.state.merkle.HapiUtils.deserializeSemVer;
-import static com.swirlds.state.merkle.HapiUtils.serializeSemVer;
+import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.swirlds.state.lifecycle.HapiUtils.deserializeSemVer;
+import static com.swirlds.state.lifecycle.HapiUtils.serializeSemVer;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;

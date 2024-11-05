@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.state.merkle;
+package com.swirlds.state.lifecycle;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 

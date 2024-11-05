@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.swirlds.state.merkle.SchemaRegistry;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
