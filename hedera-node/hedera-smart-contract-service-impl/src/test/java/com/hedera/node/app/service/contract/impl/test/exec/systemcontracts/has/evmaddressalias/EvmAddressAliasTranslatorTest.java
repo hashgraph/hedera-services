@@ -35,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.getevm
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.getevmaddressalias.EvmAddressAliasTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,6 +61,9 @@ class EvmAddressAliasTranslatorTest {
     private VerificationStrategies verificationStrategies;
 
     @Mock
+    private SignatureVerifier signatureVerifier;
+
+    @Mock
     private HederaNativeOperations nativeOperations;
 
     private EvmAddressAliasTranslator subject;
@@ -73,7 +77,13 @@ class EvmAddressAliasTranslatorTest {
     void matchesEvmAddressAlias() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         attempt = prepareHasAttemptWithSelector(
-                EVM_ADDRESS_ALIAS, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+                EVM_ADDRESS_ALIAS,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator);
         assertTrue(subject.matches(attempt));
         assertEquals("0xdea3d081" /*copied from HIP-632*/, "0x" + EVM_ADDRESS_ALIAS.selectorHex());
     }
@@ -82,7 +92,13 @@ class EvmAddressAliasTranslatorTest {
     void failsOnInvalidSelector() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         attempt = prepareHasAttemptWithSelector(
-                HBAR_APPROVE, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+                HBAR_APPROVE,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator);
         assertFalse(subject.matches(attempt));
     }
 

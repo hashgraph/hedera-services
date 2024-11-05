@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.has.isauthorizedraw;
+package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.has.isauthorized;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarallowance.HbarAllowanceTranslator.HBAR_ALLOWANCE_PROXY;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw.IsAuthorizedRawTranslator.IS_AUTHORIZED_RAW;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorized.IsAuthorizedTranslator.IS_AUTHORIZED;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.APPROVED_HEADLONG_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.messageHash;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.message;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.signature;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHasAttemptWithSelectorAndCustomConfig;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHasAttemptWithSelectorAndInputAndCustomConfig;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -34,8 +34,8 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw.IsAuthorizedRawCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw.IsAuthorizedRawTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorized.IsAuthorizedCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorized.IsAuthorizedTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.v051.Version051FeatureFlags;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -52,12 +52,12 @@ import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class IsAuthorizedRawTranslatorTest {
+public class IsAuthorizedTranslatorTest {
 
     @Mock(strictness = Strictness.LENIENT) // might not use `configuration()`
     private HasCallAttempt attempt;
 
-    @Mock
+    @Mock(strictness = Strictness.LENIENT) // might not use `nativeOperations()`
     private HederaWorldUpdater.Enhancement enhancement;
 
     @Mock
@@ -78,19 +78,20 @@ public class IsAuthorizedRawTranslatorTest {
     @Mock
     private HederaNativeOperations nativeOperations;
 
-    private IsAuthorizedRawTranslator subject;
+    private IsAuthorizedTranslator subject;
 
     @BeforeEach
     void setUp() {
         final var featureFlags = new Version051FeatureFlags();
-        subject = new IsAuthorizedRawTranslator(featureFlags, customGasCalculator);
+        subject = new IsAuthorizedTranslator(featureFlags, customGasCalculator);
+
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
     }
 
     @Test
-    void matchesIsAuthorizedRawWhenEnabled() {
-        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+    void matchesIsAuthorizedWhenEnabled() {
         attempt = prepareHasAttemptWithSelectorAndCustomConfig(
-                IS_AUTHORIZED_RAW,
+                IS_AUTHORIZED,
                 subject,
                 enhancement,
                 addressIdConverter,
@@ -102,10 +103,9 @@ public class IsAuthorizedRawTranslatorTest {
     }
 
     @Test
-    void doesNotMatchIsAuthorizedRawWhenDisabled() {
-        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+    void doesNotMatchIsAuthorizedWhenDisabled() {
         attempt = prepareHasAttemptWithSelectorAndCustomConfig(
-                IS_AUTHORIZED_RAW,
+                IS_AUTHORIZED,
                 subject,
                 enhancement,
                 addressIdConverter,
@@ -118,7 +118,6 @@ public class IsAuthorizedRawTranslatorTest {
 
     @Test
     void failsOnInvalidSelector() {
-        given(enhancement.nativeOperations()).willReturn(nativeOperations);
         attempt = prepareHasAttemptWithSelectorAndCustomConfig(
                 HBAR_ALLOWANCE_PROXY,
                 subject,
@@ -132,28 +131,29 @@ public class IsAuthorizedRawTranslatorTest {
     }
 
     @Test
-    void callFromIsAuthorizedRawTest() {
-        given(attempt.configuration()).willReturn(getTestConfiguration(true));
-        final Bytes inputBytes = Bytes.wrapByteBuffer(
-                IS_AUTHORIZED_RAW.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS, messageHash, signature)));
-        givenCommonForCall(inputBytes);
+    void callFromIsAuthorizedTest() {
+
+        final var input =
+                Bytes.wrapByteBuffer(IS_AUTHORIZED.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS, message, signature)));
+        attempt = prepareHasAttemptWithSelectorAndInputAndCustomConfig(
+                IS_AUTHORIZED,
+                input,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                getTestConfiguration(true));
 
         final var call = subject.callFrom(attempt);
-        assertThat(call).isInstanceOf(IsAuthorizedRawCall.class);
-    }
-
-    private void givenCommonForCall(Bytes inputBytes) {
-        given(attempt.inputBytes()).willReturn(inputBytes.toArray());
-        given(attempt.isSelector(any())).willReturn(true);
-        given(attempt.enhancement()).willReturn(enhancement);
-        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
-        given(attempt.signatureVerifier()).willReturn(signatureVerifier);
+        assertThat(call).isInstanceOf(IsAuthorizedCall.class);
     }
 
     @NonNull
-    Configuration getTestConfiguration(final boolean enableIsAuthorizedRaw) {
+    Configuration getTestConfiguration(final boolean enableIsAuthorized) {
         return HederaTestConfigBuilder.create()
-                .withValue("contracts.systemContract.accountService.isAuthorizedRawEnabled", enableIsAuthorizedRaw)
+                .withValue("contracts.systemContract.accountService.isAuthorizedEnabled", enableIsAuthorized)
                 .getOrCreateConfig();
     }
 }
