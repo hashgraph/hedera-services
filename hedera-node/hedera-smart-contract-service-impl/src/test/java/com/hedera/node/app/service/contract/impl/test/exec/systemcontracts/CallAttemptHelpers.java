@@ -138,20 +138,15 @@ public final class CallAttemptHelpers {
             final VerificationStrategies verificationStrategies,
             final SignatureVerifier signatureVerifier,
             final SystemContractGasCalculator gasCalculator) {
-        final var input = TestHelpers.bytesForRedirectAccount(function.selector(), NON_SYSTEM_LONG_ZERO_ADDRESS);
-        return new HasCallAttempt(
-                input,
-                OWNER_BESU_ADDRESS,
-                OWNER_BESU_ADDRESS,
-                false,
+        return prepareHasAttemptWithSelectorAndCustomConfig(
+                function,
+                translator,
                 enhancement,
-                DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
                 signatureVerifier,
                 gasCalculator,
-                List.of(translator),
-                false);
+                DEFAULT_CONFIG);
     }
 
     public static HasCallAttempt prepareHasAttemptWithSelectorAndCustomConfig(
@@ -163,7 +158,28 @@ public final class CallAttemptHelpers {
             final SignatureVerifier signatureVerifier,
             final SystemContractGasCalculator gasCalculator,
             final Configuration config) {
-        final var input = TestHelpers.bytesForRedirectAccount(function.selector(), NON_SYSTEM_LONG_ZERO_ADDRESS);
+        return prepareHasAttemptWithSelectorAndInputAndCustomConfig(
+                function,
+                TestHelpers.bytesForRedirectAccount(function.selector(), NON_SYSTEM_LONG_ZERO_ADDRESS),
+                translator,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                config);
+    }
+
+    public static HasCallAttempt prepareHasAttemptWithSelectorAndInputAndCustomConfig(
+            final Function function,
+            final Bytes input,
+            final CallTranslator<HasCallAttempt> translator,
+            final HederaWorldUpdater.Enhancement enhancement,
+            final AddressIdConverter addressIdConverter,
+            final VerificationStrategies verificationStrategies,
+            final SignatureVerifier signatureVerifier,
+            final SystemContractGasCalculator gasCalculator,
+            final Configuration config) {
         return new HasCallAttempt(
                 input,
                 OWNER_BESU_ADDRESS,
