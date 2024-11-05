@@ -67,12 +67,8 @@ public enum PlatformStateService implements Service {
         }
         final var index = root.findNodeIndex(NAME, PLATFORM_STATE_KEY);
         if (index == -1) {
-            final var legacyPlatformState = requireNonNull(root.getPreV054PlatformState());
-            return legacyPlatformState.getCreationSoftwareVersion().getPbjSemanticVersion();
-        } else {
-            return ((SingletonNode<PlatformState>) root.getChild(index))
-                    .getValue()
-                    .creationSoftwareVersionOrThrow();
+            throw new IllegalStateException("Platform state not found in root");
         }
+        return ((SingletonNode<PlatformState>) root.getChild(index)).getValue().creationSoftwareVersionOrThrow();
     }
 }

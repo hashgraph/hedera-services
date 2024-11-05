@@ -73,7 +73,7 @@ class EndOfStakingPeriodUtilsTest {
         final var rewardRate = 1_000_000;
         final var maxRewardRate = rewardRate / 2;
 
-        final var result = calculateRewardSumHistory(STAKING_INFO, rewardRate, maxRewardRate, true);
+        final var result = computeExtendedRewardSumHistory(STAKING_INFO, rewardRate, maxRewardRate, true);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(maxRewardRate + 2L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isEqualTo(maxRewardRate);
@@ -83,7 +83,7 @@ class EndOfStakingPeriodUtilsTest {
     void calculatesUpdatedRewardsSumHistoryAsExpectedForNodeWithGreaterThanMinStakeAndNoMoreThanMaxStake() {
         final var rewardRate = 1_000_000;
 
-        final var result = calculateRewardSumHistory(STAKING_INFO, rewardRate, Long.MAX_VALUE, true);
+        final var result = computeExtendedRewardSumHistory(STAKING_INFO, rewardRate, Long.MAX_VALUE, true);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(1_000_002L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isEqualTo(1_000_000L);
@@ -97,7 +97,7 @@ class EndOfStakingPeriodUtilsTest {
                 .copyBuilder()
                 .stakeRewardStart(2 * STAKING_INFO.maxStake())
                 .build();
-        final var result = calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
+        final var result = computeExtendedRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(500_002L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isEqualTo(500_000L);
@@ -114,7 +114,7 @@ class EndOfStakingPeriodUtilsTest {
 
         final var stakingInfo =
                 STAKING_INFO.copyBuilder().stakeRewardStart(excessStake).build();
-        final var result = calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
+        final var result = computeExtendedRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(expectedScaledRate + 2L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isEqualTo(expectedScaledRate);
@@ -125,7 +125,7 @@ class EndOfStakingPeriodUtilsTest {
         final var rewardRate = 1_000_000_000;
 
         final var stakingInfo = STAKING_INFO.copyBuilder().stake(0).build();
-        final var result = calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
+        final var result = computeExtendedRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(2L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isZero();
@@ -140,7 +140,7 @@ class EndOfStakingPeriodUtilsTest {
                 .stake(0)
                 .stakeRewardStart(STAKING_INFO.minStake() - 1)
                 .build();
-        final var result = calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, false);
+        final var result = computeExtendedRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, false);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(1000000002L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isEqualTo(rewardRate);
@@ -149,7 +149,7 @@ class EndOfStakingPeriodUtilsTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void computeStakeNullArg() {
-        Assertions.assertThatThrownBy(() -> computeNextStake(null)).isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> computeNewStakes(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -157,7 +157,7 @@ class EndOfStakingPeriodUtilsTest {
         final var maxStake = STAKE_TO_REWARD + STAKE_TO_NOT_REWARD - 1;
         final var input = STAKING_INFO.copyBuilder().maxStake(maxStake).build();
 
-        final var result = computeNextStake(input);
+        final var result = computeNewStakes(input);
         Assertions.assertThat(result.stake()).isEqualTo(maxStake);
         Assertions.assertThat(result.stakeRewardStart()).isEqualTo(STAKE_TO_REWARD);
     }
@@ -169,7 +169,7 @@ class EndOfStakingPeriodUtilsTest {
                 .minStake(STAKE_TO_REWARD + STAKE_TO_NOT_REWARD + 1)
                 .build();
 
-        final var result = computeNextStake(input);
+        final var result = computeNewStakes(input);
         Assertions.assertThat(result.stake()).isZero();
         Assertions.assertThat(result.stakeRewardStart()).isEqualTo(STAKE_TO_REWARD);
     }
@@ -182,7 +182,7 @@ class EndOfStakingPeriodUtilsTest {
                 .maxStake(STAKE_TO_REWARD + STAKE_TO_NOT_REWARD + 1)
                 .build();
 
-        final var result = computeNextStake(input);
+        final var result = computeNewStakes(input);
         Assertions.assertThat(result.stake()).isEqualTo(STAKE_TO_REWARD + STAKE_TO_NOT_REWARD);
         Assertions.assertThat(result.stakeRewardStart()).isEqualTo(STAKE_TO_REWARD);
     }

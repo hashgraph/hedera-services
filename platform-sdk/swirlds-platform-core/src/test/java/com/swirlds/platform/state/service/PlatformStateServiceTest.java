@@ -70,22 +70,12 @@ class PlatformStateServiceTest {
     }
 
     @Test
-    void rootWithNoPlatformStateAndLegacyStateAtChildZeroGetsLegacyVersion() {
+    void rootWithNoPlatformState_throwsException() {
         given(root.getNumberOfChildren()).willReturn(1);
         given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
                 .willReturn(-1);
-        given(root.getPreV054PlatformState()).willReturn(legacyState);
-        given(legacyState.getCreationSoftwareVersion()).willReturn(version);
-        given(version.getPbjSemanticVersion()).willReturn(SemanticVersion.DEFAULT);
-        assertSame(SemanticVersion.DEFAULT, PLATFORM_STATE_SERVICE.creationVersionOf(root));
-    }
 
-    @Test
-    void rootWithNoPlatformStateMustHaveLegacyStateAtChildZero() {
-        given(root.getNumberOfChildren()).willReturn(1);
-        given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
-                .willReturn(-1);
-        assertThrows(NullPointerException.class, () -> PLATFORM_STATE_SERVICE.creationVersionOf(root));
+        assertThrows(IllegalStateException.class, () -> PLATFORM_STATE_SERVICE.creationVersionOf(root));
     }
 
     @Test

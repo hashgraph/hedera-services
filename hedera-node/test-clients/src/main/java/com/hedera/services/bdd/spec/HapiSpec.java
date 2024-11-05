@@ -88,6 +88,7 @@ import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedHedera;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
+import com.hedera.services.bdd.junit.hedera.embedded.RepeatableEmbeddedHedera;
 import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
@@ -470,8 +471,13 @@ public class HapiSpec implements Runnable, Executable {
      * @return the embedded Hedera
      * @throws IllegalStateException if the spec is not in embedded mode
      */
-    public EmbeddedHedera embeddedHederaOrThrow() {
-        return embeddedNetworkOrThrow().embeddedHederaOrThrow();
+    public RepeatableEmbeddedHedera repeatableEmbeddedHederaOrThrow() {
+        final var embeddedHedera = embeddedNetworkOrThrow().embeddedHederaOrThrow();
+        if (embeddedHedera instanceof RepeatableEmbeddedHedera repeatableEmbeddedHedera) {
+            return repeatableEmbeddedHedera;
+        } else {
+            throw new IllegalStateException(embeddedHedera.getClass().getSimpleName() + " is not repeatable");
+        }
     }
 
     /**

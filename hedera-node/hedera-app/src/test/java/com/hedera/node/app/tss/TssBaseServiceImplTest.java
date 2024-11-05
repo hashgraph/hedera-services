@@ -25,6 +25,7 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.merkle.SchemaRegistry;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -68,6 +69,7 @@ class TssBaseServiceImplTest {
     @BeforeEach
     void setUp() {
         given(appContext.gossip()).willReturn(gossip);
+        given(appContext.instantSource()).willReturn(InstantSource.system());
         subject = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),

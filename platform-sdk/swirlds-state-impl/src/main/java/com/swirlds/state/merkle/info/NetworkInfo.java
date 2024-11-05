@@ -27,10 +27,8 @@ import java.util.List;
  * Provides information about the network.
  */
 public interface NetworkInfo {
-
     /**
      * Returns the current ledger ID.
-     *
      * @return the {@link Bytes} of the current ledger ID
      */
     @NonNull
