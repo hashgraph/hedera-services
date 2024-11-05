@@ -107,7 +107,8 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(tssLibrary, appContext.gossip(), submissionExecutor, tssLibraryExecutor, metrics);
         this.tssMetrics = component.tssMetrics();
-        this.tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
+        this.tssHandlers = new TssHandlers(
+                component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
         this.tssSubmissions = component.tssSubmissions();
     }
 
