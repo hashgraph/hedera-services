@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state;
+package com.swirlds.state.merkle;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.platform.state.signed.SigSet;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedInputStream;
@@ -31,7 +29,7 @@ import java.nio.file.Path;
 import java.util.Set;
 
 /**
- * Utility class for reading a snapshot of a {@link MerkleRoot} from disk.
+ * Utility class for reading a snapshot of a {@link MerkleStateRoot} from disk.
  */
 public class MerkleTreeSnapshotReader {
 
@@ -53,6 +51,13 @@ public class MerkleTreeSnapshotReader {
      * Prior to v1, the signed state file was not versioned. This byte was introduced in v1 to mark a versioned file.
      */
     public static final byte VERSIONED_FILE_BYTE = Byte.MAX_VALUE;
+    /**
+     * Fun trivia: the file extension ".swh" stands for "SWirlds Hashgraph", although this is a bit misleading... as
+     * this file nor actually contains a hashgraph neither a set of signatures.
+     */
+    public static final String SIGNED_STATE_FILE_NAME = "SignedState.swh";
+
+    public static final int MAX_MERKLE_NODES_IN_STATE = Integer.MAX_VALUE;
 
     /**
      * This is a helper class to hold the data read from a state file.
@@ -60,7 +65,7 @@ public class MerkleTreeSnapshotReader {
      * @param hash the hash of the state
      * @param sigSet the signature set
      */
-    public record StateFileData(@NonNull MerkleRoot state, @NonNull Hash hash, @Nullable SigSet sigSet) {}
+    public record StateFileData(@NonNull MerkleStateRoot<?> state, @NonNull Hash hash, @Nullable SigSet sigSet) {}
 
     /**
      * Reads a state file from disk
@@ -95,7 +100,7 @@ public class MerkleTreeSnapshotReader {
             @NonNull final Path stateFile, @NonNull final MerkleDataInputStream in, @NonNull final Path directory)
             throws IOException {
         try {
-            final MerkleRoot state = in.readMerkleTree(directory, SignedStateFileUtils.MAX_MERKLE_NODES_IN_STATE);
+            final MerkleStateRoot<?> state = in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
             final Hash hash = in.readSerializable();
             final SigSet sigSet = in.readSerializable();
             return new StateFileData(state, hash, sigSet);
@@ -114,7 +119,7 @@ public class MerkleTreeSnapshotReader {
             @NonNull final Path stateFile, @NonNull final MerkleDataInputStream in, @NonNull final Path directory)
             throws IOException {
         try {
-            final MerkleRoot state = in.readMerkleTree(directory, SignedStateFileUtils.MAX_MERKLE_NODES_IN_STATE);
+            final MerkleStateRoot<?> state = in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
             final Hash hash = in.readSerializable();
             return new StateFileData(state, hash, null);
 

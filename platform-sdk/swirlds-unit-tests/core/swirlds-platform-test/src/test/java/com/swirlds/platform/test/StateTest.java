@@ -29,7 +29,7 @@ import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -87,7 +87,7 @@ class StateTest {
     private static SignedState randomSignedState() {
         Random random = new Random(0);
         State root = new State();
-        root.setSwirldState(new MerkleStateRoot(
+        root.setSwirldState(new PlatformMerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
         boolean shouldSaveToDisk = random.nextBoolean();
         SignedState signedState = new SignedState(

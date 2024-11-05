@@ -21,10 +21,10 @@ import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
-import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.system.SwirldState;
+import com.swirlds.state.merkle.MerkleTreeSnapshotWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -95,18 +95,9 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public MerkleNode migrate(final int version) {
-        if (version < ClassVersion.REMOVE_DUAL_STATE) {
+        if (version < ClassVersion.MIGRATE_PLATFORM_STATE) {
             throw new UnsupportedOperationException("State migration from version " + version + " is not supported."
                     + " The minimum supported version is " + getMinimumSupportedVersion());
-        }
-
-        if (version < ClassVersion.MIGRATE_PLATFORM_STATE
-                && getSwirldState() instanceof MerkleStateRoot merkleStateRoot) {
-            PlatformState platformState = getWritablePlatformState().copy();
-            setChild(ChildIndices.PLATFORM_STATE, null);
-            merkleStateRoot.updatePlatformState(platformState);
-            merkleStateRoot.setRoute(MerkleRouteFactory.getEmptyRoute());
-            return merkleStateRoot.copy();
         }
 
         return this;
@@ -116,7 +107,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.REMOVE_DUAL_STATE;
+        return ClassVersion.MIGRATE_PLATFORM_STATE;
     }
 
     /**
@@ -252,7 +243,8 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     public void createSnapshot(@NonNull final Path targetPath) {
         throwIfMutable();
         throwIfDestroyed();
-        MerkleTreeSnapshotWriter.createSnapshot(this, targetPath);
+        MerkleTreeSnapshotWriter.createSnapshot(
+                this, targetPath, getReadablePlatformState().getRound());
     }
 
     /**

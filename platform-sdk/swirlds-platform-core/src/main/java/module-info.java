@@ -145,7 +145,6 @@ module com.swirlds.platform.core {
     requires transitive org.hiero.event.creator;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
-    requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;

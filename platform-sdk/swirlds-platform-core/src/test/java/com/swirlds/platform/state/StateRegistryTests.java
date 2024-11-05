@@ -86,28 +86,29 @@ class StateRegistryTests {
         final List<MerkleRoot> states = new LinkedList<>();
         // Create a bunch of states
         for (int i = 0; i < 100; i++) {
-            states.add(new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier));
+            states.add(new PlatformMerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier));
             assertEquals(
                     states.size(),
-                    RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                    RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
                     "actual count should match expected count");
         }
 
         // Fast copy a state
-        final MerkleRoot stateToCopy = new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
+        final MerkleRoot stateToCopy =
+                new PlatformMerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
         states.add(stateToCopy);
         final MerkleRoot copyOfStateToCopy = stateToCopy.copy();
         states.add(copyOfStateToCopy);
         assertEquals(
                 states.size(),
-                RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
                 "actual count should match expected count");
 
         final Path dir = testDirectory;
 
         // Deserialize a state
-        final MerkleStateRoot stateToSerialize =
-                new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
+        final PlatformMerkleStateRoot stateToSerialize =
+                new PlatformMerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(stateToSerialize);
         final var platformState = stateToSerialize.getWritablePlatformState();
         platformState.bulkUpdate(v -> {
@@ -123,7 +124,7 @@ class StateRegistryTests {
         states.add(deserializedState);
         assertEquals(
                 states.size(),
-                RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
                 "actual count should match expected count");
 
         // Deleting states in a random order should cause the number of states to decrease
@@ -132,7 +133,7 @@ class StateRegistryTests {
             states.remove(random.nextInt(states.size())).release();
             assertEquals(
                     states.size(),
-                    RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                    RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
                     "actual count should match expected count");
         }
     }
