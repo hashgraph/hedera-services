@@ -17,6 +17,8 @@
 name: "ZXF: Deploy Production Release"
 on:
   push:
+    branches:
+      - develop
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+-?*"
   workflow_dispatch:
@@ -42,79 +44,10 @@ defaults:
     shell: bash
 
 jobs:
-  prepare-tag-release:
-    name: Prepare Release [Tag]
+  semantic-release:
+    name: Semantic Release
+    if: ${{ github.event_name == 'push' }}
     runs-on: network-node-linux-medium
-    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
-    outputs:
-      version: ${{ steps.tag.outputs.version }}
-      prerelease: ${{ steps.tag.outputs.prerelease }}
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
-        with:
-          egress-policy: audit
-
-      - name: Install Semantic Version Tools
-        run: |
-          echo "::group::Download SemVer Binary"
-          sudo curl -L -o /usr/local/bin/semver https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
-          echo "::endgroup::"
-          echo "::group::Change SemVer Binary Permissions"
-          sudo chmod -v +x /usr/local/bin/semver
-          echo "::endgroup::"
-          echo "::group::Show SemVer Binary Version Info"
-          semver --version
-          echo "::endgroup::"
-
-      - name: Extract Tag Version
-        id: tag
-        run: |
-          RELEASE_VERSION="$(semver get release "${{ github.ref_name }}")"
-          PRERELEASE_VERSION="$(semver get prerel "${{ github.ref_name }}")"
-
-          FINAL_VERSION="${RELEASE_VERSION}"
-          PRERELEASE_FLAG="false"
-          [[ -n "${PRERELEASE_VERSION}" ]] && FINAL_VERSION="${RELEASE_VERSION}-${PRERELEASE_VERSION}"
-          [[ -n "${PRERELEASE_VERSION}" ]] && PRERELEASE_FLAG="true"
-
-          echo "version=${FINAL_VERSION}" >>"${GITHUB_OUTPUT}"
-          echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
-
-  release-tag:
-    name: Release [Tag]
-    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    needs:
-      - prepare-tag-release
-    with:
-      version-policy: specified
-      new-version: ${{ needs.prepare-tag-release.outputs.version }}
-      trigger-env-deploy: none
-      release-profile: ${{ needs.prepare-tag-release.outputs.prerelease == 'true' && 'PrereleaseChannel' || 'MavenCentral' }}
-    secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
-      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
-      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
-      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
-      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
-      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
-      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
-      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
-      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
-      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
-      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
-      jf-url: ${{ vars.JF_URL }}
-      jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
-      jf-user-name: ${{ vars.JF_USER_NAME }}
-      jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
-
-  release-branch:
-    name: Release [Branch]
-    runs-on: network-node-linux-large
-    outputs:
-      new_version: ${{ steps.semantic.outputs.new_release_version }}
-      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -154,7 +87,7 @@ jobs:
 
       - name: Import GPG key
         id: gpg_key
-        uses: crazy-max/ghaction-import-gpg@01dd5d3ca463c7f10f7f4f7b4f177225ac661ee4 # v6.1.0
+        uses: crazy-max/ghaction-import-gpg@cb9bde2e2525e640591a934b1fd28eef1dcaf5e5 # v6.2.0
         with:
           gpg_private_key: ${{ secrets.sdk-gpg-key-contents }}
           passphrase: ${{ secrets.sdk-gpg-key-passphrase }}
@@ -177,9 +110,9 @@ jobs:
         if: ${{ steps.semantic.outputs.new_release_published == 'true' }}
         uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
         with:
-          version-policy: branch-commit
-          trigger-env-deploy: integration
-          release-profile: DevelopCommit
+          version-policy: specified
+          trigger-env-deploy: none
+          release-profile: ${{ contains(steps.semantic.outputs.new_release_version, '-') && 'PrereleaseChannel' || 'MavenCentral' }}
           new-version: ${{ steps.semantic.outputs.new_release_version }}
         secrets:
           access-token: ${{ secrets.GITHUB_TOKEN }}
@@ -198,6 +131,32 @@ jobs:
           jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
           jf-user-name: ${{ vars.JF_USER_NAME }}
           jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
+
+  release-branch:
+    name: Release [Branch]
+    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    with:
+      version-policy: branch-commit
+      trigger-env-deploy: integration
+      release-profile: DevelopCommit
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
+      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
+      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
+      jf-url: ${{ vars.JF_URL }}
+      jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
+      jf-user-name: ${{ vars.JF_USER_NAME }}
+      jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
 
   deploy-ci-trigger:
     name: Trigger CI Flows

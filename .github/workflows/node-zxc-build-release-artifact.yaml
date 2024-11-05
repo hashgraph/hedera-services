@@ -336,7 +336,7 @@ jobs:
 
   local-node-images:
     name: Publish Local Node Images
-    needs: 
+    needs:
       - determine-version
       - build-artifact
     runs-on: network-node-linux-large
@@ -475,7 +475,7 @@ jobs:
   gcp-production-image:
     name: Publish Production Image
     uses: ./.github/workflows/zxc-publish-production-image.yaml
-    needs: 
+    needs:
       - determine-version
       - build-artifact
     with:
@@ -492,7 +492,7 @@ jobs:
   jfr-production-image:
     name: Publish Production Image
     uses: ./.github/workflows/zxc-publish-production-image.yaml
-    needs: 
+    needs:
       - determine-version
       - build-artifact
     with:
@@ -509,7 +509,7 @@ jobs:
   validate-production-image:
     name: Validate Production Image
     runs-on: network-node-linux-large
-    needs: 
+    needs:
       - determine-version
       - gcp-production-image
       - jfr-production-image
@@ -802,7 +802,7 @@ jobs:
   send-notifications:
     name: Send Release Notifications
     runs-on: network-node-linux-large
-    needs: 
+    needs:
       - determine-version
       - local-node-images
       - validate-production-image
