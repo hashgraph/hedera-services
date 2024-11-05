@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.MarkerManager;
 
 public enum NoOpMerkleStateLifecycles implements MerkleStateLifecycles {
     NO_OP_MERKLE_STATE_LIFECYCLES;
@@ -51,7 +52,10 @@ public enum NoOpMerkleStateLifecycles implements MerkleStateLifecycles {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
         }
         final var schema = new V0540PlatformStateSchema();
-        logger.info("schema.statesToCreate() size: {}", schema.statesToCreate().size());
+        logger.info(
+                MarkerManager.getMarker("DEMO_INFO"),
+                "schema.statesToCreate() size: {}",
+                schema.statesToCreate().size());
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {

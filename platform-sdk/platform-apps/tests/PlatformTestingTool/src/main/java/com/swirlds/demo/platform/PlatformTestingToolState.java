@@ -255,6 +255,12 @@ public class PlatformTestingToolState extends MerkleStateRoot {
         expectedFCMFamily = new ExpectedFCMFamilyImpl();
 
         referenceNftLedger = new ReferenceNftLedger(NFT_TRACKING_FRACTION);
+
+        logger.info(
+                LOGM_STARTUP,
+                "PlatformTestingToolState constructor... Current child count: {} | Max child count: {} ",
+                getNumberOfChildren(),
+                getMaximumChildCount());
     }
 
     protected PlatformTestingToolState(final PlatformTestingToolState sourceState) {
@@ -414,14 +420,6 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     // count invalid signature ratio
     static AtomicLong totalTransactionSignatureCount = new AtomicLong(0);
     static AtomicLong expectedInvalidSignatureCount = new AtomicLong(0);
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getNumberOfChildren() {
-        return ChildIndices.CHILD_COUNT;
-    }
 
     /**
      * {@inheritDoc}
