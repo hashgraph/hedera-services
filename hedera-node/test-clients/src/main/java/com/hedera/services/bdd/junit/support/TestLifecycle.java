@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.SpecStateObserver;
@@ -100,5 +101,9 @@ public class TestLifecycle {
 
     public List<SpecStateObserver.SpecState> getSharedStates() {
         return sharedStates;
+    }
+
+    public List<HederaNode> getNodes() {
+        return targetNetwork.nodes();
     }
 }

@@ -52,15 +52,30 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -93,9 +108,12 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
      */
     class PerformNodeOperatorQueryAndVerifyPayerBalance {
 
+        private static List<HederaNode> nodes = new ArrayList<>();
+
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle lifecycle) {
             lifecycle.doAdhoc(createAllAccountsAndTokens());
+            nodes = lifecycle.getNodes();
         }
 
         @HapiTest
@@ -644,5 +662,109 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             .asNodeOperator()
                             .hasAnswerOnlyPrecheck(OK)));
         }
+
+        @HapiTest
+        @DisplayName("Node Operator Submit Query not from Localhost")
+        final Stream<DynamicTest> submitCryptoTransfer() {
+            // Create the gRPC channel
+            final int nodeOperatorGrpcPort = nodes.getFirst().getGrpcNodeOperatorPort();
+            ManagedChannel channel = ManagedChannelBuilder.forAddress("0.0.0.0", nodeOperatorGrpcPort)
+                    .usePlaintext()
+                    .build();
+
+            // Create the stub
+            CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
+
+            Query query = buildCryptoAccountInfoQuery();
+
+            return Stream.of(DynamicTest.dynamicTest("Node Operator Submit Query not from Localhost", () -> {
+                // Assert that the exception is thrown
+                assertThatThrownBy(() -> {
+                            // Submit the transaction
+                            stub.getAccountInfo(query);
+                        })
+                        .isInstanceOf(io.grpc.StatusRuntimeException.class);
+                // Close the channel
+                channel.shutdown();
+            }));
+        }
+
+        @HapiTest
+        @DisplayName("Node Operator Submit Crypto Transfer Localhost Node Operator Port")
+        final Stream<DynamicTest> submitCryptoTransferLocalHostNodeOperatorPort() {
+            // Create the gRPC channel
+            final int nodeOperatorGrpcPort = nodes.getFirst().getGrpcNodeOperatorPort();
+            ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", nodeOperatorGrpcPort)
+                    .usePlaintext()
+                    .build();
+
+            // Create the stub
+            CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
+
+            // Create the transaction
+            final AccountID TO_ACCOUNT =
+                    AccountID.newBuilder().setAccountNum(1002).build();
+            final AccountID FROM_ACCOUNT =
+                    AccountID.newBuilder().setAccountNum(1001).build();
+            final long AMOUNT = 1000L;
+
+            Transaction transaction = buildCryptoTransferTransaction(FROM_ACCOUNT, TO_ACCOUNT, AMOUNT);
+
+            return Stream.of(
+                    DynamicTest.dynamicTest("Node Operator Submit Crypto Transfer Localhost Node Operator Port", () -> {
+                        // Assert that the exception is thrown
+                        assertThatThrownBy(() -> {
+                                    // Submit the transaction
+                                    stub.cryptoTransfer(transaction);
+                                })
+                                .isInstanceOf(io.grpc.StatusRuntimeException.class)
+                                .hasMessageContaining(
+                                        "UNIMPLEMENTED: Method not found: proto.CryptoService/cryptoTransfer");
+                        // Close the channel
+                        channel.shutdown();
+                    }));
+        }
+
+        private static Transaction buildCryptoTransferTransaction(
+                AccountID fromAccount, AccountID toAccount, long amount) {
+            // Create the transfer list
+            TransferList transferList = TransferList.newBuilder()
+                    .addAccountAmounts(AccountAmount.newBuilder()
+                            .setAccountID(fromAccount)
+                            .setAmount(-amount)
+                            .build())
+                    .addAccountAmounts(AccountAmount.newBuilder()
+                            .setAccountID(toAccount)
+                            .setAmount(amount)
+                            .build())
+                    .build();
+
+            // Create the CryptoTransferTransactionBody
+            CryptoTransferTransactionBody body = CryptoTransferTransactionBody.newBuilder()
+                    .setTransfers(transferList)
+                    .build();
+
+            // Create the TransactionBody
+            TransactionBody transactionBody =
+                    TransactionBody.newBuilder().setCryptoTransfer(body).build();
+
+            // Create the Transaction
+            return Transaction.newBuilder()
+                    .setSignedTransactionBytes(transactionBody.toByteString())
+                    .build();
+        }
+    }
+
+    private Query buildCryptoAccountInfoQuery() {
+        // Define the account ID for which the account info is being requested
+        final AccountID accountID = AccountID.newBuilder().setAccountNum(1001).build();
+
+        // Create the CryptoGetInfo query
+        Query query = Query.newBuilder()
+                .setCryptoGetInfo(
+                        CryptoGetInfoQuery.newBuilder().setAccountID(accountID).build())
+                .build();
+
+        return query;
     }
 }

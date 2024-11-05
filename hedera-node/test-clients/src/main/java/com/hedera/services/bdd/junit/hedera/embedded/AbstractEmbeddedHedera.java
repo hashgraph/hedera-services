@@ -195,10 +195,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         }
         final var responseBuffer = BufferedData.allocate(MAX_QUERY_RESPONSE_SIZE);
         if (asNodeOperator) {
-            System.out.println("operatorQueryWorkflow " + hedera.operatorQueryWorkflow());
             hedera.operatorQueryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
         } else {
-            System.out.println("queryWorkflow " + hedera.queryWorkflow());
             hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
         }
         return parseQueryResponse(responseBuffer);
