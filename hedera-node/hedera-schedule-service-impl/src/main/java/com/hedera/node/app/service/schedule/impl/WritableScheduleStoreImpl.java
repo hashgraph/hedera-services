@@ -188,7 +188,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     /**
      * {@inheritDoc}
      */
-    public List<Schedule> getByExpirationBetween(final long firstSecondToExpire,final long lastSecondToExpire) {
+    public List<Schedule> getByExpirationBetween(final long firstSecondToExpire, final long lastSecondToExpire) {
         final var schedules = new ArrayList<Schedule>();
         for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
             final var scheduleIdList = getByExpirationSecond(i);
