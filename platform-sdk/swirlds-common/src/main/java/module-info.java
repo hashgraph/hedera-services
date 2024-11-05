@@ -161,6 +161,8 @@ module com.swirlds.common {
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;
+    requires com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
     requires com.sun.jna;
     requires io.github.classgraph;
     requires io.prometheus.simpleclient.httpserver;
@@ -171,5 +173,4 @@ module com.swirlds.common {
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.nativelib.secp256k1;
     requires static transitive com.github.spotbugs.annotations;
-    requires com.hedera.node.hapi;
 }
