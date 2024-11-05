@@ -525,6 +525,12 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
                         "A label must be computed based on the same " + "service name and state key in the metadata!");
             }
 
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Setting child.. Service name: {} / Number of children: {} / node: {}",
+                    md.serviceName(),
+                    getNumberOfChildren(),
+                    nodeIndex);
             setChild(getNumberOfChildren(), node);
         } else {
             node = getChild(nodeIndex);

@@ -419,14 +419,6 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
-    public int getNumberOfChildren() {
-        return ChildIndices.CHILD_COUNT;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public int getMinimumChildCount() {
         return ChildIndices.SDK_VERSION_21_CHILD_COUNT;
     }
