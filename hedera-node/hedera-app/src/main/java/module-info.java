@@ -50,6 +50,7 @@ module com.hedera.node.app {
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
+    requires java.annotation;
     requires org.apache.commons.lang3;
     requires org.hyperledger.besu.datatypes;
     requires static com.github.spotbugs.annotations;
@@ -116,6 +117,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.tss.pairings;
     exports com.hedera.node.app.tss.handlers;
     exports com.hedera.node.app.tss.stores;
+    exports com.hedera.node.app.tss.schemas;
     exports com.hedera.node.app.blocks.schemas;
 
     provides ConfigurationExtension with

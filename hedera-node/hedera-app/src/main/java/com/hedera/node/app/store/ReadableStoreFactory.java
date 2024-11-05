@@ -57,6 +57,9 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.stores.ReadableTssStore;
+import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.common.SoftwareVersion;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -119,6 +122,7 @@ public class ReadableStoreFactory {
                 ReadablePlatformStateStore.class,
                 new StoreEntry(PlatformStateService.NAME, ReadablePlatformStateStore::new));
         newMap.put(ReadableRosterStore.class, new StoreEntry(RosterStateId.NAME, ReadableRosterStoreImpl::new));
+        newMap.put(ReadableTssStore.class, new StoreEntry(TssBaseService.NAME, ReadableTssStoreImpl::new));
         return Collections.unmodifiableMap(newMap);
     }
 

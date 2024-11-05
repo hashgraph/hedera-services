@@ -102,7 +102,6 @@ import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
@@ -858,14 +857,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         initialStateHashFuture = completedFuture(stateHash.getBytes());
     }
 
-    /**
-     * @param metrics the metrics object being used to report tss performance
-     */
-    public void registerTssMetrics(@NonNull final Metrics metrics) {
-        requireNonNull(metrics);
-        tssBaseService.registerMetrics(new TssMetrics(metrics));
-    }
-
     /*==================================================================================================================
     *
     * Exposed for use by embedded Hedera
@@ -953,7 +944,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .consensusSnapshotOrThrow()
                 .round();
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
-        final var networkInfo = new StateNetworkInfo(state, platform.getSelfId().id(), configProvider);
+
+        final var activeRoster = tssBaseService.chooseRosterForNetwork(
+                state, trigger, serviceMigrator, version, configProvider.getConfiguration());
+        final var networkInfo =
+                new StateNetworkInfo(state, activeRoster, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
