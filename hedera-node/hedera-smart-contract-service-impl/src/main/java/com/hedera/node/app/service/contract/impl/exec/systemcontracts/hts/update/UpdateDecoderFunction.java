@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.validation;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update;
 
-import com.swirlds.platform.system.address.AddressBook;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/**
- * A record representing an update to the address book.
- *
- * @param previousAddressBook the previous address book
- * @param currentAddressBook  the new current address book
- */
-public record AddressBookUpdate(@NonNull AddressBook previousAddressBook, @NonNull AddressBook currentAddressBook) {}
+@FunctionalInterface
+public interface UpdateDecoderFunction {
+
+    TransactionBody decode(@NonNull final HtsCallAttempt input);
+}

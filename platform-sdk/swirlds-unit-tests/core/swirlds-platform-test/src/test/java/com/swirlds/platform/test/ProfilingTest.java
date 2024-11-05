@@ -22,6 +22,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
@@ -51,7 +52,8 @@ public class ProfilingTest {
         final StandardEventEmitter emitter = new StandardEventEmitter(generator);
         final AddressBook addressBook = emitter.getGraphGenerator().getAddressBook();
 
-        final Consensus consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
+        final Consensus consensus = new ConsensusImpl(
+                platformContext, new NoOpConsensusMetrics(), RosterRetriever.buildRoster(addressBook));
 
         for (int i = 0; i < numEvents; i++) {
             consensus.addEvent(emitter.emitEvent());

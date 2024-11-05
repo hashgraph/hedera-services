@@ -17,24 +17,30 @@
 package com.hedera.node.app.tss;
 
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.handlers.TssVoteHandler;
+import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.util.concurrent.Executor;
 import javax.inject.Singleton;
 
 @Singleton
-@Component(modules = {TssModule.class})
+@Component
 public interface TssBaseServiceComponent {
     @Component.Factory
     interface Factory {
         TssBaseServiceComponent create(
+                @BindsInstance TssLibrary tssLibrary,
                 @BindsInstance AppContext.Gossip gossip,
                 @BindsInstance Executor submissionExecutor,
-                @BindsInstance @TssLibraryExecutor Executor libraryExecutor);
+                @BindsInstance @TssLibraryExecutor Executor libraryExecutor,
+                @BindsInstance Metrics metrics);
     }
+
+    TssMetrics tssMetrics();
 
     TssMessageHandler tssMessageHandler();
 
