@@ -155,6 +155,7 @@ public interface HandleWorkflowModule {
                 tokenHandlers.tokenClaimAirdropHandler(),
                 utilHandlers.prngHandler(),
                 tssHandlers.get().tssMessageHandler(),
-                tssHandlers.get().tssVoteHandler());
+                tssHandlers.get().tssVoteHandler(),
+                tssHandlers.get().tssShareSignatureHandler());
     }
 }

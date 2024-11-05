@@ -43,10 +43,12 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
-import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.handlers.TssHandlers;
+import com.hedera.node.app.tss.handlers.TssMessageHandler;
+import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
+import com.hedera.node.app.tss.handlers.TssVoteHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -79,7 +81,13 @@ class IngestComponentTest {
     private TssBaseService tssBaseService;
 
     @Mock
-    private TransactionHandler transactionHandler;
+    private TssMessageHandler tssMessageHandler;
+
+    @Mock
+    private TssVoteHandler tssVoteHandler;
+
+    @Mock
+    private TssShareSignatureHandler tssShareSignatureHandler;
 
     private HederaInjectionComponent app;
 
@@ -105,7 +113,8 @@ class IngestComponentTest {
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP);
-        given(tssBaseService.tssHandlers()).willReturn(new TssHandlers(transactionHandler, transactionHandler));
+        given(tssBaseService.tssHandlers())
+                .willReturn(new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler));
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
