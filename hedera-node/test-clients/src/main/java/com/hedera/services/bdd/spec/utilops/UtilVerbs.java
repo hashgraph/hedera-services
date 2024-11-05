@@ -201,6 +201,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.PrivateKey;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
@@ -2303,6 +2304,14 @@ public class UtilVerbs {
         }
 
         return privateKeyByteArray;
+    }
+
+    public static PrivateKey getEd25519PrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
+        var key = spec.registry().getKey(privateKeyRef);
+        final var privateKey = spec.keys()
+                .getEd25519PrivateKey(com.swirlds.common.utility.CommonUtils.hex(
+                        key.getEd25519().toByteArray()));
+        return privateKey;
     }
 
     private static double getChargedUsed(@NonNull final HapiSpec spec, @NonNull final String txn) {
