@@ -75,7 +75,6 @@ public interface ScheduleService extends RpcService {
             TransactionBody body,
             VerificationAssistant verificationAssistant,
             AccountID payerId,
-            @Nullable TransactionBody originalTransactionBody,
             @Nullable Instant nbf) {}
 
     /**

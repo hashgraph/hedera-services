@@ -17,10 +17,7 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -107,19 +104,19 @@ class ScheduleServiceImplTest {
     void testBasicIteration() {
         setUpMocks();
         // Given two schedules within the interval
-        var schedule1 = createMockSchedule(Instant.now().plusSeconds(60));
-        var schedule2 = createMockSchedule(Instant.now().plusSeconds(120));
+        final var schedule1 = createMockSchedule(Instant.now().plusSeconds(60));
+        final var schedule2 = createMockSchedule(Instant.now().plusSeconds(120));
         when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule1, schedule2));
 
-        var iterator =
+        final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(180), cleanupStoreFactory);
 
         // Assert both schedules can be iterated over
-        assertTrue(iterator.hasNext());
-        assertNotNull(iterator.next());
-        assertTrue(iterator.hasNext());
-        assertNotNull(iterator.next());
-        assertFalse(iterator.hasNext());
+        assertThat(iterator.hasNext()).isTrue();
+        assertThat(iterator.next()).isNotNull();
+        assertThat(iterator.hasNext()).isTrue();
+        assertThat(iterator.next()).isNotNull();
+        assertThat(iterator.hasNext()).isFalse();
     }
 
     @Test
@@ -128,26 +125,26 @@ class ScheduleServiceImplTest {
         // No schedules within the interval
         when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of());
 
-        var iterator =
+        final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(180), cleanupStoreFactory);
 
         // Assert that iterator has no elements
-        assertFalse(iterator.hasNext());
+        assertThat(iterator.hasNext()).isFalse();
     }
 
     @Test
     void testRemoveFunctionality() {
         setUpMocks();
         // Given one schedule
-        var schedule = createMockSchedule(Instant.now().plusSeconds(60));
+        final var schedule = createMockSchedule(Instant.now().plusSeconds(60));
         when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
 
-        var iterator =
+        final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory);
 
-        assertTrue(iterator.hasNext());
-        var txn = iterator.next();
-        assertNotNull(txn);
+        assertThat(iterator.hasNext()).isTrue();
+        final var txn = iterator.next();
+        assertThat(txn).isNotNull();
 
         // Test remove
         iterator.remove();
@@ -162,56 +159,56 @@ class ScheduleServiceImplTest {
     void testRemoveWithoutNextShouldThrowException() {
         setUpMocks();
         // Given one schedule
-        var schedule = mock(Schedule.class);
+        final var schedule = mock(Schedule.class);
         when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
 
-        var iterator =
+        final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory);
 
         // Attempt to remove without calling next() should throw IllegalStateException
-        assertThrows(IllegalStateException.class, iterator::remove);
+        assertThatThrownBy(iterator::remove).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void testNextBeyondEndShouldThrowException() {
         setUpMocks();
         // Given one schedule
-        var schedule = createMockSchedule(Instant.now().plusSeconds(60));
+        final var schedule = createMockSchedule(Instant.now().plusSeconds(60));
         when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
 
-        var iterator =
+        final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory);
 
-        assertTrue(iterator.hasNext());
+        assertThat(iterator.hasNext()).isTrue();
         iterator.next();
 
         // No more elements, calling next() should throw NoSuchElementException
-        assertThrows(NoSuchElementException.class, iterator::next);
+        assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
     void testFilterExecutedOrDeletedSchedules() {
         setUpMocks();
         // Given three schedules, one executed, one deleted, and one valid
-        var schedule1 = mockExecuted();
-        var schedule2 = mockDeleted();
-        var schedule3 = createMockSchedule(Instant.now().plusSeconds(180)); // Valid
+        final var schedule1 = mockExecuted();
+        final var schedule2 = mockDeleted();
+        final var schedule3 = createMockSchedule(Instant.now().plusSeconds(180)); // Valid
 
         when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule1, schedule2, schedule3));
 
-        var iterator =
+        final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(200), cleanupStoreFactory);
 
         // Only the valid schedule should be iterated over
-        assertTrue(iterator.hasNext());
-        var txn = iterator.next();
-        assertNotNull(txn);
-        assertFalse(iterator.hasNext());
+        assertThat(iterator.hasNext()).isTrue();
+        final var txn = iterator.next();
+        assertThat(txn).isNotNull();
+        assertThat(iterator.hasNext()).isFalse();
     }
 
     private Schedule createMockSchedule(Instant expiration) {
-        var schedule = mock(Schedule.class);
-        var createTransaction = mock(TransactionBody.class);
+        final var schedule = mock(Schedule.class);
+        final var createTransaction = mock(TransactionBody.class);
         when(createTransaction.transactionIDOrThrow()).thenReturn(TransactionID.DEFAULT);
         when(schedule.originalCreateTransactionOrThrow()).thenReturn(createTransaction);
         when(schedule.executed()).thenReturn(false);
@@ -222,13 +219,13 @@ class ScheduleServiceImplTest {
     }
 
     private Schedule mockDeleted() {
-        var schedule = mock(Schedule.class);
+        final var schedule = mock(Schedule.class);
         when(schedule.deleted()).thenReturn(true);
         return schedule;
     }
 
     private Schedule mockExecuted() {
-        var schedule = mock(Schedule.class);
+        final var schedule = mock(Schedule.class);
         when(schedule.executed()).thenReturn(true);
         return schedule;
     }

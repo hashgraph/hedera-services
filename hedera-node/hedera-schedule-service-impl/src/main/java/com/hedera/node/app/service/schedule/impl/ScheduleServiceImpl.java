@@ -99,7 +99,6 @@ public final class ScheduleServiceImpl implements ScheduleService {
                         childAsOrdinary(schedule),
                         callback,
                         schedule.payerAccountId(),
-                        schedule.originalCreateTransaction(),
                         Instant.ofEpochSecond(schedule.calculatedExpirationSecond()));
             }
         };
