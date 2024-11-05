@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyF
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEd25519PrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newThresholdKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -828,6 +829,122 @@ public class IsAuthorizedTest {
                     cryptoCreate(ACCOUNT)
                             .balance(ONE_MILLION_HBARS)
                             .key(KEY_LIST)
+                            .exposingCreatedIdTo(accountNum::set),
+                    cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ED25519_KEY, ONE_HUNDRED_HBARS)),
+                    uploadInitCode(HRC632_CONTRACT),
+                    contractCreate(HRC632_CONTRACT),
+                    withOpContext((spec, opLog) -> {
+                        final var message = "submit".getBytes();
+                        final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
+                        final var privateKeyEcdsa = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                        final var publicKeyEcdsa =
+                                spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1();
+                        final var addressBytesEcdsa = recoverAddressFromPrivateKey(privateKeyEcdsa);
+                        final var signedBytesEcdsa = Signing.signMessage(messageHash, privateKeyEcdsa);
+
+                        final var privateKeyEd = getEd25519PrivateKeyFromSpec(spec, ED25519_KEY);
+                        final var publicKeyEd =
+                                spec.registry().getKey(ED25519_KEY).getEd25519();
+                        final var signedBytesEd = SignatureGenerator.signBytes(message, privateKeyEd);
+                        final var signatureMap = SignatureMap.newBuilder()
+                                .sigPair(List.of(
+                                        SignaturePair.newBuilder()
+                                                .ed25519(Bytes.wrap(signedBytesEd))
+                                                .pubKeyPrefix(Bytes.wrap(publicKeyEd.toByteArray()))
+                                                .build(),
+                                        SignaturePair.newBuilder()
+                                                .ecdsaSecp256k1(Bytes.wrap(signedBytesEcdsa))
+                                                .pubKeyPrefix(Bytes.wrap(publicKeyEcdsa.toByteArray()))
+                                                .build()))
+                                .build();
+                        final var signatureMapBytes =
+                                SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
+
+                        final var call = contractCall(
+                                        HRC632_CONTRACT,
+                                        "isAuthorizedCall",
+                                        asHeadlongAddress(asAddress(accountNum.get())),
+                                        message,
+                                        signatureMapBytes)
+                                .via("authorizeCall")
+                                .gas(2_000_000L);
+                        allRunFor(spec, call);
+                    }),
+                    getTxnRecord("authorizeCall")
+                            .hasPriority(recordWith()
+                                    .status(SUCCESS)
+                                    .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))));
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> thresholdKey1of2HappyPath() {
+            final AtomicReference<AccountID> accountNum = new AtomicReference<>();
+            return hapiTest(
+                    newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
+                    newKeyNamed(ED25519_KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
+                    newThresholdKeyNamed(THRESHOLD_KEY, 1, List.of(ECDSA_KEY, ED25519_KEY)),
+                    cryptoCreate(ACCOUNT)
+                            .balance(ONE_MILLION_HBARS)
+                            .key(THRESHOLD_KEY)
+                            .exposingCreatedIdTo(accountNum::set),
+                    cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ED25519_KEY, ONE_HUNDRED_HBARS)),
+                    uploadInitCode(HRC632_CONTRACT),
+                    contractCreate(HRC632_CONTRACT),
+                    withOpContext((spec, opLog) -> {
+                        final var message = "submit".getBytes();
+                        final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
+                        final var privateKeyEcdsa = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                        final var publicKeyEcdsa =
+                                spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1();
+                        final var addressBytesEcdsa = recoverAddressFromPrivateKey(privateKeyEcdsa);
+                        final var signedBytesEcdsa = Signing.signMessage(messageHash, privateKeyEcdsa);
+
+                        final var privateKeyEd = getEd25519PrivateKeyFromSpec(spec, ED25519_KEY);
+                        final var publicKeyEd =
+                                spec.registry().getKey(ED25519_KEY).getEd25519();
+                        final var signedBytesEd = SignatureGenerator.signBytes(message, privateKeyEd);
+                        final var signatureMap = SignatureMap.newBuilder()
+                                .sigPair(List.of(
+                                        //                                        SignaturePair.newBuilder()
+                                        //
+                                        // .ed25519(Bytes.wrap(signedBytesEd))
+                                        //
+                                        // .pubKeyPrefix(Bytes.wrap(publicKeyEd.toByteArray()))
+                                        //                                                .build(),
+                                        SignaturePair.newBuilder()
+                                                .ecdsaSecp256k1(Bytes.wrap(signedBytesEcdsa))
+                                                .pubKeyPrefix(Bytes.wrap(publicKeyEcdsa.toByteArray()))
+                                                .build()))
+                                .build();
+                        final var signatureMapBytes =
+                                SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
+
+                        final var call = contractCall(
+                                        HRC632_CONTRACT,
+                                        "isAuthorizedCall",
+                                        asHeadlongAddress(asAddress(accountNum.get())),
+                                        message,
+                                        signatureMapBytes)
+                                .via("authorizeCall")
+                                .gas(2_000_000L);
+                        allRunFor(spec, call);
+                    }),
+                    getTxnRecord("authorizeCall")
+                            .hasPriority(recordWith()
+                                    .status(SUCCESS)
+                                    .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))));
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> thresholdKey2of2HappyPath() {
+            final AtomicReference<AccountID> accountNum = new AtomicReference<>();
+            return hapiTest(
+                    newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
+                    newKeyNamed(ED25519_KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
+                    newThresholdKeyNamed(THRESHOLD_KEY, 2, List.of(ECDSA_KEY, ED25519_KEY)),
+                    cryptoCreate(ACCOUNT)
+                            .balance(ONE_MILLION_HBARS)
+                            .key(THRESHOLD_KEY)
                             .exposingCreatedIdTo(accountNum::set),
                     cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ED25519_KEY, ONE_HUNDRED_HBARS)),
                     uploadInitCode(HRC632_CONTRACT),
