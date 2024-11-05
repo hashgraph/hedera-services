@@ -52,10 +52,6 @@ public enum NoOpMerkleStateLifecycles implements MerkleStateLifecycles {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
         }
         final var schema = new V0540PlatformStateSchema();
-        logger.info(
-                MarkerManager.getMarker("DEMO_INFO"),
-                "schema.statesToCreate() size: {}",
-                schema.statesToCreate().size());
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
