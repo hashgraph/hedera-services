@@ -1,5 +1,6 @@
 /**
- * # Tss Share Signature Transaction
+ * # Tss Share Signature
+ * Submits a share signature of node on a block hash during TSS process.
  *
  * ### Keywords
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -33,12 +34,17 @@ option java_package = "com.hedera.hapi.services.auxiliary.tss.legacy";
 option java_multiple_files = true;
 
 /**
- * The body of a transaction that contains a share signature produced by a node in a TSS network.
- * This transaction will be gossipped with highest priority.
+ * The body of a transaction that contains a share signature produced
+ * by a node in a TSS network. This transaction will be gossipped with highest priority.
+ *
+ * ### Block Stream Effects
+ * This transaction body will be present in the block stream. This will not have
+ * any state changes or transaction output or transaction result.
  */
 message TssShareSignatureTransactionBody {
   /**
-   * The hash of the roster containing the node whose share produced the share signature.
+   * The hash of the roster containing the node whose share produced the
+   * share signature.
    */
   bytes roster_hash = 1;
 
