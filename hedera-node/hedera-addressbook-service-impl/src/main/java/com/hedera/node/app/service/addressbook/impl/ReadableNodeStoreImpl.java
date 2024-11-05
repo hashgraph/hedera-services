@@ -54,7 +54,7 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
     }
 
     @Override
-    public Roster newRosterFromNodes() {
+    public Roster snapshotOfFutureRoster() {
         return constructFromNodesState(nodesState());
     }
 
@@ -103,7 +103,6 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
                 rosterEntries.add(entry);
             }
         }
-
         rosterEntries.sort(Comparator.comparingLong(RosterEntry::nodeId));
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }

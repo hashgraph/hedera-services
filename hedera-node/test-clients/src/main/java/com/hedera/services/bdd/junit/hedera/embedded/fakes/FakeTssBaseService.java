@@ -56,11 +56,20 @@ import org.apache.logging.log4j.Logger;
  *     <li>"Signs" messages by scheduling callback to its consumers using the SHA-384 hash of the
  *     message as the signature.</li>
  * </ul>
+ * <b>Important:</b> this class is not thread-safe, and should only be used as a mock in repeatable mode
+ * when specs are run one at a time.
  */
 public class FakeTssBaseService implements TssBaseService {
     private static final Logger log = LogManager.getLogger(FakeTssBaseService.class);
 
+    private final FakeTssLibrary tssLibrary = new FakeTssLibrary();
     private final TssBaseServiceImpl delegate;
+    private final Queue<Runnable> pendingTssSubmission = new ArrayDeque<>();
+    /**
+     * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
+     * itself in its callback.
+     */
+    private final List<BiConsumer<byte[], byte[]>> consumers = new CopyOnWriteArrayList<>();
 
     /**
      * The type of signing to perform.
@@ -77,25 +86,24 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     private Signing signing = Signing.FAKE;
-
-    /**
-     * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
-     * itself in its callback.
-     */
-    private final List<BiConsumer<byte[], byte[]>> consumers = new CopyOnWriteArrayList<>();
-
     private boolean ignoreRequests = false;
-
-    private final Queue<Runnable> pendingTssSubmission = new ArrayDeque<>();
 
     public FakeTssBaseService(@NonNull final AppContext appContext) {
         delegate = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),
                 pendingTssSubmission::offer,
-                new FakeTssLibrary(),
+                tssLibrary,
                 pendingTssSubmission::offer,
                 new NoOpMetrics());
+    }
+
+    /**
+     * Returns the fake TSS library.
+     * @return the fake TSS library
+     */
+    public FakeTssLibrary fakeTssLibrary() {
+        return tssLibrary;
     }
 
     /**
