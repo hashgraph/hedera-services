@@ -76,7 +76,7 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.config.TransactionConfig;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.spi.CommittableWritableStates;
