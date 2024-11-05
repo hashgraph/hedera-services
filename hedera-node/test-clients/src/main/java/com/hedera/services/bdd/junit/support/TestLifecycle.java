@@ -103,6 +103,11 @@ public class TestLifecycle {
         return sharedStates;
     }
 
+    /**
+     * Gets the nodes in the target network.
+     *
+     * @return the nodes
+     */
     public List<HederaNode> getNodes() {
         return targetNetwork.nodes();
     }
