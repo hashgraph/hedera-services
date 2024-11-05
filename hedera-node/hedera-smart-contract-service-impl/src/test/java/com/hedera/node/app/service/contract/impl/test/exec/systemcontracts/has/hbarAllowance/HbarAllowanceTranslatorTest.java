@@ -38,6 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbaral
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarallowance.HbarAllowanceTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,6 +64,9 @@ public class HbarAllowanceTranslatorTest {
     private VerificationStrategies verificationStrategies;
 
     @Mock
+    private SignatureVerifier signatureVerifier;
+
+    @Mock
     private HederaNativeOperations nativeOperations;
 
     private HbarAllowanceTranslator subject;
@@ -76,11 +80,23 @@ public class HbarAllowanceTranslatorTest {
     void matchesHbarAllowance() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         attempt = prepareHasAttemptWithSelector(
-                HBAR_ALLOWANCE, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+                HBAR_ALLOWANCE,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator);
         assertTrue(subject.matches(attempt));
 
         attempt = prepareHasAttemptWithSelector(
-                HBAR_ALLOWANCE_PROXY, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+                HBAR_ALLOWANCE_PROXY,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator);
         assertTrue(subject.matches(attempt));
     }
 
@@ -88,7 +104,13 @@ public class HbarAllowanceTranslatorTest {
     void failsOnInvalidSelector() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         attempt = prepareHasAttemptWithSelector(
-                HBAR_APPROVE, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+                HBAR_APPROVE,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator);
         assertFalse(subject.matches(attempt));
     }
 
