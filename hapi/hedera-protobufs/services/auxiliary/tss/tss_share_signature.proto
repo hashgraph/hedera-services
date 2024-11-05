@@ -43,8 +43,15 @@ option java_multiple_files = true;
  */
 message TssShareSignatureTransactionBody {
   /**
-   * The hash of the roster containing the node whose share produced the
-   * share signature.
+   * A SHA2-384 Hash.<br/>
+   * This is the hash of the roster containing the node whose
+   * share produced this share signature.
+   * <p>
+   * This value is REQUIRED.<br/>
+   * This value MUST identify the network roster active at the time this
+   * share signature was produced.<br/>
+   * This share signature MUST be produced from a share distributed during
+   * the rekey process for the identified roster.
    */
   bytes roster_hash = 1;
 
