@@ -31,7 +31,7 @@ import "basic_types.proto";
  * This transaction body SHALL be considered a "privileged transaction".
  *
  * - This transaction MUST be signed by the governing council and
- * - the active `admin_key` for the node.
+ *   the active `admin_key` for the node.
  * - If this transaction sets a new value for the `admin_key`, then both the
  *   current `admin_key`, and the new `admin_key` MUST sign this transaction.
  * - This transaction SHALL NOT change any field that is not set (is null) in
@@ -162,4 +162,27 @@ message NodeUpdateTransactionBody {
      * If set, this field MUST NOT be set to an empty `KeyList`.
      */
     proto.Key admin_key = 8;
+
+    /**
+     * An ALT_BN128 elliptic curve public encryption key.<br/>
+     * This is controlled by the node operator and specific to this
+     * node's TSS operations.
+     * <p>
+     * The elliptic curve type MAY change in the future. For example,
+     * if the Ethereum ecosystem creates precompiles for BLS12_381,
+     * we may switch to that curve.<br/>
+     * This value SHALL be specified according to EIP-196 and EIP-197 standards.
+     * See [EIP-196](https://eips.ethereum.org/EIPS/eip-196#encoding) and
+     * (EIP-197](https://eips.ethereum.org/EIPS/eip-197#encoding)<br/>
+     * This field is OPTIONAL (that is, it can initially be null),
+     * but once set, it MUST NOT be null.<br/>
+     * If this field is set:
+     * <ul>
+     *   <li>This field MUST contain the bytes of a standard ALT_BN128 key value.</li>
+     *   <li>This key MUST only be used for node TSS operations.</li>
+     *   <li>This key MUST be unique in all future rosters.</li>
+     *   <li>This key MUST be used to encrypt all of this node's future TSS messages.</li>
+     * </ul>
+     */
+    bytes tss_encryption_key = 9;
 }

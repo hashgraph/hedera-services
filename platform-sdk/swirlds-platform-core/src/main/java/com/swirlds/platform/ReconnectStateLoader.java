@@ -26,9 +26,10 @@ import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.validation.AddressBookUpdate;
+import com.swirlds.platform.event.validation.RosterUpdate;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedState;
@@ -139,10 +140,16 @@ public class ReconnectStateLoader {
                     signedState.getState().getReadablePlatformState().getSnapshot()));
 
             platformWiring
-                    .getAddressBookUpdateInput()
-                    .inject(new AddressBookUpdate(
-                            signedState.getState().getReadablePlatformState().getPreviousAddressBook(),
-                            signedState.getState().getReadablePlatformState().getAddressBook()));
+                    .getRosterUpdateInput()
+                    .inject(new RosterUpdate(
+                            RosterRetriever.buildRoster(signedState
+                                    .getState()
+                                    .getReadablePlatformState()
+                                    .getPreviousAddressBook()),
+                            RosterRetriever.buildRoster(signedState
+                                    .getState()
+                                    .getReadablePlatformState()
+                                    .getAddressBook())));
 
             final AncientMode ancientMode = platformContext
                     .getConfiguration()

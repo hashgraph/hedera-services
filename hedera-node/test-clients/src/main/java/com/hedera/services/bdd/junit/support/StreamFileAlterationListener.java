@@ -82,12 +82,12 @@ public class StreamFileAlterationListener extends FileAlterationListenerAdaptor 
         while (true) {
             retryCount++;
             try {
-                exposure.accept(f);
                 log.info(
-                        "Listener@{} gave validators access to {} file {}",
+                        "Listener@{} giving validators access to {} file {}",
                         System.identityHashCode(this),
                         fileType,
                         f.getAbsolutePath());
+                exposure.accept(f);
                 return;
             } catch (Exception e) {
                 if (retryCount < NUM_RETRIES) {
@@ -108,7 +108,13 @@ public class StreamFileAlterationListener extends FileAlterationListenerAdaptor 
     private void exposeBlock(@NonNull final File file) {
         final var block =
                 BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(file.toPath()).getFirst();
-        listeners.forEach(l -> l.onNewBlock(block));
+        listeners.forEach(l -> {
+            try {
+                l.onNewBlock(block);
+            } catch (Exception e) {
+                log.error("{} failed to process block file {}", l, file.getAbsolutePath(), e);
+            }
+        });
     }
 
     private void exposeSidecars(final File file) {

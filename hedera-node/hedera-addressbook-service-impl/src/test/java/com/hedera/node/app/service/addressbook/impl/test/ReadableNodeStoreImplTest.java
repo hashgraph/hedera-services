@@ -25,18 +25,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase;
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import java.util.Set;
 import org.assertj.core.util.Streams;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class ReadableNodeStoreImplTest extends AddressBookTestBase {
@@ -107,4 +111,39 @@ class ReadableNodeStoreImplTest extends AddressBookTestBase {
         assertEquals(
                 keySet, Set.of(new EntityNumber(1), new EntityNumber(2), new EntityNumber(4), new EntityNumber(5)));
     }
+
+    @Test
+    @DisplayName("Constructing a new roster includes all of the latest nodes defined in state")
+    void snapshotOfFutureRosterIncludesAllUndeletedDefinitions() {
+        final ReadableKVState<EntityNumber, Node> nodesState = emptyReadableNodeStateBuilder()
+                .value(EntityNumber.newBuilder().number(1).build(), NODE_1)
+                .value(EntityNumber.newBuilder().number(2).build(), NODE_2)
+                .value(EntityNumber.newBuilder().number(3).build(), NODE_3)
+                .value(
+                        EntityNumber.newBuilder().number(4).build(),
+                        Node.newBuilder().nodeId(4).weight(40).deleted(true).build())
+                .build();
+        given(readableStates.<EntityNumber, Node>get(anyString())).willReturn(nodesState);
+
+        subject = new ReadableNodeStoreImpl(readableStates);
+        final var result = subject.snapshotOfFutureRoster();
+        org.assertj.core.api.Assertions.assertThat(result.rosterEntries())
+                .containsExactlyInAnyOrder(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3);
+    }
+
+    private static final Node NODE_1 = Node.newBuilder().nodeId(1).weight(10).build();
+    private static final RosterEntry ROSTER_NODE_1 = RosterEntry.newBuilder()
+            .nodeId(NODE_1.nodeId())
+            .weight(NODE_1.weight())
+            .build();
+    private static final Node NODE_2 = Node.newBuilder().nodeId(2).weight(20).build();
+    private static final RosterEntry ROSTER_NODE_2 = RosterEntry.newBuilder()
+            .nodeId(NODE_2.nodeId())
+            .weight(NODE_2.weight())
+            .build();
+    private static final Node NODE_3 = Node.newBuilder().nodeId(3).weight(30).build();
+    private static final RosterEntry ROSTER_NODE_3 = RosterEntry.newBuilder()
+            .nodeId(NODE_3.nodeId())
+            .weight(NODE_3.weight())
+            .build();
 }
