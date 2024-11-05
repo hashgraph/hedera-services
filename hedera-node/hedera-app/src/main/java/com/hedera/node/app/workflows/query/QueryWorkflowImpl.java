@@ -105,7 +105,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     /**
      * Indicates if the QueryWorkflow should charge for handling queries.
      */
-    private boolean shouldCharge;
+    private final boolean shouldCharge;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -353,14 +353,5 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         } catch (UnknownHederaFunctionality e) {
             return HederaFunctionality.NONE;
         }
-    }
-
-    /**
-     * Sets if the workflow should charge for handling queries.
-     *
-     * @param shouldCharge If the workflow should charge for handling queries.
-     */
-    public void setShouldCharge(boolean shouldCharge) {
-        this.shouldCharge = shouldCharge;
     }
 }
