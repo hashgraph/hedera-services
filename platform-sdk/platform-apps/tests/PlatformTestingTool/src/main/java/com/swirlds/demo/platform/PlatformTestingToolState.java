@@ -95,6 +95,7 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -436,7 +437,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      */
     @Override
     public int getMaximumChildCount() {
-        return ChildIndices.CHILD_COUNT;
+        return ChildIndices.CHILD_COUNT + 1;
     }
 
     /**
@@ -469,6 +470,8 @@ public class PlatformTestingToolState extends MerkleStateRoot {
                 return childClassId == VirtualMap.CLASS_ID || childClassId == NULL_CLASS_ID;
             case ChildIndices.QUORUM_RESULT:
                 return childClassId == QuorumResult.CLASS_ID;
+            case ChildIndices.SINGLETON_NODE:
+                return childClassId == SingletonNode.CLASS_ID;
             default:
                 return false;
         }
@@ -1312,7 +1315,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
-        //        super.init(platform, trigger, previousSoftwareVersion);
+        super.init(platform, trigger, previousSoftwareVersion);
 
         if (trigger == InitTrigger.RESTART) {
             rebuildExpectedMapFromState(Instant.EPOCH, true);
@@ -1684,7 +1687,9 @@ public class PlatformTestingToolState extends MerkleStateRoot {
 
         public static final int QUORUM_RESULT = 10;
 
-        public static final int CHILD_COUNT = 11;
+        public static final int SINGLETON_NODE = 11;
+
+        public static final int CHILD_COUNT = 12;
     }
 
     @Override
