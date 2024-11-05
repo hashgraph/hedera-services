@@ -16,6 +16,9 @@
 
 package com.swirlds.common.system.address;
 
+/**
+ * Class keeping constants related to rosters and addresses
+ * */
 public class RosterConstants {
 
     // FUTURE WORK: remove this restriction and use other strategies to make serialization safe
