@@ -76,7 +76,7 @@ public class HapiClients {
      */
     private final Map<AccountID, String> tlsStubIds;
     /**
-     * Id of node-{host, port} pairs to use for non-workflow operations using node operator ports
+     * Id of node-{host, port} pairs to use for node operator operations
      */
     private final Map<AccountID, String> nodeOperatorStubIds;
 
@@ -158,13 +158,13 @@ public class HapiClients {
         final var existingPool = channelPools.computeIfAbsent(channelUri, COPY_ON_WRITE_LIST_SUPPLIER);
         if (existingPool.size() < MAX_DESIRED_CHANNELS_PER_NODE) {
             final var channel = createNettyChannel(false, node.getHost(), node.getGrpcNodeOperatorPort(), -1);
-            requireNonNull(channel, "Cannot continue without Netty channel");
+            requireNonNull(channel, "FATAL: Cannot continue without additional Netty channel");
             existingPool.add(ChannelStubs.from(channel, new NodeConnectInfo(node.hapiSpecInfo()), false));
         }
         stubSequences.putIfAbsent(channelUri, new AtomicInteger());
     }
 
-    private HapiClients(Supplier<List<NodeConnectInfo>> nodeInfosSupplier) {
+    private HapiClients(final Supplier<List<NodeConnectInfo>> nodeInfosSupplier) {
         this.nodes = Collections.emptyList();
         this.nodeInfos = nodeInfosSupplier.get();
         stubIds = nodeInfos.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::uri));
@@ -209,7 +209,7 @@ public class HapiClients {
     }
 
     /**
-     * Retrieves a blocking stub for the FIleService based on the provided parameters.
+     * Retrieves a blocking stub for the FileService based on the provided parameters.
      *
      * This method obtains a stub from the pool, identified by the given AccountID,
      * TLS usage, and node operator status. It sets a deadline for the stub's

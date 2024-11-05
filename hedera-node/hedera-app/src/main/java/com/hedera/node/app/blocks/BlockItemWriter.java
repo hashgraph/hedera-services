@@ -37,6 +37,7 @@ public interface BlockItemWriter {
      * Writes a serialized item to the destination stream.
      *
      * @param bytes the serialized item to write
+     * @return the block item writer
      */
     default BlockItemWriter writePbjItem(@NonNull final Bytes bytes) {
         requireNonNull(bytes);
@@ -47,6 +48,7 @@ public interface BlockItemWriter {
      * Writes a serialized item to the destination stream.
      *
      * @param bytes the serialized item to write
+     * @return the block item writer
      */
     BlockItemWriter writeItem(@NonNull byte[] bytes);
 
@@ -54,6 +56,7 @@ public interface BlockItemWriter {
      * Writes a pre-serialized sequence of items to the destination stream.
      *
      * @param data the serialized item to write
+     * @return the block item writer
      */
     BlockItemWriter writeItems(@NonNull BufferedData data);
 

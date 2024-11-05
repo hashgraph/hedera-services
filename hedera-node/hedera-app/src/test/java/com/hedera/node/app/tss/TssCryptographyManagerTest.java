@@ -76,12 +76,15 @@ public class TssCryptographyManagerTest {
     @Mock
     private WritableTssStore tssStore;
 
+    @Mock
+    private TssMetrics tssMetrics;
+
     @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
 
     @BeforeEach
     void setUp() {
-        subject = new TssCryptographyManager(tssLibrary, gossip, ForkJoinPool.commonPool());
+        subject = new TssCryptographyManager(tssLibrary, gossip, ForkJoinPool.commonPool(), tssMetrics);
         when(handleContext.networkInfo()).thenReturn(networkInfo);
         when(networkInfo.selfNodeInfo()).thenReturn(new NodeInfoImpl(0, AccountID.DEFAULT, 0, null, null));
     }
@@ -120,7 +123,7 @@ public class TssCryptographyManagerTest {
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
-        when(tssStore.getTssMessages(any())).thenReturn(List.of(body));
+        when(tssStore.getTssMessageBodies(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
 
         when(tssLibrary.computePublicShares(any(), any())).thenReturn(mockPublicShares);
@@ -140,7 +143,7 @@ public class TssCryptographyManagerTest {
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
-        when(tssStore.getTssMessages(any())).thenReturn(List.of(body));
+        when(tssStore.getTssMessageBodies(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
 
         when(tssLibrary.computePublicShares(any(), any())).thenThrow(new RuntimeException());

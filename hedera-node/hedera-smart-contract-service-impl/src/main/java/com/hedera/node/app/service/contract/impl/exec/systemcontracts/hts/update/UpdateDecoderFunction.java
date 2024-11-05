@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.crypto;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update;
 
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.address.AddressBook;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
 
-/**
- * A record representing an address book with the keys and certificates associated with each node.
- *
- * @param addressBook           the address book
- * @param nodeIdKeysAndCertsMap the keys and certificates associated with each node
- */
-public record AddressBookAndCerts(
-        @NonNull AddressBook addressBook, @NonNull Map<NodeId, KeysAndCerts> nodeIdKeysAndCertsMap) {}
+@FunctionalInterface
+public interface UpdateDecoderFunction {
+
+    TransactionBody decode(@NonNull final HtsCallAttempt input);
+}

@@ -30,6 +30,7 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
@@ -51,6 +52,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
@@ -100,6 +102,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final FakeState state = new FakeState();
     protected final AccountID defaultNodeAccountId;
     protected final AddressBook addressBook;
+    protected final Roster roster;
     protected final NodeId defaultNodeId;
     protected final AtomicInteger nextNano = new AtomicInteger(0);
     protected final Hedera hedera;
@@ -111,6 +114,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
         addressBook = loadAddressBook(node.getExternalPath(ADDRESS_BOOK));
+        roster = RosterRetriever.buildRoster(addressBook);
         nodeIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .collect(toMap(AbstractEmbeddedHedera::accountIdOf, Address::getNodeId));
         accountIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
@@ -133,7 +137,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     @Override
     public void start() {
-        hedera.initPlatformState(state);
+        hedera.initializeStatesApi(state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook);
+
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
         final WritableSingletonState<PlatformState> platformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
         final var currentState = requireNonNull(platformState.get());
@@ -144,7 +149,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         ((CommittableWritableStates) writableStates).commit();
 
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
-        hedera.onStateInitialized(state, fakePlatform(), GENESIS, null);
+        hedera.onStateInitialized(state, fakePlatform(), GENESIS);
         hedera.init(fakePlatform(), defaultNodeId);
         fakePlatform().start();
         fakePlatform().notifyListeners(ACTIVE_NOTIFICATION);

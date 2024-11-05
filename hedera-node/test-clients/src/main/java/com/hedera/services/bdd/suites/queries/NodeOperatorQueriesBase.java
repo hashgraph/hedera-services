@@ -21,8 +21,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.spec.SpecOperation;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A class with setup for Node Operator Queries tests
@@ -42,23 +40,20 @@ public class NodeOperatorQueriesBase {
     protected static final String CONTRACT = "contract";
     protected static final String SCHEDULE = "schedule";
     protected static final String TOPIC = "topic";
+    protected static final int QUERY_COST = 84018;
 
     /**
-     * Create Node Operator account
-     * Create all other accounts
-     * Create tokens
+     * Creates an account for use as a node operator account, as well as a regular fungible token
      *
      * @return array of operations
      */
     protected static SpecOperation[] createAllAccountsAndTokens() {
-
-        final var createOperations = new ArrayList<SpecOperation>(List.of(
-                cryptoCreate(OWNER).balance(0L),
-                tokenCreate(FUNGIBLE_QUERY_TOKEN)
-                        .treasury(OWNER)
-                        .tokenType(FUNGIBLE_COMMON)
-                        .initialSupply(100L)));
-
-        return createOperations.toArray(new SpecOperation[0]);
+        return new SpecOperation[] {
+            cryptoCreate(OWNER).balance(0L),
+            tokenCreate(FUNGIBLE_QUERY_TOKEN)
+                    .treasury(OWNER)
+                    .tokenType(FUNGIBLE_COMMON)
+                    .initialSupply(100L)
+        };
     }
 }

@@ -64,13 +64,6 @@ class ServicesSoftwareVersionTest {
     }
 
     @Test
-    void alwaysLaterThanHederaSoftwareVersion() {
-        final var prevVersion = new HederaSoftwareVersion(LATE, LATE, DEFAULT_CONFIG_VERSION);
-        final var subject = new ServicesSoftwareVersion(EARLY, DEFAULT_CONFIG_VERSION);
-        assertThat(subject.compareTo(prevVersion)).isGreaterThan(0);
-    }
-
-    @Test
     void majorIsLaterThanMinor() {
         final var prevVersion = new ServicesSoftwareVersion(MIDDLE, DEFAULT_CONFIG_VERSION);
         final var subject = new ServicesSoftwareVersion(LATE, DEFAULT_CONFIG_VERSION);

@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDE
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.lessThan;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -39,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -117,63 +119,40 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
         }
 
         @HapiTest
-        final Stream<DynamicTest> nodeOperatorQueryVerifyPayerBalanceForAccountBalance_WithoutOpContext() {
-            // declare payer account balance variables
-            final AtomicLong currentPayerBalance = new AtomicLong();
-            final AtomicLong payerBalanceAfterFirstQuery = new AtomicLong();
-            final AtomicLong payerBalanceAfterSecondQuery = new AtomicLong();
+        final Stream<DynamicTest> nodeOperatorQueryVerifyPayerBalanceForAccountBalance() {
             return hapiTest(
                     cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
                     cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                    getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set),
-                    // perform paid query, pay for the query with payer account
+                    // perform getAccountBalance() query, pay for the query with payer account
                     // the grpc client performs the query to different ports
                     getAccountBalance(NODE_OPERATOR).payingWith(PAYER),
                     sleepFor(3_000),
-                    getAccountBalance(PAYER).exposingBalanceTo(payerBalanceAfterFirstQuery::set),
+                    // assert payer is charged
+                    getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS),
                     // perform free query to local port with asNodeOperator() method
                     getAccountBalance(NODE_OPERATOR).payingWith(PAYER).asNodeOperator(),
                     sleepFor(3_000),
-                    // assert payer account balance is not changed
-                    getAccountBalance(PAYER).exposingBalanceTo(payerBalanceAfterSecondQuery::set),
-                    doAdhoc(() -> {
-                        assertThat(currentPayerBalance.get())
-                                .withFailMessage("Balances are not equal!")
-                                .isEqualTo(payerBalanceAfterFirstQuery.get());
-                        assertThat(payerBalanceAfterFirstQuery.get())
-                                .withFailMessage("Balances are not equal!")
-                                .isEqualTo(payerBalanceAfterSecondQuery.get());
-                    }));
+                    // assert payer is not charged as the query is performed as node operator
+                    getAccountBalance(PAYER).hasTinyBars(ONE_HUNDRED_HBARS));
         }
 
         @HapiTest
-        final Stream<DynamicTest> nodeOperatorQueryVerifyPayerBalanceForAccountInfo_WithoutOpContext() {
-            // declare payer account balance variables
-            final AtomicLong currentPayerBalance = new AtomicLong();
-            final AtomicLong payerBalanceAfterFirstQuery = new AtomicLong();
-            final AtomicLong payerBalanceAfterSecondQuery = new AtomicLong();
+        final Stream<DynamicTest> nodeOperatorQueryVerifyPayerBalanceForAccountInfo() {
             return hapiTest(
                     cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
                     cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                    getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set),
-                    // perform paid query, pay for the query with payer account
+                    balanceSnapshot("payerInitialBalance", PAYER),
+                    // perform getAccountInfo() query, pay for the query with payer account
                     // the grpc client performs the query to different ports
                     getAccountInfo(NODE_OPERATOR).payingWith(PAYER),
                     sleepFor(3_000),
-                    getAccountBalance(PAYER).exposingBalanceTo(payerBalanceAfterFirstQuery::set),
+                    // assert payer is charged
+                    getAccountBalance(PAYER).hasTinyBars(changeFromSnapshot("payerInitialBalance", -QUERY_COST)),
                     // perform free query to local port with asNodeOperator() method
                     getAccountInfo(NODE_OPERATOR).payingWith(PAYER).asNodeOperator(),
                     sleepFor(3_000),
-                    // assert payer account balance is not changed
-                    getAccountBalance(PAYER).exposingBalanceTo(payerBalanceAfterSecondQuery::set),
-                    doAdhoc(() -> {
-                        assertThat(payerBalanceAfterFirstQuery.get())
-                                .withFailMessage("Balances are equal!")
-                                .isNotEqualTo(currentPayerBalance.get());
-                        assertThat(payerBalanceAfterFirstQuery.get())
-                                .withFailMessage("Balances are not equal!")
-                                .isEqualTo(payerBalanceAfterSecondQuery.get());
-                    }));
+                    // assert payer is not charged as the query is performed as node operator
+                    getAccountBalance(PAYER).hasTinyBars(changeFromSnapshot("payerInitialBalance", -QUERY_COST)));
         }
 
         /**
