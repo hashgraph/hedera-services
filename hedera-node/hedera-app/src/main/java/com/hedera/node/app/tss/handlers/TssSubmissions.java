@@ -33,7 +33,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
@@ -92,7 +91,10 @@ public class TssSubmissions {
             @NonNull final TssMessageTransactionBody body, @NonNull final HandleContext context) {
         requireNonNull(body);
         requireNonNull(context);
-        return submit(b -> b.tssMessage(body), context.configuration(), context.networkInfo().selfNodeInfo().accountId());
+        return submit(
+                b -> b.tssMessage(body),
+                context.configuration(),
+                context.networkInfo().selfNodeInfo().accountId());
     }
 
     /**
@@ -106,7 +108,10 @@ public class TssSubmissions {
             @NonNull final TssVoteTransactionBody body, @NonNull final HandleContext context) {
         requireNonNull(body);
         requireNonNull(context);
-        return submit(b -> b.tssVote(body), context.configuration(), context.networkInfo().selfNodeInfo().accountId());
+        return submit(
+                b -> b.tssVote(body),
+                context.configuration(),
+                context.networkInfo().selfNodeInfo().accountId());
     }
 
     /**

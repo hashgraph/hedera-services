@@ -201,11 +201,12 @@ public class TssBaseServiceImpl implements TssBaseService {
                 () -> {
                     final var tssPrivateShares = privateKeysAccessor.getActiveRosterShares();
                     final var activeRoster = privateKeysAccessor.getActiveRosterHash();
-                    for(final var privateShare : tssPrivateShares) {
+                    for (final var privateShare : tssPrivateShares) {
                         final var signature = tssLibrary.sign(privateShare, messageHash);
                         final var tssShareSignatureBody = TssShareSignatureTransactionBody.newBuilder()
                                 .messageHash(Bytes.wrap(messageHash))
-                                .shareSignature(Bytes.wrap(signature.signature().signature().toBytes()))
+                                .shareSignature(Bytes.wrap(
+                                        signature.signature().signature().toBytes()))
                                 .shareIndex(privateShare.shareId().idElement())
                                 .rosterHash(activeRoster)
                                 .build();
@@ -213,19 +214,19 @@ public class TssBaseServiceImpl implements TssBaseService {
                         tssSubmissions.submitTssShareSignature(tssShareSignatureBody, null);
                     }
                     consumers.forEach(consumer -> {
-                    try {
-                        // TODO: Remove this once TssShareSignatureHandler is implemented
-                        consumer.accept(messageHash, mockSignature);
-                    } catch (Exception e) {
-                        log.error(
-                                "Failed to provide signature {} on message {} to consumer {}",
-                                CommonUtils.hex(mockSignature),
-                                CommonUtils.hex(messageHash),
-                                consumer,
-                                e);
-                    }
-                });
-                    },
+                        try {
+                            // TODO: Remove this once TssShareSignatureHandler is implemented
+                            consumer.accept(messageHash, mockSignature);
+                        } catch (Exception e) {
+                            log.error(
+                                    "Failed to provide signature {} on message {} to consumer {}",
+                                    CommonUtils.hex(mockSignature),
+                                    CommonUtils.hex(messageHash),
+                                    consumer,
+                                    e);
+                        }
+                    });
+                },
                 signingExecutor);
     }
 

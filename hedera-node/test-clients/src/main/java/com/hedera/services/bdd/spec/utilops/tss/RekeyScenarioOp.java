@@ -125,8 +125,9 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
     @Nullable
     private Bytes targetRosterHash;
 
+    private int actualVotes = 0;
+    private int actualMessages = 0;
     private int expectedVotes = NA;
-
     private int expectedMessages = NA;
 
     static {
@@ -220,16 +221,31 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
 
     @Override
     public boolean test(@NonNull final Block block) throws AssertionError {
+        final var blockNo = block.items().getFirst().blockHeaderOrThrow().number();
+        log.info(
+                "Pre-block#{}, votes={}/{}, messages={}/{}",
+                blockNo,
+                actualVotes,
+                (expectedVotes == NA) ? "?" : expectedVotes,
+                actualMessages,
+                (expectedMessages == NA) ? "?" : expectedMessages);
+        observeInteractionsIn(block);
+        log.info(
+                "Post-block#{}, votes={}/{}, messages={}/{}",
+                blockNo,
+                actualVotes,
+                (expectedVotes == NA) ? "?" : expectedVotes,
+                actualMessages,
+                (expectedMessages == NA) ? "?" : expectedMessages);
         if (expectedMessages != NA && expectedVotes != NA) {
-            final var blockNo = block.items().getFirst().blockHeaderOrThrow().number();
-            log.info("Pre-block#{}, expected votes={}, expected messages={}", blockNo, expectedVotes, expectedMessages);
-            observeInteractionsIn(block);
-            log.info(
-                    "  -> After #{}, expected votes={}, expected messages={}",
-                    blockNo,
-                    expectedVotes,
-                    expectedMessages);
-            return expectedMessages == 0 && expectedVotes == 0;
+            if (actualMessages > expectedMessages) {
+                Assertions.fail(
+                        "Too many messages submitted, expected " + expectedMessages + " but got " + actualMessages);
+            }
+            if (actualVotes > expectedVotes) {
+                Assertions.fail("Too many votes submitted, expected " + expectedVotes + " but got " + actualVotes);
+            }
+            return (actualMessages == expectedMessages) && (actualVotes == expectedVotes);
         }
         return false;
     }
@@ -245,9 +261,9 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
                     if (body.nodeAccountIDOrElse(AccountID.DEFAULT).accountNumOrElse(0L)
                             == CLASSIC_FIRST_NODE_ACCOUNT_NUM) {
                         if (body.hasTssMessage()) {
-                            expectedMessages--;
+                            actualMessages++;
                         } else if (body.hasTssVote()) {
-                            expectedVotes--;
+                            actualVotes++;
                         }
                     }
                 } catch (ParseException e) {

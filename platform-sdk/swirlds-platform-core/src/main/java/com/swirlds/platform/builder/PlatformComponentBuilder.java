@@ -1059,7 +1059,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     AdHocThreadManager.getStaticThreadManager(),
                     blocks.keysAndCerts(),
-                    blocks.initialAddressBook(),
+                    getInitialRoster(),
                     blocks.selfId(),
                     blocks.appVersion(),
                     blocks.swirldStateManager(),
