@@ -75,8 +75,8 @@ public abstract class AbstractSpecEntity<O extends SpecOperation, M extends Reco
 
     /**
      * Wraps a supplier of a future result, allowing us to defer scheduling that supplier until we know
-     * it is the privileged supplier of out of potentially several suppliers concurrent test executor
-     * threads created for this entity.
+     * it is the privileged supplier out of potentially several suppliers concurrent test executor threads
+     * created for this entity.
      * @param <M> the type of the model returned by the supplier
      */
     private static class DeferredResult<M extends Record> {
