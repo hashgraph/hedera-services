@@ -44,6 +44,9 @@ module com.hedera.node.app {
     requires com.google.protobuf;
     requires io.grpc.netty;
     requires io.grpc;
+    requires io.helidon.common.tls;
+    requires io.helidon.webclient.api;
+    requires io.helidon.webclient.grpc;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
@@ -113,6 +116,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.tss.pairings;
     exports com.hedera.node.app.tss.handlers;
     exports com.hedera.node.app.tss.stores;
+    exports com.hedera.node.app.blocks.schemas;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

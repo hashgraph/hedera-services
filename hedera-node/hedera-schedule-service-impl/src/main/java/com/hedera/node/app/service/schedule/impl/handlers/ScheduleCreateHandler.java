@@ -63,7 +63,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -72,7 +71,7 @@ import javax.inject.Singleton;
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_CREATE}.
  */
 @Singleton
-public class ScheduleCreateHandler extends ScheduleManager implements TransactionHandler {
+public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
     private final InstantSource instantSource;
 
@@ -162,8 +161,9 @@ public class ScheduleCreateHandler extends ScheduleManager implements Transactio
         // we can compare those bytes to any new ScheduleCreate transaction for detecting duplicate
         // ScheduleCreate transactions. SchedulesByEquality is the virtual map for that task.
         final var scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
-        final var possibleDuplicates = scheduleStore.getByEquality(provisionalSchedule);
-        final var duplicate = maybeDuplicate(provisionalSchedule, possibleDuplicates);
+        final var possibleDuplicateId = scheduleStore.getByEquality(provisionalSchedule);
+        final var possibleDuplicate = possibleDuplicateId == null ? null : scheduleStore.get(possibleDuplicateId);
+        final var duplicate = maybeDuplicate(provisionalSchedule, possibleDuplicate);
         if (duplicate != null) {
             final var scheduledTxnId = duplicate
                     .originalCreateTransactionOrThrow()
@@ -252,15 +252,12 @@ public class ScheduleCreateHandler extends ScheduleManager implements Transactio
         return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs);
     }
 
-    private @Nullable Schedule maybeDuplicate(
-            @NonNull final Schedule schedule, @Nullable final List<Schedule> duplicates) {
-        if (duplicates == null) {
+    private @Nullable Schedule maybeDuplicate(@NonNull final Schedule schedule, @Nullable final Schedule duplicate) {
+        if (duplicate == null) {
             return null;
         }
-        for (final var duplicate : duplicates) {
-            if (areIdentical(duplicate, schedule)) {
-                return duplicate;
-            }
+        if (areIdentical(duplicate, schedule)) {
+            return duplicate;
         }
         return null;
     }

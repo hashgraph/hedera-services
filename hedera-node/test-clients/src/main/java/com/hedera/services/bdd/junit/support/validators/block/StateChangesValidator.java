@@ -19,8 +19,6 @@ package com.hedera.services.bdd.junit.support.validators.block;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
-import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
-import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
@@ -31,8 +29,6 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.working
 import static com.hedera.services.bdd.junit.support.validators.block.ChildHashUtils.hashesByName;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.state.GenesisStateBuilder.initGenesisPlatformState;
-import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,74 +41,44 @@ import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.QueuePushChange;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.node.app.Hedera;
 import com.hedera.node.app.blocks.BlockStreamManager;
-import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
-import com.hedera.node.app.config.ConfigProviderImpl;
-import com.hedera.node.app.fees.FeeService;
-import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.info.GenesisNetworkInfo;
-import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.roster.RosterService;
-import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
-import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
-import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
-import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.service.util.impl.UtilServiceImpl;
-import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.OrderedServiceMigrator;
-import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.spi.signatures.SignatureVerifier;
-import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
-import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakePlatformContext;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.config.BasicConfig;
+import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.Event;
-import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -129,9 +95,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -165,9 +129,9 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "bc49350852851a2c737ef6b5db24da8ba108401952ec207a1a5a4230de8d8a626da1f3663f0560bd6cf401c601b08896"),
+                        "0340d546d0bfeb6e2f12af275347f584231fa41928a700543c9595affa817da5423bc4aac0689a388f6a8b972de30028"),
                 node0Dir.resolve("output/swirlds.log"),
-                node0Dir.resolve("genesis-config.txt"),
+                node0Dir.resolve("config.txt"),
                 node0Dir.resolve("data/config/application.properties"),
                 Bytes.fromHex("03"));
         final var blocks =
@@ -240,40 +204,37 @@ public class StateChangesValidator implements BlockStreamValidator {
                 "hedera.app.properties.path",
                 pathToOverrideProperties.toAbsolutePath().toString());
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
-        final var servicesRegistry = new ServicesRegistryImpl(ConstructableRegistry.getInstance(), bootstrapConfig);
-        registerServices(InstantSource.system(), servicesRegistry, bootstrapConfig);
         final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
         final var servicesVersion = versionConfig.servicesVersion();
         final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
-        final var roster = createRoster(addressBook);
-        final var networkInfo = new GenesisNetworkInfo(roster, ledgerId);
-
-        final var migrator = new OrderedServiceMigrator();
         final var configVersion =
                 bootstrapConfig.getConfigData(HederaConfig.class).configVersion();
         final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
         final var metrics = new NoOpMetrics();
-        final var lifecycles =
-                newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry, metrics);
-        this.state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
-        initGenesisPlatformState(
-                new FakePlatformContext(NodeId.of(0), Executors.newSingleThreadScheduledExecutor()),
-                this.state.getWritablePlatformState(),
-                addressBook,
-                currentVersion);
+        final var hedera = new Hedera(
+                ConstructableRegistry.getInstance(),
+                ServicesRegistryImpl::new,
+                new OrderedServiceMigrator(),
+                InstantSource.system(),
+                appContext -> new TssBaseServiceImpl(
+                        appContext,
+                        ForkJoinPool.commonPool(),
+                        ForkJoinPool.commonPool(),
+                        new PlaceholderTssLibrary(),
+                        ForkJoinPool.commonPool()));
+        this.state = (MerkleStateRoot) hedera.newMerkleStateRoot();
+        hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, addressBook);
+        final Configuration platformConfig = ConfigurationBuilder.create()
+                .withConfigDataType(MetricsConfig.class)
+                .withConfigDataType(TransactionConfig.class)
+                .withConfigDataType(CryptoConfig.class)
+                .withConfigDataType(BasicConfig.class)
+                .build();
+        initGenesisPlatformState(platformConfig, this.state.getWritablePlatformState(), addressBook, currentVersion);
         final var stateToBeCopied = state;
         state = state.copy();
         // get the state hash before applying the state changes from current block
         this.genesisStateHash = CRYPTO.digestTreeSync(stateToBeCopied);
-
-        migrator.doMigrations(
-                state,
-                servicesRegistry,
-                null,
-                new ServicesSoftwareVersion(servicesVersion, configVersion),
-                new ConfigProviderImpl().getConfiguration(),
-                networkInfo,
-                metrics);
 
         logger.info("Registered all Service and migrated state definitions to version {}", servicesVersion);
     }
@@ -524,58 +485,6 @@ public class StateChangesValidator implements BlockStreamValidator {
         }
     }
 
-    private void registerServices(
-            final InstantSource instantSource,
-            final ServicesRegistry servicesRegistry,
-            final VersionedConfiguration bootstrapConfig) {
-        final var appContext = new AppContextImpl(instantSource, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP);
-        // Register all service schema RuntimeConstructable factories before platform init
-        Set.of(
-                        new EntityIdService(),
-                        new ConsensusServiceImpl(),
-                        new ContractServiceImpl(appContext),
-                        new FileServiceImpl(),
-                        new TssBaseServiceImpl(
-                                appContext,
-                                ForkJoinPool.commonPool(),
-                                ForkJoinPool.commonPool(),
-                                new PlaceholderTssLibrary(),
-                                ForkJoinPool.commonPool()),
-                        new FreezeServiceImpl(),
-                        new ScheduleServiceImpl(),
-                        new TokenServiceImpl(),
-                        new UtilServiceImpl(),
-                        new RecordCacheService(),
-                        new BlockRecordService(),
-                        new BlockStreamService(),
-                        new FeeService(),
-                        new CongestionThrottleService(),
-                        new NetworkServiceImpl(),
-                        new AddressBookServiceImpl(),
-                        new RosterService(),
-                        PLATFORM_STATE_SERVICE)
-                .forEach(servicesRegistry::register);
-    }
-
-    private SignatureVerifier fakeSignatureVerifier() {
-        return new SignatureVerifier() {
-            @Override
-            public boolean verifySignature(
-                    @NonNull Key key,
-                    @NonNull Bytes bytes,
-                    @NonNull MessageType messageType,
-                    @NonNull SignatureMap signatureMap,
-                    @Nullable Function<Key, SimpleKeyStatus> simpleKeyVerifier) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @Override
-            public KeyCounts countSimpleKeys(@NonNull Key key) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-        };
-    }
-
     private static @Nullable Bytes findRootHashFrom(@NonNull final Path stateMetadataPath) {
         try (final var lines = Files.lines(stateMetadataPath)) {
             return lines.filter(line -> line.startsWith("HASH:"))
@@ -652,66 +561,6 @@ public class StateChangesValidator implements BlockStreamValidator {
         return sb == null ? null : hashesByName(sb.toString());
     }
 
-    private static MerkleStateLifecycles newPlatformInitLifecycle(
-            @NonNull final Configuration bootstrapConfig,
-            @NonNull final SoftwareVersion currentVersion,
-            @NonNull final OrderedServiceMigrator serviceMigrator,
-            @NonNull final ServicesRegistryImpl servicesRegistry,
-            @NonNull final NoOpMetrics metrics) {
-        return new MerkleStateLifecycles() {
-            @Override
-            public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
-                final var deserializedVersion = serviceMigrator.creationVersionOf(state);
-                return serviceMigrator.doMigrations(
-                        state,
-                        servicesRegistry.subRegistryFor(
-                                EntityIdService.NAME, PlatformStateService.NAME, RosterStateId.NAME),
-                        deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
-                        currentVersion,
-                        bootstrapConfig,
-                        UNAVAILABLE_NETWORK_INFO,
-                        metrics);
-            }
-
-            @Override
-            public void onPreHandle(@NonNull Event event, @NonNull State state) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @Override
-            public void onHandleConsensusRound(@NonNull final Round round, @NonNull State state) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @Override
-            public void onSealConsensusRound(@NonNull final Round round, @NonNull final State state) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @Override
-            public void onStateInitialized(
-                    @NonNull State state,
-                    @NonNull Platform platform,
-                    @NonNull InitTrigger trigger,
-                    @Nullable SoftwareVersion previousVersion) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @Override
-            public void onUpdateWeight(
-                    @NonNull MerkleStateRoot state,
-                    @NonNull AddressBook configAddressBook,
-                    @NonNull PlatformContext context) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @Override
-            public void onNewRecoveredState(@NonNull MerkleStateRoot recoveredState) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-        };
-    }
-
     private static Object singletonPutFor(@NonNull final SingletonUpdateChange singletonUpdateChange) {
         return switch (singletonUpdateChange.newValue().kind()) {
             case UNSET -> throw new IllegalStateException("Singleton update value is not set");
@@ -769,7 +618,9 @@ public class StateChangesValidator implements BlockStreamValidator {
             case NFT_VALUE -> mapChangeValue.nftValueOrThrow();
             case PROTO_STRING_VALUE -> new ProtoString(mapChangeValue.protoStringValueOrThrow());
             case SCHEDULE_VALUE -> mapChangeValue.scheduleValueOrThrow();
+            case SCHEDULE_ID_VALUE -> mapChangeValue.scheduleIdValueOrThrow();
             case SCHEDULE_LIST_VALUE -> mapChangeValue.scheduleListValueOrThrow();
+            case SCHEDULE_ID_LIST_VALUE -> mapChangeValue.scheduleIdListValueOrThrow();
             case SLOT_VALUE_VALUE -> mapChangeValue.slotValueValueOrThrow();
             case STAKING_NODE_INFO_VALUE -> mapChangeValue.stakingNodeInfoValueOrThrow();
             case TOKEN_VALUE -> mapChangeValue.tokenValueOrThrow();

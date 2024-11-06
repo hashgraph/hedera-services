@@ -27,10 +27,14 @@ defaults:
     shell: bash
 
 permissions:
+  actions: write
   contents: write
+  statuses: write
 
 env:
   XTS_CANDIDATE_TAG: "xts-candidate"
+  XTS_PASS_GREP_PATTERN: "xts-pass-*"
+  PROMOTED_GREP_PATTERN: "build-.{5}"
 
 jobs:
   tag-for-xts:
@@ -43,7 +47,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout Default Branch
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: '0'
           ref: 'develop'
@@ -62,7 +66,7 @@ jobs:
           fi
 
       - name: Checkout Code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         if: ${{ steps.validate-input.outputs.commit_on_dev == 'true'}}
         with:
           fetch-depth: '0'
@@ -79,11 +83,46 @@ jobs:
           gpg_private_key: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
           passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
 
+      # Check if this commit is already tagged in the XTS flow
+      - name: Check if XTS flow is required
+        id: check-xts-required
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_PATTERN: ${{ env.XTS_CANDIDATE_TAG }}
+          XTS_PASS_PATTERN: ${{ env.XTS_PASS_GREP_PATTERN }}
+          BUILD_PROMO_PATTERN: ${{ env.PROMOTED_GREP_PATTERN }}
+        run: |
+          set +e
+          # Check if the HEAD ref is already tagged in the XTS workflows
+          XTS_CANDIDATE_TAGGED=$(git tag --contains HEAD | grep -E "${CANDIDATE_PATTERN}")
+          XTS_PASS_TAGGED=$(git tag --contains HEAD | grep -E "${XTS_PASS_PATTERN}")
+          BUILD_PROMOTED_TAGGED=$(git tag --contains HEAD | grep -E "${BUILD_PROMO_PATTERN}")
+          set -e
+
+          # if the strings are not empty than the commit has been tagged.
+          if [[ -n "${XTS_CANDIDATE_TAGGED}" || -n "${XTS_PASS_TAGGED}" || -n "${BUILD_PROMOTED_TAGGED}" ]]; then
+            gh run cancel ${{ github.run_id }}
+          else
+            echo "xts-checks-required=true" >> $GITHUB_OUTPUT
+          fi
+
       # move the tag if successful
       - name: Tag Code and push
+        if: ${{ steps.check-xts-required.outputs.xts-checks-required == 'true' }}
         run: |
-          git push --delete origin "${XTS_CANDIDATE_TAG}"
-          git tag --delete "${XTS_CANDIDATE_TAG}"
+          # Check if the tag exists
+          set +e
+          git rev-list -n 1 "${XTS_CANDIDATE_TAG}" >/dev/null 2>&1
+          XTS_COMMIT_FOUND="${?}"
+          set -e
+
+          # Delete the tag if it does exist
+          if [[ "${XTS_COMMIT_FOUND}" -eq 0 ]]; then
+            git push --delete origin "${XTS_CANDIDATE_TAG}"
+            git tag -d "${XTS_CANDIDATE_TAG}"
+          fi
+
+          # Create the new tag
           git tag --annotate "${XTS_CANDIDATE_TAG}" --message "chore: tagging commit for XTS promotion"
           git push --set-upstream origin --tags
 

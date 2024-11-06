@@ -108,6 +108,7 @@ class StateRegistryTests {
         // Deserialize a state
         final MerkleStateRoot stateToSerialize =
                 new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(stateToSerialize);
         final var platformState = stateToSerialize.getWritablePlatformState();
         platformState.bulkUpdate(v -> {
             v.setCreationSoftwareVersion(new BasicSoftwareVersion(version.minor()));

@@ -526,7 +526,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void hanldeWorkAsExpected() throws CertificateEncodingException {
+    void handleWorksAsExpected() throws CertificateEncodingException {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withDescription("Description")

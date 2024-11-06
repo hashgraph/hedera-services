@@ -56,7 +56,7 @@ import javax.inject.Singleton;
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_SIGN}.
  */
 @Singleton
-public class ScheduleSignHandler extends ScheduleManager implements TransactionHandler {
+public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 
     @Inject

@@ -1029,7 +1029,7 @@ public class Create2OperationSuite {
                 // check created contract
                 sourcing(() -> getContractInfo(mergedAliasAddr.get())
                         .has(contractWith()
-                                .hasStandinContractKey()
+                                .defaultAdminKey()
                                 // fix here
                                 .maxAutoAssociations(0)
                                 .memo(LAZY_MEMO)
@@ -1131,7 +1131,7 @@ public class Create2OperationSuite {
                 // check created contract
                 sourcing(() -> getContractInfo(mergedAliasAddr.get())
                         .has(contractWith()
-                                .hasStandinContractKey()
+                                .defaultAdminKey()
                                 .maxAutoAssociations(1)
                                 .hasAlreadyUsedAutomaticAssociations(1)
                                 .memo(LAZY_MEMO)
@@ -1235,7 +1235,7 @@ public class Create2OperationSuite {
                 // check created contract
                 sourcing(() -> getContractInfo(mergedAliasAddr.get())
                         .has(contractWith()
-                                .hasStandinContractKey()
+                                .defaultAdminKey()
                                 .numKvPairs(2)
                                 .maxAutoAssociations(2)
                                 .hasAlreadyUsedAutomaticAssociations(2)
@@ -1331,7 +1331,7 @@ public class Create2OperationSuite {
                 // check created contract
                 sourcing(() -> getContractInfo(mergedAliasAddr.get())
                         .has(contractWith()
-                                .hasStandinContractKey()
+                                .defaultAdminKey()
                                 .maxAutoAssociations(1)
                                 .hasAlreadyUsedAutomaticAssociations(1)
                                 .memo(LAZY_MEMO)
@@ -1446,7 +1446,7 @@ public class Create2OperationSuite {
                 // check created contract
                 sourcing(() -> getContractInfo(mergedAliasAddr.get())
                         .has(contractWith()
-                                .hasStandinContractKey()
+                                .defaultAdminKey()
                                 .maxAutoAssociations(1)
                                 .hasAlreadyUsedAutomaticAssociations(1)
                                 .memo(LAZY_MEMO)

@@ -27,7 +27,6 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -96,19 +95,19 @@ public final class TransactionStateLogger {
     /**
      * Log the start of a transaction.
      *
-     * @param transaction The transaction to log
+     * @param consensusTimestamp The transaction consensus timestamp
      * @param txBody The transaction body
      * @param payer The payer
      */
     public static void logStartUserTransaction(
-            @NonNull final ConsensusTransaction transaction,
+            @NonNull final Instant consensusTimestamp,
             @Nullable final TransactionBody txBody,
             @NonNull final AccountID payer) {
         if (logger.isDebugEnabled()) {
             logger.debug(
                     "    Starting user transaction {} at platform time {} from payer 0.0.{}",
                     txBody == null ? "null" : formatTransactionId(txBody.transactionID()),
-                    transaction.getConsensusTimestamp(),
+                    consensusTimestamp,
                     payer.accountNum());
         }
     }
