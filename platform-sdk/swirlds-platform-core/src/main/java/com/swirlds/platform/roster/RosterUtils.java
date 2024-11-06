@@ -194,6 +194,18 @@ public final class RosterUtils {
     }
 
     /**
+     * Count the number of RosterEntries with non-zero weight.
+     * @param roster a roster
+     * @return the number of RosterEntries with non-zero weight
+     */
+    public static int getNumberWithWeight(@NonNull final Roster roster) {
+        return (int) roster.rosterEntries().stream()
+                .map(RosterEntry::weight)
+                .filter(w -> w != 0)
+                .count();
+    }
+
+    /**
      * Build an Address object out of a given RosterEntry object.
      * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param entry a RosterEntry

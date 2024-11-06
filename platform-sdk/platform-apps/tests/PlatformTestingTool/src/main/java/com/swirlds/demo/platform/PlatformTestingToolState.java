@@ -83,6 +83,7 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -597,7 +598,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     public synchronized void setPayloadConfig(final FCMConfig fcmConfig) {
         expectedFCMFamily.setNodeId(platform.getSelfId().id());
         expectedFCMFamily.setFcmConfig(fcmConfig);
-        expectedFCMFamily.setWeightedNodeNum(platform.getAddressBook().getNumberWithWeight());
+        expectedFCMFamily.setWeightedNodeNum(RosterUtils.getNumberWithWeight(platform.getRoster()));
 
         referenceNftLedger.setFractionToTrack(this.getNftLedger(), fcmConfig.getNftTrackingFraction());
     }
@@ -617,11 +618,12 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     void initControlStructures(final Action<Long, ControlAction> action) {
-        final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(platform.getSelfId());
+        final int nodeIndex =
+                RosterUtils.getIndex(platform.getRoster(), platform.getSelfId().id());
         this.controlQuorum = new QuorumTriggeredAction<>(
                 () -> nodeIndex,
-                platform.getAddressBook()::getSize,
-                platform.getAddressBook()::getNumberWithWeight,
+                () -> platform.getRoster().rosterEntries().size(),
+                () -> RosterUtils.getNumberWithWeight(platform.getRoster()),
                 action);
 
         this.exceptionRateLimiter = new ThresholdLimitingHandler<>(EXCEPTION_RATE_THRESHOLD);
@@ -768,7 +770,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * zeroes.
      */
     private void logIfFirstTransaction(final NodeId id) {
-        final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
+        final int nodeIndex = RosterUtils.getIndex(platform.getRoster(), id.id());
         if (progressCfg != null
                 && progressCfg.getProgressMarker() > 0
                 && getTransactionCounter().get(nodeIndex).getAllTransactionAmount() == 0) {
@@ -782,7 +784,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private void handleBytesTransaction(@NonNull final TestTransaction testTransaction, @NonNull final NodeId id) {
         Objects.requireNonNull(testTransaction, "testTransaction must not be null");
         Objects.requireNonNull(id, "id must not be null");
-        final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
+        final int nodeIndex = RosterUtils.getIndex(platform.getRoster(), id.id());
         final RandomBytesTransaction bytesTransaction = testTransaction.getBytesTransaction();
         if (bytesTransaction.getIsInserSeq()) {
             final long seq = Utilities.toLong(bytesTransaction.getData().toByteArray());
@@ -807,7 +809,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         Objects.requireNonNull(virtualMerkleTransaction, "virtualMerkleTransaction must not be null");
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(consensusTimestamp, "consensusTimestamp must not be null");
-        final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
+        final int nodeIndex = RosterUtils.getIndex(platform.getRoster(), id.id());
         VirtualMerkleTransactionHandler.handle(
                 consensusTimestamp,
                 virtualMerkleTransaction,
@@ -841,7 +843,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(timestamp, "timestamp must not be null");
 
-        final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
+        final int nodeIndex = RosterUtils.getIndex(platform.getRoster(), id.id());
         final FCMTransaction fcmTransaction = testTransaction.getFcmTransaction();
 
         // Handle Activity transaction, which doesn't effect any entity's lifecyle
@@ -1050,7 +1052,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(timestamp, "timestamp must not be null");
 
-        final long nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
+        final long nodeIndex = RosterUtils.getIndex(platform.getRoster(), id.id());
         final ControlTransaction msg = testTransaction.getControlTransaction();
         logger.info(
                 DEMO_INFO.getMarker(),
@@ -1109,14 +1111,16 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      */
     private void updateTransactionCounters() {
         if (getTransactionCounter() == null
-                || getTransactionCounter().size() != platform.getAddressBook().getSize()) {
-            setNextSeqCons(new NextSeqConsList(platform.getAddressBook().getSize()));
+                || getTransactionCounter().size()
+                        != platform.getRoster().rosterEntries().size()) {
+            setNextSeqCons(
+                    new NextSeqConsList(platform.getRoster().rosterEntries().size()));
 
             logger.info(DEMO_INFO.getMarker(), "resetting transaction counters");
 
-            setTransactionCounter(
-                    new TransactionCounterList(platform.getAddressBook().getSize()));
-            for (int id = 0; id < platform.getAddressBook().getSize(); id++) {
+            setTransactionCounter(new TransactionCounterList(
+                    platform.getRoster().rosterEntries().size()));
+            for (int id = 0; id < platform.getRoster().rosterEntries().size(); id++) {
                 getTransactionCounter().add(new TransactionCounter(id));
             }
         }
@@ -1292,7 +1296,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      */
     private void genesisInit() {
         logger.info(LOGM_STARTUP, "Set QuorumResult from genesisInit()");
-        setQuorumResult(new QuorumResult<>(platform.getAddressBook().getSize()));
+        setQuorumResult(new QuorumResult<>(platform.getRoster().rosterEntries().size()));
 
         setIssLeaf(new IssLeaf());
     }
@@ -1330,7 +1334,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         }
 
         expectedFCMFamily.setNodeId(platform.getSelfId().id());
-        expectedFCMFamily.setWeightedNodeNum(platform.getAddressBook().getNumberWithWeight());
+        expectedFCMFamily.setWeightedNodeNum(RosterUtils.getNumberWithWeight(platform.getRoster()));
 
         // initialize data structures used for FCQueue transaction records expiration
         initializeExpirationQueueAndAccountsSet();

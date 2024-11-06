@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
@@ -44,6 +45,14 @@ public interface Platform {
      */
     @NonNull
     NotificationEngine getNotificationEngine();
+
+    /**
+     * Get the Address Book
+     *
+     * @return AddressBook
+     */
+    @NonNull
+    Roster getRoster();
 
     /**
      * Get the Address Book

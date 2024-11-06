@@ -24,6 +24,7 @@ import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAc
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
@@ -34,6 +35,7 @@ import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
@@ -250,6 +252,16 @@ public class SignedState implements SignedStateInfo {
                 }
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NonNull Roster getRoster() {
+        return RosterRetriever.buildRoster(Objects.requireNonNull(
+                state.getReadablePlatformState().getAddressBook(),
+                "address book stored in this signed state is null, this should never happen"));
     }
 
     /**

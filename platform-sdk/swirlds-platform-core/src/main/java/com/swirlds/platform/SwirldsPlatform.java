@@ -25,6 +25,7 @@ import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateFor
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSavedStateFiles;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -103,6 +104,11 @@ public class SwirldsPlatform implements Platform {
      * The unique ID of this node.
      */
     private final NodeId selfId;
+
+    /**
+     * the current nodes in the network and their information
+     */
+    private final Roster currentRoster;
 
     /**
      * the current nodes in the network and their information
@@ -212,6 +218,7 @@ public class SwirldsPlatform implements Platform {
         notificationEngine = blocks.notificationEngine();
 
         currentAddressBook = initialState.getAddressBook();
+        currentRoster = initialState.getRoster();
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
 
@@ -494,6 +501,15 @@ public class SwirldsPlatform implements Platform {
     @NonNull
     public Signature sign(@NonNull final byte[] data) {
         return new PlatformSigner(keysAndCerts).sign(data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public Roster getRoster() {
+        return currentRoster;
     }
 
     /**
