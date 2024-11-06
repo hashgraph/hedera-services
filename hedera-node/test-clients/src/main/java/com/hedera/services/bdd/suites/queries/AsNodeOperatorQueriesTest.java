@@ -85,8 +85,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Tag(CRYPTO)
 @HapiTestLifecycle
@@ -635,7 +633,13 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                 // Assert that the exception is thrown
                 assertThatThrownBy(() -> {
                             // Once the channel is ready, submit the transaction
+                            long counter = 0;
                             while (finalChannel.getState(true) != ConnectivityState.READY) {
+                                // make sure the test doesn't hang forever
+                                if (counter++ >= 60) {
+                                    break;
+                                }
+
                                 Thread.sleep(1000);
                             }
                             stub.getAccountInfo(query);
@@ -681,7 +685,13 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                         // Assert that the exception is thrown
                         assertThatThrownBy(() -> {
                                     // Once the channel is ready, submit the transaction
+                                    long counter = 0;
                                     while (finalChannel.getState(true) != ConnectivityState.READY) {
+                                        // make sure the test doesn't hang forever
+                                        if (counter++ >= 60) {
+                                            break;
+                                        }
+
                                         Thread.sleep(1000);
                                     }
 
