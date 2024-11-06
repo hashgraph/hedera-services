@@ -49,6 +49,7 @@ import org.apache.logging.log4j.Logger;
  */
 class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Logger log = LogManager.getLogger(ConcurrentEmbeddedHedera.class);
+    private static final long VALID_START_TIME_OFFSET_SECS = 42;
     private static final Duration SIMULATED_ROUND_DURATION = Duration.ofMillis(1);
 
     private final ConcurrentFakePlatform platform;
@@ -93,6 +94,11 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                             nodeId, now(), semanticVersion, createAppPayloadWrapper(transaction.toByteArray())));
             return OK_RESPONSE;
         }
+    }
+
+    @Override
+    protected long validStartOffsetSecs() {
+        return VALID_START_TIME_OFFSET_SECS;
     }
 
     @Override
@@ -153,7 +159,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                                         event.getSoftwareVersion());
                             })
                             .toList();
-                    final var round = new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);
+                    final var round = new FakeRound(roundNo.getAndIncrement(), roster, consensusEvents);
                     hedera.handleWorkflow().handleRound(state, round);
                     hedera.onSealConsensusRound(round, state);
                     notifyBlockStreamManagerIfEnabled(round.getRoundNum());

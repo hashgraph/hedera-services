@@ -1,0 +1,520 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.services.bdd.suites.contract.precompile;
+
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+
+import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.OrderedInIsolation;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
+import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
+
+@Tag(SMART_CONTRACT)
+@HapiTestLifecycle
+@OrderedInIsolation
+public class AirdropSystemContractTest {
+
+    @Contract(contract = "Airdrop", creationGas = 20_000_000L)
+    static SpecContract airdropContract;
+
+    @Account(name = "sender", tinybarBalance = 10_000_000_000L)
+    static SpecAccount sender;
+
+    @BeforeAll
+    public static void beforeAll(final @NonNull TestLifecycle lifecycle) {
+        lifecycle.doAdhoc(
+                sender.authorizeContract(airdropContract), sender.transferHBarsTo(airdropContract, 5_000_000_000L));
+    }
+
+    @HapiTest
+    @Order(1)
+    @DisplayName("Airdrop token")
+    public Stream<DynamicTest> airdropToken(
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token) {
+        return hapiTest(
+                sender.associateTokens(token),
+                token.treasury().transferUnitsTo(sender, 500_000L, token),
+                airdropContract
+                        .call("tokenAirdrop", token, sender, receiver, 10L)
+                        .gas(1500000),
+                receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 10L)));
+    }
+
+    @HapiTest
+    @Order(2)
+    @DisplayName("Airdrop NFT")
+    public Stream<DynamicTest> airdropNft(
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft) {
+        return hapiTest(
+                sender.associateTokens(nft),
+                nft.treasury().transferNFTsTo(sender, nft, 1L),
+                airdropContract.call("nftAirdrop", nft, sender, receiver, 1L).gas(1500000),
+                receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 1L)),
+                nft.serialNo(1L).assertOwnerIs(receiver));
+    }
+
+    @HapiTest
+    @Order(3)
+    @DisplayName("Multiple Airdrop token transactions")
+    public Stream<DynamicTest> airdropTokens(
+            @NonNull @FungibleToken(name = "token1", initialSupply = 1_000_000L) final SpecFungibleToken token1,
+            @NonNull @FungibleToken(name = "token2", initialSupply = 1_000_000L) final SpecFungibleToken token2,
+            @NonNull @FungibleToken(name = "token3", initialSupply = 1_000_000L) final SpecFungibleToken token3,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver1,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver2,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver3) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            allRunFor(
+                    spec,
+                    sender.associateTokens(token1, token2, token3),
+                    token1.treasury().transferUnitsTo(sender, 1_000L, token1),
+                    token2.treasury().transferUnitsTo(sender, 1_000L, token2),
+                    token3.treasury().transferUnitsTo(sender, 1_000L, token3));
+            allRunFor(
+                    spec,
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 0L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(token2.name(), 0L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(token3.name(), 0L)));
+            allRunFor(
+                    spec,
+                    airdropContract
+                            .call(
+                                    "tokenNAmountAirdrops",
+                                    prepareTokenAddresses(spec, token1, token2, token3),
+                                    prepareSenderAddresses(spec, sender, sender, sender),
+                                    prepareReceiverAddresses(spec, receiver1, receiver2, receiver3),
+                                    10L)
+                            .gas(1500000));
+            allRunFor(
+                    spec,
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 10L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(token2.name(), 10L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(token3.name(), 10L)));
+        }));
+    }
+
+    @HapiTest
+    @Order(4)
+    @DisplayName("Multiple Airdrop NFT transactions")
+    public Stream<DynamicTest> airdropNfts(
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft1,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft2,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft3,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver1,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver2,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver3) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            allRunFor(
+                    spec,
+                    sender.associateTokens(nft1, nft2, nft3),
+                    nft1.treasury().transferNFTsTo(sender, nft1, 1L),
+                    nft2.treasury().transferNFTsTo(sender, nft2, 1L),
+                    nft3.treasury().transferNFTsTo(sender, nft3, 1L));
+            allRunFor(
+                    spec,
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(nft1.name(), 0L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(nft2.name(), 0L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(nft3.name(), 0L)));
+            final var serials = new long[] {1L, 1L, 1L};
+            allRunFor(
+                    spec,
+                    airdropContract
+                            .call(
+                                    "nftNAmountAirdrops",
+                                    prepareNftAddresses(spec, nft1, nft2, nft3),
+                                    prepareSenderAddresses(spec, sender, sender, sender),
+                                    prepareReceiverAddresses(spec, receiver1, receiver2, receiver3),
+                                    serials)
+                            .gas(1500000));
+            allRunFor(
+                    spec,
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(nft1.name(), 1L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(nft2.name(), 1L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(nft3.name(), 1L)),
+                    nft1.serialNo(1L).assertOwnerIs(receiver1),
+                    nft2.serialNo(1L).assertOwnerIs(receiver2),
+                    nft3.serialNo(1L).assertOwnerIs(receiver3));
+        }));
+    }
+
+    @HapiTest
+    @Order(5)
+    @DisplayName("Airdrop token and NFT")
+    public Stream<DynamicTest> airdropTokenAndNft(
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token1,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token2,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token3,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft1,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft2,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft3,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver1,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver2,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver3,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver4,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver5,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver6) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            allRunFor(
+                    spec,
+                    sender.associateTokens(token1, token2, token3),
+                    token1.treasury().transferUnitsTo(sender, 1_000L, token1),
+                    token2.treasury().transferUnitsTo(sender, 1_000L, token2),
+                    token3.treasury().transferUnitsTo(sender, 1_000L, token3));
+            allRunFor(
+                    spec,
+                    sender.associateTokens(nft1, nft2, nft3),
+                    nft1.treasury().transferNFTsTo(sender, nft1, 1L),
+                    nft2.treasury().transferNFTsTo(sender, nft2, 1L),
+                    nft3.treasury().transferNFTsTo(sender, nft3, 1L));
+            allRunFor(
+                    spec,
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 0L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(token2.name(), 0L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(token3.name(), 0L)));
+            allRunFor(
+                    spec,
+                    receiver4.getBalance().andAssert(balance -> balance.hasTokenBalance(nft1.name(), 0L)),
+                    receiver5.getBalance().andAssert(balance -> balance.hasTokenBalance(nft2.name(), 0L)),
+                    receiver6.getBalance().andAssert(balance -> balance.hasTokenBalance(nft3.name(), 0L)));
+            final var serials = new long[] {1L, 1L, 1L};
+            allRunFor(
+                    spec,
+                    airdropContract
+                            .call(
+                                    "mixedAirdrop",
+                                    prepareTokenAddresses(spec, token1, token2, token3),
+                                    prepareNftAddresses(spec, nft1, nft2, nft3),
+                                    prepareSenderAddresses(spec, sender, sender, sender),
+                                    prepareReceiverAddresses(spec, receiver1, receiver2, receiver3),
+                                    prepareSenderAddresses(spec, sender, sender, sender),
+                                    prepareReceiverAddresses(spec, receiver4, receiver5, receiver6),
+                                    10L,
+                                    serials)
+                            .gas(1750000));
+            allRunFor(
+                    spec,
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 10L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(token2.name(), 10L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(token3.name(), 10L)),
+                    receiver4.getBalance().andAssert(balance -> balance.hasTokenBalance(nft1.name(), 1L)),
+                    receiver5.getBalance().andAssert(balance -> balance.hasTokenBalance(nft2.name(), 1L)),
+                    receiver6.getBalance().andAssert(balance -> balance.hasTokenBalance(nft3.name(), 1L)),
+                    nft1.serialNo(1L).assertOwnerIs(receiver4),
+                    nft2.serialNo(1L).assertOwnerIs(receiver5),
+                    nft3.serialNo(1L).assertOwnerIs(receiver6));
+        }));
+    }
+
+    @HapiTest
+    @Order(6)
+    @DisplayName("Airdrop 10 token and NFT")
+    public Stream<DynamicTest> airdrop10TokenAndNft(
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token1,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token2,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token3,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token4,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token5,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft1,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft2,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft3,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft4,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft5,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver1,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver2,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver3,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver4,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver5,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver6,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver7,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver8,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver9,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver10) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            allRunFor(
+                    spec,
+                    sender.associateTokens(token1, token2, token3, token4, token5),
+                    token1.treasury().transferUnitsTo(sender, 1_000L, token1),
+                    token2.treasury().transferUnitsTo(sender, 1_000L, token2),
+                    token3.treasury().transferUnitsTo(sender, 1_000L, token3),
+                    token4.treasury().transferUnitsTo(sender, 1_000L, token4),
+                    token5.treasury().transferUnitsTo(sender, 1_000L, token5));
+            allRunFor(
+                    spec,
+                    sender.associateTokens(nft1, nft2, nft3, nft4, nft5),
+                    nft1.treasury().transferNFTsTo(sender, nft1, 1L),
+                    nft2.treasury().transferNFTsTo(sender, nft2, 1L),
+                    nft3.treasury().transferNFTsTo(sender, nft3, 1L),
+                    nft4.treasury().transferNFTsTo(sender, nft4, 1L),
+                    nft5.treasury().transferNFTsTo(sender, nft5, 1L));
+            allRunFor(
+                    spec,
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 0L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(token2.name(), 0L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(token3.name(), 0L)),
+                    receiver4.getBalance().andAssert(balance -> balance.hasTokenBalance(token4.name(), 0L)),
+                    receiver5.getBalance().andAssert(balance -> balance.hasTokenBalance(token5.name(), 0L)),
+                    receiver6.getBalance().andAssert(balance -> balance.hasTokenBalance(nft1.name(), 0L)),
+                    receiver7.getBalance().andAssert(balance -> balance.hasTokenBalance(nft2.name(), 0L)),
+                    receiver8.getBalance().andAssert(balance -> balance.hasTokenBalance(nft3.name(), 0L)),
+                    receiver9.getBalance().andAssert(balance -> balance.hasTokenBalance(nft4.name(), 0L)),
+                    receiver10.getBalance().andAssert(balance -> balance.hasTokenBalance(nft5.name(), 0L)));
+            final var serials = new long[] {1L, 1L, 1L, 1L, 1L};
+            allRunFor(
+                    spec,
+                    airdropContract
+                            .call(
+                                    "mixedAirdrop",
+                                    prepareTokenAddresses(spec, token1, token2, token3, token4, token5),
+                                    prepareNftAddresses(spec, nft1, nft2, nft3, nft4, nft5),
+                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender),
+                                    prepareReceiverAddresses(
+                                            spec, receiver1, receiver2, receiver3, receiver4, receiver5),
+                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender),
+                                    prepareReceiverAddresses(
+                                            spec, receiver6, receiver7, receiver8, receiver9, receiver10),
+                                    10L,
+                                    serials)
+                            .gas(1550000));
+            allRunFor(
+                    spec,
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 10L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(token2.name(), 10L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(token3.name(), 10L)),
+                    receiver4.getBalance().andAssert(balance -> balance.hasTokenBalance(token4.name(), 10L)),
+                    receiver5.getBalance().andAssert(balance -> balance.hasTokenBalance(token5.name(), 10L)),
+                    receiver6.getBalance().andAssert(balance -> balance.hasTokenBalance(nft1.name(), 1L)),
+                    receiver7.getBalance().andAssert(balance -> balance.hasTokenBalance(nft2.name(), 1L)),
+                    receiver8.getBalance().andAssert(balance -> balance.hasTokenBalance(nft3.name(), 1L)),
+                    receiver9.getBalance().andAssert(balance -> balance.hasTokenBalance(nft4.name(), 1L)),
+                    receiver10.getBalance().andAssert(balance -> balance.hasTokenBalance(nft5.name(), 1L)),
+                    nft1.serialNo(1L).assertOwnerIs(receiver6),
+                    nft2.serialNo(1L).assertOwnerIs(receiver7),
+                    nft3.serialNo(1L).assertOwnerIs(receiver8),
+                    nft4.serialNo(1L).assertOwnerIs(receiver9),
+                    nft5.serialNo(1L).assertOwnerIs(receiver10));
+        }));
+    }
+
+    @HapiTest
+    @Order(7)
+    @DisplayName("Should fail Airdrop 11 token and NFT")
+    public Stream<DynamicTest> airdrop11TokenAndNft(
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token1,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token2,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token3,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token4,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token5,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft1,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft2,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft3,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft4,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft5,
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft6,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver1,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver2,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver3,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver4,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver5,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver6,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver7,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver8,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver9,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver10,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver11) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            allRunFor(
+                    spec,
+                    sender.associateTokens(token1, token2, token3, token4, token5),
+                    token1.treasury().transferUnitsTo(sender, 1_000L, token1),
+                    token2.treasury().transferUnitsTo(sender, 1_000L, token2),
+                    token3.treasury().transferUnitsTo(sender, 1_000L, token3),
+                    token4.treasury().transferUnitsTo(sender, 1_000L, token4),
+                    token5.treasury().transferUnitsTo(sender, 1_000L, token5));
+            allRunFor(
+                    spec,
+                    sender.associateTokens(nft1, nft2, nft3, nft4, nft5, nft6),
+                    nft1.treasury().transferNFTsTo(sender, nft1, 1L),
+                    nft2.treasury().transferNFTsTo(sender, nft2, 1L),
+                    nft3.treasury().transferNFTsTo(sender, nft3, 1L),
+                    nft4.treasury().transferNFTsTo(sender, nft4, 1L),
+                    nft5.treasury().transferNFTsTo(sender, nft5, 1L),
+                    nft6.treasury().transferNFTsTo(sender, nft6, 1L));
+            allRunFor(
+                    spec,
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 0L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(token2.name(), 0L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(token3.name(), 0L)),
+                    receiver4.getBalance().andAssert(balance -> balance.hasTokenBalance(token4.name(), 0L)),
+                    receiver5.getBalance().andAssert(balance -> balance.hasTokenBalance(token5.name(), 0L)),
+                    receiver6.getBalance().andAssert(balance -> balance.hasTokenBalance(nft1.name(), 0L)),
+                    receiver7.getBalance().andAssert(balance -> balance.hasTokenBalance(nft2.name(), 0L)),
+                    receiver8.getBalance().andAssert(balance -> balance.hasTokenBalance(nft3.name(), 0L)),
+                    receiver9.getBalance().andAssert(balance -> balance.hasTokenBalance(nft4.name(), 0L)),
+                    receiver10.getBalance().andAssert(balance -> balance.hasTokenBalance(nft5.name(), 0L)),
+                    receiver11.getBalance().andAssert(balance -> balance.hasTokenBalance(nft6.name(), 0L)));
+            final var serials = new long[] {1L, 1L, 1L, 1L, 1L, 1L};
+            allRunFor(
+                    spec,
+                    airdropContract
+                            .call(
+                                    "mixedAirdrop",
+                                    prepareTokenAddresses(spec, token1, token2, token3, token4, token5),
+                                    prepareNftAddresses(spec, nft1, nft2, nft3, nft4, nft5),
+                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender),
+                                    prepareReceiverAddresses(
+                                            spec, receiver1, receiver2, receiver3, receiver4, receiver5),
+                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender, sender),
+                                    prepareReceiverAddresses(
+                                            spec, receiver6, receiver7, receiver8, receiver9, receiver10, receiver11),
+                                    10L,
+                                    serials)
+                            .gas(1550000)
+                            .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED)));
+            allRunFor(
+                    spec,
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 0L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(token2.name(), 0L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(token3.name(), 0L)),
+                    receiver4.getBalance().andAssert(balance -> balance.hasTokenBalance(token4.name(), 0L)),
+                    receiver5.getBalance().andAssert(balance -> balance.hasTokenBalance(token5.name(), 0L)),
+                    receiver6.getBalance().andAssert(balance -> balance.hasTokenBalance(nft1.name(), 0L)),
+                    receiver7.getBalance().andAssert(balance -> balance.hasTokenBalance(nft2.name(), 0L)),
+                    receiver8.getBalance().andAssert(balance -> balance.hasTokenBalance(nft3.name(), 0L)),
+                    receiver9.getBalance().andAssert(balance -> balance.hasTokenBalance(nft4.name(), 0L)),
+                    receiver10.getBalance().andAssert(balance -> balance.hasTokenBalance(nft5.name(), 0L)),
+                    receiver11.getBalance().andAssert(balance -> balance.hasTokenBalance(nft6.name(), 0L)));
+        }));
+    }
+
+    @HapiTest
+    @Order(8)
+    @DisplayName("Airdrop fails when the sender does not have enough balance")
+    public Stream<DynamicTest> airdropFailsWhenSenderDoesNotHaveEnoughBalance(
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token) {
+        return hapiTest(
+                sender.associateTokens(token),
+                airdropContract
+                        .call("tokenAirdrop", token, sender, receiver, 10L)
+                        .gas(1500000)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INSUFFICIENT_TOKEN_BALANCE)));
+    }
+
+    @HapiTest
+    @Order(9)
+    @DisplayName("Airdrop fails when the receiver does not have a valid account")
+    public Stream<DynamicTest> airdropFailsWhenReceiverDoesNotHaveValidAccount(
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken tokenAsReceiver) {
+        return hapiTest(
+                sender.associateTokens(token),
+                token.treasury().transferUnitsTo(sender, 500_000L, token),
+                airdropContract
+                        .call("tokenAirdrop", token, sender, tokenAsReceiver, 10L)
+                        .gas(1500000)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_ACCOUNT_ID)));
+    }
+
+    @HapiTest
+    @Order(10)
+    @DisplayName("Airdrop fails when the token does not exist")
+    public Stream<DynamicTest> airdropFailsWhenTokenDoesNotExist(
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver,
+            @NonNull @Account final SpecAccount accountAsToken) {
+        return hapiTest(airdropContract
+                .call("tokenAirdrop", accountAsToken, sender, receiver, 10L)
+                .gas(1500000)
+                .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_TOKEN_ID)));
+    }
+
+    @HapiTest
+    @Order(11)
+    @DisplayName("Airdrop fails with nft serials out of bound")
+    public Stream<DynamicTest> failToUpdateNFTsMetadata(
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver) {
+        return hapiTest(
+                sender.associateTokens(nft),
+                airdropContract
+                        .call("nftAirdrop", nft, sender, receiver, Long.MAX_VALUE)
+                        .gas(1500000)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_NFT_ID)),
+                airdropContract
+                        .call("nftAirdrop", nft, sender, receiver, 0L)
+                        .gas(1500000)
+                        .andAssert(
+                                txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_TOKEN_NFT_SERIAL_NUMBER)),
+                airdropContract
+                        .call("nftAirdrop", nft, sender, receiver, -1L)
+                        .gas(1500000)
+                        .andAssert(txn ->
+                                txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_TOKEN_NFT_SERIAL_NUMBER)));
+    }
+
+    private Address[] prepareReceiverAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... receivers) {
+        return Arrays.stream(receivers)
+                .map(receiver -> receiver.addressOn(spec.targetNetworkOrThrow()))
+                .toArray(Address[]::new);
+    }
+
+    private Address[] prepareTokenAddresses(@NonNull HapiSpec spec, @NonNull SpecFungibleToken... tokens) {
+        return Arrays.stream(tokens)
+                .map(token -> token.addressOn(spec.targetNetworkOrThrow()))
+                .toArray(Address[]::new);
+    }
+
+    private Address[] prepareNftAddresses(@NonNull HapiSpec spec, @NonNull SpecNonFungibleToken... nfts) {
+        return Arrays.stream(nfts)
+                .map(nft -> nft.addressOn(spec.targetNetworkOrThrow()))
+                .toArray(Address[]::new);
+    }
+
+    private Address[] prepareSenderAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... senders) {
+        return Arrays.stream(senders)
+                .map(sender -> sender.addressOn(spec.targetNetworkOrThrow()))
+                .toArray(Address[]::new);
+    }
+}

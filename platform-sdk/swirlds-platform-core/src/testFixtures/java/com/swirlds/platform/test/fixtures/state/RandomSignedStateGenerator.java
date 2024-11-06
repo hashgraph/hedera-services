@@ -187,7 +187,7 @@ public class RandomSignedStateGenerator {
         } else {
             consensusSnapshotInstance = consensusSnapshot;
         }
-
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState((MerkleStateRoot) stateInstance);
         final PlatformStateModifier platformState = stateInstance.getWritablePlatformState();
 
         platformState.bulkUpdate(v -> {
@@ -212,7 +212,7 @@ public class RandomSignedStateGenerator {
                 .build();
 
         final SignedState signedState = new SignedState(
-                platformContext,
+                configuration,
                 signatureVerifier,
                 stateInstance,
                 "RandomSignedStateGenerator.build()",

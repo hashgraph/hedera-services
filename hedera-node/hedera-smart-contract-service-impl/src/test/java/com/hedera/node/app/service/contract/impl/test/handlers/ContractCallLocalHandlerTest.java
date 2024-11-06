@@ -259,6 +259,7 @@ class ContractCallLocalHandlerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void computesFeesSuccessfully() {
 
         final var id = ContractID.newBuilder().contractNum(10).build();

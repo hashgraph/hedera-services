@@ -25,7 +25,7 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
 import com.hedera.node.app.spi.AppContext;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -38,7 +38,6 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  */
 public class ContractServiceImpl implements ContractService {
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
-    public static final String LAZY_MEMO = "lazy-created account";
 
     private final ContractServiceComponent component;
 

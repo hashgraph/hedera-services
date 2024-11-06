@@ -23,7 +23,9 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -59,12 +61,22 @@ class TssBaseServiceImplTest {
     @Mock
     private AppContext appContext;
 
+    @Mock
+    private Metrics metrics;
+
     private TssBaseServiceImpl subject;
 
     @BeforeEach
     void setUp() {
         given(appContext.gossip()).willReturn(gossip);
-        subject = new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool());
+        given(appContext.instantSource()).willReturn(InstantSource.system());
+        subject = new TssBaseServiceImpl(
+                appContext,
+                ForkJoinPool.commonPool(),
+                ForkJoinPool.commonPool(),
+                new PlaceholderTssLibrary(),
+                ForkJoinPool.commonPool(),
+                metrics);
     }
 
     @Test

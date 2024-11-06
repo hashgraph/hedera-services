@@ -46,7 +46,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * An embedded Hedera node that handles transactions synchronously on ingest and thus
  * cannot be used in concurrent tests.
  */
-class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
+public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Instant FIXED_POINT = Instant.parse("2024-06-24T12:05:41.487328Z");
     private static final Duration SIMULATED_ROUND_DURATION = Duration.ofSeconds(1);
     private final FakeTime time = new FakeTime(FIXED_POINT, Duration.ZERO);
@@ -106,6 +106,20 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         return response;
     }
 
+    @Override
+    protected long validStartOffsetSecs() {
+        // We handle each transaction in a round starting in the next second of fake consensus time, so
+        // we don't need any offset here; this simplifies tests that validate purging expired receipts
+        return 0L;
+    }
+
+    /**
+     * Returns the last consensus round number.
+     */
+    public long lastRoundNo() {
+        return platform.lastRoundNo();
+    }
+
     private void handleNextRound() {
         hedera.onPreHandle(platform.lastCreatedEvent, state);
         final var round = platform.nextConsensusRound();
@@ -145,7 +159,7 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                     consensusOrder.getAndIncrement(),
                     firstRoundTime,
                     lastCreatedEvent.getSoftwareVersion()));
-            return new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);
+            return new FakeRound(roundNo.getAndIncrement(), requireNonNull(roster), consensusEvents);
         }
     }
 }

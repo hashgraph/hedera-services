@@ -21,6 +21,7 @@ import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
 import static com.hedera.node.app.state.merkle.VersionUtils.alreadyIncludesStateDefs;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
+import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -41,6 +42,12 @@ import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.disk.OnDiskKey;
@@ -53,13 +60,7 @@ import com.swirlds.state.merkle.queue.QueueNode;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import com.swirlds.state.merkle.singleton.ValueLeaf;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -346,7 +347,15 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                             new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder);
                                     return virtualMap;
                                 },
-                                virtualMap -> virtualMap.registerMetrics(metrics));
+                                // Register the metrics for the virtual map if they are available.
+                                // Early rounds of migration done by services such as PlatformStateService,
+                                // EntityIdService and RosterService will not have metrics available yet, but their
+                                // later rounds of migration will.
+                                // Therefore, for the first round of migration, we will not register the metrics for
+                                // virtual maps.
+                                UNAVAILABLE_METRICS.equals(metrics)
+                                        ? virtualMap -> {}
+                                        : virtualMap -> virtualMap.registerMetrics(metrics));
                     }
                 });
 

@@ -54,12 +54,13 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -134,15 +135,18 @@ public class SystemSetup {
      */
     public void doPostUpgradeSetup(@NonNull final Dispatch dispatch) {
         final var systemContext = systemContextFor(dispatch);
+        final var config = dispatch.config();
 
         // We update the node details file from the address book that resulted from all pre-upgrade HAPI node changes
-        final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
-        fileService.updateAddressBookAndNodeDetailsAfterFreeze(systemContext, nodeStore);
-        dispatch.stack().commitFullStack();
+        final var nodesConfig = config.getConfigData(NodesConfig.class);
+        if (nodesConfig.enableDAB()) {
+            final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
+            fileService.updateAddressBookAndNodeDetailsAfterFreeze(systemContext, nodeStore);
+            dispatch.stack().commitFullStack();
+        }
 
         // And then we update the system files for fees schedules, throttles, override properties, and override
         // permissions from any upgrade files that are present in the configured directory
-        final var config = dispatch.config();
         final var filesConfig = config.getConfigData(FilesConfig.class);
         final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
         final List<AutoSysFileUpdate> autoUpdates = List.of(

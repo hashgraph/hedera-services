@@ -69,8 +69,8 @@ import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -461,6 +461,11 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public Map<AccountID, Long> dispatchPaidRewards() {
         return dispatchPaidRewards == null ? emptyMap() : dispatchPaidRewards;
+    }
+
+    @Override
+    public NodeInfo creatorInfo() {
+        return creatorInfo;
     }
 
     private <T> T dispatchForRecord(

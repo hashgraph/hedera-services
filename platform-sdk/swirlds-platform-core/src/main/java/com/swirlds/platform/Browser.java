@@ -68,7 +68,6 @@ import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
@@ -211,6 +210,12 @@ public class Browser {
             BootstrapUtils.setupConfigBuilder(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
             final Configuration guiConfig = guiConfigBuilder.build();
 
+            final ConfigurationBuilder configBuilder = ConfigurationBuilder.create();
+            rethrowIO(() ->
+                    BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+            final Configuration configuration = configBuilder.build();
+
+            initNodeSecurity(appDefinition.getConfigAddressBook(), configuration);
             guiEventStorage = new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());
 
             guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
@@ -267,16 +272,15 @@ public class Browser {
                     MerkleCryptographyFactory.create(configuration, CryptographyHolder.get()));
             // Create the initial state for the platform
             final HashedReservedSignedState reservedState = getInitialState(
-                    platformContext,
+                    configuration,
+                    recycleBin,
                     appMain.getSoftwareVersion(),
                     appMain::newMerkleStateRoot,
-                    SignedStateFileUtils::readState,
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     nodeId,
                     appDefinition.getConfigAddressBook());
             final var initialState = reservedState.state();
-            final var stateHash = reservedState.hash();
 
             // Initialize the address book
             final AddressBook addressBook = initializeAddressBook(

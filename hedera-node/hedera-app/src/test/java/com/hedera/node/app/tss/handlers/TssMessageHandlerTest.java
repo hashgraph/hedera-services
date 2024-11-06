@@ -17,16 +17,42 @@
 package com.hedera.node.app.tss.handlers;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.tss.PlaceholderTssLibrary.SIGNATURE_SCHEMA;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.hedera.node.app.tss.TssCryptographyManager;
+import com.hedera.node.app.tss.TssCryptographyManager.Vote;
+import com.hedera.node.app.tss.TssMetrics;
+import com.hedera.node.app.tss.api.TssParticipantDirectory;
+import com.hedera.node.app.tss.pairings.FakeGroupElement;
+import com.hedera.node.app.tss.pairings.PairingPrivateKey;
+import com.hedera.node.app.tss.pairings.PairingPublicKey;
+import com.hedera.node.app.tss.stores.WritableTssStore;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.Signature;
+import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
+import java.math.BigInteger;
 import java.time.Instant;
+import java.util.BitSet;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,31 +80,109 @@ class TssMessageHandlerTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
 
+    @Mock
+    private AppContext.Gossip gossip;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private TssCryptographyManager tssCryptographyManager;
+
+    @Mock
+    private PairingPublicKey pairingPublicKey;
+
+    @Mock
+    private Signature signature;
+
+    @Mock
+    private StoreFactory storeFactory;
+
+    @Mock
+    private WritableTssStore tssStore;
+
+    @Mock
+    private ReadableRosterStore readableRosterStore;
+
+    @Mock
+    private PairingPrivateKey pairingPrivateKey;
+
+    @Mock
+    private TssMetrics tssMetrics;
+
+    private Roster roster;
     private TssMessageHandler subject;
+    private Vote vote;
+    private TssParticipantDirectory tssParticipantDirectory;
 
     @BeforeEach
     void setUp() {
-        subject = new TssMessageHandler(submissionManager);
+        final var voteBitSet = new BitSet(8);
+        voteBitSet.set(2);
+        vote = new Vote(pairingPublicKey, signature, voteBitSet);
+        roster = new Roster(List.of(
+                RosterEntry.newBuilder().nodeId(1).weight(100).build(),
+                RosterEntry.newBuilder().nodeId(2).weight(50).build()));
+        tssParticipantDirectory = TssParticipantDirectory.createBuilder()
+                .withSelf(1, pairingPrivateKey)
+                .withParticipant(1, 10, pairingPublicKey)
+                .build(SIGNATURE_SCHEMA);
+
+        subject = new TssMessageHandler(submissionManager, gossip, tssCryptographyManager, tssMetrics);
     }
 
     @Test
     void nothingImplementedYet() {
         assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
-        assertDoesNotThrow(() -> subject.pureChecks(tssMessage()));
+        assertDoesNotThrow(() -> subject.pureChecks(getTssBody()));
     }
 
     @Test
-    void submitsToyVoteOnHandlingMessage() {
+    void submitsVoteOnHandlingMessageWhenThresholdMet() {
         given(handleContext.networkInfo()).willReturn(networkInfo);
         given(handleContext.consensusNow()).willReturn(CONSENSUS_NOW);
         given(handleContext.configuration()).willReturn(DEFAULT_CONFIG);
         given(networkInfo.selfNodeInfo()).willReturn(nodeInfo);
         given(nodeInfo.accountId()).willReturn(NODE_ACCOUNT_ID);
+        given(nodeInfo.nodeId()).willReturn(1L);
+        given(handleContext.body()).willReturn(getTssBody());
+        given(readableRosterStore.getActiveRoster()).willReturn(roster);
+        given(pairingPublicKey.publicKey()).willReturn(new FakeGroupElement(BigInteger.valueOf(10)));
+
+        when(handleContext.storeFactory()).thenReturn(storeFactory);
+        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
+        when(storeFactory.readableStore(ReadableRosterStore.class)).thenReturn(readableRosterStore);
+
+        given(tssCryptographyManager.getVoteFuture(
+                        eq(getTssBody().tssMessageOrThrow().targetRosterHash()),
+                        any(TssParticipantDirectory.class),
+                        eq(handleContext)))
+                .willReturn(CompletableFuture.completedFuture(vote));
+        given(signature.getBytes()).willReturn(Bytes.wrap("test"));
 
         subject.handle(handleContext);
+
+        verify(submissionManager).submitTssVote(any(), eq(handleContext));
     }
 
-    private TransactionBody tssMessage() {
-        return TransactionBody.DEFAULT;
+    @Test
+    public void testHandleException() {
+        when(handleContext.body()).thenReturn(getTssBody());
+        when(tssCryptographyManager.getVoteFuture(any(), any(), any()))
+                .thenThrow(new RuntimeException("Simulated error"));
+
+        // Execute the handler and ensure no vote is submitted
+        assertThrows(RuntimeException.class, () -> subject.handle(handleContext));
+        verify(submissionManager, never()).submitTssVote(any(), any());
+    }
+
+    public static TransactionBody getTssBody() {
+        final Bytes targetRosterHash = Bytes.wrap("targetRoster".getBytes());
+        final Bytes sourceRosterHash = Bytes.wrap("sourceRoster".getBytes());
+        return TransactionBody.newBuilder()
+                .tssMessage(TssMessageTransactionBody.newBuilder()
+                        .tssMessage(Bytes.wrap("tssMessage".getBytes()))
+                        .shareIndex(1)
+                        .sourceRosterHash(sourceRosterHash)
+                        .targetRosterHash(targetRosterHash)
+                        .build())
+                .build();
     }
 }
