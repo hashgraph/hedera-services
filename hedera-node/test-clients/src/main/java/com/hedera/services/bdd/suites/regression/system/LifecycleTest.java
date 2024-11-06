@@ -148,7 +148,7 @@ public interface LifecycleTest {
     }
 
     /**
-     * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP.
+     * Returns an operation that upgrades the network with disabled node operator port to the next configuration version using a fake upgrade ZIP.
      * @return the operation
      */
     default SpecOperation restartWithDisabledNodeOperatorGrpcPort() {

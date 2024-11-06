@@ -24,8 +24,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -106,17 +108,25 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase implement
                     cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
                     cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
                     fileCreate(filename).contents("anyContentAgain").payingWith(PAYER),
-                    // Both the node operator and payer submit queries
-                    getFileInfo(filename).payingWith(PAYER).logged(),
-                    getFileInfo(filename)
-                            .payingWith(NODE_OPERATOR)
-                            .asNodeOperator()
-                            .logged(),
-                    sleepFor(1_000),
-                    // The node operator wasn't charged
-                    getAccountBalance(NODE_OPERATOR)
-                            .hasTinyBars(ONE_HUNDRED_HBARS)
-                            .logged());
+
+                    withOpContext((spec, opLog) -> {
+                        // Both the node operator and payer submit queries
+                        final var fileInfo = getFileInfo(filename).payingWith(PAYER);
+                        final var fileInfoAsNodeOperator = getFileInfo(filename)
+                                        .payingWith(NODE_OPERATOR)
+                                        .asNodeOperator();
+                        sleepFor(1_000);
+                                // The node operator wasn't charged
+                        getAccountBalance(NODE_OPERATOR)
+                                .hasTinyBars(ONE_HUNDRED_HBARS)
+                                .logged();
+
+                        allRunFor(spec, fileInfo, fileInfoAsNodeOperator);
+                        fileInfo.logged();
+                        fileInfoAsNodeOperator.logged();
+                    })
+
+            );
         }
     }
 }
