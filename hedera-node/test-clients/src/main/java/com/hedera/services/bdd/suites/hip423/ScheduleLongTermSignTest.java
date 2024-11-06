@@ -82,12 +82,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.TestMethodOrder;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+// Enable when long term scheduling is enabled
+@Disabled
 @HapiTestLifecycle
 public class ScheduleLongTermSignTest {
 
@@ -104,7 +103,6 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(1)
     final Stream<DynamicTest> changeInNestedSigningReqsRespected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -151,15 +149,6 @@ public class ScheduleLongTermSignTest {
                         cryptoCreate("foo"),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(receiver).hasTinyBars(1L));
-    }
-
-    private Key bumpThirdNestedThresholdSigningReq(Key source) {
-        var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
-        newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(2));
-        var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
-        return source.toBuilder()
-                .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
-                .build();
     }
 
     @HapiTest
@@ -257,15 +246,6 @@ public class ScheduleLongTermSignTest {
                                 .alsoSigningWith(NEW_SENDER_KEY)
                                 .sigControl(forKey(NEW_SENDER_KEY, sigTwo)),
                         getAccountBalance(receiver).hasTinyBars(1L));
-    }
-
-    private Key lowerThirdNestedThresholdSigningReq(Key source) {
-        var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
-        newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(1));
-        var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
-        return source.toBuilder()
-                .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
-                .build();
     }
 
     @HapiTest
@@ -769,5 +749,23 @@ public class ScheduleLongTermSignTest {
                         cryptoCreate("foo"),
                         getScheduleInfo(DEFERRED_FALL).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(666L));
+    }
+
+    private Key lowerThirdNestedThresholdSigningReq(Key source) {
+        var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
+        newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(1));
+        var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
+        return source.toBuilder()
+                .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
+                .build();
+    }
+
+    private Key bumpThirdNestedThresholdSigningReq(Key source) {
+        var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
+        newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(2));
+        var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
+        return source.toBuilder()
+                .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
+                .build();
     }
 }

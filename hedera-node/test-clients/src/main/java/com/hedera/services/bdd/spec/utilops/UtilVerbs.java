@@ -22,7 +22,6 @@ import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubK
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -731,7 +730,9 @@ public class UtilVerbs {
      * @return the operation that runs the sub-operations in parallel
      */
     public static GroupedOps<?> inParallel(@NonNull final SpecOperation... subs) {
-        return repeatableModeRequested() ? blockingOrder(subs) : new ParallelSpecOps(subs);
+        return "repeatable".equalsIgnoreCase(System.getProperty("hapi.spec.embedded.mode"))
+                ? blockingOrder(subs)
+                : new ParallelSpecOps(subs);
     }
 
     public static CustomSpecAssert assertionsHold(CustomSpecAssert.ThrowingConsumer custom) {

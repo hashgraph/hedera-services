@@ -23,10 +23,19 @@ on:
     inputs:
       ref:
         required: true
-        description: "The github ref that triggered the workflow"
-#      event:
-#        required: true
-#        description: "The github event of the triggering workflow"
+        description: "The github branch or tag that triggered the workflow"
+      author:
+        required: false
+        description: "The author of the commit"
+        default: ""
+      msg:
+        required: false
+        description: "The message on the head commit"
+        default: ""
+      sha:
+        required: false
+        description: "The commit ID of the commit that triggered the workflow"
+        default: ""
 
 defaults:
   run:
@@ -138,7 +147,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout Code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: '0'
           ref: develop
@@ -154,12 +163,19 @@ jobs:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{ "ref": "${{ inputs.ref }}" }'
 
-#      - name: Trigger ZXF Deploy Integration
-#        if: ${{ needs.release-branch.result == 'success' }}
-#        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
-#        with:
-#          workflow: .github/workflows/node-zxf-deploy-integration.yaml
-#          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
-#          ref: develop # ensure we are always using the workflow definition from the develop branch
-#          token: ${{ secrets.GH_ACCESS_TOKEN }}
-#          inputs: '{ "event": "${{ inputs.event }}" }'
+      - name: Trigger ZXF Deploy Integration
+        if: ${{ needs.release-branch.result == 'success' &&
+          (inputs.author != '' && inputs.message != '' && inputs.headSha != '') &&
+          !cancelled() }}
+        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
+        with:
+          workflow: .github/workflows/node-zxf-deploy-integration.yaml
+          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
+          ref: develop # ensure we are always using the workflow definition from the develop branch
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          inputs: '{
+            "ref": "${{ inputs.ref }}",
+            "author": "${{ inputs.author }}",
+            "msg": "${{ inputs.msg }}",
+            "sha": "${{ inputs.sha }}"
+          }'
