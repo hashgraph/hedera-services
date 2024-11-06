@@ -17,22 +17,23 @@
 package com.swirlds.platform.state.snapshot;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNATURE_SET_FILE_NAME;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SUPPORTED_SIGSET_VERSIONS;
 import static java.nio.file.Files.exists;
 
-import com.swirlds.base.function.CheckedBiFunction;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.MerkleTreeSnapshotReader;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -66,60 +67,52 @@ public final class SignedStateFileReader {
     }
 
     /**
-     * Reads a SignedState from disk using the provided snapshot reader function. If the reader throws
-     * an exception, it is propagated by this method to the caller.
+     * Reads a SignedState from disk. If the reader throws an exception, it is propagated by this method to the caller.
      *
-     * @param platformContext               the platform context
+     * @param configuration                 the configuration for this node
      * @param stateFile                     the file to read from
-     * @param snapshotStateReader           state snapshot reading function
      * @return a signed state with it's associated hash (as computed when the state was serialized)
      * @throws IOException if there is any problems with reading from a file
      */
     public static @NonNull DeserializedSignedState readStateFile(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Path stateFile,
-            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
-            throws IOException {
+            @NonNull final Configuration configuration, @NonNull final Path stateFile) throws IOException {
 
-        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(configuration);
         Objects.requireNonNull(stateFile);
 
         checkSignedStatePath(stateFile);
 
         final DeserializedSignedState returnState;
+        final MerkleTreeSnapshotReader.StateFileData data = MerkleTreeSnapshotReader.readStateFileData(stateFile);
 
-        record StateFileData(MerkleRoot state, Hash hash, SigSet sigSet) {}
-
-        final StateFileData data = deserializeAndDebugOnFailure(
-                () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
-                (final MerkleDataInputStream in) -> {
-                    readAndCheckVersion(in);
-
-                    final Path directory = stateFile.getParent();
-
-                    try {
-                        final MerkleRoot state = snapshotStateReader.apply(in, directory);
-                        final Hash hash = in.readSerializable();
+        final MerkleTreeSnapshotReader.StateFileData normalizedData;
+        if (data.sigSet() == null) {
+            final File sigSetFile =
+                    stateFile.getParent().resolve(SIGNATURE_SET_FILE_NAME).toFile();
+            normalizedData = deserializeAndDebugOnFailure(
+                    () -> new BufferedInputStream(new FileInputStream(sigSetFile)),
+                    (final MerkleDataInputStream in) -> {
+                        readAndCheckSigSetFileVersion(in);
                         final SigSet sigSet = in.readSerializable();
-                        return new StateFileData(state, hash, sigSet);
-                    } catch (final IOException e) {
-                        throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
-                    }
-                });
+                        return new MerkleTreeSnapshotReader.StateFileData(data.state(), data.hash(), sigSet);
+                    });
+        } else {
+            normalizedData = data;
+        }
 
         final SignedState newSignedState = new SignedState(
-                platformContext,
+                configuration,
                 CryptoStatic::verifySignature,
-                data.state(),
+                normalizedData.state(),
                 "SignedStateFileReader.readStateFile()",
                 false,
                 false,
                 false);
 
-        newSignedState.setSigSet(data.sigSet());
+        newSignedState.setSigSet(normalizedData.sigSet());
 
         returnState = new DeserializedSignedState(
-                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.hash());
+                newSignedState.reserve("SignedStateFileReader.readStateFile()"), normalizedData.hash());
 
         return returnState;
     }
@@ -140,18 +133,16 @@ public final class SignedStateFileReader {
     }
 
     /**
-     * Read the version from a signed state file and check it
+     * Read the version from a signature set file and check it
      *
      * @param in the stream to read from
      * @throws IOException if the version is invalid
      */
-    private static void readAndCheckVersion(@NonNull final MerkleDataInputStream in) throws IOException {
-        final byte versionByte = in.readByte();
-        if (versionByte != VERSIONED_FILE_BYTE) {
-            throw new IOException("File is not versioned -- data corrupted or is an unsupported legacy state");
+    private static void readAndCheckSigSetFileVersion(@NonNull final MerkleDataInputStream in) throws IOException {
+        final int fileVersion = in.readInt();
+        if (!SUPPORTED_SIGSET_VERSIONS.contains(fileVersion)) {
+            throw new IOException("Unsupported file version: " + fileVersion);
         }
-
-        in.readInt(); // file version
         in.readProtocolVersion();
     }
 }

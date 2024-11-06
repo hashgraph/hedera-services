@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.config.legacy;
 
+import static com.swirlds.base.utility.FileSystemUtils.waitForPathPresence;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.utility.CommonUtils;
@@ -27,7 +28,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.Arrays;
@@ -41,7 +41,7 @@ import org.apache.logging.log4j.Logger;
  * Loader that load all properties form the config.txt file
  *
  * @deprecated will be replaced by the {@link com.swirlds.config.api.Configuration} API in near future once the
- * onfig.txt has been migrated to the regular config API. If you need to use this class please try to do as less static
+ * config.txt has been migrated to the regular config API. If you need to use this class please try to do as less static
  * access as possible.
  */
 @Deprecated(forRemoval = true)
@@ -56,7 +56,7 @@ public final class LegacyConfigPropertiesLoader {
     public static final String ERROR_MORE_THAN_ONE_APP =
             "config.txt had more than one line starting with 'app'. All but the last will be ignored.";
     public static final String ERROR_NO_PARAMETER = "%s needs a parameter";
-    public static final String ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS = "'address' needs a minimum of 7 parameters";
+    public static final String ERROR_ADDRESS_COULD_NOT_BE_PARSED = "'address' could not be parsed";
     public static final String ERROR_PROPERTY_NOT_KNOWN =
             "'%s' in config.txt isn't a recognized first parameter for a line";
     public static final String ERROR_NEXT_NODE_NOT_GREATER_THAN_HIGHEST_ADDRESS =
@@ -66,14 +66,14 @@ public final class LegacyConfigPropertiesLoader {
     private LegacyConfigPropertiesLoader() {}
 
     /**
-     * @throws NullPointerException in case {@code configPath} parameter is {@code null}
+     * @throws NullPointerException   in case {@code configPath} parameter is {@code null}
      * @throws ConfigurationException in case {@code configPath} cannot be found in the system
      */
     public static LegacyConfigProperties loadConfigFile(@NonNull final Path configPath) throws ConfigurationException {
         Objects.requireNonNull(configPath, "configPath must not be null");
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
-        if (!Files.exists(configPath)) {
+        if (!waitForPathPresence(configPath)) {
             throw new ConfigurationException(
                     "ERROR: Configuration file not found: %s".formatted(configPath.toString()));
         }
@@ -115,15 +115,19 @@ public final class LegacyConfigPropertiesLoader {
                                     addressBook.add(address);
                                 }
                             } catch (final ParseException ex) {
-                                logger.error(
-                                        EXCEPTION.getMarker(),
-                                        "file {}, line {}, offset {}: {}",
-                                        configPath,
-                                        lineNumber,
-                                        ex.getErrorOffset(),
-                                        ex.getMessage());
-                                onError(ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS);
+                                // if we fail to parse address, we must abort since otherwise node starts with subset
+                                // of node keys and fails to join the network eventually.
+                                throw new ConfigurationException(
+                                        String.format(
+                                                "%s [line: %d]: %s",
+                                                ERROR_ADDRESS_COULD_NOT_BE_PARSED, lineNumber, line),
+                                        ex);
                             }
+                        }
+                        case "nextnodeid" -> {
+                            // As of release 0.56, nextNodeId is not used and ignored.
+                            // CI/CD pipelines need to be updated to remove this field from files.
+                            // Future Work: remove this case when nextNodeId is no longer present in CI/CD pipelines.
                         }
                         default -> onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
                     }

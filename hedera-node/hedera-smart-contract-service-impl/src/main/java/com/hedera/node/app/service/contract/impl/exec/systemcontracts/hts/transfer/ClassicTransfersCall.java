@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -134,12 +135,14 @@ public class ClassicTransfersCall extends AbstractCall {
             return reversionWith(
                     gasRequirement,
                     systemContractOperations()
-                            .externalizePreemptedDispatch(syntheticTransfer, INVALID_RECEIVING_NODE_ACCOUNT));
+                            .externalizePreemptedDispatch(
+                                    syntheticTransfer, INVALID_RECEIVING_NODE_ACCOUNT, CRYPTO_TRANSFER));
         }
         if (executionIsNotSupported()) {
             return haltWith(
                     gasRequirement,
-                    systemContractOperations().externalizePreemptedDispatch(syntheticTransfer, NOT_SUPPORTED));
+                    systemContractOperations()
+                            .externalizePreemptedDispatch(syntheticTransfer, NOT_SUPPORTED, CRYPTO_TRANSFER));
         }
         final var transferToDispatch = shouldRetryWithApprovals()
                 ? syntheticTransfer
@@ -147,7 +150,7 @@ public class ClassicTransfersCall extends AbstractCall {
                         .cryptoTransfer(requireNonNull(approvalSwitchHelper)
                                 .switchToApprovalsAsNeededIn(
                                         syntheticTransfer.cryptoTransferOrThrow(),
-                                        systemContractOperations().activeSignatureTestWith(verificationStrategy),
+                                        systemContractOperations().signatureTestWith(verificationStrategy),
                                         nativeOperations(),
                                         senderId))
                         .build()

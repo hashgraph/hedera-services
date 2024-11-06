@@ -87,7 +87,7 @@ abstract class GrpcTestBase extends TestBase {
     /**
      * Represents "this node" in our tests.
      */
-    private final NodeId nodeSelfId = new NodeId(7);
+    private final NodeId nodeSelfId = NodeId.of(7);
 
     /**
      * This {@link NettyGrpcServerManager} is used to handle the wire protocol tasks and delegate to our gRPC handlers
@@ -115,32 +115,40 @@ abstract class GrpcTestBase extends TestBase {
     /** The ingest workflow to use. */
     private IngestWorkflow ingestWorkflow = NOOP_INGEST_WORKFLOW;
     /** The query workflow to use. */
-    private QueryWorkflow queryWorkflow = NOOP_QUERY_WORKFLOW;
+    private QueryWorkflow userQueryWorkflow = NOOP_QUERY_WORKFLOW;
+
+    private QueryWorkflow operatorQueryWorkflow = NOOP_QUERY_WORKFLOW;
     /** The channel on the client to connect to the grpc server */
     private Channel channel;
+    /** The channel on the client to connect to the node operator grpc server */
+    private Channel nodeOperatorChannel;
 
     /**
      */
     protected void registerQuery(
             @NonNull final String methodName,
             @NonNull final IngestWorkflow ingestWorkflow,
-            @NonNull final QueryWorkflow queryWorkflow) {
+            @NonNull final QueryWorkflow userQueryWorkflow,
+            @NonNull final QueryWorkflow operatorQueryWorkflow) {
         this.queryMethodName = methodName;
-        this.queryWorkflow = queryWorkflow;
+        this.userQueryWorkflow = userQueryWorkflow;
+        this.operatorQueryWorkflow = operatorQueryWorkflow;
         this.ingestWorkflow = ingestWorkflow;
     }
 
     protected void registerIngest(
             @NonNull final String methodName,
             @NonNull final IngestWorkflow ingestWorkflow,
-            @NonNull final QueryWorkflow queryWorkflow) {
+            @NonNull final QueryWorkflow userQueryWorkflow,
+            @NonNull final QueryWorkflow operatorQueryWorkflow) {
         this.ingestMethodName = methodName;
         this.ingestWorkflow = ingestWorkflow;
-        this.queryWorkflow = queryWorkflow;
+        this.userQueryWorkflow = userQueryWorkflow;
+        this.operatorQueryWorkflow = operatorQueryWorkflow;
     }
 
     /** Starts the grpcServer and sets up the clients. */
-    protected void startServer() {
+    protected void startServer(boolean withNodeOperatorPort) {
         final var testService = new RpcService() {
             @NonNull
             @Override
@@ -182,13 +190,22 @@ abstract class GrpcTestBase extends TestBase {
 
         final var servicesRegistry = new ServicesRegistryImpl(ConstructableRegistry.getInstance(), configuration);
         servicesRegistry.register(testService);
-        final var config = createConfig(new TestSource());
+        final var config = createConfig(new TestSource().withNodeOperatorPortEnabled(withNodeOperatorPort));
         this.grpcServer = new NettyGrpcServerManager(
-                () -> new VersionedConfigImpl(config, 1), servicesRegistry, ingestWorkflow, queryWorkflow, metrics);
+                () -> new VersionedConfigImpl(config, 1),
+                servicesRegistry,
+                ingestWorkflow,
+                userQueryWorkflow,
+                operatorQueryWorkflow,
+                metrics);
 
         grpcServer.start();
 
         this.channel = NettyChannelBuilder.forAddress("localhost", grpcServer.port())
+                .usePlaintext()
+                .build();
+
+        this.nodeOperatorChannel = NettyChannelBuilder.forAddress("localhost", grpcServer.nodeOperatorPort())
                 .usePlaintext()
                 .build();
     }
@@ -198,7 +215,8 @@ abstract class GrpcTestBase extends TestBase {
         if (this.grpcServer != null) this.grpcServer.stop();
         grpcServer = null;
         ingestWorkflow = NOOP_INGEST_WORKFLOW;
-        queryWorkflow = NOOP_QUERY_WORKFLOW;
+        userQueryWorkflow = NOOP_QUERY_WORKFLOW;
+        operatorQueryWorkflow = NOOP_QUERY_WORKFLOW;
         queryMethodName = null;
         ingestMethodName = null;
     }
@@ -216,6 +234,31 @@ abstract class GrpcTestBase extends TestBase {
     protected String send(final String service, final String function, final String payload) {
         return ClientCalls.blockingUnaryCall(
                 channel,
+                MethodDescriptor.<String, String>newBuilder()
+                        .setFullMethodName(service + "/" + function)
+                        .setRequestMarshaller(new StringMarshaller())
+                        .setResponseMarshaller(new StringMarshaller())
+                        .setType(MethodType.UNARY)
+                        .build(),
+                CallOptions.DEFAULT,
+                payload);
+    }
+
+    /**
+     * Sends a request as a node operator using the specified service and function.
+     *
+     * This method constructs a unary call to the specified service and function,
+     * marshaling the request and response as strings. It blocks until the call is
+     * completed and returns the response payload.
+     *
+     * @param service the name of the service to call
+     * @param function the name of the function to invoke within the service
+     * @param payload the request payload to send
+     * @return the response payload received from the service
+     */
+    protected String sendAsNodeOperator(final String service, final String function, final String payload) {
+        return ClientCalls.blockingUnaryCall(
+                nodeOperatorChannel,
                 MethodDescriptor.<String, String>newBuilder()
                         .setFullMethodName(service + "/" + function)
                         .setRequestMarshaller(new StringMarshaller())
@@ -260,6 +303,7 @@ abstract class GrpcTestBase extends TestBase {
         private int tlsPort = 0;
         private int startRetries = 3;
         private int startRetryIntervalMs = 100;
+        private boolean nodeOperatorPortEnabled = false;
 
         @Override
         public int getOrdinal() {
@@ -269,7 +313,12 @@ abstract class GrpcTestBase extends TestBase {
         @NonNull
         @Override
         public Set<String> getPropertyNames() {
-            return Set.of("grpc.port", "grpc.tlsPort", "netty.startRetryIntervalMs", "netty.startRetries");
+            return Set.of(
+                    "grpc.port",
+                    "grpc.tlsPort",
+                    "grpc.nodeOperatorPortEnabled",
+                    "netty.startRetryIntervalMs",
+                    "netty.startRetries");
         }
 
         @Nullable
@@ -277,6 +326,7 @@ abstract class GrpcTestBase extends TestBase {
         public String getValue(@NonNull String s) throws NoSuchElementException {
             return switch (s) {
                 case "grpc.port" -> String.valueOf(port);
+                case "grpc.nodeOperatorPortEnabled" -> String.valueOf(nodeOperatorPortEnabled);
                 case "grpc.tlsPort" -> String.valueOf(tlsPort);
                 case "netty.startRetryIntervalMs" -> String.valueOf(startRetryIntervalMs);
                 case "netty.startRetries" -> String.valueOf(startRetries);
@@ -290,6 +340,17 @@ abstract class GrpcTestBase extends TestBase {
 
         public TestSource withPort(final int value) {
             this.port = value;
+            return this;
+        }
+
+        /**
+         * Sets the flag indicating whether the node operator port is enabled.
+         *
+         * @param value true to enable the node operator port; false to disable it
+         * @return the current instance of TestSource
+         */
+        public TestSource withNodeOperatorPortEnabled(boolean value) {
+            this.nodeOperatorPortEnabled = value;
             return this;
         }
 

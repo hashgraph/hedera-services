@@ -18,16 +18,19 @@ package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.junit.hedera.MarkerFile.EXEC_IMMEDIATE_MF;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.purgeUpgradeArtifacts;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runBackgroundTrafficUntilFreezeComplete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActive;
@@ -63,7 +66,6 @@ public interface LifecycleTest {
     int MIXED_OPS_BURST_TPS = 50;
     Duration FREEZE_TIMEOUT = Duration.ofSeconds(90);
     Duration RESTART_TIMEOUT = Duration.ofSeconds(180);
-    //    Duration RESTART_TIMEOUT = Duration.ofSeconds(300);
     Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(60);
     Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
     Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
@@ -176,6 +178,7 @@ public interface LifecycleTest {
     default HapiSpecOperation upgradeToConfigVersion(final int version, @NonNull final SpecOperation... preRestartOps) {
         requireNonNull(preRestartOps);
         return blockingOrder(
+                runBackgroundTrafficUntilFreezeComplete(),
                 sourcing(() -> freezeUpgrade()
                         .startingIn(2)
                         .seconds()
@@ -185,7 +188,11 @@ public interface LifecycleTest {
                 blockingOrder(preRestartOps),
                 FakeNmt.restartNetwork(version),
                 doAdhoc(() -> CURRENT_CONFIG_VERSION.set(version)),
-                waitForActiveNetwork(RESTART_TIMEOUT));
+                waitForActiveNetwork(RESTART_TIMEOUT),
+                cryptoCreate("postUpgradeAccount"),
+                // Ensure we have a post-upgrade transaction in a new period to trigger
+                // system file exports while still streaming records
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     /**

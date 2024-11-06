@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.copyBuilderFrom;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.asStakingRewardBuilder;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.fromStakingInfo;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.lastInstantOfPreviousPeriodFor;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.newNodeStakeUpdateBuilder;
@@ -215,7 +216,7 @@ public class StakeInfoHelper {
                         stakingInfo.copyBuilder().weight(0).deleted(true).build());
                 log.info("Marked node{} as deleted since it has been removed from the address book", nodeId);
                 // None of this node's rewards can ever be claimed now, so clear them from pending
-                final var rewards = copyBuilderFrom(rewardsStore)
+                final var rewards = asStakingRewardBuilder(rewardsStore)
                         .pendingRewards(rewardsStore.pendingRewards() - stakingInfo.pendingRewards())
                         .build();
                 rewardsStore.put(rewards);
@@ -247,7 +248,7 @@ public class StakeInfoHelper {
                 stakingConfig.maxStakeRewarded(),
                 POST_UPGRADE_MEMO);
         log.info("Exporting:\n{}", nodeStakes);
-        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class)
+        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class, NODE_STAKE_UPDATE)
                 .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo(POST_UPGRADE_MEMO)
                 .status(SUCCESS);

@@ -150,7 +150,7 @@ class ExpectedFCMFamilyTest {
 
     static {
         platform = Mockito.mock(Platform.class);
-        Mockito.when(platform.getSelfId()).thenReturn(new NodeId(0L));
+        Mockito.when(platform.getSelfId()).thenReturn(NodeId.of(0L));
     }
 
     @BeforeAll

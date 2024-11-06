@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_A
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoAssociate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
@@ -102,7 +103,8 @@ public class DispatchUsageManager {
         if (CONTRACT_OPERATIONS.contains(function)) {
             leakUnusedGas(dispatch);
         }
-        if (dispatch.txnCategory() == USER && dispatch.recordBuilder().status() != SUCCESS) {
+        if ((dispatch.txnCategory() == USER || dispatch.txnCategory() == NODE)
+                && dispatch.recordBuilder().status() != SUCCESS) {
             if (canAutoCreate(function)) {
                 reclaimFailedCryptoCreateCapacity(dispatch);
             }

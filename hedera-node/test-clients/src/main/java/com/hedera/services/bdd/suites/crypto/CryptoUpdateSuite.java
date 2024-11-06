@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyLabels.complex;
@@ -42,12 +43,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilOp.flatten;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.createEthereumAccountsWithECKeysAllDifferentWays;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.visibleNonSyntheticItems;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -67,19 +74,33 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabels;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.UtilStateChange.ECKind;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -132,6 +153,66 @@ public class CryptoUpdateSuite {
                         .newStakedAccountId("0.0.21")));
     }
 
+    private static final UnaryOperator<String> ROTATION_TXN = account -> account + "KeyRotation";
+
+    /**
+     * Creates four accounts with ECDSA keys, the first having a long-zero EVM address and the other three having
+     * arbitrary EVM addresses created via,
+     * <ol>
+     *     <li>Legacy HIP-32 auto-account creation via transfer to a key alias.</li>
+     *     <li>Hollow account creation via transfer to an EVM address.</li>
+     *     <li>Explicit HIP-583 specification of the EVM address on creation.</li>
+     * </ol>
+     * Then asserts that each of them have the expected EVM addresses in the {@link HapiGetAccountInfo} query both
+     * before and after key rotation; and that the record stream does not imply anything different.
+     */
+    @HapiTest
+    final Stream<DynamicTest> keyRotationDoesNotChangeEvmAddress() {
+        final Map<String, Address> evmAddresses = new HashMap<>();
+
+        final var accountsToHaveKeysRotated =
+                ECKind.defaultAccountNames().values().stream().sorted().toList();
+        final var allTxnIds = Stream.concat(
+                        accountsToHaveKeysRotated.stream(),
+                        accountsToHaveKeysRotated.stream().map(ROTATION_TXN))
+                .toArray(String[]::new);
+        return hapiTest(flatten(
+                recordStreamMustIncludePassFrom(
+                        visibleNonSyntheticItems(
+                                keyRotationsValidator(evmAddresses, accountsToHaveKeysRotated), allTxnIds),
+                        Duration.ofSeconds(10)),
+                // If the FileAlterationObserver just started the monitor, there's a chance we could miss the
+                // first couple of creations, so wait for a new record file boundary
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted),
+                createEthereumAccountsWithECKeysAllDifferentWays(),
+                // --- ROTATE KEYS ---
+                blockingOrder(IntStream.range(0, accountsToHaveKeysRotated.size())
+                        .mapToObj(i -> {
+                            final var newKey = "replKey" + i;
+                            final var targetAccount = accountsToHaveKeysRotated.get(i);
+                            return blockingOrder(
+                                    newKeyNamed(newKey).shape(KeyShape.SECP256K1),
+                                    cryptoUpdate(targetAccount).key(newKey).via(ROTATION_TXN.apply(targetAccount)));
+                        })
+                        .toArray(SpecOperation[]::new))));
+    }
+
+    private static VisibleItemsValidator keyRotationsValidator(
+            @NonNull final Map<String, Address> evmAddresses, @NonNull final List<String> accountsToHaveKeysRotated) {
+        return (spec, records) -> {
+            final var rotationTxnIds =
+                    accountsToHaveKeysRotated.stream().map(ROTATION_TXN).toArray(String[]::new);
+            for (final var txnId : rotationTxnIds) {
+                final var successItems = requireNonNull(records.get(txnId), txnId + " not found");
+                final var updateEntry = successItems.entries().stream()
+                        .filter(entry -> entry.function() == CryptoUpdate)
+                        .findFirst()
+                        .orElseThrow();
+                assertEquals(0, updateEntry.txnRecord().getEvmAddress().size(), "for txnId " + txnId);
+            }
+        };
+    }
+
     @HapiTest
     final Stream<DynamicTest> updateForMaxAutoAssociationsForAccountsWorks() {
         return defaultHapiSpec("updateForMaxAutoAssociationsForAccountsWorks")
@@ -179,41 +260,31 @@ public class CryptoUpdateSuite {
                 newKeyNamed(ADMIN_KEY),
                 cryptoCreate("user").key(ADMIN_KEY).stakedAccountId("0.0.20").declinedReward(true),
                 getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith()
+                        .has(accountWith()
                                 .stakedAccountId("0.0.20")
                                 .noStakingNodeId()
                                 .isDeclinedReward(true)),
                 cryptoUpdate("user").newStakedNodeId(0L).newDeclinedReward(false),
                 getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith()
-                                .noStakedAccountId()
-                                .stakedNodeId(0L)
-                                .isDeclinedReward(false)),
+                        .has(accountWith().noStakedAccountId().stakedNodeId(0L).isDeclinedReward(false)),
                 cryptoUpdate("user").newStakedNodeId(-1L),
                 cryptoUpdate("user").newStakedNodeId(-25L).hasKnownStatus(INVALID_STAKING_ID),
                 getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith()
-                                .noStakedAccountId()
-                                .noStakingNodeId()
-                                .isDeclinedReward(false)),
+                        .has(accountWith().noStakedAccountId().noStakingNodeId().isDeclinedReward(false)),
                 cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("0.0.20").newDeclinedReward(true),
                 getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith()
+                        .has(accountWith()
                                 .stakedAccountId("0.0.20")
                                 .noStakingNodeId()
                                 .isDeclinedReward(true))
                         .logged(),
                 cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("0.0.0"),
                 getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith()
-                                .noStakedAccountId()
-                                .noStakingNodeId()
-                                .isDeclinedReward(true))
+                        .has(accountWith().noStakedAccountId().noStakingNodeId().isDeclinedReward(true))
                         .logged(),
                 // For completeness stake back to a node
                 cryptoUpdate("user").key(ADMIN_KEY).newStakedNodeId(1),
-                getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith().stakedNodeId(1L).isDeclinedReward(true)));
+                getAccountInfo("user").has(accountWith().stakedNodeId(1L).isDeclinedReward(true)));
     }
 
     @LeakyHapiTest(overrides = {"entities.maxLifetime", "ledger.maxAutoAssociations"})

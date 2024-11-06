@@ -31,6 +31,7 @@ package com.hedera.hapi.node.state.blockstream;
  */
 
 import "timestamp.proto";
+import "basic_types.proto";
 
 option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.blockstream">>> This comment is special code for setting PBJ Compiler java package
@@ -49,7 +50,7 @@ option java_multiple_files = true;
  * _each_ block, but MUST be updated at the beginning of the _next_ block.<br/>
  * This value SHALL contain the block hash up to, and including, the
  * immediately prior completed block.<br/>
- * The state change to update this singleton MUST be the last "output"
+ * The state change to update this singleton MUST be the last
  * block item in this block.
  */
 message BlockStreamInfo {
@@ -73,7 +74,7 @@ message BlockStreamInfo {
      * A concatenation of hash values.<br/>
      * This combines several trailing output block item hashes and
      * is used as a seed value for a pseudo-random number generator.<br/>
-     * This is also requiried to implement the EVM `PREVRANDAO` opcode.
+     * This is also required to implement the EVM `PREVRANDAO` opcode.<br/>
      * This MUST contain at least 256 bits of entropy.
      */
     bytes trailing_output_hashes = 3;
@@ -131,4 +132,27 @@ message BlockStreamInfo {
      * the current block.
      */
     proto.Timestamp block_end_time = 9;
+
+    /**
+     * Whether the post-upgrade work has been done.
+     * <p>
+     * This MUST be false if and only if the network just restarted
+     * after an upgrade and has not yet done the post-upgrade work.
+     */
+    bool post_upgrade_work_done = 10;
+
+    /**
+     * A version describing the version of application software.
+    * <p>
+    * This SHALL be the software version that created this block.
+    */
+    proto.SemanticVersion creation_software_version = 11;
+
+    /**
+     * The time stamp at which the last interval process was done.
+     * <p>
+     * This field SHALL hold the consensus time for the last time
+     * at which an interval of time-dependent events were processed.
+     */
+    proto.Timestamp last_interval_process_time = 12;
 }

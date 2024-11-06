@@ -41,7 +41,6 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.protocol.Protocol;
@@ -59,6 +58,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
+import org.hiero.consensus.gossip.FallenBehindManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,7 +71,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 class ReconnectProtocolTests {
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-    private static final NodeId PEER_ID = new NodeId(1L);
+    private static final NodeId PEER_ID = NodeId.of(1L);
 
     private ReconnectController reconnectController;
     private ReconnectThrottle teacherThrottle;
@@ -145,7 +145,7 @@ class ReconnectProtocolTests {
 
         final List<NodeId> neighborsForReconnect = LongStream.range(0L, 10L)
                 .filter(id -> id != PEER_ID.id() || params.isReconnectNeighbor)
-                .mapToObj(NodeId::new)
+                .mapToObj(NodeId::of)
                 .toList();
 
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
@@ -281,8 +281,8 @@ class ReconnectProtocolTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final NodeId node1 = new NodeId(1L);
-        final NodeId node2 = new NodeId(2L);
+        final NodeId node1 = NodeId.of(1L);
+        final NodeId node2 = NodeId.of(2L);
         final ReconnectProtocol peer1 = new ReconnectProtocol(
                 platformContext,
                 getStaticThreadManager(),
@@ -362,7 +362,7 @@ class ReconnectProtocolTests {
                 fallenBehindManager,
                 () -> ACTIVE,
                 configuration);
-        final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
+        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertTrue(protocol.shouldInitiate());
         protocol.initiateFailed();
 
@@ -407,7 +407,7 @@ class ReconnectProtocolTests {
                 () -> ACTIVE,
                 configuration);
 
-        final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
+        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertTrue(protocol.shouldAccept());
         protocol.acceptFailed();
 
@@ -444,7 +444,7 @@ class ReconnectProtocolTests {
                 fallenBehindManager,
                 () -> ACTIVE,
                 configuration);
-        final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
+        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertFalse(protocol.shouldAccept());
     }
 
@@ -474,7 +474,7 @@ class ReconnectProtocolTests {
                 fallenBehindManager,
                 () -> PlatformStatus.CHECKING,
                 configuration);
-        final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
+        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertFalse(protocol.shouldAccept());
     }
 
@@ -500,7 +500,7 @@ class ReconnectProtocolTests {
                 mock(FallenBehindManager.class),
                 () -> ACTIVE,
                 configuration);
-        final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
+        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertTrue(protocol.shouldAccept());
 
         verify(reconnectController, times(1)).blockLearnerPermit();
@@ -546,7 +546,7 @@ class ReconnectProtocolTests {
                 mock(FallenBehindManager.class),
                 () -> ACTIVE,
                 configuration);
-        final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
+        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertFalse(protocol.shouldAccept());
 
         verify(reconnectController, times(1)).blockLearnerPermit();

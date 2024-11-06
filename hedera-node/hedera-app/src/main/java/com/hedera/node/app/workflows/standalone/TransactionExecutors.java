@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.standalone;
 
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
 
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -26,6 +27,9 @@ import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
+import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.tss.PlaceholderTssLibrary;
+import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -35,6 +39,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
@@ -73,9 +78,10 @@ public enum TransactionExecutors {
             final var dispatch = executor.standaloneDispatchFactory().newDispatch(state, transactionBody, consensusNow);
             tracerBinding.runWhere(List.of(operationTracers), () -> executor.dispatchProcessor()
                     .processDispatch(dispatch));
-            return dispatch.stack()
+            final var recordSource = dispatch.stack()
                     .buildHandleOutput(consensusNow, exchangeRateManager.exchangeRates())
-                    .recordsOrThrow();
+                    .recordSourceOrThrow();
+            return ((LegacyListRecordSource) recordSource).precomputedRecords();
         };
     }
 
@@ -87,13 +93,22 @@ public enum TransactionExecutors {
                 new AppSignatureVerifier(
                         bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
-                        new SignatureVerifierImpl(CryptographyHolder.get())));
+                        new SignatureVerifierImpl(CryptographyHolder.get())),
+                UNAVAILABLE_GOSSIP);
+        final var tssBaseService = new TssBaseServiceImpl(
+                appContext,
+                ForkJoinPool.commonPool(),
+                ForkJoinPool.commonPool(),
+                new PlaceholderTssLibrary(),
+                ForkJoinPool.commonPool(),
+                new NoOpMetrics());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
         final var configProvider = new ConfigProviderImpl(false, null, properties);
         return DaggerExecutorComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
+                .tssBaseService(tssBaseService)
                 .fileServiceImpl(fileService)
                 .contractServiceImpl(contractService)
                 .metrics(new NoOpMetrics())

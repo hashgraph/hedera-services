@@ -108,7 +108,7 @@ public class ChildFeeContextImpl implements FeeContext {
     }
 
     @Override
-    public @Nullable Configuration configuration() {
+    public @NonNull Configuration configuration() {
         return context.configuration();
     }
 

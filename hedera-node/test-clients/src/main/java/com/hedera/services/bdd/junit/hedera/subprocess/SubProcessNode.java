@@ -162,6 +162,11 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         if (processHandle == null) {
             return CompletableFuture.completedFuture(null);
         }
+        log.info(
+                "Destroying node '{}' with PID '{}' (Alive? {})",
+                metadata.nodeId(),
+                processHandle.pid(),
+                processHandle.isAlive() ? "Yes" : "No");
         if (!processHandle.destroy()) {
             log.warn("May have failed to stop node '{}' with PID '{}'", metadata.nodeId(), processHandle.pid());
         }
@@ -193,13 +198,18 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
      * Reassigns the ports used by this node.
      *
      * @param grpcPort the new gRPC port
+     *                 @param grpcNodeOperatorPort the new gRPC node operator port
      * @param gossipPort the new gossip port
      * @param tlsGossipPort the new TLS gossip port
      * @param prometheusPort the new Prometheus port
      */
     public void reassignPorts(
-            final int grpcPort, final int gossipPort, final int tlsGossipPort, final int prometheusPort) {
-        metadata = metadata.withNewPorts(grpcPort, gossipPort, tlsGossipPort, prometheusPort);
+            final int grpcPort,
+            final int grpcNodeOperatorPort,
+            final int gossipPort,
+            final int tlsGossipPort,
+            final int prometheusPort) {
+        metadata = metadata.withNewPorts(grpcPort, grpcNodeOperatorPort, gossipPort, tlsGossipPort, prometheusPort);
     }
 
     /**

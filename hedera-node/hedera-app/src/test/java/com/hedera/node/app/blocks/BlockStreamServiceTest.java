@@ -16,14 +16,11 @@
 
 package com.hedera.node.app.blocks;
 
-import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
 import com.swirlds.state.spi.SchemaRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,43 +32,17 @@ final class BlockStreamServiceTest {
     @Mock
     private SchemaRegistry schemaRegistry;
 
-    private BlockStreamService subject;
+    private final BlockStreamService subject = new BlockStreamService();
 
     @Test
     void serviceNameAsExpected() {
-        givenDisabledSubject();
-
         assertThat(subject.getServiceName()).isEqualTo("BlockStreamService");
     }
 
     @Test
     void enabledSubjectRegistersV0540Schema() {
-        givenEnabledSubject();
-
         subject.registerSchemas(schemaRegistry);
 
-        verify(schemaRegistry).register(argThat(s -> s instanceof V0540BlockStreamSchema));
-    }
-
-    @Test
-    void disabledSubjectDoesNotRegisterSchema() {
-        givenDisabledSubject();
-
-        subject.registerSchemas(schemaRegistry);
-
-        verifyNoInteractions(schemaRegistry);
-
-        assertThat(subject.migratedLastBlockHash()).isEmpty();
-    }
-
-    private void givenEnabledSubject() {
-        final var testConfig = HederaTestConfigBuilder.create()
-                .withValue("blockStream.streamMode", "BOTH")
-                .getOrCreateConfig();
-        subject = new BlockStreamService(testConfig);
-    }
-
-    private void givenDisabledSubject() {
-        subject = new BlockStreamService(DEFAULT_CONFIG);
+        verify(schemaRegistry).register(argThat(s -> s instanceof V0560BlockStreamSchema));
     }
 }
