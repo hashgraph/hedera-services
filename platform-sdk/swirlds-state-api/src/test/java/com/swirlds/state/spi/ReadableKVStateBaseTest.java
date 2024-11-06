@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import com.swirlds.state.test.fixtures.StateTestBase;
+import com.swirlds.state.test.fixtures.StringRecord;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,8 +50,8 @@ import org.junit.jupiter.api.Test;
  * ReadableKVStateBase#reset()}) will be covered by other tests in addition to this one.
  */
 public class ReadableKVStateBaseTest extends StateTestBase {
-    private ReadableKVStateBase<String, String> state;
-    protected Map<String, String> backingMap;
+    private ReadableKVStateBase<String, StringRecord> state;
+    protected Map<String, StringRecord> backingMap;
 
     @BeforeEach
     void setUp() {
@@ -58,8 +59,8 @@ public class ReadableKVStateBaseTest extends StateTestBase {
         this.state = createFruitState(this.backingMap);
     }
 
-    protected Map<String, String> createBackingMap() {
-        final var map = new HashMap<String, String>();
+    protected Map<String, StringRecord> createBackingMap() {
+        final var map = new HashMap<String, StringRecord>();
         map.put(A_KEY, APPLE);
         map.put(B_KEY, BANANA);
         map.put(C_KEY, CHERRY);
@@ -70,7 +71,7 @@ public class ReadableKVStateBaseTest extends StateTestBase {
         return map;
     }
 
-    protected ReadableKVStateBase<String, String> createFruitState(Map<String, String> backingMap) {
+    protected ReadableKVStateBase<String, StringRecord> createFruitState(Map<String, StringRecord> backingMap) {
         return new MapReadableKVState<>(FRUIT_STATE_KEY, backingMap);
     }
 

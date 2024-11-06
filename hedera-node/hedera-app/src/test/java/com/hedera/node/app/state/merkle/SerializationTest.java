@@ -62,6 +62,7 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.test.fixtures.StringRecord;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
@@ -119,8 +120,8 @@ class SerializationTest extends MerkleTestBase {
             @Override
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
-                final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC);
-                final var animalDef = StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC, 100);
+                final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_RECORD_CODEC);
+                final var animalDef = StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_CODEC, STRING_RECORD_CODEC, 100);
                 final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC);
                 final var steamDef = StateDefinition.queue(STEAM_STATE_KEY, STRING_CODEC);
                 return Set.of(fruitDef, animalDef, countryDef, steamDef);
@@ -129,7 +130,7 @@ class SerializationTest extends MerkleTestBase {
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
                 final var newStates = ctx.newStates();
-                final WritableKVState<String, String> fruit = newStates.get(FRUIT_STATE_KEY);
+                final WritableKVState<String, StringRecord> fruit = newStates.get(FRUIT_STATE_KEY);
                 fruit.put(A_KEY, APPLE);
                 fruit.put(B_KEY, BANANA);
                 fruit.put(C_KEY, CHERRY);
@@ -138,8 +139,9 @@ class SerializationTest extends MerkleTestBase {
                 fruit.put(F_KEY, FIG);
                 fruit.put(G_KEY, GRAPE);
 
-                final OnDiskWritableKVState<String, String> animals =
-                        (OnDiskWritableKVState<String, String>) (OnDiskWritableKVState) newStates.get(ANIMAL_STATE_KEY);
+                final OnDiskWritableKVState<String, StringRecord> animals =
+                        (OnDiskWritableKVState<String, StringRecord>)
+                                (OnDiskWritableKVState) newStates.get(ANIMAL_STATE_KEY);
                 animals.put(A_KEY, AARDVARK);
                 animals.put(B_KEY, BEAR);
                 animals.put(C_KEY, CUTTLEFISH);
@@ -340,7 +342,7 @@ class SerializationTest extends MerkleTestBase {
 
     private static void populateVmCache(MerkleStateRoot loadedTree) {
         final var states = loadedTree.getWritableStates(FIRST_SERVICE);
-        final WritableKVState<String, String> animalState = states.get(ANIMAL_STATE_KEY);
+        final WritableKVState<String, StringRecord> animalState = states.get(ANIMAL_STATE_KEY);
         assertThat(animalState.getForModify(A_KEY)).isEqualTo(AARDVARK);
         assertThat(animalState.getForModify(B_KEY)).isEqualTo(BEAR);
         assertThat(animalState.getForModify(C_KEY)).isEqualTo(CUTTLEFISH);
@@ -352,7 +354,7 @@ class SerializationTest extends MerkleTestBase {
 
     private static void assertTree(MerkleStateRoot loadedTree) {
         final var states = loadedTree.getReadableStates(FIRST_SERVICE);
-        final ReadableKVState<String, String> fruitState = states.get(FRUIT_STATE_KEY);
+        final ReadableKVState<String, StringRecord> fruitState = states.get(FRUIT_STATE_KEY);
         assertThat(fruitState.get(A_KEY)).isEqualTo(APPLE);
         assertThat(fruitState.get(B_KEY)).isEqualTo(BANANA);
         assertThat(fruitState.get(C_KEY)).isEqualTo(CHERRY);
@@ -361,7 +363,7 @@ class SerializationTest extends MerkleTestBase {
         assertThat(fruitState.get(F_KEY)).isEqualTo(FIG);
         assertThat(fruitState.get(G_KEY)).isEqualTo(GRAPE);
 
-        final ReadableKVState<String, String> animalState = states.get(ANIMAL_STATE_KEY);
+        final ReadableKVState<String, StringRecord> animalState = states.get(ANIMAL_STATE_KEY);
         assertThat(animalState.get(A_KEY)).isEqualTo(AARDVARK);
         assertThat(animalState.get(B_KEY)).isEqualTo(BEAR);
         assertThat(animalState.get(C_KEY)).isEqualTo(CUTTLEFISH);

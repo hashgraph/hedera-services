@@ -609,7 +609,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         };
     }
 
-    private static Object mapValueFor(@NonNull final MapChangeValue mapChangeValue) {
+    private static Record mapValueFor(@NonNull final MapChangeValue mapChangeValue) {
         return switch (mapChangeValue.valueChoice().kind()) {
             case UNSET -> throw new IllegalStateException("Value choice is not set for " + mapChangeValue);
             case ACCOUNT_VALUE -> mapChangeValue.accountValueOrThrow();

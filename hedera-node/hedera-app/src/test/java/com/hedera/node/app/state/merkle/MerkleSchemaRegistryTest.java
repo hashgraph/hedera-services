@@ -44,6 +44,7 @@ import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.test.fixtures.StringRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -423,7 +424,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         assertThat(ctx).isNotNull();
                         assertThat(ctx.previousVersion()).isNull();
                         assertThat(ctx.newStates().size()).isEqualTo(1);
-                        final WritableKVState<String, String> fruit =
+                        final WritableKVState<String, StringRecord> fruit =
                                 ctx.newStates().get(FRUIT_STATE_KEY);
                         fruit.put(A_KEY, APPLE);
                         fruit.put(B_KEY, BANANA);
@@ -453,7 +454,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         // and nothing new
                         assertThat(previousStates.isEmpty()).isFalse();
                         assertThat(previousStates.contains(FRUIT_STATE_KEY)).isTrue();
-                        final ReadableKVState<String, String> oldFruit = previousStates.get(FRUIT_STATE_KEY);
+                        final ReadableKVState<String, StringRecord> oldFruit = previousStates.get(FRUIT_STATE_KEY);
                         assertThat(oldFruit.keys()).toIterable().hasSize(3);
                         assertThat(oldFruit.get(A_KEY)).isEqualTo(APPLE);
                         assertThat(oldFruit.get(B_KEY)).isEqualTo(BANANA);
@@ -466,12 +467,12 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         assertThat(newStates.contains(COUNTRY_STATE_KEY)).isTrue();
 
                         // Add in the new animals
-                        final WritableKVState<String, String> animals = newStates.get(ANIMAL_STATE_KEY);
+                        final WritableKVState<String, StringRecord> animals = newStates.get(ANIMAL_STATE_KEY);
                         animals.put(A_KEY, AARDVARK);
                         animals.put(B_KEY, BEAR);
 
                         // Remove, update, and add fruit
-                        final WritableKVState<String, String> fruit = newStates.get(FRUIT_STATE_KEY);
+                        final WritableKVState<String, StringRecord> fruit = newStates.get(FRUIT_STATE_KEY);
                         fruit.remove(A_KEY);
                         fruit.put(B_KEY, BLACKBERRY);
                         fruit.put(E_KEY, EGGPLANT);
@@ -509,12 +510,12 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         // Verify that everything in v2 is still here
                         assertThat(previousStates.stateKeys())
                                 .containsExactlyInAnyOrder(FRUIT_STATE_KEY, ANIMAL_STATE_KEY, COUNTRY_STATE_KEY);
-                        final ReadableKVState<String, String> oldFruit = previousStates.get(FRUIT_STATE_KEY);
+                        final ReadableKVState<String, StringRecord> oldFruit = previousStates.get(FRUIT_STATE_KEY);
                         assertThat(oldFruit.keys()).toIterable().containsExactlyInAnyOrder(B_KEY, C_KEY, E_KEY);
                         assertThat(oldFruit.get(B_KEY)).isEqualTo(BLACKBERRY);
                         assertThat(oldFruit.get(C_KEY)).isEqualTo(CHERRY);
                         assertThat(oldFruit.get(E_KEY)).isEqualTo(EGGPLANT);
-                        final ReadableKVState<String, String> oldAnimals = previousStates.get(ANIMAL_STATE_KEY);
+                        final ReadableKVState<String, StringRecord> oldAnimals = previousStates.get(ANIMAL_STATE_KEY);
                         assertThat(oldAnimals.get(A_KEY)).isEqualTo(AARDVARK);
                         assertThat(oldAnimals.get(B_KEY)).isEqualTo(BEAR);
 
@@ -524,7 +525,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         assertThat(newStates.contains(ANIMAL_STATE_KEY)).isTrue();
 
                         // Add in a new animal
-                        final WritableKVState<String, String> animals = newStates.get(ANIMAL_STATE_KEY);
+                        final WritableKVState<String, StringRecord> animals = newStates.get(ANIMAL_STATE_KEY);
                         animals.put(C_KEY, CUTTLEFISH);
 
                         // And I should still see the COUNTRY_STATE_KEY in the previousStates,
@@ -562,7 +563,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                 // Then we see that the values for A, B, and C are available
                 final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
                 assertThat(readableStates.size()).isEqualTo(1);
-                final ReadableKVState<String, String> fruitV1 = readableStates.get(FRUIT_STATE_KEY);
+                final ReadableKVState<String, StringRecord> fruitV1 = readableStates.get(FRUIT_STATE_KEY);
                 assertThat(fruitV1.keys()).toIterable().containsExactlyInAnyOrder(A_KEY, B_KEY, C_KEY);
             }
 
@@ -591,11 +592,11 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                 final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
                 assertThat(readableStates.size()).isEqualTo(3);
 
-                final ReadableKVState<String, String> fruitV2 = readableStates.get(FRUIT_STATE_KEY);
+                final ReadableKVState<String, StringRecord> fruitV2 = readableStates.get(FRUIT_STATE_KEY);
                 assertThat(fruitV2.keys()).toIterable().containsExactlyInAnyOrder(B_KEY, C_KEY, E_KEY);
                 assertThat(fruitV2.get(B_KEY)).isEqualTo(BLACKBERRY);
 
-                final ReadableKVState<String, String> animalV2 = readableStates.get(ANIMAL_STATE_KEY);
+                final ReadableKVState<String, StringRecord> animalV2 = readableStates.get(ANIMAL_STATE_KEY);
                 assertThat(animalV2.get(A_KEY)).isEqualTo(AARDVARK);
                 assertThat(animalV2.get(B_KEY)).isEqualTo(BEAR);
 
@@ -638,7 +639,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         .isInstanceOf(IllegalArgumentException.class);
 
                 // And this should be updated
-                final ReadableKVState<String, String> animalV2 = readableStates.get(ANIMAL_STATE_KEY);
+                final ReadableKVState<String, StringRecord> animalV2 = readableStates.get(ANIMAL_STATE_KEY);
                 assertThat(animalV2.get(A_KEY)).isEqualTo(AARDVARK);
                 assertThat(animalV2.get(B_KEY)).isEqualTo(BEAR);
                 assertThat(animalV2.get(C_KEY)).isEqualTo(CUTTLEFISH);

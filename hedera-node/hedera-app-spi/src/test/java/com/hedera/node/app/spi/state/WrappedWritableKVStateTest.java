@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.StateTestBase;
+import com.swirlds.state.test.fixtures.StringRecord;
 import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,12 +35,12 @@ import org.mockito.Mockito;
  * This test verifies the behavior of {@link WrappedWritableKVState}.
  */
 class WrappedWritableKVStateTest extends StateTestBase {
-    private WritableKVStateBase<String, String> delegate;
-    private WrappedWritableKVState<String, String> state;
+    private WritableKVStateBase<String, StringRecord> delegate;
+    private WrappedWritableKVState<String, StringRecord> state;
 
     @BeforeEach
     public void setUp() {
-        final var map = new HashMap<String, String>();
+        final var map = new HashMap<String, StringRecord>();
         map.put(A_KEY, APPLE);
         map.put(B_KEY, BANANA);
         this.delegate = new MapWritableKVState<>(FRUIT_STATE_KEY, map);
@@ -125,7 +126,7 @@ class WrappedWritableKVStateTest extends StateTestBase {
             // Commit should cause change in modifications on delegate.
             // So the size of the delegate also decreases by 1.
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), new StringRecord(anyString()));
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
             assertEquals(1, state.size());
             assertEquals(1, delegate.size());

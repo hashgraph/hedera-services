@@ -22,6 +22,7 @@ import static org.mockito.MockitoAnnotations.openMocks;
 
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.test.fixtures.StateTestBase;
+import com.swirlds.state.test.fixtures.StringRecord;
 import java.util.Iterator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,12 +33,12 @@ import org.mockito.Mock;
  */
 class WrappedReadableKVStateTest extends StateTestBase {
     @Mock
-    private ReadableKVState<String, String> delegate;
+    private ReadableKVState<String, StringRecord> delegate;
 
     @Mock
     private Iterator<String> keys;
 
-    private WrappedReadableKVState<String, String> state;
+    private WrappedReadableKVState<String, StringRecord> state;
 
     @BeforeEach
     void setUp() {

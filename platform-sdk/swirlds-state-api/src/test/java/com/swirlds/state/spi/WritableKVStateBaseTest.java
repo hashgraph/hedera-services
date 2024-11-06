@@ -24,6 +24,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.state.test.fixtures.MapWritableKVState;
+import com.swirlds.state.test.fixtures.StringRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,11 +56,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
     private static final String NUM_ITERATIONS_ARG = "WritableKVStateBaseTest.DeterministicUpdates.numIterations";
-    private WritableKVStateBase<String, String> state;
+    private WritableKVStateBase<String, StringRecord> state;
 
     @Override
-    protected Map<String, String> createBackingMap() {
-        final var map = new HashMap<String, String>();
+    protected Map<String, StringRecord> createBackingMap() {
+        final var map = new HashMap<String, StringRecord>();
         this.backingMap = Mockito.spy(map);
         backingMap.put(A_KEY, APPLE);
         backingMap.put(B_KEY, BANANA);
@@ -75,7 +76,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
         return backingMap;
     }
 
-    protected WritableKVStateBase<String, String> createFruitState(@NonNull final Map<String, String> map) {
+    protected WritableKVStateBase<String, StringRecord> createFruitState(@NonNull final Map<String, StringRecord> map) {
         this.state = Mockito.spy(new MapWritableKVState<>(FRUIT_STATE_KEY, map));
         return state;
     }
@@ -85,10 +86,10 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
     @ExtendWith(MockitoExtension.class)
     final class WithRegisteredListeners {
         @Mock
-        private KVChangeListener<String, String> firstListener;
+        private KVChangeListener<String, StringRecord> firstListener;
 
         @Mock
-        private KVChangeListener<String, String> secondListener;
+        private KVChangeListener<String, StringRecord> secondListener;
 
         @BeforeEach
         void setUp() {
@@ -100,28 +101,28 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
         @DisplayName("all listeners are notified of puts in order")
         void allAreNotifiedOfPut() {
             final var inOrder = inOrder(firstListener, secondListener);
-            state.put("H", "Honeydew");
-            state.put("I", "Indian Fig");
+            state.put("H", new StringRecord("Honeydew"));
+            state.put("I", new StringRecord("Indian Fig"));
             state.commit();
 
-            inOrder.verify(firstListener).mapUpdateChange("H", "Honeydew");
-            inOrder.verify(secondListener).mapUpdateChange("H", "Honeydew");
-            inOrder.verify(firstListener).mapUpdateChange("I", "Indian Fig");
-            inOrder.verify(secondListener).mapUpdateChange("I", "Indian Fig");
+            inOrder.verify(firstListener).mapUpdateChange("H", new StringRecord("Honeydew"));
+            inOrder.verify(secondListener).mapUpdateChange("H", new StringRecord("Honeydew"));
+            inOrder.verify(firstListener).mapUpdateChange("I", new StringRecord("Indian Fig"));
+            inOrder.verify(secondListener).mapUpdateChange("I", new StringRecord("Indian Fig"));
         }
 
         @Test
         @DisplayName("all listeners are notified of updates in order")
         void allAreNotifiedOfUpdates() {
             final var inOrder = inOrder(firstListener, secondListener);
-            state.put("B", "Blackberry");
-            state.put("C", "Cantaloupe");
+            state.put("B", new StringRecord("Blackberry"));
+            state.put("C", new StringRecord("Cantaloupe"));
             state.commit();
 
-            inOrder.verify(firstListener).mapUpdateChange("B", "Blackberry");
-            inOrder.verify(secondListener).mapUpdateChange("B", "Blackberry");
-            inOrder.verify(firstListener).mapUpdateChange("C", "Cantaloupe");
-            inOrder.verify(secondListener).mapUpdateChange("C", "Cantaloupe");
+            inOrder.verify(firstListener).mapUpdateChange("B", new StringRecord("Blackberry"));
+            inOrder.verify(secondListener).mapUpdateChange("B", new StringRecord("Blackberry"));
+            inOrder.verify(firstListener).mapUpdateChange("C", new StringRecord("Cantaloupe"));
+            inOrder.verify(secondListener).mapUpdateChange("C", new StringRecord("Cantaloupe"));
         }
 
         @Test
@@ -166,7 +167,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause no changes to the backing store
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
 
@@ -205,7 +206,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause no changes to the backing store
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
 
@@ -266,7 +267,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the most recent put value to be saved
             state.commit();
-            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).putIntoDataSource(C_KEY, CHERRY);
             verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
@@ -301,7 +302,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the most recent put value to be saved
             state.commit();
-            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).putIntoDataSource(B_KEY, BLACKBERRY);
             verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
@@ -333,7 +334,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
         }
@@ -362,7 +363,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should keep the size, as the modifications are considered in size.
             state.commit();
-            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).putIntoDataSource(C_KEY, CHERRY);
             verify(state, Mockito.never()).removeFromDataSource(anyString());
             assertEquals(3, state.size());
@@ -383,7 +384,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should not cause any change in size, as the modifications were considered
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
             assertEquals(1, state.size());
         }
@@ -400,7 +401,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should not have any effect on size
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.never()).removeFromDataSource(anyString());
             assertEquals(2, state.size());
         }
@@ -417,7 +418,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should not have any effect on size
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.never()).removeFromDataSource(anyString());
             assertEquals(2, state.size());
         }
@@ -451,7 +452,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be added
             state.commit();
-            verify(state, Mockito.times(1)).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
+            verify(state, Mockito.times(1)).putIntoDataSource(Mockito.anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).putIntoDataSource(C_KEY, CHERRY);
             verify(state, Mockito.never()).removeFromDataSource(Mockito.anyString());
 
@@ -480,7 +481,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be updated
             state.commit();
-            verify(state, Mockito.times(1)).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
+            verify(state, Mockito.times(1)).putIntoDataSource(Mockito.anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).putIntoDataSource(A_KEY, ACAI);
             verify(state, Mockito.never()).removeFromDataSource(Mockito.anyString());
 
@@ -506,7 +507,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be updated
             state.commit();
-            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).putIntoDataSource(B_KEY, BLACKBERRY);
             verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
@@ -529,7 +530,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be updated to the latest value
             state.commit();
-            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).putIntoDataSource(B_KEY, BLUEBERRY);
             verify(state, Mockito.never()).removeFromDataSource(anyString());
 
@@ -558,7 +559,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be updated to the latest value
             state.commit();
-            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.times(1)).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).putIntoDataSource(B_KEY, BLACKBERRY);
             verify(state, Mockito.never()).removeFromDataSource(anyString());
 
@@ -601,7 +602,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             // Commit should cause the value to be removed (even though it doesn't actually exist in
             // the backend)
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             verify(state, Mockito.times(1)).removeFromDataSource(C_KEY);
 
@@ -636,7 +637,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
 
@@ -672,7 +673,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             verify(state, Mockito.times(1)).removeFromDataSource(B_KEY);
 
@@ -705,7 +706,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
         }
@@ -735,7 +736,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             verify(state, Mockito.times(1)).removeFromDataSource(C_KEY);
         }
@@ -765,7 +766,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
         }
@@ -795,7 +796,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             verify(state, Mockito.times(1)).removeFromDataSource(C_KEY);
         }
@@ -828,7 +829,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            verify(state, Mockito.never()).putIntoDataSource(anyString(), Mockito.any(StringRecord.class));
             verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
 
@@ -1007,12 +1008,12 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
         for (int i = 0; i < numIterations; i++) {
             // Contains lambdas that will mutate the map in some way, and then populate the
             // mutation list with random mutations (puts and removes)
-            List<Consumer<WritableKVStateBase<Integer, String>>> mutations = new ArrayList<>();
+            List<Consumer<WritableKVStateBase<Integer, StringRecord>>> mutations = new ArrayList<>();
             for (int j = 0; j < numMutations; j++) {
                 final var key = random().nextInt(100);
                 if (random().nextInt(10) < 8) {
                     final var randomSuffix = randomString(10);
-                    mutations.add(state -> state.put(key, randomSuffix));
+                    mutations.add(state -> state.put(key, new StringRecord(randomSuffix)));
                 } else {
                     mutations.add(state -> state.remove(key));
                 }
@@ -1024,11 +1025,11 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             final var latch = new CountDownLatch(numThreads);
             final var mutationOrders = new ArrayList<List<Integer>>();
             for (int t = 0; t < numThreads; t++) {
-                final var state = new MapWritableKVState<Integer, String>(FRUIT_STATE_KEY) {
+                final var state = new MapWritableKVState<Integer, StringRecord>(FRUIT_STATE_KEY) {
                     private final List<Integer> keys = new ArrayList<>();
 
                     @Override
-                    protected void putIntoDataSource(@NonNull Integer key, @NonNull String value) {
+                    protected void putIntoDataSource(@NonNull Integer key, @NonNull StringRecord value) {
                         keys.add(key);
                         super.putIntoDataSource(key, value);
                     }
@@ -1044,7 +1045,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
                 // If the backend data structures are not able to maintain deterministic
                 // behavior in the face of this (like a HashMap), then the test will fail.
                 for (int j = 0; j < random().nextInt(100, 1000); j++) {
-                    state.put(random().nextInt(), randomString(100));
+                    state.put(random().nextInt(), new StringRecord(randomString(100)));
                 }
                 state.reset();
 

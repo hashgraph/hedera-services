@@ -43,7 +43,7 @@ public class ReadonlyStatesWrapper implements ReadableStates {
 
     @NonNull
     @Override
-    public <K, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+    public <K, V extends Record> ReadableKVState<K, V> get(@NonNull String stateKey) {
         return new ReadonlyKVStateWrapper<>(delegate.get(stateKey));
     }
 

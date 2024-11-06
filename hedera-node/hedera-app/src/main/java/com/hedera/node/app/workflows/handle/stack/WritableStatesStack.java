@@ -75,7 +75,7 @@ public class WritableStatesStack implements WritableStates {
 
     @Override
     @NonNull
-    public <K, V> WritableKVState<K, V> get(@NonNull final String stateKey) {
+    public <K, V extends Record> WritableKVState<K, V> get(@NonNull final String stateKey) {
         return new WritableKVStateStack<>(this, stateKey);
     }
 

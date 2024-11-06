@@ -25,7 +25,7 @@ import java.util.Set;
 public class EmptyWritableStates implements WritableStates {
     @NonNull
     @Override
-    public final <K, V> WritableKVState<K, V> get(@NonNull final String stateKey) {
+    public final <K, V extends Record> WritableKVState<K, V> get(@NonNull final String stateKey) {
         Objects.requireNonNull(stateKey);
         throw new IllegalArgumentException("There are no k/v states");
     }

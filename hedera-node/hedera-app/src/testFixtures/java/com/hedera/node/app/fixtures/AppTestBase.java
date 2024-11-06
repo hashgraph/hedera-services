@@ -215,7 +215,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             return this;
         }
 
-        public <K, V> StateMutator withKVState(
+        public <K, V extends Record> StateMutator withKVState(
                 @NonNull final String stateKey, @NonNull final K key, @NonNull final V value) {
             writableStates.get(stateKey).put(key, value);
             return this;

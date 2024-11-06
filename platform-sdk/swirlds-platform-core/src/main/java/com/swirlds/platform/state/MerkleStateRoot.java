@@ -572,7 +572,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
         @NonNull
         @Override
-        public <K, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+        public <K, V extends Record> ReadableKVState<K, V> get(@NonNull String stateKey) {
             final ReadableKVState<K, V> instance = (ReadableKVState<K, V>) kvInstances.get(stateKey);
             if (instance != null) {
                 return instance;
@@ -778,7 +778,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
         @NonNull
         @Override
-        public <K, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+        public <K, V extends Record> WritableKVState<K, V> get(@NonNull String stateKey) {
             return (WritableKVState<K, V>) super.get(stateKey);
         }
 
@@ -910,7 +910,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             });
         }
 
-        private <K, V> void registerKVListener(
+        private <K, V extends Record> void registerKVListener(
                 @NonNull final String serviceName, WritableKVStateBase<K, V> state, StateChangeListener listener) {
             final var stateId = listener.stateIdFor(serviceName, state.getStateKey());
             state.registerListener(new KVChangeListener<>() {

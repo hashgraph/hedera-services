@@ -31,7 +31,7 @@ import java.util.Objects;
  * @param <K> The key
  * @param <V> The value
  */
-public class WrappedWritableKVState<K, V> extends WritableKVStateBase<K, V> {
+public class WrappedWritableKVState<K, V extends Record> extends WritableKVStateBase<K, V> {
     /**
      * The {@link WritableKVState} to delegate to for all read operations on cache miss, and for
      * committing changes

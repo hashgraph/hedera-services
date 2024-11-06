@@ -50,7 +50,7 @@ public class FilteredReadableStates implements ReadableStates {
 
     @NonNull
     @Override
-    public <K, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+    public <K, V extends Record> ReadableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
         if (!contains(stateKey)) {
             throw new IllegalArgumentException("Could not find k/v state " + stateKey);
