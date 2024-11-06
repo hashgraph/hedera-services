@@ -19,6 +19,7 @@ package com.swirlds.demo.migration;
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
@@ -92,10 +93,10 @@ public class MigrationTestingToolMain implements SwirldMain {
                     maximumTransactionsPerNode,
                     seed);
 
-            final boolean isZeroWeight = RosterUtils.getRosterEntry(
-                                    platform.getRoster(), platform.getSelfId().id())
-                            .weight()
-                    == 0L;
+            final RosterEntry selfEntry = RosterUtils.getRosterEntry(
+                    platform.getRoster(), platform.getSelfId().id());
+
+            final boolean isZeroWeight = selfEntry.weight() == 0L;
             if (!isZeroWeight) {
                 while (transactionsCreated < maximumTransactionsPerNode) {
                     try {

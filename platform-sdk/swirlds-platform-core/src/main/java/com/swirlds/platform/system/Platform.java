@@ -47,9 +47,9 @@ public interface Platform {
     NotificationEngine getNotificationEngine();
 
     /**
-     * Get the Address Book
+     * Get the Roster
      *
-     * @return AddressBook
+     * @return the roster
      */
     @NonNull
     Roster getRoster();
