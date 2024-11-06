@@ -66,6 +66,10 @@ public class ReturnTypes {
     protected static final String EXPIRY_FIELDS =
             // second, autoRenewAccount, autoRenewPeriod
             "(uint32,address,uint32)";
+    // TODO: consider this expiry type for TokenV3. Might need to add another function to handle this.
+    protected static final String EXPIRY_FIELDS_V2 =
+            // second, autoRenewAccount, autoRenewPeriod
+            "(int64,address,int64)";
     protected static final String CUSTOM_FEES =
             // FixedFee array
             // amount, tokenId, useHbarsForPayment, useCurrentTokenForPayment, feeCollector
@@ -90,6 +94,7 @@ public class ReturnTypes {
     public static final String ADDRESS = "(address)";
 
     public static final String RESPONSE_CODE_BOOL = "(int32,bool)";
+    public static final String RESPONSE_CODE64_BOOL = "(int64,bool)";
     public static final String RESPONSE_CODE_INT32 = "(int32,int32)";
     public static final String RESPONSE_CODE_UINT256 = "(int64,uint256)";
     public static final String RESPONSE_CODE_INT256 = "(int64,int256)";
@@ -130,7 +135,7 @@ public class ReturnTypes {
                 + "("
                     + TOKEN_FIELDS
                     + TOKEN_KEYS
-                    + EXPIRY_FIELDS
+                    + EXPIRY_FIELDS_V2
                     + ",bytes" // metadata
                     + ")"
                     + STATUS_FIELDS // totalSupply, deleted, defaultKycStatus, pauseStatus
@@ -166,7 +171,7 @@ public class ReturnTypes {
                     + "("
                         + TOKEN_FIELDS
                         + TOKEN_KEYS
-                        + EXPIRY_FIELDS
+                        + EXPIRY_FIELDS_V2
                         + ",bytes" // metadata
                          + ")"
                         + STATUS_FIELDS
@@ -204,7 +209,7 @@ public class ReturnTypes {
                     + "("
                         + TOKEN_FIELDS
                         + TOKEN_KEYS
-                        + EXPIRY_FIELDS
+                        + EXPIRY_FIELDS_V2
                         + ",bytes" // metadata
                         + ")"
                         + STATUS_FIELDS // totalSupply, deleted, defaultKycStatus, pauseStatus

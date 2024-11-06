@@ -25,6 +25,7 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
@@ -58,6 +59,9 @@ import javax.inject.Singleton;
 public interface ExecutorComponent {
     @Component.Builder
     interface Builder {
+        @BindsInstance
+        Builder tssBaseService(TssBaseService tssBaseService);
+
         @BindsInstance
         Builder fileServiceImpl(FileServiceImpl fileService);
 

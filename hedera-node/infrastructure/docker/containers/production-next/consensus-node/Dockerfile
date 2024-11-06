@@ -226,6 +226,8 @@ ENV JAVA_VERSION "jdk-21.0.4+7"
 ENV JAVA_HOME /usr/local/java
 ENV PATH ${JAVA_HOME}/bin:${PATH}
 
+ENV CONTAINER_TSR_ENABLED "true"
+
 # Install Java
 COPY --from=java-builder ${JAVA_HOME}/ ${JAVA_HOME}/
 
@@ -236,9 +238,17 @@ COPY sdk/data/lib/* /opt/hgcapp/services-hedera/HapiApp2.0/data/lib/
 # Add the entrypoint script
 ADD entrypoint.sh /opt/hgcapp/services-hedera/HapiApp2.0/
 
+# Add s6-rc configuration
+COPY etc/s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d/
+
 # Ensure proper file permissions
 RUN chmod -R +x /opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh && \
     chown -R 2000:2000 /opt/hgcapp/services-hedera/HapiApp2.0
+
+# Patch the Java DNS Cache settings
+RUN sed -e '/networkaddress.cache.ttl/c networkaddress.cache.ttl=10' -i "${JAVA_HOME}/conf/security/java.security" && \
+    sed -e '/networkaddress.cache.stale.ttl/c networkaddress.cache.stale.ttl=0' -i "${JAVA_HOME}/conf/security/java.security" && \
+    sed -e '/networkaddress.cache.negative.ttl/c networkaddress.cache.negative.ttl=0' -i "${JAVA_HOME}/conf/security/java.security"
 
 ########################################
 ####    Deterministic Build Hack    ####
@@ -292,4 +302,3 @@ EXPOSE 50111/tcp 50211/tcp 50212/tcp
 USER 2000
 WORKDIR "/opt/hgcapp"
 ENTRYPOINT ["/init"]
-CMD ["/opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh"]

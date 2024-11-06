@@ -20,11 +20,12 @@ import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -34,7 +35,7 @@ import java.util.List;
  */
 public class FakeNetworkInfo implements NetworkInfo {
     private static final Bytes DEV_LEDGER_ID = Bytes.wrap(new byte[] {0x03});
-    private static final List<NodeId> FAKE_NODE_INFO_IDS = List.of(new NodeId(2), new NodeId(4), new NodeId(8));
+    private static final List<NodeId> FAKE_NODE_INFO_IDS = List.of(NodeId.of(2), NodeId.of(4), NodeId.of(8));
     private static final List<NodeInfo> FAKE_NODE_INFOS = List.of(
             fakeInfoWith(
                     2L,
@@ -81,12 +82,17 @@ public class FakeNetworkInfo implements NetworkInfo {
 
     @Override
     public boolean containsNode(final long nodeId) {
-        return FAKE_NODE_INFO_IDS.contains(new NodeId(nodeId));
+        return FAKE_NODE_INFO_IDS.contains(NodeId.of(nodeId));
     }
 
     @Override
     public void updateFrom(final State state) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public Roster roster() {
+        return Roster.DEFAULT;
     }
 
     private static NodeInfo fakeInfoWith(

@@ -18,7 +18,9 @@ package com.hedera.services.bdd.junit.extensions;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
+import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.SharedNetworkExecutionListener.*;
 import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMethodOf;
+import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.CONCURRENT;
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
 import com.hedera.services.bdd.junit.ContextRequirement;
@@ -26,13 +28,18 @@ import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
+import com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener;
+import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -54,10 +61,14 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
     public void beforeEach(@NonNull final ExtensionContext extensionContext) {
         hapiTestMethodOf(extensionContext).ifPresent(method -> {
             if (isAnnotated(method, GenesisHapiTest.class)) {
-                final var targetNetwork = new EmbeddedNetwork(method.getName().toUpperCase(), method.getName());
+                final var targetNetwork =
+                        new EmbeddedNetwork(method.getName().toUpperCase(), method.getName(), CONCURRENT);
                 targetNetwork.start();
                 HapiSpec.TARGET_NETWORK.set(targetNetwork);
             } else {
+                requiredEmbeddedMode(extensionContext)
+                        .ifPresent(
+                                SharedNetworkLauncherSessionListener.SharedNetworkExecutionListener::ensureEmbedding);
                 HapiSpec.TARGET_NETWORK.set(SHARED_NETWORK.get());
                 // If there are properties to preserve or system files to override and restore, bind that info to the
                 // thread before executing the test factory
@@ -67,6 +78,9 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                 } else if (isAnnotated(method, LeakyEmbeddedHapiTest.class)) {
                     final var a = method.getAnnotation(LeakyEmbeddedHapiTest.class);
                     bindThreadTargets(a.requirement(), a.overrides(), a.throttles(), a.fees());
+                } else if (isAnnotated(method, LeakyRepeatableHapiTest.class)) {
+                    final var a = method.getAnnotation(LeakyRepeatableHapiTest.class);
+                    bindThreadTargets(new ContextRequirement[] {}, a.overrides(), a.throttles(), a.fees());
                 }
             }
         });
@@ -78,6 +92,14 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
         HapiSpec.FEES_OVERRIDE.remove();
         HapiSpec.THROTTLES_OVERRIDE.remove();
         HapiSpec.PROPERTIES_TO_PRESERVE.remove();
+    }
+
+    private Optional<EmbeddedMode> requiredEmbeddedMode(@NonNull final ExtensionContext extensionContext) {
+        return extensionContext
+                .getTestClass()
+                .map(type -> type.getAnnotation(TargetEmbeddedMode.class))
+                .map(TargetEmbeddedMode::value)
+                .or(() -> extensionContext.getParent().flatMap(this::requiredEmbeddedMode));
     }
 
     private void bindThreadTargets(
@@ -96,7 +118,7 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
      * @param contextRequirements the context requirements of the test
      * @param relevantRequirement the relevant context requirement
      * @param resource the path to the resource
-     * @return the effective throttle resource
+     * @return the effective resource
      */
     private @Nullable String effectiveResource(
             @NonNull final ContextRequirement[] contextRequirements,

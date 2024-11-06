@@ -16,13 +16,9 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
-import static com.swirlds.common.units.DataUnit.UNIT_KILOBYTES;
-import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
-import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -32,13 +28,11 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.Randotron;
-import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
@@ -54,31 +48,27 @@ import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
-import com.swirlds.platform.event.preconsensus.PcesMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesUtilities;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.transaction.TransactionWrapper;
+import com.swirlds.platform.test.fixtures.event.PcesWriterTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
-import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -102,138 +92,11 @@ class PcesWriterTests {
     @TempDir
     Path testDirectory;
 
-    private final NodeId selfId = new NodeId(0);
+    private final NodeId selfId = NodeId.of(0);
     private final int numEvents = 1_000;
 
     protected static Stream<Arguments> buildArguments() {
         return Stream.of(Arguments.of(GENERATION_THRESHOLD), Arguments.of(BIRTH_ROUND_THRESHOLD));
-    }
-
-    /**
-     * Perform verification on a stream written by a {@link PcesWriter}.
-     *
-     * @param events             the events that were written to the stream
-     * @param platformContext    the platform context
-     * @param truncatedFileCount the expected number of truncated files
-     * @param ancientMode        the ancient mode
-     */
-    private void verifyStream(
-            @NonNull final List<PlatformEvent> events,
-            @NonNull final PlatformContext platformContext,
-            final int truncatedFileCount,
-            @NonNull final AncientMode ancientMode)
-            throws IOException {
-
-        long lastAncientIdentifier = Long.MIN_VALUE;
-        for (final PlatformEvent event : events) {
-            lastAncientIdentifier = Math.max(lastAncientIdentifier, event.getAncientIndicator(ancientMode));
-        }
-
-        final PcesFileTracker pcesFiles = PcesFileReader.readFilesFromDisk(
-                platformContext, PcesUtilities.getDatabaseDirectory(platformContext, selfId), 0, false, ancientMode);
-
-        // Verify that the events were written correctly
-        final PcesMultiFileIterator eventsIterator = pcesFiles.getEventIterator(0, 0);
-        for (final PlatformEvent event : events) {
-            assertTrue(eventsIterator.hasNext());
-            assertEquals(event, eventsIterator.next());
-        }
-
-        assertFalse(eventsIterator.hasNext());
-        assertEquals(truncatedFileCount, eventsIterator.getTruncatedFileCount());
-
-        // Make sure things look good when iterating starting in the middle of the stream that was written
-        final long startingLowerBound = lastAncientIdentifier / 2;
-        final IOIterator<PlatformEvent> eventsIterator2 = pcesFiles.getEventIterator(startingLowerBound, 0);
-        for (final PlatformEvent event : events) {
-            if (event.getAncientIndicator(ancientMode) < startingLowerBound) {
-                continue;
-            }
-            assertTrue(eventsIterator2.hasNext());
-            assertEquals(event, eventsIterator2.next());
-        }
-        assertFalse(eventsIterator2.hasNext());
-
-        // Iterating from a high ancient indicator should yield no events
-        final IOIterator<PlatformEvent> eventsIterator3 = pcesFiles.getEventIterator(lastAncientIdentifier + 1, 0);
-        assertFalse(eventsIterator3.hasNext());
-
-        // Do basic validation on event files
-        final List<PcesFile> files = new ArrayList<>();
-        pcesFiles.getFileIterator(0, 0).forEachRemaining(files::add);
-
-        // There should be at least 2 files.
-        // Certainly many more, but getting the heuristic right on this is non-trivial.
-        assertTrue(files.size() >= 2);
-
-        // Sanity check each individual file
-        int nextSequenceNumber = 0;
-        Instant previousTimestamp = Instant.MIN;
-        long previousMinimum = Long.MIN_VALUE;
-        long previousMaximum = Long.MIN_VALUE;
-        for (final PcesFile file : files) {
-            assertEquals(nextSequenceNumber, file.getSequenceNumber());
-            nextSequenceNumber++;
-            assertTrue(isGreaterThanOrEqualTo(file.getTimestamp(), previousTimestamp));
-            previousTimestamp = file.getTimestamp();
-            assertTrue(file.getLowerBound() <= file.getUpperBound());
-            assertTrue(file.getLowerBound() >= previousMinimum);
-            previousMinimum = file.getLowerBound();
-            assertTrue(file.getUpperBound() >= previousMaximum);
-            previousMaximum = file.getUpperBound();
-
-            final IOIterator<PlatformEvent> fileEvents = file.iterator(0);
-            while (fileEvents.hasNext()) {
-                final PlatformEvent event = fileEvents.next();
-                assertTrue(event.getAncientIndicator(ancientMode) >= file.getLowerBound());
-                assertTrue(event.getAncientIndicator(ancientMode) <= file.getUpperBound());
-            }
-        }
-    }
-
-    /**
-     * Build a transaction generator.
-     */
-    private static TransactionGenerator buildTransactionGenerator() {
-
-        final int transactionCount = 10;
-        final int averageTransactionSizeInKb = 10;
-        final int transactionSizeStandardDeviationInKb = 5;
-
-        return (final Random random) -> {
-            final TransactionWrapper[] transactions = new TransactionWrapper[transactionCount];
-            for (int index = 0; index < transactionCount; index++) {
-
-                final int transactionSize = (int) UNIT_KILOBYTES.convertTo(
-                        Math.max(
-                                1,
-                                averageTransactionSizeInKb
-                                        + random.nextDouble() * transactionSizeStandardDeviationInKb),
-                        UNIT_BYTES);
-                final byte[] bytes = new byte[transactionSize];
-                random.nextBytes(bytes);
-
-                transactions[index] = createAppPayloadWrapper(bytes);
-            }
-            return transactions;
-        };
-    }
-
-    /**
-     * Build an event generator.
-     */
-    static StandardGraphGenerator buildGraphGenerator(
-            @NonNull final PlatformContext platformContext, @NonNull final Random random) {
-        Objects.requireNonNull(platformContext);
-        final TransactionGenerator transactionGenerator = buildTransactionGenerator();
-
-        return new StandardGraphGenerator(
-                platformContext,
-                random.nextLong(),
-                new StandardEventSource().setTransactionGenerator(transactionGenerator),
-                new StandardEventSource().setTransactionGenerator(transactionGenerator),
-                new StandardEventSource().setTransactionGenerator(transactionGenerator),
-                new StandardEventSource().setTransactionGenerator(transactionGenerator));
     }
 
     @BeforeAll
@@ -302,7 +165,7 @@ class PcesWriterTests {
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
-        final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
+        final StandardGraphGenerator generator = PcesWriterTestUtils.buildGraphGenerator(platformContext, random);
         final int stepsUntilAncient = random.nextInt(50, 100);
         final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
@@ -353,7 +216,7 @@ class PcesWriterTests {
         rejectedEvents.forEach(
                 event -> assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
 
-        verifyStream(events, platformContext, 0, ancientMode);
+        PcesWriterTestUtils.verifyStream(selfId, events, platformContext, 0, ancientMode);
 
         writer.closeCurrentMutableFile();
     }
@@ -366,7 +229,7 @@ class PcesWriterTests {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformContext platformContext = buildContext(ancientMode);
-        final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
+        final StandardGraphGenerator generator = PcesWriterTestUtils.buildGraphGenerator(platformContext, random);
 
         final int stepsUntilAncient =
                 ancientMode == GENERATION_THRESHOLD ? random.nextInt(50, 100) : random.nextInt(5, 10);
@@ -440,7 +303,7 @@ class PcesWriterTests {
         rejectedEvents.forEach(
                 event -> assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
 
-        verifyStream(events, platformContext, 0, ancientMode);
+        PcesWriterTestUtils.verifyStream(selfId, events, platformContext, 0, ancientMode);
 
         writer.closeCurrentMutableFile();
     }
@@ -457,7 +320,7 @@ class PcesWriterTests {
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
-        final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
+        final StandardGraphGenerator generator = PcesWriterTestUtils.buildGraphGenerator(platformContext, random);
         final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
@@ -482,7 +345,7 @@ class PcesWriterTests {
 
         writer.closeCurrentMutableFile();
 
-        verifyStream(events, platformContext, 0, ancientMode);
+        PcesWriterTestUtils.verifyStream(selfId, events, platformContext, 0, ancientMode);
 
         // Without advancing the first non-ancient threshold,
         // we should never be able to increase the lower bound from 0.
@@ -500,7 +363,7 @@ class PcesWriterTests {
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
-        final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
+        final StandardGraphGenerator generator = PcesWriterTestUtils.buildGraphGenerator(platformContext, random);
         final int stepsUntilAncient = random.nextInt(50, 100);
         final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
@@ -546,7 +409,7 @@ class PcesWriterTests {
 
             final PlatformContext platformContext = buildContext(ancientMode);
 
-            final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
+            final StandardGraphGenerator generator = PcesWriterTestUtils.buildGraphGenerator(platformContext, random);
             final int stepsUntilAncient = random.nextInt(50, 100);
             final PcesSequencer sequencer = new DefaultPcesSequencer();
             final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
@@ -650,7 +513,8 @@ class PcesWriterTests {
             rejectedEvents.forEach(
                     event -> assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
 
-            verifyStream(eventsBeforeDiscontinuity, platformContext, truncateLastFile ? 1 : 0, ancientMode);
+            PcesWriterTestUtils.verifyStream(
+                    selfId, eventsBeforeDiscontinuity, platformContext, truncateLastFile ? 1 : 0, ancientMode);
 
             writer.closeCurrentMutableFile();
         }
@@ -669,7 +533,7 @@ class PcesWriterTests {
         final PlatformContext platformContext = buildContext(ancientMode);
         final FakeTime time = (FakeTime) platformContext.getTime();
 
-        final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
+        final StandardGraphGenerator generator = PcesWriterTestUtils.buildGraphGenerator(platformContext, random);
         final int stepsUntilAncient = random.nextInt(50, 100);
         final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
@@ -720,7 +584,7 @@ class PcesWriterTests {
         events.forEach(event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
         rejectedEvents.forEach(
                 event -> assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
-        verifyStream(events, platformContext, 0, ancientMode);
+        PcesWriterTestUtils.verifyStream(selfId, events, platformContext, 0, ancientMode);
 
         // Advance the time so that all files are GC eligible according to the clock.
         time.tick(Duration.ofDays(1));

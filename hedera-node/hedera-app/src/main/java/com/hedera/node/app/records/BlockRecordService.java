@@ -19,9 +19,9 @@ package com.hedera.node.app.records;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
-import com.hedera.node.app.records.schemas.V0540BlockRecordSchema;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
+import com.hedera.node.app.records.schemas.V0560BlockRecordSchema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 
@@ -48,6 +48,6 @@ public final class BlockRecordService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490BlockRecordSchema());
-        registry.register(new V0540BlockRecordSchema());
+        registry.register(new V0560BlockRecordSchema());
     }
 }

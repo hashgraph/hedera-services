@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.streams;
 
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.BLOCK_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.BlockStreamAccess.BLOCK_STREAM_ACCESS;
@@ -37,6 +38,7 @@ import com.hedera.services.bdd.junit.support.validators.BlockNoValidator;
 import com.hedera.services.bdd.junit.support.validators.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.support.validators.TokenReconciliationValidator;
 import com.hedera.services.bdd.junit.support.validators.TransactionBodyValidator;
+import com.hedera.services.bdd.junit.support.validators.block.BlockContentsValidator;
 import com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator;
 import com.hedera.services.bdd.junit.support.validators.block.TransactionRecordParityValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -71,8 +73,8 @@ public class StreamValidationOp extends UtilOp {
             new BalanceReconciliationValidator(),
             new TokenReconciliationValidator());
 
-    private static final List<BlockStreamValidator.Factory> BLOCK_STREAM_VALIDATOR_FACTORIES =
-            List.of(TransactionRecordParityValidator.FACTORY, StateChangesValidator.FACTORY);
+    private static final List<BlockStreamValidator.Factory> BLOCK_STREAM_VALIDATOR_FACTORIES = List.of(
+            TransactionRecordParityValidator.FACTORY, StateChangesValidator.FACTORY, BlockContentsValidator.FACTORY);
 
     public static void main(String[] args) {}
 
@@ -104,12 +106,16 @@ public class StreamValidationOp extends UtilOp {
                             dataRef.set(data);
                         },
                         () -> Assertions.fail("No record stream data found"));
+        // If there are no block streams to validate, we are done
+        if (spec.startupProperties().getStreamMode("blockStream.streamMode") == RECORDS) {
+            return false;
+        }
         // Freeze the network
         allRunFor(
                 spec,
                 freezeOnly().payingWith(GENESIS).startingIn(2).seconds(),
                 // Wait for the final stream files to be created
-                sleepFor(8 * BUFFER_MS));
+                sleepFor(10 * BUFFER_MS));
         readMaybeBlockStreamsFor(spec)
                 .ifPresentOrElse(
                         blocks -> {

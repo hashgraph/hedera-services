@@ -22,6 +22,7 @@ import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -44,7 +45,7 @@ import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
-import com.hedera.node.app.signature.DelegateKeyVerifier;
+import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -75,10 +76,11 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -162,7 +164,7 @@ public class ChildDispatchFactory {
             @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
         final var preHandleResult = preHandleChild(txBody, syntheticPayerId, config, readableStoreFactory);
-        final var childVerifier = getKeyVerifier(callback);
+        final var childVerifier = getKeyVerifier(callback, config);
         final var childTxnInfo = getTxnInfoFrom(syntheticPayerId, txBody);
         final var streamMode = config.getConfigData(BlockStreamConfig.class).streamMode();
         final var childStack =
@@ -300,7 +302,8 @@ public class ChildDispatchFactory {
                 }
             }
             case CHILD -> Fees.FREE;
-            case USER -> throw new IllegalStateException("Should not dispatch child with user transaction category");
+            case USER, NODE -> throw new IllegalStateException(
+                    "Should not dispatch child with user transaction category");
         };
     }
 
@@ -387,36 +390,47 @@ public class ChildDispatchFactory {
 
     /**
      * Returns a {@link AppKeyVerifier} based on the callback. If the callback is null, then it returns a
-     * {@link NoOpKeyVerifier}. Otherwise, it returns a {@link DelegateKeyVerifier} with the callback.
-     * The callback is null if the signature verification is not required. This is the case for hollow account
-     * completion and auto account creation.
+     * {@link NoOpKeyVerifier}. Otherwise, it returns a verifier that forwards calls to
+     * {@link AppKeyVerifier#verificationFor(Key)} to a
+     * {@link DefaultKeyVerifier#verificationFor(Key, VerificationAssistant)} with a verification assistant
+     * returns true exactly when the callback returns true for its key.
+     * <p>
+     * A null callback is useful for internal dispatches that do not need further signature verifications;
+     * for example, hollow account completion and auto account creation.
      *
      * @param callback the callback
+     * @param config the configuration
      * @return the key verifier
      */
-    public static AppKeyVerifier getKeyVerifier(@Nullable Predicate<Key> callback) {
+    public static AppKeyVerifier getKeyVerifier(
+            @Nullable final Predicate<Key> callback, @NonNull final Configuration config) {
         return callback == null
                 ? NO_OP_KEY_VERIFIER
                 : new AppKeyVerifier() {
-                    private final AppKeyVerifier verifier = new DelegateKeyVerifier(callback);
+                    private final AppKeyVerifier verifier =
+                            new DefaultKeyVerifier(0, config.getConfigData(HederaConfig.class), emptyMap());
 
                     @NonNull
                     @Override
                     public SignatureVerification verificationFor(@NonNull final Key key) {
-                        return callback.test(key) ? NoOpKeyVerifier.PASSED_VERIFICATION : verifier.verificationFor(key);
+                        // Within the child HandleContext, a key structure has a valid signature ONLY if
+                        // the given callback returns true for enough primitive keys in the structure
+                        return verifier.verificationFor(key, (k, v) -> callback.test(k));
                     }
 
                     @NonNull
                     @Override
                     public SignatureVerification verificationFor(
                             @NonNull final Key key, @NonNull final VerificationAssistant callback) {
-                        throw new UnsupportedOperationException("Should never be called!");
+                        // We do not yet support signing scheduled transactions from within the EVM
+                        throw new UnsupportedOperationException();
                     }
 
                     @NonNull
                     @Override
                     public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
-                        throw new UnsupportedOperationException("Should never be called!");
+                        // We do not yet support completing hollow accounts from an internal dispatch
+                        throw new UnsupportedOperationException();
                     }
 
                     @Override
@@ -433,7 +447,8 @@ public class ChildDispatchFactory {
      * @param txBody the transaction body
      * @return the transaction information
      */
-    private TransactionInfo getTxnInfoFrom(@NonNull final AccountID payerId, @NonNull final TransactionBody txBody) {
+    public static TransactionInfo getTxnInfoFrom(
+            @NonNull final AccountID payerId, @NonNull final TransactionBody txBody) {
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
         final var signedTransaction =
                 SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
@@ -458,7 +473,7 @@ public class ChildDispatchFactory {
      * @param txBody the transaction body
      * @return the functionality
      */
-    private static HederaFunctionality functionOfTxn(final TransactionBody txBody) {
+    public static HederaFunctionality functionOfTxn(final TransactionBody txBody) {
         try {
             return functionOf(txBody);
         } catch (final UnknownHederaFunctionality e) {

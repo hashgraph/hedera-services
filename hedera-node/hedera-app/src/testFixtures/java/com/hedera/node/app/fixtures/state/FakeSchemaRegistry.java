@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.fixtures.state;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.MIGRATION;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
@@ -29,13 +30,12 @@ import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -69,14 +69,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
     @SuppressWarnings("rawtypes")
     public void migrate(
             @NonNull final String serviceName, @NonNull final FakeState state, @NonNull final NetworkInfo networkInfo) {
-        migrate(
-                serviceName,
-                state,
-                CURRENT_VERSION,
-                networkInfo,
-                ConfigurationBuilder.create().build(),
-                new HashMap<>(),
-                new AtomicLong());
+        migrate(serviceName, state, CURRENT_VERSION, networkInfo, DEFAULT_CONFIG, new HashMap<>(), new AtomicLong());
     }
 
     public void migrate(

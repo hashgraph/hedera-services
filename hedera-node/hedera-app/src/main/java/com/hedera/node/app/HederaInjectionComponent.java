@@ -49,13 +49,14 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
+import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.node.app.workflows.query.annotations.UserQueries;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -63,8 +64,8 @@ import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.nio.charset.Charset;
@@ -117,6 +118,7 @@ public interface HederaInjectionComponent {
 
     IngestWorkflow ingestWorkflow();
 
+    @UserQueries
     QueryWorkflow queryWorkflow();
 
     BlockRecordManager blockRecordManager();
@@ -137,7 +139,7 @@ public interface HederaInjectionComponent {
 
     TssBaseService tssBaseService();
 
-    void inject(PlaceholderTssBaseService placeholderTssBaseService);
+    SubmissionManager submissionManager();
 
     @Component.Builder
     interface Builder {

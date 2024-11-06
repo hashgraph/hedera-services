@@ -53,17 +53,17 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -147,7 +147,7 @@ class DispatchUsageManagerTest {
     private RecordStreamBuilder recordBuilder;
 
     @Mock
-    private HandleWorkflowMetrics handleWorkflowMetrics;
+    private OpWorkflowMetrics opWorkflowMetrics;
 
     @Mock
     private ThrottleServiceManager throttleServiceManager;
@@ -166,7 +166,7 @@ class DispatchUsageManagerTest {
     @BeforeEach
     void setUp() {
         subject = new DispatchUsageManager(
-                networkInfo, handleWorkflowMetrics, throttleServiceManager, networkUtilizationManager);
+                networkInfo, opWorkflowMetrics, throttleServiceManager, networkUtilizationManager);
     }
 
     @Test
@@ -245,7 +245,7 @@ class DispatchUsageManagerTest {
         subject.finalizeAndSaveUsage(dispatch);
 
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
-        verifyNoInteractions(handleWorkflowMetrics);
+        verifyNoInteractions(opWorkflowMetrics);
     }
 
     @Test
@@ -260,7 +260,7 @@ class DispatchUsageManagerTest {
 
         subject.finalizeAndSaveUsage(dispatch);
 
-        verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
+        verify(opWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager).leakUnusedGasPreviouslyReserved(CONTRACT_CALL_TXN_INFO, GAS_LIMIT - GAS_USED);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }
@@ -277,7 +277,7 @@ class DispatchUsageManagerTest {
 
         subject.finalizeAndSaveUsage(dispatch);
 
-        verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
+        verify(opWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager)
                 .leakUnusedGasPreviouslyReserved(CONTRACT_CREATE_TXN_INFO, GAS_LIMIT - GAS_USED);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -297,7 +297,7 @@ class DispatchUsageManagerTest {
 
         subject.finalizeAndSaveUsage(dispatch);
 
-        verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
+        verify(opWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager)
                 .leakUnusedGasPreviouslyReserved(ETH_TXN_INFO, ETH_DATA_WITH_TO_ADDRESS.gasLimit() - GAS_USED);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -312,7 +312,7 @@ class DispatchUsageManagerTest {
 
         subject.finalizeAndSaveUsage(dispatch);
 
-        verify(handleWorkflowMetrics, never()).addGasUsed(GAS_USED);
+        verify(opWorkflowMetrics, never()).addGasUsed(GAS_USED);
         verify(networkUtilizationManager, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }

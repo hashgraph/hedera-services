@@ -67,7 +67,7 @@ public interface FeeContext {
      *
      * @return the {@code Configuration}
      */
-    @Nullable
+    @NonNull
     Configuration configuration();
 
     /**

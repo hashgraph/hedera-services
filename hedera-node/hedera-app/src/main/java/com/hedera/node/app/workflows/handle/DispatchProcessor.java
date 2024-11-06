@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
@@ -39,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHan
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
@@ -48,7 +50,8 @@ import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
 import com.hedera.node.app.workflows.handle.throttle.ThrottleException;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.hedera.node.config.data.NetworkAdminConfig;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -76,6 +79,7 @@ public class DispatchProcessor {
     private final TransactionDispatcher dispatcher;
     private final EthereumTransactionHandler ethereumTransactionHandler;
     private final NetworkInfo networkInfo;
+    private final OpWorkflowMetrics workflowMetrics;
 
     @Inject
     public DispatchProcessor(
@@ -88,7 +92,8 @@ public class DispatchProcessor {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final EthereumTransactionHandler ethereumTransactionHandler,
-            final NetworkInfo networkInfo) {
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final OpWorkflowMetrics workflowMetrics) {
         this.authorizer = requireNonNull(authorizer);
         this.validator = requireNonNull(validator);
         this.recordFinalizer = requireNonNull(recordFinalizer);
@@ -99,6 +104,7 @@ public class DispatchProcessor {
         this.dispatcher = requireNonNull(dispatcher);
         this.ethereumTransactionHandler = requireNonNull(ethereumTransactionHandler);
         this.networkInfo = requireNonNull(networkInfo);
+        this.workflowMetrics = requireNonNull(workflowMetrics);
     }
 
     /**
@@ -122,7 +128,7 @@ public class DispatchProcessor {
         }
         dispatchUsageManager.finalizeAndSaveUsage(dispatch);
         recordFinalizer.finalizeRecord(dispatch);
-        if (dispatch.txnCategory() == USER) {
+        if (dispatch.txnCategory() == USER || dispatch.txnCategory() == NODE) {
             dispatch.stack().commitTransaction(dispatch.recordBuilder());
         } else {
             dispatch.stack().commitFullStack();
@@ -138,7 +144,6 @@ public class DispatchProcessor {
      *
      * @param dispatch the dispatch to be processed
      * @param validationResult the due diligence report for the dispatch
-     * @return the work done by the dispatch
      */
     private void tryHandle(@NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
         try {
@@ -146,7 +151,9 @@ public class DispatchProcessor {
             dispatcher.dispatchHandle(dispatch.handleContext());
             dispatch.recordBuilder().status(SUCCESS);
             // Only user or preceding transactions can trigger system updates in the current system
-            if (dispatch.txnCategory() == USER || dispatch.txnCategory() == PRECEDING) {
+            if (dispatch.txnCategory() == USER
+                    || dispatch.txnCategory() == PRECEDING
+                    || dispatch.txnCategory() == NODE) {
                 handleSystemUpdates(dispatch);
             }
         } catch (HandleException e) {
@@ -158,8 +165,10 @@ public class DispatchProcessor {
             // Since there is no easy way to say how much work was done in the failed dispatch,
             // and current throttling is very rough-grained, we just return USER_TRANSACTION here
         } catch (final ThrottleException e) {
+            final var functionality = dispatch.txnInfo().functionality();
+            workflowMetrics.incrementThrottled(functionality);
             rollbackAndRechargeFee(dispatch, validationResult, e.getStatus());
-            if (dispatch.txnInfo().functionality() == ETHEREUM_TRANSACTION) {
+            if (functionality == ETHEREUM_TRANSACTION) {
                 ethereumTransactionHandler.handleThrottled(dispatch.handleContext());
             }
         } catch (final Exception e) {
@@ -244,7 +253,7 @@ public class DispatchProcessor {
         final var shouldWaiveServiceFee =
                 report.serviceFeeStatus() == UNABLE_TO_PAY_SERVICE_FEE || report.duplicateStatus() == DUPLICATE;
         final var feesToCharge = shouldWaiveServiceFee ? fees.withoutServiceComponent() : fees;
-        if (dispatch.txnCategory() == USER) {
+        if (dispatch.txnCategory() == USER || dispatch.txnCategory() == NODE) {
             dispatch.feeAccumulator()
                     .chargeFees(report.payerOrThrow().accountIdOrThrow(), report.creatorId(), feesToCharge);
         } else {
@@ -306,8 +315,18 @@ public class DispatchProcessor {
      * @param dispatch the dispatch to be processed
      */
     private @Nullable ResponseCodeEnum maybeAuthorizationFailure(@NonNull final Dispatch dispatch) {
-        if (!authorizer.isAuthorized(dispatch.payerId(), dispatch.txnInfo().functionality())) {
-            return dispatch.txnInfo().functionality() == SYSTEM_DELETE ? NOT_SUPPORTED : UNAUTHORIZED;
+        final var function = dispatch.txnInfo().functionality();
+        if (!authorizer.isAuthorized(dispatch.payerId(), function)) {
+            // Node transactions are judged by a different set of rules; any node account can submit
+            // any node transaction as long as it is in the allow list
+            if (dispatch.txnCategory() == NODE) {
+                final var adminConfig = dispatch.config().getConfigData(NetworkAdminConfig.class);
+                final var allowList = adminConfig.nodeTransactionsAllowList().functionalitySet();
+                if (allowList.contains(function)) {
+                    return null;
+                }
+            }
+            return function == SYSTEM_DELETE ? NOT_SUPPORTED : UNAUTHORIZED;
         }
         final var failure = authorizer.hasPrivilegedAuthorization(
                 dispatch.payerId(),

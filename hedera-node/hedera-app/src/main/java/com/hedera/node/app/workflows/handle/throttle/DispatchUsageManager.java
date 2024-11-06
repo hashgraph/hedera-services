@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_A
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoAssociate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
@@ -38,10 +39,10 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.config.data.ContractsConfig;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.Set;
@@ -54,18 +55,18 @@ public class DispatchUsageManager {
             EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);
 
     private final NetworkInfo networkInfo;
-    private final HandleWorkflowMetrics handleWorkflowMetrics;
+    private final OpWorkflowMetrics opWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
     private final NetworkUtilizationManager networkUtilizationManager;
 
     @Inject
     public DispatchUsageManager(
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
+            @NonNull final OpWorkflowMetrics opWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         this.networkInfo = requireNonNull(networkInfo);
-        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
+        this.opWorkflowMetrics = requireNonNull(opWorkflowMetrics);
         this.throttleServiceManager = requireNonNull(throttleServiceManager);
         this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
     }
@@ -102,7 +103,8 @@ public class DispatchUsageManager {
         if (CONTRACT_OPERATIONS.contains(function)) {
             leakUnusedGas(dispatch);
         }
-        if (dispatch.txnCategory() == USER && dispatch.recordBuilder().status() != SUCCESS) {
+        if ((dispatch.txnCategory() == USER || dispatch.txnCategory() == NODE)
+                && dispatch.recordBuilder().status() != SUCCESS) {
             if (canAutoCreate(function)) {
                 reclaimFailedCryptoCreateCapacity(dispatch);
             }
@@ -134,7 +136,7 @@ public class DispatchUsageManager {
         // EVM action tracer to get a better estimate of the actual gas used and the gas limit.
         if (builder.hasContractResult()) {
             final var gasUsed = builder.getGasUsedForContractTxn();
-            handleWorkflowMetrics.addGasUsed(gasUsed);
+            opWorkflowMetrics.addGasUsed(gasUsed);
             final var contractsConfig = dispatch.config().getConfigData(ContractsConfig.class);
             if (contractsConfig.throttleThrottleByGas()) {
                 final var txnInfo = dispatch.txnInfo();

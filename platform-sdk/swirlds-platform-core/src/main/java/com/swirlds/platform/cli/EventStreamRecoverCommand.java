@@ -93,7 +93,7 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
             description = "The ID of the node that is being used to recover the state. "
                     + "This node's keys should be available locally.")
     private void setSelfId(final long selfId) {
-        this.selfId = new NodeId(selfId);
+        this.selfId = NodeId.of(selfId);
     }
 
     @CommandLine.Option(

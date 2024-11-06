@@ -22,7 +22,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.permits.SyncPermitProvider;
@@ -39,6 +38,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import org.hiero.consensus.gossip.FallenBehindManager;
 
 /**
  * Executes the sync protocol where events are exchanged with a peer and all events are sent and received in topological
@@ -84,11 +84,6 @@ public class SyncProtocol implements Protocol {
     private final BooleanSupplier gossipHalted;
 
     /**
-     * Returns true if the intake queue is too full, false otherwise
-     */
-    private final BooleanSupplier intakeIsTooFull;
-
-    /**
      * The last time this protocol executed
      */
     private Instant lastSyncTime = Instant.MIN;
@@ -113,7 +108,6 @@ public class SyncProtocol implements Protocol {
      * @param intakeEventCounter     keeps track of how many events have been received from each peer, but haven't yet
      *                               made it through the intake pipeline
      * @param gossipHalted           returns true if gossip is halted, false otherwise
-     * @param intakeIsTooFull        returns true if the intake queue is too full to continue syncing, false otherwise
      * @param sleepAfterSync         the amount of time to sleep after a sync
      * @param syncMetrics            metrics tracking syncing
      * @param platformStatusSupplier provides the current platform status
@@ -126,7 +120,6 @@ public class SyncProtocol implements Protocol {
             @NonNull final SyncPermitProvider permitProvider,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final BooleanSupplier gossipHalted,
-            @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier) {
@@ -138,7 +131,6 @@ public class SyncProtocol implements Protocol {
         this.permitProvider = Objects.requireNonNull(permitProvider);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.gossipHalted = Objects.requireNonNull(gossipHalted);
-        this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
         this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
@@ -172,11 +164,6 @@ public class SyncProtocol implements Protocol {
 
         if (gossipHalted.getAsBoolean()) {
             syncMetrics.doNotSyncHalted();
-            return false;
-        }
-
-        if (intakeIsTooFull.getAsBoolean()) {
-            syncMetrics.doNotSyncIntakeQueue();
             return false;
         }
 

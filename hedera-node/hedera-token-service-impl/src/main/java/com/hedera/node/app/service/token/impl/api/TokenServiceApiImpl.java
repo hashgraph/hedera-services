@@ -52,8 +52,8 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
@@ -65,8 +65,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class TokenServiceApiImpl implements TokenServiceApi {
     private static final Logger logger = LogManager.getLogger(TokenServiceApiImpl.class);
-    private static final Key STANDIN_CONTRACT_KEY =
-            Key.newBuilder().contractID(ContractID.newBuilder().contractNum(0)).build();
 
     private final WritableAccountStore accountStore;
     private final AccountID fundingAccountID;
@@ -178,7 +176,9 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         }
         final var accountAsContract = hollowAccount
                 .copyBuilder()
-                .key(STANDIN_CONTRACT_KEY)
+                .key(Key.newBuilder()
+                        .contractID(ContractID.newBuilder().contractNum(hollowAccountId.accountNumOrThrow()))
+                        .build())
                 .smartContract(true)
                 .maxAutoAssociations(hollowAccount.numberAssociations())
                 .build();

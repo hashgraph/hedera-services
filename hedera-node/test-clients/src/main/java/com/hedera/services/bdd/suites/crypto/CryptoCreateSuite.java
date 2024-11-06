@@ -74,6 +74,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
@@ -100,7 +101,6 @@ public class CryptoCreateSuite {
     public static final String ACCOUNT = "account";
     public static final String ANOTHER_ACCOUNT = "anotherAccount";
     public static final String ED_25519_KEY = "ed25519Alias";
-    public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
     public static final String ACCOUNT_ID = "0.0.10";
     public static final String CIVILIAN = "civilian";
     public static final String NO_KEYS = "noKeys";
@@ -617,6 +617,7 @@ public class CryptoCreateSuite {
 
     @HapiTest
     final Stream<DynamicTest> createAnAccountWithECKeyAndNoAlias() {
+        final var mirrorAddress = new AtomicReference<Address>();
         return defaultHapiSpec("CreateAnAccountWithECKeyAndNoAlias")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(withOpContext((spec, opLog) -> {
@@ -625,12 +626,13 @@ public class CryptoCreateSuite {
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     assert addressBytes.length > 0;
                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                    final var createWithECDSAKey = cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY);
-                    final var getAccountInfo = getAccountInfo(ACCOUNT)
+                    final var createWithECDSAKey =
+                            cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).exposingEvmAddressTo(mirrorAddress::set);
+                    final var getAccountInfo = sourcing(() -> getAccountInfo(ACCOUNT)
                             .has(accountWith()
                                     .key(SECP_256K1_SOURCE_KEY)
                                     .noAlias()
-                                    .evmAddress(evmAddressBytes));
+                                    .evmAddress(mirrorAddress.get())));
 
                     final var getECDSAAliasAccountInfo =
                             getAliasedAccountInfo(ecdsaKey.toByteString()).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID);

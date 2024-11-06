@@ -48,10 +48,10 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.ArrayList;
 import java.util.List;
@@ -193,8 +193,10 @@ class TokenServiceApiImplTest {
 
     @Test
     void finalizesHollowAccountAsContractAsExpected() {
+        final var numAssociations = 3;
         accountStore.put(Account.newBuilder()
                 .accountId(CONTRACT_ACCOUNT_ID)
+                .numberAssociations(numAssociations)
                 .key(IMMUTABILITY_SENTINEL_KEY)
                 .build());
 
@@ -203,8 +205,9 @@ class TokenServiceApiImplTest {
         assertEquals(1, accountStore.sizeOfAccountState());
         final var finalizedAccount = accountStore.getContractById(CONTRACT_ID_BY_NUM);
         assertNotNull(finalizedAccount);
-        assertEquals(STANDIN_CONTRACT_KEY, finalizedAccount.key());
+        assertEquals(Key.newBuilder().contractID(CONTRACT_ID_BY_NUM).build(), finalizedAccount.key());
         assertTrue(finalizedAccount.smartContract());
+        assertEquals(finalizedAccount.maxAutoAssociations(), numAssociations);
     }
 
     @Test

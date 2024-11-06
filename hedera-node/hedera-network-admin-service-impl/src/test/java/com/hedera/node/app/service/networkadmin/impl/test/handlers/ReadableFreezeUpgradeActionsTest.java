@@ -116,6 +116,8 @@ class ReadableFreezeUpgradeActionsTest {
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     A_THRESHOLD_KEY)))
             .build();
+    private static final Bytes TSS_KEY = Bytes.wrap(new byte[] {1, 2, 3});
+
     private Path noiseFileLoc;
     private Path noiseSubFileLoc;
     private Path zipArchivePath; // path to valid.zip test zip file (in zipSourceDir directory)
@@ -427,7 +429,8 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc1CertificateHash"),
                 2,
                 false,
-                A_COMPLEX_KEY);
+                A_COMPLEX_KEY,
+                TSS_KEY);
         final var node2 = new Node(
                 2,
                 asAccount(4),
@@ -440,7 +443,8 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc2CertificateHash"),
                 4,
                 false,
-                A_COMPLEX_KEY);
+                A_COMPLEX_KEY,
+                TSS_KEY);
         final var node3 = new Node(
                 3,
                 asAccount(6),
@@ -453,7 +457,8 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc3CertificateHash"),
                 1,
                 true,
-                A_COMPLEX_KEY);
+                A_COMPLEX_KEY,
+                TSS_KEY);
         final var node4 = new Node(
                 4,
                 asAccount(8),
@@ -467,7 +472,8 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc5CertificateHash"),
                 8,
                 false,
-                A_COMPLEX_KEY);
+                A_COMPLEX_KEY,
+                TSS_KEY);
         final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
                 .value(new EntityNumber(4), node4)
                 .value(new EntityNumber(2), node2)
@@ -512,7 +518,6 @@ class ReadableFreezeUpgradeActionsTest {
                 .append("address, 1, 1, node2, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
                 .append("address, 2, 2, node3, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
                 .append("address, 4, 4, node5, 20, 127.0.0.4, 1445, test.domain.com, 50225, 0.0.8\n")
-                .append("nextNodeId, 5")
                 .toString();
         final byte[] pemFile1Bytes = pemFile1.getEncoded();
         final byte[] pemFile2Bytes = pemFile2.getEncoded();
@@ -552,7 +557,8 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc1CertificateHash"),
                 2,
                 false,
-                A_COMPLEX_KEY);
+                A_COMPLEX_KEY,
+                TSS_KEY);
         final var node2 = new Node(
                 1,
                 asAccount(4),
@@ -565,7 +571,8 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc2CertificateHash"),
                 4,
                 false,
-                A_COMPLEX_KEY);
+                A_COMPLEX_KEY,
+                TSS_KEY);
         final var node3 = new Node(
                 2,
                 asAccount(6),
@@ -578,7 +585,8 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc3CertificateHash"),
                 1,
                 false,
-                A_COMPLEX_KEY);
+                A_COMPLEX_KEY,
+                TSS_KEY);
         final var node4 = new Node(
                 3,
                 asAccount(8),
@@ -592,7 +600,8 @@ class ReadableFreezeUpgradeActionsTest {
                 Bytes.wrap("grpc5CertificateHash"),
                 8,
                 true,
-                A_COMPLEX_KEY);
+                A_COMPLEX_KEY,
+                TSS_KEY);
         final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
                 .value(new EntityNumber(3), node4)
                 .value(new EntityNumber(1), node2)
@@ -637,7 +646,6 @@ class ReadableFreezeUpgradeActionsTest {
                 .append("address, 0, 0, node1, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
                 .append("address, 1, 1, node2, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
                 .append("address, 2, 2, node3, 20, 127.0.0.3, 1245, 35.186.191.235, 50221, 0.0.6\n")
-                .append("nextNodeId, 4")
                 .toString();
         final byte[] pemFile1Bytes = pemFile1.getEncoded();
         final byte[] pemFile2Bytes = pemFile2.getEncoded();

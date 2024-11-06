@@ -54,11 +54,11 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -136,7 +136,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     private final SemanticVersion hapiVersion =
             SemanticVersion.newBuilder().major(1).minor(2).patch(3).build();
     /** Represents "this node" in our tests. */
-    protected final NodeId nodeSelfId = new NodeId(7);
+    protected final NodeId nodeSelfId = NodeId.of(7);
     /** The AccountID of "this node" in our tests. */
     protected final AccountID nodeSelfAccountId =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();
@@ -232,7 +232,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     }
 
     public static final class TestAppBuilder {
-        private SemanticVersion softwareVersion = CURRENT_VERSION;
         private SemanticVersion hapiVersion = CURRENT_VERSION;
         private Set<Service> services = new LinkedHashSet<>();
         private TestConfigBuilder configBuilder = HederaTestConfigBuilder.create();
@@ -256,11 +255,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
         public TestAppBuilder withHapiVersion(@NonNull final SemanticVersion version) {
             this.hapiVersion = version;
-            return this;
-        }
-
-        public TestAppBuilder withSoftwareVersion(@NonNull final SemanticVersion version) {
-            this.softwareVersion = version;
             return this;
         }
 
@@ -337,7 +331,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final ConfigProvider configProvider = () -> new VersionedConfigImpl(configBuilder.getOrCreateConfig(), 1);
             final var addresses = nodes.stream()
                     .map(nodeInfo -> new Address()
-                            .copySetNodeId(new NodeId(nodeInfo.nodeId()))
+                            .copySetNodeId(NodeId.of(nodeInfo.nodeId()))
                             .copySetWeight(nodeInfo.zeroStake() ? 0 : 10))
                     .toList();
             final var addressBook = new AddressBook(addresses);

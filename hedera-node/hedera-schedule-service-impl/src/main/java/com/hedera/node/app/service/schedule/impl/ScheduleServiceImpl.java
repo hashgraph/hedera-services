@@ -18,8 +18,9 @@ package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
+import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.RpcService;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -29,5 +30,6 @@ public final class ScheduleServiceImpl implements ScheduleService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490ScheduleSchema());
+        registry.register(new V0570ScheduleSchema());
     }
 }

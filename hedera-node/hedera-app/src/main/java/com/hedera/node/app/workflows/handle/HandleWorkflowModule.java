@@ -27,6 +27,8 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.CacheConfig;
@@ -47,6 +49,12 @@ public interface HandleWorkflowModule {
     @Singleton
     static Supplier<ContractHandlers> provideContractHandlers(@NonNull final ContractServiceImpl contractService) {
         return contractService::handlers;
+    }
+
+    @Provides
+    @Singleton
+    static Supplier<TssHandlers> provideTssHandlers(@NonNull final TssBaseService tssBaseService) {
+        return tssBaseService::tssHandlers;
     }
 
     @Provides
@@ -86,6 +94,7 @@ public interface HandleWorkflowModule {
             @NonNull final ConsensusHandlers consensusHandlers,
             @NonNull final FileHandlers fileHandlers,
             @NonNull final Supplier<ContractHandlers> contractHandlers,
+            @NonNull final Supplier<TssHandlers> tssHandlers,
             @NonNull final ScheduleHandlers scheduleHandlers,
             @NonNull final TokenHandlers tokenHandlers,
             @NonNull final UtilHandlers utilHandlers,
@@ -144,6 +153,9 @@ public interface HandleWorkflowModule {
                 addressBookHandlers.nodeUpdateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),
                 tokenHandlers.tokenClaimAirdropHandler(),
-                utilHandlers.prngHandler());
+                utilHandlers.prngHandler(),
+                tssHandlers.get().tssMessageHandler(),
+                tssHandlers.get().tssVoteHandler(),
+                tssHandlers.get().tssShareSignatureHandler());
     }
 }
