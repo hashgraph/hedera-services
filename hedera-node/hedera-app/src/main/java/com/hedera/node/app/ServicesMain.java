@@ -53,7 +53,6 @@ import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.config.data.TssConfig;
 import com.swirlds.base.time.Time;
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.context.PlatformContext;
@@ -77,6 +76,7 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -313,7 +313,7 @@ public class ServicesMain implements SwirldMain {
             RosterHistory rosterHistory;
             if (isGenesis.get()) {
                 final var genesisRoster = loadRoster(GENESIS_CONFIG_FILE_NAME);
-                rosterHistory = new RosterHistory(genesisRoster, 0, null, 0);
+                rosterHistory = new RosterHistory(genesisRoster, 0, genesisRoster, 0);
             } else {
                 final long maxSharesPerNode =
                         configuration.getConfigData(TssConfig.class).maxSharesPerNode();
@@ -322,12 +322,12 @@ public class ServicesMain implements SwirldMain {
 
             platformBuilder.withRoster(
                     rosterHistory
-                            .currentRoster()); // FUTURE: pass the roster history instead of just the current roster
+                            .getCurrentRoster()); // FUTURE: pass the roster history instead of just the current roster
         } else {
             // Initialize the address book and set on platform builder
             final var addressBook =
                     initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
-            platformBuilder.withAddressBook(diskAddressBook);
+            platformBuilder.withAddressBook(addressBook);
         }
 
         final var stateHash = reservedState.hash();
@@ -359,22 +359,6 @@ public class ServicesMain implements SwirldMain {
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
-    }
-
-    // The Roster History is a list of active rosters paired with the rounds they became active. At this time the
-    // history length is at most 2.
-    // - currentRoster - the active roster in the history paired with the highest round number.
-    // - previousRoster - the active roster in the history paired with the lowest round number.
-    // The roster history is an ordered list of pairs by descending round number. Example: [(currentRoster, 2),
-    // (previousRoster, 1)].
-    public record RosterHistory(Roster currentRoster, long currentRound, Roster previousRoster, long previousRound) {
-        public List<Pair<Roster, Long>> getHistory() {
-            if (previousRoster == null) {
-                return List.of(new Pair<>(currentRoster, currentRound));
-            }
-
-            return List.of(new Pair<>(currentRoster, currentRound), new Pair<>(previousRoster, previousRound));
-        }
     }
 
     /**
