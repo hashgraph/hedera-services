@@ -22,11 +22,7 @@ import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubK
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
-import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork.newSharedNetwork;
-import static com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork.newRemoteNetworkWithNodes;
-import static com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork.newSharedNetworkWithNodes;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
@@ -34,7 +30,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddres
 import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.HapiClients.clientsFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -100,17 +95,10 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
-import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
-import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNode;
 import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
-import com.hedera.services.bdd.junit.hedera.remote.RemoteNode;
-import com.hedera.services.bdd.junit.hedera.subprocess.GrpcPinger;
-import com.hedera.services.bdd.junit.hedera.subprocess.PrometheusClient;
-import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
@@ -1982,38 +1970,6 @@ public class UtilVerbs {
                     throw new UncheckedIOException(e);
                 }
             });
-        });
-    }
-
-    /**
-     * Returns an operation that writes the requested contents to the working directory of each node.
-     * @return the operation
-     * @throws NullPointerException if the target network is not local, hence working directories are null
-     */
-    public static SpecOperation disableNodeOperatorGrpcPort() {
-        return withOpContext((spec, opLog) -> {
-            final var network = spec.targetNetworkOrThrow();
-            final var nodes = network.nodes().stream()
-                    .<HederaNode>map(node -> {
-                        final NodeMetadata metadata = node.metadata().withNewNodeOperatorPortDisabled();
-                        return switch (network.type()) {
-                            case SUBPROCESS_NETWORK -> new SubProcessNode(
-                                    metadata, new GrpcPinger(), new PrometheusClient());
-                            case EMBEDDED_NETWORK -> new EmbeddedNode(metadata);
-                            case REMOTE_NETWORK -> new RemoteNode(metadata);
-                        };
-                    })
-                    .toList();
-
-            switch (network.type()) {
-                case SUBPROCESS_NETWORK -> {
-                    SHARED_NETWORK.set(null);
-                    newSharedNetworkWithNodes(1, nodes);
-                }
-                case EMBEDDED_NETWORK -> newSharedNetwork(
-                        spec.embeddedNetworkOrThrow().mode(), nodes);
-                case REMOTE_NETWORK -> newRemoteNetworkWithNodes(clientsFor(spec.setup()), nodes);
-            }
         });
     }
 

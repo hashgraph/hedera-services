@@ -121,16 +121,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         return sharedNetwork;
     }
 
-    public static synchronized HederaNetwork newSharedNetworkWithNodes(
-            final int size, @NonNull final List<HederaNode> nodes) {
-        if (NetworkTargetingExtension.SHARED_NETWORK.get() != null) {
-            throw new UnsupportedOperationException("Only one shared network allowed per launcher session");
-        }
-        final var sharedNetwork = liveNetworkWithNodes(SHARED_NETWORK_NAME, size, nodes);
-        NetworkTargetingExtension.SHARED_NETWORK.set(sharedNetwork);
-        return sharedNetwork;
-    }
-
     /**
      * Returns the network type; for now this is always
      * {@link TargetNetworkType#SUBPROCESS_NETWORK}.
@@ -369,17 +359,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                                 GRPC_PINGER,
                                 PROMETHEUS_CLIENT))
                         .toList());
-        Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
-        return network;
-    }
-
-    private static synchronized HederaNetwork liveNetworkWithNodes(
-            @NonNull final String name, final int size, @NonNull final List<HederaNode> nodes) {
-        if (!nextPortsInitialized) {
-            initializeNextPortsForNetwork(size);
-        }
-        final var network = new SubProcessNetwork(
-                name, nodes.stream().map(node -> (SubProcessNode) node).toList());
         Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
         return network;
     }

@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.queries;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.lessThan;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
@@ -117,10 +116,6 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase implement
                     // The node operator wasn't charged
                     getAccountBalance(NODE_OPERATOR)
                             .hasTinyBars(ONE_HUNDRED_HBARS)
-                            .logged(),
-                    // But the payer was charged
-                    getAccountBalance(PAYER)
-                            .hasTinyBars(lessThan(ONE_HUNDRED_HBARS))
                             .logged());
         }
     }

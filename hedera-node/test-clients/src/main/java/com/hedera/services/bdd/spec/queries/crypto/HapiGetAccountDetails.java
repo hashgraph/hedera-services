@@ -205,7 +205,6 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
                 assertEquals(actualCount, usedCount);
             });
             expectedLedgerId.ifPresent(id -> assertEquals(id, details.getLedgerId()));
-
             tokenAssociationsCount.ifPresent(count -> assertEquals(count, details.getTokenRelationshipsCount()));
         } else {
             log.info("AccountDetailsQuery cannot be performed as node operator without enabled feature flag");

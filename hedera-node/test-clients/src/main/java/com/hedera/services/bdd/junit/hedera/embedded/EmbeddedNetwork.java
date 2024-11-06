@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
 import static java.util.Objects.requireNonNull;
 
@@ -40,7 +41,6 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import java.util.List;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,53 +74,23 @@ public class EmbeddedNetwork extends AbstractNetwork {
         };
     }
 
-    /**
-     * Create a new network of remote nodes.
-     *
-     * @return the new network
-     */
-    public static HederaNetwork newSharedNetwork(
-            @NonNull final EmbeddedMode mode, @NonNull final List<HederaNode> nodes) {
-        requireNonNull(mode);
-        requireNonNull(nodes);
-        return switch (mode) {
-            case CONCURRENT -> new EmbeddedNetwork(CONCURRENT_NAME, CONCURRENT_WORKING_DIR, mode, nodes);
-            case REPEATABLE -> new EmbeddedNetwork(REPEATABLE_NAME, REPEATABLE_WORKING_DIR, mode, nodes);
-        };
-    }
-
     public EmbeddedNetwork(
             @NonNull final String name, @NonNull final String workingDir, @NonNull final EmbeddedMode mode) {
-        super(name, List.of(new EmbeddedNode(classicMetadataFor(0, name, FAKE_HOST, workingDir, 0, 0, true, 0, 0, 0))));
-        this.mode = requireNonNull(mode);
-        this.embeddedNode = (EmbeddedNode) nodes().getFirst();
-        // Even though we are only embedding node0, we generate an address book
-        // for a "classic" HapiTest network with 4 nodes so that tests can still
-        // submit transactions with different creator accounts; c.f. EmbeddedHedera,
-        // which skips ingest and directly submits transactions for other nodes
-        this.configTxt = configTxtForLocal(
-                name(),
+        super(
+                name,
                 IntStream.range(0, CLASSIC_HAPI_TEST_NETWORK_SIZE)
                         .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(
-                                classicMetadataFor(nodeId, name, FAKE_HOST, workingDir, 0, 0, true, 0, 0, 0)))
-                        .toList(),
-                0,
-                0);
-    }
-
-    public EmbeddedNetwork(
-            @NonNull final String name,
-            @NonNull final String workingDir,
-            @NonNull final EmbeddedMode mode,
-            @NonNull final List<HederaNode> nodes) {
-        super(name, List.of(new EmbeddedNode(classicMetadataFor(0, name, FAKE_HOST, workingDir, 0, 0, true, 0, 0, 0))));
+                                // All non-embedded node working directories are mapped to the embedded node0
+                                classicMetadataFor(
+                                        nodeId, name, FAKE_HOST, 0, 0, 0, 0, 0, workingDirFor(0, workingDir))))
+                        .toList());
         this.mode = requireNonNull(mode);
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
         // Even though we are only embedding node0, we generate an address book
         // for a "classic" HapiTest network with 4 nodes so that tests can still
         // submit transactions with different creator accounts; c.f. EmbeddedHedera,
         // which skips ingest and directly submits transactions for other nodes
-        this.configTxt = configTxtForLocal(name(), nodes, 0, 0);
+        this.configTxt = configTxtForLocal(name(), nodes(), 1, 1);
     }
 
     @Override
