@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureD
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertExpectedRels;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertNoUnexpectedRels;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
@@ -149,37 +150,41 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     @Override
     @SuppressWarnings("java:S5960")
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        ContractInfo actualInfo = response.getContractGetInfo().getContractInfo();
-        // Since we don't return token relationships from getContractInfo query, for internal testing
-        // we are using getAccountDetails query to get token relationships.
-        if (!relationships.isEmpty()
-                || !absentRelationships.isEmpty()
-                || expectations.isPresent()
-                || registryEntry.isPresent()) {
-            final var detailsLookup = QueryVerbs.getAccountDetails(
-                            "0.0." + actualInfo.getContractID().getContractNum())
-                    .payingWith(GENESIS);
-            CustomSpecAssert.allRunFor(spec, detailsLookup);
-            final var response = detailsLookup.getResponse();
-            var actualTokenRels =
-                    response.getAccountDetails().getAccountDetails().getTokenRelationshipsList();
-            assertExpectedRels(contract, relationships, actualTokenRels, spec);
-            assertNoUnexpectedRels(contract, absentRelationships, actualTokenRels, spec);
-            actualInfo = actualInfo.toBuilder()
-                    .clearTokenRelationships()
-                    .addAllTokenRelationships(actualTokenRels)
-                    .build();
-        }
-        if (expectations.isPresent()) {
-            ErroringAsserts<ContractInfo> asserts = expectations.get().assertsFor(spec);
-            List<Throwable> errors = asserts.errorsIn(actualInfo);
-            rethrowSummaryError(LOG, "Bad contract info!", errors);
-        }
-        if (expectedLedgerId.isPresent()) {
-            assertEquals(expectedLedgerId.get(), actualInfo.getLedgerId());
-        }
-        if (registryEntry.isPresent()) {
-            spec.registry().saveContractInfo(registryEntry.get(), actualInfo);
+        if (hasNodeOperatorPortEnabled(spec)) {
+            ContractInfo actualInfo = response.getContractGetInfo().getContractInfo();
+            // Since we don't return token relationships from getContractInfo query, for internal testing
+            // we are using getAccountDetails query to get token relationships.
+            if (!relationships.isEmpty()
+                    || !absentRelationships.isEmpty()
+                    || expectations.isPresent()
+                    || registryEntry.isPresent()) {
+                final var detailsLookup = QueryVerbs.getAccountDetails(
+                                "0.0." + actualInfo.getContractID().getContractNum())
+                        .payingWith(GENESIS);
+                CustomSpecAssert.allRunFor(spec, detailsLookup);
+                final var response = detailsLookup.getResponse();
+                var actualTokenRels =
+                        response.getAccountDetails().getAccountDetails().getTokenRelationshipsList();
+                assertExpectedRels(contract, relationships, actualTokenRels, spec);
+                assertNoUnexpectedRels(contract, absentRelationships, actualTokenRels, spec);
+                actualInfo = actualInfo.toBuilder()
+                        .clearTokenRelationships()
+                        .addAllTokenRelationships(actualTokenRels)
+                        .build();
+            }
+            if (expectations.isPresent()) {
+                ErroringAsserts<ContractInfo> asserts = expectations.get().assertsFor(spec);
+                List<Throwable> errors = asserts.errorsIn(actualInfo);
+                rethrowSummaryError(LOG, "Bad contract info!", errors);
+            }
+            if (expectedLedgerId.isPresent()) {
+                assertEquals(expectedLedgerId.get(), actualInfo.getLedgerId());
+            }
+            if (registryEntry.isPresent()) {
+                spec.registry().saveContractInfo(registryEntry.get(), actualInfo);
+            }
+        } else {
+            LOG.info("ContractInfoQuery cannot be performed as node operator without enabled feature flag");
         }
     }
 

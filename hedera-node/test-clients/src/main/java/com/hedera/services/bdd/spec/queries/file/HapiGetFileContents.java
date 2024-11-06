@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.queries.file;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSink;
@@ -275,16 +276,21 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        if (expContentFn.isPresent()) {
-            ByteString expected = expContentFn.get().apply(spec);
-            ByteString actual = response.getFileGetContents().getFileContents().getContents();
-            if (afterBytesTransform.isPresent()) {
-                actual = ByteString.copyFrom(afterBytesTransform.get().apply(actual.toByteArray()));
+        if (hasNodeOperatorPortEnabled(spec)) {
+            if (expContentFn.isPresent()) {
+                ByteString expected = expContentFn.get().apply(spec);
+                ByteString actual =
+                        response.getFileGetContents().getFileContents().getContents();
+                if (afterBytesTransform.isPresent()) {
+                    actual = ByteString.copyFrom(afterBytesTransform.get().apply(actual.toByteArray()));
+                }
+                Assertions.assertEquals(
+                        expected.toString(Charset.defaultCharset()),
+                        actual.toString(Charset.defaultCharset()),
+                        "Wrong file contents!");
             }
-            Assertions.assertEquals(
-                    expected.toString(Charset.defaultCharset()),
-                    actual.toString(Charset.defaultCharset()),
-                    "Wrong file contents!");
+        } else {
+            log.info("FileContentsQuery cannot be performed as node operator without enabled feature flag");
         }
     }
 

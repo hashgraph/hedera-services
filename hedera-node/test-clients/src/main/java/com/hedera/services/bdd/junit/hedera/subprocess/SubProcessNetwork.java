@@ -121,6 +121,16 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         return sharedNetwork;
     }
 
+    public static synchronized HederaNetwork newSharedNetworkWithNodes(
+            final int size, @NonNull final List<HederaNode> nodes) {
+        if (NetworkTargetingExtension.SHARED_NETWORK.get() != null) {
+            throw new UnsupportedOperationException("Only one shared network allowed per launcher session");
+        }
+        final var sharedNetwork = liveNetworkWithNodes(SHARED_NETWORK_NAME, size, nodes);
+        NetworkTargetingExtension.SHARED_NETWORK.set(sharedNetwork);
+        return sharedNetwork;
+    }
+
     /**
      * Returns the network type; for now this is always
      * {@link TargetNetworkType#SUBPROCESS_NETWORK}.
@@ -233,6 +243,16 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     /**
+     * Assigns disabled node operator port to nodes from the current <i>config.txt</i>.
+     */
+    public void assignWithDisabledNodeOperatorPort() {
+        nodes.forEach(node -> ((SubProcessNode) node).reassignWithNodeOperatorPortDisabled());
+        refreshNodeConfigTxt();
+        HapiClients.tearDown();
+        this.clients = HapiClients.clientsFor(this);
+    }
+
+    /**
      * Removes the matching node from the network and updates the <i>config.txt</i> file for the remaining nodes
      * from the given source.
      *
@@ -277,6 +297,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                                 SHARED_NETWORK_NAME.equals(name()) ? null : name(),
                                 nextGrpcPort + (int) nodeId * 2,
                                 nextNodeOperatorPort + (int) nodeId * 2,
+                                true,
                                 nextGossipPort + (int) nodeId * 2,
                                 nextGossipTlsPort + (int) nodeId * 2,
                                 nextPrometheusPort + (int) nodeId),
@@ -341,12 +362,24 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                                         SHARED_NETWORK_NAME.equals(name) ? null : name,
                                         nextGrpcPort,
                                         nextNodeOperatorPort,
+                                        true,
                                         nextGossipPort,
                                         nextGossipTlsPort,
                                         nextPrometheusPort),
                                 GRPC_PINGER,
                                 PROMETHEUS_CLIENT))
                         .toList());
+        Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
+        return network;
+    }
+
+    private static synchronized HederaNetwork liveNetworkWithNodes(
+            @NonNull final String name, final int size, @NonNull final List<HederaNode> nodes) {
+        if (!nextPortsInitialized) {
+            initializeNextPortsForNetwork(size);
+        }
+        final var network = new SubProcessNetwork(
+                name, nodes.stream().map(node -> (SubProcessNode) node).toList());
         Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
         return network;
     }

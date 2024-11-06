@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.queries.meta;
 
+import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -177,37 +178,41 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) {
-        var receipt = response.getTransactionGetReceipt().getReceipt();
-        ResponseCodeEnum actualStatus = receipt.getStatus();
-        if (expectedPriorityStatuses != null && expectedPriorityStatuses.contains(actualStatus)) {
-            expectedPriorityStatus = Optional.of(actualStatus);
-        }
-        if (expectedPriorityStatus.isPresent()) {
-            assertEquals(expectedPriorityStatus.get(), actualStatus);
-        }
-        if (expectedDuplicateStatuses.isPresent()) {
-            var duplicates = response.getTransactionGetReceipt().getDuplicateTransactionReceiptsList().stream()
-                    .map(TransactionReceipt::getStatus)
-                    .toArray(n -> new ResponseCodeEnum[n]);
-            Assertions.assertArrayEquals(expectedDuplicateStatuses.get(), duplicates);
-        }
-        if (expectedScheduledTxnId.isPresent()) {
-            var expected = spec.registry().getTxnId(expectedScheduledTxnId.get());
-            var actual = response.getTransactionGetReceipt().getReceipt().getScheduledTransactionID();
-            assertEquals(expected, actual, "Wrong scheduled transaction id!");
-        }
-        if (expectedSchedule.isPresent()) {
-            var schedule = TxnUtils.asScheduleId(expectedSchedule.get(), spec);
-            assertEquals(schedule, receipt.getScheduleID(), "Wrong/missing schedule id!");
-        }
-        if (hasChildAutoAccountCreations.isPresent()) {
-            int count = hasChildAutoAccountCreations.get();
-            for (var childReceipt : childReceipts) {
-                if (childReceipt.hasAccountID()) {
-                    count--;
-                }
+        if (hasNodeOperatorPortEnabled(spec)) {
+            var receipt = response.getTransactionGetReceipt().getReceipt();
+            ResponseCodeEnum actualStatus = receipt.getStatus();
+            if (expectedPriorityStatuses != null && expectedPriorityStatuses.contains(actualStatus)) {
+                expectedPriorityStatus = Optional.of(actualStatus);
             }
-            assertEquals(0, count);
+            if (expectedPriorityStatus.isPresent()) {
+                assertEquals(expectedPriorityStatus.get(), actualStatus);
+            }
+            if (expectedDuplicateStatuses.isPresent()) {
+                var duplicates = response.getTransactionGetReceipt().getDuplicateTransactionReceiptsList().stream()
+                        .map(TransactionReceipt::getStatus)
+                        .toArray(n -> new ResponseCodeEnum[n]);
+                Assertions.assertArrayEquals(expectedDuplicateStatuses.get(), duplicates);
+            }
+            if (expectedScheduledTxnId.isPresent()) {
+                var expected = spec.registry().getTxnId(expectedScheduledTxnId.get());
+                var actual = response.getTransactionGetReceipt().getReceipt().getScheduledTransactionID();
+                assertEquals(expected, actual, "Wrong scheduled transaction id!");
+            }
+            if (expectedSchedule.isPresent()) {
+                var schedule = TxnUtils.asScheduleId(expectedSchedule.get(), spec);
+                assertEquals(schedule, receipt.getScheduleID(), "Wrong/missing schedule id!");
+            }
+            if (hasChildAutoAccountCreations.isPresent()) {
+                int count = hasChildAutoAccountCreations.get();
+                for (var childReceipt : childReceipts) {
+                    if (childReceipt.hasAccountID()) {
+                        count--;
+                    }
+                }
+                assertEquals(0, count);
+            }
+        } else {
+            log.info("ReceiptQuery cannot be performed as node operator without enabled feature flag");
         }
     }
 

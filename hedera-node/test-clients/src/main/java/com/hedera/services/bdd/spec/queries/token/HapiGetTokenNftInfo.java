@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.queries.token;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
@@ -105,45 +106,50 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        var actualInfo = response.getTokenGetNftInfo().getNft();
+        if (hasNodeOperatorPortEnabled(spec)) {
+            var actualInfo = response.getTokenGetNftInfo().getNft();
 
-        if (expectedSerialNum.isPresent()) {
-            assertEquals(expectedSerialNum.getAsLong(), actualInfo.getNftID().getSerialNumber(), "Wrong serial num!");
-        }
-
-        if (expectedAccountID.isPresent()) {
-            var id = TxnUtils.asId(expectedAccountID.get(), spec);
-            assertEquals(id, actualInfo.getAccountID(), "Wrong account ID account!");
-        }
-
-        if (expectedSpenderID.isPresent()) {
-            if (expectedSpenderID.get().equals(MISSING_SPENDER)) {
-                Assertions.assertEquals(0, actualInfo.getSpenderId().getAccountNum(), "Wrong account ID account!");
-            } else {
-                var id = TxnUtils.asId(expectedSpenderID.get(), spec);
-                Assertions.assertEquals(id, actualInfo.getSpenderId(), "Wrong spender ID account!");
+            if (expectedSerialNum.isPresent()) {
+                assertEquals(
+                        expectedSerialNum.getAsLong(), actualInfo.getNftID().getSerialNumber(), "Wrong serial num!");
             }
+
+            if (expectedAccountID.isPresent()) {
+                var id = TxnUtils.asId(expectedAccountID.get(), spec);
+                assertEquals(id, actualInfo.getAccountID(), "Wrong account ID account!");
+            }
+
+            if (expectedSpenderID.isPresent()) {
+                if (expectedSpenderID.get().equals(MISSING_SPENDER)) {
+                    Assertions.assertEquals(0, actualInfo.getSpenderId().getAccountNum(), "Wrong account ID account!");
+                } else {
+                    var id = TxnUtils.asId(expectedSpenderID.get(), spec);
+                    Assertions.assertEquals(id, actualInfo.getSpenderId(), "Wrong spender ID account!");
+                }
+            }
+
+            expectedMetadata.ifPresent(bytes -> assertEquals(bytes, actualInfo.getMetadata(), "Wrong metadata!"));
+
+            assertFor(
+                    actualInfo.getCreationTime(),
+                    expectedCreationTime,
+                    (n, r) -> r.getCreationTime(token),
+                    "Wrong creation time (seconds)!",
+                    spec.registry());
+
+            var registry = spec.registry();
+
+            assertFor(
+                    actualInfo.getNftID().getTokenID(),
+                    expectedTokenID,
+                    (n, r) -> r.getTokenID(n),
+                    "Wrong token id!",
+                    registry);
+
+            expectedLedgerId.ifPresent(id -> assertEquals(id, actualInfo.getLedgerId()));
+        } else {
+            log.info("TokenInftInfoQuery cannot be performed as node operator without enabled feature flag");
         }
-
-        expectedMetadata.ifPresent(bytes -> assertEquals(bytes, actualInfo.getMetadata(), "Wrong metadata!"));
-
-        assertFor(
-                actualInfo.getCreationTime(),
-                expectedCreationTime,
-                (n, r) -> r.getCreationTime(token),
-                "Wrong creation time (seconds)!",
-                spec.registry());
-
-        var registry = spec.registry();
-
-        assertFor(
-                actualInfo.getNftID().getTokenID(),
-                expectedTokenID,
-                (n, r) -> r.getTokenID(n),
-                "Wrong token id!",
-                registry);
-
-        expectedLedgerId.ifPresent(id -> assertEquals(id, actualInfo.getLedgerId()));
     }
 
     private <T, R> void assertFor(

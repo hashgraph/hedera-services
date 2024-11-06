@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.queries.token;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -407,186 +408,195 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     @Override
     @SuppressWarnings("java:S5960")
     protected void assertExpectationsGiven(HapiSpec spec) {
-        var actualInfo = response.getTokenGetInfo().getTokenInfo();
+        if (hasNodeOperatorPortEnabled(spec)) {
+            var actualInfo = response.getTokenGetInfo().getTokenInfo();
 
-        if (validationOp != null) {
-            allRunFor(spec, validationOp.apply(actualInfo));
-        }
+            if (validationOp != null) {
+                allRunFor(spec, validationOp.apply(actualInfo));
+            }
 
-        expectedTokenType.ifPresent(
-                tokenType -> assertEquals(tokenType, actualInfo.getTokenType(), "Wrong token type!"));
+            expectedTokenType.ifPresent(
+                    tokenType -> assertEquals(tokenType, actualInfo.getTokenType(), "Wrong token type!"));
 
-        expectedSupplyType.ifPresent(
-                supplyType -> assertEquals(supplyType, actualInfo.getSupplyType(), "Wrong supply type!"));
+            expectedSupplyType.ifPresent(
+                    supplyType -> assertEquals(supplyType, actualInfo.getSupplyType(), "Wrong supply type!"));
 
-        if (expectedSymbol.isPresent()) {
-            assertEquals(expectedSymbol.get(), actualInfo.getSymbol(), "Wrong symbol!");
-        }
+            if (expectedSymbol.isPresent()) {
+                assertEquals(expectedSymbol.get(), actualInfo.getSymbol(), "Wrong symbol!");
+            }
 
-        if (expectedName.isPresent()) {
-            assertEquals(expectedName.get(), actualInfo.getName(), "Wrong name!");
-        }
+            if (expectedName.isPresent()) {
+                assertEquals(expectedName.get(), actualInfo.getName(), "Wrong name!");
+            }
 
-        if (expectedAutoRenewAccount.isPresent()) {
-            var id = TxnUtils.asId(expectedAutoRenewAccount.get(), spec);
-            assertEquals(id, actualInfo.getAutoRenewAccount(), "Wrong auto renew account!");
-        }
+            if (expectedAutoRenewAccount.isPresent()) {
+                var id = TxnUtils.asId(expectedAutoRenewAccount.get(), spec);
+                assertEquals(id, actualInfo.getAutoRenewAccount(), "Wrong auto renew account!");
+            }
 
-        if (expectedAutoRenewPeriod.isPresent()) {
-            assertEquals(
-                    expectedAutoRenewPeriod.getAsLong(),
-                    actualInfo.getAutoRenewPeriod().getSeconds(),
-                    "Wrong auto renew period!");
-        }
+            if (expectedAutoRenewPeriod.isPresent()) {
+                assertEquals(
+                        expectedAutoRenewPeriod.getAsLong(),
+                        actualInfo.getAutoRenewPeriod().getSeconds(),
+                        "Wrong auto renew period!");
+            }
 
-        if (expectedMaxSupply.isPresent()) {
-            assertEquals(expectedMaxSupply.getAsLong(), actualInfo.getMaxSupply(), "Wrong max supply!");
-        }
+            if (expectedMaxSupply.isPresent()) {
+                assertEquals(expectedMaxSupply.getAsLong(), actualInfo.getMaxSupply(), "Wrong max supply!");
+            }
 
-        if (expectedTotalSupply.isPresent()) {
-            assertEquals(expectedTotalSupply.getAsLong(), actualInfo.getTotalSupply(), "Wrong total supply!");
-        }
-        if (totalSupplyAssertion != null) {
-            totalSupplyAssertion.accept(actualInfo.getTotalSupply());
-        }
+            if (expectedTotalSupply.isPresent()) {
+                assertEquals(expectedTotalSupply.getAsLong(), actualInfo.getTotalSupply(), "Wrong total supply!");
+            }
+            if (totalSupplyAssertion != null) {
+                totalSupplyAssertion.accept(actualInfo.getTotalSupply());
+            }
 
-        if (expectedDecimals.isPresent()) {
-            assertEquals(expectedDecimals.getAsInt(), actualInfo.getDecimals(), "Wrong decimals!");
-        }
+            if (expectedDecimals.isPresent()) {
+                assertEquals(expectedDecimals.getAsInt(), actualInfo.getDecimals(), "Wrong decimals!");
+            }
 
-        if (expectedTreasury.isPresent()) {
-            var id = TxnUtils.asId(expectedTreasury.get(), spec);
-            assertEquals(id, actualInfo.getTreasury(), "Wrong treasury account!");
-        }
+            if (expectedTreasury.isPresent()) {
+                var id = TxnUtils.asId(expectedTreasury.get(), spec);
+                assertEquals(id, actualInfo.getTreasury(), "Wrong treasury account!");
+            }
 
-        expectedPauseStatus.ifPresent(
-                status -> assertEquals(status, actualInfo.getPauseStatus(), "wrong Pause status"));
+            expectedPauseStatus.ifPresent(
+                    status -> assertEquals(status, actualInfo.getPauseStatus(), "wrong Pause status"));
 
-        final var actualFees = actualInfo.getCustomFeesList();
-        for (var expectedFee : expectedFees) {
-            expectedFee.accept(spec, actualFees);
-        }
+            final var actualFees = actualInfo.getCustomFeesList();
+            for (var expectedFee : expectedFees) {
+                expectedFee.accept(spec, actualFees);
+            }
 
-        expectedMemo.ifPresent(s -> assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
-        expectedMetadata.ifPresent(s -> assertEquals(s, actualInfo.getMetadata().toStringUtf8(), "Wrong metadata!"));
+            expectedMemo.ifPresent(s -> assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
+            expectedMetadata.ifPresent(
+                    s -> assertEquals(s, actualInfo.getMetadata().toStringUtf8(), "Wrong metadata!"));
 
-        var registry = spec.registry();
-        assertFor(actualInfo.getTokenId(), expectedId, (n, r) -> r.getTokenID(n), "Wrong token id!", registry);
-        assertFor(
-                actualInfo.getExpiry(),
-                expectedExpiry,
-                (n, r) -> Timestamp.newBuilder().setSeconds(r.getExpiry(token)).build(),
-                "Wrong token expiry!",
-                registry);
-
-        if (explicitExpiry != -1) {
-            assertEquals(explicitExpiry, actualInfo.getExpiry().getSeconds(), "Wrong token expiry");
-        }
-
-        if (emptyFreezeKey) {
-            assertForRemovedKey(actualInfo.getFreezeKey());
-        } else if (explicitFreezeKey != null) {
-            assertEquals(fromPbj(explicitFreezeKey), actualInfo.getFreezeKey(), "Wrong token freeze key!");
-        } else {
+            var registry = spec.registry();
+            assertFor(actualInfo.getTokenId(), expectedId, (n, r) -> r.getTokenID(n), "Wrong token id!", registry);
             assertFor(
-                    actualInfo.getFreezeKey(),
-                    expectedFreezeKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFreezeKey(n),
-                    "Wrong token freeze key!",
+                    actualInfo.getExpiry(),
+                    expectedExpiry,
+                    (n, r) -> Timestamp.newBuilder()
+                            .setSeconds(r.getExpiry(token))
+                            .build(),
+                    "Wrong token expiry!",
                     registry);
-        }
 
-        if (emptyAdminKey) {
-            assertForRemovedKey(actualInfo.getAdminKey());
-        } else if (explicitAdminKey != null) {
-            assertEquals(fromPbj(explicitAdminKey), actualInfo.getAdminKey(), "Wrong token admin key!");
+            if (explicitExpiry != -1) {
+                assertEquals(explicitExpiry, actualInfo.getExpiry().getSeconds(), "Wrong token expiry");
+            }
+
+            if (emptyFreezeKey) {
+                assertForRemovedKey(actualInfo.getFreezeKey());
+            } else if (explicitFreezeKey != null) {
+                assertEquals(fromPbj(explicitFreezeKey), actualInfo.getFreezeKey(), "Wrong token freeze key!");
+            } else {
+                assertFor(
+                        actualInfo.getFreezeKey(),
+                        expectedFreezeKey,
+                        (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFreezeKey(n),
+                        "Wrong token freeze key!",
+                        registry);
+            }
+
+            if (emptyAdminKey) {
+                assertForRemovedKey(actualInfo.getAdminKey());
+            } else if (explicitAdminKey != null) {
+                assertEquals(fromPbj(explicitAdminKey), actualInfo.getAdminKey(), "Wrong token admin key!");
+            } else {
+                assertFor(
+                        actualInfo.getAdminKey(),
+                        expectedAdminKey,
+                        (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getAdminKey(n),
+                        "Wrong token admin key!",
+                        registry);
+            }
+
+            if (emptyWipeKey) {
+                assertForRemovedKey(actualInfo.getWipeKey());
+            } else if (explicitWipeKey != null) {
+                assertEquals(fromPbj(explicitWipeKey), actualInfo.getWipeKey(), "Wrong token wipe key!");
+            } else {
+                assertFor(
+                        actualInfo.getWipeKey(),
+                        expectedWipeKey,
+                        (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getWipeKey(n),
+                        "Wrong token wipe key!",
+                        registry);
+            }
+
+            if (emptyKycKey) {
+                assertForRemovedKey(actualInfo.getKycKey());
+            } else if (explicitKycKey != null) {
+                assertEquals(fromPbj(explicitKycKey), actualInfo.getKycKey(), "Wrong token KYC key!");
+            } else {
+                assertFor(
+                        actualInfo.getKycKey(),
+                        expectedKycKey,
+                        (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getKycKey(n),
+                        "Wrong token KYC key!",
+                        registry);
+            }
+
+            if (emptySupplyKey) {
+                assertForRemovedKey(actualInfo.getSupplyKey());
+            } else if (explicitSupplyKey != null) {
+                assertEquals(fromPbj(explicitSupplyKey), actualInfo.getSupplyKey(), "Wrong token supply key!");
+            } else {
+                assertFor(
+                        actualInfo.getSupplyKey(),
+                        expectedSupplyKey,
+                        (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getSupplyKey(n),
+                        "Wrong token supply key!",
+                        registry);
+            }
+
+            if (emptyFeeScheduleKey) {
+                assertForRemovedKey(actualInfo.getFeeScheduleKey());
+            } else if (explicitFeeScheduleKey != null) {
+                assertEquals(
+                        fromPbj(explicitFeeScheduleKey),
+                        actualInfo.getFeeScheduleKey(),
+                        "Wrong token fee schedule key!");
+            } else {
+                assertFor(
+                        actualInfo.getFeeScheduleKey(),
+                        expectedFeeScheduleKey,
+                        (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFeeScheduleKey(n),
+                        "Wrong token fee schedule key!",
+                        registry);
+            }
+
+            if (emptyPauseKey) {
+                assertForRemovedKey(actualInfo.getPauseKey());
+            } else if (explicitPauseKey != null) {
+                assertEquals(fromPbj(explicitPauseKey), actualInfo.getPauseKey(), "Wrong token pause key!");
+            } else {
+                assertFor(
+                        actualInfo.getPauseKey(),
+                        expectedPauseKey,
+                        (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getPauseKey(n),
+                        "Wrong token pause key!",
+                        registry);
+            }
+
+            if (emptyMetadataKey) {
+                assertForRemovedKey(actualInfo.getMetadataKey());
+            } else {
+                assertFor(
+                        actualInfo.getMetadataKey(),
+                        expectedMetadataKey,
+                        (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getMetadataKey(n),
+                        "Wrong token metadata key!",
+                        registry);
+            }
+
+            expectedLedgerId.ifPresent(id -> assertEquals(id, actualInfo.getLedgerId()));
         } else {
-            assertFor(
-                    actualInfo.getAdminKey(),
-                    expectedAdminKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getAdminKey(n),
-                    "Wrong token admin key!",
-                    registry);
+            LOG.info("TokenInfoQuery cannot be performed as node operator without enabled feature flag");
         }
-
-        if (emptyWipeKey) {
-            assertForRemovedKey(actualInfo.getWipeKey());
-        } else if (explicitWipeKey != null) {
-            assertEquals(fromPbj(explicitWipeKey), actualInfo.getWipeKey(), "Wrong token wipe key!");
-        } else {
-            assertFor(
-                    actualInfo.getWipeKey(),
-                    expectedWipeKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getWipeKey(n),
-                    "Wrong token wipe key!",
-                    registry);
-        }
-
-        if (emptyKycKey) {
-            assertForRemovedKey(actualInfo.getKycKey());
-        } else if (explicitKycKey != null) {
-            assertEquals(fromPbj(explicitKycKey), actualInfo.getKycKey(), "Wrong token KYC key!");
-        } else {
-            assertFor(
-                    actualInfo.getKycKey(),
-                    expectedKycKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getKycKey(n),
-                    "Wrong token KYC key!",
-                    registry);
-        }
-
-        if (emptySupplyKey) {
-            assertForRemovedKey(actualInfo.getSupplyKey());
-        } else if (explicitSupplyKey != null) {
-            assertEquals(fromPbj(explicitSupplyKey), actualInfo.getSupplyKey(), "Wrong token supply key!");
-        } else {
-            assertFor(
-                    actualInfo.getSupplyKey(),
-                    expectedSupplyKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getSupplyKey(n),
-                    "Wrong token supply key!",
-                    registry);
-        }
-
-        if (emptyFeeScheduleKey) {
-            assertForRemovedKey(actualInfo.getFeeScheduleKey());
-        } else if (explicitFeeScheduleKey != null) {
-            assertEquals(
-                    fromPbj(explicitFeeScheduleKey), actualInfo.getFeeScheduleKey(), "Wrong token fee schedule key!");
-        } else {
-            assertFor(
-                    actualInfo.getFeeScheduleKey(),
-                    expectedFeeScheduleKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFeeScheduleKey(n),
-                    "Wrong token fee schedule key!",
-                    registry);
-        }
-
-        if (emptyPauseKey) {
-            assertForRemovedKey(actualInfo.getPauseKey());
-        } else if (explicitPauseKey != null) {
-            assertEquals(fromPbj(explicitPauseKey), actualInfo.getPauseKey(), "Wrong token pause key!");
-        } else {
-            assertFor(
-                    actualInfo.getPauseKey(),
-                    expectedPauseKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getPauseKey(n),
-                    "Wrong token pause key!",
-                    registry);
-        }
-
-        if (emptyMetadataKey) {
-            assertForRemovedKey(actualInfo.getMetadataKey());
-        } else {
-            assertFor(
-                    actualInfo.getMetadataKey(),
-                    expectedMetadataKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getMetadataKey(n),
-                    "Wrong token metadata key!",
-                    registry);
-        }
-
-        expectedLedgerId.ifPresent(id -> assertEquals(id, actualInfo.getLedgerId()));
     }
 
     private <T, R> void assertFor(

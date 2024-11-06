@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -193,99 +194,110 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        final var balanceResponse = response.getCryptogetAccountBalance();
-        long actual = balanceResponse.getBalance();
-        if (balanceObserver != null) {
-            balanceObserver.accept(actual);
-        }
-        if (verboseLoggingOn) {
-            String message = String.format(
-                    "Explicit token balances: %s",
-                    response.getCryptogetAccountBalance().getTokenBalancesList());
-            log.info(message);
-        }
-
-        if (assertAccountIDIsNotAlias) {
-            final var expectedID = spec.registry()
-                    .getAccountID(spec.registry()
-                            .getKey(aliasKeySource)
-                            .toByteString()
-                            .toStringUtf8());
-            assertEquals(expectedID, response.getCryptogetAccountBalance().getAccountID());
-        }
-
-        if (expectedId != null) {
-            assertEquals(expectedId, response.getCryptogetAccountBalance().getAccountID(), "Wrong account id");
-        }
-
-        if (expectedCondition.isPresent()) {
-            Function<Long, Optional<String>> condition = expectedCondition.get().apply(spec);
-            Optional<String> failure = condition.apply(actual);
-            if (failure.isPresent()) {
-                Assertions.fail("Bad balance! :: " + failure.get());
+        if (hasNodeOperatorPortEnabled(spec)) {
+            final var balanceResponse = response.getCryptogetAccountBalance();
+            long actual = balanceResponse.getBalance();
+            if (balanceObserver != null) {
+                balanceObserver.accept(actual);
             }
-        } else if (expected.isPresent()) {
-            assertEquals(expected.get().longValue(), actual, "Wrong balance!");
-        }
+            if (verboseLoggingOn) {
+                String message = String.format(
+                        "Explicit token balances: %s",
+                        response.getCryptogetAccountBalance().getTokenBalancesList());
+                log.info(message);
+            }
 
-        // Since we don't support token balances from getAccountBalance query, for internal testing
-        // we are using getAccountDetails query to get token balances.
-        if (!expectedTokenBalances.isEmpty() || !tokenBalanceObservers.isEmpty()) {
-            final var detailsLookup = QueryVerbs.getAccountDetails(
-                            "0.0." + balanceResponse.getAccountID().getAccountNum())
-                    .payingWith(GENESIS);
-            allRunFor(spec, detailsLookup);
-            final var response = detailsLookup.getResponse();
-            Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
-                    response.getAccountDetails().getAccountDetails().getTokenRelationshipsList().stream()
-                            .map(tr -> TokenBalance.newBuilder()
-                                    .setTokenId(tr.getTokenId())
-                                    .setBalance(tr.getBalance())
-                                    .setDecimals(tr.getDecimals())
-                                    .build())
-                            .collect(Collectors.toMap(
-                                    TokenBalance::getTokenId, tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
-            Pair<Long, Integer> defaultTb = Pair.of(0L, 0);
-            for (Map.Entry<String, String> tokenBalance : expectedTokenBalances) {
-                var tokenId = asTokenId(tokenBalance.getKey(), spec);
-                String[] expectedParts = tokenBalance.getValue().split("-");
-                Long expectedBalance = Long.valueOf(expectedParts[0]);
-                try {
-                    assertEquals(
-                            expectedBalance,
-                            actualTokenBalances.getOrDefault(tokenId, defaultTb).getLeft(),
-                            String.format("Wrong balance for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
-                } catch (AssertionError e) {
-                    if (includeTokenMemoOnError) {
-                        final var lookup = QueryVerbs.getTokenInfo("0.0." + tokenId.getTokenNum());
-                        allRunFor(spec, lookup);
-                        final var memo = lookup.getResponse()
-                                .getTokenGetInfo()
-                                .getTokenInfo()
-                                .getMemo();
-                        Assertions.fail(e.getMessage() + " - M'" + memo + "'");
-                    } else {
-                        throw e;
+            if (assertAccountIDIsNotAlias) {
+                final var expectedID = spec.registry()
+                        .getAccountID(spec.registry()
+                                .getKey(aliasKeySource)
+                                .toByteString()
+                                .toStringUtf8());
+                assertEquals(expectedID, response.getCryptogetAccountBalance().getAccountID());
+            }
+
+            if (expectedId != null) {
+                assertEquals(expectedId, response.getCryptogetAccountBalance().getAccountID(), "Wrong account id");
+            }
+
+            if (expectedCondition.isPresent()) {
+                Function<Long, Optional<String>> condition =
+                        expectedCondition.get().apply(spec);
+                Optional<String> failure = condition.apply(actual);
+                if (failure.isPresent()) {
+                    Assertions.fail("Bad balance! :: " + failure.get());
+                }
+            } else if (expected.isPresent()) {
+                assertEquals(expected.get().longValue(), actual, "Wrong balance!");
+            }
+
+            // Since we don't support token balances from getAccountBalance query, for internal testing
+            // we are using getAccountDetails query to get token balances.
+            if (!expectedTokenBalances.isEmpty() || !tokenBalanceObservers.isEmpty()) {
+                final var detailsLookup = QueryVerbs.getAccountDetails(
+                                "0.0." + balanceResponse.getAccountID().getAccountNum())
+                        .payingWith(GENESIS);
+                allRunFor(spec, detailsLookup);
+                final var response = detailsLookup.getResponse();
+                Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
+                        response.getAccountDetails().getAccountDetails().getTokenRelationshipsList().stream()
+                                .map(tr -> TokenBalance.newBuilder()
+                                        .setTokenId(tr.getTokenId())
+                                        .setBalance(tr.getBalance())
+                                        .setDecimals(tr.getDecimals())
+                                        .build())
+                                .collect(Collectors.toMap(
+                                        TokenBalance::getTokenId, tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
+                Pair<Long, Integer> defaultTb = Pair.of(0L, 0);
+                for (Map.Entry<String, String> tokenBalance : expectedTokenBalances) {
+                    var tokenId = asTokenId(tokenBalance.getKey(), spec);
+                    String[] expectedParts = tokenBalance.getValue().split("-");
+                    Long expectedBalance = Long.valueOf(expectedParts[0]);
+                    try {
+                        assertEquals(
+                                expectedBalance,
+                                actualTokenBalances
+                                        .getOrDefault(tokenId, defaultTb)
+                                        .getLeft(),
+                                String.format(
+                                        "Wrong balance for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
+                    } catch (AssertionError e) {
+                        if (includeTokenMemoOnError) {
+                            final var lookup = QueryVerbs.getTokenInfo("0.0." + tokenId.getTokenNum());
+                            allRunFor(spec, lookup);
+                            final var memo = lookup.getResponse()
+                                    .getTokenGetInfo()
+                                    .getTokenInfo()
+                                    .getMemo();
+                            Assertions.fail(e.getMessage() + " - M'" + memo + "'");
+                        } else {
+                            throw e;
+                        }
+                    }
+                    if (!"G".equals(expectedParts[1])) {
+                        Integer expectedDecimals = Integer.valueOf(expectedParts[1]);
+                        assertEquals(
+                                expectedDecimals,
+                                actualTokenBalances
+                                        .getOrDefault(tokenId, defaultTb)
+                                        .getRight(),
+                                String.format(
+                                        "Wrong decimals for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
                     }
                 }
-                if (!"G".equals(expectedParts[1])) {
-                    Integer expectedDecimals = Integer.valueOf(expectedParts[1]);
-                    assertEquals(
-                            expectedDecimals,
-                            actualTokenBalances.getOrDefault(tokenId, defaultTb).getRight(),
-                            String.format("Wrong decimals for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
+                if (tokenBalanceObservers.isPresent()) {
+                    var observers = tokenBalanceObservers.get();
+                    for (var entry : observers.entrySet()) {
+                        var id = TxnUtils.asTokenId(entry.getKey(), spec);
+                        var obs = entry.getValue();
+                        obs.accept(actualTokenBalances
+                                .getOrDefault(id, Pair.of(-1L, -1))
+                                .getLeft());
+                    }
                 }
             }
-            if (tokenBalanceObservers.isPresent()) {
-                var observers = tokenBalanceObservers.get();
-                for (var entry : observers.entrySet()) {
-                    var id = TxnUtils.asTokenId(entry.getKey(), spec);
-                    var obs = entry.getValue();
-                    obs.accept(actualTokenBalances
-                            .getOrDefault(id, Pair.of(-1L, -1))
-                            .getLeft());
-                }
-            }
+        } else {
+            log.info("AccountBalanceQuery cannot be performed as node operator without enabled feature flag");
         }
     }
 

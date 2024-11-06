@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.queries.consensus;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -166,35 +167,40 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) {
-        ConsensusTopicInfo info = response.getConsensusGetTopicInfo().getTopicInfo();
-        if (expiryObserver != null) {
-            expiryObserver.accept(info.getExpirationTime().getSeconds());
-        }
-        topicMemo.ifPresent(exp -> assertEquals(exp, info.getMemo(), "Bad memo!"));
-        if (seqNoFn.isPresent()) {
-            seqNo = OptionalLong.of(seqNoFn.get().getAsLong());
-        }
-        seqNo.ifPresent(exp -> assertEquals(exp, info.getSequenceNumber(), "Bad sequence number!"));
-        seqNoInfoObserver.ifPresent(obs -> obs.accept(info.getSequenceNumber()));
-        runningHashEntry.ifPresent(
-                entry -> runningHash = Optional.of(spec.registry().getBytes(entry)));
-        runningHash.ifPresent(
-                exp -> assertArrayEquals(exp, info.getRunningHash().toByteArray(), "Bad running hash!"));
-        expiry.ifPresent(exp -> assertEquals(exp, info.getExpirationTime().getSeconds(), "Bad expiry!"));
-        autoRenewPeriod.ifPresent(
-                exp -> assertEquals(exp, info.getAutoRenewPeriod().getSeconds(), "Bad auto-renew period!"));
-        adminKey.ifPresent(exp -> assertEquals(spec.registry().getKey(exp), info.getAdminKey(), "Bad admin key!"));
-        submitKey.ifPresent(exp -> assertEquals(spec.registry().getKey(exp), info.getSubmitKey(), "Bad submit key!"));
-        autoRenewAccount.ifPresent(
-                exp -> assertEquals(asId(exp, spec), info.getAutoRenewAccount(), "Bad auto-renew account!"));
-        if (hasNoAdminKey) {
-            assertFalse(info.hasAdminKey(), "Should have no admin key!");
-        }
+        if (hasNodeOperatorPortEnabled(spec)) {
+            ConsensusTopicInfo info = response.getConsensusGetTopicInfo().getTopicInfo();
+            if (expiryObserver != null) {
+                expiryObserver.accept(info.getExpirationTime().getSeconds());
+            }
+            topicMemo.ifPresent(exp -> assertEquals(exp, info.getMemo(), "Bad memo!"));
+            if (seqNoFn.isPresent()) {
+                seqNo = OptionalLong.of(seqNoFn.get().getAsLong());
+            }
+            seqNo.ifPresent(exp -> assertEquals(exp, info.getSequenceNumber(), "Bad sequence number!"));
+            seqNoInfoObserver.ifPresent(obs -> obs.accept(info.getSequenceNumber()));
+            runningHashEntry.ifPresent(
+                    entry -> runningHash = Optional.of(spec.registry().getBytes(entry)));
+            runningHash.ifPresent(
+                    exp -> assertArrayEquals(exp, info.getRunningHash().toByteArray(), "Bad running hash!"));
+            expiry.ifPresent(exp -> assertEquals(exp, info.getExpirationTime().getSeconds(), "Bad expiry!"));
+            autoRenewPeriod.ifPresent(
+                    exp -> assertEquals(exp, info.getAutoRenewPeriod().getSeconds(), "Bad auto-renew period!"));
+            adminKey.ifPresent(exp -> assertEquals(spec.registry().getKey(exp), info.getAdminKey(), "Bad admin key!"));
+            submitKey.ifPresent(
+                    exp -> assertEquals(spec.registry().getKey(exp), info.getSubmitKey(), "Bad submit key!"));
+            autoRenewAccount.ifPresent(
+                    exp -> assertEquals(asId(exp, spec), info.getAutoRenewAccount(), "Bad auto-renew account!"));
+            if (hasNoAdminKey) {
+                assertFalse(info.hasAdminKey(), "Should have no admin key!");
+            }
 
-        if (hasNoSubmitKey) {
-            assertFalse(info.hasSubmitKey(), "Should have no submit key!");
+            if (hasNoSubmitKey) {
+                assertFalse(info.hasSubmitKey(), "Should have no submit key!");
+            }
+            expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, info.getLedgerId()));
+        } else {
+            log.info("TopicInfoQuery cannot be performed as node operator without enabled feature flag");
         }
-        expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, info.getLedgerId()));
     }
 
     @Override

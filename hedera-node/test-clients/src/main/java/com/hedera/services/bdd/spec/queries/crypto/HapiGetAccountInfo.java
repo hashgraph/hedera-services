@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -223,78 +224,82 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        var actualInfo = response.getCryptoGetInfo().getAccountInfo();
-        if (expectedHollowStatus != ExpectedHollowStatus.NA) {
-            final var key = toPbj(actualInfo.getKey());
-            if (expectedHollowStatus == ExpectedHollowStatus.HOLLOW) {
-                assertEquals(IMMUTABILITY_SENTINEL_KEY, key);
-            } else {
-                assertNotEquals(IMMUTABILITY_SENTINEL_KEY, key);
-            }
-        }
-        if (assertAliasKeyMatches) {
-            Objects.requireNonNull(aliasKeySource);
-            final var expected = spec.registry().getKey(aliasKeySource).toByteString();
-            assertEquals(expected, actualInfo.getAlias());
-        }
-        if (assertAccountIDIsNotAlias) {
-            Objects.requireNonNull(aliasKeySource);
-            final var expectedKeyForAccount =
-                    spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8();
-            final var expectedID = spec.registry().getAccountID(expectedKeyForAccount);
-            assertNotEquals(actualInfo.getAlias(), actualInfo.getAccountID().getAccountNum());
-            assertEquals(expectedID, actualInfo.getAccountID());
-        }
-        // Since we don't return token relationships from getAccountInfo query, for internal testing
-        // we are using getAccountDetails query to get token relationships.
-        if (!relationships.isEmpty()
-                || alreadyUsedAutomaticAssociations.isPresent()
-                || !absentRelationships.isEmpty()
-                || (expectations.isPresent() && expectations.get().hasTokenAssociationExpectation())
-                || registryEntry.isPresent()) {
-            final var detailsLookup = QueryVerbs.getAccountDetails(
-                            "0.0." + actualInfo.getAccountID().getAccountNum())
-                    .payingWith(GENESIS);
-            CustomSpecAssert.allRunFor(spec, detailsLookup);
-            final var response = detailsLookup.getResponse();
-            var actualTokenRels =
-                    response.getAccountDetails().getAccountDetails().getTokenRelationshipsList();
-            ExpectedTokenRel.assertExpectedRels(account, relationships, actualTokenRels, spec);
-            ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
-            alreadyUsedAutomaticAssociations.ifPresent(usedCount -> {
-                int actualCount = 0;
-                for (var rel : actualTokenRels) {
-                    if (rel.getAutomaticAssociation()) {
-                        actualCount++;
-                    }
+        if (hasNodeOperatorPortEnabled(spec)) {
+            var actualInfo = response.getCryptoGetInfo().getAccountInfo();
+            if (expectedHollowStatus != ExpectedHollowStatus.NA) {
+                final var key = toPbj(actualInfo.getKey());
+                if (expectedHollowStatus == ExpectedHollowStatus.HOLLOW) {
+                    assertEquals(IMMUTABILITY_SENTINEL_KEY, key);
+                } else {
+                    assertNotEquals(IMMUTABILITY_SENTINEL_KEY, key);
                 }
-                assertEquals(actualCount, usedCount);
-            });
-            if (tokenAssociationsCount.isPresent()) {
-                assertEquals(tokenAssociationsCount.get(), actualInfo.getTokenRelationshipsCount());
             }
-            actualInfo = actualInfo.toBuilder()
-                    .addAllTokenRelationships(actualTokenRels)
-                    .build();
-        }
+            if (assertAliasKeyMatches) {
+                Objects.requireNonNull(aliasKeySource);
+                final var expected = spec.registry().getKey(aliasKeySource).toByteString();
+                assertEquals(expected, actualInfo.getAlias());
+            }
+            if (assertAccountIDIsNotAlias) {
+                Objects.requireNonNull(aliasKeySource);
+                final var expectedKeyForAccount =
+                        spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8();
+                final var expectedID = spec.registry().getAccountID(expectedKeyForAccount);
+                assertNotEquals(actualInfo.getAlias(), actualInfo.getAccountID().getAccountNum());
+                assertEquals(expectedID, actualInfo.getAccountID());
+            }
+            // Since we don't return token relationships from getAccountInfo query, for internal testing
+            // we are using getAccountDetails query to get token relationships.
+            if (!relationships.isEmpty()
+                    || alreadyUsedAutomaticAssociations.isPresent()
+                    || !absentRelationships.isEmpty()
+                    || (expectations.isPresent() && expectations.get().hasTokenAssociationExpectation())
+                    || registryEntry.isPresent()) {
+                final var detailsLookup = QueryVerbs.getAccountDetails(
+                                "0.0." + actualInfo.getAccountID().getAccountNum())
+                        .payingWith(GENESIS);
+                CustomSpecAssert.allRunFor(spec, detailsLookup);
+                final var response = detailsLookup.getResponse();
+                var actualTokenRels =
+                        response.getAccountDetails().getAccountDetails().getTokenRelationshipsList();
+                ExpectedTokenRel.assertExpectedRels(account, relationships, actualTokenRels, spec);
+                ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
+                alreadyUsedAutomaticAssociations.ifPresent(usedCount -> {
+                    int actualCount = 0;
+                    for (var rel : actualTokenRels) {
+                        if (rel.getAutomaticAssociation()) {
+                            actualCount++;
+                        }
+                    }
+                    assertEquals(actualCount, usedCount);
+                });
+                if (tokenAssociationsCount.isPresent()) {
+                    assertEquals(tokenAssociationsCount.get(), actualInfo.getTokenRelationshipsCount());
+                }
+                actualInfo = actualInfo.toBuilder()
+                        .addAllTokenRelationships(actualTokenRels)
+                        .build();
+            }
 
-        if (expectations.isPresent()) {
-            ErroringAsserts<AccountInfo> asserts = expectations.get().assertsFor(spec);
-            List<Throwable> errors = asserts.errorsIn(actualInfo);
-            rethrowSummaryError(log, "Bad account info!", errors);
-        }
+            if (expectations.isPresent()) {
+                ErroringAsserts<AccountInfo> asserts = expectations.get().assertsFor(spec);
+                List<Throwable> errors = asserts.errorsIn(actualInfo);
+                rethrowSummaryError(log, "Bad account info!", errors);
+            }
 
-        var actualOwnedNfts = actualInfo.getOwnedNfts();
-        ownedNfts.ifPresent(nftsOwned -> assertEquals((long) nftsOwned, actualOwnedNfts));
+            var actualOwnedNfts = actualInfo.getOwnedNfts();
+            ownedNfts.ifPresent(nftsOwned -> assertEquals((long) nftsOwned, actualOwnedNfts));
 
-        var actualMaxAutoAssociations = actualInfo.getMaxAutomaticTokenAssociations();
-        maxAutomaticAssociations.ifPresent(
-                maxAutoAssociations -> assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
-        if (expectedLedgerId.isPresent()) {
-            assertEquals(expectedLedgerId.get(), actualInfo.getLedgerId());
-        }
-        if (registryEntry.isPresent()) {
-            spec.registry().saveAccountInfo(registryEntry.get(), actualInfo);
+            var actualMaxAutoAssociations = actualInfo.getMaxAutomaticTokenAssociations();
+            maxAutomaticAssociations.ifPresent(
+                    maxAutoAssociations -> assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
+            if (expectedLedgerId.isPresent()) {
+                assertEquals(expectedLedgerId.get(), actualInfo.getLedgerId());
+            }
+            if (registryEntry.isPresent()) {
+                spec.registry().saveAccountInfo(registryEntry.get(), actualInfo);
+            }
+        } else {
+            log.info("AccountInfoQuery cannot be performed as node operator without enabled feature flag");
         }
     }
 

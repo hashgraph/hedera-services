@@ -65,6 +65,18 @@ public class RemoteNetwork extends AbstractGrpcNetwork implements HederaNetwork 
                 clients);
     }
 
+    /**
+     * Create a new network of remote nodes.
+     *
+     * @return the new network
+     */
+    public static HederaNetwork newRemoteNetworkWithNodes(
+            @NonNull final HapiClients clients, @NonNull final List<HederaNode> nodes) {
+        requireNonNull(clients);
+        requireNonNull(nodes);
+        return new RemoteNetwork(REMOTE_NETWORK_NAME, nodes, clients);
+    }
+
     @Override
     public TargetNetworkType type() {
         return REMOTE_NETWORK;
@@ -95,6 +107,7 @@ public class RemoteNetwork extends AbstractGrpcNetwork implements HederaNetwork 
                 connectInfo.getHost(),
                 connectInfo.getPort(),
                 UNKNOWN_PORT,
+                true,
                 UNKNOWN_PORT,
                 UNKNOWN_PORT,
                 UNKNOWN_PORT,

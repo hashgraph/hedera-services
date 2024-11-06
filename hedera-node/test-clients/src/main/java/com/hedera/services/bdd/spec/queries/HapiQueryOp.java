@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.queries;
 
+import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForCost;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
@@ -206,7 +207,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
             if (needsPayment() && !loggingOff) {
                 String message;
-                if (asNodeOperator) {
+                if (asNodeOperator && hasNodeOperatorPortEnabled(spec)) {
                     message = String.format(
                             "%sNode operator sending %s with %s", spec.logPrefix(), this, txnToString(payment));
                 } else {
@@ -214,6 +215,10 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
                 }
 
                 log.info(message);
+            }
+
+            if (!hasNodeOperatorPortEnabled(spec)) {
+                return true;
             }
             query = maybeModified(queryFor(spec, payment, ResponseType.ANSWER_ONLY), spec);
             beforeAnswerOnlyQuery();
@@ -294,6 +299,10 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
                             "%sPaying for COST_ANSWER of %s with %s", spec.logPrefix(), this, txnToString(payment));
                 }
                 log.info(message);
+            }
+
+            if (!hasNodeOperatorPortEnabled(spec)) {
+                return Transaction.getDefaultInstance();
             }
             query = maybeModified(queryFor(spec, payment, ResponseType.COST_ANSWER), spec);
             response = spec.targetNetworkOrThrow().send(query, type(), targetNodeFor(spec), asNodeOperator);

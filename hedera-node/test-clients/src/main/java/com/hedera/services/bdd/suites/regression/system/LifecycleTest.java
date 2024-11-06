@@ -148,6 +148,22 @@ public interface LifecycleTest {
     }
 
     /**
+     * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP.
+     * @return the operation
+     */
+    default SpecOperation restartWithDisabledNodeOperatorGrpcPort() {
+        return blockingOrder(
+                freezeOnly().startingIn(5).seconds().payingWith(GENESIS).deferStatusResolution(),
+                // Immediately submit a transaction in the same round to ensure freeze time is only
+                // reset when last frozen time matches it (i.e., in a post-upgrade transaction)
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
+                confirmFreezeAndShutdown(),
+                sourcing(() ->
+                        FakeNmt.restartNetworkWithDisabledNodeOperatorPort(CURRENT_CONFIG_VERSION.incrementAndGet())),
+                waitForActiveNetwork(RESTART_TIMEOUT));
+    }
+
+    /**
      * Returns an operation that upgrades the network to the given configuration version using a fake upgrade ZIP.
      * @param version the configuration version to upgrade to
      * @return the operation

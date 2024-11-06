@@ -19,9 +19,12 @@ package com.hedera.services.bdd.suites.queries;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.lessThan;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -29,6 +32,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.suites.regression.system.LifecycleTest;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,7 +47,7 @@ import org.junit.jupiter.api.Tag;
 /**
  * A class with Node Operator Queries tests
  */
-public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
+public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase implements LifecycleTest {
 
     @Nested
     @DisplayName("verify payer balance")
@@ -92,6 +96,32 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                     sleepFor(3_000),
                     // assert payer is not charged as the query is performed as node operator
                     getAccountBalance(PAYER).hasTinyBars(changeFromSnapshot("payerInitialBalance", -QUERY_COST)));
+        }
+
+        @HapiTest
+        @DisplayName("Only node operators aren't charged for file info queries")
+        final Stream<DynamicTest> test() {
+            final var filename = "anyFile.txt";
+            return hapiTest(
+                    restartWithDisabledNodeOperatorGrpcPort(),
+                    cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                    fileCreate(filename).contents("anyContentAgain").payingWith(PAYER),
+                    // Both the node operator and payer submit queries
+                    getFileInfo(filename).payingWith(PAYER).logged(),
+                    getFileInfo(filename)
+                            .payingWith(NODE_OPERATOR)
+                            .asNodeOperator()
+                            .logged(),
+                    sleepFor(1_000),
+                    // The node operator wasn't charged
+                    getAccountBalance(NODE_OPERATOR)
+                            .hasTinyBars(ONE_HUNDRED_HBARS)
+                            .logged(),
+                    // But the payer was charged
+                    getAccountBalance(PAYER)
+                            .hasTinyBars(lessThan(ONE_HUNDRED_HBARS))
+                            .logged());
         }
     }
 }

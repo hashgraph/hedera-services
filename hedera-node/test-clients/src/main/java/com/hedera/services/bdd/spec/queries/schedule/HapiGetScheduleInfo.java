@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.queries.schedule;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.getRelativeExpiry;
@@ -159,75 +160,79 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     @Override
     @SuppressWarnings("java:S5960")
     protected void assertExpectationsGiven(HapiSpec spec) {
-        var actualInfo = response.getScheduleGetInfo().getScheduleInfo();
+        if (hasNodeOperatorPortEnabled(spec)) {
+            var actualInfo = response.getScheduleGetInfo().getScheduleInfo();
 
-        expectedScheduledTxnId.ifPresent(n -> assertEquals(
-                spec.registry().getTxnId(correspondingScheduledTxnId(n)),
-                actualInfo.getScheduledTransactionID(),
-                "Wrong scheduled transaction id!"));
+            expectedScheduledTxnId.ifPresent(n -> assertEquals(
+                    spec.registry().getTxnId(correspondingScheduledTxnId(n)),
+                    actualInfo.getScheduledTransactionID(),
+                    "Wrong scheduled transaction id!"));
 
-        expectedCreatorAccountID.ifPresent(s -> assertEquals(
-                TxnUtils.asId(s, spec), actualInfo.getCreatorAccountID(), "Wrong schedule creator account ID!"));
+            expectedCreatorAccountID.ifPresent(s -> assertEquals(
+                    TxnUtils.asId(s, spec), actualInfo.getCreatorAccountID(), "Wrong schedule creator account ID!"));
 
-        expectedPayerAccountID.ifPresent(s -> assertEquals(
-                TxnUtils.asId(s, spec), actualInfo.getPayerAccountID(), "Wrong schedule payer account ID!"));
+            expectedPayerAccountID.ifPresent(s -> assertEquals(
+                    TxnUtils.asId(s, spec), actualInfo.getPayerAccountID(), "Wrong schedule payer account ID!"));
 
-        expectedEntityMemo.ifPresent(s -> assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
+            expectedEntityMemo.ifPresent(s -> assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
 
-        if (checkForRecordedScheduledTxn) {
-            assertEquals(
-                    spec.registry().getScheduledTxn(schedule),
-                    actualInfo.getScheduledTransactionBody(),
-                    "Wrong scheduled txn!");
-        }
-
-        if (shouldBeExecuted) {
-            Assertions.assertTrue(actualInfo.hasExecutionTime(), "Wasn't already executed!");
-        }
-
-        if (shouldNotBeExecuted) {
-            Assertions.assertFalse(actualInfo.hasExecutionTime(), "Was already executed!");
-        }
-
-        if (shouldNotBeDeleted) {
-            Assertions.assertFalse(actualInfo.hasDeletionTime(), "Was already deleted!");
-        }
-
-        if (deletionTxn.isPresent()) {
-            assertTimestampMatches(
-                    deletionTxn.get(), 0, actualInfo.getDeletionTime(), "Wrong consensus deletion time!", spec);
-        }
-
-        var registry = spec.registry();
-
-        expectedSignatories.ifPresent(signatories -> {
-            final var expect = KeyList.newBuilder();
-            for (final var signatory : signatories) {
-                accumulateSimple(registry.getKey(signatory), expect);
+            if (checkForRecordedScheduledTxn) {
+                assertEquals(
+                        spec.registry().getScheduledTxn(schedule),
+                        actualInfo.getScheduledTransactionBody(),
+                        "Wrong scheduled txn!");
             }
-            final List<Key> expectedKeys = new ArrayList<>(expect.getKeysList());
-            expectedKeys.sort(KEY_COMPARATOR);
-            final var actualKeys = new ArrayList<>(actualInfo.getSigners().getKeysList());
-            actualKeys.sort(KEY_COMPARATOR);
-            assertEquals(expectedKeys, actualKeys, "Wrong signatories");
-        });
 
-        expectedExpirationTimeRelativeTo.ifPresent(stringLongPair -> assertEquals(
-                getRelativeExpiry(spec, stringLongPair.getKey(), stringLongPair.getValue()),
-                actualInfo.getExpirationTime(),
-                "Wrong Expiration Time!"));
+            if (shouldBeExecuted) {
+                Assertions.assertTrue(actualInfo.hasExecutionTime(), "Wasn't already executed!");
+            }
 
-        expectedWaitForExpiry.ifPresent(
-                aBoolean -> assertEquals(aBoolean, actualInfo.getWaitForExpiry(), "waitForExpiry was wrong!"));
+            if (shouldNotBeExecuted) {
+                Assertions.assertFalse(actualInfo.hasExecutionTime(), "Was already executed!");
+            }
 
-        assertFor(
-                actualInfo.getAdminKey(),
-                expectedAdminKey,
-                (n, r) -> r.getAdminKey(schedule),
-                "Wrong schedule admin key!",
-                registry);
+            if (shouldNotBeDeleted) {
+                Assertions.assertFalse(actualInfo.hasDeletionTime(), "Was already deleted!");
+            }
 
-        expectedLedgerId.ifPresent(id -> assertEquals(id, actualInfo.getLedgerId()));
+            if (deletionTxn.isPresent()) {
+                assertTimestampMatches(
+                        deletionTxn.get(), 0, actualInfo.getDeletionTime(), "Wrong consensus deletion time!", spec);
+            }
+
+            var registry = spec.registry();
+
+            expectedSignatories.ifPresent(signatories -> {
+                final var expect = KeyList.newBuilder();
+                for (final var signatory : signatories) {
+                    accumulateSimple(registry.getKey(signatory), expect);
+                }
+                final List<Key> expectedKeys = new ArrayList<>(expect.getKeysList());
+                expectedKeys.sort(KEY_COMPARATOR);
+                final var actualKeys = new ArrayList<>(actualInfo.getSigners().getKeysList());
+                actualKeys.sort(KEY_COMPARATOR);
+                assertEquals(expectedKeys, actualKeys, "Wrong signatories");
+            });
+
+            expectedExpirationTimeRelativeTo.ifPresent(stringLongPair -> assertEquals(
+                    getRelativeExpiry(spec, stringLongPair.getKey(), stringLongPair.getValue()),
+                    actualInfo.getExpirationTime(),
+                    "Wrong Expiration Time!"));
+
+            expectedWaitForExpiry.ifPresent(
+                    aBoolean -> assertEquals(aBoolean, actualInfo.getWaitForExpiry(), "waitForExpiry was wrong!"));
+
+            assertFor(
+                    actualInfo.getAdminKey(),
+                    expectedAdminKey,
+                    (n, r) -> r.getAdminKey(schedule),
+                    "Wrong schedule admin key!",
+                    registry);
+
+            expectedLedgerId.ifPresent(id -> assertEquals(id, actualInfo.getLedgerId()));
+        } else {
+            LOG.info("ScheduleInfoQuery cannot be performed as node operator without enabled feature flag");
+        }
     }
 
     private static void accumulateSimple(@NonNull final Key key, @NonNull final KeyList.Builder builder) {

@@ -1393,7 +1393,7 @@ public class HapiSpec implements Runnable, Executable {
         hapiRegistry = null;
     }
 
-    private EmbeddedNetwork embeddedNetworkOrThrow() {
+    public EmbeddedNetwork embeddedNetworkOrThrow() {
         if (!(targetNetworkOrThrow() instanceof EmbeddedNetwork network)) {
             throw new IllegalStateException("Target network is not embedded");
         }

@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.queries.meta;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -98,24 +99,28 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
     @Override
     @SuppressWarnings("java:S5960")
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        SemanticVersion actualProto = response.getNetworkGetVersionInfo().getHapiProtoVersion();
-        SemanticVersion actualServices = response.getNetworkGetVersionInfo().getHederaServicesVersion();
-        if (servicesVersionConsumer != null) {
-            servicesVersionConsumer.accept(actualServices);
-        }
-        if (expectedProto.isPresent()) {
-            Assertions.assertEquals(expectedProto.get(), actualProto, "Wrong HAPI proto version");
-        }
-        if (expectedServices.isPresent()) {
-            Assertions.assertEquals(expectedServices.get(), actualServices, "Wrong Hedera Services version");
-        }
-        if (assertNoDegenSemvers) {
-            var degenSemver = SemanticVersion.getDefaultInstance();
-            Assertions.assertNotEquals(degenSemver, actualProto);
-            Assertions.assertNotEquals(degenSemver, actualServices);
-        }
-        if (!servicesSemVerBuild.isEmpty()) {
-            Assertions.assertEquals(servicesSemVerBuild, actualServices.getBuild());
+        if (hasNodeOperatorPortEnabled(spec)) {
+            SemanticVersion actualProto = response.getNetworkGetVersionInfo().getHapiProtoVersion();
+            SemanticVersion actualServices = response.getNetworkGetVersionInfo().getHederaServicesVersion();
+            if (servicesVersionConsumer != null) {
+                servicesVersionConsumer.accept(actualServices);
+            }
+            if (expectedProto.isPresent()) {
+                Assertions.assertEquals(expectedProto.get(), actualProto, "Wrong HAPI proto version");
+            }
+            if (expectedServices.isPresent()) {
+                Assertions.assertEquals(expectedServices.get(), actualServices, "Wrong Hedera Services version");
+            }
+            if (assertNoDegenSemvers) {
+                var degenSemver = SemanticVersion.getDefaultInstance();
+                Assertions.assertNotEquals(degenSemver, actualProto);
+                Assertions.assertNotEquals(degenSemver, actualServices);
+            }
+            if (!servicesSemVerBuild.isEmpty()) {
+                Assertions.assertEquals(servicesSemVerBuild, actualServices.getBuild());
+            }
+        } else {
+            LOG.info("VersionInfoQuery cannot be performed as node operator without enabled feature flag");
         }
     }
 
