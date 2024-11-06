@@ -17,15 +17,19 @@
 package com.swirlds.platform.roster;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class RosterUtilsTest {
     @Test
-    void tesetHash() {
+    void testHash() {
         final Hash hash = RosterUtils.hash(Roster.DEFAULT);
         assertEquals(
                 "38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b",
@@ -41,5 +45,108 @@ public class RosterUtilsTest {
         assertEquals(
                 "1b8414aa690d96ce79e972abfc58c7ca04052996f89c5e6789b25b9051ee85fccb7c8ed3fc6ebacef177adfdcbbb5709",
                 validRosterHash.toString());
+    }
+
+    @Test
+    void testFetchHostname() {
+        assertEquals(
+                "domain.name",
+                RosterUtils.fetchHostname(
+                        RosterEntry.newBuilder()
+                                .gossipEndpoint(List.of(ServiceEndpoint.newBuilder()
+                                        .port(666)
+                                        .domainName("domain.name")
+                                        .build()))
+                                .build(),
+                        0));
+
+        assertEquals(
+                "domain.name.2",
+                RosterUtils.fetchHostname(
+                        RosterEntry.newBuilder()
+                                .gossipEndpoint(List.of(
+                                        ServiceEndpoint.newBuilder()
+                                                .port(666)
+                                                .domainName("domain.name")
+                                                .build(),
+                                        ServiceEndpoint.newBuilder()
+                                                .port(666)
+                                                .domainName("domain.name.2")
+                                                .build()))
+                                .build(),
+                        1));
+
+        assertEquals(
+                "10.0.0.1",
+                RosterUtils.fetchHostname(
+                        RosterEntry.newBuilder()
+                                .gossipEndpoint(List.of(ServiceEndpoint.newBuilder()
+                                        .port(666)
+                                        .ipAddressV4(Bytes.wrap(new byte[] {10, 0, 0, 1}))
+                                        // While the below violates the ServiceEndpoint specification,
+                                        // there's no any hard validations present, and we want to ensure
+                                        // the logic in the RosterUtils.fetchHostname() picks up the IP
+                                        // instead of the domainName in this case, so we provide both in this test:
+                                        .domainName("domain.name")
+                                        .build()))
+                                .build(),
+                        0));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> RosterUtils.fetchHostname(
+                        RosterEntry.newBuilder()
+                                .gossipEndpoint(List.of(ServiceEndpoint.newBuilder()
+                                        .port(666)
+                                        .ipAddressV4(Bytes.wrap(new byte[] {10, 0, 0, 1, 2}))
+                                        // While the below violates the ServiceEndpoint specification,
+                                        // there's no any hard validations present, and we want to ensure
+                                        // the logic in the RosterUtils.fetchHostname() picks up the IP
+                                        // instead of the domainName in this case, so we provide both in this test:
+                                        .domainName("domain.name")
+                                        .build()))
+                                .build(),
+                        0));
+    }
+
+    @Test
+    void testFetchPort() {
+        assertEquals(
+                666,
+                RosterUtils.fetchPort(
+                        RosterEntry.newBuilder()
+                                .gossipEndpoint(List.of(ServiceEndpoint.newBuilder()
+                                        .port(666)
+                                        .domainName("domain.name")
+                                        .build()))
+                                .build(),
+                        0));
+
+        assertEquals(
+                777,
+                RosterUtils.fetchPort(
+                        RosterEntry.newBuilder()
+                                .gossipEndpoint(List.of(
+                                        ServiceEndpoint.newBuilder()
+                                                .port(666)
+                                                .domainName("domain.name")
+                                                .build(),
+                                        ServiceEndpoint.newBuilder()
+                                                .port(777)
+                                                .domainName("domain.name.2")
+                                                .build()))
+                                .build(),
+                        1));
+
+        assertEquals(
+                888,
+                RosterUtils.fetchPort(
+                        RosterEntry.newBuilder()
+                                .gossipEndpoint(List.of(ServiceEndpoint.newBuilder()
+                                        .port(888)
+                                        .ipAddressV4(Bytes.wrap(new byte[] {10, 0, 0, 1}))
+                                        .build()))
+                                .build(),
+                        0));
     }
 }

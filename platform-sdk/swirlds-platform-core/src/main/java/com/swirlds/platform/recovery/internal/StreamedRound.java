@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.recovery.internal;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.util.iterator.TypedIterator;
@@ -36,10 +36,10 @@ public class StreamedRound implements Round {
     private final List<CesEvent> events;
     private final long roundNumber;
     private final Instant consensusTimestamp;
-    private final AddressBook consensusRoster;
+    private final Roster consensusRoster;
 
     public StreamedRound(
-            @NonNull final AddressBook consensusRoster, @NonNull final List<CesEvent> events, final long roundNumber) {
+            @NonNull final Roster consensusRoster, @NonNull final List<CesEvent> events, final long roundNumber) {
         this.events = events;
         this.roundNumber = roundNumber;
         events.stream().map(CesEvent::getPlatformEvent).forEach(PlatformEvent::setConsensusTimestampsOnTransactions);
@@ -89,7 +89,7 @@ public class StreamedRound implements Round {
      */
     @NonNull
     @Override
-    public AddressBook getConsensusRoster() {
+    public Roster getConsensusRoster() {
         return consensusRoster;
     }
 

@@ -63,6 +63,13 @@ public abstract class AbstractFakePlatform implements Platform {
         notificationEngine.statusChangeListeners.forEach(l -> l.notify(notification));
     }
 
+    /**
+     * Returns the number of the last consensus round.
+     */
+    public long lastRoundNo() {
+        return roundNo.get() - 1;
+    }
+
     @NonNull
     @Override
     public Signature sign(@NonNull final byte[] data) {

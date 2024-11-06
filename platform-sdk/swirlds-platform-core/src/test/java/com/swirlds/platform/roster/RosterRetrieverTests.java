@@ -238,11 +238,11 @@ public class RosterRetrieverTests {
     }
 
     @Test
-    void testRetrieve() {
-        assertEquals(ROSTER_666, RosterRetriever.retrieve(state));
+    void testRetrieveActiveOrGenesisActiveRoster() {
+        assertEquals(ROSTER_666, RosterRetriever.retrieveActiveOrGenesisRoster(state));
     }
 
-    private static Stream<Arguments> provideArgumentsForRetrieveParametrized() {
+    private static Stream<Arguments> provideArgumentsForRetrieveActiveOrGenesisActiveParametrizedRoster() {
         return Stream.of(
                 Arguments.of(554L, ROSTER_FROM_ADDRESS_BOOK),
                 Arguments.of(555L, ROSTER_555),
@@ -256,13 +256,13 @@ public class RosterRetrieverTests {
     }
 
     @ParameterizedTest
-    @MethodSource("provideArgumentsForRetrieveParametrized")
-    void testRetrieveParametrized(final long round, final Roster roster) {
+    @MethodSource("provideArgumentsForRetrieveActiveOrGenesisActiveParametrizedRoster")
+    void testRetrieveActiveOrGenesisActiveParametrizedRoster(final long round, final Roster roster) {
         doReturn(round).when(consensusSnapshot).round();
-        assertEquals(roster, RosterRetriever.retrieve(state));
+        assertEquals(roster, RosterRetriever.retrieveActiveOrGenesisRoster(state));
     }
 
-    private static Stream<Arguments> provideArgumentsForRetrieveForRound() {
+    private static Stream<Arguments> provideArgumentsForRetrieveActiveOrGenesisActiveForRoundRoster() {
         return Stream.of(
                 Arguments.of(554L, null),
                 Arguments.of(555L, ROSTER_555),
@@ -276,23 +276,23 @@ public class RosterRetrieverTests {
     }
 
     @ParameterizedTest
-    @MethodSource("provideArgumentsForRetrieveForRound")
-    void testRetrieveForRound(final long round, final Roster roster) {
-        assertEquals(roster, RosterRetriever.retrieve(state, round));
+    @MethodSource("provideArgumentsForRetrieveActiveOrGenesisActiveForRoundRoster")
+    void testRetrieveActiveOrGenesisActiveForRoundRoster(final long round, final Roster roster) {
+        assertEquals(roster, RosterRetriever.retrieveActive(state, round));
     }
 
     @Test
-    void testRetrieveAddressBook() {
+    void testRetrieveActiveOrGenesisActiveAddressBookRoster() {
         // First try a very old round for which there's not a roster
         doReturn(554L).when(consensusSnapshot).round();
-        assertEquals(ROSTER_FROM_ADDRESS_BOOK, RosterRetriever.retrieve(state));
+        assertEquals(ROSTER_FROM_ADDRESS_BOOK, RosterRetriever.retrieveActiveOrGenesisRoster(state));
 
         // Then try a newer round, but remove the roster from the RosterMap
         doReturn(666L).when(consensusSnapshot).round();
         doReturn(null)
                 .when(rosterMap)
                 .get(eq(ProtoBytes.newBuilder().value(HASH_666).build()));
-        assertEquals(ROSTER_FROM_ADDRESS_BOOK, RosterRetriever.retrieve(state));
+        assertEquals(ROSTER_FROM_ADDRESS_BOOK, RosterRetriever.retrieveActiveOrGenesisRoster(state));
     }
 
     public static X509Certificate randomX509Certificate() {

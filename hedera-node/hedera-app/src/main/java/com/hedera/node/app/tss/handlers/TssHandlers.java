@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.tss.handlers;
 
-import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public record TssHandlers(@NonNull TransactionHandler tssMessageHandler, @NonNull TransactionHandler tssVoteHandler) {}
+public record TssHandlers(
+        @NonNull TssMessageHandler tssMessageHandler,
+        @NonNull TssVoteHandler tssVoteHandler,
+        @NonNull TssShareSignatureHandler tssShareSignatureHandler) {}

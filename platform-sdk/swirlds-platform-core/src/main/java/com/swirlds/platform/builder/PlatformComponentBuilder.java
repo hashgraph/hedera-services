@@ -559,8 +559,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public ConsensusEngine buildConsensusEngine() {
         if (consensusEngine == null) {
-            consensusEngine = new DefaultConsensusEngine(
-                    blocks.platformContext(), blocks.initialState().get().getAddressBook(), blocks.selfId());
+            consensusEngine = new DefaultConsensusEngine(blocks.platformContext(), getInitialRoster(), blocks.selfId());
         }
         return consensusEngine;
     }
@@ -1060,7 +1059,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     AdHocThreadManager.getStaticThreadManager(),
                     blocks.keysAndCerts(),
-                    blocks.initialAddressBook(),
+                    getInitialRoster(),
                     blocks.selfId(),
                     blocks.appVersion(),
                     blocks.swirldStateManager(),
@@ -1199,7 +1198,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public BranchDetector buildBranchDetector() {
         if (branchDetector == null) {
-            branchDetector = new DefaultBranchDetector(blocks.initialAddressBook());
+            branchDetector = new DefaultBranchDetector(getInitialRoster());
         }
         return branchDetector;
     }
@@ -1231,7 +1230,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public BranchReporter buildBranchReporter() {
         if (branchReporter == null) {
-            branchReporter = new DefaultBranchReporter(blocks.platformContext(), blocks.initialAddressBook());
+            branchReporter = new DefaultBranchReporter(blocks.platformContext(), getInitialRoster());
         }
         return branchReporter;
     }

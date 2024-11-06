@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.APPROVED_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.messageHash;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.signature;
-import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHasAttemptWithSelector;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHasAttemptWithSelectorAndCustomConfig;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauth
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.v051.Version051FeatureFlags;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -72,6 +73,9 @@ public class IsAuthorizedRawTranslatorTest {
     private VerificationStrategies verificationStrategies;
 
     @Mock
+    private SignatureVerifier signatureVerifier;
+
+    @Mock
     private HederaNativeOperations nativeOperations;
 
     private IsAuthorizedRawTranslator subject;
@@ -84,27 +88,46 @@ public class IsAuthorizedRawTranslatorTest {
 
     @Test
     void matchesIsAuthorizedRawWhenEnabled() {
-        given(attempt.configuration()).willReturn(getTestConfiguration(true));
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
-        attempt = prepareHasAttemptWithSelector(
-                IS_AUTHORIZED_RAW, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        attempt = prepareHasAttemptWithSelectorAndCustomConfig(
+                IS_AUTHORIZED_RAW,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                getTestConfiguration(true));
         assertTrue(subject.matches(attempt));
     }
 
     @Test
     void doesNotMatchIsAuthorizedRawWhenDisabled() {
-        given(attempt.configuration()).willReturn(getTestConfiguration(false));
-        given(attempt.selector()).willReturn(IS_AUTHORIZED_RAW.selector());
-        var matches = subject.matches(attempt);
-        assertFalse(matches);
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        attempt = prepareHasAttemptWithSelectorAndCustomConfig(
+                IS_AUTHORIZED_RAW,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                getTestConfiguration(false));
+        assertFalse(subject.matches(attempt));
     }
 
     @Test
     void failsOnInvalidSelector() {
-        given(attempt.configuration()).willReturn(getTestConfiguration(true));
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
-        attempt = prepareHasAttemptWithSelector(
-                HBAR_ALLOWANCE_PROXY, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        attempt = prepareHasAttemptWithSelectorAndCustomConfig(
+                HBAR_ALLOWANCE_PROXY,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                getTestConfiguration(true));
         assertFalse(subject.matches(attempt));
     }
 
@@ -124,6 +147,7 @@ public class IsAuthorizedRawTranslatorTest {
         given(attempt.isSelector(any())).willReturn(true);
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
+        given(attempt.signatureVerifier()).willReturn(signatureVerifier);
     }
 
     @NonNull
