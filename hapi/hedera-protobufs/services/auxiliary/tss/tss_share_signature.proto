@@ -35,9 +35,10 @@ option java_package = "com.hedera.hapi.services.auxiliary.tss.legacy";
 option java_multiple_files = true;
 
 /**
- * The body of a transaction that contains signature of node signing the block hash with its private
- * shares in the TSS process.
- * This transaction will be gossipped with highest priority.
+ * A TSS Share Signature transaction Body.<br/>
+ * This transaction body communicates a node's signature of a block hash
+ * using its private share within the TSS process.
+ * This transaction MUST be prioritized for low latency gossip transmission.
  *
  * ### Block Stream Effects
  * This transaction body will be present in the block stream. This will not have
