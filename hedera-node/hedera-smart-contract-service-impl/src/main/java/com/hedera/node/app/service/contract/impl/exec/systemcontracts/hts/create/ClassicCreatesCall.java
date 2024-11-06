@@ -87,7 +87,6 @@ public class ClassicCreatesCall extends AbstractCall {
      * @param syntheticCreate the body of synthetic create operation
      * @param verificationStrategy the verification strategy to use
      * @param spender the spender account id
-     * @param addressIdConverter the address ID converter for this call
      */
     public ClassicCreatesCall(
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
