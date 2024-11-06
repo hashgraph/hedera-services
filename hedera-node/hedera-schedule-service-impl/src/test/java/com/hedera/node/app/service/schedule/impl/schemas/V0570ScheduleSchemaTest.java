@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ScheduleID;
@@ -116,9 +117,8 @@ class V0570ScheduleSchemaTest extends ScheduleTestBase {
     void testStatesToRemove() {
         Set<String> statesToRemove = subject.statesToRemove();
         assertNotNull(statesToRemove);
-        assertEquals(0, statesToRemove.size());
-        //        assertTrue(statesToRemove.containsAll(Set.of(SCHEDULES_BY_EXPIRY_SEC_KEY,
-        // SCHEDULES_BY_EQUALITY_KEY)));
+        assertEquals(2, statesToRemove.size());
+        assertTrue(statesToRemove.containsAll(Set.of(SCHEDULES_BY_EXPIRY_SEC_KEY, SCHEDULES_BY_EQUALITY_KEY)));
     }
 
     @SuppressWarnings("DataFlowIssue")
