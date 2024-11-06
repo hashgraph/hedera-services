@@ -46,6 +46,32 @@ The supported functions callable from an EOA are as follows:
 | `0x06d15889`  | `signSchedule() external returns (int64 responseCode)`                                                    | Signs the targeted schedule transaction with the sender's keys.  For `EthereumTransactions` the embedded ECDSA key will be used.  For `ContractCall` transactions, the keys derived from the signature map of the transaction will be used. |
 | `0x88af14e6`  | `getScheduledTransactionInfo() external returns (int64 responseCode, ScheduleInfo memory scheduleInfo)`   | Retrieves the `ScheduleInfo` struct for the schedule transaction given as the target for this call.                                                                                                                                         |
 
+### SchduleInfo Struct
+
+The `ScheduleInfo` struct will contain the following fields:
+
+```solidity
+   struct ScheduleInfo {
+        address scheduleID;
+
+        int64 deletionTime;
+        int64 executionTime;
+        int64 expirationTime;
+
+        string memo;
+
+        KeyValue adminKey;
+        KeyValue[] signers;
+
+        address creatorAccountID;
+        address payerAccountID;
+        
+        address scheduledTransactionID;
+        bytes ledger_id;
+        bool wait_for_expiry;
+    }
+```
+
 ### Phased Implementation
 0. The implementation of the infrastructure to support the Schedule Service System Contract must be implemented before any support for the functions enumerated above can be added.
 This includes the code for the `HSSSystemContract` class, the `HssCallAttempt` class, the `HssCall` classes, the `ScheduleServiceEntity` class, and the `Translator` class.
