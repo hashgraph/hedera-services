@@ -49,12 +49,10 @@ message Roster {
  */
 message RosterEntry {
 
-  /**
-   * The tssEncryptionKey field has been reserved because it is no longer
-   * required to be stored in the Roster. The public portion of this key will
-   * continue to be stored in the Roster state, but will, however, be stored
-   * just as raw bytes.
-   */
+  // The tssEncryptionKey field has been reserved because it is no longer
+  // required to be stored in the Roster. The public portion of this key will
+  // continue to be stored in the Roster state, but will, however, be stored
+  // just as raw bytes.
   reserved 4;
 
   /**
