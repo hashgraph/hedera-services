@@ -32,9 +32,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -59,15 +57,18 @@ public class ActiveRosterKeyMaterial {
      * @param selfId the node id
      */
     public void generateKeyMaterialForActiveRoster(
-            @NonNull final State state, @NonNull final Configuration configuration, @NonNull final NodeInfo selfId) {
+            @NonNull final State state, @NonNull final Configuration configuration, final long selfId) {
         final var storeFactory = new ReadableStoreFactory(state);
         final var tssStore = storeFactory.getStore(ReadableTssStore.class);
         final var rosterStore = storeFactory.getStore(ReadableRosterStore.class);
 
-        final var maxSharesPerNode = configuration.getConfigData(TssConfig.class).maxSharesPerNode();
+        final var maxSharesPerNode =
+                configuration.getConfigData(TssConfig.class).maxSharesPerNode();
         this.activeRosterHash = rosterStore.getActiveRosterHash();
-        this.activeRoster = requireNonNull(storeFactory.getStore(ReadableRosterStore.class).getActiveRoster());
-        this.activeRosterParticipantDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, (int) selfId.nodeId());
+        this.activeRoster =
+                requireNonNull(storeFactory.getStore(ReadableRosterStore.class).getActiveRoster());
+        this.activeRosterParticipantDirectory =
+                computeParticipantDirectory(activeRoster, maxSharesPerNode, (int) selfId);
         this.activeRosterShares = getTssPrivateShares(activeRosterParticipantDirectory, tssStore, activeRosterHash);
     }
 
@@ -85,18 +86,14 @@ public class ActiveRosterKeyMaterial {
     public void reset() {
         activeRosterShares.clear();
         activeRosterHash = Bytes.EMPTY;
-
     }
+
     public Roster activeRoster() {
         return activeRoster;
     }
 
     public TssParticipantDirectory activeRosterParticipantDirectory() {
         return activeRosterParticipantDirectory;
-    }
-
-    public TssLibrary tssLibrary() {
-        return tssLibrary;
     }
 
     public Bytes activeRosterHash() {

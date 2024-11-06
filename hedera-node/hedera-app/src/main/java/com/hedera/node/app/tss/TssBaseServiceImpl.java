@@ -57,7 +57,6 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -69,7 +68,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -201,13 +199,13 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void requestLedgerSignature(@NonNull final byte[] messageHash, final Instant lastUsedConsensusTime) {
+    public void requestLedgerSignature(final byte[] messageHash, final Instant lastUsedConsensusTime) {
         requireNonNull(messageHash);
-        // (TSS-FUTURE) Initiate asynchronous process of creating a ledger signature
+        // (TSS-FUTURE) Initiate an asynchronous process of creating a ledger signature
         final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
                 () -> {
-                    if(configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
+                    if (configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
                         submitShareSignatures(messageHash, lastUsedConsensusTime);
                     }
                     consumers.forEach(consumer -> {
@@ -227,7 +225,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                 signingExecutor);
     }
 
-    private void submitShareSignatures(final byte @NonNull [] messageHash, final Instant lastUsedConsensusTime) {
+    private void submitShareSignatures(final byte[] messageHash, final Instant lastUsedConsensusTime) {
         final var tssPrivateShares = privateKeysAccessor.activeRosterShares();
         final var activeRoster = privateKeysAccessor.activeRosterHash();
         long nanosOffset = 1;
@@ -239,8 +237,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                     .shareIndex(privateShare.shareId().idElement())
                     .rosterHash(activeRoster)
                     .build();
-            tssSubmissions.submitTssShareSignature(tssShareSignatureBody,
-                    lastUsedConsensusTime.plusNanos(nanosOffset++));
+            tssSubmissions.submitTssShareSignature(
+                    tssShareSignatureBody, lastUsedConsensusTime.plusNanos(nanosOffset++));
         }
     }
 

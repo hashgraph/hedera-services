@@ -30,7 +30,6 @@ import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.swirlds.config.api.Configuration;
@@ -76,9 +75,7 @@ public class TssSubmissions {
     private HandleContext lastContextUsed;
 
     @Inject
-    public TssSubmissions(@NonNull final AppContext.Gossip gossip,
-                          @NonNull final Executor submissionExecutor,
-                          @NonNull final ConfigProvider config) {
+    public TssSubmissions(@NonNull final AppContext.Gossip gossip, @NonNull final Executor submissionExecutor) {
         this.gossip = requireNonNull(gossip);
         this.submissionExecutor = requireNonNull(submissionExecutor);
     }
@@ -126,8 +123,8 @@ public class TssSubmissions {
      * @param lastUsedConsensusTime the last used consensus time
      * @return a future that completes when the share signature has been submitted
      */
-    public CompletableFuture<Void> submitTssShareSignature(@NonNull final TssShareSignatureTransactionBody body,
-                                                           final Instant lastUsedConsensusTime) {
+    public CompletableFuture<Void> submitTssShareSignature(
+            @NonNull final TssShareSignatureTransactionBody body, final Instant lastUsedConsensusTime) {
         requireNonNull(body);
         return submit(b -> b.tssShareSignature(body), null, null, lastUsedConsensusTime);
     }

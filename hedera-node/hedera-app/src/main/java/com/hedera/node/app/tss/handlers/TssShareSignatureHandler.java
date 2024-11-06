@@ -24,7 +24,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssShareId;
 import com.hedera.node.app.tss.api.TssShareSignature;
@@ -32,10 +31,7 @@ import com.hedera.node.app.tss.pairings.FakeGroupElement;
 import com.hedera.node.app.tss.pairings.PairingSignature;
 import com.hedera.node.app.tss.pairings.SignatureSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.sun.jdi.IntegerValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -44,6 +40,8 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Handles TSS share signature transactions.
@@ -54,18 +52,14 @@ public class TssShareSignatureHandler implements TransactionHandler {
     private final TssLibrary tssLibrary;
     // From AppContext
     private final InstantSource instantSource;
-    private final TssBaseService tssBaseService;
     private final SortedSet<SignatureRequest> requests = new TreeSet<>();
     private final Map<Bytes, Set<TssShareSignature>> signatures = new ConcurrentHashMap<>();
     private Instant lastPurgeTime = Instant.EPOCH;
 
     @Inject
-    public TssShareSignatureHandler(final TssLibrary tssLibrary,
-                                    final InstantSource instantSource,
-                                    final TssBaseService tssBaseService) {
+    public TssShareSignatureHandler(final TssLibrary tssLibrary, final InstantSource instantSource) {
         this.tssLibrary = tssLibrary;
         this.instantSource = instantSource;
-        this.tssBaseService = tssBaseService;
     }
 
     @Override
@@ -84,17 +78,19 @@ public class TssShareSignatureHandler implements TransactionHandler {
         signatures.computeIfAbsent(messageHash, k -> ConcurrentHashMap.newKeySet());
 
         // Step 2: Verify the signature using TSS library
-        final var tssShareSignature = new TssShareSignature(new TssShareId((int) shareIndex),
-                new PairingSignature(new FakeGroupElement(BigInteger.valueOf(shareIndex)),
+        final var tssShareSignature = new TssShareSignature(
+                new TssShareId((int) shareIndex),
+                new PairingSignature(
+                        new FakeGroupElement(BigInteger.valueOf(shareIndex)),
                         SignatureSchema.create(shareSignature.toByteArray())));
-//        if (!tssLibrary.verifySignature(tssShareSignature)) {
-//            throw new PreCheckException("Invalid TSS share signature");
-//        }
+        //        if (!tssLibrary.verifySignature(tssShareSignature)) {
+        //            throw new PreCheckException("Invalid TSS share signature");
+        //        }
 
         // Purge any expired signature requests, at most once per second
         final var now = instantSource.instant();
         if (now.getEpochSecond() > lastPurgeTime.getEpochSecond()) {
-            synchronized(requests) {
+            synchronized (requests) {
                 requests.removeIf(req -> req.timestamp().isBefore(now.minusSeconds(60)));
             }
             lastPurgeTime = now;
@@ -117,5 +113,4 @@ public class TssShareSignatureHandler implements TransactionHandler {
             return timestamp.compareTo(o.timestamp());
         }
     }
-
 }

@@ -369,7 +369,9 @@ public class HandleWorkflow {
                     final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                     privateKeysAccessor.generateKeyMaterialForActiveRoster(
-                            userTxn.state(), userTxn.config(), userTxn.creatorInfo());
+                            userTxn.state(),
+                            userTxn.config(),
+                            userTxn.creatorInfo().nodeId());
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
                             userTxn.tokenContextImpl(),

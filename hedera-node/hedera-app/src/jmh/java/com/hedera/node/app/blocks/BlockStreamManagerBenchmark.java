@@ -118,7 +118,9 @@ public class BlockStreamManagerBenchmark {
                     "blockStream.serializationBatchSize", "32"));
     private final List<BlockItem> roundItems = new ArrayList<>();
     private final TssBaseServiceImpl tssBaseService = new TssBaseServiceImpl(
-            new AppContextImpl(Instant::now, fakeSignatureVerifier(),
+            new AppContextImpl(
+                    Instant::now,
+                    fakeSignatureVerifier(),
                     UNAVAILABLE_GOSSIP,
                     configProvider.getConfiguration(),
                     DEFAULT_NODE_ACCOUNT_ID),

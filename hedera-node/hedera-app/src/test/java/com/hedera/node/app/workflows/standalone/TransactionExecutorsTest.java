@@ -276,12 +276,12 @@ class TransactionExecutorsTest {
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(
-                                new AppContextImpl(InstantSource.system(),
-                                        signatureVerifier,
-                                        UNAVAILABLE_GOSSIP,
-                                        HederaTestConfigBuilder.createConfig(),
-                                        3L)),
+                        new ContractServiceImpl(new AppContextImpl(
+                                InstantSource.system(),
+                                signatureVerifier,
+                                UNAVAILABLE_GOSSIP,
+                                HederaTestConfigBuilder.createConfig(),
+                                3L)),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
