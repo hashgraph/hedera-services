@@ -261,7 +261,6 @@ class WritableRosterStoreTest {
                     .nodeId(i)
                     .weight(i + 1) // weight must be > 0
                     .gossipCaCertificate(Bytes.wrap("test" + i))
-                    .tssEncryptionKey(Bytes.wrap("test" + i))
                     .gossipEndpoint(ServiceEndpoint.newBuilder()
                             .domainName("domain.com" + i)
                             .port(666)
