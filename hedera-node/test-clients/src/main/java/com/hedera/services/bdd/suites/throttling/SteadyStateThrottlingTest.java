@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.throttling;
 
-import static com.hedera.services.bdd.junit.TestTags.LONG_RUNNING;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -71,9 +70,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
 
-@Tag(LONG_RUNNING)
 @OrderedInIsolation
 public class SteadyStateThrottlingTest {
     private static final int REGRESSION_NETWORK_SIZE = 4;

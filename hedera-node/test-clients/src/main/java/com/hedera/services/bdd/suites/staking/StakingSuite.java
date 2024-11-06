@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.staking;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.NO_CONCURRENT_STAKE_PERIOD_BOUNDARY_CROSSINGS;
-import static com.hedera.services.bdd.junit.TestTags.LONG_RUNNING;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -75,9 +74,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
-@Tag(LONG_RUNNING)
 @HapiTestLifecycle
 public class StakingSuite {
     private static final Duration MIN_TIME_TO_NEXT_PERIOD = Duration.ofSeconds(10);
