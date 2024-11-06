@@ -78,7 +78,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;

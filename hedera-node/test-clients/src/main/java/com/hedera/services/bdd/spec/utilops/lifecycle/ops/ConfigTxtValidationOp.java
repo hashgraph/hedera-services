@@ -67,7 +67,8 @@ public class ConfigTxtValidationOp extends AbstractLifecycleOp {
             @NonNull final Path configTxtPath, @NonNull final Consumer<String> lastError) {
         try {
             log.info("Attempting to load address book from {}", configTxtPath);
-            loadAddressBook(configTxtPath);
+            final var addressBook = loadAddressBook(configTxtPath);
+            log.info("  -> Loaded book from {} with {} entries", configTxtPath, addressBook.getSize());
             return true;
         } catch (Throwable t) {
             lastError.accept(t.getClass().getSimpleName() + " - '" + t.getMessage() + "'");

@@ -20,9 +20,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
