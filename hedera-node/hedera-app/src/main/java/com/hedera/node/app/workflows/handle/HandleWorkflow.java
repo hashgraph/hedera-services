@@ -397,8 +397,9 @@ public class HandleWorkflow {
                     // in the RosterService state to become the active roster
                     final var ledgerId = getLedgerId(dispatch.handleContext());
                     if (ledgerId != null) {
-                        final var rosterStore =
-                                dispatch.handleContext().storeFactory().writableStore(WritableRosterStore.class);
+                        final var writableStoreFactory = new WritableStoreFactory(
+                                userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
+                        final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
                         final var candidateRoster = rosterStore.getCandidateRoster();
                         if (candidateRoster != null) {
                             final long roundNumber = ((CesEvent) userTxn.event()).getRoundReceived();
