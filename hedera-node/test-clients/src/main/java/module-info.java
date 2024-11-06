@@ -27,6 +27,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.utilops.lifecycle;
     exports com.hedera.services.bdd.spec.utilops.lifecycle.ops;
     exports com.hedera.services.bdd.spec.utilops.mod;
+    exports com.hedera.services.bdd.spec.utilops.tss;
     exports com.hedera.services.bdd.spec.utilops.pauses;
     exports com.hedera.services.bdd.spec.utilops.streams;
     exports com.hedera.services.bdd.spec.utilops.upgrade;

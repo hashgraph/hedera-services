@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw.IsAuthorizedRawCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw.IsAuthorizedRawCall.SignatureType;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,12 +55,16 @@ class IsAuthorizedRawCallTest extends CallTestBase {
     @Mock
     private HasCallAttempt attempt;
 
+    @Mock
+    private SignatureVerifier signatureVerifier;
+
     private final CustomGasCalculator customGasCalculator = new CustomGasCalculator();
 
     @BeforeEach
     void setup() {
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
         given(attempt.enhancement()).willReturn(mockEnhancement());
+        given(attempt.signatureVerifier()).willReturn(signatureVerifier);
         lenient().when(frame.getRemainingGas()).thenReturn(10_000_000L);
     }
 
