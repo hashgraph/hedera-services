@@ -477,8 +477,8 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
         final var someoneElse = "someoneElse";
         return hapiTest(flattened(
                 nodeOperatorAccount(),
-                newKeyNamed(someoneElse),
                 payerAccount(),
+                newKeyNamed(someoneElse),
                 uploadInitCode(contract),
                 contractCreate(contract),
                 // Sign the node operator query request with a totally unrelated key, to show that there is no
@@ -524,8 +524,8 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
         final var someoneElse = "someoneElse";
         return hapiTest(flattened(
                 nodeOperatorAccount(),
-                newKeyNamed(someoneElse),
                 payerAccount(),
+                newKeyNamed(someoneElse),
                 uploadInitCode(contract),
                 contractCreate(contract),
                 // Sign the node operator query request with a totally unrelated key, to show that there is no
