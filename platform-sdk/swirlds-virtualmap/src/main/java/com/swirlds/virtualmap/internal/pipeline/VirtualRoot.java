@@ -109,6 +109,10 @@ public interface VirtualRoot<K extends VirtualKey, V extends VirtualValue> exten
     RecordAccessor<K, V> detach();
 
     /**
+     * Takes a snapshot of this virtual root into the specified location. The snapshot can be loaded
+     * back to memory using {@link com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder#restore(String, Path)}
+     * method. It will contain the same data as this root, but some data may be moved from memory to
+     * disk or vice versa. After snapshot is taken, it does not consume any runtime resources, CPU or memory.
      *
      * @param destination the location where snapshot files will be located
      * @throws IOException if an I/O error occurs
