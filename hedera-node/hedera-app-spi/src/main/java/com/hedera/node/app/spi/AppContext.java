@@ -16,18 +16,17 @@
 
 package com.hedera.node.app.spi;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 
 /**
- * Gives context to {@link com.swirlds.state.spi.Service} implementations on how the application workflows will do
+ * Gives context to {@link Service} implementations on how the application workflows will do
  * shared functions like verifying signatures or computing the current instant.
  */
 public interface AppContext {

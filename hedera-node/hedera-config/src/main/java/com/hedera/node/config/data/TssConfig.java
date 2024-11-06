@@ -23,15 +23,14 @@ import java.time.Duration;
 
 /**
  * Configuration for the TSS service.
- *
  * @param maxSharesPerNode                The maximum number of shares that can be assigned to a node.
  * @param timesToTrySubmission            The number of times to retry a submission on getting an {@link IllegalStateException}
  * @param retryDelay                      The delay between retries
  * @param distinctTxnIdsToTry             The number of distinct transaction IDs to try in the event of a duplicate id
  * @param keyCandidateRoster              A feature flag for TSS; set this to true to enable the process that will key
- * @param keyActiveRoster                 A test-only configuration; set this to true to enable the process that will key the candidate
- *                                        roster with TSS key material.
- * @param enableLedgerId                  A feature flag for TSS; set this to true to enable the process that will key
+ * @param keyActiveRoster                 A test-only configuration; set this to true to enable the process that will
+ *                                        key the candidate roster with TSS key material, without waiting for upgrade
+ *                                        boundary.
  * @param signatureLivenessPeriodMinutes  The amount of time a share signature is held in memory before being
  *                                        discarded in minutes
  * @param ledgerSignatureFailureThreshold The number of consecutive failures to produce a ledger signature before
@@ -45,6 +44,5 @@ public record TssConfig(
         @ConfigProperty(defaultValue = "10") @NetworkProperty int distinctTxnIdsToTry,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean keyCandidateRoster,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean keyActiveRoster,
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean enableLedgerId,
         @ConfigProperty(defaultValue = "5") @NetworkProperty int signatureLivenessPeriodMinutes,
         @ConfigProperty(defaultValue = "2") @NetworkProperty int ledgerSignatureFailureThreshold) {}
