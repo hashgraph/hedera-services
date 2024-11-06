@@ -623,6 +623,7 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
             try {
                 channel = ManagedChannelBuilder.forAddress("0.0.0.0", nodeOperatorGrpcPort)
                         .usePlaintext()
+                        .idleTimeout(5_000, TimeUnit.MICROSECONDS)
                         .build();
                 // The assertion lambda below needs a `final` var to access :(
                 final ManagedChannel finalChannel = channel;
@@ -635,7 +636,7 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                             // Once the channel is ready, submit the transaction
                             long counter = 0;
                             while (finalChannel.getState(true) != ConnectivityState.READY) {
-                                // make sure the test doesn't hang forever
+                                // Make sure the test doesn't hang forever
                                 if (counter++ >= 60) {
                                     break;
                                 }
@@ -687,7 +688,7 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                                     // Once the channel is ready, submit the transaction
                                     long counter = 0;
                                     while (finalChannel.getState(true) != ConnectivityState.READY) {
-                                        // make sure the test doesn't hang forever
+                                        // Make sure the test doesn't hang forever
                                         if (counter++ >= 60) {
                                             break;
                                         }
