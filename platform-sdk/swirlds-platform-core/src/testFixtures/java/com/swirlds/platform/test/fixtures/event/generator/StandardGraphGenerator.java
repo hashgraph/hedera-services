@@ -29,6 +29,7 @@ import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
@@ -196,7 +197,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     }
 
     private void initializeInternalConsensus() {
-        consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
+        consensus = new ConsensusImpl(
+                platformContext, new NoOpConsensusMetrics(), RosterRetriever.buildRoster(addressBook));
         inOrderLinker = new ConsensusLinker(platformContext, NodeId.of(0));
     }
 

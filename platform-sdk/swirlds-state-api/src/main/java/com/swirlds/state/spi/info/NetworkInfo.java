@@ -16,6 +16,7 @@
 
 package com.swirlds.state.spi.info;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,10 +27,8 @@ import java.util.List;
  * Provides information about the network.
  */
 public interface NetworkInfo {
-
     /**
      * Returns the current ledger ID.
-     *
      * @return the {@link Bytes} of the current ledger ID
      */
     @NonNull
@@ -59,4 +58,10 @@ public interface NetworkInfo {
      * @param state the state to update from
      */
     void updateFrom(State state);
+
+    /**
+     * Returns the currently active roster used by the network.
+     * @return the currently active roster
+     */
+    Roster roster();
 }

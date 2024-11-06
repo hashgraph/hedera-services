@@ -26,6 +26,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.RoyaltyFeeWrapper;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -76,6 +77,14 @@ public class CreateSyntheticTxnFactory {
         return txnBodyBuilder;
     }
 
+    public static TokenCreateTransactionBody.Builder createTokenWithMetadata(
+            @NonNull final TokenCreateWrapper tokenCreateWrapper) {
+        final var transactionBodyBuilder = createToken(tokenCreateWrapper);
+        setMetadata(tokenCreateWrapper, transactionBodyBuilder);
+        setMetadataKey(tokenCreateWrapper, transactionBodyBuilder);
+        return transactionBodyBuilder;
+    }
+
     private static void setTokenKeys(
             @NonNull final TokenCreateWrapper tokenCreateWrapper, final Builder txnBodyBuilder) {
         tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
@@ -119,6 +128,21 @@ public class CreateSyntheticTxnFactory {
         }
         if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != null) {
             txnBodyBuilder.autoRenewPeriod(tokenCreateWrapper.getExpiry().autoRenewPeriod());
+        }
+    }
+
+    private static void setMetadataKey(
+            @NonNull final TokenCreateWrapper tokenCreateWrapper, final Builder txnBodyBuilder) {
+        tokenCreateWrapper.getTokenKeys().stream()
+                .filter(TokenKeyWrapper::isUsedForMetadataKey)
+                .map(tokenKeyWrapper -> tokenKeyWrapper.key().asGrpc())
+                .forEach(txnBodyBuilder::metadataKey);
+    }
+
+    private static void setMetadata(
+            @NonNull final TokenCreateWrapper tokenCreateWrapper, final Builder txnBodyBuilder) {
+        if (tokenCreateWrapper.getMetadata() != null) {
+            txnBodyBuilder.metadata(tokenCreateWrapper.getMetadata());
         }
     }
 
