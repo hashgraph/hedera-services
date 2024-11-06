@@ -786,7 +786,7 @@ public class PlatformWiring {
         stateSignerWiring.bind(builder::buildStateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         if (inlinePces) {
-            pcesInlineWriterWiring.bind(new NoOpInlinePcesWriter());
+            pcesInlineWriterWiring.bind(builder::buildInlinePcesWriter);
         } else {
             roundDurabilityBufferWiring.bind(builder::buildRoundDurabilityBuffer);
             pcesSequencerWiring.bind(builder::buildPcesSequencer);
