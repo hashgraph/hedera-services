@@ -16,10 +16,6 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.tss.TssCryptographyManager.isThresholdMet;
-import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
-import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
-import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -42,17 +38,17 @@ import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.LedgerId;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
-import com.hedera.node.config.data.TssConfig;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.context.PlatformContext;
@@ -77,11 +73,9 @@ import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.roster.RosterHistory;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.service.ReadableRosterStore;
-import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -92,16 +86,13 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Main entry point.
@@ -310,16 +301,17 @@ public class ServicesMain implements SwirldMain {
                 .withKeysAndCerts(keysAndCerts);
 
         if (addressbookUseRosterLifecycle) {
-            RosterHistory rosterHistory;
-            if (isGenesis.get()) {
-                final var genesisRoster = loadRoster(GENESIS_CONFIG_FILE_NAME);
-                rosterHistory = new RosterHistory(genesisRoster, 0, genesisRoster, 0);
-            } else {
-                final long maxSharesPerNode =
-                        configuration.getConfigData(TssConfig.class).maxSharesPerNode();
-                rosterHistory = determineRosterHistory(version, initialState, selfId, maxSharesPerNode);
-            }
-
+            final SignedState loadedSignedState = initialState.get();
+            final var state = ((MerkleStateRoot) loadedSignedState.getState());
+            final boolean softwareUpgrade = detectSoftwareUpgrade(version, loadedSignedState);
+            final var writableStoreFactory = new WritableStoreFactory(
+                    state,
+                    RosterStateId.NAME,
+                    configuration,
+                    new StoreMetricsServiceImpl(metrics)); // TODO: proper storeMetricsService instance?
+            final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
+            final var rosterHistory =
+                    determineRosterHistory(isGenesis.get(), state, rosterStore, diskAddressBook, softwareUpgrade);
             platformBuilder.withRoster(
                     rosterHistory
                             .getCurrentRoster()); // FUTURE: pass the roster history instead of just the current roster
@@ -365,38 +357,48 @@ public class ServicesMain implements SwirldMain {
      * Determining the Roster History.
      * There are three non-genesis modes that a node can start in:
      * <ul>
+     *   <li> Genesis Network - The node is started with a genesis roster and no pre-existing state on disk. </li>
      *   <li> Network Transplant - The node is started with a state on disk and an overriding roster for a different network. </li>
      *   <li> Software Upgrade - The node is restarted with the same state on disk and a software upgrade is happening. </li>
      *   <li> Normal Restart - The node is restarted with the same state on disk and no software upgrade is happening. </li>
      * </ul>
      *
-     * @param version              the software version of the current node
-     * @param initialState         the initial state of the platform
-     * @param selfId               the node id of the current node
-     * @param maxSharesPerNode     the maximum number of shares per node
-     * @return the roster
+     * @param isGenesis            whether running in genesis mode
+     * @param state                the state of the platform
+     * @param rosterStore          the roster store
+     * @param diskAddressBook     the address book read from disk
+     * @param softwareUpgrade      whether a software upgrade is happening
+     * @return the roster history
      */
-    private static @NotNull RosterHistory determineRosterHistory(
-            @NonNull final SoftwareVersion version,
-            @NonNull final ReservedSignedState initialState,
-            @NonNull final NodeId selfId,
-            final long maxSharesPerNode) {
-        requireNonNull(version);
-        requireNonNull(initialState);
-        requireNonNull(selfId);
+    private static @NonNull RosterHistory determineRosterHistory(
+            final boolean isGenesis,
+            @NonNull final State state,
+            @NonNull final WritableRosterStore rosterStore,
+            @NonNull final AddressBook diskAddressBook,
+            final boolean softwareUpgrade) {
+        requireNonNull(state);
+        requireNonNull(rosterStore);
+        requireNonNull(diskAddressBook);
 
-        // FUTURE: Network Transplant -> An override-config.txt file is present on disk
+        if (isGenesis) {
+            final var genesisRoster = loadRoster(GENESIS_CONFIG_FILE_NAME);
+            // Set (genesisRoster, 0) ase the new active roster in the roster state.
+            rosterStore.putActiveRoster(genesisRoster, 0);
 
-        final SignedState loadedSignedState = initialState.get();
-        final boolean softwareUpgrade = detectSoftwareUpgrade(version, loadedSignedState);
-        final var state = ((MerkleStateRoot) loadedSignedState.getState());
-        final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
+            // rosterHistory := [(genesisRoster, 0)]
+            return new RosterHistory(genesisRoster, 0, genesisRoster, 0);
+        }
+
+        final boolean overrideConfigExists = false; // An override-config.txt file is present on disk
+        if (overrideConfigExists) {
+            // FUTURE: Network Transplant
+        }
 
         // Normal Restart, no software upgrade is happening
         if (!softwareUpgrade) {
-            final var roundRosterPairs = rosterStore.getRoundRosterPairs();
+            final var roundRosterPairs = rosterStore.getRosterHistory();
             // If there exists active rosters in the roster state.
-            if (!roundRosterPairs.isEmpty()) {
+            if (roundRosterPairs != null) {
                 // Read the active rosters and construct the existing rosterHistory from roster state
                 final var current = roundRosterPairs.get(0);
                 final var previous = roundRosterPairs.get(1);
@@ -412,105 +414,55 @@ public class ServicesMain implements SwirldMain {
             }
         }
 
-        // A software upgrade is happening
-
+        // Migration Software Upgrade
+        // The roster state is empty (no candidate roster and no active rosters)
         final var activeRoster = rosterStore.getActiveRoster();
-        // TODO: Migration Software Upgrade
-        //        A config.txt file is present on disk
-        //        The roster state is empty (no candidate roster and no active rosters)
-
-        // TODO: Subsequent Software Upgrades
-        //        There is a candidate roster in the roster state
-
-        // Otherwise, we are at an upgrade boundary, see:
-        // https://github.com/hashgraph/hedera-services/blob/develop/platform-sdk/docs/proposals/TSS-Ledger-Id/TSS-Ledger-Id.md?plain=1#L723
-        // If there is no candidate roster set in the state, the active roster continues to be used
         final var candidateRoster = rosterStore.getCandidateRoster();
-        if (candidateRoster == null) {
-            //            return activeRoster;
-            // TODO: fix
-            return new RosterHistory(activeRoster, 0, null, 0);
+        if (activeRoster == null && candidateRoster == null) {
+            // Read the current AddressBooks from the platform state.
+            // previousRoster := translateToRoster(currentAddressBook)
+            final var addressBookStore = new ReadableStoreFactory(state).getStore(ReadableNodeStore.class);
+            final var prevousRoster = addressBookStore.snapshotOfFutureRoster();
+
+            // configAddressBook := Read the address book in config.txt
+            // currentRoster := translateToRoster(configAddressBook)
+            final var currentRoster = createRoster(diskAddressBook);
+
+            // currentRound := state round +1
+            final long currentRound = rosterStore.getRosterHistory().getFirst().roundNumber() + 1;
+            // set (previousRoster, 0) as the active roster in the roster state.
+            // set (currentRoster, currentRound) as the active roster in the roster state.
+            rosterStore.putActiveRoster(prevousRoster, 0);
+            rosterStore.putActiveRoster(currentRoster, currentRound);
+
+            // rosterHistory := [(currentRoster, currentRound), (previousRoster, 0)]
+            return new RosterHistory(currentRoster, currentRound, prevousRoster, 0);
         }
 
-        // FUTURE: get the same TssLibrary instance that we use for the Hedera instance
-        final var tssLibrary = new PlaceholderTssLibrary();
+        // Subsequent Software Upgrades
+        // There is a candidate roster in the roster state
+        // No override-config.txt file is present on disk
+        if (candidateRoster != null && !overrideConfigExists) {
+            final var previousRoundPair = rosterStore.getRosterHistory().getFirst();
 
-        final boolean activeRosterKeyed =
-                hasEnoughKeyMaterial(activeRoster, state, selfId, maxSharesPerNode, tssLibrary);
-        final boolean candidateRosterKeyed =
-                hasEnoughKeyMaterial(candidateRoster, state, selfId, maxSharesPerNode, tssLibrary);
-        final var ledgerId = getLedgerId(loadedSignedState);
+            // currentRound := state round +1
+            final long currentRound = previousRoundPair.roundNumber() + 1;
 
-        // If the existing active roster and candidate roster do not have complete key material and the network does not
-        // yet have a ledger id, the node will adopt the candidate roster immediately on software upgrade
-        if (!activeRosterKeyed && !candidateRosterKeyed && ledgerId == null) {
-            //            return candidateRoster;
-            // TODO: fix
-            return new RosterHistory(candidateRoster, 0, null, 0);
+            // (previousRoster, previousRound) := read the latest (current) active roster and round from the roster
+            // state.
+            final var previousRoster = rosterStore.getActiveRoster();
+            final var previousRound = previousRoundPair.roundNumber();
+
+            // clear the candidate roster from the roster state.
+            // set (candidateRoster, currentRound) as the new active roster in the roster state.
+            rosterStore.putActiveRoster(candidateRoster, currentRound);
+
+            // new rosterHistory := [(candidateRoster, currentRound), (previousRoster, previousRound)]
+            return new RosterHistory(candidateRoster, currentRound, previousRoster, previousRound);
         }
 
-        // If the candidate roster exists, has key material, and the number of yes
-        // votes passes the threshold for adoption, then the candidate roster
-        // will be adopted and become the new active roster.
-        // Validation Check: if the state already has a ledger id set, the ledger
-        // id recovered from the key material must match the ledger id in the state.
-        if (candidateRosterKeyed && ledgerId != null) {
-            final var candidateLedgerIdBytes =
-                    recoverLedgerId(candidateRoster, state, selfId, maxSharesPerNode, tssLibrary);
-            final var ledgerIdBytes = ledgerId.ledgerId().toByteArray();
-            if (Arrays.equals(ledgerIdBytes, candidateLedgerIdBytes)) {
-                //                return candidateRoster;
-                // TODO: fix
-                return new RosterHistory(candidateRoster, 0, null, 0);
-            }
-
-            // If the candidate roster key material does not match the ledger ID:
-            //   - we can’t adopt the candidate roster; log an exception, and revert to the most recent active roster
-            //   - don’t do anything with the candidate roster, because we expect the system to replace it at some point
-            logger.error("The key material does not match the ledger ID");
-        }
-
-        // In all other cases the existing active roster will remain the active roster.
-        //        return activeRoster;
-        // TODO: fix
-        return new RosterHistory(activeRoster, 0, null, 0);
-    }
-
-    private static boolean hasEnoughKeyMaterial(
-            final Roster roster,
-            final State state,
-            final NodeId selfId,
-            final long maxSharesPerNode,
-            final TssLibrary tssLibrary) {
-        final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStoreImpl.class);
-        final var rosterHash = RosterUtils.hash(roster).getBytes();
-        final var tssMessageBodies = tssStore.getTssMessageBodies(rosterHash);
-        final var tssParticipantDirectory = computeParticipantDirectory(roster, maxSharesPerNode, (int) selfId.id());
-        final var validTssOps = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
-        return isThresholdMet(validTssOps, tssParticipantDirectory);
-    }
-
-    private static @Nullable LedgerId getLedgerId(SignedState loadedSignedState) {
-        // FUTURE: lookup the ledger id from the state described in
-        // https://github.com/hashgraph/hedera-services/blob/develop/platform-sdk/docs/proposals/TSS-Ledger-Id/TSS-Ledger-Id.md#ledger-id-queue
-        return LedgerId.DEFAULT;
-    }
-
-    private static @NonNull byte[] recoverLedgerId(
-            final Roster roster,
-            final State state,
-            final NodeId selfId,
-            final long maxSharesPerNode,
-            final TssLibrary tssLibrary) {
-        final var tssParticipantDirectory = computeParticipantDirectory(roster, maxSharesPerNode, (int) selfId.id());
-        final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStoreImpl.class);
-        final var rosterHash = RosterUtils.hash(roster).getBytes();
-        final var tssMessageBodies = tssStore.getTssMessageBodies(rosterHash);
-        final var validTssOps = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
-        final var validTssMessages = getTssMessages(validTssOps);
-        final var computedPublicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
-        final var ledgerId = tssLibrary.aggregatePublicShares(computedPublicShares);
-        return ledgerId.publicKey().toBytes();
+        // If none of the cases above were met, this is a fatal error.
+        throw new IllegalStateException("Invalid state for determining roster history");
     }
 
     /**
