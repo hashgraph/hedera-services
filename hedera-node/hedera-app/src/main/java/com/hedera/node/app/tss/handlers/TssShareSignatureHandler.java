@@ -24,9 +24,26 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.api.TssShareId;
+import com.hedera.node.app.tss.api.TssShareSignature;
+import com.hedera.node.app.tss.pairings.FakeGroupElement;
+import com.hedera.node.app.tss.pairings.PairingSignature;
+import com.hedera.node.app.tss.pairings.SignatureSchema;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.sun.jdi.IntegerValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.time.InstantSource;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Handles TSS share signature transactions.
@@ -34,14 +51,54 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TssShareSignatureHandler implements TransactionHandler {
+    private final TssLibrary tssLibrary;
+    // From AppContext
+    private final InstantSource instantSource;
+    private final TssBaseService tssBaseService;
+    private final SortedSet<SignatureRequest> requests = new TreeSet<>();
+    private final Map<Bytes, Set<TssShareSignature>> signatures = new ConcurrentHashMap<>();
+    private Instant lastPurgeTime = Instant.EPOCH;
 
     @Inject
-    public TssShareSignatureHandler() {}
+    public TssShareSignatureHandler(final TssLibrary tssLibrary,
+                                    final InstantSource instantSource,
+                                    final TssBaseService tssBaseService) {
+        this.tssLibrary = tssLibrary;
+        this.instantSource = instantSource;
+        this.tssBaseService = tssBaseService;
+    }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        // TODO: Implement this in the later PRS
+        final var body = context.body().tssShareSignatureOrThrow();
+        final var shareSignature = body.shareSignature();
+        final var messageHash = body.messageHash();
+        final var shareIndex = body.shareIndex();
+        final var rosterHash = body.rosterHash();
+
+        // Extract the bytes B being signed
+        // computeIfAbsent() the set of signatures on B
+        // For each signature on B not already present, verify with tssLibrary and accumulate in map
+        // If B now has sufficient signatures to aggregate, do so and notify tssBaseService of sig on B
+        signatures.computeIfAbsent(messageHash, k -> ConcurrentHashMap.newKeySet());
+
+        // Step 2: Verify the signature using TSS library
+        final var tssShareSignature = new TssShareSignature(new TssShareId((int) shareIndex),
+                new PairingSignature(new FakeGroupElement(BigInteger.valueOf(shareIndex)),
+                        SignatureSchema.create(shareSignature.toByteArray())));
+//        if (!tssLibrary.verifySignature(tssShareSignature)) {
+//            throw new PreCheckException("Invalid TSS share signature");
+//        }
+
+        // Purge any expired signature requests, at most once per second
+        final var now = instantSource.instant();
+        if (now.getEpochSecond() > lastPurgeTime.getEpochSecond()) {
+            synchronized(requests) {
+                requests.removeIf(req -> req.timestamp().isBefore(now.minusSeconds(60)));
+            }
+            lastPurgeTime = now;
+        }
     }
 
     @Override
@@ -53,4 +110,12 @@ public class TssShareSignatureHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
     }
+
+    private record SignatureRequest(Bytes message, Instant timestamp) implements Comparable<SignatureRequest> {
+        @Override
+        public int compareTo(@NonNull final SignatureRequest o) {
+            return timestamp.compareTo(o.timestamp());
+        }
+    }
+
 }

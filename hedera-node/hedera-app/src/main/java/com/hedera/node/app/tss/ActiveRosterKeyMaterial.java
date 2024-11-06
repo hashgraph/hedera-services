@@ -21,6 +21,7 @@ import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
@@ -29,47 +30,45 @@ import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.LinkedHashMap;
+
 import java.util.List;
-import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class PrivateKeysAccessor {
-    private Map<Bytes, List<TssPrivateShare>> privateShares;
+public class ActiveRosterKeyMaterial {
     private List<TssPrivateShare> activeRosterShares;
     private Bytes activeRosterHash;
-
     private final TssLibrary tssLibrary;
+    private TssParticipantDirectory activeRosterParticipantDirectory;
+    private Roster activeRoster;
 
     @Inject
-    public PrivateKeysAccessor(@NonNull final TssLibrary tssLibrary) {
+    public ActiveRosterKeyMaterial(@NonNull final TssLibrary tssLibrary) {
         this.tssLibrary = requireNonNull(tssLibrary);
     }
 
+    /**
+     * Generates the key material for the active roster.
+     * @param state the state
+     * @param configuration the configuration
+     * @param selfId the node id
+     */
     public void generateKeyMaterialForActiveRoster(
             @NonNull final State state, @NonNull final Configuration configuration, @NonNull final NodeInfo selfId) {
         final var storeFactory = new ReadableStoreFactory(state);
         final var tssStore = storeFactory.getStore(ReadableTssStore.class);
         final var rosterStore = storeFactory.getStore(ReadableRosterStore.class);
 
-        final var maxSharesPerNode =
-                configuration.getConfigData(TssConfig.class).maxSharesPerNode();
+        final var maxSharesPerNode = configuration.getConfigData(TssConfig.class).maxSharesPerNode();
         this.activeRosterHash = rosterStore.getActiveRosterHash();
-        final var activeRoster =
-                requireNonNull(storeFactory.getStore(ReadableRosterStore.class).getActiveRoster());
-
-        final var activeDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, (int) selfId.nodeId());
-        final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
-        final var tssShares = getTssPrivateShares(activeDirectory, tssStore, activeRosterHash);
-        privateShares.put(activeRosterHash, tssShares);
-        activeRosterShares = tssShares;
+        this.activeRoster = requireNonNull(storeFactory.getStore(ReadableRosterStore.class).getActiveRoster());
+        this.activeRosterParticipantDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, (int) selfId.nodeId());
+        this.activeRosterShares = getTssPrivateShares(activeRosterParticipantDirectory, tssStore, activeRosterHash);
     }
 
     @NonNull
@@ -84,18 +83,27 @@ public class PrivateKeysAccessor {
     }
 
     public void reset() {
-        privateShares = new LinkedHashMap<>();
+        activeRosterShares.clear();
+        activeRosterHash = Bytes.EMPTY;
+
+    }
+    public Roster activeRoster() {
+        return activeRoster;
     }
 
-    public List<TssPrivateShare> getPrivateShares(@NonNull final Bytes activeRosterHash) {
-        return privateShares.get(activeRosterHash);
+    public TssParticipantDirectory activeRosterParticipantDirectory() {
+        return activeRosterParticipantDirectory;
     }
 
-    public List<TssPrivateShare> getActiveRosterShares() {
-        return activeRosterShares;
+    public TssLibrary tssLibrary() {
+        return tssLibrary;
     }
 
-    public Bytes getActiveRosterHash() {
+    public Bytes activeRosterHash() {
         return activeRosterHash;
+    }
+
+    public List<TssPrivateShare> activeRosterShares() {
+        return activeRosterShares;
     }
 }

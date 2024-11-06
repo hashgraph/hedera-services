@@ -112,7 +112,9 @@ class IngestComponentTest {
                         DEFAULT_CONFIG.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
-                UNAVAILABLE_GOSSIP);
+                UNAVAILABLE_GOSSIP,
+                configuration,
+                3L);
         given(tssBaseService.tssHandlers())
                 .willReturn(new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler));
         app = DaggerHederaInjectionComponent.builder()

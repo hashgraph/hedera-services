@@ -57,6 +57,7 @@ module com.hedera.node.app {
     requires static com.google.auto.service;
     requires static java.compiler;
     requires static org.jetbrains.annotations;
+    requires jdk.jdi;
     // javax.annotation.processing.Generated
 
     exports com.hedera.node.app;

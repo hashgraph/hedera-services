@@ -57,6 +57,7 @@ import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -68,6 +69,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -89,7 +91,9 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssSubmissions tssSubmissions;
     private final Executor tssLibraryExecutor;
     private final ExecutorService signingExecutor;
-    private final PrivateKeysAccessor privateKeysAccessor;
+    private final ActiveRosterKeyMaterial privateKeysAccessor;
+    private final Configuration configuration;
+    private final long selfId;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
@@ -102,7 +106,9 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
-        this.privateKeysAccessor = new PrivateKeysAccessor(tssLibrary);
+        this.privateKeysAccessor = new ActiveRosterKeyMaterial(tssLibrary);
+        this.configuration = requireNonNull(appContext.configuration());
+        this.selfId = appContext.selfId();
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
                         tssLibrary,
@@ -111,7 +117,9 @@ public class TssBaseServiceImpl implements TssBaseService {
                         submissionExecutor,
                         tssLibraryExecutor,
                         metrics,
-                        privateKeysAccessor);
+                        privateKeysAccessor,
+                        appContext.configuration(),
+                        appContext.selfId());
         this.tssMetrics = component.tssMetrics();
         this.tssHandlers = new TssHandlers(
                 component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
@@ -167,7 +175,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
 
         final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
-        final var tssPrivateShares = privateKeysAccessor.getPrivateShares(activeRosterHash);
+        final var tssPrivateShares = privateKeysAccessor.activeRosterShares();
 
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
         // FUTURE - instead of an arbitrary counter here, use the share index from the private share
@@ -193,25 +201,14 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void requestLedgerSignature(@NonNull final byte[] messageHash) {
+    public void requestLedgerSignature(@NonNull final byte[] messageHash, final Instant lastUsedConsensusTime) {
         requireNonNull(messageHash);
         // (TSS-FUTURE) Initiate asynchronous process of creating a ledger signature
         final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
                 () -> {
-                    final var tssPrivateShares = privateKeysAccessor.getActiveRosterShares();
-                    final var activeRoster = privateKeysAccessor.getActiveRosterHash();
-                    for (final var privateShare : tssPrivateShares) {
-                        final var signature = tssLibrary.sign(privateShare, messageHash);
-                        final var tssShareSignatureBody = TssShareSignatureTransactionBody.newBuilder()
-                                .messageHash(Bytes.wrap(messageHash))
-                                .shareSignature(Bytes.wrap(
-                                        signature.signature().signature().toBytes()))
-                                .shareIndex(privateShare.shareId().idElement())
-                                .rosterHash(activeRoster)
-                                .build();
-                        // what context to use
-                        tssSubmissions.submitTssShareSignature(tssShareSignatureBody, null);
+                    if(configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
+                        submitShareSignatures(messageHash, lastUsedConsensusTime);
                     }
                     consumers.forEach(consumer -> {
                         try {
@@ -228,6 +225,23 @@ public class TssBaseServiceImpl implements TssBaseService {
                     });
                 },
                 signingExecutor);
+    }
+
+    private void submitShareSignatures(final byte @NonNull [] messageHash, final Instant lastUsedConsensusTime) {
+        final var tssPrivateShares = privateKeysAccessor.activeRosterShares();
+        final var activeRoster = privateKeysAccessor.activeRosterHash();
+        long nanosOffset = 1;
+        for (final var privateShare : tssPrivateShares) {
+            final var signature = tssLibrary.sign(privateShare, messageHash);
+            final var tssShareSignatureBody = TssShareSignatureTransactionBody.newBuilder()
+                    .messageHash(Bytes.wrap(messageHash))
+                    .shareSignature(Bytes.wrap(signature.signature().signature().toBytes()))
+                    .shareIndex(privateShare.shareId().idElement())
+                    .rosterHash(activeRoster)
+                    .build();
+            tssSubmissions.submitTssShareSignature(tssShareSignatureBody,
+                    lastUsedConsensusTime.plusNanos(nanosOffset++));
+        }
     }
 
     @Override
@@ -282,11 +296,32 @@ public class TssBaseServiceImpl implements TssBaseService {
         return activeRoster;
     }
 
+    public void notifySignature(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
+        requireNonNull(messageHash);
+        requireNonNull(signature);
+        // (TSS-FUTURE) Notify the consumers that a signature has been received
+        CompletableFuture.runAsync(
+                () -> consumers.forEach(consumer -> {
+                    try {
+                        consumer.accept(messageHash, signature);
+                    } catch (Exception e) {
+                        log.error(
+                                "Failed to provide signature {} on message {} to consumer {}",
+                                CommonUtils.hex(signature),
+                                CommonUtils.hex(messageHash),
+                                consumer,
+                                e);
+                    }
+                }),
+                signingExecutor);
+    }
+
     /**
      * Returns true if there exists a vote bitset for the given candidate roster hash whose received weight
      * is at least 1/3 of the total weight of the active roster.
+     *
      * @param activeRoster the active roster
-     * @param rosterHash the candidate roster hash
+     * @param rosterHash   the candidate roster hash
      * @param tssBaseStore the TSS store
      * @return true if the threshold has been reached, false otherwise
      */

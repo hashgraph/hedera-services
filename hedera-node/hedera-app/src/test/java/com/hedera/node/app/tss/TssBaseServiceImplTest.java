@@ -25,6 +25,8 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.spi.SchemaRegistry;
+
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
@@ -88,11 +90,11 @@ class TssBaseServiceImplTest {
         subject.registerLedgerSignatureConsumer(trackingConsumer);
         subject.registerLedgerSignatureConsumer(secondConsumer);
 
-        subject.requestLedgerSignature(firstMessage);
+        subject.requestLedgerSignature(firstMessage, Instant.ofEpochSecond(1_234_567L));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         subject.unregisterLedgerSignatureConsumer(secondConsumer);
         latch = new CountDownLatch(1);
-        subject.requestLedgerSignature(secondMessage);
+        subject.requestLedgerSignature(secondMessage, Instant.ofEpochSecond(1_234_567L));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
 
         assertEquals(2, receivedMessageHashes.size());

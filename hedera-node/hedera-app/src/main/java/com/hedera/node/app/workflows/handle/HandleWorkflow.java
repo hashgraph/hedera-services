@@ -71,7 +71,7 @@ import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.tss.PrivateKeysAccessor;
+import com.hedera.node.app.tss.ActiveRosterKeyMaterial;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -137,7 +137,7 @@ public class HandleWorkflow {
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
-    private PrivateKeysAccessor privateKeysAccessor;
+    private ActiveRosterKeyMaterial privateKeysAccessor;
 
     @Inject
     public HandleWorkflow(
@@ -161,7 +161,7 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
-            @NonNull final PrivateKeysAccessor privateKeysAccessor) {
+            @NonNull final ActiveRosterKeyMaterial privateKeysAccessor) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);

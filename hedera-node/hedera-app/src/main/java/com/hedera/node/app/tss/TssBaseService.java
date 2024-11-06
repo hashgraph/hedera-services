@@ -28,6 +28,8 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.time.Instant;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -91,8 +93,9 @@ public interface TssBaseService extends Service {
      * to all consumers that have been registered through {@link #registerLedgerSignatureConsumer}.
      *
      * @param messageHash The hash of the message to be signed by the ledger.
+     * @param lastUsedConsensusTime The last used consensus time in the round.
      */
-    void requestLedgerSignature(@NonNull byte[] messageHash);
+    void requestLedgerSignature(@NonNull byte[] messageHash, final Instant lastUsedConsensusTime);
 
     /**
      * Registers a consumer of the message hash and the ledger signature on the message hash.

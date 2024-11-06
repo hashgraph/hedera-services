@@ -19,6 +19,7 @@ package com.hedera.node.app.tss;
 import com.hedera.node.app.tss.api.TssLibrary;
 import dagger.Binds;
 import dagger.Module;
+
 import javax.inject.Singleton;
 
 @Module

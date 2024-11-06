@@ -48,6 +48,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  */
 public enum TransactionExecutors {
     TRANSACTION_EXECUTORS;
+    public static final long DEFAULT_NODE_ACCOUNT_ID = 3L;
 
     /**
      * A strategy to bind and retrieve {@link OperationTracer} scoped to a thread.
@@ -94,7 +95,9 @@ public enum TransactionExecutors {
                         bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
-                UNAVAILABLE_GOSSIP);
+                UNAVAILABLE_GOSSIP,
+                bootstrapConfigProvider.getConfiguration(),
+                DEFAULT_NODE_ACCOUNT_ID);
         final var tssBaseService = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),

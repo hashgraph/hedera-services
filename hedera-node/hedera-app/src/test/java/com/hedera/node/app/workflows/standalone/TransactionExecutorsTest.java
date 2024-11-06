@@ -68,6 +68,7 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -276,7 +277,11 @@ class TransactionExecutorsTest {
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
                         new ContractServiceImpl(
-                                new AppContextImpl(InstantSource.system(), signatureVerifier, UNAVAILABLE_GOSSIP)),
+                                new AppContextImpl(InstantSource.system(),
+                                        signatureVerifier,
+                                        UNAVAILABLE_GOSSIP,
+                                        HederaTestConfigBuilder.createConfig(),
+                                        3L)),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),

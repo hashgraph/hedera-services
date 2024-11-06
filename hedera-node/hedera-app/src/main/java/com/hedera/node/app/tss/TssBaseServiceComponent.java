@@ -16,13 +16,17 @@
 
 package com.hedera.node.app.tss;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
 import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.handlers.TssVoteHandler;
+import com.hedera.node.config.ConfigProvider;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.spi.info.NodeInfo;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.time.InstantSource;
@@ -41,7 +45,9 @@ public interface TssBaseServiceComponent {
                 @BindsInstance Executor submissionExecutor,
                 @BindsInstance @TssLibraryExecutor Executor libraryExecutor,
                 @BindsInstance Metrics metrics,
-                @BindsInstance PrivateKeysAccessor privateKeysAccessor);
+                @BindsInstance ActiveRosterKeyMaterial privateKeysAccessor,
+                @BindsInstance Configuration configuration,
+                @BindsInstance long selfId);
     }
 
     TssMetrics tssMetrics();

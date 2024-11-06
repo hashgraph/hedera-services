@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.spi;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 
@@ -87,4 +90,8 @@ public interface AppContext {
      * @return the gossip interface
      */
     Gossip gossip();
+
+    Configuration configuration();
+
+    long selfId();
 }

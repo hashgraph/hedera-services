@@ -30,6 +30,7 @@ import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.swirlds.config.api.Configuration;
@@ -75,7 +76,9 @@ public class TssSubmissions {
     private HandleContext lastContextUsed;
 
     @Inject
-    public TssSubmissions(@NonNull final AppContext.Gossip gossip, @NonNull final Executor submissionExecutor) {
+    public TssSubmissions(@NonNull final AppContext.Gossip gossip,
+                          @NonNull final Executor submissionExecutor,
+                          @NonNull final ConfigProvider config) {
         this.gossip = requireNonNull(gossip);
         this.submissionExecutor = requireNonNull(submissionExecutor);
     }
@@ -94,7 +97,8 @@ public class TssSubmissions {
         return submit(
                 b -> b.tssMessage(body),
                 context.configuration(),
-                context.networkInfo().selfNodeInfo().accountId());
+                context.networkInfo().selfNodeInfo().accountId(),
+                nextValidStartFor(context));
     }
 
     /**
@@ -111,21 +115,21 @@ public class TssSubmissions {
         return submit(
                 b -> b.tssVote(body),
                 context.configuration(),
-                context.networkInfo().selfNodeInfo().accountId());
+                context.networkInfo().selfNodeInfo().accountId(),
+                nextValidStartFor(context));
     }
 
     /**
      * Attempts to submit a TSS share signature to the network.
      *
-     * @param body the TSS share signature to submit
-     * @param context the TSS context
+     * @param body    the TSS share signature to submit
+     * @param lastUsedConsensusTime the last used consensus time
      * @return a future that completes when the share signature has been submitted
      */
-    public CompletableFuture<Void> submitTssShareSignature(
-            @NonNull final TssShareSignatureTransactionBody body, @NonNull final HandleContext context) {
+    public CompletableFuture<Void> submitTssShareSignature(@NonNull final TssShareSignatureTransactionBody body,
+                                                           final Instant lastUsedConsensusTime) {
         requireNonNull(body);
-        requireNonNull(context);
-        return submit(b -> b.tssShareSignature(body), context);
+        return submit(b -> b.tssShareSignature(body), null, null, lastUsedConsensusTime);
     }
 
     private CompletableFuture<Void> submit(
@@ -136,7 +140,7 @@ public class TssSubmissions {
         final var tssConfig = config.getConfigData(TssConfig.class);
         final var hederaConfig = config.getConfigData(HederaConfig.class);
         final var validDuration = new Duration(hederaConfig.transactionMaxValidDuration());
-        final var validStartTime = new AtomicReference<>(nextValidStartFor(context));
+        final var validStartTime = new AtomicReference<>(consensusNow);
         final var attemptsLeft = new AtomicInteger(tssConfig.timesToTrySubmission());
         return CompletableFuture.runAsync(
                 () -> {

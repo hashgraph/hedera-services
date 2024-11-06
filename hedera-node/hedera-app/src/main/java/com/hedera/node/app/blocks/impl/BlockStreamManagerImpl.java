@@ -284,6 +284,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Put this block hash context in state via the block stream info
             final var writableState = state.getWritableStates(BlockStreamService.NAME);
             final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+            final var boundaryTimestamp = boundaryStateChangeListener.boundaryTimestampOrThrow();
             blockStreamInfoState.put(new BlockStreamInfo(
                     blockNumber,
                     blockTimestamp(),
@@ -293,7 +294,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     blockStartStateHash,
                     outputTreeStatus.numLeaves(),
                     outputTreeStatus.rightmostHashes(),
-                    boundaryStateChangeListener.boundaryTimestampOrThrow(),
+                    boundaryTimestamp,
                     pendingWork != POST_UPGRADE_WORK,
                     version,
                     asTimestamp(lastIntervalProcessTime)));
@@ -323,7 +324,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;
-            tssBaseService.requestLedgerSignature(blockHash.toByteArray());
+            tssBaseService.requestLedgerSignature(blockHash.toByteArray(), asInstant(boundaryTimestamp));
         }
     }
 
