@@ -35,6 +35,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.security.cert.X509Certificate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
@@ -49,6 +50,15 @@ public class WorkingDirUtils {
     private static final String LOG4J2_XML = "log4j2.xml";
     private static final String PROJECT_BOOTSTRAP_ASSETS_LOC = "hedera-node/configuration/dev";
     private static final String TEST_CLIENTS_BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
+    private static final X509Certificate SIG_CERT;
+
+    static {
+        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
+                .withSize(1)
+                .withRealKeysEnabled(true)
+                .build();
+        SIG_CERT = requireNonNull(randomAddressBook.iterator().next().getSigCert());
+    }
 
     public static final String DATA_DIR = "data";
     public static final String CONFIG_DIR = "config";
@@ -312,14 +322,9 @@ public class WorkingDirUtils {
     public static AddressBook loadAddressBook(@NonNull final Path path) {
         requireNonNull(path);
         final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
-        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
-                .withSize(1)
-                .withRealKeysEnabled(true)
-                .build();
-        final var sigCert = requireNonNull(randomAddressBook.iterator().next().getSigCert());
         final var addressBook = configFile.getAddressBook();
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
-                .map(address -> address.copySetSigCert(sigCert))
+                .map(address -> address.copySetSigCert(SIG_CERT))
                 .toList());
     }
 

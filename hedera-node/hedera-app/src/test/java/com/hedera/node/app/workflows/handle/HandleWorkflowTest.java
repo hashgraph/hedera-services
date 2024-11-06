@@ -43,7 +43,7 @@ import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
-import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
+import com.hedera.node.app.workflows.handle.steps.StakePeriodChanges;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -73,7 +73,7 @@ class HandleWorkflowTest {
     private NetworkInfo networkInfo;
 
     @Mock
-    private NodeStakeUpdates nodeStakeUpdates;
+    private StakePeriodChanges stakePeriodChanges;
 
     @Mock
     private DispatchProcessor dispatchProcessor;
@@ -191,7 +191,7 @@ class HandleWorkflowTest {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
         subject = new HandleWorkflow(
                 networkInfo,
-                nodeStakeUpdates,
+                stakePeriodChanges,
                 dispatchProcessor,
                 configProvider,
                 storeMetricsService,

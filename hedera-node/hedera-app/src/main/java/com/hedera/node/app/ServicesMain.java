@@ -17,7 +17,7 @@
 package com.hedera.node.app;
 
 import static com.hedera.node.app.tss.TssCryptographyManager.isThresholdMet;
-import static com.hedera.node.app.tss.handlers.TssUtils.computeTssParticipantDirectory;
+import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
@@ -69,6 +69,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
@@ -117,10 +118,26 @@ public class ServicesMain implements SwirldMain {
     private final SwirldMain delegate;
 
     /**
+     * The {@link Metrics} to use.
+     */
+    private static Metrics metrics;
+
+    /**
      * Create a new instance
      */
     public ServicesMain() {
-        delegate = newHedera();
+        delegate = new Hedera(
+                ConstructableRegistry.getInstance(),
+                ServicesRegistryImpl::new,
+                new OrderedServiceMigrator(),
+                InstantSource.system(),
+                appContext -> new TssBaseServiceImpl(
+                        appContext,
+                        ForkJoinPool.commonPool(),
+                        ForkJoinPool.commonPool(),
+                        new PlaceholderTssLibrary(),
+                        ForkJoinPool.commonPool(),
+                        new NoOpMetrics()));
     }
 
     /**
@@ -190,7 +207,6 @@ public class ServicesMain implements SwirldMain {
      */
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
-        final Hedera hedera = newHedera();
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
         final AddressBook diskAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
@@ -214,15 +230,17 @@ public class ServicesMain implements SwirldMain {
 
         final NodeId selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
 
-        final SoftwareVersion version = hedera.getSoftwareVersion();
-        logger.info("Starting node {} with version {}", selfId, version);
-
         final var configuration = buildConfiguration();
         final var keysAndCerts =
                 initNodeSecurity(diskAddressBook, configuration).get(selfId);
 
         setupGlobalMetrics(configuration);
-        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        metrics = getMetricsProvider().createPlatformMetrics(selfId);
+
+        final Hedera hedera = newHedera();
+        final SoftwareVersion version = hedera.getSoftwareVersion();
+        logger.info("Starting node {} with version {}", selfId, version);
+
         final var time = Time.getCurrent();
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
@@ -273,9 +291,6 @@ public class ServicesMain implements SwirldMain {
         // Initialize the Merkle cryptography
         final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
-
-        // Register the metrics related to TSS functionalities
-        hedera.registerTssMetrics(metrics);
 
         // Create the platform context
         final var platformContext = PlatformContext.create(
@@ -485,8 +500,8 @@ public class ServicesMain implements SwirldMain {
             final TssLibrary tssLibrary) {
         final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStoreImpl.class);
         final var rosterHash = RosterUtils.hash(roster).getBytes();
-        final var tssMessageBodies = tssStore.getTssMessages(rosterHash);
-        final var tssParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int) selfId.id());
+        final var tssMessageBodies = tssStore.getTssMessageBodies(rosterHash);
+        final var tssParticipantDirectory = computeParticipantDirectory(roster, maxSharesPerNode, (int) selfId.id());
         final var validTssOps = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
         return isThresholdMet(validTssOps, tssParticipantDirectory);
     }
@@ -503,10 +518,10 @@ public class ServicesMain implements SwirldMain {
             final NodeId selfId,
             final long maxSharesPerNode,
             final TssLibrary tssLibrary) {
-        final var tssParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int) selfId.id());
+        final var tssParticipantDirectory = computeParticipantDirectory(roster, maxSharesPerNode, (int) selfId.id());
         final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStoreImpl.class);
         final var rosterHash = RosterUtils.hash(roster).getBytes();
-        final var tssMessageBodies = tssStore.getTssMessages(rosterHash);
+        final var tssMessageBodies = tssStore.getTssMessageBodies(rosterHash);
         final var validTssOps = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
         final var validTssMessages = getTssMessages(validTssOps);
         final var computedPublicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
@@ -615,6 +630,6 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
-                        new NoOpMetrics()));
+                        metrics));
     }
 }

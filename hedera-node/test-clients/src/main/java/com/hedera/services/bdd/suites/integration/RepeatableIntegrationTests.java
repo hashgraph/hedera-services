@@ -18,26 +18,35 @@ package com.hedera.services.bdd.suites.integration;
 
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_TSS_CONTROL;
+import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.TssVerbs.rekeyingScenario;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.startIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.stopIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.DabEdits.NO_DAB_EDITS;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TSS_MESSAGE_SIMS;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.INVALID_MESSAGES;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.VALID_MESSAGES;
+import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.UNEQUAL_NODE_STAKES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -81,6 +90,24 @@ public class RepeatableIntegrationTests {
                         cryptoCreate("directProof"));
             }
         }));
+    }
+
+    /**
+     * Creates a rekeying scenario where the embedded node receives the threshold number of valid TSS messages.
+     */
+    @LeakyRepeatableHapiTest(
+            value = {NEEDS_TSS_CONTROL, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
+            overrides = {"tss.keyCandidateRoster"})
+    Stream<DynamicTest> embeddedNodeVotesGivenThresholdValidMessages() {
+        final var scenario = rekeyingScenario(
+                // Changing stakes is enough to ensure the candidate roster is different from the active roster
+                NO_DAB_EDITS,
+                // Give unequal stake to all nodes (so they have different numbers of shares in the candidate roster)
+                UNEQUAL_NODE_STAKES,
+                // Submit invalid messages from node1, to verify the embedded node votes waits for the required
+                // number of threshold valid messages
+                TSS_MESSAGE_SIMS.apply(List.of(INVALID_MESSAGES, VALID_MESSAGES, VALID_MESSAGES)));
+        return hapiTest(blockStreamMustIncludePassFrom(spec -> scenario), scenario);
     }
 
     /**

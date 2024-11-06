@@ -17,10 +17,15 @@
 package com.hedera.node.app.tss;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
@@ -34,7 +39,6 @@ import java.util.function.Consumer;
  */
 public interface TssBaseService extends Service {
     String NAME = "TssBaseService";
-
     /**
      * The status of the TSS service relative to a given roster and ledger id.
      */
@@ -56,11 +60,6 @@ public interface TssBaseService extends Service {
     }
 
     /**
-     * @param metrics the metrics object being used to report tss performance
-     */
-    void registerMetrics(@NonNull TssMetrics metrics);
-
-    /**
      * Returns the status of the TSS service relative to the given roster, ledger id, and given TSS base state.
      *
      * @param roster the candidate roster
@@ -69,15 +68,6 @@ public interface TssBaseService extends Service {
      * @return the status of the TSS service
      */
     Status getStatus(@NonNull Roster roster, @NonNull Bytes ledgerId, @NonNull ReadableTssStoreImpl tssBaseStore);
-
-    /**
-     * Adopts the given roster for TSS operations.
-     * @param roster the active roster
-     * @param context the TSS context
-     * @param roundNumber the current round number
-     * @throws IllegalArgumentException if the expected shares cannot be aggregated
-     */
-    void adopt(@NonNull Roster roster, @NonNull final HandleContext context, final long roundNumber);
 
     /**
      * Bootstraps the TSS service for the given roster in the given context.
@@ -123,4 +113,23 @@ public interface TssBaseService extends Service {
      * @return the handlers
      */
     TssHandlers tssHandlers();
+
+    /**
+     * Returns the active roster for the given network state.
+     * If the network is not at genesis and is an upgrade, then the active roster is determined based on the
+     * votes in the state. If the network is at genesis, then the active roster is the genesis roster.
+     *
+     * @param state           the network state
+     * @param trigger         the initialization trigger
+     * @param serviceMigrator the service migrator
+     * @param version         the services software version
+     * @param configuration  the configuration
+     * @return the active roster
+     */
+    Roster chooseRosterForNetwork(
+            @NonNull State state,
+            @NonNull InitTrigger trigger,
+            @NonNull ServiceMigrator serviceMigrator,
+            @NonNull ServicesSoftwareVersion version,
+            @NonNull Configuration configuration);
 }

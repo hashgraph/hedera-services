@@ -81,14 +81,15 @@ import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
-import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
+import com.hedera.node.app.workflows.handle.steps.StakePeriodChanges;
 import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.CesEvent;
@@ -120,7 +121,7 @@ public class HandleWorkflow {
 
     private final StreamMode streamMode;
     private final NetworkInfo networkInfo;
-    private final NodeStakeUpdates nodeStakeUpdates;
+    private final StakePeriodChanges stakePeriodChanges;
     private final DispatchProcessor dispatchProcessor;
     private final StoreMetricsService storeMetricsService;
     private final BlockRecordManager blockRecordManager;
@@ -146,7 +147,7 @@ public class HandleWorkflow {
     @Inject
     public HandleWorkflow(
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final NodeStakeUpdates nodeStakeUpdates,
+            @NonNull final StakePeriodChanges stakePeriodChanges,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
@@ -167,7 +168,7 @@ public class HandleWorkflow {
             @NonNull final UserTxnFactory userTxnFactory,
             @NonNull final TssBaseService tssBaseService) {
         this.networkInfo = requireNonNull(networkInfo);
-        this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
+        this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.blockRecordManager = requireNonNull(blockRecordManager);
@@ -370,6 +371,11 @@ public class HandleWorkflow {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     systemSetup.externalizeInitSideEffects(
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
+                    // Set the genesis roster in state
+                    final var writableStoreFactory = new WritableStoreFactory(
+                            userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
+                    final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
+                    rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
                             userTxn.tokenContextImpl(),
@@ -392,11 +398,11 @@ public class HandleWorkflow {
                     final var ledgerId = getLedgerId(dispatch.handleContext());
                     if (ledgerId != null) {
                         final var rosterStore =
-                                dispatch.handleContext().storeFactory().readableStore(ReadableRosterStore.class);
+                                dispatch.handleContext().storeFactory().writableStore(WritableRosterStore.class);
                         final var candidateRoster = rosterStore.getCandidateRoster();
                         if (candidateRoster != null) {
                             final long roundNumber = ((CesEvent) userTxn.event()).getRoundReceived();
-                            tssBaseService.adopt(candidateRoster, dispatch.handleContext(), roundNumber);
+                            rosterStore.putActiveRoster(candidateRoster, roundNumber);
                         }
                     } else {
                         // If there is NOT an existing ledger ID, adopt the ledger ID i.e. CREATE a ledger ID and store
@@ -559,9 +565,9 @@ public class HandleWorkflow {
                 .memo(txnInfo.txBody().memo());
     }
 
-    private void updateNodeStakes(@NonNull final UserTxn userTxn, final Dispatch dispatch) {
+    private void updateNodeStakes(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
         try {
-            nodeStakeUpdates.process(
+            stakePeriodChanges.process(
                     dispatch,
                     userTxn.stack(),
                     userTxn.tokenContextImpl(),
