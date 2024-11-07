@@ -657,7 +657,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     @Override
     public synchronized PlatformTestingToolState copy() {
         throwIfImmutable();
-        setImmutable(true);
+        //        setImmutable(true);
         roundCounter++;
 
         if (transactionsIgnoredByExpectedMap > 0) {
@@ -1312,7 +1312,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
-        super.init(platform, trigger, previousSoftwareVersion);
+        //        super.init(platform, trigger, previousSoftwareVersion);
 
         if (trigger == InitTrigger.RESTART) {
             rebuildExpectedMapFromState(Instant.EPOCH, true);
