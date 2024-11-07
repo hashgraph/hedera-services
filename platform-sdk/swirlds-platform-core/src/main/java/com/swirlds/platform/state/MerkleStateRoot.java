@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.*;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -432,6 +432,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             @NonNull final Supplier<T> nodeSupplier,
             @NonNull final Consumer<T> nodeInitializer) {
 
+        logger.info(STARTUP.getMarker(), "Putting states... ", md.serviceName());
+
         // Validate the inputs
         throwIfImmutable();
         requireNonNull(md);
@@ -448,6 +450,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         // it isn't stale or incomplete (e.g. in a genesis case)
         readableStatesMap.put(serviceName, new MerkleReadableStates(stateMetadata));
         writableStatesMap.put(serviceName, new MerkleWritableStates(serviceName, stateMetadata));
+
+        logger.info(STARTUP.getMarker(), "Put states! Service name: {} ", md.serviceName());
 
         // Look for a node, and if we don't find it, then insert the one we were given
         // If there is not a node there, then set it. I don't want to overwrite the existing node,
@@ -478,8 +482,21 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
                         "A label must be computed based on the same " + "service name and state key in the metadata!");
             }
 
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Setting child.. Service name: {} / Number of children: {} / node: {}",
+                    md.serviceName(),
+                    getNumberOfChildren(),
+                    nodeIndex);
             setChild(getNumberOfChildren(), node);
         } else {
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Getting child.. Service name: {} / Number of children: {} / node: {}",
+                    md.serviceName(),
+                    getNumberOfChildren(),
+                    nodeIndex);
+
             node = getChild(nodeIndex);
         }
         nodeInitializer.accept(node);

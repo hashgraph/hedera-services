@@ -40,11 +40,18 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.MarkerManager;
 
 public enum NoOpMerkleStateLifecycles implements MerkleStateLifecycles {
     NO_OP_MERKLE_STATE_LIFECYCLES;
 
+    private static final Logger logger = LogManager.getLogger(NoOpMerkleStateLifecycles.class);
+
     public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
+        logger.info(MarkerManager.getMarker("DEMO_INFO"), "Init Platform State...");
+
         if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
         }
@@ -66,7 +73,11 @@ public enum NoOpMerkleStateLifecycles implements MerkleStateLifecycles {
                         throw new IllegalStateException("PlatformStateService only expected to use singleton states");
                     }
                 });
+
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
+
+        logger.info(MarkerManager.getMarker("DEMO_INFO"), "Writable states: {}", writableStates.stateKeys());
+
         final var migrationContext = new MigrationContext() {
             @NonNull
             @Override
@@ -113,6 +124,11 @@ public enum NoOpMerkleStateLifecycles implements MerkleStateLifecycles {
                 return Map.of();
             }
         };
+
+        logger.info(
+                MarkerManager.getMarker("DEMO_INFO"),
+                "(MigrationContext) Writable states: {}",
+                migrationContext.newStates().stateKeys());
 
         schema.migrate(migrationContext);
         ((CommittableWritableStates) writableStates).commit();

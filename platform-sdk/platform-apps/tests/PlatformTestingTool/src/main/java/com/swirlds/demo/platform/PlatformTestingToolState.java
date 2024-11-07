@@ -250,7 +250,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             @NonNull final MerkleStateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
-        allocateSpaceForChild(ChildIndices.CHILD_COUNT);
+        // allocateSpaceForChild(ChildIndices.CHILD_COUNT);
 
         expectedFCMFamily = new ExpectedFCMFamilyImpl();
 
