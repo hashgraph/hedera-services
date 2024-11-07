@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.tss.handlers;
 
-import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
@@ -30,10 +29,9 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssCryptographyManager;
+import com.hedera.node.app.tss.TssKeyMaterialAccessor;
 import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.stores.WritableTssStore;
-import com.hedera.node.config.data.TssConfig;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -48,17 +46,20 @@ public class TssMessageHandler implements TransactionHandler {
     private final AppContext.Gossip gossip;
     private final TssCryptographyManager tssCryptographyManager;
     private final TssMetrics tssMetrics;
+    private final TssKeyMaterialAccessor keyMaterialAccessor;
 
     @Inject
     public TssMessageHandler(
             @NonNull final TssSubmissions submissionManager,
             @NonNull final AppContext.Gossip gossip,
             @NonNull final TssCryptographyManager tssCryptographyManager,
-            @NonNull final TssMetrics metrics) {
+            @NonNull final TssMetrics metrics,
+            @NonNull final TssKeyMaterialAccessor keyMaterialAccessor) {
         this.submissionManager = requireNonNull(submissionManager);
         this.gossip = requireNonNull(gossip);
         this.tssCryptographyManager = requireNonNull(tssCryptographyManager);
         this.tssMetrics = requireNonNull(metrics);
+        this.keyMaterialAccessor = requireNonNull(keyMaterialAccessor);
     }
 
     @Override
@@ -86,12 +87,7 @@ public class TssMessageHandler implements TransactionHandler {
         tssStore.put(key, op);
 
         // Obtain the directory of participants for the target roster
-        final var maxShares =
-                context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
-        final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
-        final var directory =
-                computeParticipantDirectory(requireNonNull(rosterStore.getActiveRoster()), maxShares, (int)
-                        context.networkInfo().selfNodeInfo().nodeId());
+        final var directory = keyMaterialAccessor.activeRosterParticipantDirectory();
         // Schedule work to potentially compute a signed vote for the new key material of the target
         // roster, if this message was valid and passed the threshold number of messages required
         tssCryptographyManager

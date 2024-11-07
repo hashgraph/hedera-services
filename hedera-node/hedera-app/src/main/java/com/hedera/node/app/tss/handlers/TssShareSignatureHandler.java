@@ -26,7 +26,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.TssRosterKeyMaterialAccessor;
+import com.hedera.node.app.tss.TssKeyMaterialAccessor;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssShareId;
 import com.hedera.node.app.tss.api.TssShareSignature;
@@ -54,7 +54,7 @@ import javax.inject.Singleton;
 @Singleton
 public class TssShareSignatureHandler implements TransactionHandler {
     private final TssLibrary tssLibrary;
-    private final TssRosterKeyMaterialAccessor rosterKeyMaterialAccessor;
+    private final TssKeyMaterialAccessor rosterKeyMaterialAccessor;
     private final InstantSource instantSource;
     private final SortedSet<SignatureRequest> requests = new TreeSet<>();
     private final Map<Bytes, Map<Bytes, Set<TssShareSignature>>> signatures = new ConcurrentHashMap<>();
@@ -65,7 +65,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
     public TssShareSignatureHandler(
             @NonNull final TssLibrary tssLibrary,
             @NonNull final InstantSource instantSource,
-            @NonNull final TssRosterKeyMaterialAccessor rosterKeyMaterialAccessor,
+            @NonNull final TssKeyMaterialAccessor rosterKeyMaterialAccessor,
             @NonNull final TssBaseService tssBaseService) {
         this.tssLibrary = tssLibrary;
         this.instantSource = instantSource;

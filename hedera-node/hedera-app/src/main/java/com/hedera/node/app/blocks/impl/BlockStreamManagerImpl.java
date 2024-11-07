@@ -135,10 +135,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     /**
      * Represents a block pending completion by the block hash signature needed for its block proof.
      *
-     * @param number the block number
-     * @param blockHash the block hash
-     * @param proofBuilder the block proof builder
-     * @param writer the block item writer
+     * @param number        the block number
+     * @param blockHash     the block hash
+     * @param proofBuilder  the block proof builder
+     * @param writer        the block item writer
      * @param siblingHashes the sibling hashes needed for an indirect block proof of an earlier block
      */
     private record PendingBlock(
@@ -324,6 +324,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;
+            // Request the ledger signature for the block hash.
+            // The boundary timestamp plus nanos will be used for the TssShareSignature transaction's valid start
             tssBaseService.requestLedgerSignature(blockHash.toByteArray(), asInstant(boundaryTimestamp));
         }
     }
@@ -365,7 +367,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
      * pending block proofs become available at the same time.
      *
-     * @param message the number of the block to finish
+     * @param message   the number of the block to finish
      * @param signature the signature to use in the block proof
      */
     @Override
@@ -413,7 +415,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * software version.
      *
      * @param blockStreamInfo the block stream info
-     * @param version the version
+     * @param version         the version
      * @return the type of pending work given the block stream info and version
      */
     @VisibleForTesting

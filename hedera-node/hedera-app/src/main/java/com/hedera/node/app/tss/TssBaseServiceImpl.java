@@ -18,7 +18,6 @@ package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
-import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static com.hedera.node.app.tss.handlers.TssVoteHandler.hasMetThreshold;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.roster.RosterRetriever.getCandidateRosterHash;
@@ -51,7 +50,6 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -89,7 +87,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssSubmissions tssSubmissions;
     private final Executor tssLibraryExecutor;
     private final ExecutorService signingExecutor;
-    private final TssRosterKeyMaterialAccessor privateKeysAccessor;
+    private final TssKeyMaterialAccessor privateKeysAccessor;
     private final Configuration configuration;
 
     public TssBaseServiceImpl(
@@ -103,7 +101,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
-        this.privateKeysAccessor = new TssRosterKeyMaterialAccessor(tssLibrary);
+        this.privateKeysAccessor = new TssKeyMaterialAccessor(tssLibrary);
         this.configuration = requireNonNull(appContext.configuration());
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
@@ -162,16 +160,14 @@ public class TssBaseServiceImpl implements TssBaseService {
         tssMetrics.trackCandidateRosterLifecycleStart(candidateRosterLifecycleStart);
         // (TSS-FUTURE) Implement `keyActiveRoster`
         // https://github.com/hashgraph/hedera-services/issues/16166
-        final var storeFactory = context.storeFactory();
+
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
 
-        final var activeRoster = requireNonNull(
-                storeFactory.readableStore(ReadableRosterStore.class).getActiveRoster());
-        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
-
-        final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
+        final var candidateDirectory =
+                privateKeysAccessor.candidateRosterParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
+        final var activeRosterHash = privateKeysAccessor.activeRosterHash();
         final var tssPrivateShares = privateKeysAccessor.activeRosterShares();
 
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();

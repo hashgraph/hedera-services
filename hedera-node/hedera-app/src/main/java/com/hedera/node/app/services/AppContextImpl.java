@@ -24,9 +24,12 @@ import java.time.InstantSource;
 import java.util.function.LongSupplier;
 
 /**
- * Implements the {@link AppContext} interface.
- * @param instantSource the source of the current instant
- * @param signatureVerifier the signature verifier
+ * Provides the context for the application.
+ * @param instantSource The source of the current instant.
+ * @param signatureVerifier The verifier of signatures.
+ * @param gossip The gossip interface.
+ * @param configuration The configuration.
+ * @param selfIdSupplier The supplier of the self-node id.
  */
 public record AppContextImpl(
         @NonNull InstantSource instantSource,

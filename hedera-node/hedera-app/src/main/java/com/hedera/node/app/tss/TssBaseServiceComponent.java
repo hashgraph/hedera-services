@@ -43,7 +43,7 @@ public interface TssBaseServiceComponent {
                 @BindsInstance Executor submissionExecutor,
                 @BindsInstance @TssLibraryExecutor Executor libraryExecutor,
                 @BindsInstance Metrics metrics,
-                @BindsInstance TssRosterKeyMaterialAccessor privateKeysAccessor,
+                @BindsInstance TssKeyMaterialAccessor privateKeysAccessor,
                 @BindsInstance Configuration configuration,
                 @BindsInstance LongSupplier selfId,
                 @BindsInstance TssBaseService tssBaseService);

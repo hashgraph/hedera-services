@@ -91,7 +91,15 @@ public interface AppContext {
      */
     Gossip gossip();
 
+    /**
+     * The active configuration of the application.
+     * @return the configuration
+     */
     Configuration configuration();
 
+    /**
+     * The supplier of the node's id.
+     * @return the supplier
+     */
     LongSupplier selfIdSupplier();
 }

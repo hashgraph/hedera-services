@@ -35,8 +35,10 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssCryptographyManager;
 import com.hedera.node.app.tss.TssCryptographyManager.Vote;
+import com.hedera.node.app.tss.TssKeyMaterialAccessor;
 import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.FakeGroupElement;
@@ -125,7 +127,12 @@ class TssMessageHandlerTest {
                 .withParticipant(1, 10, pairingPublicKey)
                 .build(SIGNATURE_SCHEMA);
 
-        subject = new TssMessageHandler(submissionManager, gossip, tssCryptographyManager, tssMetrics);
+        subject = new TssMessageHandler(
+                submissionManager,
+                gossip,
+                tssCryptographyManager,
+                tssMetrics,
+                new TssKeyMaterialAccessor(new PlaceholderTssLibrary()));
     }
 
     @Test

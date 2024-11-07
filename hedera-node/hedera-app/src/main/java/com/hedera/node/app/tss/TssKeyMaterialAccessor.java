@@ -39,16 +39,15 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class TssRosterKeyMaterialAccessor {
+public class TssKeyMaterialAccessor {
     private List<TssPrivateShare> activeRosterShares;
     private List<TssPublicShare> activeRosterPublicShares;
     private Bytes activeRosterHash;
     private final TssLibrary tssLibrary;
     private TssParticipantDirectory activeParticipantDirectory;
-    private Roster activeRoster;
 
     @Inject
-    public TssRosterKeyMaterialAccessor(@NonNull final TssLibrary tssLibrary) {
+    public TssKeyMaterialAccessor(@NonNull final TssLibrary tssLibrary) {
         this.tssLibrary = requireNonNull(tssLibrary);
     }
 
@@ -57,6 +56,7 @@ public class TssRosterKeyMaterialAccessor {
      * @param state the state
      * @param configuration the configuration
      * @param selfId the node id
+     * @param rosterStore the roster store
      */
     public void generateKeyMaterialForActiveRoster(
             @NonNull final State state,
@@ -67,14 +67,19 @@ public class TssRosterKeyMaterialAccessor {
         final var tssStore = storeFactory.getStore(ReadableTssStore.class);
         final var maxSharesPerNode =
                 configuration.getConfigData(TssConfig.class).maxSharesPerNode();
-        this.activeRosterHash = rosterStore.getActiveRosterHash();
-        this.activeRoster = rosterStore.getActiveRoster();
+        this.activeRosterHash = requireNonNull(rosterStore.getActiveRosterHash());
+        final var activeRoster = requireNonNull(rosterStore.getActiveRoster());
         this.activeParticipantDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, (int) selfId);
         this.activeRosterShares = getTssPrivateShares(activeParticipantDirectory, tssStore, activeRosterHash);
 
         final var tssMessageBodies = tssStore.getTssMessageBodies(activeRosterHash);
         final var validTssMessages = getTssMessages(tssMessageBodies);
         this.activeRosterPublicShares = tssLibrary.computePublicShares(activeParticipantDirectory, validTssMessages);
+    }
+
+    public TssParticipantDirectory candidateRosterParticipantDirectory(
+            @NonNull final Roster candidateRoster, final long maxSharesPerNode, final int selfId) {
+        return computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
     }
 
     @NonNull
@@ -88,27 +93,44 @@ public class TssRosterKeyMaterialAccessor {
         return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
     }
 
+    /**
+     * Resets the key material.
+     */
     public void reset() {
         activeRosterShares.clear();
+        activeRosterPublicShares.clear();
         activeRosterHash = Bytes.EMPTY;
+        activeParticipantDirectory = null;
     }
 
+    /**
+     * Returns the active roster public shares.
+     * @return the active roster public shares
+     */
     public List<TssPublicShare> activeRosterPublicShares() {
         return activeRosterPublicShares;
     }
 
-    public Roster activeRoster() {
-        return activeRoster;
-    }
-
+    /**
+     * Returns the active roster participant directory.
+     * @return the active roster participant directory
+     */
     public TssParticipantDirectory activeRosterParticipantDirectory() {
         return activeParticipantDirectory;
     }
 
+    /**
+     * Returns the active roster hash.
+     * @return the active roster hash
+     */
     public Bytes activeRosterHash() {
         return activeRosterHash;
     }
 
+    /**
+     * Returns the active roster shares.
+     * @return the active roster shares
+     */
     public List<TssPrivateShare> activeRosterShares() {
         return activeRosterShares;
     }

@@ -72,7 +72,7 @@ import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.tss.TssRosterKeyMaterialAccessor;
+import com.hedera.node.app.tss.TssKeyMaterialAccessor;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -139,7 +139,7 @@ public class HandleWorkflow {
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
-    private TssRosterKeyMaterialAccessor privateKeysAccessor;
+    private TssKeyMaterialAccessor privateKeysAccessor;
 
     @Inject
     public HandleWorkflow(
@@ -163,7 +163,7 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
-            @NonNull final TssRosterKeyMaterialAccessor privateKeysAccessor) {
+            @NonNull final TssKeyMaterialAccessor privateKeysAccessor) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -369,6 +369,8 @@ public class HandleWorkflow {
                     final var writableStoreFactory = new WritableStoreFactory(
                             userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
                     final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
+
+                    privateKeysAccessor.reset();
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                     privateKeysAccessor.generateKeyMaterialForActiveRoster(
                             userTxn.state(),
