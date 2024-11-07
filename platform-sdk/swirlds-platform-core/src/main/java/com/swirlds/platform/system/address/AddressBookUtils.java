@@ -364,4 +364,38 @@ public class AddressBookUtils {
         }
         return addressBook;
     }
+
+    /**
+     * Format a "consensusEventStreamName" using the "memo" field from the self-Address.
+     *
+     * !!! IMPORTANT !!!: It's imperative to retain the logic that is based on the current content of the "memo" field,
+     * even if the code is updated to source the content of "memo" from another place. The "consensusEventStreamName" is used
+     * as a directory name to save some files on disk, and the directory name should remain unchanged for now.
+     * <p>
+     * Per @lpetrovic05 : "As far as I know, CES isn't really used for anything.
+     * It is however, uploaded to google storage, so maybe the name change might affect the uploader."
+     * <p>
+     * This logic could and should eventually change to use the nodeId only (see the else{} branch below.)
+     * However, this change needs to be coordinated with DevOps and NodeOps to ensure the data continues to be uploaded.
+     * Replacing the directory and starting with an empty one may or may not affect the DefaultConsensusEventStream
+     * which will need to be tested when this change takes place.
+     *
+     * @param addressBook an AddressBook
+     * @param selfId a NodeId for self
+     * @return consensusEventStreamName
+     */
+    @NonNull
+    public static String formatConsensusEventStreamName(
+            @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
+        // !!!!! IMPORTANT !!!!! Read the javadoc above and the comment below before modifying this code.
+        // Required for conformity with legacy behavior. This sort of funky logic is normally something
+        // we'd try to move away from, but since we will be removing the CES entirely, it's simpler
+        // to just wait until the entire component disappears.
+        final Address address = addressBook.getAddress(selfId);
+        if (!address.getMemo().isEmpty()) {
+            return address.getMemo();
+        } else {
+            return String.valueOf(selfId);
+        }
+    }
 }

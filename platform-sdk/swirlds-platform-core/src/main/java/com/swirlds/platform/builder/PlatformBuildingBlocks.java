@@ -28,13 +28,13 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.pool.TransactionPoolNexus;
+import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -76,6 +76,7 @@ import java.util.function.Supplier;
  *                                               underlying data source), this indirection can be removed once states
  *                                               are passed within the wiring framework
  * @param initialPcesFiles                       the initial set of PCES files present when the node starts
+ * @param consensusEventStreamName               a string used to format a directory with consensusEventStream data
  * @param issScratchpad                          scratchpad storage for ISS recovery
  * @param notificationEngine                     for sending notifications to the application (legacy pattern)
  * @param firstPlatform                          if this is the first platform being built (there is static setup that
@@ -102,6 +103,7 @@ public record PlatformBuildingBlocks(
         @NonNull String swirldName,
         @NonNull SoftwareVersion appVersion,
         @NonNull ReservedSignedState initialState,
+        @NonNull RosterHistory rosterHistory,
         @NonNull ApplicationCallbacks applicationCallbacks,
         @Nullable Consumer<PlatformEvent> preconsensusEventConsumer,
         @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
@@ -111,6 +113,7 @@ public record PlatformBuildingBlocks(
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
         @NonNull AtomicReference<Function<String, ReservedSignedState>> latestImmutableStateProviderReference,
         @NonNull PcesFileTracker initialPcesFiles,
+        @NonNull String consensusEventStreamName,
         @NonNull Scratchpad<IssScratchpad> issScratchpad,
         @NonNull NotificationEngine notificationEngine,
         @NonNull AtomicReference<StatusActionSubmitter> statusActionSubmitterReference,
@@ -129,6 +132,7 @@ public record PlatformBuildingBlocks(
         requireNonNull(swirldName);
         requireNonNull(appVersion);
         requireNonNull(initialState);
+        requireNonNull(rosterHistory);
         requireNonNull(applicationCallbacks);
         requireNonNull(intakeEventCounter);
         requireNonNull(randomBuilder);
@@ -136,6 +140,7 @@ public record PlatformBuildingBlocks(
         requireNonNull(isInFreezePeriodReference);
         requireNonNull(latestImmutableStateProviderReference);
         requireNonNull(initialPcesFiles);
+        requireNonNull(consensusEventStreamName);
         requireNonNull(issScratchpad);
         requireNonNull(notificationEngine);
         requireNonNull(statusActionSubmitterReference);
@@ -143,15 +148,5 @@ public record PlatformBuildingBlocks(
         requireNonNull(getLatestCompleteStateReference);
         requireNonNull(loadReconnectStateReference);
         requireNonNull(clearAllPipelinesForReconnectReference);
-    }
-
-    /**
-     * Get the address book from the initial state.
-     *
-     * @return the initial address book
-     */
-    @NonNull
-    public AddressBook initialAddressBook() {
-        return initialState.get().getState().getReadablePlatformState().getAddressBook();
     }
 }
