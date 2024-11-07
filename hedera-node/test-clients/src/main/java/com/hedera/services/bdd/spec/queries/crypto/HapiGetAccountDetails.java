@@ -19,7 +19,6 @@ package com.hedera.services.bdd.spec.queries.crypto;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -164,51 +163,48 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
 
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        if (hasNodeOperatorPortEnabled(spec)) {
-            final var details = response.getAccountDetails().getAccountDetails();
-            if (assertAliasKeyMatches) {
-                Objects.requireNonNull(aliasKeySource);
-                final var expected = spec.registry().getKey(aliasKeySource).toByteString();
-                assertEquals(expected, details.getAlias());
-            }
-            if (assertAccountIDIsNotAlias) {
-                Objects.requireNonNull(aliasKeySource);
-                final var expectedKeyForAccount =
-                        spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8();
-                final var expectedID = spec.registry().getAccountID(expectedKeyForAccount);
-                Assertions.assertNotEquals(
-                        details.getAlias(), details.getAccountId().getAccountNum());
-                assertEquals(expectedID, details.getAccountId());
-            }
-            if (expectations.isPresent()) {
-                ErroringAsserts<AccountDetails> asserts = expectations.get().assertsFor(spec);
-                List<Throwable> errors = asserts.errorsIn(details);
-                rethrowSummaryError(log, "Bad account details!", errors);
-            }
-            var actualTokenRels = details.getTokenRelationshipsList();
-            ExpectedTokenRel.assertExpectedRels(account, relationships, actualTokenRels, spec);
-            ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
-
-            var actualOwnedNfts = details.getOwnedNfts();
-            ownedNfts.ifPresent(nftsOwned -> assertEquals((long) nftsOwned, actualOwnedNfts));
-
-            var actualMaxAutoAssociations = details.getMaxAutomaticTokenAssociations();
-            maxAutomaticAssociations.ifPresent(
-                    maxAutoAssociations -> assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
-            alreadyUsedAutomaticAssociations.ifPresent(usedCount -> {
-                int actualCount = 0;
-                for (var rel : actualTokenRels) {
-                    if (rel.getAutomaticAssociation()) {
-                        actualCount++;
-                    }
-                }
-                assertEquals(actualCount, usedCount);
-            });
-            expectedLedgerId.ifPresent(id -> assertEquals(id, details.getLedgerId()));
-            tokenAssociationsCount.ifPresent(count -> assertEquals(count, details.getTokenRelationshipsCount()));
-        } else {
-            log.info("AccountDetailsQuery cannot be performed as node operator without enabled feature flag");
+        final var details = response.getAccountDetails().getAccountDetails();
+        if (assertAliasKeyMatches) {
+            Objects.requireNonNull(aliasKeySource);
+            final var expected = spec.registry().getKey(aliasKeySource).toByteString();
+            assertEquals(expected, details.getAlias());
         }
+        if (assertAccountIDIsNotAlias) {
+            Objects.requireNonNull(aliasKeySource);
+            final var expectedKeyForAccount =
+                    spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8();
+            final var expectedID = spec.registry().getAccountID(expectedKeyForAccount);
+            Assertions.assertNotEquals(
+                    details.getAlias(), details.getAccountId().getAccountNum());
+            assertEquals(expectedID, details.getAccountId());
+        }
+        if (expectations.isPresent()) {
+            ErroringAsserts<AccountDetails> asserts = expectations.get().assertsFor(spec);
+            List<Throwable> errors = asserts.errorsIn(details);
+            rethrowSummaryError(log, "Bad account details!", errors);
+        }
+        var actualTokenRels = details.getTokenRelationshipsList();
+        ExpectedTokenRel.assertExpectedRels(account, relationships, actualTokenRels, spec);
+        ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
+
+        var actualOwnedNfts = details.getOwnedNfts();
+        ownedNfts.ifPresent(nftsOwned -> assertEquals((long) nftsOwned, actualOwnedNfts));
+
+        var actualMaxAutoAssociations = details.getMaxAutomaticTokenAssociations();
+        maxAutomaticAssociations.ifPresent(
+                maxAutoAssociations -> assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
+        alreadyUsedAutomaticAssociations.ifPresent(usedCount -> {
+            int actualCount = 0;
+            for (var rel : actualTokenRels) {
+                if (rel.getAutomaticAssociation()) {
+                    actualCount++;
+                }
+            }
+            assertEquals(actualCount, usedCount);
+        });
+        expectedLedgerId.ifPresent(id -> assertEquals(id, details.getLedgerId()));
+
+        tokenAssociationsCount.ifPresent(count -> assertEquals(count, details.getTokenRelationshipsCount()));
     }
 
     @Override

@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.queries.contract;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.HEXED_EVM_ADDRESS_LEN;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
@@ -37,13 +36,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import java.util.function.Consumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode> {
-    private static final Logger log = LogManager.getLogger(HapiGetContractBytecode.class);
-
     private final String contract;
     private Optional<byte[]> expected = Optional.empty();
     private Optional<Consumer<byte[]>> bytecodeObs = Optional.empty();
@@ -87,18 +82,12 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
     @Override
     @SuppressWarnings("java:S5960")
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        if (hasNodeOperatorPortEnabled(spec)) {
-            if (hasExpectations) {
-                Assertions.assertFalse(
-                        response.getContractGetBytecodeResponse().getBytecode().isEmpty(), "Empty " + "bytecode!");
-            }
-            expected.ifPresent(bytes -> Assertions.assertArrayEquals(
-                    bytes,
-                    response.getContractGetBytecodeResponse().getBytecode().toByteArray(),
-                    "Wrong bytecode!"));
-        } else {
-            log.info("ContractBytecodeQuery cannot be performed as node operator without enabled feature flag");
+        if (hasExpectations) {
+            Assertions.assertFalse(
+                    response.getContractGetBytecodeResponse().getBytecode().isEmpty(), "Empty " + "bytecode!");
         }
+        expected.ifPresent(bytes -> Assertions.assertArrayEquals(
+                bytes, response.getContractGetBytecodeResponse().getBytecode().toByteArray(), "Wrong bytecode!"));
     }
 
     @Override

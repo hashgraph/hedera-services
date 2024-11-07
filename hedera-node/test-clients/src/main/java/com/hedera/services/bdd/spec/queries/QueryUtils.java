@@ -116,9 +116,4 @@ public class QueryUtils {
         final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
         return asAccountString(spec.registry().getAccountID(lookedUpKey));
     }
-
-    public static boolean hasNodeOperatorPortEnabled(HapiSpec spec) {
-        return spec.targetNetworkOrThrow().nodes().stream()
-                .anyMatch(node -> node.metadata().grpcNodeOperatorPortEnabled());
-    }
 }

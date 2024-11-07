@@ -20,7 +20,6 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDebits;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
@@ -590,27 +589,23 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     @Override
     protected void assertExpectationsGiven(final HapiSpec spec) throws Throwable {
-        if (hasNodeOperatorPortEnabled(spec)) {
-            if (assertNothing) {
-                return;
-            }
+        if (assertNothing) {
+            return;
+        }
 
-            final var txRecord = response.getTransactionGetRecord();
-            final var actualRecord = txRecord.getTransactionRecord();
-            assertCorrectRecord(spec, actualRecord);
+        final var txRecord = response.getTransactionGetRecord();
+        final var actualRecord = txRecord.getTransactionRecord();
+        assertCorrectRecord(spec, actualRecord);
 
-            final var childRecords = txRecord.getChildTransactionRecordsList();
-            assertChildRecords(spec, childRecords);
+        final var childRecords = txRecord.getChildTransactionRecordsList();
+        assertChildRecords(spec, childRecords);
 
-            if (assertEffectivePayersAreKnown) {
-                actualRecord.getAssessedCustomFeesList().forEach(acf -> acf.getEffectivePayerAccountIdList()
-                        .forEach(effPayer -> assertNotEquals(
-                                0L,
-                                effPayer.getAccountNum(),
-                                "Assessed fee " + acf + " has unknown" + " effective payer")));
-            }
-        } else {
-            LOG.info("TransactionRecordQuery cannot be performed as node operator without enabled feature flag");
+        if (assertEffectivePayersAreKnown) {
+            actualRecord.getAssessedCustomFeesList().forEach(acf -> acf.getEffectivePayerAccountIdList()
+                    .forEach(effPayer -> assertNotEquals(
+                            0L,
+                            effPayer.getAccountNum(),
+                            "Assessed fee " + acf + " has unknown" + " effective payer")));
         }
     }
 

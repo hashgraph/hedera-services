@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureD
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSink;
@@ -95,16 +94,12 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        if (hasNodeOperatorPortEnabled(spec)) {
-            if (expectation.isPresent()) {
-                List<TransactionRecord> actualRecords = response.getCryptoGetAccountRecords().getRecordsList().stream()
-                        .filter(TxnUtils::isNotEndOfStakingPeriodRecord)
-                        .toList();
-                List<Throwable> errors = expectation.get().assertsFor(spec).errorsIn(actualRecords);
-                rethrowSummaryError(log, "Bad account records!", errors);
-            }
-        } else {
-            log.info("AccountRecordsQuery cannot be performed as node operator without enabled feature flag");
+        if (expectation.isPresent()) {
+            List<TransactionRecord> actualRecords = response.getCryptoGetAccountRecords().getRecordsList().stream()
+                    .filter(TxnUtils::isNotEndOfStakingPeriodRecord)
+                    .toList();
+            List<Throwable> errors = expectation.get().assertsFor(spec).errorsIn(actualRecords);
+            rethrowSummaryError(log, "Bad account records!", errors);
         }
     }
 

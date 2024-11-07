@@ -59,7 +59,7 @@ public class FakeNmt {
      * @return the operation that restarts the network
      */
     public static TryToStartNodesOp restartNetworkWithDisabledNodeOperatorPort(final int configVersion) {
-        return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, false);
+        return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, true);
     }
 
     /**

@@ -38,7 +38,7 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
 
     private final int configVersion;
     private final ReassignPorts reassignPorts;
-    private boolean nodeOperatorPortEnabled = true;
+    private boolean nodeOperatorPortDisabled = false;
 
     public TryToStartNodesOp(@NonNull final NodeSelector selector) {
         this(selector, 0, ReassignPorts.NO);
@@ -56,11 +56,11 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
     }
 
     public TryToStartNodesOp(
-            @NonNull final NodeSelector selector, final int configVersion, boolean nodeOperatorPortEnabled) {
+            @NonNull final NodeSelector selector, final int configVersion, boolean nodeOperatorPortDisabled) {
         super(selector);
         this.configVersion = configVersion;
         this.reassignPorts = ReassignPorts.NO;
-        this.nodeOperatorPortEnabled = nodeOperatorPortEnabled;
+        this.nodeOperatorPortDisabled = nodeOperatorPortDisabled;
     }
 
     @Override
@@ -72,7 +72,7 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
             subProcessNetwork.assignNewMetadata(ReassignPorts.YES);
         }
 
-        if (!nodeOperatorPortEnabled) {
+        if (nodeOperatorPortDisabled) {
             if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
                 throw new IllegalStateException("Can only reassign ports for a SubProcessNetwork");
             }

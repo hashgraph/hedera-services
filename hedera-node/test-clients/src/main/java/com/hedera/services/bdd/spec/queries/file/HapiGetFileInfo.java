@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.queries.file;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -140,27 +139,22 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
     @Override
     @SuppressWarnings("java:S5960")
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        if (hasNodeOperatorPortEnabled(spec)) {
-            var info = response.getFileGetInfo().getFileInfo();
+        var info = response.getFileGetInfo().getFileInfo();
 
-            Assertions.assertEquals(TxnUtils.asFileId(file, spec), info.getFileID(), "Wrong file id!");
-            keyReprObserver.ifPresent(
-                    obs -> obs.accept(info.getKeys().toString().replaceAll("\\s", "")));
+        Assertions.assertEquals(TxnUtils.asFileId(file, spec), info.getFileID(), "Wrong file id!");
+        keyReprObserver.ifPresent(obs -> obs.accept(info.getKeys().toString().replaceAll("\\s", "")));
 
-            if (immutable) {
-                Assertions.assertFalse(info.hasKeys(), "Should have no WACL, expected immutable!");
-            }
-            expectedWacl.ifPresent(
-                    k -> Assertions.assertEquals(spec.registry().getKey(k).getKeyList(), info.getKeys(), "Bad WACL!"));
-            expectedDeleted.ifPresent(f -> Assertions.assertEquals(f, info.getDeleted(), "Bad deletion status!"));
-            long actual = info.getExpirationTime().getSeconds();
-            expiryTest.ifPresent(p ->
-                    Assertions.assertTrue(p.test(actual), String.format("Expiry of %d was not as expected!", actual)));
-            expectedMemo.ifPresent(e -> Assertions.assertEquals(e, info.getMemo()));
-            expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, info.getLedgerId()));
-        } else {
-            LOG.info("TokenInfoQuery cannot be performed as node operator without enabled feature flag");
+        if (immutable) {
+            Assertions.assertFalse(info.hasKeys(), "Should have no WACL, expected immutable!");
         }
+        expectedWacl.ifPresent(
+                k -> Assertions.assertEquals(spec.registry().getKey(k).getKeyList(), info.getKeys(), "Bad WACL!"));
+        expectedDeleted.ifPresent(f -> Assertions.assertEquals(f, info.getDeleted(), "Bad deletion status!"));
+        long actual = info.getExpirationTime().getSeconds();
+        expiryTest.ifPresent(
+                p -> Assertions.assertTrue(p.test(actual), String.format("Expiry of %d was not as expected!", actual)));
+        expectedMemo.ifPresent(e -> Assertions.assertEquals(e, info.getMemo()));
+        expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, info.getLedgerId()));
     }
 
     /**

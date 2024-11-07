@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.queries.token;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.hasNodeOperatorPortEnabled;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -63,35 +62,30 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
 
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        if (hasNodeOperatorPortEnabled(spec)) {
-            var actualInfo = response.getTokenGetNftInfos().getNftsList();
-            var expectedInfo = new ArrayList<TokenNftInfo>();
-            expectedNfts.ifPresent(nfts -> {
-                for (HapiTokenNftInfo nftInfo : nfts) {
-                    var expectedNftId = NftID.newBuilder();
-                    var expectedNftElement = TokenNftInfo.newBuilder();
+        var actualInfo = response.getTokenGetNftInfos().getNftsList();
+        var expectedInfo = new ArrayList<TokenNftInfo>();
+        expectedNfts.ifPresent(nfts -> {
+            for (HapiTokenNftInfo nftInfo : nfts) {
+                var expectedNftId = NftID.newBuilder();
+                var expectedNftElement = TokenNftInfo.newBuilder();
 
-                    nftInfo.getExpectedTokenID().ifPresent(e -> {
-                        expectedNftId.setTokenID(TxnUtils.asTokenId(e, spec));
-                        expectedNftElement.setCreationTime(spec.registry().getCreationTime(e));
-                    });
-                    nftInfo.getExpectedSerialNum().ifPresent(expectedNftId::setSerialNumber);
+                nftInfo.getExpectedTokenID().ifPresent(e -> {
+                    expectedNftId.setTokenID(TxnUtils.asTokenId(e, spec));
+                    expectedNftElement.setCreationTime(spec.registry().getCreationTime(e));
+                });
+                nftInfo.getExpectedSerialNum().ifPresent(expectedNftId::setSerialNumber);
 
-                    expectedNftElement.setNftID(expectedNftId.build());
-                    nftInfo.getExpectedAccountID()
-                            .ifPresent(e -> expectedNftElement.setAccountID(TxnUtils.asId(e, spec)));
-                    nftInfo.getExpectedMetadata().ifPresent(expectedNftElement::setMetadata);
+                expectedNftElement.setNftID(expectedNftId.build());
+                nftInfo.getExpectedAccountID().ifPresent(e -> expectedNftElement.setAccountID(TxnUtils.asId(e, spec)));
+                nftInfo.getExpectedMetadata().ifPresent(expectedNftElement::setMetadata);
 
-                    nftInfo.getExpectedLedgerID().ifPresent(id -> expectedNftElement.setLedgerId(rationalize(id)));
+                nftInfo.getExpectedLedgerID().ifPresent(id -> expectedNftElement.setLedgerId(rationalize(id)));
 
-                    var completedNft = expectedNftElement.build();
-                    expectedInfo.add(completedNft);
-                }
-                Assertions.assertEquals(actualInfo, expectedInfo);
-            });
-        } else {
-            log.info("TokenNftInfosQuery cannot be performed as node operator without enabled feature flag");
-        }
+                var completedNft = expectedNftElement.build();
+                expectedInfo.add(completedNft);
+            }
+            Assertions.assertEquals(actualInfo, expectedInfo);
+        });
     }
 
     @Override
