@@ -210,6 +210,10 @@ public class ServicesMain implements SwirldMain {
         final NodeId selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
 
         final var configuration = buildConfiguration();
+
+        // Register with the ConstructableRegistry classes which need configuration.
+        BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
+
         final var keysAndCerts =
                 initNodeSecurity(diskAddressBook, configuration).get(selfId);
 
@@ -264,9 +268,6 @@ public class ServicesMain implements SwirldMain {
         // Initialize the Merkle cryptography
         final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
-
-        // Register with the ConstructableRegistry classes which need configuration.
-        BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
 
         // Create the platform context
         final var platformContext = PlatformContext.create(
