@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.state.spi;
+package com.swirlds.state.lifecycle;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;

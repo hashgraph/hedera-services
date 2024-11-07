@@ -78,6 +78,7 @@ import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
+import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
 import com.hedera.node.app.tss.handlers.TssVoteHandler;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import org.junit.jupiter.api.Test;
@@ -264,6 +265,9 @@ class HandleWorkflowModuleTest {
     @Mock
     private TssVoteHandler tssVoteHandler;
 
+    @Mock
+    private TssShareSignatureHandler tssShareSignatureHandler;
+
     @Test
     void usesComponentsToGetHandlers() {
         given(consensusHandlers.consensusCreateTopicHandler()).willReturn(consensusCreateTopicHandler);
@@ -321,7 +325,7 @@ class HandleWorkflowModuleTest {
                 consensusHandlers,
                 fileHandlers,
                 () -> contractHandlers,
-                () -> new TssHandlers(tssMessageHandler, tssVoteHandler),
+                () -> new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler),
                 scheduleHandlers,
                 tokenHandlers,
                 utilHandlers,

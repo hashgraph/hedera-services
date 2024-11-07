@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

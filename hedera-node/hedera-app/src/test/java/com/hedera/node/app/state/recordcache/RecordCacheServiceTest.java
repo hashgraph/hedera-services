@@ -22,8 +22,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
 import com.hedera.node.app.state.recordcache.schemas.V0540RecordCacheSchema;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
