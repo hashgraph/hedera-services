@@ -40,6 +40,17 @@ public interface NetworkUtilizationManager {
             @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state);
 
     /**
+     * Updates the throttle usage and congestion pricing using the given transaction.
+     *
+     * @param txnInfo       - the transaction to use for updating the network utilization.
+     * @param consensusTime - the consensus time of the transaction.
+     * @param state         - the state of the node.
+     * @return
+     */
+    boolean trackScheduledTxn(
+            @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state);
+
+    /**
      * Updates the throttle usage and congestion pricing for cases where the transaction is not valid, but we want to track the fee payments related to it.
      *
      * @param consensusNow - the consensus time of the transaction.

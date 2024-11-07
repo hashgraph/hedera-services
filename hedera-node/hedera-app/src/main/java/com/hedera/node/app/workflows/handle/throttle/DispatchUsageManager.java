@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoAssociate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
@@ -84,8 +85,10 @@ public class DispatchUsageManager {
             // reset throttles for every dispatch before we track the usage. This is to ensure that
             // when the user transaction fails, we release the capacity taken at consensus by child transactions.
             throttleServiceManager.resetThrottlesUnconditionally(readableStates);
-            final var isThrottled =
-                    networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
+            final var isThrottled = dispatch.txnCategory().equals(SCHEDULED)
+                    ? networkUtilizationManager.trackScheduledTxn(
+                            dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack())
+                    : networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
             if (networkUtilizationManager.wasLastTxnGasThrottled()) {
                 throw ThrottleException.newGasThrottleException();
             } else if (isThrottled) {

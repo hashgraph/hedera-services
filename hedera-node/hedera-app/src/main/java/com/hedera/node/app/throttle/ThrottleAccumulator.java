@@ -33,6 +33,7 @@ import static com.hedera.node.app.service.token.AliasUtils.isEntityNumAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.SCHEDULING_THROTTLE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -158,7 +159,8 @@ public class ThrottleAccumulator {
             @NonNull final TransactionInfo txnInfo, @NonNull final Instant now, @NonNull final State state) {
         resetLastAllowedUse();
         lastTxnWasGasThrottled = false;
-        if (shouldThrottleTxn(false, txnInfo, now, state)) {
+        final var isSchedule = throttleType.equals(SCHEDULING_THROTTLE);
+        if (shouldThrottleTxn(isSchedule, txnInfo, now, state)) {
             reclaimLastAllowedUse();
             return true;
         }
@@ -882,7 +884,10 @@ public class ThrottleAccumulator {
         if (contractsConfig.throttleThrottleByGas() && contractsConfig.maxGasPerSec() == 0) {
             log.warn("{} gas throttling enabled, but limited to 0 gas/sec", throttleType.name());
         }
-        gasThrottle = new GasLimitDeterministicThrottle(contractsConfig.maxGasPerSec());
+
+        // todo check what should be the max gas per second
+        final var maxGasPerSec = SCHEDULING_THROTTLE.equals(throttleType) ? 5000000 : contractsConfig.maxGasPerSec();
+        gasThrottle = new GasLimitDeterministicThrottle(maxGasPerSec);
         throttleMetrics.setupGasThrottleMetric(gasThrottle, configuration);
         log.info(
                 "Resolved {} gas throttle -\n {} gas/sec (throttling {})",
@@ -927,6 +932,7 @@ public class ThrottleAccumulator {
 
     public enum ThrottleType {
         FRONTEND_THROTTLE,
-        BACKEND_THROTTLE
+        BACKEND_THROTTLE,
+        SCHEDULING_THROTTLE,
     }
 }

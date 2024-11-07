@@ -17,6 +17,7 @@
 package com.hedera.node.app.throttle;
 
 import com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema;
+import com.hedera.node.app.throttle.schemas.V0570CongestionThrottleSchema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,5 +36,6 @@ public class CongestionThrottleService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490CongestionThrottleSchema());
+        registry.register(new V0570CongestionThrottleSchema());
     }
 }

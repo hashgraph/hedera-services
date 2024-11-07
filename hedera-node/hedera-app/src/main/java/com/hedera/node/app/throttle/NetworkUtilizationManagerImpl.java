@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
+import com.hedera.node.app.throttle.annotations.ScheduleThrottle;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
@@ -43,12 +44,15 @@ import javax.inject.Singleton;
 public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager {
     private final ThrottleAccumulator backendThrottle;
     private final CongestionMultipliers congestionMultipliers;
+    private final ThrottleAccumulator scheduleThrottle;
 
     @Inject
     public NetworkUtilizationManagerImpl(
             @NonNull @BackendThrottle final ThrottleAccumulator backendThrottle,
+            @NonNull @ScheduleThrottle final ThrottleAccumulator scheduleAccumulator,
             @NonNull final CongestionMultipliers congestionMultipliers) {
         this.backendThrottle = requireNonNull(backendThrottle, "backendThrottle must not be null");
+        this.scheduleThrottle = requireNonNull(scheduleAccumulator, "scheduleAccumulator must not be null");
         this.congestionMultipliers = requireNonNull(congestionMultipliers, "congestionMultipliers must not be null");
     }
 
@@ -57,6 +61,14 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
             @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state) {
         final var shouldThrottle = backendThrottle.checkAndEnforceThrottle(txnInfo, consensusTime, state);
         congestionMultipliers.updateMultiplier(consensusTime);
+        return shouldThrottle;
+    }
+
+    public boolean trackScheduledTxn(
+            @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state) {
+        final var shouldThrottle = scheduleThrottle.checkAndEnforceThrottle(txnInfo, consensusTime, state);
+        // todo do we need to update the multiplier?
+        // congestionMultipliers.updateMultiplier(consensusTime);
         return shouldThrottle;
     }
 

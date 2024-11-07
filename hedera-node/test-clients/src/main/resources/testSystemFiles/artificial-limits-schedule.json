@@ -1,0 +1,111 @@
+{
+  "buckets": [
+    {
+      "name": "ThroughputLimits",
+      "burstPeriod": 1,
+      "throttleGroups": [
+        {
+          "opsPerSec": 60,
+          "operations": [
+            "CryptoCreate",
+            "CryptoTransfer",
+            "UtilPrng",
+            "CryptoUpdate",
+            "CryptoDelete",
+            "CryptoGetInfo",
+            "CryptoGetAccountRecords",
+            "CryptoApproveAllowance",
+            "CryptoDeleteAllowance",
+            "ConsensusCreateTopic",
+            "ConsensusSubmitMessage",
+            "ConsensusUpdateTopic",
+            "ConsensusDeleteTopic",
+            "ConsensusGetTopicInfo",
+            "TokenGetInfo",
+            "TokenGetNftInfo",
+            "TokenGetNftInfos",
+            "TokenGetAccountNftInfos",
+            "ScheduleDelete",
+            "ScheduleGetInfo",
+            "FileGetContents",
+            "FileGetInfo",
+            "ContractUpdate",
+            "ContractDelete",
+            "ContractGetInfo",
+            "ContractGetBytecode",
+            "ContractGetRecords",
+            "ContractCallLocal",
+            "TransactionGetRecord",
+            "GetVersionInfo"
+          ]
+        },
+        {
+          "opsPerSec": 60,
+          "operations": [
+            "ContractCall",
+            "ContractCreate",
+            "FileCreate",
+            "FileUpdate",
+            "FileAppend",
+            "FileDelete",
+            "EthereumTransaction"
+          ]
+        },
+        {
+          "opsPerSec": 60,
+          "operations": [
+            "ScheduleSign",
+            "TokenCreate",
+            "TokenDelete",
+            "TokenMint",
+            "TokenBurn",
+            "TokenPause",
+            "TokenUnpause",
+            "TokenUpdate",
+            "TokenFeeScheduleUpdate",
+            "TokenAssociateToAccount",
+            "TokenAccountWipe",
+            "TokenDissociateFromAccount",
+            "TokenFreezeAccount",
+            "TokenUnfreezeAccount",
+            "TokenGrantKycToAccount",
+            "TokenRevokeKycFromAccount"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PriorityReservations",
+      "burstPeriod": 300,
+      "throttleGroups": [
+        {
+          "opsPerSec": 400,
+          "operations": [
+            "ContractCall",
+            "ContractCreate",
+            "FileCreate",
+            "FileUpdate",
+            "FileAppend",
+            "FileDelete",
+            "EthereumTransaction",
+            "ScheduleCreate"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "FreeQueryLimits",
+      "burstPeriod": 300,
+      "throttleGroups": [
+        {
+          "opsPerSec": 100,
+          "operations": [
+            "CryptoGetAccountBalance",
+            "TransactionGetReceipt",
+            "TransactionGetRecord"
+          ]
+        }
+      ]
+    }
+  ]
+}

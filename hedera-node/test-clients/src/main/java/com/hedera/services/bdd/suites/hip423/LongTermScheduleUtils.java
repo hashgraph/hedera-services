@@ -59,6 +59,7 @@ public final class LongTermScheduleUtils {
     static final String DEFERRED_CREATION = "deferredCreation";
     static final String PAYING_ACCOUNT_2 = "payingAccount2";
     static final String SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED = "Scheduled transaction must not succeed";
+    static final String SCHEDULED_TRANSACTION_MUST_SUCCEED = "Scheduled transaction must succeed";
     static final String SCHEDULE_CREATE_FEE = "scheduleCreateFee";
     static final String SENDER_1 = "sender1";
     static final String SENDER_2 = "sender2";

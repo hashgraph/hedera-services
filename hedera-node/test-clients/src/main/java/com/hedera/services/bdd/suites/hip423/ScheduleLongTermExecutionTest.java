@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.hip423;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
@@ -40,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThrottles;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
@@ -55,6 +57,7 @@ import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateF
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.ORIG_FILE;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.PAYING_ACCOUNT_2;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SCHEDULED_TRANSACTION_MUST_SUCCEED;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SCHEDULE_CREATE_FEE;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_1;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_2;
@@ -81,6 +84,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLED_AT_CONSENSUS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -1302,4 +1306,121 @@ public class ScheduleLongTermExecutionTest {
     //                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
     //                                .payingWith(GENESIS));
     //    }
+
+    @HapiTest
+    @Order(22)
+    final Stream<DynamicTest> throttleWorksAsExpected() {
+        final var firstSchedule = "first";
+        final var secondSchedule = "second";
+        final var thirdSchedule = "third";
+        return hapiTest(
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate(RECEIVER),
+                cryptoCreate(SENDER).via(SENDER_TXN),
+                overridingThrottles("testSystemFiles/artificial-limits-schedule.json"),
+                scheduleCreate(firstSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                        .designatingPayer(PAYING_ACCOUNT)
+                        .waitForExpiry()
+                        .withRelativeExpiry(SENDER_TXN, 4)
+                        .recordingScheduledTxn()
+                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
+                        .via(firstSchedule),
+                scheduleCreate(secondSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 2)))
+                        .designatingPayer(PAYING_ACCOUNT)
+                        .waitForExpiry()
+                        .withRelativeExpiry(SENDER_TXN, 4)
+                        .recordingScheduledTxn()
+                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
+                        .via(secondSchedule),
+                scheduleCreate(thirdSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 3)))
+                        .designatingPayer(PAYING_ACCOUNT)
+                        .waitForExpiry()
+                        .withRelativeExpiry(SENDER_TXN, 4)
+                        .recordingScheduledTxn()
+                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
+                        .via(thirdSchedule),
+                sleepFor(5000),
+                cryptoCreate("foo").via(TRIGGERING_TXN),
+                withOpContext((spec, opLog) -> {
+                    var firstScheduleRecord = getTxnRecord(firstSchedule).scheduled();
+                    var secondScheduleRecord = getTxnRecord(secondSchedule).scheduled();
+                    var thirdScheduleRecord = getTxnRecord(thirdSchedule).scheduled();
+                    allRunFor(spec, firstScheduleRecord, secondScheduleRecord, thirdScheduleRecord);
+
+                    Assertions.assertEquals(
+                            SUCCESS,
+                            firstScheduleRecord.getResponseRecord().getReceipt().getStatus(),
+                            SCHEDULED_TRANSACTION_MUST_SUCCEED);
+                    Assertions.assertEquals(
+                            SUCCESS,
+                            secondScheduleRecord
+                                    .getResponseRecord()
+                                    .getReceipt()
+                                    .getStatus(),
+                            SCHEDULED_TRANSACTION_MUST_SUCCEED);
+                    Assertions.assertEquals(
+                            THROTTLED_AT_CONSENSUS,
+                            thirdScheduleRecord.getResponseRecord().getReceipt().getStatus(),
+                            SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
+                }));
+    }
+
+    @HapiTest
+    @Order(22)
+    final Stream<DynamicTest> gasThrottleWorksAsExpected() {
+        final var firstSchedule = "first";
+        final var secondSchedule = "second";
+        final var thirdSchedule = "third";
+        return hapiTest(
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate(RECEIVER),
+                cryptoCreate(SENDER).via(SENDER_TXN),
+                overridingThrottles("testSystemFiles/artificial-limits-schedule.json"),
+                scheduleCreate(firstSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                        .designatingPayer(PAYING_ACCOUNT)
+                        .waitForExpiry()
+                        .withRelativeExpiry(SENDER_TXN, 4)
+                        .recordingScheduledTxn()
+                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
+                        .via(firstSchedule),
+                scheduleCreate(secondSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 2)))
+                        .designatingPayer(PAYING_ACCOUNT)
+                        .waitForExpiry()
+                        .withRelativeExpiry(SENDER_TXN, 4)
+                        .recordingScheduledTxn()
+                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
+                        .via(secondSchedule),
+                scheduleCreate(thirdSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 3)))
+                        .designatingPayer(PAYING_ACCOUNT)
+                        .waitForExpiry()
+                        .withRelativeExpiry(SENDER_TXN, 4)
+                        .recordingScheduledTxn()
+                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
+                        .via(thirdSchedule),
+                sleepFor(5000),
+                cryptoCreate("foo").via(TRIGGERING_TXN),
+                withOpContext((spec, opLog) -> {
+                    final var firstScheduleRecord = getTxnRecord(firstSchedule).scheduled();
+                    final var secondScheduleRecord =
+                            getTxnRecord(secondSchedule).scheduled();
+                    final var thirdScheduleRecord = getTxnRecord(thirdSchedule).scheduled();
+                    allRunFor(spec, firstScheduleRecord, secondScheduleRecord, thirdScheduleRecord);
+
+                    Assertions.assertEquals(
+                            SUCCESS,
+                            firstScheduleRecord.getResponseRecord().getReceipt().getStatus(),
+                            SCHEDULED_TRANSACTION_MUST_SUCCEED);
+                    Assertions.assertEquals(
+                            SUCCESS,
+                            secondScheduleRecord
+                                    .getResponseRecord()
+                                    .getReceipt()
+                                    .getStatus(),
+                            SCHEDULED_TRANSACTION_MUST_SUCCEED);
+                    Assertions.assertEquals(
+                            THROTTLED_AT_CONSENSUS,
+                            thirdScheduleRecord.getResponseRecord().getReceipt().getStatus(),
+                            SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
+                }));
+    }
 }
