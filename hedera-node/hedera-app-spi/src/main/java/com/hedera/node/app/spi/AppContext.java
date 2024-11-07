@@ -24,6 +24,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
+import java.util.function.LongSupplier;
 
 /**
  * Gives context to {@link Service} implementations on how the application workflows will do
@@ -92,5 +93,5 @@ public interface AppContext {
 
     Configuration configuration();
 
-    long selfId();
+    LongSupplier selfIdSupplier();
 }

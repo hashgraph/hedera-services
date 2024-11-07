@@ -69,6 +69,7 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.tss.TssRosterKeyMaterialAccessor;
@@ -86,6 +87,7 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
@@ -371,7 +373,8 @@ public class HandleWorkflow {
                     privateKeysAccessor.generateKeyMaterialForActiveRoster(
                             userTxn.state(),
                             userTxn.config(),
-                            userTxn.creatorInfo().nodeId());
+                            userTxn.creatorInfo().nodeId(),
+                            rosterStore);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
                             userTxn.tokenContextImpl(),
@@ -391,6 +394,11 @@ public class HandleWorkflow {
                     // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
+                    privateKeysAccessor.generateKeyMaterialForActiveRoster(
+                            userTxn.state(),
+                            userTxn.config(),
+                            userTxn.creatorInfo().nodeId(),
+                            new ReadableStoreFactory(userTxn.state()).getStore(ReadableRosterStore.class));
                 }
 
                 final var baseBuilder = initializeBuilderInfo(

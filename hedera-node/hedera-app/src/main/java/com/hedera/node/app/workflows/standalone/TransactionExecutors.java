@@ -97,7 +97,7 @@ public enum TransactionExecutors {
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP,
                 bootstrapConfigProvider.getConfiguration(),
-                DEFAULT_NODE_ACCOUNT_ID);
+                () -> DEFAULT_NODE_ACCOUNT_ID);
         final var tssBaseService = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),

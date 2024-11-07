@@ -28,6 +28,7 @@ import dagger.BindsInstance;
 import dagger.Component;
 import java.time.InstantSource;
 import java.util.concurrent.Executor;
+import java.util.function.LongSupplier;
 import javax.inject.Singleton;
 
 @Singleton
@@ -44,7 +45,7 @@ public interface TssBaseServiceComponent {
                 @BindsInstance Metrics metrics,
                 @BindsInstance TssRosterKeyMaterialAccessor privateKeysAccessor,
                 @BindsInstance Configuration configuration,
-                @BindsInstance long selfId,
+                @BindsInstance LongSupplier selfId,
                 @BindsInstance TssBaseService tssBaseService);
     }
 

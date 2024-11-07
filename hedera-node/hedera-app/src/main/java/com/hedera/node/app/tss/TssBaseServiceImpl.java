@@ -115,7 +115,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                         metrics,
                         privateKeysAccessor,
                         appContext.configuration(),
-                        appContext.selfId(),
+                        appContext.selfIdSupplier(),
                         this);
         this.tssMetrics = component.tssMetrics();
         this.tssHandlers = new TssHandlers(

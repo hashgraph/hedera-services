@@ -21,6 +21,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
+import java.util.function.LongSupplier;
 
 /**
  * Implements the {@link AppContext} interface.
@@ -32,5 +33,5 @@ public record AppContextImpl(
         @NonNull SignatureVerifier signatureVerifier,
         @NonNull Gossip gossip,
         @NonNull Configuration configuration,
-        long selfId)
+        LongSupplier selfIdSupplier)
         implements AppContext {}

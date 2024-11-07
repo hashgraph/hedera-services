@@ -59,16 +59,16 @@ public class TssRosterKeyMaterialAccessor {
      * @param selfId the node id
      */
     public void generateKeyMaterialForActiveRoster(
-            @NonNull final State state, @NonNull final Configuration configuration, final long selfId) {
+            @NonNull final State state,
+            @NonNull final Configuration configuration,
+            final long selfId,
+            @NonNull final ReadableRosterStore rosterStore) {
         final var storeFactory = new ReadableStoreFactory(state);
         final var tssStore = storeFactory.getStore(ReadableTssStore.class);
-        final var rosterStore = storeFactory.getStore(ReadableRosterStore.class);
-
         final var maxSharesPerNode =
                 configuration.getConfigData(TssConfig.class).maxSharesPerNode();
         this.activeRosterHash = rosterStore.getActiveRosterHash();
-        this.activeRoster =
-                requireNonNull(storeFactory.getStore(ReadableRosterStore.class).getActiveRoster());
+        this.activeRoster = rosterStore.getActiveRoster();
         this.activeParticipantDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, (int) selfId);
         this.activeRosterShares = getTssPrivateShares(activeParticipantDirectory, tssStore, activeRosterHash);
 
