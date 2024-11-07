@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.time.Instant;
@@ -71,6 +72,8 @@ class TssBaseServiceImplTest {
     void setUp() {
         given(appContext.gossip()).willReturn(gossip);
         given(appContext.instantSource()).willReturn(InstantSource.system());
+        given(appContext.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
+        given(appContext.selfIdSupplier()).willReturn(() -> 3L);
         subject = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),

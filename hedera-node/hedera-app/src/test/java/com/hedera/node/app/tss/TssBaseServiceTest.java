@@ -80,6 +80,9 @@ public class TssBaseServiceTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
 
+    @Mock
+    private TssKeyMaterialAccessor keyMaterialAccessor;
+
     private TssBaseService subject;
 
     @BeforeEach

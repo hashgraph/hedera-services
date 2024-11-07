@@ -35,7 +35,6 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssCryptographyManager;
 import com.hedera.node.app.tss.TssCryptographyManager.Vote;
 import com.hedera.node.app.tss.TssKeyMaterialAccessor;
@@ -109,6 +108,9 @@ class TssMessageHandlerTest {
     @Mock
     private TssMetrics tssMetrics;
 
+    @Mock
+    private TssKeyMaterialAccessor keyMaterialAccessor;
+
     private Roster roster;
     private TssMessageHandler subject;
     private Vote vote;
@@ -128,11 +130,7 @@ class TssMessageHandlerTest {
                 .build(SIGNATURE_SCHEMA);
 
         subject = new TssMessageHandler(
-                submissionManager,
-                gossip,
-                tssCryptographyManager,
-                tssMetrics,
-                new TssKeyMaterialAccessor(new PlaceholderTssLibrary()));
+                submissionManager, gossip, tssCryptographyManager, tssMetrics, keyMaterialAccessor);
     }
 
     @Test
@@ -150,12 +148,10 @@ class TssMessageHandlerTest {
         given(nodeInfo.accountId()).willReturn(NODE_ACCOUNT_ID);
         given(nodeInfo.nodeId()).willReturn(1L);
         given(handleContext.body()).willReturn(getTssBody());
-        given(readableRosterStore.getActiveRoster()).willReturn(roster);
         given(pairingPublicKey.publicKey()).willReturn(new FakeGroupElement(BigInteger.valueOf(10)));
 
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
-        when(storeFactory.readableStore(ReadableRosterStore.class)).thenReturn(readableRosterStore);
 
         given(tssCryptographyManager.getVoteFuture(
                         eq(getTssBody().tssMessageOrThrow().targetRosterHash()),
@@ -163,6 +159,7 @@ class TssMessageHandlerTest {
                         eq(handleContext)))
                 .willReturn(CompletableFuture.completedFuture(vote));
         given(signature.getBytes()).willReturn(Bytes.wrap("test"));
+        given(keyMaterialAccessor.activeRosterParticipantDirectory()).willReturn(tssParticipantDirectory);
 
         subject.handle(handleContext);
 
