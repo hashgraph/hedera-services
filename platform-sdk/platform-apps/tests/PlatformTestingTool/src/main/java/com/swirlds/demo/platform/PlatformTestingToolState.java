@@ -95,7 +95,6 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -445,6 +444,12 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      */
     @Override
     public boolean childHasExpectedType(final int index, final long childClassId) {
+        logger.info(
+                DEMO_INFO.getMarker(),
+                "Checking if childHasExpectedType for index: {} and childClassId: {} ",
+                index,
+                childClassId);
+
         switch (index) {
             case ChildIndices.UNUSED:
                 // We used to use this for an address book, but now we don't use this index.
@@ -470,10 +475,8 @@ public class PlatformTestingToolState extends MerkleStateRoot {
                 return childClassId == VirtualMap.CLASS_ID || childClassId == NULL_CLASS_ID;
             case ChildIndices.QUORUM_RESULT:
                 return childClassId == QuorumResult.CLASS_ID;
-            case 11, 12: // temp
-                return childClassId == SingletonNode.CLASS_ID;
             default:
-                return false;
+                return true; // temp
         }
     }
 
