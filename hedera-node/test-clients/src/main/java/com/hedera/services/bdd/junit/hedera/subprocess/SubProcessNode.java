@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.recreateWorkingDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static java.nio.file.StandardOpenOption.APPEND;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
@@ -47,10 +46,8 @@ import com.hedera.services.bdd.suites.regression.system.LifecycleTest;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
@@ -271,17 +268,12 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
             jcmdPath += ".exe";
         }
         final long pid = requireNonNull(processHandle).pid();
-        final var processBuilder =
-                new ProcessBuilder(jcmdPath, Long.toString(pid), "Thread.print").redirectErrorStream(true);
-        final var jcmd = processBuilder.start();
         final var errorRedirectPath =
                 metadata.workingDirOrThrow().resolve(OUTPUT_DIR).resolve(ERROR_REDIRECT_FILE);
-        try (final var reader = new BufferedReader(new InputStreamReader(jcmd.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                Files.writeString(errorRedirectPath, line + "\n", APPEND);
-            }
-        }
+        final var processBuilder = new ProcessBuilder(jcmdPath, Long.toString(pid), "Thread.print")
+                .redirectOutput(errorRedirectPath.toFile())
+                .redirectErrorStream(true);
+        final var jcmd = processBuilder.start();
         final int exitCode;
         try {
             exitCode = jcmd.waitFor();
