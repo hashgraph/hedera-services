@@ -26,6 +26,7 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.api.TssPrivateShare;
+import com.hedera.node.app.tss.api.TssPublicShare;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -38,15 +39,16 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class ActiveRosterKeyMaterial {
+public class TssRosterKeyMaterialAccessor {
     private List<TssPrivateShare> activeRosterShares;
+    private List<TssPublicShare> activeRosterPublicShares;
     private Bytes activeRosterHash;
     private final TssLibrary tssLibrary;
-    private TssParticipantDirectory activeRosterParticipantDirectory;
+    private TssParticipantDirectory activeParticipantDirectory;
     private Roster activeRoster;
 
     @Inject
-    public ActiveRosterKeyMaterial(@NonNull final TssLibrary tssLibrary) {
+    public TssRosterKeyMaterialAccessor(@NonNull final TssLibrary tssLibrary) {
         this.tssLibrary = requireNonNull(tssLibrary);
     }
 
@@ -67,9 +69,12 @@ public class ActiveRosterKeyMaterial {
         this.activeRosterHash = rosterStore.getActiveRosterHash();
         this.activeRoster =
                 requireNonNull(storeFactory.getStore(ReadableRosterStore.class).getActiveRoster());
-        this.activeRosterParticipantDirectory =
-                computeParticipantDirectory(activeRoster, maxSharesPerNode, (int) selfId);
-        this.activeRosterShares = getTssPrivateShares(activeRosterParticipantDirectory, tssStore, activeRosterHash);
+        this.activeParticipantDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, (int) selfId);
+        this.activeRosterShares = getTssPrivateShares(activeParticipantDirectory, tssStore, activeRosterHash);
+
+        final var tssMessageBodies = tssStore.getTssMessageBodies(activeRosterHash);
+        final var validTssMessages = getTssMessages(tssMessageBodies);
+        this.activeRosterPublicShares = tssLibrary.computePublicShares(activeParticipantDirectory, validTssMessages);
     }
 
     @NonNull
@@ -88,12 +93,16 @@ public class ActiveRosterKeyMaterial {
         activeRosterHash = Bytes.EMPTY;
     }
 
+    public List<TssPublicShare> activeRosterPublicShares() {
+        return activeRosterPublicShares;
+    }
+
     public Roster activeRoster() {
         return activeRoster;
     }
 
     public TssParticipantDirectory activeRosterParticipantDirectory() {
-        return activeRosterParticipantDirectory;
+        return activeParticipantDirectory;
     }
 
     public Bytes activeRosterHash() {

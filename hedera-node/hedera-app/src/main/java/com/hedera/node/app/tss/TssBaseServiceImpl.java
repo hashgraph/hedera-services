@@ -89,7 +89,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssSubmissions tssSubmissions;
     private final Executor tssLibraryExecutor;
     private final ExecutorService signingExecutor;
-    private final ActiveRosterKeyMaterial privateKeysAccessor;
+    private final TssRosterKeyMaterialAccessor privateKeysAccessor;
     private final Configuration configuration;
     private final long selfId;
 
@@ -104,7 +104,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
-        this.privateKeysAccessor = new ActiveRosterKeyMaterial(tssLibrary);
+        this.privateKeysAccessor = new TssRosterKeyMaterialAccessor(tssLibrary);
         this.configuration = requireNonNull(appContext.configuration());
         this.selfId = appContext.selfId();
         final var component = DaggerTssBaseServiceComponent.factory()
