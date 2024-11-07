@@ -30,9 +30,12 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.condi
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.destroyAnySubProcessNodeWithId;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.startSubProcessNodeFrom;
 import static com.hedera.services.bdd.junit.hedera.subprocess.StatusLookupAttempt.newLogAttempt;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ERROR_REDIRECT_FILE;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.recreateWorkingDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static java.nio.file.StandardOpenOption.APPEND;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
@@ -41,11 +44,13 @@ import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen;
 import com.hedera.services.bdd.suites.regression.system.LifecycleTest;
-import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
@@ -163,17 +168,26 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
             return CompletableFuture.completedFuture(null);
         }
         log.info(
-                "Destroying node '{}' with PID '{}' (Alive? {})",
+                "Destroying node{} with PID '{}' (Alive? {})",
                 metadata.nodeId(),
                 processHandle.pid(),
                 processHandle.isAlive() ? "Yes" : "No");
         if (!processHandle.destroy()) {
-            log.warn("May have failed to stop node '{}' with PID '{}'", metadata.nodeId(), processHandle.pid());
+            log.warn("May have failed to stop node{} with PID '{}'", metadata.nodeId(), processHandle.pid());
         }
         return processHandle.onExit().thenAccept(handle -> {
             log.info("Destroyed PID {}", handle.pid());
             this.processHandle = null;
         });
+    }
+
+    @Override
+    public void dumpThreads() {
+        try {
+            triggerThreadDump();
+        } catch (Exception e) {
+            log.warn("Unable to dump threads for node{}", metadata.nodeId(), e);
+        }
     }
 
     @Override
@@ -198,7 +212,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
      * Reassigns the ports used by this node.
      *
      * @param grpcPort the new gRPC port
-     *                 @param grpcNodeOperatorPort the new gRPC node operator port
+     * @param grpcNodeOperatorPort the new gRPC node operator port
      * @param gossipPort the new gossip port
      * @param tlsGossipPort the new TLS gossip port
      * @param prometheusPort the new Prometheus port
@@ -214,6 +228,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
 
     /**
      * Reassigns the account ID used by this node.
+     *
      * @param memo the memo containing the new account ID to use
      */
     public void reassignNodeAccountIdFrom(@NonNull final String memo) {
@@ -226,15 +241,6 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-    }
-
-    private boolean stopWith(@NonNull final BooleanFunction<ProcessHandle> stop) {
-        if (processHandle == null) {
-            return false;
-        }
-        final var result = stop.apply(processHandle);
-        processHandle = null;
-        return result;
     }
 
     private void assertStopped() {
@@ -256,5 +262,35 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
     public enum ReassignPorts {
         YES,
         NO
+    }
+
+    private void triggerThreadDump() throws IOException {
+        final var javaHome = System.getProperty("java.home");
+        var jcmdPath = javaHome + File.separator + "bin" + File.separator + "jcmd";
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            jcmdPath += ".exe";
+        }
+        final long pid = requireNonNull(processHandle).pid();
+        final var processBuilder =
+                new ProcessBuilder(jcmdPath, Long.toString(pid), "Thread.print").redirectErrorStream(true);
+        final var jcmd = processBuilder.start();
+        final var errorRedirectPath =
+                metadata.workingDirOrThrow().resolve(OUTPUT_DIR).resolve(ERROR_REDIRECT_FILE);
+        try (final var reader = new BufferedReader(new InputStreamReader(jcmd.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                Files.writeString(errorRedirectPath, line + "\n", APPEND);
+            }
+        }
+        final int exitCode;
+        try {
+            exitCode = jcmd.waitFor();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException(e);
+        }
+        if (exitCode != 0) {
+            throw new IOException("jcmd exited with code " + exitCode);
+        }
     }
 }
