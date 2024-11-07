@@ -289,10 +289,10 @@ public class HandleWorkflow {
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
      * {@link BlockRecordManager} to be externalized.
      *
-     * @param state the writable {@link State} that this transaction will work on
-     * @param event the {@link ConsensusEvent} that this transaction belongs to
+     * @param state   the writable {@link State} that this transaction will work on
+     * @param event   the {@link ConsensusEvent} that this transaction belongs to
      * @param creator the {@link NodeInfo} of the creator of the transaction
-     * @param txn the {@link ConsensusTransaction} to be handled
+     * @param txn     the {@link ConsensusTransaction} to be handled
      */
     private void handlePlatformTransaction(
             @NonNull final State state,
@@ -372,6 +372,7 @@ public class HandleWorkflow {
 
                     privateKeysAccessor.reset();
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
+                    // Generate key material for the active roster once it is switched
                     privateKeysAccessor.generateKeyMaterialForActiveRoster(
                             userTxn.state(),
                             userTxn.config(),
@@ -396,6 +397,7 @@ public class HandleWorkflow {
                     // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
+                    // Generate key material for the active roster once it is switched
                     privateKeysAccessor.generateKeyMaterialForActiveRoster(
                             userTxn.state(),
                             userTxn.config(),
@@ -526,8 +528,8 @@ public class HandleWorkflow {
      * information. The record builder is initialized with the transaction, transaction bytes, transaction ID,
      * exchange rate, and memo.
      *
-     * @param builder the base builder
-     * @param txnInfo the transaction information
+     * @param builder         the base builder
+     * @param txnInfo         the transaction information
      * @param exchangeRateSet the active exchange rate set
      * @return the initialized base builder
      */
@@ -585,7 +587,7 @@ public class HandleWorkflow {
     /**
      * Process all time-based events that are due since the last processing time.
      *
-     * @param userTxn the user transaction
+     * @param userTxn         the user transaction
      * @param lastProcessTime an upper bound on the last time that time-based events were processed
      * @return true if the interval was processed
      */

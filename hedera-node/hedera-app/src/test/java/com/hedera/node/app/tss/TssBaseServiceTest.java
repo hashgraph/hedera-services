@@ -86,6 +86,8 @@ public class TssBaseServiceTest {
     void setUp() {
         given(appContext.gossip()).willReturn(mock(AppContext.Gossip.class));
         given(appContext.instantSource()).willReturn(InstantSource.system());
+        given(appContext.selfIdSupplier()).willReturn(() -> 3L);
+        given(appContext.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
 
         subject = new TssBaseServiceImpl(
                 appContext,
@@ -116,6 +118,7 @@ public class TssBaseServiceTest {
         given(storeFactory.readableStore(ReadableTssStore.class)).willReturn(readableTssStore);
         // Simulate CURRENT_CANDIDATE_ROSTER and ACTIVE_ROSTER
         mockWritableRosterStore();
+        given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
 
         // Attempt to set the same candidate roster
         subject.setCandidateRoster(CURRENT_CANDIDATE_ROSTER, handleContext);
@@ -131,6 +134,7 @@ public class TssBaseServiceTest {
         final var rosterStore = mockWritableRosterStore();
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
+        given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
 
         // Attempt to set the active roster as the new candidate roster
         subject.setCandidateRoster(ACTIVE_ROSTER, handleContext);
@@ -143,6 +147,7 @@ public class TssBaseServiceTest {
         given(storeFactory.readableStore(ReadableTssStore.class)).willReturn(readableTssStore);
         // Simulate the _current_ candidate roster and active roster
         final var rosterStore = mockWritableRosterStore();
+        given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
 
         // Test setting a _new_ candidate roster with nodes 1, 2, and 3
         final var inputRoster = Roster.newBuilder()

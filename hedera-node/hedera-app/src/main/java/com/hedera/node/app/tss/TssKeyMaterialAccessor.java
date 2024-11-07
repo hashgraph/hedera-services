@@ -97,8 +97,12 @@ public class TssKeyMaterialAccessor {
      * Resets the key material.
      */
     public void reset() {
-        activeRosterShares.clear();
-        activeRosterPublicShares.clear();
+        if (activeRosterShares != null) {
+            activeRosterShares.clear();
+        }
+        if (activeRosterPublicShares != null) {
+            activeRosterPublicShares.clear();
+        }
         activeRosterHash = Bytes.EMPTY;
         activeParticipantDirectory = null;
     }
@@ -108,7 +112,7 @@ public class TssKeyMaterialAccessor {
      * @return the active roster public shares
      */
     public List<TssPublicShare> activeRosterPublicShares() {
-        return activeRosterPublicShares;
+        return requireNonNull(activeRosterPublicShares);
     }
 
     /**
@@ -116,7 +120,7 @@ public class TssKeyMaterialAccessor {
      * @return the active roster participant directory
      */
     public TssParticipantDirectory activeRosterParticipantDirectory() {
-        return activeParticipantDirectory;
+        return requireNonNull(activeParticipantDirectory);
     }
 
     /**
@@ -124,7 +128,7 @@ public class TssKeyMaterialAccessor {
      * @return the active roster hash
      */
     public Bytes activeRosterHash() {
-        return activeRosterHash;
+        return requireNonNull(activeRosterHash);
     }
 
     /**
@@ -132,6 +136,6 @@ public class TssKeyMaterialAccessor {
      * @return the active roster shares
      */
     public List<TssPrivateShare> activeRosterShares() {
-        return activeRosterShares;
+        return requireNonNull(activeRosterShares);
     }
 }

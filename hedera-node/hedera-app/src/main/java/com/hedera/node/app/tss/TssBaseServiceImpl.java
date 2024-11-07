@@ -87,7 +87,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssSubmissions tssSubmissions;
     private final Executor tssLibraryExecutor;
     private final ExecutorService signingExecutor;
-    private final TssKeyMaterialAccessor privateKeysAccessor;
+    private final TssKeyMaterialAccessor keyMaterialAccessor;
     private final Configuration configuration;
 
     public TssBaseServiceImpl(
@@ -101,7 +101,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
-        this.privateKeysAccessor = new TssKeyMaterialAccessor(tssLibrary);
+        this.keyMaterialAccessor = new TssKeyMaterialAccessor(tssLibrary);
         this.configuration = requireNonNull(appContext.configuration());
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
@@ -111,7 +111,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                         submissionExecutor,
                         tssLibraryExecutor,
                         metrics,
-                        privateKeysAccessor,
+                        keyMaterialAccessor,
                         appContext.configuration(),
                         appContext.selfIdSupplier(),
                         this);
@@ -166,9 +166,9 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
 
         final var candidateDirectory =
-                privateKeysAccessor.candidateRosterParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
-        final var activeRosterHash = privateKeysAccessor.activeRosterHash();
-        final var tssPrivateShares = privateKeysAccessor.activeRosterShares();
+                keyMaterialAccessor.candidateRosterParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
+        final var activeRosterHash = keyMaterialAccessor.activeRosterHash();
+        final var tssPrivateShares = keyMaterialAccessor.activeRosterShares();
 
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
         // FUTURE - instead of an arbitrary counter here, use the share index from the private share
@@ -223,8 +223,8 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     private void submitShareSignatures(final byte[] messageHash, final Instant lastUsedConsensusTime) {
-        final var tssPrivateShares = privateKeysAccessor.activeRosterShares();
-        final var activeRoster = privateKeysAccessor.activeRosterHash();
+        final var tssPrivateShares = keyMaterialAccessor.activeRosterShares();
+        final var activeRoster = keyMaterialAccessor.activeRosterHash();
         long nanosOffset = 1;
         for (final var privateShare : tssPrivateShares) {
             final var signature = tssLibrary.sign(privateShare, messageHash);
@@ -347,5 +347,9 @@ public class TssBaseServiceImpl implements TssBaseService {
             }
         }
         return false;
+    }
+
+    public TssKeyMaterialAccessor privateKeysAccessor() {
+        return keyMaterialAccessor;
     }
 }
