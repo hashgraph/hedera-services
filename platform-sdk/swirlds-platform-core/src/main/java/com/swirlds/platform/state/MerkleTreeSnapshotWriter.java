@@ -19,9 +19,9 @@ package com.swirlds.platform.state;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
+import static com.swirlds.platform.state.MerkleTreeSnapshotReader.SIG_SET_SEPARATE_STATE_FILE_VERSION;
+import static com.swirlds.platform.state.MerkleTreeSnapshotReader.VERSIONED_FILE_BYTE;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIG_SET_SEPARATE_STATE_FILE_VERSION;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;

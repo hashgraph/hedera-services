@@ -22,7 +22,6 @@ import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubK
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -137,6 +136,7 @@ import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
+import com.hedera.services.bdd.spec.utilops.inventory.NewSpecThresholdKey;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromEcdsaFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
@@ -201,6 +201,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.PrivateKey;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
@@ -720,6 +721,10 @@ public class UtilVerbs {
         return new NewSpecKeyList(key, childKeys);
     }
 
+    public static NewSpecThresholdKey newThresholdKeyNamed(String key, int nRequired, List<String> childKeys) {
+        return new NewSpecThresholdKey(key, nRequired, childKeys);
+    }
+
     /**
      * Unless the {@link HapiSpec} is in a repeatable mode, returns an operation that will
      * run the given sub-operations in parallel.
@@ -731,7 +736,9 @@ public class UtilVerbs {
      * @return the operation that runs the sub-operations in parallel
      */
     public static GroupedOps<?> inParallel(@NonNull final SpecOperation... subs) {
-        return repeatableModeRequested() ? blockingOrder(subs) : new ParallelSpecOps(subs);
+        return "repeatable".equalsIgnoreCase(System.getProperty("hapi.spec.embedded.mode"))
+                ? blockingOrder(subs)
+                : new ParallelSpecOps(subs);
     }
 
     public static CustomSpecAssert assertionsHold(CustomSpecAssert.ThrowingConsumer custom) {
@@ -2303,6 +2310,14 @@ public class UtilVerbs {
         }
 
         return privateKeyByteArray;
+    }
+
+    public static PrivateKey getEd25519PrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
+        var key = spec.registry().getKey(privateKeyRef);
+        final var privateKey = spec.keys()
+                .getEd25519PrivateKey(com.swirlds.common.utility.CommonUtils.hex(
+                        key.getEd25519().toByteArray()));
+        return privateKey;
     }
 
     private static double getChargedUsed(@NonNull final HapiSpec spec, @NonNull final String txn) {

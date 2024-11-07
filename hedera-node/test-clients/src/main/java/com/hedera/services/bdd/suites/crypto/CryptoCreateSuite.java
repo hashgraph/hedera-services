@@ -101,7 +101,6 @@ public class CryptoCreateSuite {
     public static final String ACCOUNT = "account";
     public static final String ANOTHER_ACCOUNT = "anotherAccount";
     public static final String ED_25519_KEY = "ed25519Alias";
-    public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
     public static final String ACCOUNT_ID = "0.0.10";
     public static final String CIVILIAN = "civilian";
     public static final String NO_KEYS = "noKeys";

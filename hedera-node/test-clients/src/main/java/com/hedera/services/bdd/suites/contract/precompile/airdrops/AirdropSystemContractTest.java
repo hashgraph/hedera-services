@@ -20,9 +20,8 @@ import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareAccountAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareNftAddresses;
-import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareReceiverAddresses;
-import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareSenderAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareTokenAddresses;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -125,8 +124,8 @@ public class AirdropSystemContractTest {
                             .call(
                                     "tokenNAmountAirdrops",
                                     prepareTokenAddresses(spec, token1, token2, token3),
-                                    prepareSenderAddresses(spec, sender, sender, sender),
-                                    prepareReceiverAddresses(spec, receiver1, receiver2, receiver3),
+                                    prepareAccountAddresses(spec, sender, sender, sender),
+                                    prepareAccountAddresses(spec, receiver1, receiver2, receiver3),
                                     10L)
                             .gas(1500000));
             allRunFor(
@@ -166,8 +165,8 @@ public class AirdropSystemContractTest {
                             .call(
                                     "nftNAmountAirdrops",
                                     prepareNftAddresses(spec, nft1, nft2, nft3),
-                                    prepareSenderAddresses(spec, sender, sender, sender),
-                                    prepareReceiverAddresses(spec, receiver1, receiver2, receiver3),
+                                    prepareAccountAddresses(spec, sender, sender, sender),
+                                    prepareAccountAddresses(spec, receiver1, receiver2, receiver3),
                                     serials)
                             .gas(1500000));
             allRunFor(
@@ -228,10 +227,10 @@ public class AirdropSystemContractTest {
                                     "mixedAirdrop",
                                     prepareTokenAddresses(spec, token1, token2, token3),
                                     prepareNftAddresses(spec, nft1, nft2, nft3),
-                                    prepareSenderAddresses(spec, sender, sender, sender),
-                                    prepareReceiverAddresses(spec, receiver1, receiver2, receiver3),
-                                    prepareSenderAddresses(spec, sender, sender, sender),
-                                    prepareReceiverAddresses(spec, receiver4, receiver5, receiver6),
+                                    prepareAccountAddresses(spec, sender, sender, sender),
+                                    prepareAccountAddresses(spec, receiver1, receiver2, receiver3),
+                                    prepareAccountAddresses(spec, sender, sender, sender),
+                                    prepareAccountAddresses(spec, receiver4, receiver5, receiver6),
                                     10L,
                                     serials)
                             .gas(1750000));
@@ -310,11 +309,11 @@ public class AirdropSystemContractTest {
                                     "mixedAirdrop",
                                     prepareTokenAddresses(spec, token1, token2, token3, token4, token5),
                                     prepareNftAddresses(spec, nft1, nft2, nft3, nft4, nft5),
-                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender),
-                                    prepareReceiverAddresses(
+                                    prepareAccountAddresses(spec, sender, sender, sender, sender, sender),
+                                    prepareAccountAddresses(
                                             spec, receiver1, receiver2, receiver3, receiver4, receiver5),
-                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender),
-                                    prepareReceiverAddresses(
+                                    prepareAccountAddresses(spec, sender, sender, sender, sender, sender),
+                                    prepareAccountAddresses(
                                             spec, receiver6, receiver7, receiver8, receiver9, receiver10),
                                     10L,
                                     serials)
@@ -404,11 +403,11 @@ public class AirdropSystemContractTest {
                                     "mixedAirdrop",
                                     prepareTokenAddresses(spec, token1, token2, token3, token4, token5),
                                     prepareNftAddresses(spec, nft1, nft2, nft3, nft4, nft5),
-                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender),
-                                    prepareReceiverAddresses(
+                                    prepareAccountAddresses(spec, sender, sender, sender, sender, sender),
+                                    prepareAccountAddresses(
                                             spec, receiver1, receiver2, receiver3, receiver4, receiver5),
-                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender, sender),
-                                    prepareReceiverAddresses(
+                                    prepareAccountAddresses(spec, sender, sender, sender, sender, sender, sender),
+                                    prepareAccountAddresses(
                                             spec, receiver6, receiver7, receiver8, receiver9, receiver10, receiver11),
                                     10L,
                                     serials)

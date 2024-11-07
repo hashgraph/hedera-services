@@ -20,14 +20,14 @@ import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.branching.BranchDetectorTests.generateSimpleSequenceOfEvents;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,20 +44,21 @@ class BranchReporterTests {
 
         final Randotron randotron = Randotron.create();
 
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(randotron).withSize(8).build();
+        final Roster roster = RandomRosterBuilder.create(randotron).withSize(8).build();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final DefaultBranchReporter reporter = new DefaultBranchReporter(platformContext, addressBook);
+        final DefaultBranchReporter reporter = new DefaultBranchReporter(platformContext, roster);
 
         int ancientThreshold = randotron.nextInt(1, 1000);
         reporter.updateEventWindow(
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
         final List<PlatformEvent> events = new ArrayList<>();
-        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
+        for (final NodeId nodeId : roster.rosterEntries().stream()
+                .map(re -> NodeId.of(re.nodeId()))
+                .toList()) {
             events.addAll(generateSimpleSequenceOfEvents(randotron, nodeId, ancientThreshold, 512));
         }
 
@@ -86,20 +87,21 @@ class BranchReporterTests {
     void doesNotThrowLargeAncientWindow() {
         final Randotron randotron = Randotron.create();
 
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(randotron).withSize(8).build();
+        final Roster roster = RandomRosterBuilder.create(randotron).withSize(8).build();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final DefaultBranchReporter reporter = new DefaultBranchReporter(platformContext, addressBook);
+        final DefaultBranchReporter reporter = new DefaultBranchReporter(platformContext, roster);
 
         int ancientThreshold = randotron.nextInt(1, 1000);
         reporter.updateEventWindow(
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
         final List<PlatformEvent> events = new ArrayList<>();
-        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
+        for (final NodeId nodeId : roster.rosterEntries().stream()
+                .map(re -> NodeId.of(re.nodeId()))
+                .toList()) {
             events.addAll(generateSimpleSequenceOfEvents(randotron, nodeId, ancientThreshold, 512));
         }
 
@@ -123,16 +125,15 @@ class BranchReporterTests {
     void eventWindowMustBeSetTest() {
         final Randotron randotron = Randotron.create();
 
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(randotron).withSize(8).build();
+        final Roster roster = RandomRosterBuilder.create(randotron).withSize(8).build();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final DefaultBranchReporter reporter = new DefaultBranchReporter(platformContext, addressBook);
+        final DefaultBranchReporter reporter = new DefaultBranchReporter(platformContext, roster);
 
         final PlatformEvent event = new TestingEventBuilder(randotron)
-                .setCreatorId(addressBook.getNodeId(0))
+                .setCreatorId(NodeId.of(roster.rosterEntries().get(0).nodeId()))
                 .build();
         assertThrows(IllegalStateException.class, () -> reporter.reportBranch(event));
     }

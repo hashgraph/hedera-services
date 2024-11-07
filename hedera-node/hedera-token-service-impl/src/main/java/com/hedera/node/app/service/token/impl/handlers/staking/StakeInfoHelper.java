@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.copyBuilderFrom;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.asStakingRewardBuilder;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.fromStakingInfo;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.lastInstantOfPreviousPeriodFor;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.newNodeStakeUpdateBuilder;
@@ -40,8 +40,8 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -216,7 +216,7 @@ public class StakeInfoHelper {
                         stakingInfo.copyBuilder().weight(0).deleted(true).build());
                 log.info("Marked node{} as deleted since it has been removed from the address book", nodeId);
                 // None of this node's rewards can ever be claimed now, so clear them from pending
-                final var rewards = copyBuilderFrom(rewardsStore)
+                final var rewards = asStakingRewardBuilder(rewardsStore)
                         .pendingRewards(rewardsStore.pendingRewards() - stakingInfo.pendingRewards())
                         .build();
                 rewardsStore.put(rewards);
