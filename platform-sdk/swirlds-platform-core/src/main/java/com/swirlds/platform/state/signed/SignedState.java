@@ -252,16 +252,6 @@ public class SignedState implements SignedStateInfo {
         }
     }
 
-    //    /**
-    //     * {@inheritDoc}
-    //     */
-    //    @Override
-    //    public @NonNull Roster getRoster() {
-    //        return RosterRetriever.buildRoster(Objects.requireNonNull(
-    //                state.getReadablePlatformState().getAddressBook(),
-    //                "address book stored in this signed state is null, this should never happen"));
-    //    }
-
     /**
      * {@inheritDoc}
      */
