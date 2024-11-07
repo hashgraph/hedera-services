@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -81,46 +81,37 @@ import org.junit.jupiter.api.DynamicTest;
 public class FileCreateSuite {
     @HapiTest
     final Stream<DynamicTest> exchangeRateControlAccountIsntCharged() {
-        return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
-                .given(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000_000L)),
-                        balanceSnapshot("pre", EXCHANGE_RATE_CONTROL),
-                        getFileContents(EXCHANGE_RATES).saveTo("exchangeRates.bin"))
-                .when(fileUpdate(EXCHANGE_RATES)
+        return hapiTest(
+                cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000_000L)),
+                balanceSnapshot("pre", EXCHANGE_RATE_CONTROL),
+                getFileContents(EXCHANGE_RATES).saveTo("exchangeRates.bin"),
+                fileUpdate(EXCHANGE_RATES)
                         .payingWith(EXCHANGE_RATE_CONTROL)
-                        .path(Path.of("./", "exchangeRates.bin").toString()))
-                .then(getAccountBalance(EXCHANGE_RATE_CONTROL).hasTinyBars(changeFromSnapshot("pre", 0)));
+                        .path(Path.of("./", "exchangeRates.bin").toString()),
+                getAccountBalance(EXCHANGE_RATE_CONTROL).hasTinyBars(changeFromSnapshot("pre", 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest> createFailsWithExcessiveLifetime() {
-        return defaultHapiSpec("CreateFailsWithExcessiveLifetime")
-                .given()
-                .when()
-                .then(doWithStartupConfig("entities.maxLifetime", value -> fileCreate("test")
-                        .lifetime(Long.parseLong(value) + 12_345L)
-                        .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)));
+        return hapiTest(doWithStartupConfig("entities.maxLifetime", value -> fileCreate("test")
+                .lifetime(Long.parseLong(value) + 12_345L)
+                .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)));
     }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given()
-                .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> fileCreate("file")
-                        .contents("ABC")));
+        return hapiTest(submitModified(
+                withSuccessivelyVariedBodyIds(), () -> fileCreate("file").contents("ABC")));
     }
 
     @HapiTest
     final Stream<DynamicTest> createWithMemoWorks() {
         String memo = "Really quite something!";
 
-        return defaultHapiSpec("createWithMemoWorks")
-                .given(
-                        fileCreate("ntb").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        fileCreate("memorable").entityMemo(memo))
-                .when()
-                .then(withTargetLedgerId(ledgerId ->
+        return hapiTest(
+                fileCreate("ntb").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                fileCreate("memorable").entityMemo(memo),
+                withTargetLedgerId(ledgerId ->
                         getFileInfo("memorable").hasEncodedLedgerId(ledgerId).hasMemo(memo)));
     }
 
@@ -130,15 +121,12 @@ public class FileCreateSuite {
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
         SigControl invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 
-        return defaultHapiSpec("CreateFailsWithMissingSigs")
-                .given()
-                .when()
-                .then(
-                        fileCreate("test")
-                                .waclShape(shape)
-                                .sigControl(forKey("test", invalidSig))
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        fileCreate("test").waclShape(shape).sigControl(forKey("test", validSig)));
+        return hapiTest(
+                fileCreate("test")
+                        .waclShape(shape)
+                        .sigControl(forKey("test", invalidSig))
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                fileCreate("test").waclShape(shape).sigControl(forKey("test", validSig)));
     }
 
     private static Transaction replaceTxnNodeAccount(Transaction txn) {
@@ -155,15 +143,12 @@ public class FileCreateSuite {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 
-        return defaultHapiSpec("CreateFailsWithPayerAccountNotFound")
-                .given()
-                .when()
-                .then(fileCreate("test")
-                        .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD)
-                        .waclShape(shape)
-                        .sigControl(forKey("test", validSig))
-                        .withTxnTransform(FileCreateSuite::replaceTxnNodeAccount)
-                        .hasPrecheckFrom(INVALID_NODE_ACCOUNT));
+        return hapiTest(fileCreate("test")
+                .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD)
+                .waclShape(shape)
+                .sigControl(forKey("test", validSig))
+                .withTxnTransform(FileCreateSuite::replaceTxnNodeAccount)
+                .hasPrecheckFrom(INVALID_NODE_ACCOUNT));
     }
 
     @HapiTest
@@ -171,12 +156,8 @@ public class FileCreateSuite {
         var now = Instant.now();
         System.out.println(now.getEpochSecond());
 
-        return defaultHapiSpec("precheckRejectsBadEffectiveAutoRenewPeriod")
-                .given()
-                .when()
-                .then(fileCreate("notHere")
-                        .lifetime(-60L)
-                        .hasPrecheck(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE));
+        return hapiTest(
+                fileCreate("notHere").lifetime(-60L).hasPrecheck(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
     @HapiTest
@@ -187,41 +168,38 @@ public class FileCreateSuite {
         var newWacl = listOf(SIMPLE, listOf(3), threshOf(1, 3));
         var newWaclSigs = newWacl.signedWith(sigs(ON, sigs(ON, ON, ON), sigs(OFF, OFF, ON)));
 
-        return defaultHapiSpec("targetsAppear")
-                .given(UtilVerbs.newKeyNamed("newWacl").shape(newWacl))
-                .when(fileCreate("file")
+        return hapiTest(
+                UtilVerbs.newKeyNamed("newWacl").shape(newWacl),
+                fileCreate("file")
                         .via("createTxn")
                         .contents(contents)
                         .key("newWacl")
                         .expiry(requestedExpiry)
                         .signedBy(GENESIS, "newWacl")
-                        .sigControl(ControlForKey.forKey("newWacl", newWaclSigs)))
-                .then(
-                        QueryVerbs.getFileInfo("file")
-                                .hasDeleted(false)
-                                .hasWacl("newWacl")
-                                .hasExpiryPassing(expiry -> expiry == requestedExpiry),
-                        QueryVerbs.getFileContents("file")
-                                .hasByteStringContents(ignore -> ByteString.copyFrom(contents)));
+                        .sigControl(ControlForKey.forKey("newWacl", newWaclSigs)),
+                QueryVerbs.getFileInfo("file")
+                        .hasDeleted(false)
+                        .hasWacl("newWacl")
+                        .hasExpiryPassing(expiry -> expiry == requestedExpiry),
+                QueryVerbs.getFileContents("file").hasByteStringContents(ignore -> ByteString.copyFrom(contents)));
     }
 
     @HapiTest
     final Stream<DynamicTest> getsExpectedRejections() {
-        return defaultHapiSpec("getsExpectedRejections")
-                .given(fileCreate("tbd"), fileDelete("tbd"))
-                .when()
-                .then(
-                        getFileInfo("1.2.3").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
-                        getFileContents("1.2.3").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
-                        getFileContents("tbd")
-                                .nodePayment(1_234L)
-                                .hasAnswerOnlyPrecheck(OK)
-                                .logged(),
-                        getFileInfo("tbd")
-                                .nodePayment(1_234L)
-                                .hasAnswerOnlyPrecheck(OK)
-                                .hasDeleted(true)
-                                .logged());
+        return hapiTest(
+                fileCreate("tbd"),
+                fileDelete("tbd"),
+                getFileInfo("1.2.3").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
+                getFileContents("1.2.3").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
+                getFileContents("tbd")
+                        .nodePayment(1_234L)
+                        .hasAnswerOnlyPrecheck(OK)
+                        .logged(),
+                getFileInfo("tbd")
+                        .nodePayment(1_234L)
+                        .hasAnswerOnlyPrecheck(OK)
+                        .hasDeleted(true)
+                        .logged());
     }
 
     /**
