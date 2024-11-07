@@ -77,6 +77,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
@@ -218,7 +219,7 @@ public class SwirldsPlatform implements Platform {
         notificationEngine = blocks.notificationEngine();
 
         currentAddressBook = initialState.getAddressBook();
-        currentRoster = initialState.getRoster();
+        currentRoster = AddressBookUtils.createRoster(currentAddressBook);
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
 

@@ -35,6 +35,7 @@ import com.swirlds.platform.state.signed.SignedStateReference;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -74,7 +75,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
 
         this.addressBook = initialState.getAddressBook();
-        this.roster = initialState.getRoster();
+        this.roster = AddressBookUtils.createRoster(addressBook);
 
         if (loadSigningKeys) {
             keysAndCerts = initNodeSecurity(addressBook, configuration).get(selfId);
