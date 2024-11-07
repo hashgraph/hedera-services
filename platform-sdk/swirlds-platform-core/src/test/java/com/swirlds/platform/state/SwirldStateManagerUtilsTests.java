@@ -36,6 +36,7 @@ public class SwirldStateManagerUtilsTests {
 
         final MerkleStateRoot state =
                 new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         state.reserve();
         final SwirldStateMetrics stats = mock(SwirldStateMetrics.class);
         final MerkleRoot result = SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));

@@ -18,7 +18,6 @@ package com.hedera.node.app.tss.pairings;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import org.jetbrains.annotations.NotNull;
 
 public class FakeFieldElement implements FieldElement {
 
@@ -28,7 +27,7 @@ public class FakeFieldElement implements FieldElement {
         this.value = value;
     }
 
-    @NotNull
+    @NonNull
     @Override
     public BigInteger toBigInteger() {
         return value;

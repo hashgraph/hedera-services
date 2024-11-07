@@ -38,8 +38,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -55,6 +55,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TssSubmissionsTest {
     private static final int TIMES_TO_TRY_SUBMISSION = 3;
     private static final int DISTINCT_TXN_IDS_TO_TRY = 2;
+    private static final int NANOS_TO_SKIP_ON_DUPLICATE = 13;
     private static final String RETRY_DELAY = "1ms";
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final AccountID NODE_ACCOUNT_ID =
@@ -125,7 +126,7 @@ class TssSubmissionsTest {
 
         future.get(1, TimeUnit.SECONDS);
 
-        verify(gossip).submit(voteSubmission(1));
+        verify(gossip).submit(voteSubmission(NANOS_TO_SKIP_ON_DUPLICATE));
     }
 
     @Test
@@ -135,13 +136,13 @@ class TssSubmissionsTest {
                 .submit(messageSubmission(0));
         doThrow(new IllegalArgumentException("" + INVALID_NODE_ACCOUNT))
                 .when(gossip)
-                .submit(messageSubmission(1));
+                .submit(messageSubmission(NANOS_TO_SKIP_ON_DUPLICATE));
 
         final var future = subject.submitTssMessage(TssMessageTransactionBody.DEFAULT, context);
 
         future.exceptionally(t -> {
                     for (int i = 0; i < DISTINCT_TXN_IDS_TO_TRY; i++) {
-                        verify(gossip).submit(messageSubmission(i));
+                        verify(gossip).submit(messageSubmission(i * NANOS_TO_SKIP_ON_DUPLICATE));
                     }
                     return null;
                 })

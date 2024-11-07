@@ -17,7 +17,6 @@
 package com.hedera.node.app.state.merkle;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFileData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -45,25 +44,24 @@ import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
-import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableSingletonState;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
-import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
@@ -197,7 +195,7 @@ class SerializationTest extends MerkleTestBase {
     @ValueSource(booleans = {true, false})
     void simpleReadAndWrite(boolean forceFlush) throws IOException, ConstructableRegistryException {
         final var schemaV1 = createV1Schema();
-        final var originalTree = (MerkleStateRoot) createMerkleHederaState(schemaV1);
+        final var originalTree = createMerkleHederaState(schemaV1);
 
         // When we serialize it to bytes and deserialize it back into a tree
         MerkleStateRoot copy = originalTree.copy(); // make a copy to make VM flushable
@@ -244,10 +242,7 @@ class SerializationTest extends MerkleTestBase {
         originalTree.computeHash();
         originalTree.createSnapshot(tempDir);
 
-        final SignedStateFileReader.StateFileData deserializedSignedState = readStateFileData(
-                tempDir.resolve(SignedStateFileUtils.SIGNED_STATE_FILE_NAME), SignedStateFileUtils::readState);
-
-        MerkleStateRoot state = (MerkleStateRoot) deserializedSignedState.state();
+        MerkleStateRoot state = originalTree.loadSnapshot(tempDir.resolve(SignedStateFileUtils.SIGNED_STATE_FILE_NAME));
         initServices(schemaV1, state);
         assertTree(state);
     }

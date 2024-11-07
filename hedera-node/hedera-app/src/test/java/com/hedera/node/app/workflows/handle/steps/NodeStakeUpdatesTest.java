@@ -44,6 +44,7 @@ import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
@@ -70,6 +71,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +82,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NodeStakeUpdatesTest {
+public class NodeStakeUpdatesTest {
     private static final Instant CONSENSUS_TIME_1234567 = Instant.ofEpochSecond(1_234_5670L, 1357);
 
     @Mock
@@ -119,30 +121,33 @@ class NodeStakeUpdatesTest {
     @Mock
     private WritableSingletonState<RosterState> rosterState;
 
-    private NodeStakeUpdates subject;
+    @Mock
+    private WritableKVState<EntityNumber, Node> nodesState;
+
+    private StakePeriodChanges subject;
 
     @BeforeEach
     void setUp() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 
-        subject =
-                new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService, storeMetricsService);
+        subject = new StakePeriodChanges(
+                stakingPeriodCalculator, exchangeRateManager, tssBaseService, storeMetricsService);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void nullArgConstructor() {
         Assertions.assertThatThrownBy(
-                        () -> new NodeStakeUpdates(null, exchangeRateManager, tssBaseService, storeMetricsService))
-                .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(
-                        () -> new NodeStakeUpdates(stakingPeriodCalculator, null, tssBaseService, storeMetricsService))
+                        () -> new StakePeriodChanges(null, exchangeRateManager, tssBaseService, storeMetricsService))
                 .isInstanceOf(NullPointerException.class);
         Assertions.assertThatThrownBy(() ->
-                        new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, null, storeMetricsService))
+                        new StakePeriodChanges(stakingPeriodCalculator, null, tssBaseService, storeMetricsService))
                 .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(
-                        () -> new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService, null))
+        Assertions.assertThatThrownBy(() ->
+                        new StakePeriodChanges(stakingPeriodCalculator, exchangeRateManager, null, storeMetricsService))
+                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() ->
+                        new StakePeriodChanges(stakingPeriodCalculator, exchangeRateManager, tssBaseService, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -153,13 +158,16 @@ class NodeStakeUpdatesTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void processUpdateCalledForGenesisTxn() {
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
+        given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
 
         subject.process(dispatch, stack, context, RECORDS, true, Instant.EPOCH);
 
-        verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
+        verify(stakingPeriodCalculator).updateNodes(eq(context), eq(ExchangeRateSet.DEFAULT), any(BiConsumer.class));
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
@@ -181,6 +189,7 @@ class NodeStakeUpdatesTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void processUpdateCalledForNextPeriodWithRecordsStreamMode() {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
         // Use any number of seconds that gets isNextPeriod(...) to return true
@@ -192,10 +201,12 @@ class NodeStakeUpdatesTest {
                                 .nanos(CONSENSUS_TIME_1234567.getNano()))
                         .build());
         given(context.consensusTime()).willReturn(currentConsensusTime);
+        given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
 
         // Pre-condition check
         Assertions.assertThat(
-                        NodeStakeUpdates.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
+                        StakePeriodChanges.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
 
@@ -204,11 +215,13 @@ class NodeStakeUpdatesTest {
         verify(stakingPeriodCalculator)
                 .updateNodes(
                         argThat(stakingContext -> currentConsensusTime.equals(stakingContext.consensusTime())),
-                        eq(ExchangeRateSet.DEFAULT));
+                        eq(ExchangeRateSet.DEFAULT),
+                        any(BiConsumer.class));
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void processUpdateCalledForNextPeriodWithBlocksStreamMode() {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
         // Use any number of seconds that gets isNextPeriod(...) to return true
@@ -217,35 +230,41 @@ class NodeStakeUpdatesTest {
 
         // Pre-condition check
         Assertions.assertThat(
-                        NodeStakeUpdates.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
+                        StakePeriodChanges.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
+        given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
 
         subject.process(dispatch, stack, context, BLOCKS, false, CONSENSUS_TIME_1234567);
 
         verify(stakingPeriodCalculator)
                 .updateNodes(
                         argThat(stakingContext -> currentConsensusTime.equals(stakingContext.consensusTime())),
-                        eq(ExchangeRateSet.DEFAULT));
+                        eq(ExchangeRateSet.DEFAULT),
+                        any(BiConsumer.class));
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void processUpdateExceptionIsCaught() {
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         doThrow(new RuntimeException("test exception"))
                 .when(stakingPeriodCalculator)
-                .updateNodes(any(), eq(ExchangeRateSet.DEFAULT));
+                .updateNodes(any(), eq(ExchangeRateSet.DEFAULT), any(BiConsumer.class));
         given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
                         .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
                         .build());
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
+        given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
 
         Assertions.assertThatNoException()
                 .isThrownBy(() -> subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH));
-        verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
+        verify(stakingPeriodCalculator).updateNodes(eq(context), eq(ExchangeRateSet.DEFAULT), any(BiConsumer.class));
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
@@ -255,7 +274,7 @@ class NodeStakeUpdatesTest {
 
         final var earlierNowConsensus =
                 CONSENSUS_TIME_1234567.minusSeconds(Duration.ofDays(1).toSeconds());
-        final var result = NodeStakeUpdates.isNextStakingPeriod(earlierNowConsensus, CONSENSUS_TIME_1234567, context);
+        final var result = StakePeriodChanges.isNextStakingPeriod(earlierNowConsensus, CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isFalse();
     }
@@ -265,7 +284,7 @@ class NodeStakeUpdatesTest {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
 
         final var result =
-                NodeStakeUpdates.isNextStakingPeriod(CONSENSUS_TIME_1234567, CONSENSUS_TIME_1234567, context);
+                StakePeriodChanges.isNextStakingPeriod(CONSENSUS_TIME_1234567, CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isFalse();
     }
@@ -276,7 +295,7 @@ class NodeStakeUpdatesTest {
 
         final var laterNowConsensus =
                 CONSENSUS_TIME_1234567.plusSeconds(Duration.ofDays(1).toSeconds());
-        final var result = NodeStakeUpdates.isNextStakingPeriod(laterNowConsensus, CONSENSUS_TIME_1234567, context);
+        final var result = StakePeriodChanges.isNextStakingPeriod(laterNowConsensus, CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isTrue();
     }
@@ -290,7 +309,7 @@ class NodeStakeUpdatesTest {
                 // 1000 min * 60 seconds/min
                 1000 * 60);
         final var result =
-                NodeStakeUpdates.isNextStakingPeriod(earlierStakingPeriodTime, CONSENSUS_TIME_1234567, context);
+                StakePeriodChanges.isNextStakingPeriod(earlierStakingPeriodTime, CONSENSUS_TIME_1234567, context);
         Assertions.assertThat(result).isFalse();
     }
 
@@ -303,7 +322,7 @@ class NodeStakeUpdatesTest {
                 // 1000 min * 60 seconds/min
                 1000 * 60);
         final var result =
-                NodeStakeUpdates.isNextStakingPeriod(laterStakingPeriodTime, CONSENSUS_TIME_1234567, context);
+                StakePeriodChanges.isNextStakingPeriod(laterStakingPeriodTime, CONSENSUS_TIME_1234567, context);
         Assertions.assertThat(result).isTrue();
     }
 
@@ -436,7 +455,7 @@ class NodeStakeUpdatesTest {
                 .getOrCreateConfig();
     }
 
-    private static class RosterCase {
+    public static class RosterCase {
         static final Bytes BYTES_1_2_3 = Bytes.wrap("1, 2, 3");
         static final Node NODE_1 = Node.newBuilder()
                 .nodeId(1)
@@ -447,7 +466,7 @@ class NodeStakeUpdatesTest {
                         .port(11)
                         .build())
                 .build();
-        static final RosterEntry ROSTER_NODE_1 = RosterEntry.newBuilder()
+        public static final RosterEntry ROSTER_NODE_1 = RosterEntry.newBuilder()
                 .nodeId(NODE_1.nodeId())
                 .weight(NODE_1.weight())
                 .gossipCaCertificate(NODE_1.gossipCaCertificate())
@@ -462,7 +481,7 @@ class NodeStakeUpdatesTest {
                         .port(22)
                         .build())
                 .build();
-        static final RosterEntry ROSTER_NODE_2 = RosterEntry.newBuilder()
+        public static final RosterEntry ROSTER_NODE_2 = RosterEntry.newBuilder()
                 .nodeId(NODE_2.nodeId())
                 .weight(NODE_2.weight())
                 .gossipCaCertificate(NODE_2.gossipCaCertificate())
@@ -480,7 +499,7 @@ class NodeStakeUpdatesTest {
                         .port(33)
                         .build())
                 .build();
-        static final RosterEntry ROSTER_NODE_3 = RosterEntry.newBuilder()
+        public static final RosterEntry ROSTER_NODE_3 = RosterEntry.newBuilder()
                 .nodeId(NODE_3.nodeId())
                 .weight(NODE_3.weight())
                 .gossipCaCertificate(NODE_3.gossipCaCertificate())
@@ -502,10 +521,10 @@ class NodeStakeUpdatesTest {
                 .gossipEndpoint(NODE_4.gossipEndpoint())
                 .build();
 
-        static final Roster CURRENT_CANDIDATE_ROSTER = Roster.newBuilder()
+        public static final Roster CURRENT_CANDIDATE_ROSTER = Roster.newBuilder()
                 .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2))
                 .build();
-        static final Roster ACTIVE_ROSTER = Roster.newBuilder()
+        public static final Roster ACTIVE_ROSTER = Roster.newBuilder()
                 .rosterEntries(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3, ROSTER_NODE_4)
                 .build();
 

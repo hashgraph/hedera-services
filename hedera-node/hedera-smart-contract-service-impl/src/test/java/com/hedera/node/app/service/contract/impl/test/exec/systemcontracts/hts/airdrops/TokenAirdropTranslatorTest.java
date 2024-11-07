@@ -42,7 +42,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.M
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -94,38 +96,28 @@ class TokenAirdropTranslatorTest extends CallTestBase {
 
     @Test
     void matchesWhenAirdropEnabled() {
-        when(configuration.getConfigData(ContractsConfig.class)).thenReturn(contractsConfig);
-        when(contractsConfig.systemContractAirdropTokensEnabled()).thenReturn(true);
         attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
                 TOKEN_AIRDROP,
                 translator,
-                enhancement,
+                mockEnhancement(),
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
-                configuration);
-
-        boolean result = translator.matches(attempt);
-
-        assertTrue(result);
+                getTestConfiguration(true));
+        assertTrue(translator.matches(attempt));
     }
 
     @Test
-    void matchesWhenAirdropDisabled() {
-        when(configuration.getConfigData(ContractsConfig.class)).thenReturn(contractsConfig);
-        when(contractsConfig.systemContractAirdropTokensEnabled()).thenReturn(false);
+    void doesNotMatchWhenAirdropDisabled() {
         attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
                 TOKEN_AIRDROP,
                 translator,
-                enhancement,
+                mockEnhancement(),
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
-                configuration);
-
-        boolean result = translator.matches(attempt);
-
-        assertFalse(result);
+                getTestConfiguration(false));
+        assertFalse(translator.matches(attempt));
     }
 
     @Test
@@ -168,5 +160,12 @@ class TokenAirdropTranslatorTest extends CallTestBase {
         final var call = translator.callFrom(attempt);
         assertEquals(DispatchForResponseCodeHtsCall.class, call.getClass());
         verify(decoder).decodeAirdrop(attempt);
+    }
+
+    @NonNull
+    Configuration getTestConfiguration(final boolean enabled) {
+        return HederaTestConfigBuilder.create()
+                .withValue("contracts.systemContract.airdropTokens.enabled", enabled)
+                .getOrCreateConfig();
     }
 }
