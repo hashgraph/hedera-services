@@ -73,7 +73,7 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
         return updateSelectorsMap.keySet().stream()
                 .anyMatch(selector -> selector.equals(TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA)
-                        ? attempt.isSelectorIfConfigEnabled(selector, metadataSupport)
+                        ? attempt.isSelectorIfConfigEnabled(metadataSupport, selector)
                         : attempt.isSelector(selector));
     }
 

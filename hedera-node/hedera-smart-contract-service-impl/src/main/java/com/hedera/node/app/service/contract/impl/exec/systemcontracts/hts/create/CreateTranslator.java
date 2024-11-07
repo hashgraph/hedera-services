@@ -196,7 +196,7 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                 CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES);
         return createSelectorsMap.keySet().stream()
                 .anyMatch(selector -> metaSelectors.contains(selector)
-                        ? attempt.isSelectorIfConfigEnabled(selector, metaConfigEnabled)
+                        ? attempt.isSelectorIfConfigEnabled(metaConfigEnabled, selector)
                         : attempt.isSelector(selector));
     }
 
