@@ -50,15 +50,9 @@ public final class SystemContractAirdropHelper {
         });
     }
 
-    public static Address[] prepareSenderAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... senders) {
+    public static Address[] prepareAccountAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... senders) {
         return Arrays.stream(senders)
                 .map(sender -> sender.addressOn(spec.targetNetworkOrThrow()))
-                .toArray(Address[]::new);
-    }
-
-    public static Address[] prepareReceiverAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... receivers) {
-        return Arrays.stream(receivers)
-                .map(receiver -> receiver.addressOn(spec.targetNetworkOrThrow()))
                 .toArray(Address[]::new);
     }
 

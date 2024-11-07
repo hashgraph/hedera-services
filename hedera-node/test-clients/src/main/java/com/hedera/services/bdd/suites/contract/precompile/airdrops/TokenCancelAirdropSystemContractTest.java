@@ -28,10 +28,9 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.checkForEmptyBalance;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareAccountAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareAirdrops;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareNftAddresses;
-import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareReceiverAddresses;
-import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareSenderAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareTokenAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareTokensAndBalances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -139,9 +138,9 @@ public class TokenCancelAirdropSystemContractTest {
         return hapiTest(withOpContext((spec, opLog) -> {
             allRunFor(spec, prepareTokensAndBalances(sender, receiver, tokenList, nftList));
             prepareAirdrops(sender, receiver, tokenList, nftList, spec);
-            final var senders = prepareSenderAddresses(
+            final var senders = prepareAccountAddresses(
                     spec, sender, sender, sender, sender, sender, sender, sender, sender, sender, sender);
-            final var receivers = prepareReceiverAddresses(
+            final var receivers = prepareAccountAddresses(
                     spec, receiver, receiver, receiver, receiver, receiver, receiver, receiver, receiver, receiver,
                     receiver);
             final var tokens = prepareTokenAddresses(spec, token1, token2, token3, token4, token5);
@@ -169,8 +168,8 @@ public class TokenCancelAirdropSystemContractTest {
         return hapiTest(withOpContext((spec, opLog) -> {
             allRunFor(spec, prepareTokensAndBalances(sender, receiver, tokenList, List.of()));
             prepareAirdrops(sender, receiver, tokenList, List.of(), spec);
-            final var senders = prepareSenderAddresses(spec, sender, sender, sender);
-            final var receivers = prepareReceiverAddresses(spec, receiver, receiver, receiver);
+            final var senders = prepareAccountAddresses(spec, sender, sender, sender);
+            final var receivers = prepareAccountAddresses(spec, receiver, receiver, receiver);
             final var tokens = prepareTokenAddresses(spec, token1, token2, token3);
             final var serials = new long[] {0L, 0L, 0L};
             allRunFor(
@@ -205,9 +204,9 @@ public class TokenCancelAirdropSystemContractTest {
             prepareAirdrops(sender, receiver, List.of(token1, token2, token3), List.of(), spec);
             prepareAirdrops(sender, receiver, List.of(token4, token5, token6), List.of(), spec);
             prepareAirdrops(sender, receiver, List.of(), nftList, spec);
-            final var senders = prepareSenderAddresses(
+            final var senders = prepareAccountAddresses(
                     spec, sender, sender, sender, sender, sender, sender, sender, sender, sender, sender, sender);
-            final var receivers = prepareReceiverAddresses(
+            final var receivers = prepareAccountAddresses(
                     spec, receiver, receiver, receiver, receiver, receiver, receiver, receiver, receiver, receiver,
                     receiver, receiver);
             final var tokens = prepareTokenAddresses(spec, token1, token2, token3, token4, token5);
