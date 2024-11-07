@@ -122,7 +122,6 @@ jobs:
       enable-timing-sensitive-tests: true
       enable-time-consuming-tests: true
       enable-hammer-tests: true
-      enable-hapi-tests-time-consuming: true
       enable-network-log-capture: true
       ref: ${{ needs.fetch-xts-candidate.outputs.xts-tag-commit }}
     secrets:

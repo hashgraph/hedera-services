@@ -70,7 +70,6 @@ jobs:
       enable-hapi-tests-crypto: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
       enable-hapi-tests-token: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
       enable-hapi-tests-smart-contract: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
-      enable-hapi-tests-time-consuming: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
       enable-hapi-tests-restart: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
       enable-hapi-tests-nd-reconnect: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
       enable-spotless-check: ${{ github.event.inputs.enable-spotless-check == 'true' }}
