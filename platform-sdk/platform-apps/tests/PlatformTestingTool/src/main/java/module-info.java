@@ -36,6 +36,7 @@ module com.swirlds.demo.platform {
     requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core;
     requires com.swirlds.state.api;
+    requires com.swirlds.state.impl;
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.core;
