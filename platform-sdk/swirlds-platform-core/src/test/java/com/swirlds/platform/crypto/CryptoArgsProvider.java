@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.crypto;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -23,10 +24,11 @@ import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.PathsConfig;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder.WeightDistributionStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -51,21 +53,25 @@ public class CryptoArgsProvider {
      */
     static Stream<Arguments> basicTestArgs() throws Exception {
         Instant start = Instant.now();
-        final AddressBookAndCerts addressBookAndCerts = loadAddressBookWithKeys(NUMBER_OF_ADDRESSES);
+        final RosterAndCerts rosterAndCerts = loadAddressBookWithKeys(NUMBER_OF_ADDRESSES);
         start = Instant.now();
         final AddressBook genAB = createAddressBook(NUMBER_OF_ADDRESSES);
         final Map<NodeId, KeysAndCerts> genC = CryptoStatic.generateKeysAndCerts(genAB);
         start = Instant.now();
         return Stream.of(
-                Arguments.of(addressBookAndCerts.addressBook(), addressBookAndCerts.nodeIdKeysAndCertsMap()),
-                Arguments.of(genAB, genC));
+                Arguments.of(rosterAndCerts.roster(), rosterAndCerts.nodeIdKeysAndCertsMap()),
+                Arguments.of(RosterRetriever.buildRoster(genAB), genC));
     }
 
     public static AddressBook createAddressBook(final int size) {
-        final AddressBook addresses = RandomAddressBookBuilder.create(Randotron.create())
+        final Roster roster = RandomRosterBuilder.create(Randotron.create())
                 .withSize(size)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
+
+        // We still use the keys injection mechanism from the EnhancedKeyStoreLoader and CryptoStatic,
+        // so we use an AddressBook here.
+        AddressBook addresses = RosterUtils.buildAddressBook(roster);
 
         for (int i = 0; i < addresses.getSize(); i++) {
             final NodeId nodeId = addresses.getNodeId(i);
@@ -95,17 +101,17 @@ public class CryptoArgsProvider {
      * @param size the size of the required address book
      */
     @NonNull
-    public static AddressBookAndCerts loadAddressBookWithKeys(final int size)
+    public static RosterAndCerts loadAddressBookWithKeys(final int size)
             throws URISyntaxException, UnrecoverableKeyException, KeyLoadingException, KeyStoreException,
                     NoSuchAlgorithmException, KeyGeneratingException, NoSuchProviderException {
         final AddressBook createdAB = createAddressBook(size);
         final Map<NodeId, KeysAndCerts> loadedC = EnhancedKeyStoreLoader.using(
                         createdAB, configure(ResourceLoader.getFile("preGeneratedPEMKeysAndCerts/")))
                 .scan()
-                .generateIfNecessary()
+                .generate()
                 .verify()
                 .injectInAddressBook()
                 .keysAndCerts();
-        return new AddressBookAndCerts(createdAB, loadedC);
+        return new RosterAndCerts(RosterRetriever.buildRoster(createdAB), loadedC);
     }
 }

@@ -16,25 +16,7 @@
 
 package com.hedera.node.app.tss;
 
-import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.tss.api.TssLibrary;
-import dagger.Binds;
 import dagger.Module;
-import dagger.Provides;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.Executor;
-import javax.inject.Singleton;
 
 @Module
-public interface TssModule {
-    @Provides
-    @Singleton
-    static TssCryptographyManager tssCryptographyManager(
-            @NonNull final AppContext.Gossip gossip, @NonNull @TssLibraryExecutor final Executor libraryExecutor) {
-        return new TssCryptographyManager(new PlaceholderTssLibrary(), gossip, libraryExecutor);
-    }
-
-    @Binds
-    @Singleton
-    TssLibrary bindTssLibrary(PlaceholderTssLibrary fakeTssLibrary);
-}
+public interface TssModule {}

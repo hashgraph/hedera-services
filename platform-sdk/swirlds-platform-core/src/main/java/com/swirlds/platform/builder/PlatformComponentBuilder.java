@@ -559,8 +559,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public ConsensusEngine buildConsensusEngine() {
         if (consensusEngine == null) {
-            consensusEngine = new DefaultConsensusEngine(
-                    blocks.platformContext(), blocks.initialState().get().getAddressBook(), blocks.selfId());
+            consensusEngine = new DefaultConsensusEngine(blocks.platformContext(), getInitialRoster(), blocks.selfId());
         }
         return consensusEngine;
     }
@@ -1060,7 +1059,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     AdHocThreadManager.getStaticThreadManager(),
                     blocks.keysAndCerts(),
-                    blocks.initialAddressBook(),
+                    getInitialRoster(),
                     blocks.selfId(),
                     blocks.appVersion(),
                     blocks.swirldStateManager(),

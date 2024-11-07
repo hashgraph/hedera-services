@@ -36,6 +36,9 @@ mainModuleInfo {
     // This is needed to pick up and include the native libraries for the netty epoll transport
     runtimeOnly("io.netty.transport.epoll.linux.x86_64")
     runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
+    runtimeOnly("io.helidon.grpc.core")
+    runtimeOnly("io.helidon.webclient")
+    runtimeOnly("io.helidon.webclient.grpc")
 }
 
 testModuleInfo {
@@ -48,6 +51,7 @@ testModuleInfo {
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.state.api.test.fixtures")
+    requires("com.swirlds.state.impl.test.fixtures")
     requires("com.swirlds.base.test.fixtures")
     requires("headlong")
     requires("org.assertj.core")

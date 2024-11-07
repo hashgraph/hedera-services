@@ -18,9 +18,10 @@ package com.hedera.node.app.blocks;
 
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
+import com.hedera.node.app.blocks.impl.GrpcBlockItemWriter;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -45,7 +46,7 @@ public interface BlockStreamModule {
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         return switch (blockStreamConfig.writerMode()) {
             case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
-            case GRPC -> throw new IllegalArgumentException("gRPC block writer not yet implemented");
+            case GRPC -> () -> new GrpcBlockItemWriter(blockStreamConfig);
         };
     }
     ;
