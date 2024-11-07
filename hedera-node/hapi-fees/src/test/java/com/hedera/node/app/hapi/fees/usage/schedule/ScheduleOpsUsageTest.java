@@ -156,7 +156,8 @@ class ScheduleOpsUsageTest {
                 + BASIC_ENTITY_ID_SIZE;
 
         // when:
-        final var estimate = subject.scheduleCreateUsage(creationTxn(scheduledTxn), sigUsage, lifetimeSecs);
+        final var estimate =
+                subject.scheduleCreateUsage(creationTxn(scheduledTxn), sigUsage, lifetimeSecs, null); // TODO: fix
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
@@ -186,8 +187,8 @@ class ScheduleOpsUsageTest {
                 + BASIC_ENTITY_ID_SIZE;
 
         // when:
-        final var estimate =
-                subject.scheduleCreateUsage(creationTxn(scheduledTxnWithContractCall), sigUsage, lifetimeSecs);
+        final var estimate = subject.scheduleCreateUsage(
+                creationTxn(scheduledTxnWithContractCall), sigUsage, lifetimeSecs, null); // TODO: fix
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);

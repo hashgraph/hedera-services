@@ -68,7 +68,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_CREATE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#ScheduleCreate}.
  */
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
