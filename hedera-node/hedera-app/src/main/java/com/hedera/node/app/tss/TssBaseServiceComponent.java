@@ -44,7 +44,8 @@ public interface TssBaseServiceComponent {
                 @BindsInstance Metrics metrics,
                 @BindsInstance TssRosterKeyMaterialAccessor privateKeysAccessor,
                 @BindsInstance Configuration configuration,
-                @BindsInstance long selfId);
+                @BindsInstance long selfId,
+                @BindsInstance TssBaseService tssBaseService);
     }
 
     TssMetrics tssMetrics();

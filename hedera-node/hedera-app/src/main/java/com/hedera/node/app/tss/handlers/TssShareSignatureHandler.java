@@ -24,6 +24,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.TssRosterKeyMaterialAccessor;
 import com.hedera.node.app.tss.api.TssLibrary;
@@ -54,7 +55,6 @@ import javax.inject.Singleton;
 public class TssShareSignatureHandler implements TransactionHandler {
     private final TssLibrary tssLibrary;
     private final TssRosterKeyMaterialAccessor rosterKeyMaterialAccessor;
-    // From AppContext
     private final InstantSource instantSource;
     private final SortedSet<SignatureRequest> requests = new TreeSet<>();
     private final Map<Bytes, Map<Bytes, Set<TssShareSignature>>> signatures = new ConcurrentHashMap<>();
@@ -65,10 +65,12 @@ public class TssShareSignatureHandler implements TransactionHandler {
     public TssShareSignatureHandler(
             @NonNull final TssLibrary tssLibrary,
             @NonNull final InstantSource instantSource,
-            @NonNull final TssRosterKeyMaterialAccessor rosterKeyMaterialAccessor) {
+            @NonNull final TssRosterKeyMaterialAccessor rosterKeyMaterialAccessor,
+            @NonNull final TssBaseService tssBaseService) {
         this.tssLibrary = tssLibrary;
         this.instantSource = instantSource;
         this.rosterKeyMaterialAccessor = rosterKeyMaterialAccessor;
+        this.tssBaseService = (TssBaseServiceImpl) tssBaseService;
     }
 
     @Override
@@ -80,27 +82,17 @@ public class TssShareSignatureHandler implements TransactionHandler {
         final var shareIndex = body.shareIndex();
         final var rosterHash = body.rosterHash();
 
-        // Extract the bytes B being signed
-        // computeIfAbsent() the set of signatures on B
-        // For each signature on B not already present, verify with tssLibrary and accumulate in map
-        // If B now has sufficient signatures to aggregate, do so and notify tssBaseService of sig on B
-        final var tssShareSignature = new TssShareSignature(
-                new TssShareId((int) shareIndex),
-                new PairingSignature(
-                        new FakeGroupElement(BigInteger.valueOf(shareIndex)),
-                        SignatureSchema.create(shareSignature.toByteArray())));
-        final var isValid = !tssLibrary.verifySignature(
-                rosterKeyMaterialAccessor.activeRosterParticipantDirectory(),
-                rosterKeyMaterialAccessor.activeRosterPublicShares(),
-                tssShareSignature);
-        if (isValid) {
-            // Use computeIfAbsent
-            signatures
-                    .computeIfAbsent(messageHash, k -> new ConcurrentHashMap<>())
-                    .computeIfAbsent(rosterHash, k -> new TreeSet<>())
-                    .add(tssShareSignature);
-        }
+        // verify if signature is already present
+        final var isPresent = signatures.get(messageHash).get(rosterHash).stream()
+                .anyMatch(sig -> sig.shareId().idElement() == shareIndex);
 
+        // For each signature not already present for this message hash, verify with
+        // tssLibrary and accumulate in map
+        if (!isPresent) {
+            validateAndAccumulateSignatures(shareSignature, messageHash, rosterHash, shareIndex);
+        }
+        // If message hash now has enough signatures to aggregate, do so and notify
+        // tssBaseService of sign the message hash with ledger signature
         if (isThresholdMet(messageHash, rosterHash)) {
             final var tssShareSignatures = this.signatures.get(messageHash).get(rosterHash);
             final var ledgerSignature =
@@ -116,6 +108,25 @@ public class TssShareSignatureHandler implements TransactionHandler {
                 requests.removeIf(req -> req.timestamp().isBefore(now.minusSeconds(60)));
             }
             lastPurgeTime = now;
+        }
+    }
+
+    private void validateAndAccumulateSignatures(
+            final Bytes shareSignature, final Bytes messageHash, final Bytes rosterHash, final long shareIndex) {
+        final var tssShareSignature = new TssShareSignature(
+                new TssShareId((int) shareIndex),
+                new PairingSignature(
+                        new FakeGroupElement(BigInteger.valueOf(shareIndex)),
+                        SignatureSchema.create(shareSignature.toByteArray())));
+        final var isValid = tssLibrary.verifySignature(
+                rosterKeyMaterialAccessor.activeRosterParticipantDirectory(),
+                rosterKeyMaterialAccessor.activeRosterPublicShares(),
+                tssShareSignature);
+        if (isValid) {
+            signatures
+                    .computeIfAbsent(messageHash, k -> new ConcurrentHashMap<>())
+                    .computeIfAbsent(rosterHash, k -> ConcurrentHashMap.newKeySet())
+                    .add(tssShareSignature);
         }
     }
 

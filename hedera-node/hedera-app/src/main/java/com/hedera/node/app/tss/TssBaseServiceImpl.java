@@ -91,7 +91,6 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final ExecutorService signingExecutor;
     private final TssRosterKeyMaterialAccessor privateKeysAccessor;
     private final Configuration configuration;
-    private final long selfId;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
@@ -106,7 +105,6 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
         this.privateKeysAccessor = new TssRosterKeyMaterialAccessor(tssLibrary);
         this.configuration = requireNonNull(appContext.configuration());
-        this.selfId = appContext.selfId();
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
                         tssLibrary,
@@ -117,7 +115,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                         metrics,
                         privateKeysAccessor,
                         appContext.configuration(),
-                        appContext.selfId());
+                        appContext.selfId(),
+                        this);
         this.tssMetrics = component.tssMetrics();
         this.tssHandlers = new TssHandlers(
                 component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
@@ -207,20 +206,22 @@ public class TssBaseServiceImpl implements TssBaseService {
                 () -> {
                     if (configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
                         submitShareSignatures(messageHash, lastUsedConsensusTime);
+                    } else {
+                        // This is only for testing purposes when the candidate roster is
+                        // not enabled
+                        consumers.forEach(consumer -> {
+                            try {
+                                consumer.accept(messageHash, mockSignature);
+                            } catch (Exception e) {
+                                log.error(
+                                        "Failed to provide signature {} on message {} to consumer {}",
+                                        CommonUtils.hex(mockSignature),
+                                        CommonUtils.hex(messageHash),
+                                        consumer,
+                                        e);
+                            }
+                        });
                     }
-                    consumers.forEach(consumer -> {
-                        try {
-                            // TODO: Remove this once TssShareSignatureHandler is implemented
-                            consumer.accept(messageHash, mockSignature);
-                        } catch (Exception e) {
-                            log.error(
-                                    "Failed to provide signature {} on message {} to consumer {}",
-                                    CommonUtils.hex(mockSignature),
-                                    CommonUtils.hex(messageHash),
-                                    consumer,
-                                    e);
-                        }
-                    });
                 },
                 signingExecutor);
     }
@@ -294,10 +295,15 @@ public class TssBaseServiceImpl implements TssBaseService {
         return activeRoster;
     }
 
+    /**
+     * Notifies the consumers that a signature has been received for the message hash.
+     *
+     * @param messageHash the message hash
+     * @param signature   the signature
+     */
     public void notifySignature(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
         requireNonNull(messageHash);
         requireNonNull(signature);
-        // (TSS-FUTURE) Notify the consumers that a signature has been received
         CompletableFuture.runAsync(
                 () -> consumers.forEach(consumer -> {
                     try {
