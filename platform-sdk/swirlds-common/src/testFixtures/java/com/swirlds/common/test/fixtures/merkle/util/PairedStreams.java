@@ -20,9 +20,11 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 
 /**
  * Utility class for generating paired streams for synchronization tests.
@@ -81,23 +83,25 @@ public class PairedStreams implements AutoCloseable {
 
     @Override
     public void close() {
-        try {
-            teacherOutput.close();
-            teacherInput.close();
-            learnerOutput.close();
-            learnerInput.close();
-
-            teacherOutputBuffer.close();
-            teacherInputBuffer.close();
-            learnerOutputBuffer.close();
-            learnerInputBuffer.close();
-
-            server.close();
-            teacherSocket.close();
-            learnerSocket.close();
-        } catch (IOException e) {
-            // this is the test code, and we don't want the test to fail because of a close error
-            e.printStackTrace();
+        final List<Closeable> toClose = List.of(
+                teacherOutput,
+                teacherInput,
+                learnerOutput,
+                learnerInput,
+                teacherOutputBuffer,
+                teacherInputBuffer,
+                learnerOutputBuffer,
+                learnerInputBuffer,
+                server,
+                teacherSocket,
+                learnerSocket);
+        for (final Closeable c : toClose) {
+            try {
+                c.close();
+            } catch (final Exception e) {
+                // this is the test code, and we don't want the test to fail because of a close error
+                e.printStackTrace();
+            }
         }
     }
 

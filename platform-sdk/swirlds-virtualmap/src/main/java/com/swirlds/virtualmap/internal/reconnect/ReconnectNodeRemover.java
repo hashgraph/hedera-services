@@ -138,10 +138,12 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
      * @param newKey
      * 		the key of the new leaf node
      */
-    public synchronized void newLeafNode(final long path, final K newKey) {
+    public void newLeafNode(final long path, final K newKey) {
         final VirtualLeafRecord<K, ?> oldRecord = oldRecords.findLeafRecord(path, false);
         if ((oldRecord != null) && !newKey.equals(oldRecord.getKey())) {
-            leavesToDelete.add(oldRecord);
+            synchronized (this) {
+                leavesToDelete.add(oldRecord);
+            }
         }
     }
 

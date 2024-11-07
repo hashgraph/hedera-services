@@ -21,26 +21,32 @@ import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
-import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
+import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
-import java.util.Queue;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,8 +66,8 @@ import org.apache.logging.log4j.Logger;
  * @param <V>
  * 		The value
  */
-public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualValue>
-        extends VirtualTreeViewBase<K, V> implements TeacherTreeView<Long> {
+public class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualValue> extends VirtualTreeViewBase<K, V>
+        implements TeacherTreeView<Long> {
 
     private static final Logger logger = LogManager.getLogger(TeacherPullVirtualTreeView.class);
 
@@ -70,7 +76,7 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
     /**
      * The {@link RecordAccessor} used for accessing the original map state.
      */
-    private RecordAccessor<K, V> records;
+    private volatile RecordAccessor<K, V> records;
 
     /**
      * This latch counts down when the view is fully initialized and ready for use.
@@ -98,6 +104,10 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
         // There is no distinction between originalState and reconnectState in this implementation
         super(root, state, state);
         this.reconnectConfig = reconnectConfig;
+        prepareReady(threadManager, pipeline);
+    }
+
+    public void prepareReady(final ThreadManager threadManager, final VirtualPipeline pipeline) {
         new ThreadConfiguration(threadManager)
                 .setRunnable(() -> {
                     records = pipeline.detachCopy(root);
@@ -112,48 +122,48 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public void startTeacherTasks(
             final TeachingSynchronizer teachingSynchronizer,
+            final int viewId,
             final Time time,
             final StandardWorkGroup workGroup,
-            final MerkleDataInputStream inputStream,
-            final MerkleDataOutputStream outputStream,
-            final Queue<TeacherSubtree> subtrees) {
-        final AsyncOutputStream<PullVirtualTreeResponse> out =
-                teachingSynchronizer.buildOutputStream(workGroup, outputStream);
-        out.start();
-
-        final TeacherPullVirtualTreeReceiveTask teacherReceiveTask =
-                new TeacherPullVirtualTreeReceiveTask(time, reconnectConfig, workGroup, inputStream, out, this);
-        teacherReceiveTask.exec();
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
+            final Map<Integer, TeacherTreeView<?>> views,
+            final Consumer<Integer> completeListener) {
+        final AtomicInteger teacherTasksRunning =
+                teachingSynchronizer.computeViewMetadata("TasksRunning", new AtomicInteger(0));
+        final Set<Integer> viewsInProgress =
+                teachingSynchronizer.computeViewMetadata("ViewsInProgress", ConcurrentHashMap.newKeySet());
+        viewsInProgress.add(viewId);
+        final AtomicBoolean pullTeacherTasksStarted =
+                teachingSynchronizer.computeViewMetadata("POOL", new AtomicBoolean(false));
+        if (pullTeacherTasksStarted.compareAndSet(false, true)) {
+            // FUTURE work: pool size config
+            for (int i = 0; i < 32; i++) {
+                teacherTasksRunning.incrementAndGet();
+                final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
+                        reconnectConfig,
+                        workGroup,
+                        in,
+                        out,
+                        views,
+                        completeListener,
+                        teacherTasksRunning,
+                        viewsInProgress);
+                teacherReceiveTask.exec();
+            }
+        }
     }
 
-    private boolean isLeaf(final long path) {
-        return (path >= reconnectState.getFirstLeafPath()) && (path <= reconnectState.getLastLeafPath());
+    @Override
+    public boolean usesSharedInputQueue() {
+        return true;
     }
 
-    /**
-     * Writes the virtual node identified by a given path to the output stream.
-     *
-     * <p>For the root node (path 0), reconnect state information is written: the first leaf path (long)
-     * and the last leaf path (long). Other internal nodes are not written at all.
-     *
-     * <p>For dirty leaf nodes, the corresponding leaf records are written. Clean leaf nodes aren't
-     * written at all.
-     *
-     * @param out the output stream
-     * @param path the virtual path
-     * @param isClean indicates if the virtual node on the learner side matches what's on the teacher
-     * @throws IOException if an I/O error occurs
-     */
-    public void writeNode(final SerializableDataOutputStream out, final long path, final boolean isClean)
-            throws IOException {
-        checkValidNode(path, reconnectState);
-        if (path == 0) {
-            out.writeLong(reconnectState.getFirstLeafPath());
-            out.writeLong(reconnectState.getLastLeafPath());
-        }
-        if (!isClean && isLeaf(path) && (reconnectState.getFirstLeafPath() > 0)) {
-            out.writeSerializable(records.findLeafRecord(path, false), false);
-        }
+    public boolean isLeaf(final long path) {
+        return (path >= reconnectState.getFirstLeafPath())
+                && (path <= reconnectState.getLastLeafPath())
+                && (reconnectState.getFirstLeafPath() > 0);
     }
 
     /**
@@ -163,7 +173,17 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
      * @return the virtual node hash
      */
     public Hash loadHash(final long path) {
+        if (closed.get()) {
+            throw new MerkleSynchronizationException("View is closed");
+        }
         return records.findHash(path);
+    }
+
+    public VirtualLeafRecord<K, V> loadLeaf(final long path) {
+        if (closed.get()) {
+            throw new MerkleSynchronizationException("View is closed");
+        }
+        return records.findLeafRecord(path, false);
     }
 
     /**
@@ -275,14 +295,22 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
         return node == ROOT_PATH;
     }
 
+    public final AtomicBoolean closed = new AtomicBoolean(false);
+
     /**
      * {@inheritDoc}
      */
     @Override
     public void close() {
+        closed.set(true);
         try {
-            waitUntilReady();
-            records.getDataSource().close();
+            try {
+                waitUntilReady();
+            } finally {
+                // If the current thread is interrupted, waitUntilReady() above throws an interrupted
+                // exception. This is why the data source is closed in the "finally" block
+                records.getDataSource().close();
+            }
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "interrupted while attempting to close data source");
         } catch (final InterruptedException e) {

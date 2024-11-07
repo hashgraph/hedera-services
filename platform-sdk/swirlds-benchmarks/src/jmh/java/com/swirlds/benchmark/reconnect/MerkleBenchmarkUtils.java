@@ -25,9 +25,12 @@ import com.swirlds.benchmark.BenchmarkMetrics;
 import com.swirlds.benchmark.BenchmarkValue;
 import com.swirlds.benchmark.reconnect.lag.BenchmarkSlowLearningSynchronizer;
 import com.swirlds.benchmark.reconnect.lag.BenchmarkSlowTeachingSynchronizer;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
+import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.iterators.MerkleIterator;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -36,8 +39,11 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.virtualmap.VirtualMap;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -223,5 +229,78 @@ public class MerkleBenchmarkUtils {
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    public static boolean areTreesEqual(final MerkleNode rootA, final MerkleNode rootB) throws IOException {
+        final Iterator<MerkleNode> iteratorA = new MerkleIterator<>(rootA);
+        final Iterator<MerkleNode> iteratorB = new MerkleIterator<>(rootB);
+
+        while (iteratorA.hasNext()) {
+            if (!iteratorB.hasNext()) {
+                return false;
+            }
+            final MerkleNode a = iteratorA.next();
+            final MerkleNode b = iteratorB.next();
+
+            if (!areNodesEqual(a, b)) {
+                return false;
+            }
+        }
+
+        return !iteratorB.hasNext();
+    }
+
+    private static boolean areNodesEqual(final MerkleNode a, final MerkleNode b) throws IOException {
+        if (a == null || b == null) {
+            return a == b;
+        } else {
+            if (a.getClassId() != b.getClassId()) {
+                return false;
+            }
+            if (a.isLeaf()) {
+                return areLeavesEqual(a.asLeaf(), b.asLeaf());
+            } else {
+                return areInternalsEqual(a.asInternal(), b.asInternal());
+            }
+        }
+    }
+
+    /**
+     * Compares two merkle leaves of the same type for equality.
+     */
+    private static boolean areLeavesEqual(final MerkleLeaf a, final MerkleLeaf b) throws IOException {
+        try {
+            final ByteArrayOutputStream bsA = new ByteArrayOutputStream();
+            final SerializableDataOutputStream sA = new SerializableDataOutputStream(bsA);
+            sA.writeSerializable(a, true);
+
+            final ByteArrayOutputStream bsB = new ByteArrayOutputStream();
+            final SerializableDataOutputStream sB = new SerializableDataOutputStream(bsB);
+            sB.writeSerializable(b, true);
+
+            final byte[] bytesA = bsA.toByteArray();
+            final byte[] bytesB = bsB.toByteArray();
+
+            if (bytesA.length != bytesB.length) {
+                return false;
+            }
+            for (int index = 0; index < bytesA.length; index++) {
+                if (bytesA[index] != bytesB[index]) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (final UnsupportedOperationException e) {
+            // Some leaf types don't want to be serialized. Those should implement equals if they want to be compered
+            // with this method.
+            return Objects.equals(a, b);
+        }
+    }
+
+    /**
+     * Compares two merkle internal nodes of the same type for equality.
+     */
+    private static boolean areInternalsEqual(final MerkleInternal a, final MerkleInternal b) {
+        return a.getNumberOfChildren() == b.getNumberOfChildren();
     }
 }

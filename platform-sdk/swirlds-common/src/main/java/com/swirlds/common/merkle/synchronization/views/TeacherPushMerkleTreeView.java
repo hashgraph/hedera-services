@@ -19,8 +19,6 @@ package com.swirlds.common.merkle.synchronization.views;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -28,12 +26,9 @@ import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
-import com.swirlds.common.merkle.synchronization.task.Lesson;
 import com.swirlds.common.merkle.synchronization.task.NodeToSend;
-import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushReceiveTask;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushSendTask;
-import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.config.api.Configuration;
@@ -42,10 +37,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * A teaching tree view for a standard in memory merkle tree.
@@ -80,26 +77,21 @@ public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
     @Override
     public void startTeacherTasks(
             final TeachingSynchronizer teachingSynchronizer,
+            final int viewId,
             final Time time,
             final StandardWorkGroup workGroup,
-            final MerkleDataInputStream inputStream,
-            final MerkleDataOutputStream outputStream,
-            final Queue<TeacherSubtree> subtrees) {
-        final AsyncInputStream<QueryResponse> in =
-                new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
-        final AsyncOutputStream<Lesson<NodeToSend>> out =
-                teachingSynchronizer.buildOutputStream(workGroup, outputStream);
-
-        in.start();
-        out.start();
-
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
+            final Map<Integer, TeacherTreeView<?>> views,
+            final Consumer<Integer> completeListener) {
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
-        final TeacherPushSendTask<NodeToSend> teacherPushSendTask =
-                new TeacherPushSendTask<>(time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
+        final TeacherPushSendTask<NodeToSend> teacherPushSendTask = new TeacherPushSendTask<>(
+                viewId, time, reconnectConfig, workGroup, in, out, subtreeListener, this, senderIsFinished);
         teacherPushSendTask.start();
         final TeacherPushReceiveTask<NodeToSend> teacherPushReceiveTask =
-                new TeacherPushReceiveTask<>(workGroup, in, this, senderIsFinished);
+                new TeacherPushReceiveTask<>(workGroup, viewId, in, this, senderIsFinished, completeListener);
         teacherPushReceiveTask.start();
     }
 

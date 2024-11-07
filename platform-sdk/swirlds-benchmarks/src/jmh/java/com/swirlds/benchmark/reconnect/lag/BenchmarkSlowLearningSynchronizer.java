@@ -29,6 +29,7 @@ import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Supplier;
 
 /**
  * A {@link LearningSynchronizer} with simulated delay.
@@ -70,11 +71,12 @@ public class BenchmarkSlowLearningSynchronizer extends LearningSynchronizer {
      * {@inheritDoc}
      */
     @Override
-    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
-            final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new BenchmarkSlowAsyncOutputStream<>(
+    public <T extends SelfSerializable> AsyncOutputStream buildOutputStream(
+            final StandardWorkGroup workGroup, final Supplier<Boolean> alive, final SerializableDataOutputStream out) {
+        return new BenchmarkSlowAsyncOutputStream(
                 out,
                 workGroup,
+                alive,
                 randomSeed,
                 delayStorageMicroseconds,
                 delayStorageFuzzRangePercent,

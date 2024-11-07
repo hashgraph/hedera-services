@@ -299,12 +299,13 @@ public abstract class VirtualMapBaseBench extends BaseBench {
 
     protected VirtualMap<BenchmarkKey, BenchmarkValue> saveMap(
             final VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap) {
+        final String label = virtualMap.getLabel();
         final VirtualMap<BenchmarkKey, BenchmarkValue> curMap = virtualMap.copy();
         try {
             final long start = System.currentTimeMillis();
             Path savedDir;
             for (int i = 0; ; i++) {
-                savedDir = getBenchDir().resolve(SAVED + i).resolve(LABEL);
+                savedDir = getBenchDir().resolve(SAVED + i);
                 if (!Files.exists(savedDir)) {
                     break;
                 }
@@ -312,10 +313,10 @@ public abstract class VirtualMapBaseBench extends BaseBench {
             Files.createDirectories(savedDir);
             virtualMap.getRight().getHash();
             try (final SerializableDataOutputStream out =
-                    new SerializableDataOutputStream(Files.newOutputStream(savedDir.resolve(LABEL + SERDE_SUFFIX)))) {
+                    new SerializableDataOutputStream(Files.newOutputStream(savedDir.resolve(label + SERDE_SUFFIX)))) {
                 virtualMap.serialize(out, savedDir);
             }
-            logger.info("Saved map {} to {} in {} ms", LABEL, savedDir, System.currentTimeMillis() - start);
+            logger.info("Saved map {} to {} in {} ms", label, savedDir, System.currentTimeMillis() - start);
         } catch (IOException ex) {
             logger.error("Error saving VirtualMap", ex);
         } finally {
@@ -327,7 +328,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
     protected VirtualMap<BenchmarkKey, BenchmarkValue> restoreMap(final String label) {
         Path savedDir = null;
         for (int i = 0; ; i++) {
-            final Path nextSavedDir = getBenchDir().resolve(SAVED + i).resolve(label);
+            final Path nextSavedDir = getBenchDir().resolve(SAVED + i);
             if (!Files.exists(nextSavedDir.resolve(label + SERDE_SUFFIX))) {
                 break;
             }

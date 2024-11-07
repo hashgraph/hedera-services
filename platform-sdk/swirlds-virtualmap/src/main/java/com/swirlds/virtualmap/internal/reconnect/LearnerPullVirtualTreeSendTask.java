@@ -44,6 +44,7 @@ import org.apache.logging.log4j.Logger;
  * Path#INVALID_PATH}, this request is sent to indicate that there will be no more requests from
  * the learner, and this task is finished.
  */
+@SuppressWarnings("rawtypes")
 public class LearnerPullVirtualTreeSendTask {
 
     private static final Logger logger = LogManager.getLogger(LearnerPullVirtualTreeSendTask.class);
@@ -51,12 +52,9 @@ public class LearnerPullVirtualTreeSendTask {
     private static final String NAME = "reconnect-learner-sender";
 
     private final StandardWorkGroup workGroup;
-    private final AsyncOutputStream<PullVirtualTreeRequest> out;
+    private final int viewId;
+    private final AsyncOutputStream out;
     private final LearnerPullVirtualTreeView view;
-    private final NodeTraversalOrder traversalOrder;
-
-    // Indicates if the learner sender task is done sending all requests to the teacher
-    private final AtomicBoolean senderIsFinished;
 
     // Max time to wait for path 0 (virtual root) response from the teacher
     private final Duration rootResponseTimeout;
@@ -67,6 +65,9 @@ public class LearnerPullVirtualTreeSendTask {
     // Number of requests sent to teacher / responses expected from the teacher. Increased in
     // this task, decreased in the receiving task
     private final AtomicLong responsesExpected;
+
+    private final AtomicBoolean rootRequestSent;
+    private final AtomicBoolean lastPathSent;
 
     /**
      * Create a thread for sending node requests to the teacher.
@@ -79,8 +80,6 @@ public class LearnerPullVirtualTreeSendTask {
      * 		the output stream, this object is responsible for closing this when finished
      * @param view
      * 		the view to be used when touching the merkle tree
-     * @param senderIsFinished
-     * 		becomes true once the sending thread has finished
      * @param responsesExpected
      *      number of responses expected from the teacher, increased by one every time a request
      *      is sent
@@ -88,19 +87,21 @@ public class LearnerPullVirtualTreeSendTask {
     public LearnerPullVirtualTreeSendTask(
             final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
-            final AsyncOutputStream<PullVirtualTreeRequest> out,
+            final int viewId,
+            final AsyncOutputStream out,
             final LearnerPullVirtualTreeView view,
-            final NodeTraversalOrder traversalOrder,
-            final AtomicBoolean senderIsFinished,
             final CountDownLatch rootResponseReceived,
-            final AtomicLong responsesExpected) {
+            final AtomicLong responsesExpected,
+            final AtomicBoolean rootRequestSent,
+            final AtomicBoolean lastPathSent) {
         this.workGroup = workGroup;
+        this.viewId = viewId;
         this.out = out;
         this.view = view;
-        this.traversalOrder = traversalOrder;
-        this.senderIsFinished = senderIsFinished;
         this.rootResponseReceived = rootResponseReceived;
         this.responsesExpected = responsesExpected;
+        this.rootRequestSent = rootRequestSent;
+        this.lastPathSent = lastPathSent;
 
         this.rootResponseTimeout = reconnectConfig.pullLearnerRootResponseTimeout();
     }
@@ -110,38 +111,41 @@ public class LearnerPullVirtualTreeSendTask {
     }
 
     private void run() {
-        try (out) {
-            // Send a request for the root node first. The response will contain virtual tree path range
-            out.sendAsync(new PullVirtualTreeRequest(Path.ROOT_PATH, new Hash()));
-            view.getMapStats().incrementTransfersFromLearner();
-            responsesExpected.incrementAndGet();
-            if (!rootResponseReceived.await(rootResponseTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
-                throw new MerkleSynchronizationException("Timed out waiting for root node response from the teacher");
-            }
-
-            while (true) {
-                final long path = traversalOrder.getNextPathToSend();
-                logger.debug(RECONNECT.getMarker(), "Learner send path: " + path);
-                if (path < Path.INVALID_PATH) {
-                    Thread.onSpinWait();
-                    continue;
-                }
-                final Hash hash = path == Path.INVALID_PATH ? null : view.getNodeHash(path);
-                out.sendAsync(new PullVirtualTreeRequest(path, hash));
+        try {
+            if (rootRequestSent.compareAndSet(false, true)) {
+                // Send a request for the root node first. The response will contain virtual tree path range
+                out.sendAsync(viewId, new PullVirtualTreeRequest(Path.ROOT_PATH, new Hash()));
                 view.getMapStats().incrementTransfersFromLearner();
-                if (path == Path.INVALID_PATH) {
-                    break;
-                }
                 responsesExpected.incrementAndGet();
             }
-            logger.debug(RECONNECT.getMarker(), "Learner send done");
+            if (!rootResponseReceived.await(rootResponseTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
+                throw new MerkleSynchronizationException(
+                        "Timed out waiting for root node response from the teacher, view=" + viewId);
+            }
+
+            while (!Thread.currentThread().isInterrupted()) {
+                final long path = view.getNextPathToSend();
+                if (path == Path.INVALID_PATH) {
+                    if (lastPathSent.compareAndSet(false, true)) {
+                        responsesExpected.incrementAndGet();
+                        out.sendAsync(viewId, new PullVirtualTreeRequest(path, null));
+                    }
+                    break;
+                }
+                if (path < 0) {
+                    // No path available to send yet. Slow down
+                    Thread.sleep(1);
+                    continue;
+                }
+                responsesExpected.incrementAndGet();
+                out.sendAsync(viewId, new PullVirtualTreeRequest(path, view.getNodeHash(path)));
+                view.getMapStats().incrementTransfersFromLearner();
+            }
         } catch (final InterruptedException ex) {
-            logger.warn(RECONNECT.getMarker(), "Learner's sending task interrupted");
+            logger.warn(RECONNECT.getMarker(), "Learner sending task is interrupted");
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            throw new MerkleSynchronizationException("Exception in the learner's sending task", ex);
-        } finally {
-            senderIsFinished.set(true);
+            workGroup.handleError(ex);
         }
     }
 }

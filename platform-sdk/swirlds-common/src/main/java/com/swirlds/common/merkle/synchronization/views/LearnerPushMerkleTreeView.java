@@ -21,40 +21,34 @@ import static com.swirlds.common.constructable.ClassIdFormatter.classIdString;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.LearnerPushTask;
-import com.swirlds.common.merkle.synchronization.task.Lesson;
-import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * Implementation for a view of a standard in memory merkle tree.
  */
 public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
 
-    private final ReconnectConfig reconnectConfig;
+    private final int viewId;
 
     private final MerkleNode originalRoot;
-
-    private AsyncInputStream<Lesson<MerkleNode>> in;
-    private AsyncOutputStream<QueryResponse> out;
 
     private final Queue<ExpectedLesson<MerkleNode>> expectedLessons;
     private final LinkedList<MerkleInternal> nodesToInitialize;
@@ -70,8 +64,8 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
      *      a ReconnectMapStats object to collect reconnect metrics
      */
     public LearnerPushMerkleTreeView(
-            final ReconnectConfig reconnectConfig, final MerkleNode root, @NonNull final ReconnectMapStats mapStats) {
-        this.reconnectConfig = reconnectConfig;
+            final int viewId, final MerkleNode root, @NonNull final ReconnectMapStats mapStats) {
+        this.viewId = viewId;
         this.originalRoot = root;
         this.mapStats = mapStats;
         expectedLessons = new LinkedList<>();
@@ -82,24 +76,24 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
     public void startLearnerTasks(
             final LearningSynchronizer learningSynchronizer,
             final StandardWorkGroup workGroup,
-            final MerkleDataInputStream inputStream,
-            final MerkleDataOutputStream outputStream,
-            final Queue<MerkleNode> rootsToReceive,
-            final AtomicReference<MerkleNode> reconstructedRoot) {
-        in = new AsyncInputStream<>(inputStream, workGroup, () -> new Lesson<>(this), reconnectConfig);
-        out = learningSynchronizer.buildOutputStream(workGroup, outputStream);
-
-        in.start();
-        out.start();
-
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
+            final Map<Integer, LearnerTreeView<?>> views,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
+            final AtomicReference<MerkleNode> reconstructedRoot,
+            final Consumer<Integer> completeListener) {
         final LearnerPushTask<MerkleNode> learnerThread = new LearnerPushTask<>(
-                workGroup, in, out, rootsToReceive, reconstructedRoot, this, learningSynchronizer, mapStats);
+                workGroup,
+                viewId,
+                in,
+                out,
+                subtreeListener,
+                reconstructedRoot,
+                this,
+                learningSynchronizer,
+                completeListener,
+                mapStats);
         learnerThread.start();
-    }
-
-    @Override
-    public void abort() {
-        in.abort();
     }
 
     /**

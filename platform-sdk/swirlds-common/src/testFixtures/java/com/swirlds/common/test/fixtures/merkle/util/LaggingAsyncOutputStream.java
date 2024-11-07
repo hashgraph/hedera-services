@@ -20,16 +20,16 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
-import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Supplier;
 
 /**
  * This variant of the async output stream introduces extra latency.
  */
-public class LaggingAsyncOutputStream<T extends SelfSerializable> extends AsyncOutputStream<T> {
+public class LaggingAsyncOutputStream extends AsyncOutputStream {
 
     private final BlockingQueue<Long> messageTimes;
 
@@ -38,9 +38,10 @@ public class LaggingAsyncOutputStream<T extends SelfSerializable> extends AsyncO
     public LaggingAsyncOutputStream(
             final SerializableDataOutputStream out,
             final StandardWorkGroup workGroup,
+            final Supplier<Boolean> alive,
             final long latencyMilliseconds,
             final ReconnectConfig reconnectConfig) {
-        super(out, workGroup, reconnectConfig);
+        super(out, workGroup, alive, reconnectConfig);
         this.messageTimes = new LinkedBlockingQueue<>();
         this.latencyMilliseconds = latencyMilliseconds;
     }
@@ -49,19 +50,17 @@ public class LaggingAsyncOutputStream<T extends SelfSerializable> extends AsyncO
      * {@inheritDoc}
      */
     @Override
-    public void sendAsync(final T message) throws InterruptedException {
-        if (!isAlive()) {
-            throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
-        }
+    public void sendAsync(final int viewId, final SelfSerializable message) throws InterruptedException {
         messageTimes.put(System.currentTimeMillis());
-        getOutgoingMessages().put(message);
+        super.sendAsync(viewId, message);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void serializeMessage(final T message) throws IOException {
+    protected void serializeMessage(final SelfSerializable message, final SerializableDataOutputStream out)
+            throws IOException {
         long messageTime = messageTimes.remove();
         long now = System.currentTimeMillis();
         long waitTime = (messageTime + latencyMilliseconds) - now;
@@ -72,6 +71,6 @@ public class LaggingAsyncOutputStream<T extends SelfSerializable> extends AsyncO
                 Thread.currentThread().interrupt();
             }
         }
-        message.serialize(getOutputStream());
+        super.serializeMessage(message, out);
     }
 }

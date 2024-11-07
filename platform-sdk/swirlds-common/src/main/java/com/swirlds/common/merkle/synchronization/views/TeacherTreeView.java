@@ -17,15 +17,15 @@
 package com.swirlds.common.merkle.synchronization.views;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
-import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
-import java.util.Queue;
+import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * A "view" into a merkle tree (or subtree) used to perform a reconnect operation. This view is used to access
@@ -45,17 +45,20 @@ public interface TeacherTreeView<T>
      *
      * @param teachingSynchronizer the teacher synchronizer
      * @param workGroup the work group to run teaching task(s) in
-     * @param inputStream the input stream to read data from learner
-     * @param outputStream the output stream to write data to learner
-     * @param subtrees if custom tree views are encountered, they must be added to this queue
+     * @param in the input stream to read data from learner
+     * @param out the output stream to write data to learner
+     * @param subtreeListener a listener to notify when custom tree views are encountered
      */
     void startTeacherTasks(
             final TeachingSynchronizer teachingSynchronizer,
+            final int viewId,
             final Time time,
             final StandardWorkGroup workGroup,
-            final MerkleDataInputStream inputStream,
-            final MerkleDataOutputStream outputStream,
-            final Queue<TeacherSubtree> subtrees);
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
+            final Map<Integer, TeacherTreeView<?>> views,
+            final Consumer<Integer> completeListener);
 
     /**
      * Aborts the reconnect process on the teacher side. It may be used to release resources, when
@@ -127,5 +130,15 @@ public interface TeacherTreeView<T>
     default void waitUntilReady() throws InterruptedException {
         // By default, a view is considered "ready" after constructed.
         // If that is not the case for a view implementation, override this method.
+    }
+
+    /**
+     * Indicates whether this teacher view uses a shared or a dedicated message queue when
+     * reading messages from an async input stream.
+     *
+     * @return true if this view uses a dedicated async input stream queue; false otherwise
+     */
+    default boolean usesSharedInputQueue() {
+        return false;
     }
 }

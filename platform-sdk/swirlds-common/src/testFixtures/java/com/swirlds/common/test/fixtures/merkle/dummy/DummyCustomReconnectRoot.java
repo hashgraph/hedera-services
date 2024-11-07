@@ -23,6 +23,7 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.task.NodeToSend;
+import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
@@ -108,8 +109,11 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      */
     @Override
     public LearnerTreeView<MerkleNode> buildLearnerView(
-            final ReconnectConfig reconnectConfig, @NonNull final ReconnectMapStats mapStats) {
-        return new DummyLearnerPushMerkleTreeView(reconnectConfig, this, mapStats);
+            final int viewId,
+            final ReconnectConfig reconnectConfig,
+            @NonNull ReconnectNodeCount nodeCount,
+            @NonNull final ReconnectMapStats mapStats) {
+        return new DummyLearnerPushMerkleTreeView(viewId, this, mapStats);
     }
 
     /**
