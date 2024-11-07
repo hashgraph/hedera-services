@@ -36,7 +36,6 @@ import com.swirlds.platform.state.signed.SignedStateReference;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.address.AddressBookUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
