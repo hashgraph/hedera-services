@@ -19,8 +19,8 @@ package com.hedera.node.app.service.token.impl.test.handlers.staking;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.node.app.service.token.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.calculateWeightFromStake;
-import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.scaleUpWeightToStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.rescaleWeight;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.scaleStakeToWeight;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,6 +84,9 @@ public class EndOfStakingPeriodUpdaterTest {
 
     @Mock
     private NodeStakeUpdateStreamBuilder nodeStakeUpdateRecordBuilder;
+
+    @Mock
+    private BiConsumer<Long, Integer> weightUpdates;
 
     private ReadableAccountStore accountStore;
 
@@ -115,7 +119,7 @@ public class EndOfStakingPeriodUpdaterTest {
         final var stakingInfoStore = mock(WritableStakingInfoStore.class);
         final var stakingRewardsStore = mock(WritableNetworkStakingRewardsStore.class);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         verifyNoInteractions(stakingInfoStore, stakingRewardsStore);
     }
@@ -128,11 +132,11 @@ public class EndOfStakingPeriodUpdaterTest {
         final var stake4 = 900_000_789_111L;
         final var stake5 = 0L;
         final var totalStake = stake1 + stake2 + stake3 + stake4;
-        final var updatedWeight1 = calculateWeightFromStake(stake1, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var updatedWeight2 = calculateWeightFromStake(stake2, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var updatedWeight3 = calculateWeightFromStake(stake3, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var updatedWeight4 = calculateWeightFromStake(stake4, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var updatedWeight5 = calculateWeightFromStake(stake5, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+        final var updatedWeight1 = scaleStakeToWeight(stake1, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+        final var updatedWeight2 = scaleStakeToWeight(stake2, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+        final var updatedWeight3 = scaleStakeToWeight(stake3, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+        final var updatedWeight4 = scaleStakeToWeight(stake4, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+        final var updatedWeight5 = scaleStakeToWeight(stake5, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
         final var totalWeight = updatedWeight1 + updatedWeight2 + updatedWeight3 + updatedWeight4 + updatedWeight5;
         assertThat(totalWeight).isLessThanOrEqualTo(SUM_OF_CONSENSUS_WEIGHTS);
         assertThat(updatedWeight1).isEqualTo(1);
@@ -154,11 +158,11 @@ public class EndOfStakingPeriodUpdaterTest {
         final var zeroStake = 0L;
         // calculate weights
         final var totalStake = equalsMinStake + stakeInBetween1 + stakeInBetween2 + stakeEqualsMax + zeroStake;
-        final var weightForEqualsMin = calculateWeightFromStake(equalsMinStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var weightInBetween1 = calculateWeightFromStake(stakeInBetween1, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var weightInBetween2 = calculateWeightFromStake(stakeInBetween2, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var weightForEqualsMax = calculateWeightFromStake(stakeEqualsMax, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var weightForZeroStake = calculateWeightFromStake(zeroStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+        final var weightForEqualsMin = scaleStakeToWeight(equalsMinStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+        final var weightInBetween1 = scaleStakeToWeight(stakeInBetween1, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+        final var weightInBetween2 = scaleStakeToWeight(stakeInBetween2, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+        final var weightForEqualsMax = scaleStakeToWeight(stakeEqualsMax, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+        final var weightForZeroStake = scaleStakeToWeight(zeroStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
         final var totalWeight =
                 weightForEqualsMin + weightInBetween1 + weightInBetween2 + weightForEqualsMax + weightForZeroStake;
         // total of all weights should be less than or equal to SUM_OF_CONSENSUS_WEIGHTS
@@ -170,15 +174,15 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(weightForZeroStake).isZero();
 
         final var scaledStake1 =
-                scaleUpWeightToStake(weightForEqualsMin, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+                rescaleWeight(weightForEqualsMin, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
         final var scaledStake2 =
-                scaleUpWeightToStake(weightInBetween1, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+                rescaleWeight(weightInBetween1, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
         final var scaledStake3 =
-                scaleUpWeightToStake(weightInBetween2, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+                rescaleWeight(weightInBetween2, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
         final var scaledStake4 =
-                scaleUpWeightToStake(weightForEqualsMax, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+                rescaleWeight(weightForEqualsMax, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
         final var scaledStake5 =
-                scaleUpWeightToStake(weightForZeroStake, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
+                rescaleWeight(weightForZeroStake, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
 
         // calculate scaled weight based on the max weight allocated and max stake of all nodes
         final var maxWeight = Math.max(
@@ -215,7 +219,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -255,7 +259,7 @@ public class EndOfStakingPeriodUpdaterTest {
         final var stakingInfoStore = mock(WritableStakingInfoStore.class);
         final var stakingRewardsStore = mock(WritableNetworkStakingRewardsStore.class);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         verifyNoInteractions(stakingInfoStore, stakingRewardsStore);
         assertThat(logCaptor.infoLogs()).contains("Staking not enabled, nothing to do");
@@ -277,7 +281,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -317,7 +321,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -358,7 +362,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -373,14 +377,14 @@ public class EndOfStakingPeriodUpdaterTest {
 
     @Test
     void returnsZeroWeightIfTotalStakeOfAllNodeIsZero() {
-        final var weight = calculateWeightFromStake(10, 0, 500);
+        final var weight = scaleStakeToWeight(10, 0, 500);
         assertThat(weight).isEqualTo(0);
-        assertThat(logCaptor.warnLogs()).contains("Total stake of all nodes should be greater than 0. But got 0");
+        assertThat(logCaptor.errorLogs()).contains("Scaling 10 to zero weight because total stake is 0");
     }
 
     @Test
     void returnsZeroScaledUpWeightIfTotalStakeOfAllNodeIsZero() {
-        final var weight = scaleUpWeightToStake(10, 1000, 1000, 0, 500);
+        final var weight = rescaleWeight(10, 1000, 1000, 0, 500);
         assertThat(weight).isEqualTo(0);
         assertThat(logCaptor.warnLogs())
                 .contains(

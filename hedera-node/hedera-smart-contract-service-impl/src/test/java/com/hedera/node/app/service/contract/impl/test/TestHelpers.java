@@ -707,6 +707,7 @@ public class TestHelpers {
             "6080604052348015600f57600080fd5b50600061016a905077e4cbd3a7fefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
     public static byte[] messageHash = unhex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad");
+    public static byte[] message = "This is a message".getBytes();
 
     public static byte[] signature = unhex(
             "aca7da997ad177f040240cdccf6905b71ab16b74434388c3a72f34fd25d6439346b2bac274ff29b48b3ea6e2d04c1336eaceafda3c53ab483fc3ff12fac3ebf200");

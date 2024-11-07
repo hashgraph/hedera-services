@@ -23,17 +23,23 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
-import com.hedera.services.bdd.spec.utilops.embedded.MutateScheduleExpiries;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateScheduleExpiriesOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateStakingInfosOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTokenOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateTssMessagesOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewPendingAirdropOp;
@@ -82,9 +88,31 @@ public final class EmbeddedVerbs {
      * @param mutation the mutation to apply to the schedule expiries
      * @return the operation that will mutate the schedule expiries
      */
-    public static MutateScheduleExpiries mutateScheduleExpiries(
+    public static MutateScheduleExpiriesOp mutateScheduleExpiries(
             @NonNull final Consumer<WritableKVState<ProtoLong, ScheduleIdList>> mutation) {
-        return new MutateScheduleExpiries(mutation);
+        return new MutateScheduleExpiriesOp(mutation);
+    }
+
+    /**
+     * Returns an operation that allows the test author to directly mutate the staking infos.
+     *
+     * @param mutation the mutation to apply to the staking infos
+     * @return the operation that will mutate the staking infos
+     */
+    public static MutateStakingInfosOp mutateStakingInfos(
+            @NonNull final Consumer<WritableKVState<EntityNumber, StakingNodeInfo>> mutation) {
+        return new MutateStakingInfosOp(mutation);
+    }
+
+    /**
+     * Returns an operation that allows the test author to directly mutate the TSS messages.
+     *
+     * @param mutation the mutation to apply to the TSS messages
+     * @return the operation that will mutate the TSS messages
+     */
+    public static MutateTssMessagesOp mutateTssMessages(
+            @NonNull final Consumer<WritableKVState<TssMessageMapKey, TssMessageTransactionBody>> mutation) {
+        return new MutateTssMessagesOp(mutation);
     }
 
     /**

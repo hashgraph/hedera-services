@@ -210,6 +210,12 @@ public class Browser {
             BootstrapUtils.setupConfigBuilder(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
             final Configuration guiConfig = guiConfigBuilder.build();
 
+            final ConfigurationBuilder configBuilder = ConfigurationBuilder.create();
+            rethrowIO(() ->
+                    BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+            final Configuration configuration = configBuilder.build();
+
+            initNodeSecurity(appDefinition.getConfigAddressBook(), configuration);
             guiEventStorage = new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());
 
             guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);

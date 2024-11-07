@@ -25,6 +25,7 @@ import com.sun.jna.ptr.IntByReference;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
+import org.bouncycastle.math.ec.rfc8032.Ed25519;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
 /**
@@ -100,6 +101,13 @@ public final class Signing {
         System.arraycopy(sig, 0, result, 0, 64);
         result[64] = (byte) (recId.getValue() + 27);
         return result;
+    }
+
+    public static byte[] signMessageEd25519(final byte[] message, byte[] privateKey) {
+        byte[] signature = new byte[Ed25519.SIGNATURE_SIZE];
+        Ed25519.sign(privateKey, 0, message, 0, message.length, signature, 0);
+
+        return signature;
     }
 
     private Signing() {}

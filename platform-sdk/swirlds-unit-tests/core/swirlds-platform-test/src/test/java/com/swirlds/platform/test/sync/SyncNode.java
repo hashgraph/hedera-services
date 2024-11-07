@@ -42,7 +42,6 @@ import com.swirlds.platform.gossip.sync.config.SyncConfig_;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -144,7 +143,7 @@ public class SyncNode {
                 .withConfiguration(configuration)
                 .build();
 
-        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
+        shadowGraph = new Shadowgraph(platformContext, numNodes, new NoOpIntakeEventCounter());
         shadowGraph.updateEventWindow(EventWindow.getGenesisEventWindow(ancientMode));
         this.executor = executor;
     }
