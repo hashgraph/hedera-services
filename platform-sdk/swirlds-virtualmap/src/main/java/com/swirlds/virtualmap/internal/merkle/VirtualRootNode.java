@@ -1250,8 +1250,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public void serialize(final SerializableDataOutputStream out, final Path outputDirectory) throws IOException {
-        final long start = System.currentTimeMillis();
-        //        pipeline.snapshot(this, outputDirectory);
         pipeline.pausePipelineAndRun("detach", () -> {
             snapshot(outputDirectory);
             return null;
@@ -1261,11 +1259,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         out.writeSerializable(keySerializer, true);
         out.writeSerializable(valueSerializer, true);
         out.writeLong(cache.getFastCopyVersion());
-        logger.info(
-                VIRTUAL_MERKLE_STATS.getMarker(),
-                "VRN serialize {} took {} ms",
-                getFastCopyVersion(),
-                System.currentTimeMillis() - start);
     }
 
     /**
