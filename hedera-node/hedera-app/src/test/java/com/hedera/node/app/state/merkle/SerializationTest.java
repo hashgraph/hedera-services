@@ -77,7 +77,6 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
@@ -85,6 +84,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SerializationTest extends MerkleTestBase {
+
     private Path dir;
     private Configuration config;
     private NetworkInfo networkInfo;
@@ -94,9 +94,6 @@ class SerializationTest extends MerkleTestBase {
 
     @Mock
     private MigrationStateChanges migrationStateChanges;
-
-    @TempDir
-    Path tempDir;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -221,6 +218,7 @@ class SerializationTest extends MerkleTestBase {
     void snapshot() throws IOException {
         final var schemaV1 = createV1Schema();
         final var originalTree = createMerkleHederaState(schemaV1);
+        final var tempDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
         final var configBuilder = new TestConfigBuilder()
                 .withValue(StateConfig_.SIGNED_STATE_DISK, 1)
                 .withValue(
