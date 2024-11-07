@@ -34,10 +34,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.checkForBalances;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.checkForEmptyBalance;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareAccountAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareFTAirdrops;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareNftAddresses;
-import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareReceiverAddresses;
-import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareSenderAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareTokenAddresses;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -137,11 +136,11 @@ public class AirdropToContractSystemContractTest {
                                         "mixedAirdrop",
                                         prepareTokenAddresses(spec, token1, token2, token3),
                                         prepareNftAddresses(spec, nft1, nft2, nft3),
-                                        prepareSenderAddresses(spec, sender, sender, sender),
-                                        prepareReceiverAddresses(
+                                        prepareAccountAddresses(spec, sender, sender, sender),
+                                        prepareAccountAddresses(
                                                 spec, receiverContract, receiverContract, receiverContract),
-                                        prepareSenderAddresses(spec, sender, sender, sender),
-                                        prepareReceiverAddresses(
+                                        prepareAccountAddresses(spec, sender, sender, sender),
+                                        prepareAccountAddresses(
                                                 spec, receiverContract, receiverContract, receiverContract),
                                         10L,
                                         serials)
@@ -185,10 +184,10 @@ public class AirdropToContractSystemContractTest {
                                         "mixedAirdrop",
                                         prepareTokenAddresses(spec, token1, token2),
                                         prepareNftAddresses(spec, nft1, nft2),
-                                        prepareSenderAddresses(spec, sender, sender),
-                                        prepareReceiverAddresses(spec, receiverContract, receiverContract),
-                                        prepareSenderAddresses(spec, sender, sender),
-                                        prepareReceiverAddresses(spec, receiverContract, receiverContract),
+                                        prepareAccountAddresses(spec, sender, sender),
+                                        prepareAccountAddresses(spec, receiverContract, receiverContract),
+                                        prepareAccountAddresses(spec, sender, sender),
+                                        prepareAccountAddresses(spec, receiverContract, receiverContract),
                                         10L,
                                         serials)
                                 .gas(1_500_000L)
@@ -225,8 +224,8 @@ public class AirdropToContractSystemContractTest {
                                 .call(
                                         "tokenNAmountAirdrops",
                                         prepareTokenAddresses(spec, token1, token2),
-                                        prepareSenderAddresses(spec, sender, sender),
-                                        prepareReceiverAddresses(spec, receiverContract, receiverContract),
+                                        prepareAccountAddresses(spec, sender, sender),
+                                        prepareAccountAddresses(spec, receiverContract, receiverContract),
                                         10L)
                                 .gas(1_500_000L)
                                 .sending(85_000_000L)

@@ -59,15 +59,15 @@ public final class SystemContractAirdropHelper {
         });
     }
 
-    public static Address[] prepareAccountAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... senders) {
-        return Arrays.stream(senders)
-                .map(sender -> sender.addressOn(spec.targetNetworkOrThrow()))
+    public static Address[] prepareAccountAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... accounts) {
+        return Arrays.stream(accounts)
+                .map(account -> account.addressOn(spec.targetNetworkOrThrow()))
                 .toArray(Address[]::new);
     }
 
-    public static Address[] prepareReceiverAddresses(@NonNull HapiSpec spec, @NonNull SpecContract... receivers) {
-        return Arrays.stream(receivers)
-                .map(receiver -> receiver.addressOn(spec.targetNetworkOrThrow()))
+    public static Address[] prepareAccountAddresses(@NonNull HapiSpec spec, @NonNull SpecContract... contracts) {
+        return Arrays.stream(contracts)
+                .map(contract -> contract.addressOn(spec.targetNetworkOrThrow()))
                 .toArray(Address[]::new);
     }
 
