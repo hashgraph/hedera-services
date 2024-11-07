@@ -146,47 +146,6 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
         assertThat(byExpiry).isNull();
     }
 
-    @Test
-    void testSchedulesWithinRange() {
-        // Mocking data for specific expiration seconds
-        final long firstSecondToExpire = 100;
-        final long lastSecondToExpire = 102;
-
-        final Schedule schedule1 = scheduleInState
-                .copyBuilder()
-                .scheduleId(createScheduleWithId(1))
-                .calculatedExpirationSecond(firstSecondToExpire)
-                .build();
-        final Schedule schedule2 = scheduleInState
-                .copyBuilder()
-                .scheduleId(createScheduleWithId(2))
-                .calculatedExpirationSecond(lastSecondToExpire)
-                .build();
-
-        writableSchedules.put(schedule1);
-        writableSchedules.put(schedule2);
-
-        // Call the method under test
-        final List<Schedule> result = writableSchedules.getByExpirationBetween(firstSecondToExpire, lastSecondToExpire);
-
-        // Assert the result contains all the schedules within the specified range
-        assertThat(result).containsExactly(schedule1, schedule2);
-    }
-
-    @Test
-    void testHandlesEmptyExpirationRangeGracefully() {
-        final long firstSecondToExpire = 100;
-        final long lastSecondToExpire = 102;
-
-        // No schedules are added to writableSchedules
-
-        // Call the method under test
-        final List<Schedule> result = writableSchedules.getByExpirationBetween(firstSecondToExpire, lastSecondToExpire);
-
-        // Assert that the result is an empty list
-        assertThat(result).isEmpty();
-    }
-
     @NonNull
     static Schedule replaceSignatoriesAndMarkExecuted(
             @NonNull final Schedule schedule,
@@ -195,9 +154,5 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
         final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
         final Schedule.Builder builder = schedule.copyBuilder().executed(true).resolutionTime(consensusTimestamp);
         return builder.signatories(List.copyOf(newSignatories)).build();
-    }
-
-    private ScheduleID createScheduleWithId(long id) {
-        return ScheduleID.newBuilder().realmNum(0).shardNum(0).scheduleNum(id).build();
     }
 }

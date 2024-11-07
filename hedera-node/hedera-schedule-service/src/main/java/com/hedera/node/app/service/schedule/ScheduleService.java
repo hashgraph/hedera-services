@@ -26,6 +26,7 @@ import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -86,6 +87,6 @@ public interface ScheduleService extends RpcService {
     default Iterator<ExecutableTxn> iterTxnsForInterval(
             Instant start, Instant end, Supplier<StoreFactory> cleanupStoreFactory) {
         // Default implementation returns an empty iterator
-        return null;
+        return Collections.emptyIterator();
     }
 }

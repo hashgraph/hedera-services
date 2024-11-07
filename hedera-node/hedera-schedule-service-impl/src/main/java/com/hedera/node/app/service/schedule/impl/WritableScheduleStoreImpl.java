@@ -36,8 +36,6 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -183,19 +181,5 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         }
         schedulesByIdMutable.remove(scheduleId);
         logger.debug("Purging expired schedule {} from state.", scheduleId);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public List<Schedule> getByExpirationBetween(final long firstSecondToExpire, final long lastSecondToExpire) {
-        final var schedules = new ArrayList<Schedule>();
-        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
-            final var scheduleIdList = getByExpirationSecond(i);
-            if (scheduleIdList != null) {
-                schedules.addAll(scheduleIdList.stream().map(this::get).toList());
-            }
-        }
-        return schedules;
     }
 }

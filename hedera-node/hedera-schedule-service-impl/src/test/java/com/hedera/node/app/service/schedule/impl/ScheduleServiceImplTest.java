@@ -33,11 +33,11 @@ import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.store.StoreFactory;
-import java.time.Instant;
-import java.util.Collections;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.StateDefinition;
+import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -57,7 +57,8 @@ class ScheduleServiceImplTest {
     private SchemaRegistry registry;
 
     private StoreFactory storeFactory;
-    private WritableScheduleStoreImpl store;
+    private ReadableScheduleStoreImpl readableStore;
+    private WritableScheduleStoreImpl writableStore;
     private Supplier<StoreFactory> cleanupStoreFactory;
     private ScheduleService scheduleService;
 
@@ -102,11 +103,11 @@ class ScheduleServiceImplTest {
 
     @Test
     void testBasicIteration() {
-        setUpMocks();
+        mockReadableStore();
         // Given two schedules within the interval
         final var schedule1 = createMockSchedule(Instant.now().plusSeconds(60));
         final var schedule2 = createMockSchedule(Instant.now().plusSeconds(120));
-        when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule1, schedule2));
+        when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule1, schedule2));
 
         final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(180), cleanupStoreFactory);
@@ -121,9 +122,9 @@ class ScheduleServiceImplTest {
 
     @Test
     void testEmptyList() {
-        setUpMocks();
+        mockReadableStore();
         // No schedules within the interval
-        when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of());
+        when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of());
 
         final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(180), cleanupStoreFactory);
@@ -135,10 +136,10 @@ class ScheduleServiceImplTest {
 
     @Test
     void testRemoveFunctionality() {
-        setUpMocks();
+        mockWritableStore();
         // Given one schedule
         final var schedule = createMockSchedule(Instant.now().plusSeconds(60));
-        when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
+        when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
 
         final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory);
@@ -151,17 +152,17 @@ class ScheduleServiceImplTest {
         iterator.remove();
 
         // Verify that delete and purge were called on the store
-        final InOrder inOrder = inOrder(store);
-        inOrder.verify(store).delete(eq(schedule.scheduleId()), any());
-        inOrder.verify(store).purge(eq(schedule.scheduleId()));
+        final InOrder inOrder = inOrder(writableStore);
+        inOrder.verify(writableStore).delete(eq(schedule.scheduleId()), any());
+        inOrder.verify(writableStore).purge(eq(schedule.scheduleId()));
     }
 
     @Test
     void testRemoveWithoutNextShouldThrowException() {
-        setUpMocks();
+        mockReadableStore();
         // Given one schedule
         final var schedule = mock(Schedule.class);
-        when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
+        when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
 
         final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory);
@@ -172,10 +173,10 @@ class ScheduleServiceImplTest {
 
     @Test
     void testNextBeyondEndShouldThrowException() {
-        setUpMocks();
+        mockReadableStore();
         // Given one schedule
         final var schedule = createMockSchedule(Instant.now().plusSeconds(60));
-        when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
+        when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
 
         final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory);
@@ -189,13 +190,14 @@ class ScheduleServiceImplTest {
 
     @Test
     void testFilterExecutedOrDeletedSchedules() {
-        setUpMocks();
+        mockReadableStore();
         // Given three schedules, one executed, one deleted, and one valid
         final var schedule1 = mockExecuted();
         final var schedule2 = mockDeleted();
         final var schedule3 = createMockSchedule(Instant.now().plusSeconds(180)); // Valid
 
-        when(store.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule1, schedule2, schedule3));
+        when(readableStore.getByExpirationBetween(anyLong(), anyLong()))
+                .thenReturn(List.of(schedule1, schedule2, schedule3));
 
         final var iterator =
                 scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(200), cleanupStoreFactory);
@@ -231,11 +233,17 @@ class ScheduleServiceImplTest {
         return schedule;
     }
 
-    private void setUpMocks() {
+    private void mockReadableStore() {
         storeFactory = mock(StoreFactory.class);
-        store = mock(WritableScheduleStoreImpl.class);
+        readableStore = mock(ReadableScheduleStoreImpl.class);
         cleanupStoreFactory = () -> storeFactory;
         scheduleService = new ScheduleServiceImpl();
-        when(storeFactory.writableStore(WritableScheduleStoreImpl.class)).thenReturn(store);
+        when(storeFactory.readableStore(ReadableScheduleStoreImpl.class)).thenReturn(readableStore);
+    }
+
+    private void mockWritableStore() {
+        mockReadableStore();
+        writableStore = mock(WritableScheduleStoreImpl.class);
+        when(storeFactory.writableStore(WritableScheduleStoreImpl.class)).thenReturn(writableStore);
     }
 }

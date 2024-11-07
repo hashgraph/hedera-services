@@ -23,12 +23,11 @@ import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.RpcService;
-import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -47,16 +46,17 @@ public final class ScheduleServiceImpl implements ScheduleService {
     @Override
     public Iterator<ExecutableTxn> iterTxnsForInterval(
             final Instant start, final Instant end, final Supplier<StoreFactory> cleanupStoreFactory) {
-        final var store = cleanupStoreFactory.get().writableStore(WritableScheduleStoreImpl.class);
-        // Filter transactions that are not executed/deleted and have all the required keys
+        final var store = cleanupStoreFactory.get().readableStore(ReadableScheduleStoreImpl.class);
+
+        // Get transactions from state that are not executed/deleted
         final var executableTxns = store.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()).stream()
                 .filter(schedule -> !schedule.executed() && !schedule.deleted())
                 .toList();
 
         // Return a custom iterator that supports the remove() method
         return new Iterator<>() {
-            private int currentIndex = -1; // To keep track of the current element
-            private final List<Schedule> transactions = new ArrayList<>(executableTxns);
+            private int currentIndex = -1;
+            private final List<Schedule> transactions = executableTxns;
             private ExecutableTxn lastReturned;
 
             @Override
@@ -84,12 +84,6 @@ public final class ScheduleServiceImpl implements ScheduleService {
                 final var scheduleId = transactions.get(currentIndex).scheduleId();
                 iteratorStore.delete(scheduleId, Instant.now());
                 iteratorStore.purge(scheduleId);
-
-                transactions.remove(currentIndex);
-                currentIndex--; // Adjust index after removal
-
-                // Reset lastReturned to prevent consecutive remove calls
-                lastReturned = null;
             }
 
             private ExecutableTxn toExecutableTxn(final Schedule schedule) {

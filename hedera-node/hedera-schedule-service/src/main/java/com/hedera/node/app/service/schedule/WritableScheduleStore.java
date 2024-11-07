@@ -21,7 +21,6 @@ import com.hedera.hapi.node.state.schedule.Schedule;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.List;
 
 /**
  * The interface Writable schedule store.
@@ -71,12 +70,4 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @param scheduleId The ID of the schedule to purge
      */
     void purge(ScheduleID scheduleId);
-
-    /**
-     * Gets all schedules that expire between the given times.
-     *
-     * @param start The start time
-     * @param end The end time
-     */
-    List<Schedule> getByExpirationBetween(long start, long end);
 }
