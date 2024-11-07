@@ -487,7 +487,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
                     "Setting child.. Service name: {} / Number of children: {} / node: {}",
                     md.serviceName(),
                     getNumberOfChildren(),
-                    nodeIndex);
+                    node);
             setChild(getNumberOfChildren(), node);
         } else {
             logger.info(

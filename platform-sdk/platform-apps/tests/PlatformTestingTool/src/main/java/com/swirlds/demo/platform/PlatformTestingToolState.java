@@ -250,6 +250,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             @NonNull final MerkleStateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
+        // don't need it but keep for a while
         // allocateSpaceForChild(ChildIndices.CHILD_COUNT);
 
         expectedFCMFamily = new ExpectedFCMFamilyImpl();
@@ -419,14 +420,6 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
-    public int getNumberOfChildren() {
-        return ChildIndices.CHILD_COUNT;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public int getMinimumChildCount() {
         return ChildIndices.SDK_VERSION_21_CHILD_COUNT;
     }
@@ -436,7 +429,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      */
     @Override
     public int getMaximumChildCount() {
-        return ChildIndices.CHILD_COUNT + 1;
+        return ChildIndices.CHILD_COUNT;
     }
 
     /**
@@ -454,6 +447,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             case ChildIndices.UNUSED:
                 // We used to use this for an address book, but now we don't use this index.
                 // Ignore whatever is found at this index.
+                // platform should be here, so check for singleton if all will be ok
                 return true;
             case ChildIndices.CONFIG:
                 return childClassId == PayloadCfgSimple.CLASS_ID;
@@ -476,7 +470,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             case ChildIndices.QUORUM_RESULT:
                 return childClassId == QuorumResult.CLASS_ID;
             default:
-                return true; // temp
+                return false;
         }
     }
 
@@ -1660,7 +1654,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     }
 
     private static class ChildIndices {
-        public static final int UNUSED = 0;
+        public static final int UNUSED = 0; // should be platform and singleton
         public static final int CONFIG = 1;
         /**
          * last sequence by each member for consensus events
@@ -1690,9 +1684,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
 
         public static final int QUORUM_RESULT = 10;
 
-        public static final int SINGLETON_NODE = 11;
-
-        public static final int CHILD_COUNT = 13;
+        public static final int CHILD_COUNT = 11;
     }
 
     @Override
