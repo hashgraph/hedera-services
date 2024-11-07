@@ -139,22 +139,18 @@ public final class PlatformBuilder {
     /**
      * Create a new platform builder.
      *
-     * <p>When this builder is used to create a platform, it tries to load an existing app state from
-     * a snapshot on disk, if exists, using the provided {@code snapshotStateReader} function. If there
-     * is no snapshot on disk, or the reader throws an exception trying to load the snapshot, a new
-     * genesis state is created using {@code genesisStateBuilder} supplier.
-     *
-     * <p>Note: if an existing snapshot can't be loaded, or a new genesist state can't be created, the
-     * corresponding functions must throw an exception rather than return a null value.
+     * <p>Before calling this method, the app would try and load a state snapshot from disk. If one exists,
+     * the app will pass the loaded state via the initialState argument to this method. If the snapshot doesn't exist,
+     * then the app will create a new genesis state and pass it via the same initialState argument.
      *
      * @param appName             the name of the application, currently used for deciding where to store states on
      *                            disk
      * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
      * @param selfId              the ID of this node
      * @param softwareVersion     the software version of the application
-     * @param initialState        the genesis state supplied by the application
-     * @param consensusEventStreamName the consensusEventStreamName
-     * @param rosterHistory       the RosterHistory
+     * @param initialState        the initial state supplied by the application
+     * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
+     * @param rosterHistory       the roster history provided by the application to use at startup
      */
     @NonNull
     public static PlatformBuilder create(
@@ -178,8 +174,8 @@ public final class PlatformBuilder {
      * @param softwareVersion       the software version of the application
      * @param initialState          the genesis state supplied by application
      * @param selfId                the ID of this node
-     * @param consensusEventStreamName the consensusEventStreamName
-     * @param rosterHistory         the RosterHistory
+     * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
+     * @param rosterHistory         the roster history provided by the application to use at startup
      */
     private PlatformBuilder(
             @NonNull final String appName,

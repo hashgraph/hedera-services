@@ -59,6 +59,7 @@ import java.util.function.Supplier;
  * @param swirldName                             the name of the swirld being run
  * @param appVersion                             the current version of the running application
  * @param initialState                           the initial state of the platform
+ * @param rosterHistory                          the roster history provided by the application to use at startup
  * @param applicationCallbacks                   the callbacks that the platform will call when certain events happen
  * @param preconsensusEventConsumer              the consumer for preconsensus events, null if publishing this data has
  *                                               not been enabled
@@ -76,7 +77,7 @@ import java.util.function.Supplier;
  *                                               underlying data source), this indirection can be removed once states
  *                                               are passed within the wiring framework
  * @param initialPcesFiles                       the initial set of PCES files present when the node starts
- * @param consensusEventStreamName               a string used to format a directory with consensusEventStream data
+ * @param consensusEventStreamName               a part of the name of the directory where the consensus event stream is written
  * @param issScratchpad                          scratchpad storage for ISS recovery
  * @param notificationEngine                     for sending notifications to the application (legacy pattern)
  * @param firstPlatform                          if this is the first platform being built (there is static setup that
