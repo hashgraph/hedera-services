@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.state.spi.info;
+package com.swirlds.state.lifecycle.info;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -27,10 +27,8 @@ import java.util.List;
  * Provides information about the network.
  */
 public interface NetworkInfo {
-
     /**
      * Returns the current ledger ID.
-     *
      * @return the {@link Bytes} of the current ledger ID
      */
     @NonNull

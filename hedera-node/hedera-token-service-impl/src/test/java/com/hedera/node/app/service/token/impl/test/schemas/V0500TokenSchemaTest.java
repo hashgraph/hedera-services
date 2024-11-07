@@ -28,7 +28,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.HashMap;
 import java.util.Map;
