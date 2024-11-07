@@ -40,20 +40,23 @@ module com.hedera.node.app {
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
+    requires com.swirlds.state.impl;
     requires com.swirlds.virtualmap;
     requires com.google.common;
     requires com.google.protobuf;
     requires io.grpc.netty;
     requires io.grpc;
+    requires io.helidon.common.tls;
+    requires io.helidon.webclient.api;
+    requires io.helidon.webclient.grpc;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
+    requires java.annotation;
     requires org.apache.commons.lang3;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires static java.compiler;
-    requires static org.jetbrains.annotations;
-    // javax.annotation.processing.Generated
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app;
     exports com.hedera.node.app.state;
@@ -111,6 +114,8 @@ module com.hedera.node.app {
     exports com.hedera.node.app.records.impl.producers;
     exports com.hedera.node.app.records.impl.producers.formats;
     exports com.hedera.node.app.grpc.impl.netty;
+    exports com.hedera.node.app.tss.schemas;
+    exports com.hedera.node.app.blocks.schemas;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

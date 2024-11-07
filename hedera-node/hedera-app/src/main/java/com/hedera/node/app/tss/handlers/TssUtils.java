@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.tss.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
@@ -38,12 +40,12 @@ public class TssUtils {
     /**
      * Compute the TSS participant directory from the roster.
      *
-     * @param roster           the roster
+     * @param roster the roster
      * @param maxSharesPerNode the maximum number of shares per node
-     * @param selfNodeId       the node ID of the current node
+     * @param selfNodeId the node ID of the current node
      * @return the TSS participant directory
      */
-    public static TssParticipantDirectory computeTssParticipantDirectory(
+    public static TssParticipantDirectory computeParticipantDirectory(
             @NonNull final Roster roster, final long maxSharesPerNode, final int selfNodeId) {
         final var computedShares = computeNodeShares(roster.rosterEntries(), maxSharesPerNode);
         final var totalShares =
@@ -123,13 +125,27 @@ public class TssUtils {
      */
     public static Map<Long, Long> computeNodeShares(
             @NonNull final List<RosterEntry> rosterEntries, final long maxSharesPerNode) {
+        final var weights = new LinkedHashMap<Long, Long>();
+        rosterEntries.forEach(entry -> weights.put(entry.nodeId(), entry.weight()));
+        return computeSharesFromWeights(weights, maxSharesPerNode);
+    }
+
+    /**
+     * Compute the number of shares each node should have based on the weight of the node.
+     * @param weights the map of node ID to weight
+     * @param maxShares the maximum number of shares
+     * @return a map of node ID to the number of shares
+     */
+    public static Map<Long, Long> computeSharesFromWeights(
+            @NonNull final Map<Long, Long> weights, final long maxShares) {
+        requireNonNull(weights);
         final var maxWeight =
-                rosterEntries.stream().mapToLong(RosterEntry::weight).max().orElse(0);
+                weights.values().stream().mapToLong(Long::longValue).max().orElse(0);
         final var shares = new LinkedHashMap<Long, Long>();
-        for (final var entry : rosterEntries) {
-            final var numShares = ((maxSharesPerNode * entry.weight() + maxWeight - 1) / maxWeight);
-            shares.put(entry.nodeId(), numShares);
-        }
+        weights.forEach((nodeId, weight) -> {
+            final var numShares = ((maxShares * weight + maxWeight - 1) / maxWeight);
+            shares.put(nodeId, numShares);
+        });
         return shares;
     }
 }

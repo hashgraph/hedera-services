@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import static com.hedera.node.app.spi.AppContext.*;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -37,7 +36,8 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -550,6 +550,12 @@ public interface HandleContext {
      */
     @NonNull
     Map<AccountID, Long> dispatchPaidRewards();
+
+    /**
+     * Returns the {@link NodeInfo} for the node this transaction is created from.
+     * @return the node info
+     */
+    NodeInfo creatorInfo();
 
     /**
      * Whether a dispatch should be throttled at consensus. True for everything except certain dispatches

@@ -46,35 +46,34 @@ public class PlaceholderTssLibrary implements TssLibrary {
     private final int threshold;
     private byte[] message = new byte[0];
 
-    public PlaceholderTssLibrary(int threshold) {
-        if (threshold <= 0) {
-            throw new IllegalArgumentException("Invalid threshold: " + threshold);
-        }
-
-        this.threshold = threshold;
-    }
-
     public PlaceholderTssLibrary() {
         this(DEFAULT_THRESHOLD);
     }
 
+    public PlaceholderTssLibrary(final int threshold) {
+        if (threshold <= 0) {
+            throw new IllegalArgumentException("Invalid threshold: " + threshold);
+        }
+        this.threshold = threshold;
+    }
+
     @NonNull
     @Override
-    public TssMessage generateTssMessage(@NonNull TssParticipantDirectory tssParticipantDirectory) {
-        return null;
+    public TssMessage generateTssMessage(@NonNull final TssParticipantDirectory tssParticipantDirectory) {
+        return new TssMessage(new byte[0]);
     }
 
     @NonNull
     @Override
     public TssMessage generateTssMessage(
             @NonNull TssParticipantDirectory tssParticipantDirectory, @NonNull TssPrivateShare privateShare) {
-        return null;
+        return new TssMessage(new byte[0]);
     }
 
     @Override
     public boolean verifyTssMessage(
             @NonNull TssParticipantDirectory participantDirectory, @NonNull TssMessage tssMessage) {
-        return false;
+        return true;
     }
 
     @NonNull
@@ -137,9 +136,9 @@ public class PlaceholderTssLibrary implements TssLibrary {
 
     @Override
     public boolean verifySignature(
-            @NonNull TssParticipantDirectory participantDirectory,
-            @NonNull List<TssPublicShare> publicShares,
-            @NonNull TssShareSignature signature) {
+            @NonNull final TssParticipantDirectory participantDirectory,
+            @NonNull final List<TssPublicShare> publicShares,
+            @NonNull final TssShareSignature signature) {
         if (participantDirectory.getThreshold() != this.threshold) {
             throw new IllegalArgumentException("Invalid threshold");
         }

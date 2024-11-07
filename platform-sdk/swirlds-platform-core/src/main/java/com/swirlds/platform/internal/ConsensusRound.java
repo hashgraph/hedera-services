@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.internal;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -78,7 +78,7 @@ public class ConsensusRound implements Round {
     /**
      * The consensus roster for this round.
      */
-    private final AddressBook consensusRoster;
+    private final Roster consensusRoster;
 
     /**
      * True if this round reached consensus during the replaying of the preconsensus event stream.
@@ -101,7 +101,7 @@ public class ConsensusRound implements Round {
      * @param reachedConsTimestamp the local time (not consensus time) at which this round reached consensus
      */
     public ConsensusRound(
-            @NonNull final AddressBook consensusRoster,
+            @NonNull final Roster consensusRoster,
             @NonNull final List<PlatformEvent> consensusEvents,
             @NonNull final PlatformEvent keystoneEvent,
             @NonNull final GraphGenerations generations,
@@ -222,7 +222,7 @@ public class ConsensusRound implements Round {
      */
     @Override
     @NonNull
-    public AddressBook getConsensusRoster() {
+    public Roster getConsensusRoster() {
         return consensusRoster;
     }
 
