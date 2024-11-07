@@ -241,8 +241,8 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         final var defaultExpiry =
                 spec.targetNetworkOrThrow().startupProperties().getInteger("ledger.schedule.txExpiryTimeSecs");
-        FeeCalculator.ActivityMetrics metricsCalc =
-                (_txn, svo) -> scheduleOpsUsage.scheduleCreateUsage(_txn, suFrom(svo), defaultExpiry);
+        FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) ->
+                scheduleOpsUsage.scheduleCreateUsage(_txn, suFrom(svo), defaultExpiry, null); // TODO: fix
 
         return spec.fees().forActivityBasedOp(HederaFunctionality.ScheduleCreate, metricsCalc, txn, numPayerKeys);
     }

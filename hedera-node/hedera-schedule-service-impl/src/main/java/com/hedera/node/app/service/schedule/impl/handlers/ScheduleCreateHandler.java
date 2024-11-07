@@ -36,7 +36,6 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalseP
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
@@ -59,6 +58,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
@@ -216,11 +216,10 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var config = feeContext.configuration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var schedulingConfig = config.getConfigData(SchedulingConfig.class);
-        final var subType = body.scheduleCreateOrElse(ScheduleCreateTransactionBody.DEFAULT)
-                        .scheduledTransactionBodyOrElse(SchedulableTransactionBody.DEFAULT)
-                        .hasContractCall()
-                ? SCHEDULE_CREATE_CONTRACT_CALL
-                : DEFAULT;
+        final var transactionBody = body.scheduleCreateOrElse(ScheduleCreateTransactionBody.DEFAULT)
+                .scheduledTransactionBodyOrElse(SchedulableTransactionBody.DEFAULT);
+        final var subType = transactionBody.hasContractCall() ? SCHEDULE_CREATE_CONTRACT_CALL : DEFAULT;
+
         return feeContext
                 .feeCalculatorFactory()
                 .feeCalculator(subType)
@@ -228,14 +227,16 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                         fromPbj(body),
                         sigValueObj,
                         schedulingConfig.longTermEnabled(),
-                        ledgerConfig.scheduleTxExpiryTimeSecs()));
+                        ledgerConfig.scheduleTxExpiryTimeSecs(),
+                        getHederaFunctionality(transactionBody)));
     }
 
     private @NonNull FeeData usageGiven(
             @NonNull final com.hederahashgraph.api.proto.java.TransactionBody txn,
             @NonNull final SigValueObj svo,
             final boolean longTermEnabled,
-            final long scheduledTxExpiryTimeSecs) {
+            final long scheduledTxExpiryTimeSecs,
+            @NonNull HederaFunctionality functionality) {
         final var op = txn.getScheduleCreate();
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         final long lifetimeSecs;
@@ -247,7 +248,16 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         } else {
             lifetimeSecs = scheduledTxExpiryTimeSecs;
         }
-        return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs);
+        return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs, functionality);
+    }
+
+    private static HederaFunctionality getHederaFunctionality(SchedulableTransactionBody body) {
+        // TODO: probably there is a better way to get that.
+        final var name = body.data().kind().protoName();
+        String nameFirstLetterUppercase = name.substring(0, 1).toUpperCase() + name.substring(1);
+
+        final HederaFunctionality functionality = HederaFunctionality.valueOf(nameFirstLetterUppercase);
+        return functionality;
     }
 
     private @Nullable Schedule maybeDuplicate(@NonNull final Schedule schedule, @Nullable final Schedule duplicate) {

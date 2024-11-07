@@ -1,0 +1,16 @@
+{
+  "ConsensusSubmitMessage": 1.0,
+  "CryptoTransfer": 1.0,
+  "TokenMint": 1.0,
+  "TokenBurn": 1.0,
+  "CryptoCreate": 1.0,
+  "CryptoUpdate": 1.0,
+  "FileUpdate": 1.0,
+  "SystemDelete": 1.0,
+  "SystemUndelete": 1.0,
+  "Freeze": 1.0,
+  "ContractCall": 1.0,
+  "ContractCreate": 1.0,
+  "ContractUpdate": 1.0,
+  "ContractDelete": 1.0
+}

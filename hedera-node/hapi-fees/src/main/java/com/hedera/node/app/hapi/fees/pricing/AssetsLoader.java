@@ -22,6 +22,7 @@ import com.hederahashgraph.api.proto.java.SubType;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -36,10 +37,12 @@ public class AssetsLoader {
     private static final String CAPACITIES_RESOURCE = "capacities.json";
     private static final String CONSTANT_WEIGHTS_RESOURCE = "constant-weights.json";
     private static final String CANONICAL_PRICES_RESOURCE = "canonical-prices.json";
+    private static final String SCHEDULED_TRANSACTION_MULTIPLIERS = "scheduled-transaction-multipliers.json";
 
     private Map<UsableResource, BigDecimal> cachedCapacities = null;
     private Map<HederaFunctionality, BigDecimal> cachedConstWeights = null;
     private Map<HederaFunctionality, Map<SubType, BigDecimal>> cachedCanonicalPrices = null;
+    private Map<HederaFunctionality, Double> cachedScheduledTransactionMultipliers = null;
 
     @Inject
     public AssetsLoader() {
@@ -139,5 +142,26 @@ public class AssetsLoader {
             cachedCanonicalPrices = typedPrices;
             return typedPrices;
         }
+    }
+
+    // TODO: add docs
+    public Map<HederaFunctionality, Double> loadScheduledTransactionMultipliers() throws IOException {
+        if (cachedScheduledTransactionMultipliers != null) {
+            return cachedScheduledTransactionMultipliers;
+        }
+        final Map<HederaFunctionality, Double> multipliers = new HashMap<>();
+        try (final var fin =
+                AssetsLoader.class.getClassLoader().getResourceAsStream(SCHEDULED_TRANSACTION_MULTIPLIERS)) {
+
+            final var om = new ObjectMapper();
+            final var data = om.readValue(fin, Map.class);
+
+            data.forEach((funName, multiplier) -> {
+                final var function = HederaFunctionality.valueOf((String) funName);
+                multipliers.put(function, (double) multiplier);
+            });
+        }
+
+        return multipliers;
     }
 }
