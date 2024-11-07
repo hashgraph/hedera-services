@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.TransactionID;
@@ -48,7 +49,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,7 +76,7 @@ class ScheduleServiceImplTest {
         final ScheduleServiceImpl subject = new ScheduleServiceImpl();
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
         subject.registerSchemas(registry);
-        Mockito.verify(registry, times(2)).register(schemaCaptor.capture());
+        verify(registry, times(2)).register(schemaCaptor.capture());
 
         final var schemas = schemaCaptor.getAllValues();
         assertThat(schemas).hasSize(2);
@@ -103,7 +103,7 @@ class ScheduleServiceImplTest {
 
     @Test
     void testBasicIteration() {
-        mockReadableStore();
+        setUpMocks();
         // Given two schedules within the interval
         final var schedule1 = createMockSchedule(Instant.now().plusSeconds(60));
         final var schedule2 = createMockSchedule(Instant.now().plusSeconds(120));
@@ -122,7 +122,7 @@ class ScheduleServiceImplTest {
 
     @Test
     void testEmptyList() {
-        mockReadableStore();
+        setUpMocks();
         // No schedules within the interval
         when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of());
 
@@ -135,8 +135,8 @@ class ScheduleServiceImplTest {
     }
 
     @Test
-    void testRemoveFunctionality() {
-        mockWritableStore();
+    void testDeleteFunctionality() {
+        setUpMocks();
         // Given one schedule
         final var schedule = createMockSchedule(Instant.now().plusSeconds(60));
         when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
@@ -154,12 +154,11 @@ class ScheduleServiceImplTest {
         // Verify that delete and purge were called on the store
         final InOrder inOrder = inOrder(writableStore);
         inOrder.verify(writableStore).delete(eq(schedule.scheduleId()), any());
-        inOrder.verify(writableStore).purge(eq(schedule.scheduleId()));
     }
 
     @Test
     void testRemoveWithoutNextShouldThrowException() {
-        mockReadableStore();
+        setUpReadableStore();
         // Given one schedule
         final var schedule = mock(Schedule.class);
         when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
@@ -173,7 +172,7 @@ class ScheduleServiceImplTest {
 
     @Test
     void testNextBeyondEndShouldThrowException() {
-        mockReadableStore();
+        setUpMocks();
         // Given one schedule
         final var schedule = createMockSchedule(Instant.now().plusSeconds(60));
         when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
@@ -190,7 +189,7 @@ class ScheduleServiceImplTest {
 
     @Test
     void testFilterExecutedOrDeletedSchedules() {
-        mockReadableStore();
+        setUpMocks();
         // Given three schedules, one executed, one deleted, and one valid
         final var schedule1 = mockExecuted();
         final var schedule2 = mockDeleted();
@@ -207,6 +206,73 @@ class ScheduleServiceImplTest {
         final var txn = iterator.next();
         assertThat(txn).isNotNull();
         assertThat(iterator.hasNext()).isFalse();
+    }
+
+    @Test
+    void iteratorShouldCallCleanUpExpiredSchedulesOnceAfterFullIteration() {
+        setUpMocks();
+
+        final var schedule = createMockSchedule(Instant.now().plusSeconds(60));
+        final var start = Instant.now();
+        final var end = Instant.now().plusSeconds(120);
+        when(readableStore.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()))
+                .thenReturn(List.of(schedule));
+        final var iterator = scheduleService.iterTxnsForInterval(start, end, cleanupStoreFactory);
+
+        // Iterate through all elements
+        while (iterator.hasNext()) {
+            iterator.next();
+        }
+
+        // Verify cleanUpExpiredSchedules is called exactly once
+        verify(writableStore, times(1)).purgeExpiredSchedulesBetween(start.getEpochSecond(), end.getEpochSecond());
+    }
+
+    @Test
+    void iteratorShouldTriggerCleanUpOnExcessiveNextCallsWithoutHasNext() {
+        setUpMocks();
+
+        final var schedule = createMockSchedule(Instant.now().plusSeconds(60));
+        final var start = Instant.now();
+        final var end = Instant.now().plusSeconds(120);
+        when(readableStore.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()))
+                .thenReturn(List.of(schedule));
+        final var iterator = scheduleService.iterTxnsForInterval(start, end, cleanupStoreFactory);
+
+        // Exhaust the iterator without checking hasNext()
+        iterator.next();
+
+        // After elements are exhausted, calling next() again should trigger cleanup and throw NoSuchElementException
+        assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
+
+        // Verify cleanUpExpiredSchedules is called exactly once
+        verify(writableStore, times(1)).purgeExpiredSchedulesBetween(start.getEpochSecond(), end.getEpochSecond());
+    }
+
+    @Test
+    void iteratorShouldNotCallCleanUpExpiredSchedulesMultipleTimesAfterCompletion() {
+        setUpMocks();
+
+        final var schedule = createMockSchedule(Instant.now().plusSeconds(60));
+        final var start = Instant.now();
+        final var end = Instant.now().plusSeconds(120);
+        when(readableStore.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()))
+                .thenReturn(List.of(schedule));
+        final var iterator = scheduleService.iterTxnsForInterval(start, end, cleanupStoreFactory);
+
+        // Exhaust the iterator
+        while (iterator.hasNext()) {
+            iterator.next();
+        }
+
+        // First extra call to next() after completion
+        assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
+
+        // Second extra call to next() to verify cleanup is not called again
+        assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
+
+        // Verify cleanUpExpiredSchedules is only called once despite multiple calls to next()
+        verify(writableStore, times(1)).purgeExpiredSchedulesBetween(start.getEpochSecond(), end.getEpochSecond());
     }
 
     private Schedule createMockSchedule(final Instant expiration) {
@@ -233,7 +299,7 @@ class ScheduleServiceImplTest {
         return schedule;
     }
 
-    private void mockReadableStore() {
+    private void setUpReadableStore() {
         storeFactory = mock(StoreFactory.class);
         readableStore = mock(ReadableScheduleStoreImpl.class);
         cleanupStoreFactory = () -> storeFactory;
@@ -241,8 +307,8 @@ class ScheduleServiceImplTest {
         when(storeFactory.readableStore(ReadableScheduleStoreImpl.class)).thenReturn(readableStore);
     }
 
-    private void mockWritableStore() {
-        mockReadableStore();
+    private void setUpMocks() {
+        setUpReadableStore();
         writableStore = mock(WritableScheduleStoreImpl.class);
         when(storeFactory.writableStore(WritableScheduleStoreImpl.class)).thenReturn(writableStore);
     }

@@ -63,11 +63,4 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @param lastSecondToExpire  The consensus second of the last schedule to expire.
      */
     void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire);
-
-    /**
-     * Purge a schedule from the store.
-     *
-     * @param scheduleId The ID of the schedule to purge
-     */
-    void purge(ScheduleID scheduleId);
 }
