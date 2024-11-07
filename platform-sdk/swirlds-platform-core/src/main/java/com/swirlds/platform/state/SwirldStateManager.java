@@ -163,7 +163,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
     public void savedStateInFreezePeriod() {
         // set current DualState's lastFrozenTime to be current freezeTime
         stateRef.get()
-                .getWritablePlatformState(platformContext.getConfiguration())
+                .getWritablePlatformState()
                 .setLastFrozenTime(stateRef.get().getReadablePlatformState().getFreezeTime());
     }
 

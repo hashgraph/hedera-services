@@ -83,7 +83,7 @@ public class SteadyStateThrottlingTest {
 
     private static final double PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS = 2.0;
     private static final double CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS = 1.0;
-    private static final double FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS = 100.0;
+    private static final double BALANCE_QUERY_LIMITS_QPS = 10.0;
 
     private static final int NETWORK_SIZE = REGRESSION_NETWORK_SIZE;
 
@@ -92,7 +92,7 @@ public class SteadyStateThrottlingTest {
     private static final double EXPECTED_CONTRACT_CALL_TPS =
             PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
     private static final double EXPECTED_CRYPTO_CREATE_TPS = CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS / NETWORK_SIZE;
-    private static final double EXPECTED_GET_BALANCE_QPS = FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS / NETWORK_SIZE;
+    private static final double EXPECTED_GET_BALANCE_QPS = BALANCE_QUERY_LIMITS_QPS / NETWORK_SIZE;
     private static final double TOLERATED_PERCENT_DEVIATION = 7;
     private static final String SUPPLY = "supply";
     private static final String TOKEN = "token";

@@ -34,10 +34,11 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +74,9 @@ class TssVoteHandlerTest {
     @Mock
     private StoreFactory storeFactory;
 
+    @Mock
+    private TssMetrics tssMetrics;
+
     @Mock(strictness = LENIENT)
     private NodeInfo nodeInfo;
 
@@ -81,7 +85,7 @@ class TssVoteHandlerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        tssVoteHandler = new TssVoteHandler();
+        tssVoteHandler = new TssVoteHandler(tssMetrics);
         when(handleContext.creatorInfo()).thenReturn(nodeInfo);
         when(nodeInfo.nodeId()).thenReturn(1L);
     }
@@ -92,7 +96,6 @@ class TssVoteHandlerTest {
         when(transactionBody.tssVoteOrThrow()).thenReturn(tssVoteTransactionBody);
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssBaseStore);
-        ;
 
         when(tssVoteTransactionBody.targetRosterHash()).thenReturn(Bytes.EMPTY);
         when(tssBaseStore.exists(any(TssVoteMapKey.class))).thenReturn(false);

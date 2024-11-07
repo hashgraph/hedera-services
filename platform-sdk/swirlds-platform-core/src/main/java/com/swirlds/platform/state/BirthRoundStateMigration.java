@@ -67,7 +67,7 @@ public final class BirthRoundStateMigration {
         }
 
         final MerkleRoot state = initialState.getState();
-        final PlatformStateModifier writablePlatformState = state.getWritablePlatformState(platformConfiguration);
+        final PlatformStateModifier writablePlatformState = state.getWritablePlatformState();
 
         final boolean alreadyMigrated = writablePlatformState.getFirstVersionInBirthRoundMode() != null;
         if (alreadyMigrated) {

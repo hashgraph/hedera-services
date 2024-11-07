@@ -221,7 +221,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
      */
     private void updatePlatformState(@NonNull final ConsensusRound round) {
         final PlatformStateModifier platformState =
-                swirldStateManager.getConsensusState().getWritablePlatformState(platformContext.getConfiguration());
+                swirldStateManager.getConsensusState().getWritablePlatformState();
         platformState.bulkUpdate(v -> {
             v.setRound(round.getRoundNum());
             v.setConsensusTimestamp(round.getConsensusTimestamp());
@@ -239,7 +239,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
      */
     private void updateRunningEventHash(@NonNull final ConsensusRound round) throws InterruptedException {
         final PlatformStateModifier platformState =
-                swirldStateManager.getConsensusState().getWritablePlatformState(platformContext.getConfiguration());
+                swirldStateManager.getConsensusState().getWritablePlatformState();
 
         if (writeLegacyRunningEventHash) {
             // Update the running hash object. If there are no events, the running hash does not change.
@@ -280,7 +280,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
         final SignedState signedState = new SignedState(
-                platformContext,
+                platformContext.getConfiguration(),
                 CryptoStatic::verifySignature,
                 immutableStateCons,
                 "TransactionHandler.createSignedState()",

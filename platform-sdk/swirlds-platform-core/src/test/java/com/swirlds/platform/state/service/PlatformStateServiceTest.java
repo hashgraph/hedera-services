@@ -26,9 +26,9 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.merkle.singleton.SingletonNode;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -70,22 +70,12 @@ class PlatformStateServiceTest {
     }
 
     @Test
-    void rootWithNoPlatformStateAndLegacyStateAtChildZeroGetsLegacyVersion() {
+    void rootWithNoPlatformState_throwsException() {
         given(root.getNumberOfChildren()).willReturn(1);
         given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
                 .willReturn(-1);
-        given(root.getPreV054PlatformState()).willReturn(legacyState);
-        given(legacyState.getCreationSoftwareVersion()).willReturn(version);
-        given(version.getPbjSemanticVersion()).willReturn(SemanticVersion.DEFAULT);
-        assertSame(SemanticVersion.DEFAULT, PLATFORM_STATE_SERVICE.creationVersionOf(root));
-    }
 
-    @Test
-    void rootWithNoPlatformStateMustHaveLegacyStateAtChildZero() {
-        given(root.getNumberOfChildren()).willReturn(1);
-        given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
-                .willReturn(-1);
-        assertThrows(NullPointerException.class, () -> PLATFORM_STATE_SERVICE.creationVersionOf(root));
+        assertThrows(IllegalStateException.class, () -> PLATFORM_STATE_SERVICE.creationVersionOf(root));
     }
 
     @Test

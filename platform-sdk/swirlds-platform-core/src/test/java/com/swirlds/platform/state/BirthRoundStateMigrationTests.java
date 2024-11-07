@@ -83,10 +83,8 @@ class BirthRoundStateMigrationTests {
         final SignedState signedState = generateSignedState(random, platformContext);
         final Hash originalHash = signedState.getState().getHash();
 
-        final SoftwareVersion previousSoftwareVersion = signedState
-                .getState()
-                .getWritablePlatformState(platformContext.getConfiguration())
-                .getCreationSoftwareVersion();
+        final SoftwareVersion previousSoftwareVersion =
+                signedState.getState().getWritablePlatformState().getCreationSoftwareVersion();
 
         final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
@@ -114,8 +112,7 @@ class BirthRoundStateMigrationTests {
 
         final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
-        PlatformStateModifier writablePlatformState =
-                signedState.getState().getWritablePlatformState(platformContext.getConfiguration());
+        PlatformStateModifier writablePlatformState = signedState.getState().getWritablePlatformState();
         writablePlatformState.setLastRoundBeforeBirthRoundMode(signedState.getRound() - 100);
         writablePlatformState.setFirstVersionInBirthRoundMode(previousSoftwareVersion);
         writablePlatformState.setLowestJudgeGenerationBeforeBirthRoundMode(100);

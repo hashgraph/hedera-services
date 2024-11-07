@@ -204,14 +204,14 @@ public class ReconnectLearner {
 
         final MerkleRoot state = (MerkleRoot) synchronizer.getRoot();
         final SignedState newSignedState = new SignedState(
-                platformContext,
+                platformContext.getConfiguration(),
                 CryptoStatic::verifySignature,
                 state,
                 "ReconnectLearner.reconnect()",
                 false,
                 false,
                 false);
-        newSignedState.setSigSet(sigSet, platformContext.getConfiguration());
+        newSignedState.setSigSet(sigSet);
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();
         logger.info(

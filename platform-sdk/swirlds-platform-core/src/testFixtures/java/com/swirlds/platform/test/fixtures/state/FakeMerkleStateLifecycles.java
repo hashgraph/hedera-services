@@ -24,7 +24,6 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -37,13 +36,13 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import com.swirlds.state.merkle.singleton.ValueLeaf;
 import com.swirlds.state.spi.CommittableWritableStates;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -89,9 +88,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
         }
     }
 
-    @Override
-    public List<StateChanges.Builder> initPlatformState(
-            @NonNull final State state, @NonNull final Configuration platformConfiguration) {
+    public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
         if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
         }

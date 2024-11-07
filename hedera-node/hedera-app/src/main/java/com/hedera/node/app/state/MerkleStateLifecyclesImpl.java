@@ -19,7 +19,6 @@ package com.hedera.node.app.state;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.Hedera;
@@ -27,7 +26,6 @@ import com.hedera.node.app.service.token.TokenService;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
@@ -43,7 +41,6 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -93,12 +90,6 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
     }
 
     @Override
-    public List<StateChanges.Builder> initPlatformState(
-            @NonNull final State state, @NonNull final Configuration platformConfiguration) {
-        return hedera.initPlatformState(state, platformConfiguration);
-    }
-
-    @Override
     public void onPreHandle(@NonNull final Event event, @NonNull final State state) {
         hedera.onPreHandle(event, state);
     }
@@ -121,7 +112,7 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable SoftwareVersion previousVersion) {
-        hedera.onStateInitialized(state, platform, trigger, previousVersion);
+        hedera.onStateInitialized(state, platform, trigger);
     }
 
     @Override

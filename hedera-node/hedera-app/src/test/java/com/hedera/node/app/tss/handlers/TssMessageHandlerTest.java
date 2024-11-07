@@ -36,7 +36,8 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.tss.TssCryptographyManager;
-import com.hedera.node.app.tss.TssCryptographyManager.LedgerIdWithSignature;
+import com.hedera.node.app.tss.TssCryptographyManager.Vote;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.FakeGroupElement;
 import com.hedera.node.app.tss.pairings.PairingPrivateKey;
@@ -45,8 +46,8 @@ import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.platform.state.service.ReadableRosterStore;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.BitSet;
@@ -103,16 +104,19 @@ class TssMessageHandlerTest {
     @Mock
     private PairingPrivateKey pairingPrivateKey;
 
+    @Mock
+    private TssMetrics tssMetrics;
+
     private Roster roster;
     private TssMessageHandler subject;
-    private LedgerIdWithSignature ledgerIdWithSignature;
+    private Vote vote;
     private TssParticipantDirectory tssParticipantDirectory;
 
     @BeforeEach
     void setUp() {
         final var voteBitSet = new BitSet(8);
         voteBitSet.set(2);
-        ledgerIdWithSignature = new LedgerIdWithSignature(pairingPublicKey, signature, voteBitSet);
+        vote = new Vote(pairingPublicKey, signature, voteBitSet);
         roster = new Roster(List.of(
                 RosterEntry.newBuilder().nodeId(1).weight(100).build(),
                 RosterEntry.newBuilder().nodeId(2).weight(50).build()));
@@ -121,7 +125,7 @@ class TssMessageHandlerTest {
                 .withParticipant(1, 10, pairingPublicKey)
                 .build(SIGNATURE_SCHEMA);
 
-        subject = new TssMessageHandler(submissionManager, gossip, tssCryptographyManager);
+        subject = new TssMessageHandler(submissionManager, gossip, tssCryptographyManager, tssMetrics);
     }
 
     @Test
@@ -141,15 +145,16 @@ class TssMessageHandlerTest {
         given(handleContext.body()).willReturn(getTssBody());
         given(readableRosterStore.getActiveRoster()).willReturn(roster);
         given(pairingPublicKey.publicKey()).willReturn(new FakeGroupElement(BigInteger.valueOf(10)));
-        given(gossip.sign(any())).willReturn(signature);
 
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(storeFactory.readableStore(ReadableRosterStore.class)).thenReturn(readableRosterStore);
 
-        given(tssCryptographyManager.handleTssMessageTransaction(
-                        eq(getTssBody().tssMessage()), any(TssParticipantDirectory.class), eq(handleContext)))
-                .willReturn(CompletableFuture.completedFuture(ledgerIdWithSignature));
+        given(tssCryptographyManager.getVoteFuture(
+                        eq(getTssBody().tssMessageOrThrow().targetRosterHash()),
+                        any(TssParticipantDirectory.class),
+                        eq(handleContext)))
+                .willReturn(CompletableFuture.completedFuture(vote));
         given(signature.getBytes()).willReturn(Bytes.wrap("test"));
 
         subject.handle(handleContext);
@@ -160,7 +165,7 @@ class TssMessageHandlerTest {
     @Test
     public void testHandleException() {
         when(handleContext.body()).thenReturn(getTssBody());
-        when(tssCryptographyManager.handleTssMessageTransaction(any(), any(), any()))
+        when(tssCryptographyManager.getVoteFuture(any(), any(), any()))
                 .thenThrow(new RuntimeException("Simulated error"));
 
         // Execute the handler and ensure no vote is submitted
