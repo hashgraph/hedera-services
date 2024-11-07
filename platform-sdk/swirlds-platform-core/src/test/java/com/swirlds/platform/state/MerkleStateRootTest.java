@@ -62,12 +62,12 @@ import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableSingletonState;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
@@ -961,13 +961,6 @@ class MerkleStateRootTest extends MerkleTestBase {
     @DisplayName("Migrate test")
     class MigrateTest {
         @Test
-        @DisplayName("Migrate fails if the first child is not PlatformState")
-        void migrate_fail() {
-            stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            assertThrows(IllegalStateException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
-        }
-
-        @Test
         @DisplayName("If the version is current, nothing ever happens")
         void migrate_currentVersion() {
             var node1 = mock(MerkleNode.class);
@@ -980,14 +973,9 @@ class MerkleStateRootTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("Migrate fails if the platform state is absent")
-        void migrate_platform_absent() {
-            var node1 = mock(MerkleNode.class);
-            stateRoot.setChild(0, node1);
-            var node2 = mock(MerkleNode.class);
-            stateRoot.setChild(1, node2);
-
-            assertThrows(IllegalStateException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
+        @DisplayName("Migration from previous versions is not supported")
+        void migration_not_supported() {
+            assertThrows(UnsupportedOperationException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
         }
     }
 

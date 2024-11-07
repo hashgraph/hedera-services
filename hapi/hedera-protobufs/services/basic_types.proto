@@ -1259,6 +1259,11 @@ enum HederaFunctionality {
      * Submit a vote as part of the Threshold Signature Scheme (TSS) processing.
      */
     TssVote = 97;
+
+    /**
+     * Submit a node signature as part of the Threshold Signature Scheme (TSS) processing.
+     */
+    TssShareSignature = 98;
 }
 
 /**

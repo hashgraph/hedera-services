@@ -147,8 +147,8 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.WritableSingletonStateBase;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
@@ -944,7 +944,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .consensusSnapshotOrThrow()
                 .round();
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
-        final var networkInfo = new StateNetworkInfo(state, platform.getSelfId().id(), configProvider);
+
+        final var activeRoster = tssBaseService.chooseRosterForNetwork(
+                state, trigger, serviceMigrator, version, configProvider.getConfiguration());
+        final var networkInfo =
+                new StateNetworkInfo(state, activeRoster, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)

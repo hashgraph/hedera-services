@@ -67,4 +67,4 @@ public record TokensConfig(
                 boolean airdropsClaimEnabled,
         @ConfigProperty(value = "nfts.maxBatchSizeUpdate", defaultValue = "10") @NetworkProperty
                 int nftsMaxBatchSizeUpdate,
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean countingGetBalanceThrottleEnabled) {}
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean countingGetBalanceThrottleEnabled) {}

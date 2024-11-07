@@ -38,6 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarap
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import java.math.BigInteger;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
@@ -48,6 +49,9 @@ import org.mockito.Mock;
 class HasCallAttemptTest extends CallTestBase {
     @Mock
     private VerificationStrategies verificationStrategies;
+
+    @Mock
+    private SignatureVerifier signatureVerifier;
 
     @Mock
     private AddressIdConverter addressIdConverter;
@@ -74,6 +78,7 @@ class HasCallAttemptTest extends CallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 callTranslators,
                 false);
@@ -92,6 +97,7 @@ class HasCallAttemptTest extends CallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 callTranslators,
                 false);
@@ -116,6 +122,7 @@ class HasCallAttemptTest extends CallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 callTranslators,
                 false);
@@ -142,6 +149,7 @@ class HasCallAttemptTest extends CallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 callTranslators,
                 false);
@@ -168,6 +176,7 @@ class HasCallAttemptTest extends CallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 callTranslators,
                 false);
@@ -195,6 +204,7 @@ class HasCallAttemptTest extends CallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 callTranslators,
                 false);

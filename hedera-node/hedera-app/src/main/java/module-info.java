@@ -39,6 +39,7 @@ module com.hedera.node.app {
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
+    requires com.swirlds.state.impl;
     requires com.swirlds.virtualmap;
     requires com.google.common;
     requires com.google.protobuf;
@@ -50,13 +51,12 @@ module com.hedera.node.app {
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
+    requires java.annotation;
     requires org.apache.commons.lang3;
     requires org.hyperledger.besu.datatypes;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires static java.compiler;
-    requires static org.jetbrains.annotations;
-    // javax.annotation.processing.Generated
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app;
     exports com.hedera.node.app.state to
@@ -116,6 +116,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.tss.pairings;
     exports com.hedera.node.app.tss.handlers;
     exports com.hedera.node.app.tss.stores;
+    exports com.hedera.node.app.tss.schemas;
     exports com.hedera.node.app.blocks.schemas;
 
     provides ConfigurationExtension with

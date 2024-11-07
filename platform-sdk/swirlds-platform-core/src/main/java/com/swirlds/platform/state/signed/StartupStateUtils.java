@@ -24,10 +24,8 @@ import static com.swirlds.platform.state.signed.ReservedSignedState.createNullRe
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFile;
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.base.function.CheckedBiFunction;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.platform.NodeId;
@@ -46,7 +44,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -68,7 +65,6 @@ public final class StartupStateUtils {
      * @param configuration      the configuration for this node
      * @param softwareVersion     the software version of the app
      * @param genesisStateBuilder a supplier that can build a genesis state
-     * @param snapshotStateReader a function to read an existing state snapshot
      * @param mainClassName       the name of the app's SwirldMain class
      * @param swirldName          the name of this swirld
      * @param selfId              the node id of this node
@@ -83,7 +79,6 @@ public final class StartupStateUtils {
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<MerkleRoot> genesisStateBuilder,
-            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
@@ -97,7 +92,7 @@ public final class StartupStateUtils {
         requireNonNull(configAddressBook);
 
         final ReservedSignedState loadedState = StartupStateUtils.loadStateFile(
-                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion, snapshotStateReader);
+                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion);
 
         try (loadedState) {
             if (loadedState.isNotNull()) {
@@ -126,7 +121,6 @@ public final class StartupStateUtils {
      * @param mainClassName            the name of the main class
      * @param swirldName               the name of the swirld
      * @param currentSoftwareVersion   the current software version
-     * @param snapshotStateReader      state snapshot reading function
      * @return a reserved signed state (wrapped state will be null if no state could be loaded)
      * @throws SignedStateLoadingException if there was a problem parsing states on disk and we are not configured to
      *                                     delete malformed states
@@ -138,9 +132,7 @@ public final class StartupStateUtils {
             @NonNull final NodeId selfId,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
-            @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull
-                    final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader) {
+            @NonNull final SoftwareVersion currentSoftwareVersion) {
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
@@ -155,8 +147,8 @@ public final class StartupStateUtils {
             return createNullReservation();
         }
 
-        final ReservedSignedState state = loadLatestState(
-                configuration, recycleBin, currentSoftwareVersion, savedStateFiles, snapshotStateReader);
+        final ReservedSignedState state =
+                loadLatestState(configuration, recycleBin, currentSoftwareVersion, savedStateFiles);
         return state;
     }
 
@@ -210,25 +202,22 @@ public final class StartupStateUtils {
      * Load the latest state. If the latest state is invalid, try to load the next latest state. Repeat until a valid
      * state is found or there are no more states to try.
      *
-     * @param platformContext        the platform context
      * @param currentSoftwareVersion the current software version
      * @param savedStateFiles        the saved states to try
-     * @param snapshotStateReader    state snapshot reading function
      * @return the loaded state
      */
     private static ReservedSignedState loadLatestState(
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final List<SavedStateInfo> savedStateFiles,
-            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
+            @NonNull final List<SavedStateInfo> savedStateFiles)
             throws SignedStateLoadingException {
 
         logger.info(STARTUP.getMarker(), "Loading latest state from disk.");
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            final ReservedSignedState state = loadStateFile(
-                    configuration, recycleBin, currentSoftwareVersion, savedStateFile, snapshotStateReader);
+            final ReservedSignedState state =
+                    loadStateFile(configuration, recycleBin, currentSoftwareVersion, savedStateFile);
             if (state != null) {
                 return state;
             }
@@ -241,10 +230,8 @@ public final class StartupStateUtils {
     /**
      * Load the requested state from file. If state can not be loaded, recycle the file and return null.
      *
-     * @param platformContext        the platform context
      * @param currentSoftwareVersion the current software version
      * @param savedStateFile         the state to load
-     * @param snapshotStateReader    state snapshot reading function
      * @return the loaded state, or null if the state could not be loaded. Will be fully hashed if non-null.
      */
     @Nullable
@@ -252,15 +239,14 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final SavedStateInfo savedStateFile,
-            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
+            @NonNull final SavedStateInfo savedStateFile)
             throws SignedStateLoadingException {
 
         logger.info(STARTUP.getMarker(), "Loading signed state from disk: {}", savedStateFile.stateFile());
 
         final DeserializedSignedState deserializedSignedState;
         try {
-            deserializedSignedState = readStateFile(configuration, savedStateFile.stateFile(), snapshotStateReader);
+            deserializedSignedState = readStateFile(configuration, savedStateFile.stateFile());
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "unable to load state file {}", savedStateFile.stateFile(), e);
 

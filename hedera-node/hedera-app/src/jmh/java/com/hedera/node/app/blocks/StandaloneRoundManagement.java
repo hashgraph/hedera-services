@@ -53,12 +53,13 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
-import com.swirlds.state.spi.Schema;
+import com.swirlds.state.lifecycle.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -96,7 +97,8 @@ public class StandaloneRoundManagement {
             ForkJoinPool.commonPool(),
             ForkJoinPool.commonPool(),
             new PlaceholderTssLibrary(),
-            ForkJoinPool.commonPool());
+            ForkJoinPool.commonPool(),
+            new NoOpMetrics());
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
             NoopBlockItemWriter::new,
             ForkJoinPool.commonPool(),

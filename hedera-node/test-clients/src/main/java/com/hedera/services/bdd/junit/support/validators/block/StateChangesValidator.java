@@ -79,8 +79,8 @@ import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.spi.CommittableWritableStates;
-import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -221,7 +221,8 @@ public class StateChangesValidator implements BlockStreamValidator {
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
-                        ForkJoinPool.commonPool()));
+                        ForkJoinPool.commonPool(),
+                        metrics));
         this.state = (MerkleStateRoot) hedera.newMerkleStateRoot();
         hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, addressBook);
         final Configuration platformConfig = ConfigurationBuilder.create()

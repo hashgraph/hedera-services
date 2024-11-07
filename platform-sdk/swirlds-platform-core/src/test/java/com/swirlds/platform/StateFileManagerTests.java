@@ -146,10 +146,8 @@ class StateFileManagerTests {
 
         assertEquals(-1, originalState.getReservationCount(), "invalid reservation count");
 
-        final DeserializedSignedState deserializedSignedState = readStateFile(
-                TestPlatformContextBuilder.create().build().getConfiguration(),
-                stateFile,
-                SignedStateFileUtils::readState);
+        final DeserializedSignedState deserializedSignedState =
+                readStateFile(TestPlatformContextBuilder.create().build().getConfiguration(), stateFile);
         MerkleCryptoFactory.getInstance()
                 .digestTreeSync(
                         deserializedSignedState.reservedSignedState().get().getState());
@@ -346,8 +344,7 @@ class StateFileManagerTests {
                                             TestPlatformContextBuilder.create()
                                                     .build()
                                                     .getConfiguration(),
-                                            savedStateInfo.stateFile(),
-                                            SignedStateFileUtils::readState)
+                                            savedStateInfo.stateFile())
                                     .reservedSignedState()
                                     .get(),
                             "should be able to read state on disk");
