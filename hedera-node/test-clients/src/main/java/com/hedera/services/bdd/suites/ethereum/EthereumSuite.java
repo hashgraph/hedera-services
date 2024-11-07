@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractIdWithEvmAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.namedHapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -422,15 +421,14 @@ public class EthereumSuite {
 
     @HapiTest
     final Stream<DynamicTest> invalidTxData() {
-        return defaultHapiSpec("InvalidTxData")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
-                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT))
-                .when(ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
+                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(RELAYER)
@@ -441,8 +439,7 @@ public class EthereumSuite {
                         .invalidateEthereumData()
                         .gasLimit(1_000_000L)
                         .hasPrecheck(INVALID_ETHEREUM_TRANSACTION)
-                        .via(PAY_TXN))
-                .then();
+                        .via(PAY_TXN));
     }
 
     @HapiTest
@@ -688,7 +685,7 @@ public class EthereumSuite {
                     final var record = op.getResponseRecord();
                     final var creationResult = record.getContractCreateResult();
                     final var createdIds = creationResult.getCreatedContractIDsList().stream()
-                            .sorted(Comparator.comparing(id -> id.getContractNum()))
+                            .sorted(Comparator.comparing(ContractID::getContractNum))
                             .toList();
                     assertEquals(4, createdIds.size(), "Expected four creations but got " + createdIds);
 
@@ -967,89 +964,84 @@ public class EthereumSuite {
         final var ercUser = "ercUser";
         final var HBAR_XFER = "hbarXfer";
 
-        return defaultHapiSpec("accountDeletionResetsTheAliasNonce")
-                .given(
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        cryptoCreate(TOKEN_TREASURY),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                            counterAlias.set(evmAddressBytes);
-                        }),
-                        tokenCreate("token")
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(totalSupply)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(SECP_256K1_SOURCE_KEY)
-                                .supplyKey(SECP_256K1_SOURCE_KEY)
-                                .exposingCreatedIdTo(tokenNum::set))
-                .when(
-                        withOpContext((spec, opLog) -> {
-                            var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
-                                    .signedBy(DEFAULT_PAYER, PARTY)
-                                    .via(HBAR_XFER);
+        return hapiTest(
+                cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                cryptoCreate(TOKEN_TREASURY),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    partyId.set(registry.getAccountID(PARTY));
+                    partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                    counterAlias.set(evmAddressBytes);
+                }),
+                tokenCreate("token")
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(totalSupply)
+                        .treasury(TOKEN_TREASURY)
+                        .adminKey(SECP_256K1_SOURCE_KEY)
+                        .supplyKey(SECP_256K1_SOURCE_KEY)
+                        .exposingCreatedIdTo(tokenNum::set),
+                withOpContext((spec, opLog) -> {
+                    var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
+                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                            .signedBy(DEFAULT_PAYER, PARTY)
+                            .via(HBAR_XFER);
 
-                            var op2 = getAliasedAccountInfo(counterAlias.get())
-                                    .logged()
-                                    .exposingIdTo(aliasedAccountId::set)
-                                    .has(accountWith()
-                                            .hasEmptyKey()
-                                            .noAlias()
-                                            .nonce(0)
-                                            .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                            .receiverSigReq(false)
-                                            .memo(LAZY_MEMO));
-
-                            // send eth transaction signed by the ecdsa key
-                            var op3 = ethereumCallWithFunctionAbi(
-                                            true,
-                                            "token",
-                                            getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
-                                    .type(EthTxData.EthTransactionType.EIP1559)
-                                    .signingWith(SECP_256K1_SOURCE_KEY)
-                                    .payingWith(GENESIS)
+                    var op2 = getAliasedAccountInfo(counterAlias.get())
+                            .logged()
+                            .exposingIdTo(aliasedAccountId::set)
+                            .has(accountWith()
+                                    .hasEmptyKey()
+                                    .noAlias()
                                     .nonce(0)
-                                    .gasPrice(50L)
-                                    .maxGasAllowance(FIVE_HBARS)
-                                    .maxPriorityGas(2L)
-                                    .gasLimit(1_000_000L)
-                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                    .receiverSigReq(false)
+                                    .memo(LAZY_MEMO));
 
-                            // assert account nonce is increased to 1
-                            var op4 = getAliasedAccountInfo(counterAlias.get())
-                                    .logged()
-                                    .has(accountWith().nonce(1));
+                    // send eth transaction signed by the ecdsa key
+                    var op3 = ethereumCallWithFunctionAbi(
+                                    true, "token", getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
+                            .type(EthTxData.EthTransactionType.EIP1559)
+                            .signingWith(SECP_256K1_SOURCE_KEY)
+                            .payingWith(GENESIS)
+                            .nonce(0)
+                            .gasPrice(50L)
+                            .maxGasAllowance(FIVE_HBARS)
+                            .maxPriorityGas(2L)
+                            .gasLimit(1_000_000L)
+                            .hasKnownStatus(ResponseCodeEnum.SUCCESS);
 
-                            allRunFor(spec, op1, op2, op3, op4);
+                    // assert account nonce is increased to 1
+                    var op4 = getAliasedAccountInfo(counterAlias.get())
+                            .logged()
+                            .has(accountWith().nonce(1));
 
-                            spec.registry().saveAccountId(ercUser, aliasedAccountId.get());
-                            spec.registry().saveKey(ercUser, spec.registry().getKey(SECP_256K1_SOURCE_KEY));
-                        }),
-                        // delete the account currently holding the alias
-                        cryptoDelete(ercUser))
-                .then(
-                        // try to create a new account with the same alias
-                        withOpContext((spec, opLog) -> {
-                            var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
-                                    .signedBy(DEFAULT_PAYER, PARTY)
-                                    .hasKnownStatus(SUCCESS);
+                    allRunFor(spec, op1, op2, op3, op4);
 
-                            var op2 = getAliasedAccountInfo(counterAlias.get())
-                                    // TBD: balance should be 4 or 2 hbars
-                                    .has(accountWith().nonce(0).balance(2 * ONE_HBAR));
+                    spec.registry().saveAccountId(ercUser, aliasedAccountId.get());
+                    spec.registry().saveKey(ercUser, spec.registry().getKey(SECP_256K1_SOURCE_KEY));
+                }),
+                // delete the account currently holding the alias
+                cryptoDelete(ercUser),
+                // try to create a new account with the same alias
+                withOpContext((spec, opLog) -> {
+                    var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
+                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                            .signedBy(DEFAULT_PAYER, PARTY)
+                            .hasKnownStatus(SUCCESS);
 
-                            allRunFor(spec, op1, op2);
-                        }));
+                    var op2 = getAliasedAccountInfo(counterAlias.get())
+                            // TBD: balance should be 4 or 2 hbars
+                            .has(accountWith().nonce(0).balance(2 * ONE_HBAR));
+
+                    allRunFor(spec, op1, op2);
+                }));
     }
 
     // test unprotected legacy ethereum transactions before EIP155,
@@ -1097,20 +1089,19 @@ public class EthereumSuite {
         final var EXISTING_TOKEN = "EXISTING_TOKEN";
         final var firstTxn = "firstCreateTxn";
         final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
-        return defaultHapiSpec("etx007FungibleTokenCreateWithFeesHappyPath")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
-                        cryptoCreate(feeCollectorAndAutoRenew)
-                                .keyShape(SigControl.ED25519_ON)
-                                .balance(ONE_MILLION_HBARS),
-                        uploadInitCode(contract),
-                        contractCreate(contract).gas(GAS_LIMIT),
-                        tokenCreate(EXISTING_TOKEN).decimals(5),
-                        tokenAssociate(feeCollectorAndAutoRenew, EXISTING_TOKEN),
-                        cryptoUpdate(feeCollectorAndAutoRenew).key(SECP_256K1_SOURCE_KEY))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                cryptoCreate(feeCollectorAndAutoRenew)
+                        .keyShape(SigControl.ED25519_ON)
+                        .balance(ONE_MILLION_HBARS),
+                uploadInitCode(contract),
+                contractCreate(contract).gas(GAS_LIMIT),
+                tokenCreate(EXISTING_TOKEN).decimals(5),
+                tokenAssociate(feeCollectorAndAutoRenew, EXISTING_TOKEN),
+                cryptoUpdate(feeCollectorAndAutoRenew).key(SECP_256K1_SOURCE_KEY),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         ethereumCall(
                                         contract,
@@ -1135,26 +1126,23 @@ public class EthereumSuite {
                                     opLog.info("Explicit create result" + " is {}", result[0]);
                                     final var res = (Address) result[0];
                                     createdTokenNum.set(res.value().longValueExact());
-                                }))))
-                .then(
-                        getTxnRecord(firstTxn).andAllChildRecords().logged(),
-                        childRecordsCheck(
-                                firstTxn,
-                                SUCCESS,
-                                TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
-                        withOpContext((spec, ignore) -> {
-                            final var op = getTxnRecord(firstTxn);
-                            allRunFor(spec, op);
+                                }))),
+                getTxnRecord(firstTxn).andAllChildRecords().logged(),
+                childRecordsCheck(
+                        firstTxn, SUCCESS, TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
+                withOpContext((spec, ignore) -> {
+                    final var op = getTxnRecord(firstTxn);
+                    allRunFor(spec, op);
 
-                            final var callResult = op.getResponseRecord().getContractCallResult();
-                            final var gasUsed = callResult.getGasUsed();
-                            final var amount = callResult.getAmount();
-                            final var gasLimit = callResult.getGas();
-                            Assertions.assertEquals(DEFAULT_AMOUNT_TO_SEND, amount);
-                            Assertions.assertEquals(GAS_LIMIT, gasLimit);
-                            Assertions.assertTrue(gasUsed > 0L);
-                            Assertions.assertTrue(callResult.hasContractID() && callResult.hasSenderId());
-                        }));
+                    final var callResult = op.getResponseRecord().getContractCallResult();
+                    final var gasUsed = callResult.getGasUsed();
+                    final var amount = callResult.getAmount();
+                    final var gasLimit = callResult.getGas();
+                    Assertions.assertEquals(DEFAULT_AMOUNT_TO_SEND, amount);
+                    Assertions.assertEquals(GAS_LIMIT, gasLimit);
+                    Assertions.assertTrue(gasUsed > 0L);
+                    Assertions.assertTrue(callResult.hasContractID() && callResult.hasSenderId());
+                }));
     }
 
     @HapiTest
@@ -1169,21 +1157,19 @@ public class EthereumSuite {
                 new BigInteger(Bytes.fromHex("FAC7230489E80000").toByteArray());
         //             ^^^^ 10000000000000000000 wasn't enough to pay the tx fee, so changed the leading `8` to an `F`
         final var BIG_INTEGER_WEIBAR = new BigInteger("18070450532247928832"); // this is the actual value
-        return defaultHapiSpec("fungibleTokenCreateWithAmountLookingNegativeInTwosComplement")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(
-                                        GENESIS, SECP_256K1_SOURCE_KEY, 20 * ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
-                        cryptoCreate(feeCollectorAndAutoRenew)
-                                .keyShape(SigControl.ED25519_ON)
-                                .balance(ONE_MILLION_HBARS),
-                        uploadInitCode(contract),
-                        contractCreate(contract).gas(GAS_LIMIT),
-                        tokenCreate(EXISTING_TOKEN).decimals(5),
-                        tokenAssociate(feeCollectorAndAutoRenew, EXISTING_TOKEN),
-                        cryptoUpdate(feeCollectorAndAutoRenew).key(SECP_256K1_SOURCE_KEY))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, 20 * ONE_HUNDRED_HBARS))
+                        .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                cryptoCreate(feeCollectorAndAutoRenew)
+                        .keyShape(SigControl.ED25519_ON)
+                        .balance(ONE_MILLION_HBARS),
+                uploadInitCode(contract),
+                contractCreate(contract).gas(GAS_LIMIT),
+                tokenCreate(EXISTING_TOKEN).decimals(5),
+                tokenAssociate(feeCollectorAndAutoRenew, EXISTING_TOKEN),
+                cryptoUpdate(feeCollectorAndAutoRenew).key(SECP_256K1_SOURCE_KEY),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         ethereumCall(
                                         contract,
@@ -1208,30 +1194,24 @@ public class EthereumSuite {
                                     opLog.info("Explicit create result is {}", result[0]);
                                     final var res = (Address) result[0];
                                     createdTokenNum.set(res.value().longValueExact());
-                                }))))
-                .then(
-                        getTxnRecord(firstTxn).andAllChildRecords().logged(),
-                        childRecordsCheck(
-                                firstTxn,
-                                SUCCESS,
-                                TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
-                        withOpContext((spec, ignore) -> {
-                            final var op = getTxnRecord(firstTxn);
-                            allRunFor(spec, op);
+                                }))),
+                getTxnRecord(firstTxn).andAllChildRecords().logged(),
+                childRecordsCheck(
+                        firstTxn, SUCCESS, TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
+                withOpContext((spec, ignore) -> {
+                    final var op = getTxnRecord(firstTxn);
+                    allRunFor(spec, op);
 
-                            final var callResult = op.getResponseRecord().getContractCallResult();
-                            final var gasUsed = callResult.getGasUsed();
-                            final var amountTinybar = callResult.getAmount();
-                            final var gasLimit = callResult.getGas();
-                            Assertions.assertEquals(
-                                    BIG_INTEGER_WEIBAR
-                                            .divide(WEIBARS_IN_A_TINYBAR)
-                                            .longValueExact(),
-                                    amountTinybar);
-                            Assertions.assertEquals(GAS_LIMIT, gasLimit);
-                            Assertions.assertTrue(gasUsed > 0L);
-                            Assertions.assertTrue(callResult.hasContractID() && callResult.hasSenderId());
-                        }));
+                    final var callResult = op.getResponseRecord().getContractCallResult();
+                    final var gasUsed = callResult.getGasUsed();
+                    final var amountTinybar = callResult.getAmount();
+                    final var gasLimit = callResult.getGas();
+                    Assertions.assertEquals(
+                            BIG_INTEGER_WEIBAR.divide(WEIBARS_IN_A_TINYBAR).longValueExact(), amountTinybar);
+                    Assertions.assertEquals(GAS_LIMIT, gasLimit);
+                    Assertions.assertTrue(gasUsed > 0L);
+                    Assertions.assertTrue(callResult.hasContractID() && callResult.hasSenderId());
+                }));
     }
 
     @HapiTest
