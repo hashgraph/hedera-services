@@ -470,7 +470,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
                 return childClassId == VirtualMap.CLASS_ID || childClassId == NULL_CLASS_ID;
             case ChildIndices.QUORUM_RESULT:
                 return childClassId == QuorumResult.CLASS_ID;
-            case ChildIndices.SINGLETON_NODE:
+            case 11, 12: // temp
                 return childClassId == SingletonNode.CLASS_ID;
             default:
                 return false;
@@ -1689,7 +1689,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
 
         public static final int SINGLETON_NODE = 11;
 
-        public static final int CHILD_COUNT = 12;
+        public static final int CHILD_COUNT = 13;
     }
 
     @Override
