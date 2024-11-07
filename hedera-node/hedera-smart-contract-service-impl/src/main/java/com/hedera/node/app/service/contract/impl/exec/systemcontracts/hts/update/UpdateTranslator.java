@@ -56,6 +56,7 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     /** Selector for updateTokenInfo(address, HEDERA_TOKEN_STRUCT_V3) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V3 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V3 + ")", ReturnTypes.INT);
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_WITH_METADATA) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_WITH_METADATA + ")", ReturnTypes.INT);
 
