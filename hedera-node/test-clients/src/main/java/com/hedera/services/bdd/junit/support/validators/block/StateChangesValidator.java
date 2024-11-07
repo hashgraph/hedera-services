@@ -69,6 +69,7 @@ import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.io.config.FileSystemManagerConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
@@ -237,6 +238,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(TemporaryFileConfig.class)
                 .withConfigDataType(StateCommonConfig.class)
+                .withConfigDataType(FileSystemManagerConfig.class)
                 .build();
         hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, addressBook, platformConfig);
         initGenesisPlatformState(platformConfig, this.state.getWritablePlatformState(), addressBook, currentVersion);
