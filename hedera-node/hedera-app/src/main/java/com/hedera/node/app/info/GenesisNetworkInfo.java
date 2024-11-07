@@ -17,29 +17,27 @@
 package com.hedera.node.app.info;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.inject.Singleton;
 
 /**
- * Provides information about the network, including the ledger ID. This is constructed from the
- * roster provided.
+ * Provides information about the network based on the given roster and ledger ID.
  */
-@Singleton
 public class GenesisNetworkInfo implements NetworkInfo {
-    private final Map<Long, NodeInfo> nodeInfos;
     private final Bytes ledgerId;
     private final Roster genesisRoster;
+    private final Map<Long, NodeInfo> nodeInfos;
 
     /**
      * Constructs a new {@link GenesisNetworkInfo} instance.
@@ -47,10 +45,10 @@ public class GenesisNetworkInfo implements NetworkInfo {
      * @param genesisRoster The genesis roster
      * @param ledgerId      The ledger ID
      */
-    public GenesisNetworkInfo(final Roster genesisRoster, final Bytes ledgerId) {
+    public GenesisNetworkInfo(@NonNull final Roster genesisRoster, @NonNull final Bytes ledgerId) {
+        this.ledgerId = requireNonNull(ledgerId);
+        this.genesisRoster = requireNonNull(genesisRoster);
         this.nodeInfos = buildNodeInfoMap(genesisRoster);
-        this.ledgerId = ledgerId;
-        this.genesisRoster = genesisRoster;
     }
 
     /**
@@ -108,23 +106,6 @@ public class GenesisNetworkInfo implements NetworkInfo {
     }
 
     /**
-     * Builds a node info from a roster entry from the given roster.
-     * Since this is only used in the genesis case, the account ID is generated from the node ID
-     * by adding 3 to it, as a default case.
-     *
-     * @param entry The roster entry
-     * @return The node info
-     */
-    private NodeInfo fromRosterEntry(RosterEntry entry) {
-        return new NodeInfoImpl(
-                entry.nodeId(),
-                asAccount(entry.nodeId() + 3),
-                entry.weight(),
-                entry.gossipEndpoint(),
-                entry.gossipCaCertificate());
-    }
-
-    /**
      * Builds a map of node information from the given roster. The map is keyed by node ID.
      * The node information is retrieved from the roster entry.
      * If the node information is not found in the roster entry, it is not included in the map.
@@ -132,12 +113,29 @@ public class GenesisNetworkInfo implements NetworkInfo {
      * @param roster The roster to retrieve the node information from
      * @return A map of node information
      */
-    private Map<Long, NodeInfo> buildNodeInfoMap(final Roster roster) {
+    private Map<Long, NodeInfo> buildNodeInfoMap(@NonNull final Roster roster) {
         final var nodeInfos = new LinkedHashMap<Long, NodeInfo>();
         final var rosterEntries = roster.rosterEntries();
         for (final var rosterEntry : rosterEntries) {
             nodeInfos.put(rosterEntry.nodeId(), fromRosterEntry(rosterEntry));
         }
         return nodeInfos;
+    }
+
+    /**
+     * Builds a node info from a roster entry from the given roster.
+     * Since this is only used in the genesis case, the account ID is generated from the node ID
+     * by adding 3 to it, as a default case.
+     *
+     * @param entry The roster entry
+     * @return The node info
+     */
+    private NodeInfo fromRosterEntry(@NonNull final RosterEntry entry) {
+        return new NodeInfoImpl(
+                entry.nodeId(),
+                asAccount(entry.nodeId() + 3),
+                entry.weight(),
+                entry.gossipEndpoint(),
+                entry.gossipCaCertificate());
     }
 }
