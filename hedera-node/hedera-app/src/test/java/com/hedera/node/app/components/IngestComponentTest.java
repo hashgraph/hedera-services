@@ -114,7 +114,7 @@ class IngestComponentTest {
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP,
                 configuration,
-                3L);
+                () -> 3L);
         given(tssBaseService.tssHandlers())
                 .willReturn(new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler));
         app = DaggerHederaInjectionComponent.builder()

@@ -281,7 +281,7 @@ class TransactionExecutorsTest {
                                 signatureVerifier,
                                 UNAVAILABLE_GOSSIP,
                                 HederaTestConfigBuilder.createConfig(),
-                                3L)),
+                                () -> 3L)),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),

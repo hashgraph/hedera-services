@@ -123,7 +123,7 @@ public class BlockStreamManagerBenchmark {
                     fakeSignatureVerifier(),
                     UNAVAILABLE_GOSSIP,
                     configProvider.getConfiguration(),
-                    DEFAULT_NODE_ACCOUNT_ID),
+                    () -> DEFAULT_NODE_ACCOUNT_ID),
             ForkJoinPool.commonPool(),
             ForkJoinPool.commonPool(),
             new PlaceholderTssLibrary(),
