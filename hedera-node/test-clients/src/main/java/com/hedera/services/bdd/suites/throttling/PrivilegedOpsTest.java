@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.throttling;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
@@ -87,104 +86,93 @@ public class PrivilegedOpsTest {
 
     @HapiTest
     final Stream<DynamicTest> freezeAdminPrivilegesAsExpected() {
-        return defaultHapiSpec("freezeAdminPrivilegesAsExpected")
-                .given(
-                        cryptoCreate(CIVILIAN),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_MILLION_HBARS)))
-                .when(
-                        fileUpdate(UPDATE_ZIP_FILE)
-                                .payingWith(FREEZE_ADMIN)
-                                .contents("Nope")
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        fileUpdate(UPDATE_ZIP_FILE)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .contents("Nope")
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        fileUpdate(UPDATE_ZIP_FILE)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents("Nope")
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        fileUpdate(UPDATE_ZIP_FILE)
-                                .payingWith(FEE_SCHEDULE_CONTROL)
-                                .contents("Nope")
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        fileUpdate(UPDATE_ZIP_FILE)
-                                .payingWith(CIVILIAN)
-                                .contents("Nope")
-                                .hasPrecheck(AUTHORIZATION_FAILED))
-                .then(
-                        fileUpdate(UPDATE_ZIP_FILE)
-                                .fee(0L)
-                                .via("updateTxn")
-                                .payingWith(SOFTWARE_UPDATE_ADMIN)
-                                .contents("Yuu"),
-                        getTxnRecord("updateTxn").showsNoTransfers(),
-                        fileAppend(UPDATE_ZIP_FILE)
-                                .fee(0L)
-                                .via("appendTxn")
-                                .payingWith(SOFTWARE_UPDATE_ADMIN)
-                                .content("upp"),
-                        getTxnRecord("appendTxn").showsNoTransfers(),
-                        fileUpdate(UPDATE_ZIP_FILE)
-                                .fee(0L)
-                                .payingWith(SYSTEM_ADMIN)
-                                .contents("Yuuupp"),
-                        fileAppend(UPDATE_ZIP_FILE).fee(0L).payingWith(GENESIS).content(new byte[0]));
+        return hapiTest(
+                cryptoCreate(CIVILIAN),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_MILLION_HBARS)),
+                fileUpdate(UPDATE_ZIP_FILE)
+                        .payingWith(FREEZE_ADMIN)
+                        .contents("Nope")
+                        .hasPrecheck(AUTHORIZATION_FAILED),
+                fileUpdate(UPDATE_ZIP_FILE)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .contents("Nope")
+                        .hasPrecheck(AUTHORIZATION_FAILED),
+                fileUpdate(UPDATE_ZIP_FILE)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents("Nope")
+                        .hasPrecheck(AUTHORIZATION_FAILED),
+                fileUpdate(UPDATE_ZIP_FILE)
+                        .payingWith(FEE_SCHEDULE_CONTROL)
+                        .contents("Nope")
+                        .hasPrecheck(AUTHORIZATION_FAILED),
+                fileUpdate(UPDATE_ZIP_FILE)
+                        .payingWith(CIVILIAN)
+                        .contents("Nope")
+                        .hasPrecheck(AUTHORIZATION_FAILED),
+                fileUpdate(UPDATE_ZIP_FILE)
+                        .fee(0L)
+                        .via("updateTxn")
+                        .payingWith(SOFTWARE_UPDATE_ADMIN)
+                        .contents("Yuu"),
+                getTxnRecord("updateTxn").showsNoTransfers(),
+                fileAppend(UPDATE_ZIP_FILE)
+                        .fee(0L)
+                        .via("appendTxn")
+                        .payingWith(SOFTWARE_UPDATE_ADMIN)
+                        .content("upp"),
+                getTxnRecord("appendTxn").showsNoTransfers(),
+                fileUpdate(UPDATE_ZIP_FILE).fee(0L).payingWith(SYSTEM_ADMIN).contents("Yuuupp"),
+                fileAppend(UPDATE_ZIP_FILE).fee(0L).payingWith(GENESIS).content(new byte[0]));
     }
 
     // Temporarily changes system account keys
     @LeakyHapiTest
     final Stream<DynamicTest> systemAccountUpdatePrivilegesAsExpected() {
         final var tmpTreasury = "tmpTreasury";
-        return defaultHapiSpec("systemAccountUpdatePrivilegesAsExpected")
-                .given(newKeyNamed(tmpTreasury), newKeyNamed(NEW_88), cryptoCreate(CIVILIAN))
-                .when(cryptoUpdate(ACCOUNT_88)
+        return hapiTest(
+                newKeyNamed(tmpTreasury),
+                newKeyNamed(NEW_88),
+                cryptoCreate(CIVILIAN),
+                cryptoUpdate(ACCOUNT_88)
                         .payingWith(GENESIS)
                         .signedBy(GENESIS, NEW_88)
-                        .key(NEW_88))
-                .then(
-                        cryptoUpdate(ACCOUNT_2)
-                                .receiverSigRequired(true)
-                                .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, GENESIS)
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        cryptoUpdate(ACCOUNT_2)
-                                .receiverSigRequired(true)
-                                .payingWith(SYSTEM_ADMIN)
-                                .signedBy(SYSTEM_ADMIN, GENESIS)
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        cryptoUpdate(ACCOUNT_2)
-                                .receiverSigRequired(false)
-                                .payingWith(GENESIS)
-                                .signedBy(GENESIS),
-                        cryptoUpdate(ACCOUNT_2)
-                                .key(tmpTreasury)
-                                .payingWith(GENESIS)
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        cryptoUpdate(ACCOUNT_2)
-                                .key(tmpTreasury)
-                                .payingWith(GENESIS)
-                                .signedBy(GENESIS, tmpTreasury)
-                                .notUpdatingRegistryWithNewKey(),
-                        cryptoUpdate(ACCOUNT_2)
-                                .key(GENESIS)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(GENESIS)
-                                .signedBy(GENESIS, tmpTreasury)
-                                .notUpdatingRegistryWithNewKey(),
-                        cryptoUpdate(ACCOUNT_88)
-                                .key(GENESIS)
-                                .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, NEW_88, GENESIS),
-                        cryptoUpdate(ACCOUNT_88)
-                                .payingWith(GENESIS)
-                                .signedBy(GENESIS, NEW_88)
-                                .key(NEW_88),
-                        cryptoUpdate(ACCOUNT_88)
-                                .key(GENESIS)
-                                .payingWith(SYSTEM_ADMIN)
-                                .signedBy(SYSTEM_ADMIN, GENESIS));
+                        .key(NEW_88),
+                cryptoUpdate(ACCOUNT_2)
+                        .receiverSigRequired(true)
+                        .payingWith(CIVILIAN)
+                        .signedBy(CIVILIAN, GENESIS)
+                        .hasPrecheck(AUTHORIZATION_FAILED),
+                cryptoUpdate(ACCOUNT_2)
+                        .receiverSigRequired(true)
+                        .payingWith(SYSTEM_ADMIN)
+                        .signedBy(SYSTEM_ADMIN, GENESIS)
+                        .hasPrecheck(AUTHORIZATION_FAILED),
+                cryptoUpdate(ACCOUNT_2)
+                        .receiverSigRequired(false)
+                        .payingWith(GENESIS)
+                        .signedBy(GENESIS),
+                cryptoUpdate(ACCOUNT_2)
+                        .key(tmpTreasury)
+                        .payingWith(GENESIS)
+                        .signedBy(GENESIS)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                cryptoUpdate(ACCOUNT_2)
+                        .key(tmpTreasury)
+                        .payingWith(GENESIS)
+                        .signedBy(GENESIS, tmpTreasury)
+                        .notUpdatingRegistryWithNewKey(),
+                cryptoUpdate(ACCOUNT_2)
+                        .key(GENESIS)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .payingWith(GENESIS)
+                        .signedBy(GENESIS, tmpTreasury)
+                        .notUpdatingRegistryWithNewKey(),
+                cryptoUpdate(ACCOUNT_88).key(GENESIS).payingWith(CIVILIAN).signedBy(CIVILIAN, NEW_88, GENESIS),
+                cryptoUpdate(ACCOUNT_88)
+                        .payingWith(GENESIS)
+                        .signedBy(GENESIS, NEW_88)
+                        .key(NEW_88),
+                cryptoUpdate(ACCOUNT_88).key(GENESIS).payingWith(SYSTEM_ADMIN).signedBy(SYSTEM_ADMIN, GENESIS));
     }
 
     @LeakyHapiTest(requirement = THROTTLE_OVERRIDES)
