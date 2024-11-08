@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.jrs;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -45,18 +45,17 @@ public class NodeOpsForUpgrade extends HapiSuite {
     }
 
     final Stream<DynamicTest> doDelete() {
-        return defaultHapiSpec("NodeOpsForUpgrade")
-                .given(initializeSettings())
-                .when(
-                        overridingTwo("nodes.enableDAB", "true", "nodes.updateAccountIdAllowed", "true"),
-                        newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
-                        nodeDelete("3").payingWith(GENESIS).signedBy(GENESIS),
-                        nodeUpdate("2")
-                                .description("UpdatedNode0")
-                                .accountId("0.0.100")
-                                .payingWith(GENESIS)
-                                .signedBy(GENESIS))
-                .then(overridingTwo("nodes.enableDAB", "true", "nodes.updateAccountIdAllowed", "false"));
+        return hapiTest(flattened(
+                initializeSettings(),
+                overridingTwo("nodes.enableDAB", "true", "nodes.updateAccountIdAllowed", "true"),
+                newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
+                nodeDelete("3").payingWith(GENESIS).signedBy(GENESIS),
+                nodeUpdate("2")
+                        .description("UpdatedNode0")
+                        .accountId("0.0.100")
+                        .payingWith(GENESIS)
+                        .signedBy(GENESIS),
+                overridingTwo("nodes.enableDAB", "true", "nodes.updateAccountIdAllowed", "false")));
     }
 
     @Override
