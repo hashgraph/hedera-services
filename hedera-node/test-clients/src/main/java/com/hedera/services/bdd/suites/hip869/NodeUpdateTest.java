@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDnsServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiPropertySource.invalidServiceEndpoint;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.WRONG_LENGTH_EDDSA_KEY;
@@ -60,8 +59,6 @@ import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.junit.support.TestLifecycle;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -76,7 +73,7 @@ public class NodeUpdateTest {
     private static List<X509Certificate> gossipCertificates;
 
     @BeforeAll
-    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+    static void beforeAll() {
         gossipCertificates = generateX509Certificates(2);
     }
 
@@ -280,25 +277,21 @@ public class NodeUpdateTest {
     @HapiTest
     final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
-        return defaultHapiSpec("failsAtIngestForUnAuthorizedTxns")
-                .given(
-                        newKeyNamed("adminKey"),
-                        cryptoCreate("payer").balance(10_000_000_000L),
-                        nodeCreate("ntb")
-                                .adminKey("adminKey")
-                                .description(description)
-                                .fee(ONE_HBAR)
-                                .gossipCaCertificate(
-                                        gossipCertificates.getFirst().getEncoded())
-                                .via("nodeCreation"),
-                        nodeUpdate("ntb")
-                                .payingWith("payer")
-                                .accountId("0.0.1000")
-                                .hasPrecheck(UPDATE_NODE_ACCOUNT_NOT_ALLOWED)
-                                .fee(ONE_HBAR)
-                                .via("updateNode"))
-                .when()
-                .then();
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate("payer").balance(10_000_000_000L),
+                nodeCreate("ntb")
+                        .adminKey("adminKey")
+                        .description(description)
+                        .fee(ONE_HBAR)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .via("nodeCreation"),
+                nodeUpdate("ntb")
+                        .payingWith("payer")
+                        .accountId("0.0.1000")
+                        .hasPrecheck(UPDATE_NODE_ACCOUNT_NOT_ALLOWED)
+                        .fee(ONE_HBAR)
+                        .via("updateNode"));
     }
 
     @LeakyHapiTest(overrides = {"nodes.maxServiceEndpoint"})

@@ -20,7 +20,6 @@ import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
 import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.endpointFor;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -60,13 +59,11 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -97,7 +94,7 @@ public class NodeCreateTest {
     private static List<X509Certificate> gossipCertificates;
 
     @BeforeAll
-    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+    static void beforeAll() {
         gossipCertificates = generateX509Certificates(2);
     }
 
@@ -395,49 +392,43 @@ public class NodeCreateTest {
      */
     @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFees() throws CertificateEncodingException {
-        return defaultHapiSpec("validateFees")
-                .given(
-                        newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
-                        newKeyNamed("testKey"),
-                        newKeyNamed("randomAccount"),
-                        cryptoCreate("payer").balance(10_000_000_000L),
-                        // Submit to a different node so ingest check is skipped
-                        nodeCreate("ntb")
-                                .adminKey(ED_25519_KEY)
-                                .payingWith("payer")
-                                .signedBy("payer")
-                                .setNode("0.0.4")
-                                .gossipCaCertificate(
-                                        gossipCertificates.getFirst().getEncoded())
-                                .hasKnownStatus(UNAUTHORIZED)
-                                .via("nodeCreationFailed"))
-                .when()
-                .then(
-                        getTxnRecord("nodeCreationFailed").logged(),
-                        // Validate that the failed transaction charges the correct fees.
-                        validateChargedUsdWithin("nodeCreationFailed", 0.001, 3),
-                        nodeCreate("ntb")
-                                .adminKey(ED_25519_KEY)
-                                .fee(ONE_HBAR)
-                                .gossipCaCertificate(
-                                        gossipCertificates.getFirst().getEncoded())
-                                .via("nodeCreation"),
-                        getTxnRecord("nodeCreation").logged(),
-                        // But, note that the fee will not be charged for privileged payer
-                        // The fee is charged here because the payer is not privileged
-                        validateChargedUsdWithin("nodeCreation", 0.0, 0.0),
+        return hapiTest(
+                newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
+                newKeyNamed("testKey"),
+                newKeyNamed("randomAccount"),
+                cryptoCreate("payer").balance(10_000_000_000L),
+                // Submit to a different node so ingest check is skipped
+                nodeCreate("ntb")
+                        .adminKey(ED_25519_KEY)
+                        .payingWith("payer")
+                        .signedBy("payer")
+                        .setNode("0.0.4")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .hasKnownStatus(UNAUTHORIZED)
+                        .via("nodeCreationFailed"),
+                getTxnRecord("nodeCreationFailed").logged(),
+                // Validate that the failed transaction charges the correct fees.
+                validateChargedUsdWithin("nodeCreationFailed", 0.001, 3),
+                nodeCreate("ntb")
+                        .adminKey(ED_25519_KEY)
+                        .fee(ONE_HBAR)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .via("nodeCreation"),
+                getTxnRecord("nodeCreation").logged(),
+                // But, note that the fee will not be charged for privileged payer
+                // The fee is charged here because the payer is not privileged
+                validateChargedUsdWithin("nodeCreation", 0.0, 0.0),
 
-                        // Submit with several signatures and the price should increase
-                        nodeCreate("ntb")
-                                .adminKey(ED_25519_KEY)
-                                .payingWith("payer")
-                                .signedBy("payer", "randomAccount", "testKey")
-                                .setNode("0.0.4")
-                                .gossipCaCertificate(
-                                        gossipCertificates.getLast().getEncoded())
-                                .hasKnownStatus(UNAUTHORIZED)
-                                .via("multipleSigsCreation"),
-                        validateChargedUsdWithin("multipleSigsCreation", 0.0011276316, 3.0));
+                // Submit with several signatures and the price should increase
+                nodeCreate("ntb")
+                        .adminKey(ED_25519_KEY)
+                        .payingWith("payer")
+                        .signedBy("payer", "randomAccount", "testKey")
+                        .setNode("0.0.4")
+                        .gossipCaCertificate(gossipCertificates.getLast().getEncoded())
+                        .hasKnownStatus(UNAUTHORIZED)
+                        .via("multipleSigsCreation"),
+                validateChargedUsdWithin("multipleSigsCreation", 0.0011276316, 3.0));
     }
 
     /**
@@ -447,50 +438,44 @@ public class NodeCreateTest {
     @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFeesInsufficientAmount() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
-        return defaultHapiSpec("validateFees")
-                .given(
-                        newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
-                        newKeyNamed("testKey"),
-                        newKeyNamed("randomAccount"),
-                        cryptoCreate("payer").balance(10_000_000_000L),
-                        // Submit to a different node so ingest check is skipped
-                        nodeCreate("ntb")
-                                .adminKey(ED_25519_KEY)
-                                .payingWith("payer")
-                                .signedBy("payer")
-                                .description(description)
-                                .setNode("0.0.4")
-                                .gossipCaCertificate(
-                                        gossipCertificates.getFirst().getEncoded())
-                                .fee(1)
-                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
-                                .via("nodeCreationFailed"))
-                .when()
-                .then(
-                        getTxnRecord("nodeCreationFailed").logged(),
-                        nodeCreate("ntb")
-                                .adminKey(ED_25519_KEY)
-                                .description(description)
-                                .gossipCaCertificate(
-                                        gossipCertificates.getFirst().getEncoded())
-                                .via("nodeCreation"),
-                        getTxnRecord("nodeCreation").logged(),
-                        // But, note that the fee will not be charged for privileged payer
-                        // The fee is charged here because the payer is not privileged
-                        validateChargedUsdWithin("nodeCreation", 0.0, 0.0),
+        return hapiTest(
+                newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
+                newKeyNamed("testKey"),
+                newKeyNamed("randomAccount"),
+                cryptoCreate("payer").balance(10_000_000_000L),
+                // Submit to a different node so ingest check is skipped
+                nodeCreate("ntb")
+                        .adminKey(ED_25519_KEY)
+                        .payingWith("payer")
+                        .signedBy("payer")
+                        .description(description)
+                        .setNode("0.0.4")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .fee(1)
+                        .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                        .via("nodeCreationFailed"),
+                getTxnRecord("nodeCreationFailed").logged(),
+                nodeCreate("ntb")
+                        .adminKey(ED_25519_KEY)
+                        .description(description)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .via("nodeCreation"),
+                getTxnRecord("nodeCreation").logged(),
+                // But, note that the fee will not be charged for privileged payer
+                // The fee is charged here because the payer is not privileged
+                validateChargedUsdWithin("nodeCreation", 0.0, 0.0),
 
-                        // Submit with several signatures and the price should increase
-                        nodeCreate("ntb")
-                                .adminKey(ED_25519_KEY)
-                                .payingWith("payer")
-                                .signedBy("payer", "randomAccount", "testKey")
-                                .description(description)
-                                .setNode("0.0.4")
-                                .gossipCaCertificate(
-                                        gossipCertificates.getLast().getEncoded())
-                                .fee(1)
-                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
-                                .via("multipleSigsCreation"));
+                // Submit with several signatures and the price should increase
+                nodeCreate("ntb")
+                        .adminKey(ED_25519_KEY)
+                        .payingWith("payer")
+                        .signedBy("payer", "randomAccount", "testKey")
+                        .description(description)
+                        .setNode("0.0.4")
+                        .gossipCaCertificate(gossipCertificates.getLast().getEncoded())
+                        .fee(1)
+                        .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                        .via("multipleSigsCreation"));
     }
 
     @HapiTest
