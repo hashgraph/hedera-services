@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.ethereum;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -641,14 +640,12 @@ public class NonceSuite {
     @HapiTest
     final Stream<DynamicTest>
             nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate() {
-        return defaultHapiSpec(
-                        "nonceNotUpdatedWhenOfferedGasPriceIsLessThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, 1L)),
-                        uploadInitCode(INTERNAL_CALLEE_CONTRACT))
-                .when(ethereumContractCreate(INTERNAL_CALLEE_CONTRACT)
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, 1L)),
+                uploadInitCode(INTERNAL_CALLEE_CONTRACT),
+                ethereumContractCreate(INTERNAL_CALLEE_CONTRACT)
                         .type(EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(RELAYER)
@@ -656,14 +653,12 @@ public class NonceSuite {
                         .gasLimit(ENOUGH_GAS_LIMIT)
                         .maxFeePerGas(LOW_GAS_PRICE)
                         .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
-                        .via(TX))
-                .then(
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(accountWith().nonce(0L)),
-                        getTxnRecord(TX)
-                                .hasPriority(recordWith()
-                                        .status(INSUFFICIENT_PAYER_BALANCE)
-                                        .contractCallResult(resultWith().signerNonce(0L))));
+                        .via(TX),
+                getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(0L)),
+                getTxnRecord(TX)
+                        .hasPriority(recordWith()
+                                .status(INSUFFICIENT_PAYER_BALANCE)
+                                .contractCallResult(resultWith().signerNonce(0L))));
     }
 
     @HapiTest
@@ -694,14 +689,12 @@ public class NonceSuite {
     @HapiTest
     final Stream<DynamicTest>
             nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate() {
-        return defaultHapiSpec(
-                        "nonceNotUpdatedWhenOfferedGasPriceIsBiggerThanCurrentAndSenderDoesNotHaveEnoughBalanceHandlerCheckFailedEthContractCreate")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, 1L)),
-                        uploadInitCode(INTERNAL_CALLEE_CONTRACT))
-                .when(ethereumContractCreate(INTERNAL_CALLEE_CONTRACT)
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, 1L)),
+                uploadInitCode(INTERNAL_CALLEE_CONTRACT),
+                ethereumContractCreate(INTERNAL_CALLEE_CONTRACT)
                         .type(EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(RELAYER)
@@ -709,14 +702,12 @@ public class NonceSuite {
                         .gasLimit(ENOUGH_GAS_LIMIT)
                         .maxFeePerGas(ENOUGH_GAS_PRICE)
                         .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
-                        .via(TX))
-                .then(
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(accountWith().nonce(0L)),
-                        getTxnRecord(TX)
-                                .hasPriority(recordWith()
-                                        .status(INSUFFICIENT_PAYER_BALANCE)
-                                        .contractCallResult(resultWith().signerNonce(0L))));
+                        .via(TX),
+                getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(0L)),
+                getTxnRecord(TX)
+                        .hasPriority(recordWith()
+                                .status(INSUFFICIENT_PAYER_BALANCE)
+                                .contractCallResult(resultWith().signerNonce(0L))));
     }
 
     @HapiTest

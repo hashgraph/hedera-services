@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -34,6 +35,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NODE_DETAILS;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -201,16 +203,16 @@ public class ProtectedFilesUpdateSuite {
             final String property,
             final String expected,
             final boolean isFree) {
-        return defaultHapiSpec(specialAccount + "CanUpdate" + specialFile)
-                .given(givenOps(specialAccount, specialFile))
-                .when(fileUpdate(specialFile)
+        return hapiTest(flattened(
+                givenOps(specialAccount, specialFile),
+                fileUpdate(specialFile)
                         .overridingProps(Map.of(property, expected))
-                        .payingWith(specialAccount))
-                .then(validateAndCleanUpOps(
+                        .payingWith(specialAccount),
+                validateAndCleanUpOps(
                         propertyFileValidationOp(specialAccount, specialFile, property, expected),
                         specialAccount,
                         specialFile,
-                        isFree));
+                        isFree)));
     }
 
     private HapiSpecOperation propertyFileValidationOp(
@@ -267,12 +269,11 @@ public class ProtectedFilesUpdateSuite {
     }
 
     private HapiSpecOperation[] givenOps(String account, String fileName) {
-        HapiSpecOperation[] opsArray = {
+        return new HapiSpecOperation[] {
             UtilVerbs.fundAnAccount(account),
             getFileContents(fileName).saveToRegistry(fileName),
             UtilVerbs.balanceSnapshot("preUpdate", account)
         };
-        return opsArray;
     }
 
     private HapiSpecOperation[] validateAndCleanUpOps(
@@ -291,10 +292,9 @@ public class ProtectedFilesUpdateSuite {
 
     final Stream<DynamicTest> unauthorizedAccountCannotUpdateSpecialFile(
             final String specialFile, final String newContents) {
-        return defaultHapiSpec("UnauthorizedAccountCannotUpdate" + specialFile)
-                .given(cryptoCreate("unauthorizedAccount"))
-                .when()
-                .then(fileUpdate(specialFile)
+        return hapiTest(
+                cryptoCreate("unauthorizedAccount"),
+                fileUpdate(specialFile)
                         .contents(newContents)
                         .payingWith("unauthorizedAccount")
                         .hasPrecheck(AUTHORIZATION_FAILED));
