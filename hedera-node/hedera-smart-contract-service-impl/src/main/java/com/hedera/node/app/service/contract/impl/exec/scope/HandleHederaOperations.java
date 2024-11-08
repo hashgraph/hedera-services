@@ -458,7 +458,9 @@ public class HandleHederaOperations implements HederaOperations {
     private ContractCreateTransactionBody standardized(
             final long createdNumber, @NonNull final ContractCreateTransactionBody op) {
         if (needsStandardization(op)) {
-            Key newAdminKey = null;
+            Key newAdminKey = op.adminKey();
+            // If the admin key is not set, we set it to the contract itself for externalization
+            // Typically, the op will not have an adminkey if the transaction's HederaFunctionality is ETHEREUM_TRANSACTION
             if (!op.hasAdminKey()) {
                 newAdminKey = Key.newBuilder()
                         .contractID(ContractID.newBuilder()
