@@ -40,6 +40,7 @@ import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.FCMFamily;
@@ -250,6 +251,9 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             @NonNull final MerkleStateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
+
+        logger.info(LOGM_DEMO_INFO, "PlatformTestingToolState constructor, immutable: {}", isImmutable());
+
         // don't need it but keep for a while
         // allocateSpaceForChild(ChildIndices.CHILD_COUNT);
 
@@ -260,6 +264,8 @@ public class PlatformTestingToolState extends MerkleStateRoot {
 
     protected PlatformTestingToolState(final PlatformTestingToolState sourceState) {
         super(sourceState);
+
+        logger.info(LOGM_DEMO_INFO, "PlatformTestingToolState constructor COPY, immutable: {}", isImmutable());
 
         this.initialized.set(sourceState.initialized.get());
         this.platform = sourceState.platform;
@@ -656,6 +662,12 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      */
     @Override
     public synchronized PlatformTestingToolState copy() {
+        logger.info(
+                LOGM_DEMO_INFO,
+                "PlatformTestingToolState copy method, immutable: {}, StackTrace: {}",
+                isImmutable(),
+                StackTrace.getStackTrace());
+
         throwIfImmutable();
         //        setImmutable(true);
         roundCounter++;

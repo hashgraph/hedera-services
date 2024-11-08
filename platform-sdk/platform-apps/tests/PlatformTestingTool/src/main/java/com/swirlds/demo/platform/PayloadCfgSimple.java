@@ -22,6 +22,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.utility.StackTrace;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -391,7 +392,11 @@ public class PayloadCfgSimple extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public PayloadCfgSimple copy() {
-        logger.info(LOGM_DEMO_INFO, "PayloadCfgSimple copy method, immutable: {}", isImmutable());
+        logger.info(
+                LOGM_DEMO_INFO,
+                "PayloadCfgSimple copy method, immutable: {}, StackTrace: {}",
+                isImmutable(),
+                StackTrace.getStackTrace());
         throwIfImmutable();
         return new PayloadCfgSimple(this);
     }
