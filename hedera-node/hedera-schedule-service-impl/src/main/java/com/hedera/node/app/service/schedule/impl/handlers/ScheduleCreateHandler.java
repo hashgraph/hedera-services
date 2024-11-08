@@ -248,7 +248,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         } else {
             lifetimeSecs = scheduledTxExpiryTimeSecs;
         }
-        return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs, functionality);
+        return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs);
     }
 
     private static HederaFunctionality getHederaFunctionality(SchedulableTransactionBody body) {

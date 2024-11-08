@@ -27,11 +27,13 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorage
 import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
 import com.hedera.node.app.hapi.fees.usage.QueryUsage;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -68,13 +70,7 @@ public class ScheduleOpsUsage {
         return estimate.get();
     }
 
-    public FeeData scheduleCreateUsage(
-            TransactionBody scheduleCreate,
-            SigUsage sigUsage,
-            long lifetimeSecs,
-            HederaFunctionality
-                    functionality) { // TODO: instead of passing maybe get it from the scheduleCreate directly here
-
+    public FeeData scheduleCreateUsage(TransactionBody scheduleCreate, SigUsage sigUsage, long lifetimeSecs) {
         var op = scheduleCreate.getScheduleCreate();
 
         var scheduledTxn = op.getScheduledTransactionBody();
@@ -98,6 +94,7 @@ public class ScheduleOpsUsage {
         }
 
         // TODO: what usages should be multiplied. All?
+        HederaFunctionality functionality = getHederaFunctionality(scheduleCreate);
         final var multiplier = getScheduleMultiplier(functionality);
 
         var estimate = txnEstimateFactory.get(sigUsage, scheduleCreate, ESTIMATOR_UTILS);
@@ -114,6 +111,17 @@ public class ScheduleOpsUsage {
         }
 
         return estimate.get();
+    }
+
+    private static HederaFunctionality getHederaFunctionality(TransactionBody scheduleCreate) {
+        var pbj = CommonPbjConverters.toPbj(scheduleCreate);
+        SchedulableTransactionBody body = pbj.scheduleCreate().scheduledTransactionBody();
+
+        // TODO: probably there is a better way to get that.
+        final var name = body.data().kind().protoName();
+        String nameFirstLetterUppercase = name.substring(0, 1).toUpperCase() + name.substring(1);
+
+        return HederaFunctionality.valueOf(nameFirstLetterUppercase);
     }
 
     private static double getScheduleMultiplier(HederaFunctionality functionality) {
