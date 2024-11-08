@@ -89,6 +89,14 @@ public interface MigrationContext {
     SemanticVersion previousVersion();
 
     /**
+     * Returns true if there was no previous version (i.e., the network is at genesis).
+     * @return true if this is genesis restart
+     */
+    default boolean isGenesis() {
+        return previousVersion() == null;
+    }
+
+    /**
      * Returns a mutable "scratchpad" that can be used to share values between different services
      * during a migration.
      *

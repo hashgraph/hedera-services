@@ -59,6 +59,7 @@ public class WorkingDirUtils {
     public static final String GENESIS_PROPERTIES = "genesis.properties";
     public static final String ERROR_REDIRECT_FILE = "test-clients.log";
     public static final String STATE_METADATA_FILE = "stateMetadata.txt";
+    public static final String NODE_ADMIN_KEYS_JSON = "node-admin-keys.json";
     public static final String APPLICATION_PROPERTIES = "application.properties";
 
     private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER, UPGRADE_DIR);
@@ -258,7 +259,8 @@ public class WorkingDirUtils {
     private static void copyBootstrapAssets(@NonNull final Path assetDir, @NonNull final Path workingDir) {
         try (final var files = Files.walk(assetDir)) {
             files.filter(file -> !file.equals(assetDir)).forEach(file -> {
-                if (file.getFileName().toString().endsWith(".properties")) {
+                final var name = file.getFileName().toString();
+                if (name.endsWith(".properties") || name.endsWith(".json")) {
                     copyUnchecked(
                             file,
                             workingDir
