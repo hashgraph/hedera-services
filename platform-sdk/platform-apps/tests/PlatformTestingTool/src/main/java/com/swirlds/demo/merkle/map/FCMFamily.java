@@ -133,7 +133,7 @@ public class FCMFamily extends PartialNaryMerkleInternal implements MerkleIntern
      */
     @Override
     public FCMFamily copy() {
-        throwIfImmutable(); // double check if this line needs to be removed
+        // throwIfImmutable(); // double check if this line needs to be removed
         throwIfDestroyed();
 
         return new FCMFamily(this);
