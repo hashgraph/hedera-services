@@ -85,7 +85,7 @@ import "transaction.proto";
  * ### For a node update transaction.
  * - The node operator SHALL create an `updateNode` transaction.
  *    - The node operator MUST sign this transaction with the active `key`
- *      for the account assigned as the current "node account".
+ *      assigned as the `admin_key`.
  *    - The node operator SHALL submit the transaction to the
  *      network.  Hedera council approval SHALL NOT be sought for this
  *      transaction
