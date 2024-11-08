@@ -18,10 +18,12 @@ package com.hedera.node.app.info;
 
 import static com.hedera.node.app.info.NodeInfoImpl.fromRosterEntry;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
-import static com.swirlds.platform.roster.RosterRetriever.retrieve;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
@@ -36,6 +38,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides information about the network, including the ledger ID, which may be
@@ -44,18 +48,24 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StateNetworkInfo implements NetworkInfo {
+    private static final Logger log = LogManager.getLogger(StateNetworkInfo.class);
     private final Bytes ledgerId;
     private final Map<Long, NodeInfo> nodeInfos;
     private final long selfId;
+    private final Roster activeRoster;
 
     public StateNetworkInfo(
-            @NonNull final State state, final long selfId, @NonNull final ConfigProvider configProvider) {
+            @NonNull final State state,
+            final long selfId,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final Roster activeRoster) {
         this.selfId = selfId;
         this.nodeInfos = buildNodeInfoMap(state);
         // Load the ledger ID from configuration
-        final var config = configProvider.getConfiguration();
+        final var config = requireNonNull(configProvider.getConfiguration());
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         ledgerId = ledgerConfig.id();
+        this.activeRoster = requireNonNull(activeRoster);
     }
 
     @NonNull
@@ -103,14 +113,23 @@ public class StateNetworkInfo implements NetworkInfo {
      */
     private Map<Long, NodeInfo> buildNodeInfoMap(final State state) {
         final var nodeInfos = new LinkedHashMap<Long, NodeInfo>();
-        final var rosterEntries = retrieve(state).rosterEntries();
+        // Add all nodeInfo from activeRoster
         final ReadableKVState<EntityNumber, Node> nodeState =
                 state.getReadableStates(AddressBookService.NAME).get(NODES_KEY);
-        for (final var rosterEntry : rosterEntries) {
+        for (final var rosterEntry : requireNonNull(activeRoster).rosterEntries()) {
             final var node = nodeState.get(
                     EntityNumber.newBuilder().number(rosterEntry.nodeId()).build());
             if (node != null) {
                 nodeInfos.put(rosterEntry.nodeId(), fromRosterEntry(rosterEntry, node));
+            } else {
+                nodeInfos.put(
+                        rosterEntry.nodeId(),
+                        fromRosterEntry(
+                                rosterEntry,
+                                AccountID.newBuilder()
+                                        .accountNum(rosterEntry.nodeId() + 3)
+                                        .build()));
+                log.warn("Node {} not found in node store", rosterEntry.nodeId());
             }
         }
         return nodeInfos;

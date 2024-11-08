@@ -955,7 +955,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .consensusSnapshotOrThrow()
                 .round();
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
-        final var networkInfo = new StateNetworkInfo(state, platform.getSelfId().id(), configProvider);
+        final var activeRoster = createRoster(platform.getAddressBook());
+        final var networkInfo = new StateNetworkInfo(state, platform.getSelfId().id(), configProvider, activeRoster);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
