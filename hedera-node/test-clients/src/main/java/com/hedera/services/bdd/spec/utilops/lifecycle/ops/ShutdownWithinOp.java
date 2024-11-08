@@ -24,6 +24,7 @@ import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.concurrent.CompletionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,7 +44,12 @@ public class ShutdownWithinOp extends AbstractLifecycleOp {
     @Override
     protected void run(@NonNull final HederaNode node) {
         log.info("Waiting for '{}' to stop", node.getName());
-        node.stopFuture().orTimeout(timeout.toMillis(), MILLISECONDS).join();
+        try {
+            node.stopFuture().orTimeout(timeout.toMillis(), MILLISECONDS).join();
+        } catch (CompletionException e) {
+            node.dumpThreads();
+            throw new IllegalStateException("Failed to stop '" + node.getName() + "'", e);
+        }
         log.info("Stopped node '{}'", node.getName());
     }
 }

@@ -40,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Synthe
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -60,6 +61,9 @@ class HasCallFactoryTest extends CallTestBase {
 
     @Mock
     private VerificationStrategies verificationStrategies;
+
+    @Mock
+    private SignatureVerifier signatureVerifier;
 
     @Mock
     private AddressIdConverter idConverter;
@@ -83,7 +87,11 @@ class HasCallFactoryTest extends CallTestBase {
     @BeforeEach
     void setUp() {
         subject = new HasCallFactory(
-                syntheticIds, addressChecks, verificationStrategies, List.of(new HbarAllowanceTranslator()));
+                syntheticIds,
+                addressChecks,
+                verificationStrategies,
+                signatureVerifier,
+                List.of(new HbarAllowanceTranslator()));
     }
 
     @Test

@@ -33,9 +33,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashMap;
@@ -50,11 +50,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StateNetworkInfo implements NetworkInfo {
-    private final Bytes ledgerId;
-    private final Map<Long, NodeInfo> nodeInfos;
     private final long selfId;
-    private final ConfigProvider configProvider;
+    private final Bytes ledgerId;
     private Roster activeRoster;
+    private final ConfigProvider configProvider;
+    private final Map<Long, NodeInfo> nodeInfos;
 
     /**
      * Constructs a new network information provider from the given state, roster, selfID, and configuration provider.
