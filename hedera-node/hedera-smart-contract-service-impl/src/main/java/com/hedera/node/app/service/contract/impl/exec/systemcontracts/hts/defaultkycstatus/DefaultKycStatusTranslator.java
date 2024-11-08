@@ -26,11 +26,17 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
+/**
+ * Translates {@code getTokenDefaultKycStatus()} calls to the HTS system contract.
+ */
 public class DefaultKycStatusTranslator extends AbstractCallTranslator<HtsCallAttempt> {
-
+    /** Selector for getTokenDefaultKycStatus(address) method. */
     public static final Function DEFAULT_KYC_STATUS =
             new Function("getTokenDefaultKycStatus(address)", ReturnTypes.RESPONSE_CODE_BOOL);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public DefaultKycStatusTranslator() {
         // Dagger2
