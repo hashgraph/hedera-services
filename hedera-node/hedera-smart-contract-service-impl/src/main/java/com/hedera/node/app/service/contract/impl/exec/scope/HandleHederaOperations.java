@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -457,9 +458,17 @@ public class HandleHederaOperations implements HederaOperations {
     private ContractCreateTransactionBody standardized(
             final long createdNumber, @NonNull final ContractCreateTransactionBody op) {
         if (needsStandardization(op)) {
+            Key newAdminKey = null;
+            if (!op.hasAdminKey()) {
+                newAdminKey = Key.newBuilder()
+                        .contractID(ContractID.newBuilder()
+                                .contractNum(createdNumber)
+                                .build())
+                        .build();
+            }
             return new ContractCreateTransactionBody(
                     com.hedera.hapi.node.contract.codec.ContractCreateTransactionBodyProtoCodec.INITCODE_SOURCE_UNSET,
-                    op.adminKey(),
+                    newAdminKey,
                     0L,
                     0L,
                     op.proxyAccountID(),
