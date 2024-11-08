@@ -252,10 +252,11 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
 
-        logger.info(LOGM_DEMO_INFO, "PlatformTestingToolState constructor, immutable: {}", isImmutable());
-
-        // don't need it but keep for a while
-        // allocateSpaceForChild(ChildIndices.CHILD_COUNT);
+        logger.info(
+                LOGM_DEMO_INFO,
+                "PlatformTestingToolState.<init>, immutable: {}, StackTrace: {}",
+                isImmutable(),
+                StackTrace.getStackTrace());
 
         expectedFCMFamily = new ExpectedFCMFamilyImpl();
 
@@ -265,7 +266,11 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     protected PlatformTestingToolState(final PlatformTestingToolState sourceState) {
         super(sourceState);
 
-        logger.info(LOGM_DEMO_INFO, "PlatformTestingToolState constructor COPY, immutable: {}", isImmutable());
+        logger.info(
+                LOGM_DEMO_INFO,
+                "PlatformTestingToolState.<init>(COPY), immutable: {}, StackTrace: {}",
+                isImmutable(),
+                StackTrace.getStackTrace());
 
         this.initialized.set(sourceState.initialized.get());
         this.platform = sourceState.platform;
@@ -445,9 +450,10 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     public boolean childHasExpectedType(final int index, final long childClassId) {
         logger.info(
                 DEMO_INFO.getMarker(),
-                "Checking if childHasExpectedType for index: {} and childClassId: {} ",
+                "Checking if childHasExpectedType for index: {}, childClassId: {}, StackTrace: {}",
                 index,
-                childClassId);
+                childClassId,
+                StackTrace.getStackTrace());
 
         switch (index) {
             case ChildIndices.UNUSED:
@@ -664,7 +670,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     public synchronized PlatformTestingToolState copy() {
         logger.info(
                 LOGM_DEMO_INFO,
-                "PlatformTestingToolState copy method, immutable: {}, StackTrace: {}",
+                "PlatformTestingToolState.copy() immutable: {}, StackTrace: {}",
                 isImmutable(),
                 StackTrace.getStackTrace());
 
