@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
-import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
@@ -72,6 +71,9 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.ServiceApiFactory;
+import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
@@ -138,6 +140,7 @@ public class HandleWorkflow {
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
     private final ConfigProvider configProvider;
+    private final ScheduleService scheduleService;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -163,7 +166,8 @@ public class HandleWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
-            @NonNull final UserTxnFactory userTxnFactory) {
+            @NonNull final UserTxnFactory userTxnFactory,
+            @NonNull final ScheduleService scheduleService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -188,6 +192,7 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.scheduleService = requireNonNull(scheduleService);
     }
 
     /**
@@ -592,48 +597,54 @@ public class HandleWorkflow {
             final var scheduleConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
             if (scheduleConfig.longTermEnabled()) {
                 // try to execute expired
-                final var schedules = scheduleStore.getByExpirationBetween(startSecond, endSecond);
-                for (int i = 0; i < schedules.size(); i++) {
+                final var readableStoreFactory = new ReadableStoreFactory(userTxn.stack());
+                final var writableStoreFactory = new WritableStoreFactory(
+                        userTxn.stack(), scheduleService.getServiceName(), userTxn.config(), storeMetricsService);
+                final var serviceApiFactory =
+                        new ServiceApiFactory(userTxn.stack(), userTxn.config(), storeMetricsService);
+                final var storeFactory =
+                        new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
+                final var scheduleIterator = scheduleService.iterTxnsForInterval(
+                        lastProcessTime, userTxn.consensusNow(), () -> storeFactory);
+                // todo
+                var consensusNanosOffset = 1;
+                while (scheduleIterator.hasNext()) {
                     // get schedule
-                    final var schedule = schedules.get(i);
+                    final var schedule = scheduleIterator.next();
                     // update schedule consensus
                     final var scheduleConsensus =
-                            Instant.from(userTxn.consensusNow().plusNanos(i + 1));
-                    if (schedule.waitForExpiry()) {
-                        final var txnBody = childAsOrdinary(schedule);
-                        final var scheduleUserTnx = userTxnFactory.createUserTxn(
-                                userTxn.state(),
-                                userTxn.event(),
-                                userTxn.creatorInfo(),
-                                scheduleConsensus,
-                                userTxn.type(),
-                                schedule.payerAccountId(),
-                                txnBody);
-                        final var baseBuilder = initializeBuilderInfo(
-                                scheduleUserTnx.baseBuilder(),
-                                scheduleUserTnx.txnInfo(),
-                                exchangeRateManager.exchangeRates());
-                        ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
-                        final var signatures = schedule.signatories();
-                        final var scheduleDispatch = userTxnFactory.createDispatch(
-                                scheduleUserTnx, baseBuilder, signatures::contains, SCHEDULED);
-                        dispatchProcessor.processDispatch(scheduleDispatch);
-                        // add record to the record cache
-                        final var handleOutput = scheduleUserTnx
-                                .stack()
-                                .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
-                        recordCache.addRecordSource(
-                                scheduleUserTnx.creatorInfo().nodeId(),
-                                scheduleUserTnx.txnInfo().transactionID(),
-                                DueDiligenceFailure.NO,
-                                handleOutput.preferringBlockRecordSource());
-                    }
+                            Instant.from(userTxn.consensusNow().plusNanos(consensusNanosOffset));
+                    final var txnBody = schedule.body();
+                    final var scheduleUserTnx = userTxnFactory.createUserTxn(
+                            userTxn.state(),
+                            userTxn.event(),
+                            userTxn.creatorInfo(),
+                            scheduleConsensus,
+                            userTxn.type(),
+                            schedule.payerId(),
+                            txnBody);
+                    final var baseBuilder = initializeBuilderInfo(
+                            scheduleUserTnx.baseBuilder(),
+                            scheduleUserTnx.txnInfo(),
+                            exchangeRateManager.exchangeRates());
+                    ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
+                    final var scheduleDispatch = userTxnFactory.createDispatch(
+                            scheduleUserTnx, baseBuilder, schedule.verificationAssistant(), SCHEDULED);
+                    dispatchProcessor.processDispatch(scheduleDispatch);
+                    // add record to the record cache
+                    final var handleOutput = scheduleUserTnx
+                            .stack()
+                            .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
+                    recordCache.addRecordSource(
+                            scheduleUserTnx.creatorInfo().nodeId(),
+                            scheduleUserTnx.txnInfo().transactionID(),
+                            DueDiligenceFailure.NO,
+                            handleOutput.preferringBlockRecordSource());
+
+                    scheduleIterator.remove();
+                    consensusNanosOffset++;
                 }
             }
-
-            // purge expired
-            scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
-            userTxn.stack().commitSystemStateChanges();
             return true;
         }
         return false;

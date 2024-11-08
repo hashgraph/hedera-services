@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.schedule;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.RpcServiceFactory;
@@ -76,6 +77,7 @@ public interface ScheduleService extends RpcService {
             TransactionBody body,
             VerificationAssistant verificationAssistant,
             AccountID payerId,
+            ScheduleID scheduleId,
             @Nullable Instant nbf) {}
 
     /**

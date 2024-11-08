@@ -35,14 +35,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
-// Enable when long term scheduling is enabled
-@Disabled
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @HapiTestLifecycle
 public class DisabledLongTermExecutionScheduleTest {

@@ -404,6 +404,11 @@ public class ChildDispatchFactory {
      */
     public static AppKeyVerifier getKeyVerifier(
             @Nullable final Predicate<Key> callback, @NonNull final Configuration config) {
+        return callback == null ? NO_OP_KEY_VERIFIER : getKeyVerifierWithAssistant((k, v) -> callback.test(k), config);
+    }
+
+    public static AppKeyVerifier getKeyVerifierWithAssistant(
+            @Nullable final VerificationAssistant callback, @NonNull final Configuration config) {
         return callback == null
                 ? NO_OP_KEY_VERIFIER
                 : new AppKeyVerifier() {
@@ -415,7 +420,7 @@ public class ChildDispatchFactory {
                     public SignatureVerification verificationFor(@NonNull final Key key) {
                         // Within the child HandleContext, a key structure has a valid signature ONLY if
                         // the given callback returns true for enough primitive keys in the structure
-                        return verifier.verificationFor(key, (k, v) -> callback.test(k));
+                        return verifier.verificationFor(key, callback);
                     }
 
                     @NonNull

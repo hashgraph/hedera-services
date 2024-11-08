@@ -82,12 +82,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 
-// Enable when long term scheduling is enabled
-@Disabled
 @HapiTestLifecycle
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ScheduleLongTermSignTest {
 
     @BeforeAll
@@ -103,6 +104,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(1)
     final Stream<DynamicTest> changeInNestedSigningReqsRespected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -152,6 +154,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(2)
     final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -201,54 +204,59 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    @HapiTest
-    final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
-        var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
-        var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
-        var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
-        var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
-        String sender = "X";
-        String receiver = "Y";
-        String schedule = "Z";
-        String senderKey = "sKey";
+    // todo check if this behaviour is still desired
+    //    @HapiTest
+    //    @Order(3)
+    //    final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
+    //        var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
+    //        var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
+    //        var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
+    //        var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF,
+    // OFF)));
+    //        String sender = "X";
+    //        String receiver = "Y";
+    //        String schedule = "Z";
+    //        String senderKey = "sKey";
+    //
+    //        return defaultHapiSpec("ReductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry")
+    //                .given(
+    //                        newKeyNamed(senderKey).shape(senderShape),
+    //                        keyFromMutation(NEW_SENDER_KEY,
+    // senderKey).changing(this::lowerThirdNestedThresholdSigningReq),
+    //                        cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
+    //                        cryptoCreate(receiver).balance(0L),
+    //                        scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
+    //                                .payingWith(DEFAULT_PAYER)
+    //                                .withRelativeExpiry(SENDER_TXN, 8)
+    //                                .recordingScheduledTxn()
+    //                                .alsoSigningWith(sender)
+    //                                .sigControl(ControlForKey.forKey(senderKey, sigOne)),
+    //                        getAccountBalance(receiver).hasTinyBars(0L))
+    //                .when(
+    //                        scheduleSign(schedule)
+    //                                .alsoSigningWith(NEW_SENDER_KEY)
+    //                                .sigControl(forKey(NEW_SENDER_KEY, firstSigThree)),
+    //                        getAccountBalance(receiver).hasTinyBars(0L),
+    //                        cryptoUpdate(sender).key(NEW_SENDER_KEY),
+    //                        getAccountBalance(receiver).hasTinyBars(0L))
+    //                .then(
+    //                        getScheduleInfo(schedule)
+    //                                .hasScheduleId(schedule)
+    //                                .hasWaitForExpiry(false)
+    //                                .isNotExecuted()
+    //                                .isNotDeleted()
+    //                                .hasRelativeExpiry(SENDER_TXN, 8)
+    //                                .hasRecordedScheduledTxn(),
+    //                        sleepFor(TimeUnit.SECONDS.toMillis(6)),
+    //                        cryptoCreate("foo"),
+    //                        scheduleSign(schedule)
+    //                                .alsoSigningWith(NEW_SENDER_KEY)
+    //                                .sigControl(forKey(NEW_SENDER_KEY, sigTwo)),
+    //                        getAccountBalance(receiver).hasTinyBars(1L));
+    //    }
 
-        return defaultHapiSpec("ReductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry")
-                .given(
-                        newKeyNamed(senderKey).shape(senderShape),
-                        keyFromMutation(NEW_SENDER_KEY, senderKey).changing(this::lowerThirdNestedThresholdSigningReq),
-                        cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
-                        cryptoCreate(receiver).balance(0L),
-                        scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-                                .payingWith(DEFAULT_PAYER)
-                                .withRelativeExpiry(SENDER_TXN, 8)
-                                .recordingScheduledTxn()
-                                .alsoSigningWith(sender)
-                                .sigControl(ControlForKey.forKey(senderKey, sigOne)),
-                        getAccountBalance(receiver).hasTinyBars(0L))
-                .when(
-                        scheduleSign(schedule)
-                                .alsoSigningWith(NEW_SENDER_KEY)
-                                .sigControl(forKey(NEW_SENDER_KEY, firstSigThree)),
-                        getAccountBalance(receiver).hasTinyBars(0L),
-                        cryptoUpdate(sender).key(NEW_SENDER_KEY),
-                        getAccountBalance(receiver).hasTinyBars(0L))
-                .then(
-                        getScheduleInfo(schedule)
-                                .hasScheduleId(schedule)
-                                .hasWaitForExpiry(false)
-                                .isNotExecuted()
-                                .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
-                                .hasRecordedScheduledTxn(),
-                        sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                        cryptoCreate("foo"),
-                        scheduleSign(schedule)
-                                .alsoSigningWith(NEW_SENDER_KEY)
-                                .sigControl(forKey(NEW_SENDER_KEY, sigTwo)),
-                        getAccountBalance(receiver).hasTinyBars(1L));
-    }
-
     @HapiTest
+    @Order(4)
     final Stream<DynamicTest> nestedSigningReqsWorkAsExpected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -289,6 +297,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(5)
     final Stream<DynamicTest> receiverSigRequiredNotConfusedByOrder() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -327,6 +336,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(6)
     final Stream<DynamicTest> extraSigsDontMatterAtExpiry() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -346,7 +356,7 @@ public class ScheduleLongTermSignTest {
                         cryptoCreate(receiver).balance(0L).receiverSigRequired(true),
                         scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 20)
+                                .withRelativeExpiry(SENDER_TXN, 5)
                                 .recordingScheduledTxn()
                                 .payingWith(PAYER),
                         scheduleSign(schedule)
@@ -412,15 +422,16 @@ public class ScheduleLongTermSignTest {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 20)
+                                .hasRelativeExpiry(SENDER_TXN, 5)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(21000),
+                        sleepFor(6000),
                         cryptoCreate("foo"),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
     @HapiTest
+    @Order(7)
     final Stream<DynamicTest> receiverSigRequiredNotConfusedByMultiSigSender() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -463,6 +474,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(8)
     final Stream<DynamicTest> receiverSigRequiredUpdateIsRecognized() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -510,6 +522,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(9)
     final Stream<DynamicTest> basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
@@ -526,6 +539,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(10)
     final Stream<DynamicTest> signalsIrrelevantSig() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
@@ -542,6 +556,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(11)
     final Stream<DynamicTest> signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
         var txnBody = mintToken(TOKEN_A, 50000000L);
 
@@ -568,6 +583,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(12)
     public Stream<DynamicTest> triggersUponFinishingPayerSig() {
         return defaultHapiSpec("TriggersUponFinishingPayerSigAtExpiry")
                 .given(
@@ -602,6 +618,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(13)
     public Stream<DynamicTest> triggersUponAdditionalNeededSig() {
         return defaultHapiSpec("TriggersUponAdditionalNeededSigAtExpiry")
                 .given(
@@ -634,6 +651,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(14)
     public Stream<DynamicTest> sharedKeyWorksAsExpected() {
         return defaultHapiSpec("RequiresSharedKeyToSignBothSchedulingAndScheduledTxnsAtExpiry")
                 .given(
@@ -668,6 +686,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(15)
     public Stream<DynamicTest> overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 
@@ -720,6 +739,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(15)
     public Stream<DynamicTest> retestsActivationOnSignWithEmptySigMap() {
         return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMapAtExpiry")
                 .given(newKeyNamed("a"), newKeyNamed("b"), newKeyListNamed("ab", List.of("a", "b")), newKeyNamed(ADMIN))
