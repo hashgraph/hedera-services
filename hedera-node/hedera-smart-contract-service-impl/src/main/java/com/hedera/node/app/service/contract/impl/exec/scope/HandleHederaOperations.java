@@ -25,7 +25,7 @@ import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synt
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationForExternalization;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.SUPPRESSING_TRANSACTION_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
@@ -53,7 +53,7 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -390,7 +390,7 @@ public class HandleHederaOperations implements HederaOperations {
                 null,
                 context.payer(),
                 isTopLevelCreation
-                        ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
+                        ? SUPPRESSING_TRANSACTION_CUSTOMIZER
                         : contractBodyCustomizerFor(number, bodyToExternalize),
                 HandleContext.ConsensusThrottling.OFF);
         if (recordBuilder.status() != SUCCESS) {
@@ -422,7 +422,7 @@ public class HandleHederaOperations implements HederaOperations {
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
     }
 
-    private ExternalizedRecordCustomizer contractBodyCustomizerFor(
+    private StreamBuilder.TransactionCustomizer contractBodyCustomizerFor(
             final long createdNumber, @NonNull final ContractCreateTransactionBody op) {
         return transaction -> {
             try {

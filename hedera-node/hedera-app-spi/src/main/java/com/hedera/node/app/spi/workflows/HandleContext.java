@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -33,7 +31,6 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -252,61 +249,6 @@ public interface HandleContext {
             @NonNull ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel);
 
     /**
-     * Dispatches an independent (top-level) transaction, that precedes the current transaction.
-     *
-     * <p>A top-level transaction is independent of any other transaction. If it is successful, the state changes are
-     * automatically committed. If it fails, any eventual state changes are automatically rolled back.
-     *
-     * <p>This method can only be called my a {@link TransactionCategory#USER}-transaction and only as long as no state
-     * changes have been introduced by the user transaction (either by storing state or by calling a child
-     * transaction).
-     *
-     * <p>If non-null, the provided {@link Predicate} callback will be called to enforce signing requirements; or to
-     * verify simple keys when the child transaction calls any of the {@code verificationFor} methods. If the callback
-     * is null, no signing requirements will be enforced.
-     *
-     * @param txBody             the {@link TransactionBody} of the transaction to dispatch
-     * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier           if signing requirements should be enforced, a {@link Predicate} that will be used to validate primitive keys
-     * @param syntheticPayer    the payer of the transaction
-     * @return the record builder of the transaction
-     * @throws NullPointerException     if {@code txBody} is {@code null}
-     * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
-     *                                  the record builder type is unknown to the app
-     * @throws IllegalStateException    if the current transaction has already introduced state changes
-     * @throws HandleException if the base builder for the dispatch cannot be created
-     */
-    @NonNull
-    <T> T dispatchPrecedingTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @Nullable Predicate<Key> verifier,
-            @NonNull AccountID syntheticPayer);
-
-    /**
-     * Dispatches a preceding transaction that already has an ID.
-     *
-     * @param txBody            the {@link TransactionBody} of the transaction to dispatch
-     * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier         a {@link Predicate} that will be used to validate primitive keys
-     * @return the record builder of the transaction
-     * @param <T> the record type
-     * @throws IllegalArgumentException if the transaction body did not have an id
-     */
-    // Only used in tests
-    default <T> T dispatchPrecedingTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> verifier) {
-        throwIfMissingPayerId(txBody);
-        return dispatchPrecedingTransaction(
-                txBody,
-                recordBuilderClass,
-                verifier,
-                txBody.transactionIDOrThrow().accountIDOrThrow());
-    }
-
-    /**
      * Dispatches preceding transaction that can be removed.
      *
      * <p>A removable preceding transaction depends on the current transaction. That means if the user transaction
@@ -380,33 +322,6 @@ public interface HandleContext {
             @NonNull ConsensusThrottling consensusThrottling);
 
     /**
-     * Dispatches a child transaction that already has a transaction ID due to
-     * its construction in the schedule service.
-     *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
-     * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback a {@link Predicate} callback function that will observe each primitive key
-     * @return the record builder of the child transaction
-     * @param <T> the record type
-     * @throws IllegalArgumentException if the transaction body did not have an id
-     * @throws HandleException if the base builder for the dispatch cannot be created
-     */
-    @NonNull
-    default <T> T dispatchScheduledChildTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback) {
-        throwIfMissingPayerId(txBody);
-        return dispatchChildTransaction(
-                txBody,
-                recordBuilderClass,
-                callback,
-                txBody.transactionIDOrThrow().accountIDOrThrow(),
-                SCHEDULED,
-                ConsensusThrottling.ON);
-    }
-
-    /**
      * Dispatches a removable child transaction.
      *
      * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
@@ -436,8 +351,16 @@ public interface HandleContext {
             @NonNull Class<T> recordBuilderClass,
             @Nullable Predicate<Key> callback,
             @NonNull AccountID syntheticPayerId,
-            @NonNull ExternalizedRecordCustomizer customizer,
+            @NonNull StreamBuilder.TransactionCustomizer customizer,
             @NonNull ConsensusThrottling consensusThrottling);
+
+    /**
+     * Dispatches a child transaction with the given options.
+     * @param options the options to use
+     * @return the stream builder of the child transaction
+     * @param <T> the type of the stream builder
+     */
+    <T extends StreamBuilder> T dispatch(@NonNull DispatchOptions<T> options);
 
     /**
      * Returns the current {@link SavepointStack}.

@@ -19,8 +19,8 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -187,12 +187,12 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
                         any(AccountID.class),
                         any(TransactionCategory.class),
                         any()))
-                .willReturn(new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER));
+                .willReturn(new RecordStreamBuilder(REVERSIBLE, NOOP_TRANSACTION_CUSTOMIZER, USER));
 
         final var mockStack = mock(HandleContext.SavepointStack.class);
         given(mockContext.savepointStack()).willReturn(mockStack);
         given(mockStack.getBaseBuilder(ScheduleStreamBuilder.class))
-                .willReturn(new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER));
+                .willReturn(new RecordStreamBuilder(REVERSIBLE, NOOP_TRANSACTION_CUSTOMIZER, USER));
     }
 
     private static TransactionKeys createChildKeys(

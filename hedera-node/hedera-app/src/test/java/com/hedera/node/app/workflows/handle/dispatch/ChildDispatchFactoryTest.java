@@ -51,7 +51,6 @@ import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -159,7 +158,7 @@ class ChildDispatchFactoryTest {
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
 
     private final Predicate<Key> callback = key -> true;
-    private final ExternalizedRecordCustomizer customizer = recordBuilder -> recordBuilder;
+    private final StreamBuilder.TransactionCustomizer customizer = recordBuilder -> recordBuilder;
     private final RecordStreamBuilder.ReversingBehavior reversingBehavior = StreamBuilder.ReversingBehavior.REMOVABLE;
 
     @BeforeEach

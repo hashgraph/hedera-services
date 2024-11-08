@@ -54,7 +54,6 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.config.ConfigProvider;
@@ -217,7 +216,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         eq(CryptoCreateStreamBuilder.class),
                         any(Predicate.class),
                         eq(payerId),
-                        any(ExternalizedRecordCustomizer.class),
+                        any(StreamBuilder.TransactionCustomizer.class),
                         any()))
                 .willReturn(cryptoCreateRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
@@ -307,7 +306,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         eq(TokenAirdropStreamBuilder.class),
                         any(Predicate.class),
                         eq(payerId),
-                        any(ExternalizedRecordCustomizer.class),
+                        any(StreamBuilder.TransactionCustomizer.class),
                         any()))
                 .willReturn(tokenAirdropRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1L, 2L, 3L));

@@ -33,6 +33,7 @@ import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -166,11 +167,9 @@ public class HollowAccountCompletions {
                                 .key(verification.key())
                                 .build())
                         .build();
-                // Note the null key verification callback below; we bypass signature
-                // verifications when doing hollow account finalization
-                final var recordBuilder = context.dispatchPrecedingTransaction(
-                        syntheticUpdateTxn, CryptoUpdateStreamBuilder.class, null, context.payer());
-                recordBuilder.accountID(hollowAccount.accountIdOrThrow());
+                final var streamBuilder = context.dispatch(DispatchOptions.independentDispatch(
+                        context.payer(), syntheticUpdateTxn, CryptoUpdateStreamBuilder.class));
+                streamBuilder.accountID(hollowAccount.accountIdOrThrow());
             }
         }
     }

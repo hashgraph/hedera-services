@@ -36,7 +36,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_DU
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.VALID_CONTRACT_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.SUPPRESSING_TRANSACTION_CUSTOMIZER;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -76,7 +76,7 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.UncheckedParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -335,7 +335,7 @@ class HandleHederaOperationsTest {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthAccountCreation)
                 .build();
-        final var captor = ArgumentCaptor.forClass(ExternalizedRecordCustomizer.class);
+        final var captor = ArgumentCaptor.forClass(StreamBuilder.TransactionCustomizer.class);
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
@@ -381,7 +381,7 @@ class HandleHederaOperationsTest {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthAccountCreation)
                 .build();
-        final var captor = ArgumentCaptor.forClass(ExternalizedRecordCustomizer.class);
+        final var captor = ArgumentCaptor.forClass(StreamBuilder.TransactionCustomizer.class);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
@@ -426,7 +426,7 @@ class HandleHederaOperationsTest {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthAccountCreation)
                 .build();
-        final var captor = ArgumentCaptor.forClass(ExternalizedRecordCustomizer.class);
+        final var captor = ArgumentCaptor.forClass(StreamBuilder.TransactionCustomizer.class);
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
@@ -515,7 +515,7 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(ExternalizedRecordCustomizer.class),
+                        any(StreamBuilder.TransactionCustomizer.class),
                         any()))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
@@ -530,7 +530,7 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(ExternalizedRecordCustomizer.class),
+                        any(StreamBuilder.TransactionCustomizer.class),
                         any());
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
@@ -568,7 +568,7 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(ExternalizedRecordCustomizer.class),
+                        any(StreamBuilder.TransactionCustomizer.class),
                         any()))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
@@ -576,7 +576,7 @@ class HandleHederaOperationsTest {
 
         subject.createContract(666L, someBody, CANONICAL_ALIAS);
 
-        final var captor = ArgumentCaptor.forClass(ExternalizedRecordCustomizer.class);
+        final var captor = ArgumentCaptor.forClass(StreamBuilder.TransactionCustomizer.class);
         verify(context)
                 .dispatchRemovableChildTransaction(
                         eq(synthTxn),
@@ -585,7 +585,7 @@ class HandleHederaOperationsTest {
                         eq(A_NEW_ACCOUNT_ID),
                         captor.capture(),
                         any());
-        assertNotSame(SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER, captor.getValue());
+        assertNotSame(SUPPRESSING_TRANSACTION_CUSTOMIZER, captor.getValue());
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
@@ -607,7 +607,7 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(ExternalizedRecordCustomizer.class),
+                        any(StreamBuilder.TransactionCustomizer.class),
                         any()))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);

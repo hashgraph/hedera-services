@@ -24,8 +24,8 @@ import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Acco
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWithAllowance;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -76,7 +76,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER).status(SUCCESS);
+                    return new RecordStreamBuilder(REVERSIBLE, NOOP_TRANSACTION_CUSTOMIZER, USER).status(SUCCESS);
                 });
     }
 

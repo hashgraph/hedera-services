@@ -58,7 +58,6 @@ import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -152,7 +151,7 @@ public class ChildDispatchFactory {
             @Nullable final Predicate<Key> callback,
             @NonNull final AccountID syntheticPayerId,
             @NonNull final HandleContext.TransactionCategory category,
-            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final StreamBuilder.TransactionCustomizer customizer,
             @NonNull final RecordStreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final Configuration config,
             @NonNull final SavepointStackImpl stack,
