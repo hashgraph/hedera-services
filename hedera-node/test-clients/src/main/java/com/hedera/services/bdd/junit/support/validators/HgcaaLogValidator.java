@@ -16,31 +16,58 @@
 
 package com.hedera.services.bdd.junit.support.validators;
 
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toCollection;
+
+import com.hedera.hapi.node.base.Key;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
 
 public class HgcaaLogValidator {
+    private static final String OVERRIDE_PREFIX = "Override admin key for";
+    private static final String OVERRIDE_NODE_ADMIN_KEY_PATTERN = OVERRIDE_PREFIX + " node%d is :: %s";
     private static final String WARN = "WARN";
     private static final String ERROR = "ERROR";
     private static final String POSSIBLY_CATASTROPHIC = "Possibly CATASTROPHIC";
     private final String logFileLocation;
+    private final Map<Long, Key> overrideNodeAdminKeys;
 
-    public HgcaaLogValidator(final String logFileLocation) {
-        this.logFileLocation = logFileLocation;
+    public HgcaaLogValidator(
+            @NonNull final String logFileLocation, @NonNull final Map<Long, Key> overrideNodeAdminKeys) {
+        this.logFileLocation = requireNonNull(logFileLocation);
+        this.overrideNodeAdminKeys = requireNonNull(overrideNodeAdminKeys);
     }
 
     public void validate() throws IOException {
         final List<String> problemLines = new ArrayList<>();
         final var problemTracker = new ProblemTracker();
+        final Set<String> missingNodeAdminKeyOverrides = overrideNodeAdminKeys.entrySet().stream()
+                .map(e -> String.format(OVERRIDE_NODE_ADMIN_KEY_PATTERN, e.getKey(), e.getValue()))
+                .collect(toCollection(HashSet<String>::new));
+        final Consumer<String> adminKeyOverrides = l -> {
+            if (l.contains(OVERRIDE_PREFIX)) {
+                missingNodeAdminKeyOverrides.removeIf(l::contains);
+            }
+        };
         try (final var stream = Files.lines(Paths.get(logFileLocation))) {
-            stream.filter(problemTracker::isProblem)
+            stream.peek(adminKeyOverrides)
+                    .filter(problemTracker::isProblem)
                     .map(problemTracker::indented)
                     .forEach(problemLines::add);
         }
+        missingNodeAdminKeyOverrides.forEach(o -> {
+            problemLines.add("MISSING - " + o);
+            problemTracker.numProblems++;
+        });
         if (!problemLines.isEmpty()) {
             Assertions.fail("Found " + problemTracker.numProblems + " problems in log file '" + logFileLocation + "':\n"
                     + String.join("\n", problemLines));
