@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -41,7 +40,7 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(TOKEN)
 public class TokenTotalSupplyAfterMintBurnWipeSuite {
-    private static String TOKEN_TREASURY = "treasury";
+    private static final String TOKEN_TREASURY = "treasury";
 
     @HapiTest
     final Stream<DynamicTest> checkTokenTotalSupplyAfterMintAndBurn() {
@@ -71,37 +70,30 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite {
     final Stream<DynamicTest> totalSupplyAfterWipe() {
         var tokenToWipe = "tokenToWipe";
 
-        return defaultHapiSpec("totalSupplyAfterWipe")
-                .given(
-                        newKeyNamed("wipeKey"),
-                        cryptoCreate("assoc1").balance(0L),
-                        cryptoCreate("assoc2").balance(0L),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(
-                        tokenCreate(tokenToWipe)
-                                .name(tokenToWipe)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(1_000)
-                                .wipeKey("wipeKey"),
-                        tokenAssociate("assoc1", tokenToWipe),
-                        tokenAssociate("assoc2", tokenToWipe),
-                        cryptoTransfer(moving(500, tokenToWipe).between(TOKEN_TREASURY, "assoc1")),
-                        cryptoTransfer(moving(200, tokenToWipe).between(TOKEN_TREASURY, "assoc2")),
-                        getAccountBalance("assoc1").hasTokenBalance(tokenToWipe, 500),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenToWipe, 300),
-                        getAccountInfo("assoc1").logged(),
-                        wipeTokenAccount(tokenToWipe, "assoc1", 200)
-                                .via("wipeTxn1")
-                                .logged(),
-                        wipeTokenAccount(tokenToWipe, "assoc2", 200)
-                                .via("wipeTxn2")
-                                .logged())
-                .then(
-                        getAccountBalance("assoc2").hasTokenBalance(tokenToWipe, 0),
-                        getTokenInfo(tokenToWipe)
-                                .hasTotalSupply(600)
-                                .hasName(tokenToWipe)
-                                .logged(),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenToWipe, 300));
+        return hapiTest(
+                newKeyNamed("wipeKey"),
+                cryptoCreate("assoc1").balance(0L),
+                cryptoCreate("assoc2").balance(0L),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate(tokenToWipe)
+                        .name(tokenToWipe)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(1_000)
+                        .wipeKey("wipeKey"),
+                tokenAssociate("assoc1", tokenToWipe),
+                tokenAssociate("assoc2", tokenToWipe),
+                cryptoTransfer(moving(500, tokenToWipe).between(TOKEN_TREASURY, "assoc1")),
+                cryptoTransfer(moving(200, tokenToWipe).between(TOKEN_TREASURY, "assoc2")),
+                getAccountBalance("assoc1").hasTokenBalance(tokenToWipe, 500),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenToWipe, 300),
+                getAccountInfo("assoc1").logged(),
+                wipeTokenAccount(tokenToWipe, "assoc1", 200).via("wipeTxn1").logged(),
+                wipeTokenAccount(tokenToWipe, "assoc2", 200).via("wipeTxn2").logged(),
+                getAccountBalance("assoc2").hasTokenBalance(tokenToWipe, 0),
+                getTokenInfo(tokenToWipe)
+                        .hasTotalSupply(600)
+                        .hasName(tokenToWipe)
+                        .logged(),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenToWipe, 300));
     }
 }
