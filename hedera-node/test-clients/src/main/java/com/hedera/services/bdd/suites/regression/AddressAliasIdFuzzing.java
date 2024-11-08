@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
@@ -61,11 +60,10 @@ public class AddressAliasIdFuzzing {
 
     @HapiTest
     final Stream<DynamicTest> transferToKeyFuzzing() {
-        return defaultHapiSpec("TransferToKeyFuzzing")
-                .given(cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+        return hapiTest(
+                cryptoCreate(UNIQUE_PAYER_ACCOUNT)
                         .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
-                        .withRecharging())
-                .when()
-                .then(runWithProvider(idTransferToRandomKeyWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+                        .withRecharging(),
+                runWithProvider(idTransferToRandomKeyWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
     }
 }

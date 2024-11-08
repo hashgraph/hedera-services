@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.perf.topic;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -65,7 +65,7 @@ public class SubmitMessageLoadTest extends LoadTest {
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
 
     @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
-    private static Random r = new Random(177708L);
+    private static final Random r = new Random(177708L);
 
     public static void main(String... args) {
         int usedArgs = parseArgs(args);
@@ -99,7 +99,6 @@ public class SubmitMessageLoadTest extends LoadTest {
         if (args.length > usedArgs) {
             topicID = args[usedArgs];
             log.info("Set topicID as {}", topicID);
-            usedArgs++;
         }
 
         SubmitMessageLoadTest suite = new SubmitMessageLoadTest();
@@ -116,40 +115,31 @@ public class SubmitMessageLoadTest extends LoadTest {
         Supplier<HapiSpecOperation[]> submitBurst =
                 () -> new HapiSpecOperation[] {opSupplier(settings).get()};
 
-        return defaultHapiSpec("RunSubmitMessages")
-                .given(
-                        withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        // if no pem file defined then create a new submitKey
-                        pemFile == null
-                                ? newKeyNamed(SUBMIT_KEY)
-                                : keyFromPem(pemFile)
-                                        .name(SUBMIT_KEY)
-                                        .simpleWacl()
-                                        .passphrase(KeyFactory.PEM_PASSPHRASE),
-                        // if just created a new key then export spec for later reuse
-                        pemFile == null
-                                ? withOpContext((spec, ignore) ->
-                                        spec.keys().exportEd25519Key("topicSubmitKey.pem", SUBMIT_KEY))
-                                : sleepFor(100),
-                        logIt(ignore -> settings.toString()))
-                .when(
-                        cryptoCreate(SENDER)
-                                .balance(ignore -> settings.getInitialBalance())
-                                .withRecharging()
-                                .rechargeWindow(3)
-                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-                        topicID == null
-                                ? createTopic("topic")
-                                        .submitKeyName(SUBMIT_KEY)
-                                        .hasRetryPrecheckFrom(
-                                                BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-                                : sleepFor(100),
-                        sleepFor(10000) // wait all other thread ready
-                        )
-                .then(
-                        defaultLoadTest(submitBurst, settings),
-                        getAccountBalance(SENDER).logged());
+        return hapiTest(
+                withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+                // if no pem file defined then create a new submitKey
+                pemFile == null
+                        ? newKeyNamed(SUBMIT_KEY)
+                        : keyFromPem(pemFile).name(SUBMIT_KEY).simpleWacl().passphrase(KeyFactory.PEM_PASSPHRASE),
+                // if just created a new key then export spec for later reuse
+                pemFile == null
+                        ? withOpContext(
+                                (spec, ignore) -> spec.keys().exportEd25519Key("topicSubmitKey.pem", SUBMIT_KEY))
+                        : sleepFor(100),
+                logIt(ignore -> settings.toString()),
+                cryptoCreate(SENDER)
+                        .balance(ignore -> settings.getInitialBalance())
+                        .withRecharging()
+                        .rechargeWindow(3)
+                        .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+                topicID == null
+                        ? createTopic("topic")
+                                .submitKeyName(SUBMIT_KEY)
+                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                        : sleepFor(100),
+                sleepFor(10000), // wait all other thread ready
+                defaultLoadTest(submitBurst, settings),
+                getAccountBalance(SENDER).logged());
     }
 
     private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
@@ -164,7 +154,7 @@ public class SubmitMessageLoadTest extends LoadTest {
         String submitKey = SUBMIT_KEY;
         if (settings.getTotalAccounts() > 1) {
             int s = r.nextInt(settings.getTotalAccounts());
-            int re = 0;
+            int re;
             do {
                 re = r.nextInt(settings.getTotalAccounts());
             } while (re == s);

@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.perf.crypto;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -68,7 +68,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
             String receiver = "receiver";
             if (settings.getTotalAccounts() > 2) {
                 int s = r.nextInt(settings.getTotalAccounts());
-                int re = 0;
+                int re;
                 do {
                     re = r.nextInt(settings.getTotalAccounts());
                 } while (re == s);
@@ -94,48 +94,43 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
             };
         };
 
-        return defaultHapiSpec("RunCryptoTransfers-StakedAccount")
-                .given(
-                        withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        logIt(ignore -> settings.toString()))
-                .when(
-                        cryptoCreate("sender")
-                                .balance(ignore -> settings.getInitialBalance())
-                                .payingWith(GENESIS)
-                                .withRecharging()
-                                .key(GENESIS)
-                                .rechargeWindow(3)
-                                .stakedNodeId(settings.getNodeToStake())
-                                .logging()
-                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-                        cryptoCreate("receiver")
-                                .payingWith(GENESIS)
-                                .stakedNodeId(settings.getNodeToStake())
-                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-                                .key(GENESIS)
-                                .logging(),
-                        withOpContext((spec, opLog) -> {
-                            List<SpecOperation> ops = new ArrayList<>();
-                            var stakedNodeId = settings.getNodeToStake();
-                            for (int i = 0; i < STAKED_CREATIONS; i++) {
-                                var stakedAccount = "stakedAccount" + i;
-                                if (settings.getExtraNodesToStake().length != 0) {
-                                    stakedNodeId =
-                                            settings.getExtraNodesToStake()[i % settings.getExtraNodesToStake().length];
-                                }
-                                ops.add(cryptoCreate(stakedAccount)
-                                        .payingWith("sender")
-                                        .stakedNodeId(stakedNodeId)
-                                        .fee(ONE_HBAR)
-                                        .deferStatusResolution()
-                                        .signedBy("sender", DEFAULT_PAYER));
-                            }
-                            allRunFor(spec, ops);
-                        }))
-                .then(
-                        defaultLoadTest(transferBurst, settings),
-                        getAccountBalance("sender").payingWith(GENESIS).logged());
+        return hapiTest(
+                withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+                logIt(ignore -> settings.toString()),
+                cryptoCreate("sender")
+                        .balance(ignore -> settings.getInitialBalance())
+                        .payingWith(GENESIS)
+                        .withRecharging()
+                        .key(GENESIS)
+                        .rechargeWindow(3)
+                        .stakedNodeId(settings.getNodeToStake())
+                        .logging()
+                        .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+                cryptoCreate("receiver")
+                        .payingWith(GENESIS)
+                        .stakedNodeId(settings.getNodeToStake())
+                        .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                        .key(GENESIS)
+                        .logging(),
+                withOpContext((spec, opLog) -> {
+                    List<SpecOperation> ops = new ArrayList<>();
+                    var stakedNodeId = settings.getNodeToStake();
+                    for (int i = 0; i < STAKED_CREATIONS; i++) {
+                        var stakedAccount = "stakedAccount" + i;
+                        if (settings.getExtraNodesToStake().length != 0) {
+                            stakedNodeId = settings.getExtraNodesToStake()[i % settings.getExtraNodesToStake().length];
+                        }
+                        ops.add(cryptoCreate(stakedAccount)
+                                .payingWith("sender")
+                                .stakedNodeId(stakedNodeId)
+                                .fee(ONE_HBAR)
+                                .deferStatusResolution()
+                                .signedBy("sender", DEFAULT_PAYER));
+                    }
+                    allRunFor(spec, ops);
+                }),
+                defaultLoadTest(transferBurst, settings),
+                getAccountBalance("sender").payingWith(GENESIS).logged());
     }
 
     @Override

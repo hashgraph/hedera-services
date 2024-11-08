@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.SYSTEM_ACCOUNT_BALANCES;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -60,8 +59,6 @@ public class RecordCreationSuite {
     private static final String THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER = "This is ok, it's fine, it's whatever.";
     private static final String TO_ACCOUNT = "0.0.3";
     private static final String TXN_ID = "txnId";
-    public static final String STAKING_FEES_NODE_REWARD_PERCENTAGE = "staking.fees.nodeRewardPercentage";
-    public static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE = "staking.fees.stakingRewardPercentage";
 
     @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> submittingNodeStillPaidIfServiceFeesOmitted() {
@@ -209,11 +206,11 @@ public class RecordCreationSuite {
     final Stream<DynamicTest> accountsGetPayerRecordsIfSoConfigured() {
         final var txn = "ofRecord";
 
-        return defaultHapiSpec("AccountsGetPayerRecordsIfSoConfigured")
-                .given(cryptoCreate(PAYER))
-                .when(cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L))
+        return hapiTest(
+                cryptoCreate(PAYER),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L))
                         .payingWith(PAYER)
-                        .via(txn))
-                .then(getAccountRecords(PAYER).has(inOrder(recordWith().txnId(txn))));
+                        .via(txn),
+                getAccountRecords(PAYER).has(inOrder(recordWith().txnId(txn))));
     }
 }
