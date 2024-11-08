@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.addressbook.impl;
+package com.hedera.node.app.service.addressbook.impl.helpers;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,6 +33,9 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Helper class to update node store after upgrade.
+ */
 @Singleton
 public class AddressBookHelper {
     private static final Logger log = LogManager.getLogger(AddressBookHelper.class);
@@ -39,6 +43,13 @@ public class AddressBookHelper {
     @Inject
     public AddressBookHelper() {}
 
+    /**
+     * Adjusts the node metadata after upgrade. This method will mark nodes as deleted if they are not present in the
+     * address book and add new nodes to the node store.
+     * @param networkInfo the network info
+     * @param config configuration
+     * @param nodeStore the node store
+     */
     public void adjustPostUpgradeNodeMetadata(
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Configuration config,
