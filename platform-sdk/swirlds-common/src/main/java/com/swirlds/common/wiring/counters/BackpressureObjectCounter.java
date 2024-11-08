@@ -108,15 +108,16 @@ public class BackpressureObjectCounter extends ObjectCounter {
                             try {
                                 NANOSECONDS.sleep(sleepNanos);
                             } catch (final InterruptedException e) {
-                                // Don't throw an interrupted exception, but allow the thread to maintain its interrupted status.
+                                // Don't throw an interrupted exception, but allow the thread to maintain its
+                                // interrupted status.
                                 Thread.currentThread().interrupt();
                             }
                         }
 
-                        // Although we could technically check the count here and stop the back pressure if the count is below the
-                        // threshold, it's simpler not to. Immediately after this method is called, isReleasable() will be called,
-                        // which will do the checking for us. Easier to just let that method do the work, and have this method
-                        // only be responsible for sleeping.
+                        // Although we could technically check the count here and stop the back pressure if the count is
+                        // below the threshold, it's simpler not to. Immediately after this method is called,
+                        // isReleasable() will be called, which will do the checking for us. Easier to just let that
+                        // method do the work, and have this method only be responsible for sleeping.
                         return false;
                     }
 
