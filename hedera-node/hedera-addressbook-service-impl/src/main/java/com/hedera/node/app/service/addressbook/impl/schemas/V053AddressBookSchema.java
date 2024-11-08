@@ -17,9 +17,15 @@
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.swirlds.platform.roster.RosterUtils.formatNodeName;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
@@ -42,11 +48,13 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -78,6 +86,13 @@ public class V053AddressBookSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
+        // Since this schema's version is several releases behind the current version,
+        // its migrate() will only be called at genesis in any case, but this makes it
+        // explicit that the override admin keys apply only at genesis
+        final Map<Long, Key> nodeAdminKeys = ctx.isGenesis()
+                ? parseEd25519NodeAdminKeysFrom(
+                        ctx.configuration().getConfigData(BootstrapConfig.class).nodeAdminKeysPath())
+                : emptyMap();
         final var networkInfo = ctx.genesisNetworkInfo();
         if (networkInfo == null) {
             throw new IllegalStateException("Genesis network info is not found");
@@ -90,12 +105,16 @@ public class V053AddressBookSchema extends Schema {
         final var adminKey = getAccountAdminKey(ctx);
         final var nodeDetailMap = getNodeAddressMap(ctx);
 
-        Key finalAdminKey = adminKey == null || adminKey.equals(Key.DEFAULT)
+        final var defaultAdminKey = adminKey == null || adminKey.equals(Key.DEFAULT)
                 ? Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build()
                 : adminKey;
         NodeAddress nodeDetail;
         final var addressBook = networkInfo.addressBook();
         for (final var nodeInfo : addressBook) {
+            final var nodeAdminKey = nodeAdminKeys.getOrDefault(nodeInfo.nodeId(), defaultAdminKey);
+            if (nodeAdminKey != defaultAdminKey) {
+                log.info("Override admin key for node{} is :: {}", nodeInfo.nodeId(), nodeAdminKey);
+            }
             final var nodeBuilder = Node.newBuilder()
                     .nodeId(nodeInfo.nodeId())
                     .accountId(nodeInfo.accountId())
@@ -104,7 +123,7 @@ public class V053AddressBookSchema extends Schema {
                     .gossipEndpoint(nodeInfo.gossipEndpoints())
                     .gossipCaCertificate(nodeInfo.sigCertBytes())
                     .weight(nodeInfo.stake())
-                    .adminKey(finalAdminKey);
+                    .adminKey(nodeAdminKey);
             if (nodeDetailMap != null) {
                 nodeDetail = nodeDetailMap.get(nodeInfo.nodeId());
                 if (nodeDetail != null) {
@@ -116,8 +135,36 @@ public class V053AddressBookSchema extends Schema {
             writableNodes.put(
                     EntityNumber.newBuilder().number(nodeInfo.nodeId()).build(), nodeBuilder.build());
         }
-
         log.info("Migrated {} nodes from address book", addressBook.size());
+    }
+
+    private static Map<Long, Key> parseEd25519NodeAdminKeysFrom(@NonNull final String loc) {
+        try {
+            final var json = Files.readString(Paths.get(loc));
+            return parseEd25519NodeAdminKeys(json);
+        } catch (IOException e) {
+            log.warn("Unable to read override keys from {}", loc, e);
+            return emptyMap();
+        }
+    }
+
+    /**
+     * Parses the given JSON string as a map from node ids to hexed Ed25519 public keys.
+     * @param json the JSON string
+     * @return the map from node ids to Ed25519 keys
+     */
+    public static Map<Long, Key> parseEd25519NodeAdminKeys(@NonNull final String json) {
+        requireNonNull(json);
+        final var mapper = new ObjectMapper();
+        try {
+            final Map<Long, String> result = mapper.readValue(json, new TypeReference<>() {});
+            return result.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> Key.newBuilder()
+                    .ed25519(Bytes.wrap(unhex(e.getValue())))
+                    .build()));
+        } catch (JsonProcessingException e) {
+            log.warn("Unable to parse override keys", e);
+            return emptyMap();
+        }
     }
 
     private Key getAccountAdminKey(@NonNull final MigrationContext ctx) {
@@ -161,8 +208,7 @@ public class V053AddressBookSchema extends Schema {
                     final var nodeDetails = NodeAddressBook.PROTOBUF
                             .parse(nodeDetailFile.contents())
                             .nodeAddress();
-                    nodeDetailMap =
-                            nodeDetails.stream().collect(Collectors.toMap(NodeAddress::nodeId, Function.identity()));
+                    nodeDetailMap = nodeDetails.stream().collect(toMap(NodeAddress::nodeId, Function.identity()));
                 } catch (ParseException e) {
                     log.warn("Can not parse file 102 ", e);
                 }

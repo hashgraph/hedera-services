@@ -21,6 +21,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.function.Consumer;
 
 /**
  * Lets a service do genesis entity creations that must be legible in the block stream as specific HAPI
@@ -39,12 +40,11 @@ public interface SystemContext {
     void dispatchCreation(@NonNull TransactionBody txBody, long entityNum);
 
     /**
-     * Dispatches a transaction to the appropriate service
+     * Dispatches a transaction body customized by the given specification to the appropriate service
      *
-     * @param txBody the transaction body
-     * @throws IllegalArgumentException if the entity number is not less than the first user entity number
+     * @param spec the transaction body builder consumer
      */
-    void dispatchUpdate(@NonNull TransactionBody txBody);
+    void dispatchAdmin(@NonNull Consumer<TransactionBody.Builder> spec);
 
     /**
      * The {@link Configuration} at genesis.
