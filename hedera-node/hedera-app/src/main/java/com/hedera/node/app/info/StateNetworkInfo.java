@@ -60,12 +60,12 @@ public class StateNetworkInfo implements NetworkInfo {
             @NonNull final ConfigProvider configProvider,
             @NonNull final Roster activeRoster) {
         this.selfId = selfId;
+        this.activeRoster = requireNonNull(activeRoster);
         this.nodeInfos = buildNodeInfoMap(state);
         // Load the ledger ID from configuration
         final var config = requireNonNull(configProvider.getConfiguration());
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         ledgerId = ledgerConfig.id();
-        this.activeRoster = requireNonNull(activeRoster);
     }
 
     @NonNull
