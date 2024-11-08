@@ -405,7 +405,7 @@ public class PayloadCfgSimple extends PartialMerkleLeaf implements MerkleLeaf {
                 "PayloadCfgSimple.copy(), immutable: {}, StackTrace: {}",
                 isImmutable(),
                 StackTrace.getStackTrace());
-        // throwIfImmutable();
+        throwIfImmutable();
         return new PayloadCfgSimple(this);
     }
 

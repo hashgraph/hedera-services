@@ -275,33 +275,34 @@ public class PlatformTestingToolState extends MerkleStateRoot {
         this.initialized.set(sourceState.initialized.get());
         this.platform = sourceState.platform;
 
-        if (sourceState.getConfig() != null) {
-            setConfig(sourceState.getConfig().copy());
-        }
-
-        if (sourceState.getNextSeqCons() != null) {
-            setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
-        }
-
-        if (sourceState.getFcmFamily() != null) {
-            setFcmFamily(sourceState.getFcmFamily().copy());
-        } else {
-            setFcmFamily(new FCMFamily(true));
-        }
-
-        if (sourceState.getVirtualMap() != null) {
-            setVirtualMap(sourceState.getVirtualMap().copy());
-        }
-
-        if (sourceState.getVirtualMapForSmartContracts() != null) {
-            setVirtualMapForSmartContracts(
-                    sourceState.getVirtualMapForSmartContracts().copy());
-        }
-
-        if (sourceState.getVirtualMapForSmartContractsByteCode() != null) {
-            setVirtualMapForSmartContractsByteCode(
-                    sourceState.getVirtualMapForSmartContractsByteCode().copy());
-        }
+        // commented because copying happens in super
+        //        if (sourceState.getConfig() != null) {
+        //            setConfig(sourceState.getConfig().copy());
+        //        }
+        //
+        //        if (sourceState.getNextSeqCons() != null) {
+        //            setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
+        //        }
+        //
+        //        if (sourceState.getFcmFamily() != null) {
+        //            setFcmFamily(sourceState.getFcmFamily().copy());
+        //        } else {
+        //            setFcmFamily(new FCMFamily(true));
+        //        }
+        //
+        //        if (sourceState.getVirtualMap() != null) {
+        //            setVirtualMap(sourceState.getVirtualMap().copy());
+        //        }
+        //
+        //        if (sourceState.getVirtualMapForSmartContracts() != null) {
+        //            setVirtualMapForSmartContracts(
+        //                    sourceState.getVirtualMapForSmartContracts().copy());
+        //        }
+        //
+        //        if (sourceState.getVirtualMapForSmartContractsByteCode() != null) {
+        //            setVirtualMapForSmartContractsByteCode(
+        //                    sourceState.getVirtualMapForSmartContractsByteCode().copy());
+        //        }
 
         this.lastFileTranFinishTimeStamp = sourceState.lastFileTranFinishTimeStamp;
         this.lastTranTimeStamp = sourceState.lastTranTimeStamp;
@@ -333,21 +334,21 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             }
         }
 
-        if (sourceState.getIssLeaf() != null) {
-            setIssLeaf(sourceState.getIssLeaf().copy());
-        }
+        //        if (sourceState.getIssLeaf() != null) {
+        //            setIssLeaf(sourceState.getIssLeaf().copy());
+        //        }
 
-        if (sourceState.getNftLedger() != null) {
-            setNftLedger(sourceState.getNftLedger().copy());
-        }
+        //        if (sourceState.getNftLedger() != null) {
+        //            setNftLedger(sourceState.getNftLedger().copy());
+        //        }
 
         // set the current value of QuorumResult from source state
-        if (sourceState.getQuorumResult() != null) {
-            setQuorumResult(sourceState.getQuorumResult().copy());
-        }
-        if (controlQuorum != null) {
-            controlQuorum.setQuorumResult(getQuorumResult().copy());
-        }
+        //        if (sourceState.getQuorumResult() != null) {
+        //            setQuorumResult(sourceState.getQuorumResult().copy());
+        //        }
+        //        if (controlQuorum != null) {
+        //            controlQuorum.setQuorumResult(getQuorumResult().copy());
+        //        }
 
         setImmutable(false);
         sourceState.setImmutable(true);
