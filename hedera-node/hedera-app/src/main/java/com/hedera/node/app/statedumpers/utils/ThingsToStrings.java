@@ -74,8 +74,8 @@ public class ThingsToStrings {
         }
     }
 
-    /** Quotes a string to be a valid field in a CSV (comma-separated file), as defined in RFC-4180
-     * (https://datatracker.ietf.org/doc/html/rfc4180) _except_ that we allow the field separator to
+    /** Quotes a string to be a valid field in a CSV (comma-separated file), as defined in
+     * (<a href="https://datatracker.ietf.org/doc/html/rfc4180">RFC-4180</a>) _except_ that we allow the field separator to
      * be something other than "," (e.g., ";", if we have a lot of fields that contain embedded ",").
      */
     @NonNull

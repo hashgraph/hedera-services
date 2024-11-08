@@ -246,7 +246,7 @@ abstract class GrpcTestBase extends TestBase {
 
     /**
      * Sends a request as a node operator using the specified service and function.
-     *
+     * <p>
      * This method constructs a unary call to the specified service and function,
      * marshaling the request and response as strings. It blocks until the call is
      * completed and returns the response payload.

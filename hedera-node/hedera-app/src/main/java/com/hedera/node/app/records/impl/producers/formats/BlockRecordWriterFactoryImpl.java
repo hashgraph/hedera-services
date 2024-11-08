@@ -39,7 +39,7 @@ public class BlockRecordWriterFactoryImpl implements BlockRecordWriterFactory {
 
     /**
      *
-     * @param configProvider
+     * @param configProvider the configuration provider to use
      * @param fileSystem the file system to use, needed for testing to be able to use a non-standard file
      *                   system. If null default is used.
      */

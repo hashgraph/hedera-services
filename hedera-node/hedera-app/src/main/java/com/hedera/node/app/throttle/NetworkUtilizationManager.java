@@ -34,7 +34,7 @@ public interface NetworkUtilizationManager {
      * @param txnInfo       - the transaction to use for updating the network utilization.
      * @param consensusTime - the consensus time of the transaction.
      * @param state         - the state of the node.
-     * @return
+     * @return returns true if the transaction was throttled
      */
     boolean trackTxn(
             @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state);

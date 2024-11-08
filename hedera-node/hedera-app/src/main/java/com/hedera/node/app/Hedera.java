@@ -569,7 +569,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param state               current state
      * @param deserializedVersion version deserialized
      * @param trigger             trigger that is calling migration
-     * @param genesisAddressBook
+     * @param genesisAddressBook  the genesis address book
      * @return the state changes caused by the migration
      */
     private List<StateChanges.Builder> onMigrate(

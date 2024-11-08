@@ -46,6 +46,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 
+/**
+ * Utility class for dumping account data to a file.
+ */
 public class AccountDumpUtils {
     /** String that separates all fields in the CSV format, and also the primitive-typed fields from each other and
      * the other-typed fields from each other in the compressed format.
@@ -67,6 +70,12 @@ public class AccountDumpUtils {
         // Utility class
     }
 
+    /**
+     * Dumps the accounts to a file.
+     * @param path The path to the file to write to
+     * @param accounts The accounts to dump
+     * @param checkpoint The checkpoint to dump at
+     */
     public static void dumpModAccounts(
             @NonNull final Path path,
             @NonNull final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
@@ -79,6 +88,11 @@ public class AccountDumpUtils {
         }
     }
 
+    /**
+     * Gathers the accounts from the virtual map.
+     * @param accounts The virtual map to gather accounts from
+     * @return The gathered accounts
+     */
     @NonNull
     public static BBMHederaAccount[] gatherAccounts(
             @NonNull VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts) {
@@ -108,6 +122,11 @@ public class AccountDumpUtils {
         return accountsArr;
     }
 
+    /**
+     * Converts an account from the on-disk format to the BBM format.
+     * @param account The account to convert
+     * @return The converted account
+     */
     public static BBMHederaAccount fromMod(OnDiskValue<Account> account) {
         return new BBMHederaAccount(
                 account.getValue().accountId(),
@@ -146,6 +165,11 @@ public class AccountDumpUtils {
                 account.getValue().hasStakedNodeId() ? account.getValue().stakedNodeId() : -1);
     }
 
+    /**
+     * Reports on the accounts to a writer.
+     * @param writer The writer to write to
+     * @param accountsArr The accounts to report on
+     */
     public static void reportOnAccounts(@NonNull final Writer writer, @NonNull final BBMHederaAccount[] accountsArr) {
         writer.write("account#");
         writer.write(FIELD_SEPARATOR);
@@ -159,6 +183,11 @@ public class AccountDumpUtils {
         });
     }
 
+    /**
+     * Formats a CSV header from a list of field names.
+     * @param names The list of field names
+     * @return The formatted CSV header
+     */
     @NonNull
     public static String formatCsvHeader(@NonNull final List<String> names) {
         return String.join(FIELD_SEPARATOR, names);
@@ -166,6 +195,7 @@ public class AccountDumpUtils {
 
     /** Returns the list of _all_ field names in the deterministic order, expanding the abbreviations to the full
      * field name.
+     * @return The list of all field names in order
      */
     @NonNull
     public static List<String> allFieldNamesInOrder() {
@@ -177,13 +207,21 @@ public class AccountDumpUtils {
         return r.stream().map(s -> fieldNameMap.getOrDefault(s, s)).toList();
     }
 
-    /** Given one of the primitive-type mappings above, extract the field names, and sort them */
+    /** Given one of the primitive-type mappings above, extract the field names, and sort them
+     * @param <T> The type of the field
+     * @param mapping The mapping to extract field names from
+     * @return The extracted and sorted field names
+     */
     public static <T extends Comparable<T>> List<String> getFieldNamesInOrder(
             @NonNull List<Pair<String, Function<BBMHederaAccount, T>>> mapping) {
         return mapping.stream().map(Pair::getLeft).sorted().toList();
     }
 
-    /** Given the field mappings above, extract the field names, and sort them */
+    /** Given the field mappings above, extract the field names, and sort them
+     * @param fields The field mappings to extract field names from
+     * @param ignored Ignored parameter
+     * @return The extracted and sorted field names
+     */
     // (Overload needed because of type erasure; ugly but seemed to me less ugly than an alternate name, YMMV)
     @SuppressWarnings("java:S1172") // "remove unused method parameter 'ignored'" - nope, needed as described aboved
     public static List<String> getFieldNamesInOrder(@NonNull final List<Field<?>> fields, final boolean ignored) {
@@ -192,6 +230,9 @@ public class AccountDumpUtils {
 
     /** Formats an entire account as a text string.  First field of the string is the account number, followed by all
      * of its fields.
+     * @param sb The `StringBuilder` to accumulate the formatted account into
+     * @param a The account to format
+     * @return The formatted account as a string
      */
     @NonNull
     public static String formatAccount(@NonNull final StringBuilder sb, @NonNull final BBMHederaAccount a) {
@@ -204,27 +245,43 @@ public class AccountDumpUtils {
         return sb.toString();
     }
 
-    /** Formats all the `boolean`-valued fields of an account, using the mapping `booleanFieldsMapping`. */
+    /** Formats all the `boolean`-valued fields of an account, using the mapping `booleanFieldsMapping`.
+     * @param sb The `StringBuilder` to accumulate the formatted account into
+     * @param a The account to format
+     * @param name The name of the account
+     */
     public static void formatAccountBooleans(
             @NonNull final StringBuilder sb, @NonNull final BBMHederaAccount a, @NonNull final String name) {
         formatAccountFieldsForDifferentOutputFormats(
                 sb, a, name, booleanFieldsMapping, false, b -> !b, AccountDumpUtils::tagOnlyFieldFormatter);
     }
 
-    /** A field formatter that only emits the _name_ of the field.  Used for boolean fields in compressed format. */
+    /** A field formatter that only emits the _name_ of the field.  Used for boolean fields in compressed format.
+     * @param <T> The type of the field
+     * @param p The pair of field name and field value
+     * @return The formatted field
+     */
     @NonNull
     public static <T> String tagOnlyFieldFormatter(@NonNull final Pair<String, T> p) {
         return p.getLeft();
     }
 
-    /** Formats all the `int`-valued fields of an account, using the mapping `intFieldsMapping`. */
+    /** Formats all the `int`-valued fields of an account, using the mapping `intFieldsMapping`.
+     * @param sb The `StringBuilder` to accumulate the formatted account into
+     * @param a The account to format
+     * @param name The name of the account
+     */
     public static void formatAccountInts(
             @NonNull final StringBuilder sb, @NonNull final BBMHederaAccount a, @NonNull final String name) {
         formatAccountFieldsForDifferentOutputFormats(
                 sb, a, name, intFieldsMapping, 0, n -> n == 0, AccountDumpUtils::taggedFieldFormatter);
     }
 
-    /** Formats all the `long`-valued fields of an account, using the mapping `longFieldsMapping`. */
+    /** Formats all the `long`-valued fields of an account, using the mapping `longFieldsMapping`.
+     * @param sb The `StringBuilder` to accumulate the formatted account into
+     * @param a The account to format
+     * @param name The name of the account
+     */
     public static void formatAccountLongs(
             @NonNull final StringBuilder sb, @NonNull final BBMHederaAccount a, @NonNull final String name) {
         formatAccountFieldsForDifferentOutputFormats(
@@ -233,7 +290,12 @@ public class AccountDumpUtils {
 
     /** Exceptions coming out of lambdas need to be swallowed.  This is ok because the cause is always a missing field
      * that should not have been accessed, and the check for that is always made by the caller: The caller sees if
-     * anything got added to the accumulating stringbuffer, or not.
+     * anything got added to the accumulating StringBuffer, or not.
+     * @param <R> The return type of the function
+     * @param fn The function to apply
+     * @param a The account to apply the function to
+     * @param missingValue The value to return if the function throws an exception
+     * @return The result of the function, or the missing value if the function throws an exception
      */
     @NonNull
     public static <R> R applySwallowingExceptions(
@@ -250,6 +312,8 @@ public class AccountDumpUtils {
     /** Given a mapping from field names to both a field extraction function (extract from an account) and a field
      * formatter (type-specific), produce the formatted form of all the fields given in the mapping.  Can do either of
      * the `Format`s: CSV or compressed fields.
+     * @param sb Accumulating `StringBuilder`
+     * @param a The account to get fields from
      */
     public static void formatAccountOtherFields(@NonNull final StringBuilder sb, @NonNull BBMHederaAccount a) {
         final var fieldAccessors = getFieldAccessors(sb, a);
@@ -273,7 +337,11 @@ public class AccountDumpUtils {
 
     /** A mapping for all account fields that are _not_ of primitive type.  Takes the field name to a `Field`, which
      * holds the field name, the field extractor ,and the field formatter. And it _is_ a "mapping" even though it isn't
-     * actually a `Map` data structure like the other mappings for primitive typed fields. */
+     * actually a `Map` data structure like the other mappings for primitive typed fields.
+     * @param sb The `StringBuilder` to accumulate the formatted account into
+     * @param a The account to get fields from
+     * @return The list of fields
+     */
     @SuppressWarnings({"java:S1452", "java:S2681"})
     // 1452: generic wildcard types should not be used in return types - yes, but this is a collection of `Field`s
     // of unrelated types, yet `Object` is not appropriate either
@@ -310,7 +378,12 @@ public class AccountDumpUtils {
     // spotless:on
 
     /** Apply a formatter, given a `StringBuilder` and return whether (or not) the field _existed_ and should be
-     * emitted. */
+     * emitted.
+     * @param <T> The type of the field
+     * @param sb The `StringBuilder` to accumulate the formatted field into
+     * @param bifn The formatter to apply
+     * @return Whether the field existed and should be emitted
+     */
     public static <T> Predicate<T> doWithBuilder(
             @NonNull final StringBuilder sb, @NonNull final BiPredicate<StringBuilder, T> bifn) {
         return t -> bifn.test(sb, t);
@@ -412,6 +485,8 @@ public class AccountDumpUtils {
     /** `Map.of` only has 11 overloads - for up to 10 entries.  After that there's a variadic `Map.ofEntries` which is
      * klunky because it takes `Map.Entry`s.  So this is the variadic form of `Map.of`.  Not sure why the Java people
      * didn't just put this in the `Map` class.
+     * @param es The entries to put in the map
+     * @return The map
      */
     @NonNull
     public static Map<String, String> toMap(String... es) {
@@ -431,9 +506,12 @@ public class AccountDumpUtils {
      * compressed fields.
      * @param sb Accumulating `StringBuffer`
      * @param a Account to get field from
+     * @param name The name of the account
      * @param mapping Mapping of field name (or abbreviation) to its extraction method
+     * @param missingValue The value to return if the field is missing
      * @param isDefaultValue Predicate to decide if this field has its default value (and can be elided)
      * @param formatField Method taking field name _and_ value to a string
+     * @param <T> The type of the field
      */
     public static <T extends Comparable<T>> void formatAccountFieldsForDifferentOutputFormats(
             @NonNull final StringBuilder sb,
@@ -459,9 +537,11 @@ public class AccountDumpUtils {
      * @param sb Accumulating `StringBuffer`
      * @param a Account to get field from
      * @param mapping Mapping of field name (or abbreviation) to its extraction method
+     * @param missingValue The value to return if the field is missing
      * @param isDefaultValue Predicate to decide if this field has its default value (and can be elided)
      * @param formatField Method taking field name _and_ value to a string
      * @param joinFields Stream collector to join multiple field values
+     * @param <T> The type of the field
      */
     public static <T extends Comparable<T>> void formatAccountFields(
             @NonNull final StringBuilder sb,
@@ -479,14 +559,21 @@ public class AccountDumpUtils {
                 .collect(joinFields));
     }
 
-    /** A simple formatter for field names in the compressed fields case: writes the field separator then `{name}:` */
+    /** A simple formatter for field names in the compressed fields case: writes the field separator then `{name}:`
+     * @param sb The `StringBuilder` to accumulate the formatted field into
+     * @param name The name of the field
+     */
     public static void formatFieldSep(@NonNull final StringBuilder sb, @NonNull final String name) {
         sb.append(FIELD_SEPARATOR);
         sb.append(name);
         sb.append(NAME_TO_VALUE_SEPARATOR);
     }
 
-    /** A Field formatter that emits fields as "name:value". Used for non-boolean fields in compressed format. */
+    /** A Field formatter that emits fields as "name:value". Used for non-boolean fields in compressed format.
+     * @param <T> The type of the field
+     * @param p The pair of field name and field value
+     * @return The formatted field
+     */
     @NonNull
     public static <T> String taggedFieldFormatter(@NonNull final Pair<String, T> p) {
         return p.getLeft() + NAME_TO_VALUE_SEPARATOR + p.getRight();
@@ -495,6 +582,8 @@ public class AccountDumpUtils {
     /** Unfortunately this is a hack to handle the two long-valued fields where `-1` is used as the "missing" marker.
      * Probably all the primitive-valued fields should be changed to use `Field` descriptors, which would then be
      * enhanced to have a per-field "is default value?" predicate.  But not now.)
+     * @param fn The function to coerce
+     * @return The coerced function
      */
     @SuppressWarnings(
             "java:S4276") // Functional interfaces should be as specialized as possible - except not in this case, for

@@ -71,7 +71,7 @@ public class QueryChecker {
      * @param solvencyPreCheck      the {@link SolvencyPreCheck} that checks if the payer has enough
      * @param expiryValidation      the {@link ExpiryValidation} that checks if an account is expired
      * @param feeManager            the {@link FeeManager} that calculates the fees
-     * @param dispatcher
+     * @param dispatcher            the {@link TransactionDispatcher} that dispatches transactions
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject

@@ -68,7 +68,7 @@ public final class StreamFileProducerSingleThreaded implements BlockRecordStream
      *
      * @param format        The format to use for the record stream
      * @param writerFactory constructs the writers for the record stream, one per record file
-     * @param hapiVersion
+     * @param hapiVersion   The HAPI protobuf version. Does not change during execution.
      */
     @Inject
     public StreamFileProducerSingleThreaded(
