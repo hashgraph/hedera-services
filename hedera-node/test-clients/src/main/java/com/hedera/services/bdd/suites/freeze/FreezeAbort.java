@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -43,10 +43,7 @@ public final class FreezeAbort extends HapiSuite {
         return List.of(freezeAbort());
     }
 
-    final Stream<DynamicTest> freezeAbort() {
-        return defaultHapiSpec("FreezeAbort")
-                .given()
-                .when(UtilVerbs.freezeAbort().payingWith(GENESIS))
-                .then();
+    Stream<DynamicTest> freezeAbort() {
+        return hapiTest(UtilVerbs.freezeAbort().payingWith(GENESIS));
     }
 }

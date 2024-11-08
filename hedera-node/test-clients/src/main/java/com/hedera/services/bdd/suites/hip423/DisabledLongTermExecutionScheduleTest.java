@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.hip423;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -69,116 +69,106 @@ public class DisabledLongTermExecutionScheduleTest {
     @Order(1)
     public Stream<DynamicTest> waitForExpiryIgnoredWhenLongTermDisabled() {
 
-        return defaultHapiSpec("WaitForExpiryIgnoredWhenLongTermDisabled")
-                .given(
-                        cryptoCreate(PAYER).balance(ONE_HBAR),
-                        cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
-                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-                .when(
-                        scheduleCreate(
-                                        THREE_SIG_XFER,
-                                        cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-                                                .fee(ONE_HBAR))
-                                .withRelativeExpiry(SENDER_TXN, 50)
-                                .waitForExpiry(true)
-                                .designatingPayer(PAYER)
-                                .alsoSigningWith(SENDER, RECEIVER),
-                        getAccountBalance(RECEIVER).hasTinyBars(0L),
-                        scheduleSign(THREE_SIG_XFER).alsoSigningWith(PAYER))
-                .then(
-                        getAccountBalance(RECEIVER).hasTinyBars(1L),
-                        getScheduleInfo(THREE_SIG_XFER)
-                                .hasScheduleId(THREE_SIG_XFER)
-                                .hasWaitForExpiry(false)
-                                .isExecuted());
+        return hapiTest(
+                cryptoCreate(PAYER).balance(ONE_HBAR),
+                cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
+                cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true),
+                scheduleCreate(
+                                THREE_SIG_XFER,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                        .fee(ONE_HBAR))
+                        .withRelativeExpiry(SENDER_TXN, 50)
+                        .waitForExpiry(true)
+                        .designatingPayer(PAYER)
+                        .alsoSigningWith(SENDER, RECEIVER),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                scheduleSign(THREE_SIG_XFER).alsoSigningWith(PAYER),
+                getAccountBalance(RECEIVER).hasTinyBars(1L),
+                getScheduleInfo(THREE_SIG_XFER)
+                        .hasScheduleId(THREE_SIG_XFER)
+                        .hasWaitForExpiry(false)
+                        .isExecuted());
     }
 
     @HapiTest
     @Order(2)
     public Stream<DynamicTest> expiryIgnoredWhenLongTermDisabled() {
-        return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabled")
-                .given(
-                        cryptoCreate(SENDER).balance(ONE_HBAR).via(SENDER_TXN),
-                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-                .when(scheduleCreate(
+        return hapiTest(
+                cryptoCreate(SENDER).balance(ONE_HBAR).via(SENDER_TXN),
+                cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true),
+                scheduleCreate(
                                 THREE_SIG_XFER,
                                 cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
                                         .fee(ONE_HBAR))
                         .withRelativeExpiry(SENDER_TXN, 20)
                         .waitForExpiry(true)
-                        .designatingPayer(SENDER))
-                .then(
-                        scheduleSign(THREE_SIG_XFER).alsoSigningWith(SENDER, RECEIVER),
-                        getScheduleInfo(THREE_SIG_XFER)
-                                .hasScheduleId(THREE_SIG_XFER)
-                                .isExecuted()
-                                .isNotDeleted(),
-                        getAccountBalance(RECEIVER).hasTinyBars(1L));
+                        .designatingPayer(SENDER),
+                scheduleSign(THREE_SIG_XFER).alsoSigningWith(SENDER, RECEIVER),
+                getScheduleInfo(THREE_SIG_XFER)
+                        .hasScheduleId(THREE_SIG_XFER)
+                        .isExecuted()
+                        .isNotDeleted(),
+                getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
     @HapiTest
     @Order(3)
     public Stream<DynamicTest> waitForExpiryIgnoredWhenLongTermDisabledThenEnabled() {
 
-        return defaultHapiSpec("WaitForExpiryIgnoredWhenLongTermDisabledThenEnabled")
-                .given(
-                        cryptoCreate(PAYER).balance(ONE_HBAR),
-                        cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
-                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-                .when(
-                        scheduleCreate(
-                                        THREE_SIG_XFER,
-                                        cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-                                                .fee(ONE_HBAR))
-                                .withRelativeExpiry(SENDER_TXN, 4)
-                                .waitForExpiry(true)
-                                .designatingPayer(PAYER)
-                                .alsoSigningWith(SENDER, RECEIVER),
-                        getAccountBalance(RECEIVER).hasTinyBars(0L),
-                        overriding(SCHEDULING_LONG_TERM_ENABLED, "true"),
-                        scheduleSign(THREE_SIG_XFER).alsoSigningWith(PAYER))
-                .then(
-                        cryptoCreate("triggerTxn"),
-                        getAccountBalance(RECEIVER).hasTinyBars(1L),
-                        getScheduleInfo(THREE_SIG_XFER)
-                                .hasScheduleId(THREE_SIG_XFER)
-                                .hasWaitForExpiry(false)
-                                .isExecuted(),
-                        overriding(SCHEDULING_LONG_TERM_ENABLED, "false"));
-    }
-
-    @HapiTest
-    @Order(4)
-    public Stream<DynamicTest> expiryIgnoredWhenLongTermDisabledThenEnabled() {
-        return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabledThenEnabled")
-                .given(
-                        cryptoCreate(PAYER).balance(ONE_HBAR),
-                        cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
-                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-                .when(scheduleCreate(
+        return hapiTest(
+                cryptoCreate(PAYER).balance(ONE_HBAR),
+                cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
+                cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true),
+                scheduleCreate(
                                 THREE_SIG_XFER,
                                 cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
                                         .fee(ONE_HBAR))
                         .withRelativeExpiry(SENDER_TXN, 4)
                         .waitForExpiry(true)
                         .designatingPayer(PAYER)
-                        .via(CREATE_TXN))
-                .then(
-                        getScheduleInfo(THREE_SIG_XFER)
-                                .hasScheduleId(THREE_SIG_XFER)
-                                .hasWaitForExpiry(false)
-                                .hasRelativeExpiry(CREATE_TXN, TimeUnit.MINUTES.toSeconds(30))
-                                .isNotExecuted()
-                                .isNotDeleted(),
-                        scheduleSign(THREE_SIG_XFER)
-                                .alsoSigningWith(PAYER, SENDER, RECEIVER)
-                                .payingWith(PAYER),
-                        getScheduleInfo(THREE_SIG_XFER)
-                                .hasScheduleId(THREE_SIG_XFER)
-                                .hasWaitForExpiry(false)
-                                .hasRelativeExpiry(CREATE_TXN, TimeUnit.MINUTES.toSeconds(30))
-                                .isExecuted()
-                                .isNotDeleted(),
-                        getAccountBalance(RECEIVER).hasTinyBars(1L));
+                        .alsoSigningWith(SENDER, RECEIVER),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                overriding(SCHEDULING_LONG_TERM_ENABLED, "true"),
+                scheduleSign(THREE_SIG_XFER).alsoSigningWith(PAYER),
+                cryptoCreate("triggerTxn"),
+                getAccountBalance(RECEIVER).hasTinyBars(1L),
+                getScheduleInfo(THREE_SIG_XFER)
+                        .hasScheduleId(THREE_SIG_XFER)
+                        .hasWaitForExpiry(false)
+                        .isExecuted(),
+                overriding(SCHEDULING_LONG_TERM_ENABLED, "false"));
+    }
+
+    @HapiTest
+    @Order(4)
+    public Stream<DynamicTest> expiryIgnoredWhenLongTermDisabledThenEnabled() {
+        return hapiTest(
+                cryptoCreate(PAYER).balance(ONE_HBAR),
+                cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
+                cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true),
+                scheduleCreate(
+                                THREE_SIG_XFER,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                        .fee(ONE_HBAR))
+                        .withRelativeExpiry(SENDER_TXN, 4)
+                        .waitForExpiry(true)
+                        .designatingPayer(PAYER)
+                        .via(CREATE_TXN),
+                getScheduleInfo(THREE_SIG_XFER)
+                        .hasScheduleId(THREE_SIG_XFER)
+                        .hasWaitForExpiry(false)
+                        .hasRelativeExpiry(CREATE_TXN, TimeUnit.MINUTES.toSeconds(30))
+                        .isNotExecuted()
+                        .isNotDeleted(),
+                scheduleSign(THREE_SIG_XFER)
+                        .alsoSigningWith(PAYER, SENDER, RECEIVER)
+                        .payingWith(PAYER),
+                getScheduleInfo(THREE_SIG_XFER)
+                        .hasScheduleId(THREE_SIG_XFER)
+                        .hasWaitForExpiry(false)
+                        .hasRelativeExpiry(CREATE_TXN, TimeUnit.MINUTES.toSeconds(30))
+                        .isExecuted()
+                        .isNotDeleted(),
+                getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 }

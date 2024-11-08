@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
@@ -115,18 +115,16 @@ public class UpdateServerFiles extends HapiSuite {
             Assertions.fail("Directory creation failed");
         }
         final byte[] hash = CommonUtils.noThrowSha384HashOf(data);
-        return defaultHapiSpec("uploadFileAndUpdate")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("maxFileSize", "2048000")),
-                        UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data)))
-                .when(freezeUpgrade()
+        return hapiTest(
+                fileUpdate(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of("maxFileSize", "2048000")),
+                UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data)),
+                freezeUpgrade()
                         .withUpdateFile(fileIDString)
                         .havingHash(hash)
                         .payingWith(GENESIS)
                         .startingIn(60)
-                        .seconds())
-                .then();
+                        .seconds());
     }
 }
