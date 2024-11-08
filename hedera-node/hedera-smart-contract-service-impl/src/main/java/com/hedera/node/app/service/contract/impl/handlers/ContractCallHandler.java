@@ -54,6 +54,12 @@ public class ContractCallHandler implements TransactionHandler {
     private final GasCalculator gasCalculator;
     private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
 
+    /**
+     * Constructs a {@link ContractCallHandler} with the given {@link Provider} and {@link GasCalculator}.
+     *
+     * @param provider the provider to be used
+     * @param gasCalculator the gas calculator to be used
+     */
     @Inject
     public ContractCallHandler(
             @NonNull final Provider<TransactionComponent.Factory> provider,

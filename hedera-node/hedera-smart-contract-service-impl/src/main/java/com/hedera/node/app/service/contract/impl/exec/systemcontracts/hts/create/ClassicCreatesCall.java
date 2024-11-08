@@ -37,7 +37,6 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.stackIncludesActiveAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static java.util.Objects.requireNonNull;
@@ -56,7 +55,6 @@ import com.hedera.node.app.service.contract.impl.exec.scope.EitherOrVerification
 import com.hedera.node.app.service.contract.impl.exec.scope.SpecificCryptoVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.config.data.ContractsConfig;
@@ -68,6 +66,9 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * Implements the token redirect {@code createToken()} call of the HTS system contract.
+ */
 public class ClassicCreatesCall extends AbstractCall {
     /**
      * The mono-service stipulated gas cost for a token creation (remaining fee is collected by sent value)
@@ -80,16 +81,22 @@ public class ClassicCreatesCall extends AbstractCall {
     private final VerificationStrategy verificationStrategy;
     private final AccountID spenderId;
 
+    /**
+     * @param systemContractGasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to be used
+     * @param syntheticCreate the body of synthetic create operation
+     * @param verificationStrategy the verification strategy to use
+     * @param spender the spender account id
+     */
     public ClassicCreatesCall(
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final TransactionBody syntheticCreate,
             @NonNull final VerificationStrategy verificationStrategy,
-            @NonNull final Address spender,
-            @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final AccountID spender) {
         super(systemContractGasCalculator, enhancement, false);
         this.verificationStrategy = requireNonNull(verificationStrategy);
-        this.spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
+        this.spenderId = spender;
         this.syntheticCreate = syntheticCreate;
     }
 

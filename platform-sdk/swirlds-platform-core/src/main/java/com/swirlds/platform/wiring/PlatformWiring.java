@@ -235,7 +235,13 @@ public class PlatformWiring {
                 new ComponentWiring<>(model, ConsensusEventStream.class, config.consensusEventStream());
         runningEventHashOverrideWiring = RunningEventHashOverrideWiring.create(model);
 
-        stateHasherWiring = new ComponentWiring<>(model, StateHasher.class, config.stateHasher());
+        stateHasherWiring = new ComponentWiring<>(
+                model,
+                StateHasher.class,
+                config.stateHasher(),
+                data -> data instanceof StateAndRound stateAndRound
+                        ? Math.max(stateAndRound.round().getNumAppTransactions(), 1)
+                        : 1);
 
         gossipWiring = new GossipWiring(platformContext, model);
 

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.roster;
 
+import static com.swirlds.common.RosterStateId.ROSTER_KEY;
+import static com.swirlds.common.RosterStateId.ROSTER_STATES_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -23,12 +25,12 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
-import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
@@ -63,16 +65,13 @@ public final class RosterRetriever {
      * @return an active Roster for the round of the state, or a Roster that represents the current AddressBook in PlatformState
      */
     @NonNull
-    public static Roster retrieve(@NonNull final State state) {
-        final Roster roster = retrieve(state, getRound(state));
+    public static Roster retrieveActiveOrGenesisRoster(@NonNull final State state) {
+        final var roster = retrieveActive(state, getRound(state));
         if (roster != null) {
             return roster;
         }
-
-        // Either rosters haven't been populated in the RosterState/Map yet,
-        // or the current round predates the introduction of rosters in the state.
-        // So use an AddressBook from the PlatformState to build a roster:
-        final ReadablePlatformStateStore readablePlatformStateStore =
+        // We are currently in bootstrap for the genesis roster, which is set in the address book
+        final var readablePlatformStateStore =
                 new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
         return buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
     }
@@ -87,19 +86,17 @@ public final class RosterRetriever {
      * @return an active Roster for the given round of the state, or null
      */
     @Nullable
-    public static Roster retrieve(@NonNull final State state, final long round) {
-        final Bytes activeRosterHash = getActiveRosterHash(state, round);
-        if (activeRosterHash != null) {
-            final ReadableKVState<ProtoBytes, Roster> rosterMap =
-                    state.getReadableStates(RosterStateId.NAME).get(RosterStateId.ROSTER_KEY);
-            final Roster roster = rosterMap.get(
-                    ProtoBytes.newBuilder().value(activeRosterHash).build());
-            if (roster != null) {
-                return roster;
-            }
-        }
+    public static Roster retrieveActive(@NonNull final State state, final long round) {
+        return retrieveInternal(state, getActiveRosterHash(state, round));
+    }
 
-        return null;
+    /**
+     * Returns the candidate roster from the state, if it exists.
+     * @param state the state
+     * @return the candidate roster, or null if it doesn't exist
+     */
+    public static @Nullable Roster retrieveCandidate(@NonNull final State state) {
+        return retrieveInternal(state, getCandidateRosterHash(state));
     }
 
     /**
@@ -115,17 +112,26 @@ public final class RosterRetriever {
     @Nullable
     public static Bytes getActiveRosterHash(@NonNull final State state, final long round) {
         final ReadableSingletonState<RosterState> rosterState =
-                state.getReadableStates(RosterStateId.NAME).getSingleton(RosterStateId.ROSTER_STATES_KEY);
+                state.getReadableStates(RosterStateId.NAME).getSingleton(ROSTER_STATES_KEY);
         // replace with binary search when/if the list size becomes unreasonably large (100s of entries or more)
-        final List<RoundRosterPair> roundRosterPairs = rosterState.get().roundRosterPairs();
-        for (int i = 0; i < roundRosterPairs.size(); i++) {
-            final RoundRosterPair roundRosterPair = roundRosterPairs.get(i);
+        final var roundRosterPairs = requireNonNull(rosterState.get()).roundRosterPairs();
+        for (final var roundRosterPair : roundRosterPairs) {
             if (roundRosterPair.roundNumber() <= round) {
                 return roundRosterPair.activeRosterHash();
             }
         }
-
         return null;
+    }
+
+    /**
+     * Retrieves the hash of the current candidate roster in the given state.
+     * @param state a state
+     * @return the hash of the candidate roster
+     */
+    public static @NonNull Bytes getCandidateRosterHash(@NonNull final State state) {
+        final var rosterState =
+                state.getReadableStates(RosterStateId.NAME).<RosterState>getSingleton(ROSTER_STATES_KEY);
+        return requireNonNull(rosterState.get()).candidateRosterHash();
     }
 
     /**
@@ -138,6 +144,55 @@ public final class RosterRetriever {
         final ReadablePlatformStateStore readablePlatformStateStore =
                 new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
         return readablePlatformStateStore.getRound();
+    }
+
+    /**
+     * Builds a RosterEntry out of a given Address.
+     * @param address an Address from AddressBook
+     * @return a RosterEntry
+     */
+    @NonNull
+    public static RosterEntry buildRosterEntry(@NonNull final Address address) {
+        try {
+            return RosterEntry.newBuilder()
+                    .nodeId(address.getNodeId().id())
+                    .weight(address.getWeight())
+                    .gossipCaCertificate(Bytes.wrap(address.getSigCert().getEncoded()))
+                    .gossipEndpoint(List.of(
+                                    Pair.of(address.getHostnameExternal(), address.getPortExternal()),
+                                    Pair.of(address.getHostnameInternal(), address.getPortInternal()))
+                            .stream()
+                            .filter(pair -> pair.left() != null && !pair.left().isBlank() && pair.right() != 0)
+                            .distinct()
+                            .map(pair -> {
+                                final Matcher matcher = IP_ADDRESS_PATTERN.matcher(pair.left());
+
+                                if (!matcher.matches()) {
+                                    return ServiceEndpoint.newBuilder()
+                                            .domainName(pair.left())
+                                            .port(pair.right())
+                                            .build();
+                                }
+
+                                try {
+                                    return ServiceEndpoint.newBuilder()
+                                            .ipAddressV4(Bytes.wrap(new byte[] {
+                                                (byte) Integer.parseInt(matcher.group(1)),
+                                                (byte) Integer.parseInt(matcher.group(2)),
+                                                (byte) Integer.parseInt(matcher.group(3)),
+                                                (byte) Integer.parseInt(matcher.group(4)),
+                                            }))
+                                            .port(pair.right())
+                                            .build();
+                                } catch (NumberFormatException e) {
+                                    throw new InvalidAddressBookException(e);
+                                }
+                            })
+                            .toList())
+                    .build();
+        } catch (CertificateEncodingException e) {
+            throw new InvalidAddressBookException(e);
+        }
     }
 
     /**
@@ -154,57 +209,19 @@ public final class RosterRetriever {
         return Roster.newBuilder()
                 .rosterEntries(addressBook.getNodeIdSet().stream()
                         .map(addressBook::getAddress)
-                        .map(address -> {
-                            try {
-                                return RosterEntry.newBuilder()
-                                        .nodeId(address.getNodeId().id())
-                                        .weight(address.getWeight())
-                                        .gossipCaCertificate(
-                                                Bytes.wrap(address.getSigCert().getEncoded()))
-                                        .gossipEndpoint(List.of(
-                                                        Pair.of(
-                                                                address.getHostnameExternal(),
-                                                                address.getPortExternal()),
-                                                        Pair.of(
-                                                                address.getHostnameInternal(),
-                                                                address.getPortInternal()))
-                                                .stream()
-                                                .filter(pair -> pair.left() != null
-                                                        && !pair.left().isBlank()
-                                                        && pair.right() != 0)
-                                                .distinct()
-                                                .map(pair -> {
-                                                    final Matcher matcher = IP_ADDRESS_PATTERN.matcher(pair.left());
-
-                                                    if (!matcher.matches()) {
-                                                        return ServiceEndpoint.newBuilder()
-                                                                .domainName(pair.left())
-                                                                .port(pair.right())
-                                                                .build();
-                                                    }
-
-                                                    try {
-                                                        return ServiceEndpoint.newBuilder()
-                                                                .ipAddressV4(Bytes.wrap(new byte[] {
-                                                                    (byte) Integer.parseInt(matcher.group(1)),
-                                                                    (byte) Integer.parseInt(matcher.group(2)),
-                                                                    (byte) Integer.parseInt(matcher.group(3)),
-                                                                    (byte) Integer.parseInt(matcher.group(4)),
-                                                                }))
-                                                                .port(pair.right())
-                                                                .build();
-                                                    } catch (NumberFormatException e) {
-                                                        throw new InvalidAddressBookException(e);
-                                                    }
-                                                })
-                                                .toList())
-                                        .build();
-                            } catch (CertificateEncodingException e) {
-                                throw new InvalidAddressBookException(e);
-                            }
-                        })
+                        .map(RosterRetriever::buildRosterEntry)
                         .sorted(Comparator.comparing(RosterEntry::nodeId))
                         .toList())
                 .build();
+    }
+
+    @Nullable
+    private static Roster retrieveInternal(@NonNull final State state, @Nullable final Bytes activeRosterHash) {
+        if (activeRosterHash != null) {
+            final ReadableKVState<ProtoBytes, Roster> rosterMap =
+                    state.getReadableStates(RosterStateId.NAME).get(ROSTER_KEY);
+            return rosterMap.get(new ProtoBytes(activeRosterHash));
+        }
+        return null;
     }
 }
