@@ -20,7 +20,6 @@ import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubK
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -3821,33 +3820,30 @@ public class TraceabilitySuite {
     @Order(12)
     final Stream<DynamicTest> traceabilityE2EScenario12() {
         final var contract = "CreateTrivial";
-        final var scenario12 = "traceabilityE2EScenario12";
-        return defaultHapiSpec(scenario12)
-                .given(uploadInitCode(contract))
-                .when(contractCreate(contract)
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract)
                         .via(TRACEABILITY_TXN)
-                        .inlineInitCode(extractBytecodeUnhexed(getResourcePath(contract, ".bin"))))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            final HapiGetTxnRecord txnRecord = getTxnRecord(TRACEABILITY_TXN);
-                            allRunFor(
-                                    spec,
-                                    txnRecord,
-                                    expectContractActionSidecarFor(
-                                            TRACEABILITY_TXN,
-                                            List.of(ContractAction.newBuilder()
-                                                    .setCallType(CREATE)
-                                                    .setCallOperationType(CallOperationType.OP_CREATE)
-                                                    .setCallingAccount(
-                                                            spec.registry().getAccountID(GENESIS))
-                                                    .setRecipientContract(
-                                                            spec.registry().getContractId(contract))
-                                                    .setGas(184672)
-                                                    .setGasUsed(214)
-                                                    .setOutput(EMPTY)
-                                                    .build())));
-                        }),
-                        expectContractBytecodeSansInitcodeFor(TRACEABILITY_TXN, contract));
+                        .inlineInitCode(extractBytecodeUnhexed(getResourcePath(contract, ".bin"))),
+                withOpContext((spec, opLog) -> {
+                    final HapiGetTxnRecord txnRecord = getTxnRecord(TRACEABILITY_TXN);
+                    allRunFor(
+                            spec,
+                            txnRecord,
+                            expectContractActionSidecarFor(
+                                    TRACEABILITY_TXN,
+                                    List.of(ContractAction.newBuilder()
+                                            .setCallType(CREATE)
+                                            .setCallOperationType(CallOperationType.OP_CREATE)
+                                            .setCallingAccount(spec.registry().getAccountID(GENESIS))
+                                            .setRecipientContract(
+                                                    spec.registry().getContractId(contract))
+                                            .setGas(184672)
+                                            .setGasUsed(214)
+                                            .setOutput(EMPTY)
+                                            .build())));
+                }),
+                expectContractBytecodeSansInitcodeFor(TRACEABILITY_TXN, contract));
     }
 
     @HapiTest
@@ -4416,33 +4412,30 @@ public class TraceabilitySuite {
         final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
         final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
         final var firstTxn = "firstTxn";
-        return defaultHapiSpec(vanillaBytecodeSidecar)
-                .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+        return hapiTest(
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .hasKnownStatus(SUCCESS)
-                        .via(firstTxn))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            final HapiGetTxnRecord txnRecord = getTxnRecord(firstTxn);
-                            allRunFor(
-                                    spec,
-                                    txnRecord,
-                                    expectContractActionSidecarFor(
-                                            firstTxn,
-                                            List.of(ContractAction.newBuilder()
-                                                    .setCallType(CREATE)
-                                                    .setCallOperationType(CallOperationType.OP_CREATE)
-                                                    .setCallingAccount(
-                                                            spec.registry().getAccountID(GENESIS))
-                                                    .setRecipientContract(
-                                                            spec.registry().getContractId(EMPTY_CONSTRUCTOR_CONTRACT))
-                                                    .setGas(195600)
-                                                    .setGasUsed(66)
-                                                    .setOutput(EMPTY)
-                                                    .build())));
-                        }),
-                        expectContractBytecodeSidecarFor(
-                                firstTxn, EMPTY_CONSTRUCTOR_CONTRACT, EMPTY_CONSTRUCTOR_CONTRACT));
+                        .via(firstTxn),
+                withOpContext((spec, opLog) -> {
+                    final HapiGetTxnRecord txnRecord = getTxnRecord(firstTxn);
+                    allRunFor(
+                            spec,
+                            txnRecord,
+                            expectContractActionSidecarFor(
+                                    firstTxn,
+                                    List.of(ContractAction.newBuilder()
+                                            .setCallType(CREATE)
+                                            .setCallOperationType(CallOperationType.OP_CREATE)
+                                            .setCallingAccount(spec.registry().getAccountID(GENESIS))
+                                            .setRecipientContract(
+                                                    spec.registry().getContractId(EMPTY_CONSTRUCTOR_CONTRACT))
+                                            .setGas(195600)
+                                            .setGasUsed(66)
+                                            .setOutput(EMPTY)
+                                            .build())));
+                }),
+                expectContractBytecodeSidecarFor(firstTxn, EMPTY_CONSTRUCTOR_CONTRACT, EMPTY_CONSTRUCTOR_CONTRACT));
     }
 
     @HapiTest

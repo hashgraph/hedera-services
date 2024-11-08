@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractIdWithEvmAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -752,51 +751,40 @@ public class Evm46ValidationSuite {
     @HapiTest
     final Stream<DynamicTest>
             internalCallWithValueToNonExistingNonMirrorAddressWithoutEnoughGasForLazyCreationResultsInSuccessNoAccountCreated() {
-        return defaultHapiSpec(
-                        "internalCallWithValueToNonExistingNonMirrorAddressWithoutEnoughGasForLazyCreationResultsInSuccessNoAccountCreated")
-                .given(
-                        cryptoCreate(CUSTOM_PAYER),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(
-                        balanceSnapshot("contractBalance", INTERNAL_CALLER_CONTRACT),
-                        contractCall(
-                                        INTERNAL_CALLER_CONTRACT,
-                                        CALL_WITH_VALUE_TO_FUNCTION,
-                                        nonMirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 7))
-                                .payingWith(CUSTOM_PAYER)
-                                .gas(NOT_ENOUGH_GAS_LIMIT_FOR_CREATION)
-                                .via("transferWithLowGasLimit"))
-                .then(
-                        getTxnRecord("transferWithLowGasLimit")
-                                .hasPriority(recordWith().status(SUCCESS)),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("contractBalance", 0)));
+        return hapiTest(
+                cryptoCreate(CUSTOM_PAYER),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                balanceSnapshot("contractBalance", INTERNAL_CALLER_CONTRACT),
+                contractCall(
+                                INTERNAL_CALLER_CONTRACT,
+                                CALL_WITH_VALUE_TO_FUNCTION,
+                                nonMirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 7))
+                        .payingWith(CUSTOM_PAYER)
+                        .gas(NOT_ENOUGH_GAS_LIMIT_FOR_CREATION)
+                        .via("transferWithLowGasLimit"),
+                getTxnRecord("transferWithLowGasLimit").hasPriority(recordWith().status(SUCCESS)),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("contractBalance", 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest>
             internalCallWithValueToNonExistingNonMirrorAddressWithEnoughGasForLazyCreationResultsInSuccessAccountCreated() {
-        return defaultHapiSpec(
-                        "internalCallWithValueToNonExistingNonMirrorAddressWithEnoughGasForLazyCreationResultsInSuccessAccountCreated")
-                .given(
-                        cryptoCreate(CUSTOM_PAYER),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(
-                        balanceSnapshot("contractBalance", INTERNAL_CALLER_CONTRACT),
-                        contractCall(
-                                        INTERNAL_CALLER_CONTRACT,
-                                        CALL_WITH_VALUE_TO_FUNCTION,
-                                        nonMirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 8))
-                                .payingWith(CUSTOM_PAYER)
-                                .gas(ENOUGH_GAS_LIMIT_FOR_CREATION)
-                                .via("transferWithEnoughGasLimit"))
-                .then(
-                        getTxnRecord("transferWithEnoughGasLimit")
-                                .hasPriority(recordWith().status(SUCCESS)),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("contractBalance", -1)));
+        return hapiTest(
+                cryptoCreate(CUSTOM_PAYER),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                balanceSnapshot("contractBalance", INTERNAL_CALLER_CONTRACT),
+                contractCall(
+                                INTERNAL_CALLER_CONTRACT,
+                                CALL_WITH_VALUE_TO_FUNCTION,
+                                nonMirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 8))
+                        .payingWith(CUSTOM_PAYER)
+                        .gas(ENOUGH_GAS_LIMIT_FOR_CREATION)
+                        .via("transferWithEnoughGasLimit"),
+                getTxnRecord("transferWithEnoughGasLimit")
+                        .hasPriority(recordWith().status(SUCCESS)),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("contractBalance", -1)));
     }
 
     @HapiTest

@@ -20,7 +20,6 @@ import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubK
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungiblePendingAirdrop;
@@ -421,40 +420,32 @@ public class TokenAirdropTest extends TokenAirdropBase {
             final Stream<DynamicTest>
                     transferOneFTTwiceFromEOAWithOneFTInBalanceToAccountWithNoFreeAutoAssociationsResultsInPendingAggregated() {
                 var sender = "sender";
-                return defaultHapiSpec(
-                                "Send one FT from EOA with only One FT in balance twice to Account without free Auto-Associations")
-                        .given(
-                                cryptoCreate(sender).maxAutomaticTokenAssociations(-1),
-                                cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNER, sender))
-                                        .payingWith(OWNER))
-                        .when(
-                                tokenAirdrop(moving(1, FUNGIBLE_TOKEN)
-                                                .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
-                                        .payingWith(sender)
-                                        .signedBy(sender)
-                                        .via("first airdrop"),
-                                tokenAirdrop(moving(1, FUNGIBLE_TOKEN)
-                                                .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
-                                        .payingWith(sender)
-                                        .signedBy(sender)
-                                        .via("second airdrop"))
-                        .then(
-                                getTxnRecord("first airdrop")
-                                        .hasPriority(recordWith()
-                                                .pendingAirdrops(includingFungiblePendingAirdrop(moving(
-                                                                1, FUNGIBLE_TOKEN)
-                                                        .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
-                                getTxnRecord("second airdrop")
-                                        .hasPriority(recordWith()
-                                                .pendingAirdrops(includingFungiblePendingAirdrop(moving(
-                                                                2, FUNGIBLE_TOKEN)
-                                                        .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
-                                // assert account balances
-                                getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
-                                        .hasTokenBalance(FUNGIBLE_TOKEN, 0),
-                                getAccountBalance(sender).hasTokenBalance(FUNGIBLE_TOKEN, 1),
-                                validateChargedUsd("first airdrop", 0.1, 10),
-                                validateChargedUsd("second airdrop", 0.05, 10));
+                return hapiTest(
+                        cryptoCreate(sender).maxAutomaticTokenAssociations(-1),
+                        cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNER, sender))
+                                .payingWith(OWNER),
+                        tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
+                                .payingWith(sender)
+                                .signedBy(sender)
+                                .via("first airdrop"),
+                        tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
+                                .payingWith(sender)
+                                .signedBy(sender)
+                                .via("second airdrop"),
+                        getTxnRecord("first airdrop")
+                                .hasPriority(recordWith()
+                                        .pendingAirdrops(includingFungiblePendingAirdrop(moving(1, FUNGIBLE_TOKEN)
+                                                .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
+                        getTxnRecord("second airdrop")
+                                .hasPriority(recordWith()
+                                        .pendingAirdrops(includingFungiblePendingAirdrop(moving(2, FUNGIBLE_TOKEN)
+                                                .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
+                        // assert account balances
+                        getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
+                                .hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                        getAccountBalance(sender).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                        validateChargedUsd("first airdrop", 0.1, 10),
+                        validateChargedUsd("second airdrop", 0.05, 10));
             }
 
             @HapiTest
@@ -1286,26 +1277,22 @@ public class TokenAirdropTest extends TokenAirdropBase {
         final Stream<DynamicTest>
                 airdropNFTToNonExistingEvmAddressWithoutAutoAssociationsResultingInPendingAirdropToHollowAccount() {
             final var validAliasForAirdrop = "validAliasForAirdrop";
-            return defaultHapiSpec(
-                            "Send one NFT from EOA to EVM address without auto-associations resulting in the creation of Hollow account and pending airdrop")
-                    .given()
-                    .when(tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L).between(OWNER, validAliasForAirdrop))
+            return hapiTest(
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L).between(OWNER, validAliasForAirdrop))
                             .payingWith(OWNER)
                             .signedBy(OWNER)
-                            .via("EVM address NFT airdrop"))
-                    .then(
-                            getTxnRecord("EVM address NFT airdrop")
-                                    .hasPriority(recordWith()
-                                            .pendingAirdrops(
-                                                    includingNftPendingAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L)
-                                                            .between(OWNER, validAliasForAirdrop)))),
-                            // assert hollow account
-                            getAliasedAccountInfo(validAliasForAirdrop)
-                                    .isHollow()
-                                    .hasAlreadyUsedAutomaticAssociations(0)
-                                    .hasMaxAutomaticAssociations(0)
-                                    .hasNoTokenRelationship(NON_FUNGIBLE_TOKEN),
-                            validateChargedUsd("EVM address NFT airdrop", 0.1, 10));
+                            .via("EVM address NFT airdrop"),
+                    getTxnRecord("EVM address NFT airdrop")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingNftPendingAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L)
+                                            .between(OWNER, validAliasForAirdrop)))),
+                    // assert hollow account
+                    getAliasedAccountInfo(validAliasForAirdrop)
+                            .isHollow()
+                            .hasAlreadyUsedAutomaticAssociations(0)
+                            .hasMaxAutomaticAssociations(0)
+                            .hasNoTokenRelationship(NON_FUNGIBLE_TOKEN),
+                    validateChargedUsd("EVM address NFT airdrop", 0.1, 10));
         }
 
         @HapiTest
