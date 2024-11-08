@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -126,10 +127,9 @@ public class ScheduleOpsUsage {
 
     private static double getScheduleMultiplier(HederaFunctionality functionality) {
         try {
-            // TODO: should I create the AssetsLoader instance here or call FeeSchedules.ASSETS_LOADER?
             return new AssetsLoader().loadScheduledTransactionMultipliers().get(functionality);
         } catch (IOException e) {
-            throw new RuntimeException(e); // TODO: fix
+            throw new UncheckedIOException(e);
         }
     }
 

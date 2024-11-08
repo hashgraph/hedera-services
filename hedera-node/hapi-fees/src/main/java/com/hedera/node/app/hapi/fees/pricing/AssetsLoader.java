@@ -144,7 +144,11 @@ public class AssetsLoader {
         }
     }
 
-    // TODO: add docs
+    /**
+     * Loads a map that, for each supported scheduled operation, gives the multiplier by which we will increase the fees
+     * @return map of functionality to multiplier
+     * @throws IOException if the backing JSON resource cannot be loaded
+     */
     public Map<HederaFunctionality, Double> loadScheduledTransactionMultipliers() throws IOException {
         if (cachedScheduledTransactionMultipliers != null) {
             return cachedScheduledTransactionMultipliers;
