@@ -31,15 +31,14 @@ import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialStat
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
+import com.hedera.node.app.roster.RosterStartupLogic;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
@@ -72,7 +71,6 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
-import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.WritableRosterStore;
@@ -84,7 +82,6 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
@@ -310,8 +307,9 @@ public class ServicesMain implements SwirldMain {
                     configuration,
                     new StoreMetricsServiceImpl(metrics)); // TODO: proper storeMetricsService instance?
             final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
-            final var rosterHistory =
-                    determineRosterHistory(isGenesis.get(), state, rosterStore, diskAddressBook, softwareUpgrade);
+            final var addressBookStore = new ReadableStoreFactory(state).getStore(ReadableNodeStore.class);
+            final var rosterStartupLogic = new RosterStartupLogic(rosterStore, addressBookStore, diskAddressBook);
+            final var rosterHistory = rosterStartupLogic.determineRosterHistory(isGenesis.get(), softwareUpgrade);
             platformBuilder.withRoster(
                     rosterHistory
                             .getCurrentRoster()); // FUTURE: pass the roster history instead of just the current roster
@@ -351,118 +349,6 @@ public class ServicesMain implements SwirldMain {
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
-    }
-
-    /**
-     * Determining the Roster History.
-     * There are three non-genesis modes that a node can start in:
-     * <ul>
-     *   <li> Genesis Network - The node is started with a genesis roster and no pre-existing state on disk. </li>
-     *   <li> Network Transplant - The node is started with a state on disk and an overriding roster for a different network. </li>
-     *   <li> Software Upgrade - The node is restarted with the same state on disk and a software upgrade is happening. </li>
-     *   <li> Normal Restart - The node is restarted with the same state on disk and no software upgrade is happening. </li>
-     * </ul>
-     *
-     * @param isGenesis            whether running in genesis mode
-     * @param state                the state of the platform
-     * @param rosterStore          the roster store
-     * @param diskAddressBook     the address book read from disk
-     * @param softwareUpgrade      whether a software upgrade is happening
-     * @return the roster history
-     */
-    private static @NonNull RosterHistory determineRosterHistory(
-            final boolean isGenesis,
-            @NonNull final State state,
-            @NonNull final WritableRosterStore rosterStore,
-            @NonNull final AddressBook diskAddressBook,
-            final boolean softwareUpgrade) {
-        requireNonNull(state);
-        requireNonNull(rosterStore);
-        requireNonNull(diskAddressBook);
-
-        if (isGenesis) {
-            final var genesisRoster = loadRoster(GENESIS_CONFIG_FILE_NAME);
-            // Set (genesisRoster, 0) ase the new active roster in the roster state.
-            rosterStore.putActiveRoster(genesisRoster, 0);
-
-            // rosterHistory := [(genesisRoster, 0)]
-            return new RosterHistory(genesisRoster, 0, genesisRoster, 0);
-        }
-
-        final boolean overrideConfigExists = false; // An override-config.txt file is present on disk
-        if (overrideConfigExists) {
-            // FUTURE: Network Transplant
-        }
-
-        // Normal Restart, no software upgrade is happening
-        if (!softwareUpgrade) {
-            final var roundRosterPairs = rosterStore.getRosterHistory();
-            // If there exists active rosters in the roster state.
-            if (roundRosterPairs != null) {
-                // Read the active rosters and construct the existing rosterHistory from roster state
-                final var current = roundRosterPairs.get(0);
-                final var previous = roundRosterPairs.get(1);
-                return new RosterHistory(
-                        rosterStore.get(current.activeRosterHash()),
-                        current.roundNumber(),
-                        rosterStore.get(previous.activeRosterHash()),
-                        previous.roundNumber());
-            } else {
-                // If there is no roster state content, this is a fatal error: The migration did not happen on software
-                // upgrade.
-                throw new IllegalStateException("No active rosters found in the roster state");
-            }
-        }
-
-        // Migration Software Upgrade
-        // The roster state is empty (no candidate roster and no active rosters)
-        final var activeRoster = rosterStore.getActiveRoster();
-        final var candidateRoster = rosterStore.getCandidateRoster();
-        if (activeRoster == null && candidateRoster == null) {
-            // Read the current AddressBooks from the platform state.
-            // previousRoster := translateToRoster(currentAddressBook)
-            final var addressBookStore = new ReadableStoreFactory(state).getStore(ReadableNodeStore.class);
-            final var prevousRoster = addressBookStore.snapshotOfFutureRoster();
-
-            // configAddressBook := Read the address book in config.txt
-            // currentRoster := translateToRoster(configAddressBook)
-            final var currentRoster = createRoster(diskAddressBook);
-
-            // currentRound := state round +1
-            final long currentRound = rosterStore.getRosterHistory().getFirst().roundNumber() + 1;
-            // set (previousRoster, 0) as the active roster in the roster state.
-            // set (currentRoster, currentRound) as the active roster in the roster state.
-            rosterStore.putActiveRoster(prevousRoster, 0);
-            rosterStore.putActiveRoster(currentRoster, currentRound);
-
-            // rosterHistory := [(currentRoster, currentRound), (previousRoster, 0)]
-            return new RosterHistory(currentRoster, currentRound, prevousRoster, 0);
-        }
-
-        // Subsequent Software Upgrades
-        // There is a candidate roster in the roster state
-        // No override-config.txt file is present on disk
-        if (candidateRoster != null && !overrideConfigExists) {
-            final var previousRoundPair = rosterStore.getRosterHistory().getFirst();
-
-            // currentRound := state round +1
-            final long currentRound = previousRoundPair.roundNumber() + 1;
-
-            // (previousRoster, previousRound) := read the latest (current) active roster and round from the roster
-            // state.
-            final var previousRoster = rosterStore.getActiveRoster();
-            final var previousRound = previousRoundPair.roundNumber();
-
-            // clear the candidate roster from the roster state.
-            // set (candidateRoster, currentRound) as the new active roster in the roster state.
-            rosterStore.putActiveRoster(candidateRoster, currentRound);
-
-            // new rosterHistory := [(candidateRoster, currentRound), (previousRoster, previousRound)]
-            return new RosterHistory(candidateRoster, currentRound, previousRoster, previousRound);
-        }
-
-        // If none of the cases above were met, this is a fatal error.
-        throw new IllegalStateException("Invalid state for determining roster history");
     }
 
     /**
@@ -529,7 +415,7 @@ public class ServicesMain implements SwirldMain {
      * @param addressBookPath the relative path and file name of the address book.
      * @return the address book.
      */
-    private static AddressBook loadAddressBook(@NonNull final String addressBookPath) {
+    public static AddressBook loadAddressBook(@NonNull final String addressBookPath) {
         requireNonNull(addressBookPath);
         try {
             final LegacyConfigProperties props =
@@ -541,17 +427,6 @@ public class ServicesMain implements SwirldMain {
             exitSystem(CONFIGURATION_ERROR);
             throw e;
         }
-    }
-
-    /**
-     * Loads the roster from the specified path.
-     *
-     * @param rosterPath the relative path and file name of the roster.
-     * @return the roster.
-     */
-    private static Roster loadRoster(@NonNull final String rosterPath) {
-        final var addressBook = loadAddressBook(rosterPath);
-        return createRoster(addressBook);
     }
 
     private static Hedera newHedera() {
