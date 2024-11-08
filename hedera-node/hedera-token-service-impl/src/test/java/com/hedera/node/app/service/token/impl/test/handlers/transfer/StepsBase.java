@@ -60,7 +60,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -211,14 +210,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(handleContext.dispatchRemovableChildTransaction(
-                        any(),
-                        eq(CryptoCreateStreamBuilder.class),
-                        any(Predicate.class),
-                        eq(payerId),
-                        any(StreamBuilder.TransactionCustomizer.class),
-                        any()))
-                .willReturn(cryptoCreateRecordBuilder);
+        given(handleContext.dispatch(any())).willReturn(cryptoCreateRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
@@ -301,14 +293,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(handleContext.dispatchRemovableChildTransaction(
-                        any(),
-                        eq(TokenAirdropStreamBuilder.class),
-                        any(Predicate.class),
-                        eq(payerId),
-                        any(StreamBuilder.TransactionCustomizer.class),
-                        any()))
-                .willReturn(tokenAirdropRecordBuilder);
+        given(handleContext.dispatch(any())).willReturn(tokenAirdropRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1L, 2L, 3L));
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
     }

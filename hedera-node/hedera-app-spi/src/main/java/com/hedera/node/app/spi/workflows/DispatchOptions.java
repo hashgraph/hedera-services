@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
 
 /**
@@ -86,6 +87,20 @@ public record DispatchOptions<T extends StreamBuilder>(
         requireNonNull(streamBuilderType);
         requireNonNull(reversingBehavior);
         requireNonNull(transactionCustomizer);
+    }
+
+    /**
+     * Returns the effective key verifier for the dispatch ({@code null} if all keys should be treated as authorized).
+     */
+    public @Nullable Predicate<Key> effectiveKeyVerifier() {
+        return keyVerifier == PREAUTHORIZED_KEYS ? null : keyVerifier;
+    }
+
+    /**
+     * Returns whether the dispatch should commit immediately.
+     */
+    public boolean commitImmediately() {
+        return commit == Commit.IMMEDIATELY;
     }
 
     /**

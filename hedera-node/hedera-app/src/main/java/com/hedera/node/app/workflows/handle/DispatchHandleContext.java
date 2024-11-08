@@ -394,45 +394,18 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 consensusThrottling);
     }
 
-    @NonNull
-    @Override
-    public <T> T dispatchRemovableChildTransaction(
-            @NonNull final TransactionBody childTxBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> childCallback,
-            @NonNull final AccountID childSyntheticPayerId,
-            @NonNull final StreamBuilder.TransactionCustomizer customizer,
-            @NonNull final ConsensusThrottling throttleStrategy) {
-        requireNonNull(childTxBody, "childTxBody must not be null");
-        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
-        requireNonNull(customizer, "customizer must not be null");
-        requireNonNull(throttleStrategy, "throttleStrategy must not be null");
-
-        return dispatchForRecord(
-                childTxBody,
-                recordBuilderClass,
-                childCallback,
-                childSyntheticPayerId,
-                customizer,
-                TransactionCategory.CHILD,
-                StreamBuilder.ReversingBehavior.REMOVABLE,
-                false,
-                throttleStrategy);
-    }
-
     @Override
     public <T extends StreamBuilder> T dispatch(@NonNull final DispatchOptions<T> options) {
         requireNonNull(options);
         return dispatchForRecord(
                 options.body(),
                 options.streamBuilderType(),
-                options.keyVerifier(),
+                options.effectiveKeyVerifier(),
                 options.payerId(),
                 options.transactionCustomizer(),
                 options.category(),
                 options.reversingBehavior(),
-                options.commit() == DispatchOptions.Commit.IMMEDIATELY,
+                options.commitImmediately(),
                 options.throttling());
     }
 

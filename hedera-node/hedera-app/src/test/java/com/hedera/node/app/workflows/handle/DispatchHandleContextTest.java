@@ -26,7 +26,7 @@ import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBLE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
-import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.OFF;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.stepDispatch;
 import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
@@ -585,17 +585,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             assertThatThrownBy(() -> subject.dispatchChildTransaction(
                             txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD, ON))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            null,
-                            StreamBuilder.class,
-                            VERIFIER_CALLBACK,
-                            AccountID.DEFAULT,
-                            NOOP_TRANSACTION_CUSTOMIZER,
-                            OFF))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_TRANSACTION_CUSTOMIZER, OFF))
-                    .isInstanceOf(NullPointerException.class);
         }
 
         private static Stream<Arguments> createContextDispatchers() {
@@ -604,13 +593,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             context.dispatch(independentDispatch(ALICE.accountID(), txBody, StreamBuilder.class)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
                             txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), CHILD, ON)),
-                    Arguments.of((Consumer<HandleContext>) context -> context.dispatchRemovableChildTransaction(
-                            txBody,
-                            StreamBuilder.class,
-                            VERIFIER_CALLBACK,
-                            ALICE.accountID(),
-                            (ignore) -> Transaction.DEFAULT,
-                            OFF))));
+                    Arguments.of((Consumer<HandleContext>) context -> context.dispatch(stepDispatch(
+                            ALICE.accountID(), txBody, StreamBuilder.class, (ignore) -> Transaction.DEFAULT)))));
         }
 
         @ParameterizedTest
