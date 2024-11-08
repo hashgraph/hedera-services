@@ -227,16 +227,14 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                         fromPbj(body),
                         sigValueObj,
                         schedulingConfig.longTermEnabled(),
-                        ledgerConfig.scheduleTxExpiryTimeSecs(),
-                        getHederaFunctionality(transactionBody)));
+                        ledgerConfig.scheduleTxExpiryTimeSecs()));
     }
 
     private @NonNull FeeData usageGiven(
             @NonNull final com.hederahashgraph.api.proto.java.TransactionBody txn,
             @NonNull final SigValueObj svo,
             final boolean longTermEnabled,
-            final long scheduledTxExpiryTimeSecs,
-            @NonNull HederaFunctionality functionality) {
+            final long scheduledTxExpiryTimeSecs) {
         final var op = txn.getScheduleCreate();
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         final long lifetimeSecs;
@@ -249,15 +247,6 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             lifetimeSecs = scheduledTxExpiryTimeSecs;
         }
         return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs);
-    }
-
-    private static HederaFunctionality getHederaFunctionality(SchedulableTransactionBody body) {
-        // TODO: probably there is a better way to get that.
-        final var name = body.data().kind().protoName();
-        String nameFirstLetterUppercase = name.substring(0, 1).toUpperCase() + name.substring(1);
-
-        final HederaFunctionality functionality = HederaFunctionality.valueOf(nameFirstLetterUppercase);
-        return functionality;
     }
 
     private @Nullable Schedule maybeDuplicate(@NonNull final Schedule schedule, @Nullable final Schedule duplicate) {
