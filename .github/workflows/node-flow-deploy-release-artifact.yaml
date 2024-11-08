@@ -70,8 +70,8 @@ jobs:
       - name: Extract Tag Version
         id: tag
         run: |
-          RELEASE_VERSION="$(semver get release "v1.0.0")"
-          PRERELEASE_VERSION="$(semver get prerel "1.0.0")"
+          RELEASE_VERSION="$(semver get release "${{ github.ref_name }}")"
+          PRERELEASE_VERSION="$(semver get prerel "${{ github.ref_name }}")"
 
           FINAL_VERSION="${RELEASE_VERSION}"
           PRERELEASE_FLAG="false"
@@ -80,106 +80,106 @@ jobs:
 
           echo "version=${FINAL_VERSION}" >>"${GITHUB_OUTPUT}"
           echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
-        # REVERT V1.0.0 to ${{ github.ref_name }}
 
-  # release-tag:
-  #   name: Release [Tag]
-  #   uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-  #   needs:
-  #     - prepare-tag-release
-  #   with:
-  #     version-policy: specified
-  #     new-version: ${{ needs.prepare-tag-release.outputs.version }}
-  #     trigger-env-deploy: none
-  #     release-profile: ${{ needs.prepare-tag-release.outputs.prerelease == 'true' && 'PrereleaseChannel' || 'MavenCentral' }}
-  #   secrets:
-  #     access-token: ${{ secrets.GITHUB_TOKEN }}
-  #     bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
-  #     cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
-  #     svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
-  #     svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
-  #     svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
-  #     svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
-  #     sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
-  #     sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
-  #     sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
-  #     sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
-  #     slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
-  #     jf-url: ${{ vars.JF_URL }}
-  #     jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
-  #     jf-user-name: ${{ vars.JF_USER_NAME }}
-  #     jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
+  release-tag:
+    name: Release [Tag]
+    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
+    needs:
+      - prepare-tag-release
+    with:
+      version-policy: specified
+      new-version: ${{ needs.prepare-tag-release.outputs.version }}
+      trigger-env-deploy: none
+      release-profile: ${{ needs.prepare-tag-release.outputs.prerelease == 'true' && 'PrereleaseChannel' || 'MavenCentral' }}
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
+      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
+      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
+      jf-url: ${{ vars.JF_URL }}
+      jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
+      jf-user-name: ${{ vars.JF_USER_NAME }}
+      jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
 
-  # release-branch:
-  #   name: Release [Branch]
-  #   uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-  #   if: ${{ github.event_name == 'workflow_dispatch' }}
-  #   with:
-  #     version-policy: branch-commit
-  #     trigger-env-deploy: integration
-  #     release-profile: DevelopCommit
-  #   secrets:
-  #     access-token: ${{ secrets.GITHUB_TOKEN }}
-  #     bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
-  #     cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
-  #     svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
-  #     svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
-  #     svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
-  #     svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
-  #     sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
-  #     sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
-  #     sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
-  #     sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
-  #     slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
-  #     jf-url: ${{ vars.JF_URL }}
-  #     jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
-  #     jf-user-name: ${{ vars.JF_USER_NAME }}
-  #     jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
+  release-branch:
+    name: Release [Branch]
+    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    with:
+      version-policy: branch-commit
+      trigger-env-deploy: integration
+      release-profile: DevelopCommit
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
+      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
+      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
+      jf-url: ${{ vars.JF_URL }}
+      jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
+      jf-user-name: ${{ vars.JF_USER_NAME }}
+      jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
 
-  # deploy-ci-trigger:
-  #   name: Trigger CI Flows
-  #   runs-on: network-node-linux-medium
-  #   needs:
-  #     - release-branch
-  #   steps:
-  #     - name: Harden Runner
-  #       uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
-  #       with:
-  #         egress-policy: audit
+  deploy-ci-trigger:
+    name: Trigger CI Flows
+    runs-on: network-node-linux-medium
+    needs:
+      - release-branch
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
 
-  #     - name: Checkout Code
-  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-  #       with:
-  #         fetch-depth: '0'
-  #         ref: develop
-  #         token: ${{ secrets.GH_ACCESS_TOKEN }}
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: '0'
+          ref: develop
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
 
-  #     - name: Trigger ZXF Prepare Extended Test Suite
-  #       if: ${{ needs.release-branch.result == 'success' }}
-  #       uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
-  #       with:
-  #         workflow: .github/workflows/zxf-prepare-extended-test-suite.yaml
-  #         repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
-  #         ref: develop # ensure we are always using the workflow definition from the develop branch
-  #         token: ${{ secrets.GH_ACCESS_TOKEN }}
-  #         inputs: '{ "ref": "${{ inputs.ref }}" }'
+      - name: Trigger ZXF Prepare Extended Test Suite
+        if: ${{ needs.release-branch.result == 'success' }}
+        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
+        with:
+          workflow: .github/workflows/zxf-prepare-extended-test-suite.yaml
+          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
+          ref: develop # ensure we are always using the workflow definition from the develop branch
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          inputs: '{ "ref": "${{ inputs.ref }}" }'
 
-  #     - name: Trigger ZXF Deploy Integration
-  #       if: ${{ needs.release-branch.result == 'success' &&
-  #         (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
-  #         !cancelled() }}
-  #       uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
-  #       with:
-  #         workflow: .github/workflows/node-zxf-deploy-integration.yaml
-  #         repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
-  #         ref: develop # ensure we are always using the workflow definition from the develop branch
-  #         token: ${{ secrets.GH_ACCESS_TOKEN }}
-  #         inputs: '{
-  #           "ref": "${{ inputs.ref }}",
-  #           "author": "${{ inputs.author }}",
-  #           "msg": "${{ inputs.msg }}",
-  #           "sha": "${{ inputs.sha }}"
-  #         }'
+      - name: Trigger ZXF Deploy Integration
+        if: ${{ needs.release-branch.result == 'success' &&
+          (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
+          !cancelled() }}
+        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
+        with:
+          workflow: .github/workflows/node-zxf-deploy-integration.yaml
+          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
+          ref: develop # ensure we are always using the workflow definition from the develop branch
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          inputs: |
+            {
+              "ref": "${{ inputs.ref }}",
+              "author": "${{ inputs.author }}",
+              "msg": "${{ inputs.msg }}",
+              "sha": "${{ inputs.sha }}"
+            }
 
   update-hedera-protobufs:
     name: Update Hedera Protobufs
@@ -204,7 +204,6 @@ jobs:
           fetch-depth: 0
           repository: hashgraph/hedera-protobufs
           path: hedera-protobufs
-          ref: 'test-updates-from-hedera-services' #REMOVE THIS SO THE MAIN BRANCH IS USED AND NOT THIS ONE
 
       - name: Install rsync
         run: sudo apt update && sudo apt -y install rsync
