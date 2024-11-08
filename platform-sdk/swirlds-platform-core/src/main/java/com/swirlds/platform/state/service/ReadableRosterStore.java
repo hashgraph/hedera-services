@@ -61,9 +61,14 @@ public interface ReadableRosterStore {
     Roster get(@NonNull Bytes rosterHash);
 
     /**
-     * Get the roster history
-     * @return The list of round roster pairs
+     * Gets the roster history.
+     * Returns the active roster history iff:
+     *      the roster state singleton is not null
+     *      the list of round roster pairs is not empty
+     *      the active roster hashes are present in the roster map
+     * otherwise returns null.
+     * @return the active rosters
      */
-    @NonNull
+    @Nullable
     List<RoundRosterPair> getRosterHistory();
 }

@@ -27,7 +27,6 @@ import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -98,14 +97,21 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
     }
 
     /** {@inheritDoc} */
-    @NonNull
+    @Nullable
     @Override
     public List<RoundRosterPair> getRosterHistory() {
         final RosterState rosterStateSingleton = rosterState.get();
-        List<RoundRosterPair> rosterHistory = new ArrayList<>();
-        if (rosterStateSingleton != null) {
-            rosterHistory = rosterStateSingleton.roundRosterPairs();
+        if (rosterStateSingleton != null
+                && !rosterStateSingleton.roundRosterPairs().isEmpty()) {
+            boolean allHashesPresent = rosterStateSingleton.roundRosterPairs().stream()
+                    .allMatch(pair -> rosterMap.get(ProtoBytes.newBuilder()
+                                    .value(pair.activeRosterHash())
+                                    .build())
+                            != null);
+            if (allHashesPresent) {
+                return rosterStateSingleton.roundRosterPairs();
+            }
         }
-        return rosterHistory;
+        return null;
     }
 }
