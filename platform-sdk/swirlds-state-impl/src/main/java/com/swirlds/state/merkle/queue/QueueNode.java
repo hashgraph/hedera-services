@@ -227,7 +227,7 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     public E remove() {
         final QueueNodeState state = getState();
         final OnDiskValue<E> value =
-                state.isEmpty() ? null : getFromStore(getState().getHeadAndIncrement());
+                state.isEmpty() ? null : removeFromStore(getState().getHeadAndIncrement());
         // Log to transaction state log, what was added
         logQueueRemove(getLabel(), value);
         return value == null ? null : value.getValue();
@@ -236,6 +236,15 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     @NonNull
     private OnDiskValue<E> getFromStore(final long index) {
         final OnDiskValue<E> value = getStore().get(new SingleLongKey(index));
+        if (value == null) {
+            throw new IllegalStateException("Can't find queue element at index " + index + " in the store");
+        }
+        return value;
+    }
+
+    @NonNull
+    private OnDiskValue<E> removeFromStore(final long index) {
+        final OnDiskValue<E> value = getStore().remove(new SingleLongKey(index));
         if (value == null) {
             throw new IllegalStateException("Can't find queue element at index " + index + " in the store");
         }
