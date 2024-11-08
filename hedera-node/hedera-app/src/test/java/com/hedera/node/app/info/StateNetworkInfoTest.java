@@ -32,7 +32,6 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
-import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
@@ -51,9 +50,6 @@ public class StateNetworkInfoTest {
 
     @Mock
     private ConfigProvider configProvider;
-
-    @Mock
-    private LedgerConfig ledgerConfig;
 
     @Mock
     private ReadableKVState<EntityNumber, Node> nodeState;
