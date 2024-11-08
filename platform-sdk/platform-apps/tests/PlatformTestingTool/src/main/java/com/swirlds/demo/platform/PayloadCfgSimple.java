@@ -31,7 +31,7 @@ import org.apache.logging.log4j.MarkerManager;
 
 public class PayloadCfgSimple extends PartialMerkleLeaf implements MerkleLeaf {
 
-    private static final Logger logger = LogManager.getLogger(PlatformTestingToolState.class);
+    private static final Logger logger = LogManager.getLogger(PayloadCfgSimple.class);
     private static final Marker LOGM_DEMO_INFO = MarkerManager.getMarker("DEMO_INFO");
 
     /**
