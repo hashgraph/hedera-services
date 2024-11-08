@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -59,39 +58,29 @@ public class TokenManagementSpecsStateful {
         var unfreezableToken = "without";
         var freezableToken = "withPlusDefaultTrue";
 
-        return defaultHapiSpec("FreezeMgmtFailureCasesWork")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.maxPerAccount", "" + 1000)),
-                        newKeyNamed("oneFreeze"),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("go").balance(0L),
-                        tokenCreate(unfreezableToken).treasury(TOKEN_TREASURY),
-                        tokenCreate(freezableToken)
-                                .freezeDefault(true)
-                                .freezeKey("oneFreeze")
-                                .treasury(TOKEN_TREASURY))
-                .when(
-                        tokenFreeze(unfreezableToken, TOKEN_TREASURY)
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
-                        tokenFreeze(freezableToken, "1.2.3").hasKnownStatus(INVALID_ACCOUNT_ID),
-                        tokenFreeze(freezableToken, TOKEN_TREASURY)
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenFreeze(freezableToken, "go").hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        tokenUnfreeze(freezableToken, "go").hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        tokenUnfreeze(unfreezableToken, TOKEN_TREASURY)
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
-                        tokenUnfreeze(freezableToken, "1.2.3").hasKnownStatus(INVALID_ACCOUNT_ID),
-                        tokenUnfreeze(freezableToken, TOKEN_TREASURY)
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(INVALID_SIGNATURE))
-                .then(getTokenInfo(unfreezableToken)
-                        .hasRegisteredId(unfreezableToken)
-                        .logged());
+        return hapiTest(
+                fileUpdate(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of("tokens.maxPerAccount", "" + 1000)),
+                newKeyNamed("oneFreeze"),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate("go").balance(0L),
+                tokenCreate(unfreezableToken).treasury(TOKEN_TREASURY),
+                tokenCreate(freezableToken)
+                        .freezeDefault(true)
+                        .freezeKey("oneFreeze")
+                        .treasury(TOKEN_TREASURY),
+                tokenFreeze(unfreezableToken, TOKEN_TREASURY).signedBy(GENESIS).hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
+                tokenFreeze(freezableToken, "1.2.3").hasKnownStatus(INVALID_ACCOUNT_ID),
+                tokenFreeze(freezableToken, TOKEN_TREASURY).signedBy(GENESIS).hasKnownStatus(INVALID_SIGNATURE),
+                tokenFreeze(freezableToken, "go").hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                tokenUnfreeze(freezableToken, "go").hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                tokenUnfreeze(unfreezableToken, TOKEN_TREASURY)
+                        .signedBy(GENESIS)
+                        .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
+                tokenUnfreeze(freezableToken, "1.2.3").hasKnownStatus(INVALID_ACCOUNT_ID),
+                tokenUnfreeze(freezableToken, TOKEN_TREASURY).signedBy(GENESIS).hasKnownStatus(INVALID_SIGNATURE),
+                getTokenInfo(unfreezableToken).hasRegisteredId(unfreezableToken).logged());
     }
 
     @LeakyHapiTest(overrides = {"tokens.nfts.maxAllowedMints"})

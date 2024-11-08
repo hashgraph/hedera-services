@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
@@ -55,7 +54,7 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(TOKEN)
 public class TokenUpdateNftsSuite {
-    private static String TOKEN_TREASURY = "treasury";
+    private static final String TOKEN_TREASURY = "treasury";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungible";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String METADATA_KEY = "metadataKey";
@@ -67,19 +66,17 @@ public class TokenUpdateNftsSuite {
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(
-                        newKeyNamed("multiKey"),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .supplyKey("multiKey")
-                                .metadataKey("multiKey")
-                                .initialSupply(0L),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
-                .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenUpdateNfts(
+        return hapiTest(
+                newKeyNamed("multiKey"),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .supplyKey("multiKey")
+                        .metadataKey("multiKey")
+                        .initialSupply(0L),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenUpdateNfts(
                                 NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L, 2L))
                         .signedBy(DEFAULT_PAYER, "multiKey")));
     }
@@ -91,24 +88,22 @@ public class TokenUpdateNftsSuite {
      */
     @HapiTest
     final Stream<DynamicTest> failsIfNoMetadataKeyOrSupplyKeySigns() {
-        return defaultHapiSpec("failsIfNoMetadataKeyOrSupplyKeySigns")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY),
-                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .metadataKey(METADATA_KEY)
-                                .initialSupply(0L),
-                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
-                .when()
-                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .metadataKey(METADATA_KEY)
+                        .initialSupply(0L),
+                tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
                         .via("nftUpdateTxn")
@@ -122,24 +117,22 @@ public class TokenUpdateNftsSuite {
      */
     @HapiTest
     final Stream<DynamicTest> supplyKeyAndMetadataKeyInTreasury() {
-        return defaultHapiSpec("supplyKeyAndMetadataKeyInTreasury")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY),
-                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .metadataKey(METADATA_KEY)
-                                .initialSupply(0L),
-                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
-                .when()
-                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .metadataKey(METADATA_KEY)
+                        .initialSupply(0L),
+                tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
                         .signedBy(SUPPLY_KEY, METADATA_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
@@ -154,25 +147,24 @@ public class TokenUpdateNftsSuite {
      */
     @HapiTest
     final Stream<DynamicTest> supplyKeyAndMetadataKeyOutsideTreasury() {
-        return defaultHapiSpec("supplyKeyAndMetadataKeyOutsideTreasury")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY),
-                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .metadataKey(METADATA_KEY)
-                                .initialSupply(0L),
-                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
-                .when(cryptoTransfer(
-                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, RECEIVER)))
-                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .metadataKey(METADATA_KEY)
+                        .initialSupply(0L),
+                tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                cryptoTransfer(
+                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, RECEIVER)),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
                         .signedBy(SUPPLY_KEY, METADATA_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
@@ -187,24 +179,22 @@ public class TokenUpdateNftsSuite {
      */
     @HapiTest
     final Stream<DynamicTest> metadataKeySignedInTreasury() {
-        return defaultHapiSpec("supplyKeyAndMetadataKeyOutsideTreasury")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY),
-                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .metadataKey(METADATA_KEY)
-                                .initialSupply(0L),
-                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
-                .when()
-                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .metadataKey(METADATA_KEY)
+                        .initialSupply(0L),
+                tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
                         .signedBy(METADATA_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
@@ -219,25 +209,24 @@ public class TokenUpdateNftsSuite {
      */
     @HapiTest
     final Stream<DynamicTest> metadataKeySignedOutsideTreasury() {
-        return defaultHapiSpec("metadataKeySignedOutsideTreasury")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY),
-                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .metadataKey(METADATA_KEY)
-                                .initialSupply(0L),
-                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
-                .when(cryptoTransfer(
-                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, RECEIVER)))
-                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .metadataKey(METADATA_KEY)
+                        .initialSupply(0L),
+                tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                cryptoTransfer(
+                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, RECEIVER)),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
                         .signedBy(METADATA_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
@@ -252,24 +241,22 @@ public class TokenUpdateNftsSuite {
      */
     @HapiTest
     final Stream<DynamicTest> supplyKeySignedInTreasury() {
-        return defaultHapiSpec("supplyKeySignedInTreasury")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY),
-                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .metadataKey(METADATA_KEY)
-                                .initialSupply(0L),
-                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
-                .when()
-                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .metadataKey(METADATA_KEY)
+                        .initialSupply(0L),
+                tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
                         .signedBy(SUPPLY_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
@@ -284,25 +271,24 @@ public class TokenUpdateNftsSuite {
      */
     @HapiTest
     final Stream<DynamicTest> supplyKeySignedOutsideTreasury() {
-        return defaultHapiSpec("supplyKeySignedOutsideTreasury")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY),
-                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .metadataKey(METADATA_KEY)
-                                .initialSupply(0L),
-                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
-                .when(cryptoTransfer(
-                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, RECEIVER)))
-                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .metadataKey(METADATA_KEY)
+                        .initialSupply(0L),
+                tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                cryptoTransfer(
+                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, RECEIVER)),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
                         .signedBy(SUPPLY_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
@@ -317,23 +303,21 @@ public class TokenUpdateNftsSuite {
      */
     @HapiTest
     final Stream<DynamicTest> noMetadataKeySignedInTreasury() {
-        return defaultHapiSpec("noMetadataKeySignedInTreasury")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY),
-                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .initialSupply(0L),
-                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
-                .when()
-                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .initialSupply(0L),
+                tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
                         .signedBy(SUPPLY_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
@@ -348,24 +332,23 @@ public class TokenUpdateNftsSuite {
      */
     @HapiTest
     final Stream<DynamicTest> noMetadataKeySignedOutsideTreasury() {
-        return defaultHapiSpec("noMetadataKeySignedOutsideTreasury")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY),
-                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .initialSupply(0L),
-                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
-                .when(cryptoTransfer(
-                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, RECEIVER)))
-                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .initialSupply(0L),
+                tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                cryptoTransfer(
+                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, RECEIVER)),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
                         .signedBy(SUPPLY_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
@@ -380,32 +363,31 @@ public class TokenUpdateNftsSuite {
      */
     @HapiTest
     final Stream<DynamicTest> noTokenMetadataKeyOrSupplyKeyAfterMinting() {
-        return defaultHapiSpec("noTokenMetadataKeyOrSupplyKeyAfterMinting")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY),
-                        newKeyNamed(ADMIN_KEY),
-                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .metadataKey(METADATA_KEY)
-                                .adminKey(ADMIN_KEY)
-                                .initialSupply(0L),
-                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
-                .when(tokenUpdate(NON_FUNGIBLE_TOKEN)
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(METADATA_KEY),
+                newKeyNamed(ADMIN_KEY),
+                cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .metadataKey(METADATA_KEY)
+                        .adminKey(ADMIN_KEY)
+                        .initialSupply(0L),
+                tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                tokenUpdate(NON_FUNGIBLE_TOKEN)
                         .signedBy(ADMIN_KEY)
                         .properlyEmptyingSupplyKey()
                         .properlyEmptyingMetadataKey()
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
-                        .via("tokenUpdateTxn"))
-                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                        .via("tokenUpdateTxn"),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
                         .signedBy(SUPPLY_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
@@ -415,44 +397,39 @@ public class TokenUpdateNftsSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateMetadataOfNfts() {
-        return defaultHapiSpec("updateMetadataOfNfts")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .metadataKey(METADATA_KEY)
-                                .initialSupply(0L),
-                        mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(
-                                        copyFromUtf8("a"),
-                                        copyFromUtf8("b"),
-                                        copyFromUtf8("c"),
-                                        copyFromUtf8("d"),
-                                        copyFromUtf8("e"),
-                                        copyFromUtf8("f"),
-                                        copyFromUtf8("g"))))
-                .when()
-                .then(
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L)
-                                .hasSerialNum(7L)
-                                .hasMetadata(ByteString.copyFromUtf8("g")),
-                        tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
-                                .signedBy(DEFAULT_PAYER, METADATA_KEY),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L)
-                                .hasSerialNum(7L)
-                                .hasMetadata(ByteString.copyFromUtf8(NFT_TEST_METADATA)),
-                        burnToken(NON_FUNGIBLE_TOKEN, List.of(7L)),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 6L));
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .metadataKey(METADATA_KEY)
+                        .initialSupply(0L),
+                mintToken(
+                        NON_FUNGIBLE_TOKEN,
+                        List.of(
+                                copyFromUtf8("a"),
+                                copyFromUtf8("b"),
+                                copyFromUtf8("c"),
+                                copyFromUtf8("d"),
+                                copyFromUtf8("e"),
+                                copyFromUtf8("f"),
+                                copyFromUtf8("g"))),
+                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L).hasSerialNum(7L).hasMetadata(ByteString.copyFromUtf8("g")),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
+                        .signedBy(GENESIS)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
+                        .signedBy(DEFAULT_PAYER, METADATA_KEY),
+                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L)
+                        .hasSerialNum(7L)
+                        .hasMetadata(ByteString.copyFromUtf8(NFT_TEST_METADATA)),
+                burnToken(NON_FUNGIBLE_TOKEN, List.of(7L)),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 6L));
     }
 
     @HapiTest

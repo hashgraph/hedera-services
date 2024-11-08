@@ -1140,15 +1140,13 @@ public class ScheduleLongTermExecutionTest {
     //        var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
     //
     //        return hapiTest(
-    //                .given(
     //                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).via(SENDER_TXN),
     //                        cryptoCreate(RECEIVER),
     //                        overriding(SCHEDULING_MAX_TXN_PER_SECOND, "100"),
     //                        fileUpdate(THROTTLE_DEFS)
     //                                .payingWith(EXCHANGE_RATE_CONTROL)
     //                                .contents(artificialLimits.toByteArray()),
-    //                        sleepFor(500))
-    //                .when(
+    //                        sleepFor(500),
     //                        blockingOrder(IntStream.range(0, 17)
     //                                .mapToObj(i -> new HapiSpecOperation[] {
     //                                        scheduleCreate(
@@ -1170,8 +1168,7 @@ public class ScheduleLongTermExecutionTest {
     //                                .payingWith(SENDER)
     //                                .waitForExpiry()
     //                                .withRelativeExpiry(SENDER_TXN, 120)
-    //                                .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED))
-    //                .then(
+    //                                .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED),
     //                        overriding(
     //                                SCHEDULING_MAX_TXN_PER_SECOND,
     //                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_MAX_TXN_PER_SECOND)),

@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -93,69 +92,62 @@ public class TokenFeeScheduleUpdateSpecs {
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(
-                        newKeyNamed("feeScheduleKey"),
-                        cryptoCreate("feeCollector"),
-                        tokenCreate("t").feeScheduleKey("feeScheduleKey"),
-                        tokenAssociate("feeCollector", "t"))
-                .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFeeScheduleUpdate("t")
+        return hapiTest(
+                newKeyNamed("feeScheduleKey"),
+                cryptoCreate("feeCollector"),
+                tokenCreate("t").feeScheduleKey("feeScheduleKey"),
+                tokenAssociate("feeCollector", "t"),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFeeScheduleUpdate("t")
                         .withCustom(fixedHbarFee(1, "feeCollector"))
                         .fee(ONE_HBAR)));
     }
 
     @HapiTest
     final Stream<DynamicTest> failsUpdatingToEmptyFees() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(
-                        newKeyNamed("feeScheduleKey"),
-                        cryptoCreate("feeCollector"),
-                        tokenCreate("t").feeScheduleKey("feeScheduleKey"),
-                        tokenAssociate("feeCollector", "t"))
-                .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFeeScheduleUpdate("t")
+        return hapiTest(
+                newKeyNamed("feeScheduleKey"),
+                cryptoCreate("feeCollector"),
+                tokenCreate("t").feeScheduleKey("feeScheduleKey"),
+                tokenAssociate("feeCollector", "t"),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFeeScheduleUpdate("t")
                         .hasKnownStatus(CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES)
                         .fee(ONE_HBAR)));
     }
 
     @HapiTest
     final Stream<DynamicTest> validatesRoyaltyFee() {
-        return defaultHapiSpec("validatesRoyaltyFee")
-                .given(
-                        newKeyNamed("feeScheduleKey"),
-                        newKeyNamed("supplyKey"),
-                        cryptoCreate("feeCollector"),
-                        tokenCreate("t")
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .feeScheduleKey("feeScheduleKey")
-                                .initialSupply(0)
-                                .supplyKey("supplyKey"),
-                        tokenAssociate("feeCollector", "t"))
-                .when(
-                        tokenFeeScheduleUpdate("t")
-                                .withCustom(royaltyFeeNoFallback(1, 0, "feeCollector"))
-                                .hasKnownStatus(FRACTION_DIVIDES_BY_ZERO)
-                                .fee(ONE_HBAR),
-                        tokenFeeScheduleUpdate("t")
-                                .withCustom(royaltyFeeNoFallback(2, 1, "feeCollector"))
-                                .hasKnownStatus(ROYALTY_FRACTION_CANNOT_EXCEED_ONE)
-                                .fee(ONE_HBAR),
-                        tokenFeeScheduleUpdate("t")
-                                .withCustom(royaltyFeeNoFallback(0, 1, "feeCollector"))
-                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
-                                .fee(ONE_HBAR))
-                .then(
-                        tokenFeeScheduleUpdate("t")
-                                .withCustom(royaltyFeeWithFallback(
-                                        1, 2, fixedHbarFeeInheritingRoyaltyCollector(0), "feeCollector"))
-                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
-                                .fee(ONE_HBAR),
-                        tokenFeeScheduleUpdate("t")
-                                .withCustom(royaltyFeeWithFallback(
-                                        1, 2, fixedHbarFeeInheritingRoyaltyCollector(-1), "feeCollector"))
-                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
-                                .fee(ONE_HBAR));
+        return hapiTest(
+                newKeyNamed("feeScheduleKey"),
+                newKeyNamed("supplyKey"),
+                cryptoCreate("feeCollector"),
+                tokenCreate("t")
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .feeScheduleKey("feeScheduleKey")
+                        .initialSupply(0)
+                        .supplyKey("supplyKey"),
+                tokenAssociate("feeCollector", "t"),
+                tokenFeeScheduleUpdate("t")
+                        .withCustom(royaltyFeeNoFallback(1, 0, "feeCollector"))
+                        .hasKnownStatus(FRACTION_DIVIDES_BY_ZERO)
+                        .fee(ONE_HBAR),
+                tokenFeeScheduleUpdate("t")
+                        .withCustom(royaltyFeeNoFallback(2, 1, "feeCollector"))
+                        .hasKnownStatus(ROYALTY_FRACTION_CANNOT_EXCEED_ONE)
+                        .fee(ONE_HBAR),
+                tokenFeeScheduleUpdate("t")
+                        .withCustom(royaltyFeeNoFallback(0, 1, "feeCollector"))
+                        .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
+                        .fee(ONE_HBAR),
+                tokenFeeScheduleUpdate("t")
+                        .withCustom(
+                                royaltyFeeWithFallback(1, 2, fixedHbarFeeInheritingRoyaltyCollector(0), "feeCollector"))
+                        .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
+                        .fee(ONE_HBAR),
+                tokenFeeScheduleUpdate("t")
+                        .withCustom(royaltyFeeWithFallback(
+                                1, 2, fixedHbarFeeInheritingRoyaltyCollector(-1), "feeCollector"))
+                        .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
+                        .fee(ONE_HBAR));
     }
 
     @HapiTest
@@ -191,140 +183,130 @@ public class TokenFeeScheduleUpdateSpecs {
         final var newHtsCollector = "newDenomFee";
         final var newTokenCollector = "newFractionalFee";
 
-        return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeUpdated")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
-                        newKeyNamed(adminKey),
-                        newKeyNamed(feeScheduleKey),
-                        cryptoCreate(htsCollector),
-                        cryptoCreate(newHtsCollector),
-                        cryptoCreate(hbarCollector),
-                        cryptoCreate(newHbarCollector),
-                        cryptoCreate(tokenCollector),
-                        cryptoCreate(newTokenCollector),
-                        tokenCreate(feeDenom).treasury(htsCollector),
-                        tokenCreate(newFeeDenom).treasury(newHtsCollector),
-                        tokenCreate(token)
-                                .adminKey(adminKey)
-                                .feeScheduleKey(feeScheduleKey)
-                                .treasury(tokenCollector)
-                                .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
-                                .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector)),
-                        tokenCreate(immutableTokenWithFeeScheduleKey)
-                                .feeScheduleKey(feeScheduleKey)
-                                .treasury(tokenCollector)
-                                .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
-                                .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector)),
-                        tokenCreate(noFeeScheduleKeyToken)
-                                .adminKey(adminKey)
-                                .treasury(tokenCollector)
-                                .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
-                                .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector)),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of("tokens.maxCustomFeesAllowed", "1")))
-                .when(
-                        tokenFeeScheduleUpdate(immutableTokenWithFeeScheduleKey)
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        0,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector))
-                                .hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
-                        tokenFeeScheduleUpdate(noFeeScheduleKeyToken)
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector))
-                                .hasKnownStatus(TOKEN_HAS_NO_FEE_SCHEDULE_KEY),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        0,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector))
-                                .hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(fractionalFee(
-                                        -numerator,
-                                        denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector))
-                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        denominator,
-                                        -minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector))
-                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(-maximumToCollect),
-                                        tokenCollector))
-                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
-                                .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                                .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(fixedHbarFee(hbarAmount, invalidEntityId))
-                                .hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(fixedHtsFee(htsAmount, invalidEntityId, htsCollector))
-                                .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(fixedHtsFee(htsAmount, feeDenom, hbarCollector))
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(fixedHtsFee(-htsAmount, feeDenom, htsCollector))
-                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(incompleteCustomFee(hbarCollector))
-                                .hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
-                        tokenAssociate(newTokenCollector, token),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
-                                .withCustom(fixedHtsFee(newHtsAmount, newFeeDenom, newHtsCollector))
-                                .withCustom(fractionalFee(
-                                        newNumerator,
-                                        newDenominator,
-                                        newMinimumToCollect,
-                                        OptionalLong.of(newMaximumToCollect),
-                                        newTokenCollector)))
-                .then(getTokenInfo(token)
+        return hapiTest(
+                fileUpdate(APP_PROPERTIES)
+                        .payingWith(GENESIS)
+                        .overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
+                newKeyNamed(adminKey),
+                newKeyNamed(feeScheduleKey),
+                cryptoCreate(htsCollector),
+                cryptoCreate(newHtsCollector),
+                cryptoCreate(hbarCollector),
+                cryptoCreate(newHbarCollector),
+                cryptoCreate(tokenCollector),
+                cryptoCreate(newTokenCollector),
+                tokenCreate(feeDenom).treasury(htsCollector),
+                tokenCreate(newFeeDenom).treasury(newHtsCollector),
+                tokenCreate(token)
+                        .adminKey(adminKey)
+                        .feeScheduleKey(feeScheduleKey)
+                        .treasury(tokenCollector)
+                        .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+                        .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+                        .withCustom(fractionalFee(
+                                numerator,
+                                denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                tokenCollector)),
+                tokenCreate(immutableTokenWithFeeScheduleKey)
+                        .feeScheduleKey(feeScheduleKey)
+                        .treasury(tokenCollector)
+                        .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+                        .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+                        .withCustom(fractionalFee(
+                                numerator,
+                                denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                tokenCollector)),
+                tokenCreate(noFeeScheduleKeyToken)
+                        .adminKey(adminKey)
+                        .treasury(tokenCollector)
+                        .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+                        .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+                        .withCustom(fractionalFee(
+                                numerator,
+                                denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                tokenCollector)),
+                fileUpdate(APP_PROPERTIES)
+                        .payingWith(GENESIS)
+                        .overridingProps(Map.of("tokens.maxCustomFeesAllowed", "1")),
+                tokenFeeScheduleUpdate(immutableTokenWithFeeScheduleKey)
+                        .withCustom(fractionalFee(
+                                numerator, 0, minimumToCollect, OptionalLong.of(maximumToCollect), tokenCollector))
+                        .hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
+                tokenFeeScheduleUpdate(noFeeScheduleKeyToken)
+                        .withCustom(fractionalFee(
+                                numerator,
+                                denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                tokenCollector))
+                        .hasKnownStatus(TOKEN_HAS_NO_FEE_SCHEDULE_KEY),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(fractionalFee(
+                                numerator, 0, minimumToCollect, OptionalLong.of(maximumToCollect), tokenCollector))
+                        .hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(fractionalFee(
+                                -numerator,
+                                denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                tokenCollector))
+                        .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(fractionalFee(
+                                numerator,
+                                denominator,
+                                -minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                tokenCollector))
+                        .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(fractionalFee(
+                                numerator,
+                                denominator,
+                                minimumToCollect,
+                                OptionalLong.of(-maximumToCollect),
+                                tokenCollector))
+                        .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+                        .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+                        .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(fixedHbarFee(hbarAmount, invalidEntityId))
+                        .hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(fixedHtsFee(htsAmount, invalidEntityId, htsCollector))
+                        .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(fixedHtsFee(htsAmount, feeDenom, hbarCollector))
+                        .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(fixedHtsFee(-htsAmount, feeDenom, htsCollector))
+                        .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(incompleteCustomFee(hbarCollector))
+                        .hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED),
+                fileUpdate(APP_PROPERTIES)
+                        .payingWith(GENESIS)
+                        .overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
+                tokenAssociate(newTokenCollector, token),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
+                        .withCustom(fixedHtsFee(newHtsAmount, newFeeDenom, newHtsCollector))
+                        .withCustom(fractionalFee(
+                                newNumerator,
+                                newDenominator,
+                                newMinimumToCollect,
+                                OptionalLong.of(newMaximumToCollect),
+                                newTokenCollector)),
+                getTokenInfo(token)
                         .hasCustom(fixedHbarFeeInSchedule(newHbarAmount, newHbarCollector))
                         .hasCustom(fixedHtsFeeInSchedule(newHtsAmount, newFeeDenom, newHtsCollector))
                         .hasCustom(fractionalFeeInSchedule(

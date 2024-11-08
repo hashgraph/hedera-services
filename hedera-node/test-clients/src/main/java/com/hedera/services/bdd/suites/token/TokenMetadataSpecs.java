@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -72,39 +71,33 @@ public class TokenMetadataSpecs {
     private static final String METADATA_KEY = "metadataKey";
     private static final String FREEZE_KEY = "freezeKey";
     private static final String KYC_KEY = "kycKey";
-    private static String TOKEN_TREASURY = "treasury";
+    private static final String TOKEN_TREASURY = "treasury";
 
     @HapiTest
     final Stream<DynamicTest> rejectsMetadataTooLong() {
         String metadataStringTooLong = TxnUtils.nAscii(101);
-        return defaultHapiSpec("validatesMetadataLength")
-                .given()
-                .when()
-                .then(tokenCreate(PRIMARY).metaData(metadataStringTooLong).hasPrecheck(METADATA_TOO_LONG));
+        return hapiTest(tokenCreate(PRIMARY).metaData(metadataStringTooLong).hasPrecheck(METADATA_TOO_LONG));
     }
 
     @HapiTest
     final Stream<DynamicTest> creationDoesNotHaveRequiredSigs() {
-        return defaultHapiSpec("CreationRequiresAppropriateSigs")
-                .given(
-                        cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        newKeyNamed(ADMIN_KEY))
-                .when()
-                .then(
-                        tokenCreate("shouldntWork")
-                                .treasury(TOKEN_TREASURY)
-                                .payingWith(PAYER)
-                                .adminKey(ADMIN_KEY)
-                                .signedBy(PAYER)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        /* treasury must sign */
-                        tokenCreate("shouldntWorkEither")
-                                .treasury(TOKEN_TREASURY)
-                                .payingWith(PAYER)
-                                .adminKey(ADMIN_KEY)
-                                .signedBy(PAYER, ADMIN_KEY)
-                                .hasKnownStatus(INVALID_SIGNATURE));
+        return hapiTest(
+                cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                newKeyNamed(ADMIN_KEY),
+                tokenCreate("shouldntWork")
+                        .treasury(TOKEN_TREASURY)
+                        .payingWith(PAYER)
+                        .adminKey(ADMIN_KEY)
+                        .signedBy(PAYER)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                /* treasury must sign */
+                tokenCreate("shouldntWorkEither")
+                        .treasury(TOKEN_TREASURY)
+                        .payingWith(PAYER)
+                        .adminKey(ADMIN_KEY)
+                        .signedBy(PAYER, ADMIN_KEY)
+                        .hasKnownStatus(INVALID_SIGNATURE));
     }
 
     @HapiTest

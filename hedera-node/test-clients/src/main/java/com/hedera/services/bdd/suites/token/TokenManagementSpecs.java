@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -107,6 +106,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -131,63 +131,61 @@ public class TokenManagementSpecs {
         final var PRIMARY = "primary";
         final var partyAlias = "partyAlias";
         final var counterAlias = "counterAlias";
-        return defaultHapiSpec("aliasFormFailsForAllTokenOps")
-                .given(
-                        newKeyNamed(partyAlias).shape(ED25519),
-                        newKeyNamed(counterAlias).shape(ED25519),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
-                        newKeyNamed(PAUSE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        newAliasedAccount(partyAlias))
-                .when(
-                        tokenCreate(PRIMARY)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .maxSupply(1000)
-                                .initialSupply(500)
-                                .decimals(1)
-                                .treasury(TOKEN_TREASURY)
-                                .pauseKey(PAUSE_KEY)
-                                .kycKey(KYC_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .wipeKey(WIPE_KEY),
+        return hapiTest(
+                newKeyNamed(partyAlias).shape(ED25519),
+                newKeyNamed(counterAlias).shape(ED25519),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(PAUSE_KEY),
+                newKeyNamed(KYC_KEY),
+                newKeyNamed(FREEZE_KEY),
+                newKeyNamed(WIPE_KEY),
+                newAliasedAccount(partyAlias),
+                tokenCreate(PRIMARY)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .treasury(TOKEN_TREASURY)
+                        .pauseKey(PAUSE_KEY)
+                        .kycKey(KYC_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .wipeKey(WIPE_KEY),
 
-                        // associate and dissociate with alias
-                        tokenAssociateWithAlias(partyAlias, PRIMARY)
-                                .signedBy(partyAlias, DEFAULT_PAYER)
-                                .hasPrecheck(INVALID_ACCOUNT_ID),
-                        tokenDissociateWithAlias(partyAlias, PRIMARY)
-                                .signedBy(partyAlias, DEFAULT_PAYER)
-                                .hasPrecheck(INVALID_ACCOUNT_ID),
-                        // associate again for next steps
-                        tokenAssociateWithAlias(partyAlias, PRIMARY)
-                                .signedBy(partyAlias, DEFAULT_PAYER)
-                                .hasPrecheck(INVALID_ACCOUNT_ID),
-                        // grant and revoke kyc
-                        grantTokenKycWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
-                        // revoke kyc
-                        revokeTokenKycWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
-                        // freeze, unfreeze
-                        tokenFreezeWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
-                        tokenUnfreezeWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
+                // associate and dissociate with alias
+                tokenAssociateWithAlias(partyAlias, PRIMARY)
+                        .signedBy(partyAlias, DEFAULT_PAYER)
+                        .hasPrecheck(INVALID_ACCOUNT_ID),
+                tokenDissociateWithAlias(partyAlias, PRIMARY)
+                        .signedBy(partyAlias, DEFAULT_PAYER)
+                        .hasPrecheck(INVALID_ACCOUNT_ID),
+                // associate again for next steps
+                tokenAssociateWithAlias(partyAlias, PRIMARY)
+                        .signedBy(partyAlias, DEFAULT_PAYER)
+                        .hasPrecheck(INVALID_ACCOUNT_ID),
+                // grant and revoke kyc
+                grantTokenKycWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
+                // revoke kyc
+                revokeTokenKycWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
+                // freeze, unfreeze
+                tokenFreezeWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
+                tokenUnfreezeWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
 
-                        // wipe won't happen if the kyc key exists and kyc not granted
-                        grantTokenKycWithAlias(PRIMARY, partyAlias)
-                                .hasPrecheck(INVALID_ACCOUNT_ID)
-                                .logged(),
-                        tokenAssociate(partyAlias, PRIMARY),
-                        grantTokenKyc(PRIMARY, partyAlias),
-                        cryptoTransfer(moving(1, PRIMARY).between(TOKEN_TREASURY, partyAlias))
-                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
-                        // Only wipe works with alias apart from CryptoTransfer
-                        wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1))
-                .then();
+                // wipe won't happen if the kyc key exists and kyc not granted
+                grantTokenKycWithAlias(PRIMARY, partyAlias)
+                        .hasPrecheck(INVALID_ACCOUNT_ID)
+                        .logged(),
+                tokenAssociate(partyAlias, PRIMARY),
+                grantTokenKyc(PRIMARY, partyAlias),
+                cryptoTransfer(moving(1, PRIMARY).between(TOKEN_TREASURY, partyAlias))
+                        .signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
+                // Only wipe works with alias apart from CryptoTransfer
+                wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1));
     }
 
-    //    @HapiTest
+    @Disabled
+    @HapiTest
     // This test should be enabled when aliases are supported in all transaction bodies
     final Stream<DynamicTest> aliasFormWorksForAllTokenOps() {
         final var CIVILIAN = "civilian";
@@ -198,102 +196,99 @@ public class TokenManagementSpecs {
         final var PRIMARY = "primary";
         final var partyAlias = "partyAlias";
         final var counterAlias = "counterAlias";
-        return defaultHapiSpec("aliasFormWorksForAllTokenOps")
-                .given(
-                        newKeyNamed(partyAlias).shape(ED25519),
-                        newKeyNamed(counterAlias).shape(ED25519),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
-                        newKeyNamed(PAUSE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, partyAlias, ONE_HBAR)),
-                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, counterAlias, ONE_HBAR)))
-                .when(
-                        tokenCreate(PRIMARY)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .maxSupply(1000)
-                                .initialSupply(500)
-                                .decimals(1)
-                                .treasury(TOKEN_TREASURY)
-                                .pauseKey(PAUSE_KEY)
-                                .kycKey(KYC_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .wipeKey(WIPE_KEY),
+        return hapiTest(
+                newKeyNamed(partyAlias).shape(ED25519),
+                newKeyNamed(counterAlias).shape(ED25519),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(PAUSE_KEY),
+                newKeyNamed(KYC_KEY),
+                newKeyNamed(FREEZE_KEY),
+                newKeyNamed(WIPE_KEY),
+                cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, partyAlias, ONE_HBAR)),
+                cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, counterAlias, ONE_HBAR)),
+                tokenCreate(PRIMARY)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .treasury(TOKEN_TREASURY)
+                        .pauseKey(PAUSE_KEY)
+                        .kycKey(KYC_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .wipeKey(WIPE_KEY),
 
-                        // associate and dissociate with alias
-                        tokenAssociateWithAlias(partyAlias, PRIMARY).signedBy(partyAlias, DEFAULT_PAYER),
-                        getAliasedAccountInfo(partyAlias)
-                                .hasToken(relationshipWith(PRIMARY).balance(0).kyc(Revoked))
-                                .logged(),
-                        tokenDissociateWithAlias(partyAlias, PRIMARY).signedBy(partyAlias, DEFAULT_PAYER),
-                        getAliasedAccountInfo(partyAlias)
-                                .hasNoTokenRelationship(PRIMARY)
-                                .logged(),
+                // associate and dissociate with alias
+                tokenAssociateWithAlias(partyAlias, PRIMARY).signedBy(partyAlias, DEFAULT_PAYER),
+                getAliasedAccountInfo(partyAlias)
+                        .hasToken(relationshipWith(PRIMARY).balance(0).kyc(Revoked))
+                        .logged(),
+                tokenDissociateWithAlias(partyAlias, PRIMARY).signedBy(partyAlias, DEFAULT_PAYER),
+                getAliasedAccountInfo(partyAlias)
+                        .hasNoTokenRelationship(PRIMARY)
+                        .logged(),
 
-                        // associate again for next steps
-                        tokenAssociateWithAlias(partyAlias, PRIMARY).signedBy(partyAlias, DEFAULT_PAYER),
+                // associate again for next steps
+                tokenAssociateWithAlias(partyAlias, PRIMARY).signedBy(partyAlias, DEFAULT_PAYER),
 
-                        // grant and revoke kyc
-                        grantTokenKycWithAlias(PRIMARY, partyAlias),
-                        getAliasedAccountInfo(partyAlias)
-                                .hasToken(relationshipWith(PRIMARY).balance(0).kyc(Granted))
-                                .logged(),
-                        // transfer some tokens
-                        cryptoTransfer(moving(10, PRIMARY).between(TOKEN_TREASURY, partyAlias))
-                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
-                        getAliasedAccountInfo(partyAlias)
-                                .hasToken(relationshipWith(PRIMARY).balance(10).kyc(Granted))
-                                .logged(),
+                // grant and revoke kyc
+                grantTokenKycWithAlias(PRIMARY, partyAlias),
+                getAliasedAccountInfo(partyAlias)
+                        .hasToken(relationshipWith(PRIMARY).balance(0).kyc(Granted))
+                        .logged(),
+                // transfer some tokens
+                cryptoTransfer(moving(10, PRIMARY).between(TOKEN_TREASURY, partyAlias))
+                        .signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
+                getAliasedAccountInfo(partyAlias)
+                        .hasToken(relationshipWith(PRIMARY).balance(10).kyc(Granted))
+                        .logged(),
 
-                        // revoke kyc
-                        revokeTokenKycWithAlias(PRIMARY, partyAlias),
-                        getAliasedAccountInfo(partyAlias)
-                                .hasToken(relationshipWith(PRIMARY).balance(10).kyc(Revoked))
-                                .logged(),
+                // revoke kyc
+                revokeTokenKycWithAlias(PRIMARY, partyAlias),
+                getAliasedAccountInfo(partyAlias)
+                        .hasToken(relationshipWith(PRIMARY).balance(10).kyc(Revoked))
+                        .logged(),
 
-                        // freeze, unfreeze
-                        tokenFreezeWithAlias(PRIMARY, partyAlias),
-                        getAliasedAccountInfo(partyAlias)
-                                .hasToken(relationshipWith(PRIMARY)
-                                        .balance(10)
-                                        .kyc(Revoked)
-                                        .freeze(Frozen))
-                                .logged(),
-                        tokenUnfreezeWithAlias(PRIMARY, partyAlias),
-                        getAliasedAccountInfo(partyAlias)
-                                .hasToken(relationshipWith(PRIMARY)
-                                        .balance(10)
-                                        .kyc(Revoked)
-                                        .freeze(Unfrozen))
-                                .logged(),
+                // freeze, unfreeze
+                tokenFreezeWithAlias(PRIMARY, partyAlias),
+                getAliasedAccountInfo(partyAlias)
+                        .hasToken(relationshipWith(PRIMARY)
+                                .balance(10)
+                                .kyc(Revoked)
+                                .freeze(Frozen))
+                        .logged(),
+                tokenUnfreezeWithAlias(PRIMARY, partyAlias),
+                getAliasedAccountInfo(partyAlias)
+                        .hasToken(relationshipWith(PRIMARY)
+                                .balance(10)
+                                .kyc(Revoked)
+                                .freeze(Unfrozen))
+                        .logged(),
 
-                        // wipe won't happen if the kyc key exists and kyc not granted
-                        grantTokenKycWithAlias(PRIMARY, partyAlias),
-                        wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1),
-                        getAliasedAccountInfo(partyAlias)
-                                .hasToken(relationshipWith(PRIMARY)
-                                        .balance(9)
-                                        .kyc(Granted)
-                                        .freeze(Unfrozen))
-                                .logged())
-                .then();
+                // wipe won't happen if the kyc key exists and kyc not granted
+                grantTokenKycWithAlias(PRIMARY, partyAlias),
+                wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1),
+                getAliasedAccountInfo(partyAlias)
+                        .hasToken(relationshipWith(PRIMARY)
+                                .balance(9)
+                                .kyc(Granted)
+                                .freeze(Unfrozen))
+                        .logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> getNftInfoIdVariantsTreatedAsExpected() {
-        return defaultHapiSpec("getNftInfoIdVariantsTreatedAsExpected")
-                .given(newKeyNamed("supplyKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(
-                        tokenCreate("nft")
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey("supplyKey")
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY),
-                        mintToken("nft", List.of(copyFromUtf8("Please mind the vase."))))
-                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getTokenNftInfo("nft", 1L)));
+        return hapiTest(
+                newKeyNamed("supplyKey"),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate("nft")
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey("supplyKey")
+                        .initialSupply(0)
+                        .treasury(TOKEN_TREASURY),
+                mintToken("nft", List.of(copyFromUtf8("Please mind the vase."))),
+                sendModified(withSuccessivelyVariedQueryIds(), () -> getTokenNftInfo("nft", 1L)));
     }
 
     // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
@@ -425,77 +420,70 @@ public class TokenManagementSpecs {
     final Stream<DynamicTest> wipeAccountSuccessCasesWork() {
         var wipeableToken = "with";
 
-        return defaultHapiSpec("WipeAccountSuccessCasesWork")
-                .given(
-                        newKeyNamed("wipeKey"),
-                        cryptoCreate("misc").balance(0L),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(
-                        tokenCreate(wipeableToken)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(1_000)
-                                .wipeKey("wipeKey"),
-                        tokenAssociate("misc", wipeableToken),
-                        cryptoTransfer(moving(500, wipeableToken).between(TOKEN_TREASURY, "misc")),
-                        getAccountBalance("misc").hasTokenBalance(wipeableToken, 500),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
-                        getAccountInfo("misc").logged(),
-                        wipeTokenAccount(wipeableToken, "misc", 500).via(WIPE_TXN),
-                        getAccountInfo("misc").logged(),
-                        wipeTokenAccount(wipeableToken, "misc", 0).via("wipeWithZeroAmount"),
-                        getAccountInfo("misc").logged())
-                .then(
-                        getAccountBalance("misc").hasTokenBalance(wipeableToken, 0),
-                        cryptoDelete("misc"),
-                        getTokenInfo(wipeableToken).hasTotalSupply(500),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
-                        getTxnRecord(WIPE_TXN).logged());
+        return hapiTest(
+                newKeyNamed("wipeKey"),
+                cryptoCreate("misc").balance(0L),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate(wipeableToken)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(1_000)
+                        .wipeKey("wipeKey"),
+                tokenAssociate("misc", wipeableToken),
+                cryptoTransfer(moving(500, wipeableToken).between(TOKEN_TREASURY, "misc")),
+                getAccountBalance("misc").hasTokenBalance(wipeableToken, 500),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
+                getAccountInfo("misc").logged(),
+                wipeTokenAccount(wipeableToken, "misc", 500).via(WIPE_TXN),
+                getAccountInfo("misc").logged(),
+                wipeTokenAccount(wipeableToken, "misc", 0).via("wipeWithZeroAmount"),
+                getAccountInfo("misc").logged(),
+                getAccountBalance("misc").hasTokenBalance(wipeableToken, 0),
+                cryptoDelete("misc"),
+                getTokenInfo(wipeableToken).hasTotalSupply(500),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
+                getTxnRecord(WIPE_TXN).logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> wipeAccountWithAliasesWork() {
         final var initialTokenSupply = 1000;
-        return defaultHapiSpec("wipeAccountWithAliasesWork")
-                .given(
-                        newKeyNamed(VALID_ALIAS),
-                        newKeyNamed("wipeKey"),
-                        cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
-                        tokenCreate(A_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyType(FINITE)
-                                .initialSupply(initialTokenSupply)
-                                .maxSupply(10L * initialTokenSupply)
-                                .wipeKey("wipeKey")
-                                .treasury(TOKEN_TREASURY)
-                                .via(TOKEN_A_CREATE),
-                        getTxnRecord(TOKEN_A_CREATE).hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY),
-                        tokenAssociate(CIVILIAN, A_TOKEN),
-                        cryptoTransfer(moving(10, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(A_TOKEN).balance(10)))
-                .when(
-                        cryptoTransfer(
-                                        movingHbar(10L).between(CIVILIAN, VALID_ALIAS),
-                                        moving(5, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
-                                .signedBy(DEFAULT_PAYER, CIVILIAN)
-                                .via(TRANSFER_TXN),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
-                        getAliasedAccountInfo(VALID_ALIAS)
-                                .has(accountWith().balance(10L))
-                                .hasToken(relationshipWith(A_TOKEN).balance(5L))
-                                .logged())
-                .then(
-                        wipeTokenAccountWithAlias(A_TOKEN, VALID_ALIAS, 4).via(WIPE_TXN),
-                        getAliasedAccountInfo(VALID_ALIAS)
-                                .has(accountWith().balance(10L))
-                                .hasToken(relationshipWith(A_TOKEN).balance(1L))
-                                .logged(),
-                        wipeTokenAccountWithAlias(A_TOKEN, VALID_ALIAS, 0),
-                        getAliasedAccountInfo(VALID_ALIAS)
-                                .has(accountWith().balance(10L))
-                                .hasToken(relationshipWith(A_TOKEN).balance(1L))
-                                .logged());
+        return hapiTest(
+                newKeyNamed(VALID_ALIAS),
+                newKeyNamed("wipeKey"),
+                cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
+                cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
+                tokenCreate(A_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyType(FINITE)
+                        .initialSupply(initialTokenSupply)
+                        .maxSupply(10L * initialTokenSupply)
+                        .wipeKey("wipeKey")
+                        .treasury(TOKEN_TREASURY)
+                        .via(TOKEN_A_CREATE),
+                getTxnRecord(TOKEN_A_CREATE).hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY),
+                tokenAssociate(CIVILIAN, A_TOKEN),
+                cryptoTransfer(moving(10, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)),
+                getAccountInfo(CIVILIAN).hasToken(relationshipWith(A_TOKEN).balance(10)),
+                cryptoTransfer(
+                                movingHbar(10L).between(CIVILIAN, VALID_ALIAS),
+                                moving(5, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
+                        .signedBy(DEFAULT_PAYER, CIVILIAN)
+                        .via(TRANSFER_TXN),
+                getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                getAliasedAccountInfo(VALID_ALIAS)
+                        .has(accountWith().balance(10L))
+                        .hasToken(relationshipWith(A_TOKEN).balance(5L))
+                        .logged(),
+                wipeTokenAccountWithAlias(A_TOKEN, VALID_ALIAS, 4).via(WIPE_TXN),
+                getAliasedAccountInfo(VALID_ALIAS)
+                        .has(accountWith().balance(10L))
+                        .hasToken(relationshipWith(A_TOKEN).balance(1L))
+                        .logged(),
+                wipeTokenAccountWithAlias(A_TOKEN, VALID_ALIAS, 0),
+                getAliasedAccountInfo(VALID_ALIAS)
+                        .has(accountWith().balance(10L))
+                        .hasToken(relationshipWith(A_TOKEN).balance(1L))
+                        .logged());
     }
 
     @HapiTest
@@ -539,15 +527,11 @@ public class TokenManagementSpecs {
                 wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1).hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT),
                 wipeTokenAccount(anotherWipeableToken, "misc", 501).hasKnownStatus(INVALID_WIPING_AMOUNT),
                 wipeTokenAccount(anotherWipeableToken, "misc", -1).hasPrecheck(INVALID_WIPING_AMOUNT),
-                withOpContext((spec, opLog) -> {
-                    final var key = spec.registry().getKey("alias");
-                    final var alias = key.hasECDSASecp256K1() ? key.getECDSASecp256K1() : key.getEd25519();
-                    allRunFor(
-                            spec,
-                            wipeTokenAccountWithAlias(unwipeableToken, "alias", 1)
-                                    .signedBy(GENESIS)
-                                    .hasKnownStatus(INVALID_ACCOUNT_ID));
-                }));
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        wipeTokenAccountWithAlias(unwipeableToken, "alias", 1)
+                                .signedBy(GENESIS)
+                                .hasKnownStatus(INVALID_ACCOUNT_ID))));
     }
 
     @HapiTest
@@ -571,13 +555,11 @@ public class TokenManagementSpecs {
 
     @HapiTest
     final Stream<DynamicTest> updateIdVariantsTreatedAsExpected() {
-        return defaultHapiSpec("updateIdVariantsTreatedAsExpected")
-                .given(
-                        newKeyNamed("adminKey"),
-                        cryptoCreate("autoRenewAccount"),
-                        tokenCreate("t").adminKey("adminKey"))
-                .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenUpdate("t")
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate("autoRenewAccount"),
+                tokenCreate("t").adminKey("adminKey"),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenUpdate("t")
                         .autoRenewPeriod(7776000L)
                         .autoRenewAccount("autoRenewAccount")
                         .signedBy(DEFAULT_PAYER, "adminKey", "autoRenewAccount")));
@@ -585,88 +567,77 @@ public class TokenManagementSpecs {
 
     @HapiTest
     final Stream<DynamicTest> wipeIdVariantsTreatedAsExpected() {
-        return defaultHapiSpec("wipeIdVariantsTreatedAsExpected")
-                .given(
-                        newKeyNamed("wipeKey"),
-                        cryptoCreate("holder").maxAutomaticTokenAssociations(2),
-                        tokenCreate("t").initialSupply(1000).wipeKey("wipeKey"))
-                .when(cryptoTransfer(moving(100, "t").between(DEFAULT_PAYER, "holder")))
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> wipeTokenAccount("t", "holder", 1)));
+        return hapiTest(
+                newKeyNamed("wipeKey"),
+                cryptoCreate("holder").maxAutomaticTokenAssociations(2),
+                tokenCreate("t").initialSupply(1000).wipeKey("wipeKey"),
+                cryptoTransfer(moving(100, "t").between(DEFAULT_PAYER, "holder")),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> wipeTokenAccount("t", "holder", 1)));
     }
 
     @HapiTest
     final Stream<DynamicTest> grantRevokeIdVariantsTreatedAsExpected() {
-        return defaultHapiSpec("grantRevokeIdVariantsTreatedAsExpected")
-                .given(
-                        newKeyNamed("kycKey"),
-                        cryptoCreate("somebody"),
-                        cryptoCreate("feeCollector"),
-                        tokenCreate("t").kycKey("kycKey"),
-                        tokenAssociate("somebody", "t"))
-                .when()
-                .then(
-                        submitModified(withSuccessivelyVariedBodyIds(), () -> grantTokenKyc("t", "somebody")),
-                        submitModified(withSuccessivelyVariedBodyIds(), () -> revokeTokenKyc("t", "somebody")));
+        return hapiTest(
+                newKeyNamed("kycKey"),
+                cryptoCreate("somebody"),
+                cryptoCreate("feeCollector"),
+                tokenCreate("t").kycKey("kycKey"),
+                tokenAssociate("somebody", "t"),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> grantTokenKyc("t", "somebody")),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> revokeTokenKyc("t", "somebody")));
     }
 
     @HapiTest
     final Stream<DynamicTest> pauseUnpauseIdVariantsTreatedAsExpected() {
-        return defaultHapiSpec("pauseUnpauseIdVariantsTreatedAsExpected")
-                .given(newKeyNamed("pauseKey"), tokenCreate("t").pauseKey("pauseKey"))
-                .when()
-                .then(
-                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenPause("t")),
-                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenUnpause("t")));
+        return hapiTest(
+                newKeyNamed("pauseKey"),
+                tokenCreate("t").pauseKey("pauseKey"),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenPause("t")),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenUnpause("t")));
     }
 
     @HapiTest
     final Stream<DynamicTest> freezeUnfreezeIdVariantsTreatedAsExpected() {
-        return defaultHapiSpec("freezeUnfreezeIdVariantsTreatedAsExpected")
-                .given(
-                        newKeyNamed("freezeKey"),
-                        cryptoCreate("somebody"),
-                        tokenCreate("t").freezeKey("freezeKey"),
-                        tokenAssociate("somebody", "t"))
-                .when()
-                .then(
-                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFreeze("t", "somebody")),
-                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenUnfreeze("t", "somebody")));
+        return hapiTest(
+                newKeyNamed("freezeKey"),
+                cryptoCreate("somebody"),
+                tokenCreate("t").freezeKey("freezeKey"),
+                tokenAssociate("somebody", "t"),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFreeze("t", "somebody")),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenUnfreeze("t", "somebody")));
     }
 
     @HapiTest
     final Stream<DynamicTest> mintBurnIdVariantsTreatedAsExpected() {
-        return defaultHapiSpec("mintBurnIdVariantsTreatedAsExpected")
-                .given(newKeyNamed("supplyKey"), tokenCreate("t").supplyKey("supplyKey"))
-                .when()
-                .then(
-                        submitModified(withSuccessivelyVariedBodyIds(), () -> mintToken("t", 123L)),
-                        submitModified(withSuccessivelyVariedBodyIds(), () -> burnToken("t", 123L)));
+        return hapiTest(
+                newKeyNamed("supplyKey"),
+                tokenCreate("t").supplyKey("supplyKey"),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> mintToken("t", 123L)),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> burnToken("t", 123L)));
     }
 
     @HapiTest
     final Stream<DynamicTest> freezeMgmtSuccessCasesWork() {
         var withPlusDefaultFalse = "withPlusDefaultFalse";
 
-        return defaultHapiSpec("FreezeMgmtSuccessCasesWork")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("misc").balance(0L),
-                        newKeyNamed("oneFreeze"),
-                        newKeyNamed("twoFreeze"),
-                        tokenCreate(withPlusDefaultFalse)
-                                .freezeDefault(false)
-                                .freezeKey("twoFreeze")
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate("misc", withPlusDefaultFalse))
-                .when(
-                        cryptoTransfer(moving(1, withPlusDefaultFalse).between(TOKEN_TREASURY, "misc")),
-                        tokenFreeze(withPlusDefaultFalse, "misc"),
-                        cryptoTransfer(moving(1, withPlusDefaultFalse).between(TOKEN_TREASURY, "misc"))
-                                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        getAccountInfo("misc").logged(),
-                        tokenUnfreeze(withPlusDefaultFalse, "misc"),
-                        cryptoTransfer(moving(1, withPlusDefaultFalse).between(TOKEN_TREASURY, "misc")))
-                .then(getAccountInfo("misc").logged());
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate("misc").balance(0L),
+                newKeyNamed("oneFreeze"),
+                newKeyNamed("twoFreeze"),
+                tokenCreate(withPlusDefaultFalse)
+                        .freezeDefault(false)
+                        .freezeKey("twoFreeze")
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate("misc", withPlusDefaultFalse),
+                cryptoTransfer(moving(1, withPlusDefaultFalse).between(TOKEN_TREASURY, "misc")),
+                tokenFreeze(withPlusDefaultFalse, "misc"),
+                cryptoTransfer(moving(1, withPlusDefaultFalse).between(TOKEN_TREASURY, "misc"))
+                        .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                getAccountInfo("misc").logged(),
+                tokenUnfreeze(withPlusDefaultFalse, "misc"),
+                cryptoTransfer(moving(1, withPlusDefaultFalse).between(TOKEN_TREASURY, "misc")),
+                getAccountInfo("misc").logged());
     }
 
     @HapiTest
@@ -674,92 +645,84 @@ public class TokenManagementSpecs {
         var withKycKey = "withKycKey";
         var withoutKycKey = "withoutKycKey";
 
-        return defaultHapiSpec("KycMgmtSuccessCasesWork")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("misc").balance(0L),
-                        newKeyNamed(ONE_KYC),
-                        newKeyNamed("twoKyc"),
-                        tokenCreate(withKycKey).kycKey(ONE_KYC).treasury(TOKEN_TREASURY),
-                        tokenCreate(withoutKycKey).treasury(TOKEN_TREASURY),
-                        tokenAssociate("misc", withKycKey, withoutKycKey))
-                .when(
-                        cryptoTransfer(moving(1, withKycKey).between(TOKEN_TREASURY, "misc"))
-                                .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
-                        getAccountInfo("misc").logged(),
-                        grantTokenKyc(withKycKey, "misc"),
-                        cryptoTransfer(moving(1, withKycKey).between(TOKEN_TREASURY, "misc")),
-                        revokeTokenKyc(withKycKey, "misc"),
-                        cryptoTransfer(moving(1, withKycKey).between(TOKEN_TREASURY, "misc"))
-                                .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
-                        cryptoTransfer(moving(1, withoutKycKey).between(TOKEN_TREASURY, "misc")))
-                .then(getAccountInfo("misc").logged());
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate("misc").balance(0L),
+                newKeyNamed(ONE_KYC),
+                newKeyNamed("twoKyc"),
+                tokenCreate(withKycKey).kycKey(ONE_KYC).treasury(TOKEN_TREASURY),
+                tokenCreate(withoutKycKey).treasury(TOKEN_TREASURY),
+                tokenAssociate("misc", withKycKey, withoutKycKey),
+                cryptoTransfer(moving(1, withKycKey).between(TOKEN_TREASURY, "misc"))
+                        .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
+                getAccountInfo("misc").logged(),
+                grantTokenKyc(withKycKey, "misc"),
+                cryptoTransfer(moving(1, withKycKey).between(TOKEN_TREASURY, "misc")),
+                revokeTokenKyc(withKycKey, "misc"),
+                cryptoTransfer(moving(1, withKycKey).between(TOKEN_TREASURY, "misc"))
+                        .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
+                cryptoTransfer(moving(1, withoutKycKey).between(TOKEN_TREASURY, "misc")),
+                getAccountInfo("misc").logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> supplyMgmtSuccessCasesWork() {
-        return defaultHapiSpec("SupplyMgmtSuccessCasesWork")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        newKeyNamed(SUPPLY_KEY),
-                        tokenCreate(SUPPLE)
-                                .supplyKey(SUPPLY_KEY)
-                                .initialSupply(10)
-                                .decimals(1)
-                                .treasury(TOKEN_TREASURY))
-                .when(
-                        getTokenInfo(SUPPLE).logged(),
-                        getAccountBalance(TOKEN_TREASURY).logged(),
-                        mintToken(SUPPLE, 100).via(MINT_TXN),
-                        burnToken(SUPPLE, 50).via("burnTxn"))
-                .then(
-                        getAccountInfo(TOKEN_TREASURY).logged(),
-                        getTokenInfo(SUPPLE).logged(),
-                        getTxnRecord(MINT_TXN).logged(),
-                        getTxnRecord("burnTxn").logged());
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                newKeyNamed(SUPPLY_KEY),
+                tokenCreate(SUPPLE)
+                        .supplyKey(SUPPLY_KEY)
+                        .initialSupply(10)
+                        .decimals(1)
+                        .treasury(TOKEN_TREASURY),
+                getTokenInfo(SUPPLE).logged(),
+                getAccountBalance(TOKEN_TREASURY).logged(),
+                mintToken(SUPPLE, 100).via(MINT_TXN),
+                burnToken(SUPPLE, 50).via("burnTxn"),
+                getAccountInfo(TOKEN_TREASURY).logged(),
+                getTokenInfo(SUPPLE).logged(),
+                getTxnRecord(MINT_TXN).logged(),
+                getTxnRecord("burnTxn").logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> fungibleCommonMaxSupplyReachWork() {
-        return defaultHapiSpec("FungibleCommonMaxSupplyReachWork")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .initialSupply(0)
-                                .maxSupply(500)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY))
-                .when(mintToken(FUNGIBLE_TOKEN, 3000)
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .initialSupply(0)
+                        .maxSupply(500)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                mintToken(FUNGIBLE_TOKEN, 3000)
                         .hasKnownStatus(TOKEN_MAX_SUPPLY_REACHED)
-                        .via(SHOULD_NOT_APPEAR))
-                .then(
-                        getTxnRecord(SHOULD_NOT_APPEAR).showsNoTransfers(),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 0),
-                        withOpContext((spec, opLog) -> {
-                            var mintNFT = getTxnRecord(SHOULD_NOT_APPEAR);
-                            allRunFor(spec, mintNFT);
-                            var receipt = mintNFT.getResponseRecord().getReceipt();
-                            Assertions.assertEquals(0, receipt.getNewTotalSupply());
-                        }));
+                        .via(SHOULD_NOT_APPEAR),
+                getTxnRecord(SHOULD_NOT_APPEAR).showsNoTransfers(),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                withOpContext((spec, opLog) -> {
+                    var mintNFT = getTxnRecord(SHOULD_NOT_APPEAR);
+                    allRunFor(spec, mintNFT);
+                    var receipt = mintNFT.getResponseRecord().getReceipt();
+                    Assertions.assertEquals(0, receipt.getNewTotalSupply());
+                }));
     }
 
     @HapiTest
     final Stream<DynamicTest> mintingMaxLongValueWorks() {
-        return defaultHapiSpec("MintingMaxLongValueWorks")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(10L),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .initialSupply(0)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY))
-                .when(mintToken(FUNGIBLE_TOKEN, Long.MAX_VALUE).via(MINT_TXN))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, Long.MAX_VALUE));
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(10L),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .initialSupply(0)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.INFINITE)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                mintToken(FUNGIBLE_TOKEN, Long.MAX_VALUE).via(MINT_TXN),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, Long.MAX_VALUE));
     }
 
     @HapiTest
@@ -767,43 +730,40 @@ public class TokenManagementSpecs {
         final var multiKey = "multi";
         final var token = "non-fungible";
         final var txn = "mint";
-        return defaultHapiSpec("NftMintProvidesMintedNftsAndNewTotalSupply")
-                .given(
-                        newKeyNamed(multiKey),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        tokenCreate(token)
-                                .initialSupply(0)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .supplyKey(multiKey)
-                                .treasury(TOKEN_TREASURY))
-                .when(mintToken(
+        return hapiTest(
+                newKeyNamed(multiKey),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate(token)
+                        .initialSupply(0)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyType(TokenSupplyType.INFINITE)
+                        .supplyKey(multiKey)
+                        .treasury(TOKEN_TREASURY),
+                mintToken(
                                 token,
                                 List.of(
                                         ByteString.copyFromUtf8("a"),
                                         ByteString.copyFromUtf8("b"),
                                         ByteString.copyFromUtf8("c")))
-                        .via(txn))
-                .then(getTxnRecord(txn)
+                        .via(txn),
+                getTxnRecord(txn)
                         .hasPriority(recordWith().newTotalSupply(3L).serialNos(List.of(1L, 2L, 3L)))
                         .logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> supplyMgmtFailureCasesWork() {
-        return defaultHapiSpec("SupplyMgmtFailureCasesWork")
-                .given(newKeyNamed(SUPPLY_KEY))
-                .when(
-                        tokenCreate(RIGID),
-                        tokenCreate(SUPPLE).supplyKey(SUPPLY_KEY).decimals(16).initialSupply(1))
-                .then(
-                        mintToken(RIGID, 1).signedBy(GENESIS).hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
-                        burnToken(RIGID, 1).signedBy(GENESIS).hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
-                        mintToken(SUPPLE, Long.MAX_VALUE).hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
-                        mintToken(SUPPLE, 0).hasPrecheck(OK),
-                        mintToken(SUPPLE, -1).hasPrecheck(INVALID_TOKEN_MINT_AMOUNT),
-                        burnToken(SUPPLE, 2).hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
-                        burnToken(SUPPLE, 0).hasPrecheck(OK),
-                        burnToken(SUPPLE, -1).hasPrecheck(INVALID_TOKEN_BURN_AMOUNT));
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                tokenCreate(RIGID),
+                tokenCreate(SUPPLE).supplyKey(SUPPLY_KEY).decimals(16).initialSupply(1),
+                mintToken(RIGID, 1).signedBy(GENESIS).hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
+                burnToken(RIGID, 1).signedBy(GENESIS).hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
+                mintToken(SUPPLE, Long.MAX_VALUE).hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
+                mintToken(SUPPLE, 0).hasPrecheck(OK),
+                mintToken(SUPPLE, -1).hasPrecheck(INVALID_TOKEN_MINT_AMOUNT),
+                burnToken(SUPPLE, 2).hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
+                burnToken(SUPPLE, 0).hasPrecheck(OK),
+                burnToken(SUPPLE, -1).hasPrecheck(INVALID_TOKEN_BURN_AMOUNT));
     }
 }
