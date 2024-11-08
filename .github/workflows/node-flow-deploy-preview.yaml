@@ -79,6 +79,7 @@ jobs:
     with:
       version-policy: specified
       new-version: ${{ needs.prepare-deploy-preview.outputs.version }}
+      dry-run-enabled: ${{ github.event.inputs.dry-run-enabled }}
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
