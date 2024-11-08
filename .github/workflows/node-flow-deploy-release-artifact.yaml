@@ -45,7 +45,7 @@ jobs:
   prepare-tag-release:
     name: Prepare Release [Tag]
     runs-on: network-node-linux-medium
-    # if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     outputs:
       version: ${{ steps.tag.outputs.version }}
       prerelease: ${{ steps.tag.outputs.prerelease }}
