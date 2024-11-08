@@ -45,6 +45,8 @@ class BackpressureBlocker implements ManagedBlocker {
      */
     private final long sleepNanos;
 
+    private long delta = 1L;
+
     /**
      * Constructor.
      *
@@ -57,6 +59,11 @@ class BackpressureBlocker implements ManagedBlocker {
         this.count = Objects.requireNonNull(count);
         this.capacity = capacity;
         this.sleepNanos = sleepNanos;
+    }
+
+    public BackpressureBlocker withDelta(long delta) {
+        this.delta = delta;
+        return this;
     }
 
     /**
@@ -90,14 +97,14 @@ class BackpressureBlocker implements ManagedBlocker {
      */
     @Override
     public boolean isReleasable() {
-        final long resultingCount = count.incrementAndGet();
+        final long resultingCount = count.addAndGet(delta);
         if (resultingCount <= capacity) {
             // We didn't violate capacity by incrementing the count, so we're done.
             return true;
         } else {
             // We may have violated capacity restrictions by incrementing the count.
             // Decrement count and take the slow pathway.
-            count.decrementAndGet();
+            count.addAndGet(-delta);
             return false;
         }
     }
