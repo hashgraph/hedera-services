@@ -232,6 +232,13 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         metadata = metadata.withNewAccountId(toPbj(asAccount(memo)));
     }
 
+    /**
+     * Reassigns node operator port to be disabled for this node.
+     */
+    public void reassignWithNodeOperatorPortDisabled() {
+        metadata = metadata.withNewNodeOperatorPortDisabled();
+    }
+
     private boolean swirldsLogContains(@NonNull final String text) {
         try (var lines = Files.lines(getExternalPath(SWIRLDS_LOG))) {
             return lines.anyMatch(line -> line.contains(text));
