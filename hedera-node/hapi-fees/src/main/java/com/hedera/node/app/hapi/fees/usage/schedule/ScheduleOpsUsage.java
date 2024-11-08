@@ -118,7 +118,6 @@ public class ScheduleOpsUsage {
         var pbj = CommonPbjConverters.toPbj(scheduleCreate);
         SchedulableTransactionBody body = pbj.scheduleCreate().scheduledTransactionBody();
 
-        // TODO: probably there is a better way to get that.
         final var name = body.data().kind().protoName();
         String nameFirstLetterUppercase = name.substring(0, 1).toUpperCase() + name.substring(1);
 
