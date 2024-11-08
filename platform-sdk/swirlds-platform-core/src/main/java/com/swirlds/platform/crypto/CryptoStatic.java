@@ -551,7 +551,7 @@ public final class CryptoStatic {
                     keysAndCerts = EnhancedKeyStoreLoader.using(addressBook, configuration)
                             .migrate()
                             .scan()
-                            .generateIfNecessary()
+                            .generate()
                             .verify()
                             .injectInAddressBook()
                             .keysAndCerts();
