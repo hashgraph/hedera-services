@@ -56,6 +56,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
@@ -63,6 +64,7 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
@@ -71,6 +73,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
@@ -96,10 +99,26 @@ public class ServicesMain implements SwirldMain {
     private final SwirldMain delegate;
 
     /**
+     * The {@link Metrics} to use.
+     */
+    private static Metrics metrics;
+
+    /**
      * Create a new instance
      */
     public ServicesMain() {
-        delegate = newHedera();
+        delegate = new Hedera(
+                ConstructableRegistry.getInstance(),
+                ServicesRegistryImpl::new,
+                new OrderedServiceMigrator(),
+                InstantSource.system(),
+                appContext -> new TssBaseServiceImpl(
+                        appContext,
+                        ForkJoinPool.commonPool(),
+                        ForkJoinPool.commonPool(),
+                        new PlaceholderTssLibrary(),
+                        ForkJoinPool.commonPool(),
+                        new NoOpMetrics()));
     }
 
     /**
@@ -169,7 +188,6 @@ public class ServicesMain implements SwirldMain {
      */
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
-        final Hedera hedera = newHedera();
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
         final AddressBook diskAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
@@ -193,15 +211,17 @@ public class ServicesMain implements SwirldMain {
 
         final NodeId selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
 
-        final SoftwareVersion version = hedera.getSoftwareVersion();
-        logger.info("Starting node {} with version {}", selfId, version);
-
         final var configuration = buildConfiguration();
         final var keysAndCerts =
                 initNodeSecurity(diskAddressBook, configuration).get(selfId);
 
         setupGlobalMetrics(configuration);
-        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        metrics = getMetricsProvider().createPlatformMetrics(selfId);
+
+        final Hedera hedera = newHedera();
+        final SoftwareVersion version = hedera.getSoftwareVersion();
+        logger.info("Starting node {} with version {}", selfId, version);
+
         final var time = Time.getCurrent();
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
@@ -260,17 +280,22 @@ public class ServicesMain implements SwirldMain {
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
         final var roster = createRoster(addressBook);
         final var platformBuilder = PlatformBuilder.create(
-                        Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
+                        Hedera.APP_NAME,
+                        Hedera.SWIRLD_NAME,
+                        version,
+                        initialState,
+                        selfId,
+                        AddressBookUtils.formatConsensusEventStreamName(addressBook, selfId),
+                        // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
+                        // we need to choose the correct roster in the following cases:
+                        //  - At genesis, a roster loaded from disk
+                        //  - At restart, the active roster in the saved state
+                        //  - At upgrade boundary, the candidate roster in the saved state IF
+                        //    that state satisfies conditions (e.g. the roster has been keyed)
+                        RosterUtils.buildRosterHistory(
+                                initialState.get().getState().getReadablePlatformState()))
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration)
-                .withAddressBook(addressBook)
-                // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
-                // we need to choose the correct roster in the following cases:
-                //  - At genesis, a roster loaded from disk
-                //  - At restart, the active roster in the saved state
-                //  - At upgrade boundary, the candidate roster in the saved state IF
-                //    that state satisfies conditions (e.g. the roster has been keyed)
-                .withRoster(roster)
                 .withKeysAndCerts(keysAndCerts);
 
         hedera.setInitialStateHash(stateHash);
@@ -393,6 +418,6 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
-                        new NoOpMetrics()));
+                        metrics));
     }
 }

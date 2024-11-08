@@ -23,10 +23,10 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.merkle.singleton.SingletonNode;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
@@ -67,12 +67,8 @@ public enum PlatformStateService implements Service {
         }
         final var index = root.findNodeIndex(NAME, PLATFORM_STATE_KEY);
         if (index == -1) {
-            final var legacyPlatformState = requireNonNull(root.getPreV054PlatformState());
-            return legacyPlatformState.getCreationSoftwareVersion().getPbjSemanticVersion();
-        } else {
-            return ((SingletonNode<PlatformState>) root.getChild(index))
-                    .getValue()
-                    .creationSoftwareVersionOrThrow();
+            throw new IllegalStateException("Platform state not found in root");
         }
+        return ((SingletonNode<PlatformState>) root.getChild(index)).getValue().creationSoftwareVersionOrThrow();
     }
 }

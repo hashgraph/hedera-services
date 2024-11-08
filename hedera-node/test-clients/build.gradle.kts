@@ -250,7 +250,7 @@ tasks.register<Test>("testRepeatable") {
         includeTags(
             if (ciTagExpression.isBlank())
                 "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE)"
-            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&(!INTEGRATION)"
         )
     }
 

@@ -224,12 +224,24 @@ public class PlatformWiring {
         stateSnapshotManagerWiring =
                 new ComponentWiring<>(model, StateSnapshotManager.class, config.stateSnapshotManager());
         stateSignerWiring = new ComponentWiring<>(model, StateSigner.class, config.stateSigner());
-        transactionHandlerWiring = new ComponentWiring<>(model, TransactionHandler.class, config.transactionHandler());
+        transactionHandlerWiring = new ComponentWiring<>(
+                model,
+                TransactionHandler.class,
+                config.transactionHandler(),
+                data -> data instanceof ConsensusRound consensusRound
+                        ? Math.max(consensusRound.getNumAppTransactions(), 1)
+                        : 1);
         consensusEventStreamWiring =
                 new ComponentWiring<>(model, ConsensusEventStream.class, config.consensusEventStream());
         runningEventHashOverrideWiring = RunningEventHashOverrideWiring.create(model);
 
-        stateHasherWiring = new ComponentWiring<>(model, StateHasher.class, config.stateHasher());
+        stateHasherWiring = new ComponentWiring<>(
+                model,
+                StateHasher.class,
+                config.stateHasher(),
+                data -> data instanceof StateAndRound stateAndRound
+                        ? Math.max(stateAndRound.round().getNumAppTransactions(), 1)
+                        : 1);
 
         gossipWiring = new GossipWiring(platformContext, model);
 

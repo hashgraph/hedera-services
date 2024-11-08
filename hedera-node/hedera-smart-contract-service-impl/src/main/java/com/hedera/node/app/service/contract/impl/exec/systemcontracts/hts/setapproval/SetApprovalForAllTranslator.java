@@ -36,13 +36,18 @@ import javax.inject.Inject;
  */
 public class SetApprovalForAllTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    /** Selector for setApprovalForAll(address,address,bool) method. */
     public static final Function SET_APPROVAL_FOR_ALL =
             new Function("setApprovalForAll(address,address,bool)", ReturnTypes.INT);
+    /** Selector for setApprovalForAll(address,bool) method. */
     public static final Function ERC721_SET_APPROVAL_FOR_ALL =
             new Function("setApprovalForAll(address,bool)", ReturnTypes.INT);
 
     private final SetApprovalForAllDecoder decoder;
 
+    /**
+     * @param decoder the decoder to use for approve calls
+     */
     @Inject
     public SetApprovalForAllTranslator(final SetApprovalForAllDecoder decoder) {
         this.decoder = decoder;
@@ -71,6 +76,13 @@ public class SetApprovalForAllTranslator extends AbstractCallTranslator<HtsCallA
                 attempt.isSelector(ERC721_SET_APPROVAL_FOR_ALL));
     }
 
+    /**
+     * @param body                          the transaction body to be dispatched
+     * @param systemContractGasCalculator   the gas calculator for the system contract
+     * @param enhancement                   the enhancement to use
+     * @param payerId                       the payer of the transaction
+     * @return the required gas
+     */
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,

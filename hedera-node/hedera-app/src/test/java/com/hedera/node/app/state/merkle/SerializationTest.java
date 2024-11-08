@@ -50,18 +50,18 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
-import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableSingletonState;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
-import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
@@ -255,7 +255,7 @@ class SerializationTest extends MerkleTestBase {
     @Test
     void dualReadAndWrite() throws IOException, ConstructableRegistryException {
         final var schemaV1 = createV1Schema();
-        final var originalTree = (MerkleStateRoot) createMerkleHederaState(schemaV1);
+        final var originalTree = createMerkleHederaState(schemaV1);
 
         MerkleStateRoot copy = originalTree.copy(); // make a copy to make VM flushable
 

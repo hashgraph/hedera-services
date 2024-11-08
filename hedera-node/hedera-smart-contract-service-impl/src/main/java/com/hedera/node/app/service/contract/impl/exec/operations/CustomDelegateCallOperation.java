@@ -36,6 +36,12 @@ public class CustomDelegateCallOperation extends DelegateCallOperation implement
     private final AddressChecks addressChecks;
     private final FeatureFlags featureFlags;
 
+    /**
+     * Constructor for custom delegate call operations.
+     * @param gasCalculator the gas calculator to use
+     * @param addressChecks checks against addresses reserved for Hedera
+     * @param featureFlags current evm module feature flags
+     */
     public CustomDelegateCallOperation(
             @NonNull final GasCalculator gasCalculator,
             @NonNull final AddressChecks addressChecks,

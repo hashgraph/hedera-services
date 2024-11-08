@@ -31,6 +31,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.setunl
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.setunlimitedautoassociations.SetUnlimitedAutoAssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +57,9 @@ class SetUnlimitedAutoAssociationsTranslatorTest {
 
     @Mock
     private VerificationStrategies verificationStrategies;
+
+    @Mock
+    private SignatureVerifier signatureVerifier;
 
     @Mock
     private HederaNativeOperations nativeOperations;
@@ -85,6 +89,7 @@ class SetUnlimitedAutoAssociationsTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 configuration);
         assertTrue(subject.matches(attempt));
@@ -102,6 +107,7 @@ class SetUnlimitedAutoAssociationsTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 configuration);
         assertFalse(subject.matches(attempt));

@@ -29,6 +29,7 @@ import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -83,6 +84,20 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
     public List<ScheduleID> getByExpirationSecond(final long expirationTime) {
         final ScheduleIdList inStateValue = scheduleIdsByExpirationSecond.get(new ProtoLong(expirationTime));
         return inStateValue != null ? inStateValue.scheduleIds() : null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public List<Schedule> getByExpirationBetween(final long firstSecondToExpire, final long lastSecondToExpire) {
+        final var schedules = new ArrayList<Schedule>();
+        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
+            final var scheduleIdList = getByExpirationSecond(i);
+            if (scheduleIdList != null) {
+                schedules.addAll(scheduleIdList.stream().map(this::get).toList());
+            }
+        }
+        return schedules;
     }
 
     @Override
