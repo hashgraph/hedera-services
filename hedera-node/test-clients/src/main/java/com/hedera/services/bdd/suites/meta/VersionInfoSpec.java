@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.meta;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -62,10 +62,7 @@ public class VersionInfoSpec extends HapiSuite {
                     .when()
                     .then(getVersionInfo().withYahcliLogging().noLogging());
         } else {
-            return defaultHapiSpec("discoversExpectedVersions")
-                    .given()
-                    .when()
-                    .then(getVersionInfo().logged().hasNoDegenerateSemvers());
+            return hapiTest(getVersionInfo().logged().hasNoDegenerateSemvers());
         }
     }
 

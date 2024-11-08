@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.misc;
 
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
@@ -44,20 +44,17 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(NOT_REPEATABLE)
 public class ConsensusQueriesStressTests {
-    private AtomicLong duration = new AtomicLong(10);
-    private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-    private AtomicInteger maxOpsPerSec = new AtomicInteger(10);
+    private final AtomicLong duration = new AtomicLong(10);
+    private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
+    private final AtomicInteger maxOpsPerSec = new AtomicInteger(10);
 
     @HapiTest
     final Stream<DynamicTest> getTopicInfoStress() {
-        return defaultHapiSpec("GetTopicInfoStress")
-                .given()
-                .when()
-                .then(
-                        withOpContext((spec, opLog) -> configureFromCi(spec)),
-                        runWithProvider(getTopicInfoFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get));
+        return hapiTest(
+                withOpContext((spec, opLog) -> configureFromCi(spec)),
+                runWithProvider(getTopicInfoFactory())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get));
     }
 
     private Function<HapiSpec, OpProvider> getTopicInfoFactory() {

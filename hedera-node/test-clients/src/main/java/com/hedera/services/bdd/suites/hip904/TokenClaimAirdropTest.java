@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -189,37 +188,36 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
 
     @HapiTest
     final Stream<DynamicTest> claimFungibleTokenAirdrop() {
-        return defaultHapiSpec("should transfer fungible tokens")
-                .given(flattened(
-                        setUpTokensAndAllReceivers(), cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS)))
-                .when(
-                        // do pending airdrop
-                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
-                                .payingWith(OWNER),
-                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
-                                .payingWith(OWNER),
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
+                // do pending airdrop
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
+                        .payingWith(OWNER),
+                tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
+                        .payingWith(OWNER),
 
-                        // do claim
-                        tokenClaimAirdrop(
-                                        pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
-                                        pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
-                                .payingWith(RECEIVER)
-                                .via("claimTxn"))
-                .then( // assert txn record
-                        getTxnRecord("claimTxn")
-                                .hasPriority(recordWith()
-                                        .tokenTransfers(includingFungibleMovement(
-                                                moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))
-                                        .tokenTransfers(includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 1)
-                                                .between(OWNER, RECEIVER)))),
-                        validateChargedUsd("claimTxn", 0.001, 1),
-                        // assert balance fungible tokens
-                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
-                        // assert balances NFT
-                        getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
-                        // assert token associations
-                        getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
-                        getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)));
+                // do claim
+                tokenClaimAirdrop(
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
+                                pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
+                        .payingWith(RECEIVER)
+                        .via("claimTxn"),
+                // assert txn record
+                getTxnRecord("claimTxn")
+                        .hasPriority(recordWith()
+                                .tokenTransfers(includingFungibleMovement(
+                                        moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))
+                                .tokenTransfers(includingNonfungibleMovement(
+                                        movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER)))),
+                validateChargedUsd("claimTxn", 0.001, 1),
+                // assert balance fungible tokens
+                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                // assert balances NFT
+                getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                // assert token associations
+                getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
+                getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))));
     }
 
     @HapiTest
@@ -916,27 +914,24 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     @DisplayName("Claim frozen token airdrop")
     final Stream<DynamicTest> claimFrozenToken() {
         final var tokenFreezeKey = "freezeKey";
-        return defaultHapiSpec("should fail - ACCOUNT_FROZEN_FOR_TOKEN")
-                .given(flattened(
-                        setUpTokensAndAllReceivers(),
-                        newKeyNamed(tokenFreezeKey),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .treasury(OWNER)
-                                .freezeKey(tokenFreezeKey)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(1000L)))
-                .when(
-                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
-                                .payingWith(OWNER),
-                        tokenFreeze(FUNGIBLE_TOKEN, OWNER))
-                .then(
-                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 0),
-                        tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN))
-                                .payingWith(RECEIVER)
-                                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 0));
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                newKeyNamed(tokenFreezeKey),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .treasury(OWNER)
+                        .freezeKey(tokenFreezeKey)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000L),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
+                        .payingWith(OWNER),
+                tokenFreeze(FUNGIBLE_TOKEN, OWNER),
+                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN))
+                        .payingWith(RECEIVER)
+                        .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 0)));
     }
 
     @HapiTest
