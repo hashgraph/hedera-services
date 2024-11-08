@@ -81,6 +81,12 @@ public record ContractsConfig(
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractAccountServiceIsAuthorizedRawEnabled,
+        @ConfigProperty(value = "systemContract.accountService.isAuthorizedEnabled", defaultValue = "true")
+                @NetworkProperty
+                boolean systemContractAccountServiceIsAuthorizedEnabled,
+        @ConfigProperty(value = "systemContract.metadataKeyAndFieldSupport.enabled", defaultValue = "false")
+                @NetworkProperty
+                boolean metadataKeyAndFieldEnabled,
         @ConfigProperty(value = "systemContract.updateCustomFees.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractUpdateCustomFeesEnabled,
         @ConfigProperty(value = "systemContract.tokenInfo.v2.enabled", defaultValue = "false") @NetworkProperty
