@@ -177,10 +177,9 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
         PublishStreamRequest request = PublishStreamRequest.newBuilder().build();
         try {
             BlockItemSet items = BlockItemSet.newBuilder()
-                    .addBlockItems(BlockItem.parseFrom(bytes)).build();
-            request = PublishStreamRequest.newBuilder()
-                    .setBlockItems(items)
+                    .addBlockItems(BlockItem.parseFrom(bytes))
                     .build();
+            request = PublishStreamRequest.newBuilder().setBlockItems(items).build();
             requestObserver.onNext(request);
         } catch (IOException e) {
             final String message = INVALID_MESSAGE.formatted("PublishStreamResponse", request);
@@ -202,9 +201,7 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
             BlockItemSet items = BlockItemSet.newBuilder()
                     .addBlockItems(BlockItem.parseFrom(data.asInputStream()))
                     .build();
-            request = PublishStreamRequest.newBuilder()
-                    .setBlockItems(items)
-                    .build();
+            request = PublishStreamRequest.newBuilder().setBlockItems(items).build();
             requestObserver.onNext(request);
         } catch (IOException e) {
             final String message = INVALID_MESSAGE.formatted("PublishStreamResponse", request);
