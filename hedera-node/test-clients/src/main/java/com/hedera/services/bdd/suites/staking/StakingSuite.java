@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.staking;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.NO_CONCURRENT_STAKE_PERIOD_BOUNDARY_CROSSINGS;
 import static com.hedera.services.bdd.junit.TestTags.LONG_RUNNING;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -54,6 +53,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.TINY_PARTS_PER_WHOLE;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite.PAYABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 
@@ -90,7 +90,7 @@ public class StakingSuite {
     private static final long STAKING_PERIOD_MINS = 1L;
 
     @BeforeAll
-    static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws Throwable {
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.doAdhoc(
                 overridingThree(
                         "staking.startThreshold", "" + 10 * ONE_HBAR,
@@ -110,21 +110,20 @@ public class StakingSuite {
         final var numZeroStakeAccounts = 10;
         final var stakePeriodMins = 1L;
 
-        return defaultHapiSpec("ZeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds")
-                .given(
-                        inParallel(IntStream.range(0, numZeroStakeAccounts)
-                                .mapToObj(i -> cryptoCreate(zeroStakeAccount + i)
-                                        .stakedNodeId(0)
-                                        .balance(0L))
-                                .toArray(HapiSpecOperation[]::new)),
-                        cryptoCreate("somebody").stakedNodeId(0).balance(10 * ONE_MILLION_HBARS),
-                        // Wait a few periods
-                        waitUntilStartOfNextStakingPeriod(stakePeriodMins),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
-                        waitUntilStartOfNextStakingPeriod(stakePeriodMins),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)))
-                .when()
-                .then(sleepFor(5_000), withOpContext((spec, opLog) -> {
+        return hapiTest(
+                inParallel(IntStream.range(0, numZeroStakeAccounts)
+                        .mapToObj(i -> cryptoCreate(zeroStakeAccount + i)
+                                .stakedNodeId(0)
+                                .balance(0L))
+                        .toArray(HapiSpecOperation[]::new)),
+                cryptoCreate("somebody").stakedNodeId(0).balance(10 * ONE_MILLION_HBARS),
+                // Wait a few periods
+                waitUntilStartOfNextStakingPeriod(stakePeriodMins),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
+                waitUntilStartOfNextStakingPeriod(stakePeriodMins),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
+                sleepFor(5_000),
+                withOpContext((spec, opLog) -> {
                     for (int i = 0; i < numZeroStakeAccounts; i++) {
                         final var target = zeroStakeAccount + i;
                         final var setupTxn = "setup" + i;
@@ -170,20 +169,19 @@ public class StakingSuite {
         final IntFunction<HapiSpecOperation> sendRecordLookup =
                 n -> getTxnRecord(sendToBobTxns.apply(n)).logged().exposingStakingRewardsTo(rewardsPaid::add);
 
-        return defaultHapiSpec("StakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries")
-                .given(
-                        // If we are even close to a period boundary crossing,
-                        // wait until the next one so our accounts aren't eligible
-                        // for more than the expected rewards
-                        ifNextStakePeriodStartsWithin(
-                                MIN_TIME_TO_NEXT_PERIOD,
-                                STAKING_PERIOD_MINS,
-                                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)),
-                        cryptoCreate(alice).stakedNodeId(0).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(baldwin).stakedNodeId(0).balance(0L),
-                        // Reach a period where stakers can collect rewards
-                        waitUntilStartOfNextStakingPeriod(stakePeriodMins))
-                .when(IntStream.range(0, numPeriodsToRepeat)
+        return hapiTest(flattened(
+                // If we are even close to a period boundary crossing,
+                // wait until the next one so our accounts aren't eligible
+                // for more than the expected rewards
+                ifNextStakePeriodStartsWithin(
+                        MIN_TIME_TO_NEXT_PERIOD,
+                        STAKING_PERIOD_MINS,
+                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)),
+                cryptoCreate(alice).stakedNodeId(0).balance(ONE_MILLION_HBARS),
+                cryptoCreate(baldwin).stakedNodeId(0).balance(0L),
+                // Reach a period where stakers can collect rewards
+                waitUntilStartOfNextStakingPeriod(stakePeriodMins),
+                IntStream.range(0, numPeriodsToRepeat)
                         .mapToObj(i -> blockingOrder(
                                 waitUntilJustBeforeNextStakingPeriod(stakePeriodMins, secsBeforePeriodEndToDoTransfer),
                                 getAccountBalance(alice).exposingBalanceTo(currentAliceBalance::set),
@@ -199,8 +197,8 @@ public class StakingSuite {
                                                 tinyBarsFromTo(baldwin, alice, currentBaldwinBalance.get()))
                                         .via(returnToAliceTxns.apply(i))),
                                 sourcing(() -> returnRecordLookup.apply(i))))
-                        .toArray(HapiSpecOperation[]::new))
-                .then(withOpContext((spec, opLog) -> {
+                        .toArray(HapiSpecOperation[]::new),
+                withOpContext((spec, opLog) -> {
                     final var registry = spec.registry();
                     final var aliceNum = registry.getAccountID(alice).getAccountNum();
                     final var baldwinNum = registry.getAccountID(baldwin).getAccountNum();
@@ -209,7 +207,8 @@ public class StakingSuite {
                             // Alice held the balance at the start of the first rewardable period
                             List.of(3333333000000L, 0L),
                             List.of(0L, 0L),
-                            // But Baldwin held the balance at the start of the second rewardable period
+                            // But Baldwin held the balance at the start of the second rewardable
+                            // period
                             List.of(0L, 3333333000000L),
                             List.of(0L, 0L),
                             // And also the third rewardable period
@@ -236,7 +235,7 @@ public class StakingSuite {
                         opLog.info("==============================\n");
                         Assertions.assertEquals(expectedRewardsPaid.get(i), List.of(aliceReward, baldwinReward));
                     }
-                }));
+                })));
     }
 
     @HapiTest
@@ -245,183 +244,164 @@ public class StakingSuite {
                 SUITE_PER_HBAR_REWARD_RATE * (2 * ONE_HUNDRED_HBARS / TINY_PARTS_PER_WHOLE);
         final long bobPendingRewardsCase1 = SUITE_PER_HBAR_REWARD_RATE * (ONE_HUNDRED_HBARS / TINY_PARTS_PER_WHOLE);
 
-        return defaultHapiSpec("SecondOrderRewardSituationsWork")
-                .given()
-                .when( // period 1
-                        cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(BOB).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(CAROL).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
-                .then(
-                        /* --- period 2 - paid_rewards 0 for first period --- */
-                        cryptoTransfer(tinyBarsFromTo(BOB, ALICE, ONE_HBAR)).via(FIRST_TRANSFER),
-                        getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewards(List.of()),
+        return hapiTest(
+                // period 1
+                cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(CAROL).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                /* --- period 2 - paid_rewards 0 for first period --- */
+                cryptoTransfer(tinyBarsFromTo(BOB, ALICE, ONE_HBAR)).via(FIRST_TRANSFER),
+                getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewards(List.of()),
 
-                        /* --- second period reward eligible --- */
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).via("endOfStakingPeriodXfer"),
-                        getAccountInfo(ALICE)
-                                .has(accountWith().stakedNodeId(0L).pendingRewards(666666600L))
-                                .logged(),
-                        getAccountInfo(BOB)
-                                .has(accountWith().stakedNodeId(0L).pendingRewards(333333300L))
-                                .logged(),
-                        getAccountInfo(ALICE)
-                                .has(accountWith().stakedNodeId(0L).pendingRewards(alicePendingRewardsCase1))
-                                .logged(),
-                        getAccountInfo(BOB)
-                                .has(accountWith().stakedNodeId(0L).pendingRewards(bobPendingRewardsCase1))
-                                .logged(),
-                        cryptoUpdate(CAROL).newStakedAccountId(BOB).via("secondOrderRewardSituation"),
-                        getTxnRecord("secondOrderRewardSituation")
-                                .hasPaidStakingRewards(List.of(
-                                        Pair.of(ALICE, alicePendingRewardsCase1), Pair.of(BOB, bobPendingRewardsCase1)))
-                                .logged(),
-                        /* Within the same period rewards are not awarded twice */
-                        cryptoTransfer(tinyBarsFromTo(BOB, ALICE, ONE_HBAR))
-                                .payingWith(BOB)
-                                .via("expectNoReward"),
-                        getTxnRecord("expectNoReward").hasStakingFeesPaid().logged());
+                /* --- second period reward eligible --- */
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).via("endOfStakingPeriodXfer"),
+                getAccountInfo(ALICE)
+                        .has(accountWith().stakedNodeId(0L).pendingRewards(666666600L))
+                        .logged(),
+                getAccountInfo(BOB)
+                        .has(accountWith().stakedNodeId(0L).pendingRewards(333333300L))
+                        .logged(),
+                getAccountInfo(ALICE)
+                        .has(accountWith().stakedNodeId(0L).pendingRewards(alicePendingRewardsCase1))
+                        .logged(),
+                getAccountInfo(BOB)
+                        .has(accountWith().stakedNodeId(0L).pendingRewards(bobPendingRewardsCase1))
+                        .logged(),
+                cryptoUpdate(CAROL).newStakedAccountId(BOB).via("secondOrderRewardSituation"),
+                getTxnRecord("secondOrderRewardSituation")
+                        .hasPaidStakingRewards(
+                                List.of(Pair.of(ALICE, alicePendingRewardsCase1), Pair.of(BOB, bobPendingRewardsCase1)))
+                        .logged(),
+                /* Within the same period rewards are not awarded twice */
+                cryptoTransfer(tinyBarsFromTo(BOB, ALICE, ONE_HBAR))
+                        .payingWith(BOB)
+                        .via("expectNoReward"),
+                getTxnRecord("expectNoReward").hasStakingFeesPaid().logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> pendingRewardsPaidBeforeStakedToMeUpdates() {
-        return defaultHapiSpec("PendingRewardsPaidBeforeStakedToMeUpdates")
-                .given(
-                        // If we are even close to a period boundary crossing,
-                        // wait until the next one so our accounts aren't eligible
-                        // for more than the expected rewards
-                        ifNextStakePeriodStartsWithin(
-                                MIN_TIME_TO_NEXT_PERIOD,
-                                STAKING_PERIOD_MINS,
-                                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)))
-                .when( // period 1
-                        cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(CAROL).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
-                .then(
-                        /* --- period 2 - paid_rewards 0 for first period --- */
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
-                                .via(FIRST_TRANSFER),
-                        // alice - 100, carol - 100
-                        /* --- third period reward eligible from period 2--- */
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoUpdate(CAROL).newStakedAccountId(ALICE).via("stakedIdUpdate"),
-                        getTxnRecord("stakedIdUpdate")
-                                .hasPaidStakingRewards(List.of(
-                                        Pair.of(ALICE, 100 * SUITE_PER_HBAR_REWARD_RATE),
-                                        Pair.of(CAROL, 100 * SUITE_PER_HBAR_REWARD_RATE))),
-                        /* fourth period */
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR)),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ALICE, ONE_HBAR)).via("aliceFirstXfer"),
-                        getTxnRecord("aliceFirstXfer")
-                                // The period we are collecting in is the first that Alice will have the
-                                // full benefits of the paid staking reward and Carol's stake; for now
-                                // her reward is still based on the 100 HBAR she staked herself
-                                .hasPaidStakingRewards(List.of(Pair.of(ALICE, 100 * SUITE_PER_HBAR_REWARD_RATE)))
-                                .logged(),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+        return hapiTest(
+                // If we are even close to a period boundary crossing,
+                // wait until the next one so our accounts aren't eligible
+                // for more than the expected rewards
+                ifNextStakePeriodStartsWithin(
+                        MIN_TIME_TO_NEXT_PERIOD,
+                        STAKING_PERIOD_MINS,
+                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)),
+                // period 1
+                cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(CAROL).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                /* --- period 2 - paid_rewards 0 for first period --- */
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR)).via(FIRST_TRANSFER),
+                // alice - 100, carol - 100
+                /* --- third period reward eligible from period 2--- */
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoUpdate(CAROL).newStakedAccountId(ALICE).via("stakedIdUpdate"),
+                getTxnRecord("stakedIdUpdate")
+                        .hasPaidStakingRewards(List.of(
+                                Pair.of(ALICE, 100 * SUITE_PER_HBAR_REWARD_RATE),
+                                Pair.of(CAROL, 100 * SUITE_PER_HBAR_REWARD_RATE))),
+                /* fourth period */
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR)),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, ALICE, ONE_HBAR)).via("aliceFirstXfer"),
+                getTxnRecord("aliceFirstXfer")
+                        // The period we are collecting in is the first that Alice will have the
+                        // full benefits of the paid staking reward and Carol's stake; for now
+                        // her reward is still based on the 100 HBAR she staked herself
+                        .hasPaidStakingRewards(List.of(Pair.of(ALICE, 100 * SUITE_PER_HBAR_REWARD_RATE)))
+                        .logged(),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
 
-                        /* fifth period */
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ALICE, ONE_HBAR)).via("aliceSecondXfer"),
-                        getTxnRecord("aliceSecondXfer")
-                                .hasPaidStakingRewards(List.of(Pair.of(
-                                        ALICE,
-                                        (200 + 2 * (100 * SUITE_PER_HBAR_REWARD_RATE / TINY_PARTS_PER_WHOLE))
-                                                * SUITE_PER_HBAR_REWARD_RATE)))
-                                .logged());
+                /* fifth period */
+                cryptoTransfer(tinyBarsFromTo(GENESIS, ALICE, ONE_HBAR)).via("aliceSecondXfer"),
+                getTxnRecord("aliceSecondXfer")
+                        .hasPaidStakingRewards(List.of(Pair.of(
+                                ALICE,
+                                (200 + 2 * (100 * SUITE_PER_HBAR_REWARD_RATE / TINY_PARTS_PER_WHOLE))
+                                        * SUITE_PER_HBAR_REWARD_RATE)))
+                        .logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation() {
-        return defaultHapiSpec("EvenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation")
-                .given()
-                .when(
-                        cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(BOB).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(CAROL).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
-                .then(
-                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, CAROL, 1)).via(FIRST_TRANSFER),
-                        getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
+        return hapiTest(
+                cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(CAROL).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, CAROL, 1)).via(FIRST_TRANSFER),
+                getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
     }
 
     @HapiTest
     final Stream<DynamicTest> zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP() {
-        return defaultHapiSpec("ZeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP")
-                .given(
-                        cryptoCreate("helpfulStaker").stakedNodeId(0).balance(ONE_MILLION_HBARS),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
-                .when(
-                        cryptoCreate(ALICE).stakedNodeId(0).balance(0L),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ALICE, ONE_HUNDRED_HBARS)),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoTransfer(tinyBarsFromTo(ALICE, FUNDING, ONE_HUNDRED_HBARS)),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
-                .then(
-                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, ALICE, 1)).via(FIRST_TRANSFER),
-                        getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
+        return hapiTest(
+                cryptoCreate("helpfulStaker").stakedNodeId(0).balance(ONE_MILLION_HBARS),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoCreate(ALICE).stakedNodeId(0).balance(0L),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, ALICE, ONE_HUNDRED_HBARS)),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(ALICE, FUNDING, ONE_HUNDRED_HBARS)),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, ALICE, 1)).via(FIRST_TRANSFER),
+                getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
     }
 
     @HapiTest
     final Stream<DynamicTest> losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation() {
-        return defaultHapiSpec("LosingEvenAZeroBalanceStakerTriggersStakeeRewardSituation")
-                .given()
-                .when(
-                        cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(BOB).stakedAccountId(ALICE).balance(0L),
-                        cryptoCreate(CAROL).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
-                .then(
-                        cryptoUpdate(BOB).newStakedNodeId(0L).via(FIRST_TRANSFER),
-                        getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
+        return hapiTest(
+                cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).stakedAccountId(ALICE).balance(0L),
+                cryptoCreate(CAROL).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoUpdate(BOB).newStakedNodeId(0L).via(FIRST_TRANSFER),
+                getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
     }
 
     @HapiTest
     final Stream<DynamicTest> stakingMetadataUpdateIsRewardOpportunity() {
-        return defaultHapiSpec("stakingMetadataUpdateIsRewardOpportunity")
-                .given(
-                        // If we are even close to a period boundary crossing,
-                        // wait until the next one so our accounts aren't eligible
-                        // for more than the expected rewards
-                        ifNextStakePeriodStartsWithin(
-                                MIN_TIME_TO_NEXT_PERIOD,
-                                STAKING_PERIOD_MINS,
-                                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)))
-                .when(
-                        cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
-                        uploadInitCode(PAYABLE_CONTRACT),
-                        contractCreate(PAYABLE_CONTRACT).stakedNodeId(0L).balance(ONE_HUNDRED_HBARS),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
-                .then(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
+        return hapiTest(
+                // If we are even close to a period boundary crossing,
+                // wait until the next one so our accounts aren't eligible
+                // for more than the expected rewards
+                ifNextStakePeriodStartsWithin(
+                        MIN_TIME_TO_NEXT_PERIOD,
+                        STAKING_PERIOD_MINS,
+                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)),
+                cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                uploadInitCode(PAYABLE_CONTRACT),
+                contractCreate(PAYABLE_CONTRACT).stakedNodeId(0L).balance(ONE_HUNDRED_HBARS),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
 
-                        /* Now rewards are eligible */
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
-                        // info queries return rewards
-                        getContractInfo(PAYABLE_CONTRACT)
-                                .has(contractWith().stakedNodeId(0L).pendingRewards(333333300L)),
-                        contractUpdate(PAYABLE_CONTRACT).newDeclinedReward(true).via("acceptsReward"),
-                        getTxnRecord("acceptsReward")
-                                .logged()
-                                .andAllChildRecords()
-                                .hasPaidStakingRewards(List.of(Pair.of(PAYABLE_CONTRACT, 333333300L))),
-                        contractUpdate(PAYABLE_CONTRACT).newStakedNodeId(111L).hasPrecheck(INVALID_STAKING_ID),
-                        // Same period should not trigger reward for the contract again, only for Alice
-                        // whose stakedToMe has now changed
-                        contractUpdate(PAYABLE_CONTRACT)
-                                .newStakedAccountId(ALICE)
-                                .via("samePeriodTxn"),
-                        getTxnRecord("samePeriodTxn")
-                                .logged()
-                                .hasPaidStakingRewards(List.of(Pair.of(ALICE, 100 * SUITE_PER_HBAR_REWARD_RATE))));
+                /* Now rewards are eligible */
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
+                // info queries return rewards
+                getContractInfo(PAYABLE_CONTRACT)
+                        .has(contractWith().stakedNodeId(0L).pendingRewards(333333300L)),
+                contractUpdate(PAYABLE_CONTRACT).newDeclinedReward(true).via("acceptsReward"),
+                getTxnRecord("acceptsReward")
+                        .logged()
+                        .andAllChildRecords()
+                        .hasPaidStakingRewards(List.of(Pair.of(PAYABLE_CONTRACT, 333333300L))),
+                contractUpdate(PAYABLE_CONTRACT).newStakedNodeId(111L).hasPrecheck(INVALID_STAKING_ID),
+                // Same period should not trigger reward for the contract again, only for Alice
+                // whose stakedToMe has now changed
+                contractUpdate(PAYABLE_CONTRACT).newStakedAccountId(ALICE).via("samePeriodTxn"),
+                getTxnRecord("samePeriodTxn")
+                        .logged()
+                        .hasPaidStakingRewards(List.of(Pair.of(ALICE, 100 * SUITE_PER_HBAR_REWARD_RATE))));
     }
 
     @LeakyHapiTest(requirement = NO_CONCURRENT_STAKE_PERIOD_BOUNDARY_CROSSINGS)
@@ -444,54 +424,45 @@ public class StakingSuite {
     final Stream<DynamicTest> rewardsOfDeletedAreRedirectedToBeneficiary() {
         final var bob = "bob";
         final var deletion = "deletion";
-        return defaultHapiSpec("RewardsOfDeletedAreRedirectedToBeneficiary")
-                .given(
-                        // If we are even close to a period boundary crossing,
-                        // wait until the next one so our accounts aren't eligible
-                        // for more than the expected rewards
-                        ifNextStakePeriodStartsWithin(
-                                MIN_TIME_TO_NEXT_PERIOD,
-                                STAKING_PERIOD_MINS,
-                                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)))
-                .when(
-                        cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(bob).balance(0L),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        // Alice will be first eligible for rewards in the just-started period
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
-                .then(
-                        cryptoDelete(ALICE).transfer(bob).via(deletion),
-                        getTxnRecord(deletion)
-                                .logged()
-                                .hasPaidStakingRewards(List.of(Pair.of(bob, 100 * SUITE_PER_HBAR_REWARD_RATE))));
+        return hapiTest(
+                // If we are even close to a period boundary crossing,
+                // wait until the next one so our accounts aren't eligible
+                // for more than the expected rewards
+                ifNextStakePeriodStartsWithin(
+                        MIN_TIME_TO_NEXT_PERIOD,
+                        STAKING_PERIOD_MINS,
+                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)),
+                cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(bob).balance(0L),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                // Alice will be first eligible for rewards in the just-started period
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoDelete(ALICE).transfer(bob).via(deletion),
+                getTxnRecord(deletion)
+                        .logged()
+                        .hasPaidStakingRewards(List.of(Pair.of(bob, 100 * SUITE_PER_HBAR_REWARD_RATE))));
     }
 
     // (FUTURE) Delete after confirming min stake will always be zero going forward
     final Stream<DynamicTest> canBeRewardedWithoutMinStakeIfSoConfigured() {
         final var patientlyWaiting = "patientlyWaiting";
 
-        return defaultHapiSpec("CanBeRewardedWithoutMinStakeIfSoConfigured")
-                .given(
-                        overriding("staking.requireMinStakeToReward", "true"),
-                        cryptoCreate(patientlyWaiting).stakedNodeId(0).balance(ONE_HUNDRED_HBARS))
-                .when(
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
-                        cryptoTransfer(tinyBarsFromTo(patientlyWaiting, FUNDING, 1))
-                                .via("lackingMinStake"),
-                        // If node0 was over minStake, we would have been rewarded
-                        getTxnRecord("lackingMinStake")
-                                .hasPaidStakingRewardsCount(0)
-                                .logged(),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
-                        // Now we should be rewardable even though node0 is far from minStake
-                        overriding("staking.requireMinStakeToReward", "false"),
-                        cryptoTransfer(tinyBarsFromTo(patientlyWaiting, FUNDING, 1))
-                                .via("minStakeIrrelevant"))
-                .then(getTxnRecord("lackingMinStake").logged().hasPaidStakingRewardsCount(1));
+        return hapiTest(
+                overriding("staking.requireMinStakeToReward", "true"),
+                cryptoCreate(patientlyWaiting).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
+                cryptoTransfer(tinyBarsFromTo(patientlyWaiting, FUNDING, 1)).via("lackingMinStake"),
+                // If node0 was over minStake, we would have been rewarded
+                getTxnRecord("lackingMinStake").hasPaidStakingRewardsCount(0).logged(),
+                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
+                // Now we should be rewardable even though node0 is far from minStake
+                overriding("staking.requireMinStakeToReward", "false"),
+                cryptoTransfer(tinyBarsFromTo(patientlyWaiting, FUNDING, 1)).via("minStakeIrrelevant"),
+                getTxnRecord("lackingMinStake").logged().hasPaidStakingRewardsCount(1));
     }
 }

@@ -197,53 +197,50 @@ public class SteadyStateThrottlingTest {
     }
 
     final Stream<DynamicTest> checkBalanceQps(int burstSize, double expectedQps) {
-        return defaultHapiSpec("CheckBalanceQps")
-                .given(cryptoCreate("curious").payingWith(GENESIS))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
-                    int numBusy = 0;
-                    int askedSoFar = 0;
-                    int secsToRun = (int) duration.get();
-                    var watch = Stopwatch.createStarted();
-                    int logScreen = 0;
-                    while (watch.elapsed(SECONDS) < secsToRun) {
-                        var subOps = IntStream.range(0, burstSize)
-                                .mapToObj(ignore -> getAccountBalance("0.0.2")
-                                        .noLogging()
-                                        .payingWith("curious")
-                                        .hasAnswerOnlyPrecheckFrom(BUSY, OK))
-                                .toArray(HapiSpecOperation[]::new);
-                        var burst = inParallel(subOps);
-                        allRunFor(spec, burst);
-                        askedSoFar += burstSize;
-                        for (int i = 0; i < burstSize; i++) {
-                            var op = (HapiGetAccountBalance) subOps[i];
-                            if (op.getResponse().getCryptogetAccountBalance().getBalance() == 0) {
-                                numBusy++;
-                            }
-                        }
-                        if (logScreen++ % 100 == 0) {
-                            opLog.info(
-                                    "{}/{} queries BUSY so far in {}ms",
-                                    numBusy,
-                                    askedSoFar,
-                                    watch.elapsed(TimeUnit.MILLISECONDS));
-                        }
+        return hapiTest(cryptoCreate("curious").payingWith(GENESIS), withOpContext((spec, opLog) -> {
+            int numBusy = 0;
+            int askedSoFar = 0;
+            int secsToRun = (int) duration.get();
+            var watch = Stopwatch.createStarted();
+            int logScreen = 0;
+            while (watch.elapsed(SECONDS) < secsToRun) {
+                var subOps = IntStream.range(0, burstSize)
+                        .mapToObj(ignore -> getAccountBalance("0.0.2")
+                                .noLogging()
+                                .payingWith("curious")
+                                .hasAnswerOnlyPrecheckFrom(BUSY, OK))
+                        .toArray(HapiSpecOperation[]::new);
+                var burst = inParallel(subOps);
+                allRunFor(spec, burst);
+                askedSoFar += burstSize;
+                for (int i = 0; i < burstSize; i++) {
+                    var op = (HapiGetAccountBalance) subOps[i];
+                    if (op.getResponse().getCryptogetAccountBalance().getBalance() == 0) {
+                        numBusy++;
                     }
-                    var elapsedMs = watch.elapsed(TimeUnit.MILLISECONDS);
-                    var numAnswered = askedSoFar - numBusy;
-                    var actualQps = (1.0 * numAnswered) / elapsedMs * 1000.0;
-                    var percentDeviation = Math.abs(actualQps / expectedQps - 1.0) * 100.0;
+                }
+                if (logScreen++ % 100 == 0) {
                     opLog.info(
-                            "Total ops accepted in {} {} = {} ==> {}qps vs {}qps" + " expected ({}% deviation)",
-                            elapsedMs,
-                            "ms",
-                            numAnswered,
-                            String.format("%.3f", actualQps),
-                            String.format("%.3f", expectedQps),
-                            String.format("%.3f", percentDeviation));
-                    Assertions.assertEquals(0.0, percentDeviation, TOLERATED_PERCENT_DEVIATION);
-                }));
+                            "{}/{} queries BUSY so far in {}ms",
+                            numBusy,
+                            askedSoFar,
+                            watch.elapsed(TimeUnit.MILLISECONDS));
+                }
+            }
+            var elapsedMs = watch.elapsed(TimeUnit.MILLISECONDS);
+            var numAnswered = askedSoFar - numBusy;
+            var actualQps = (1.0 * numAnswered) / elapsedMs * 1000.0;
+            var percentDeviation = Math.abs(actualQps / expectedQps - 1.0) * 100.0;
+            opLog.info(
+                    "Total ops accepted in {} {} = {} ==> {}qps vs {}qps" + " expected ({}% deviation)",
+                    elapsedMs,
+                    "ms",
+                    numAnswered,
+                    String.format("%.3f", actualQps),
+                    String.format("%.3f", expectedQps),
+                    String.format("%.3f", percentDeviation));
+            Assertions.assertEquals(0.0, percentDeviation, TOLERATED_PERCENT_DEVIATION);
+        }));
     }
 
     private Function<HapiSpec, OpProvider> xferOps() {
