@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
@@ -75,10 +75,7 @@ public class CreateAccountsBeforeReconnect extends HapiSuite {
 
         Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {generateCreateAccountOperation()};
 
-        return defaultHapiSpec("RunCreateAccounts")
-                .given(logIt(ignore -> settings.toString()))
-                .when()
-                .then(defaultLoadTest(createBurst, settings));
+        return hapiTest(logIt(ignore -> settings.toString()), defaultLoadTest(createBurst, settings));
     }
 
     @Override

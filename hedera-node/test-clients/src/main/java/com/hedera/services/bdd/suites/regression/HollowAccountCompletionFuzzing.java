@@ -17,8 +17,9 @@
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.hollowAccountFuzzingWith;
 import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.initOperations;
 
@@ -37,11 +38,10 @@ public class HollowAccountCompletionFuzzing {
 
     @HapiTest
     final Stream<DynamicTest> hollowAccountCompletionFuzzing() {
-        return defaultHapiSpec("HollowAccountCompletionFuzzing")
-                .given(initOperations())
-                .when()
-                .then(runWithProvider(hollowAccountFuzzingWith(PROPERTIES))
+        return hapiTest(flattened(
+                initOperations(),
+                runWithProvider(hollowAccountFuzzingWith(PROPERTIES))
                         .maxOpsPerSec(10)
-                        .lasting(10L, TimeUnit.SECONDS));
+                        .lasting(10L, TimeUnit.SECONDS)));
     }
 }
