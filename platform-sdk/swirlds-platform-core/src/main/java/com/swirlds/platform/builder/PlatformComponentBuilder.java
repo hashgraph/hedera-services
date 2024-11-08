@@ -21,7 +21,6 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.SwirldsPlatform;
@@ -73,7 +72,6 @@ import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.pool.DefaultTransactionPool;
 import com.swirlds.platform.pool.TransactionPool;
-import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.hasher.DefaultStateHasher;
 import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.hashlogger.DefaultHashLogger;
@@ -94,14 +92,12 @@ import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SystemExitUtils;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
@@ -193,30 +189,6 @@ public class PlatformComponentBuilder {
         if (used) {
             throw new IllegalStateException("PlatformBuilder has already been used");
         }
-    }
-
-    /**
-     * Get the roster from the initial state in PlatformBuildingBlocks.
-     *
-     * @return the initial roster
-     */
-    @NonNull
-    private Roster getInitialRoster() {
-        return RosterRetriever.buildRoster(blocks.initialAddressBook());
-    }
-
-    /**
-     * Get the previous roster from the initial state in PlatformBuildingBlocks.
-     *
-     * @return the previous roster, or null
-     */
-    @Nullable
-    private Roster getPreviousRoster() {
-        return RosterRetriever.buildRoster(blocks.initialState()
-                .get()
-                .getState()
-                .getReadablePlatformState()
-                .getPreviousAddressBook());
     }
 
     /**
@@ -317,7 +289,8 @@ public class PlatformComponentBuilder {
     @NonNull
     public InternalEventValidator buildInternalEventValidator() {
         if (internalEventValidator == null) {
-            final boolean singleNodeNetwork = blocks.initialAddressBook().getSize() == 1;
+            final boolean singleNodeNetwork =
+                    blocks.rosterHistory().getCurrentRoster().rosterEntries().size() == 1;
             internalEventValidator = new DefaultInternalEventValidator(
                     blocks.platformContext(), singleNodeNetwork, blocks.intakeEventCounter());
         }
@@ -387,8 +360,8 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     CryptoStatic::verifySignature,
                     blocks.appVersion().getPbjSemanticVersion(),
-                    getPreviousRoster(),
-                    getInitialRoster(),
+                    blocks.rosterHistory().getPreviousRoster(),
+                    blocks.rosterHistory().getCurrentRoster(),
                     blocks.intakeEventCounter());
         }
         return eventSignatureValidator;
@@ -522,7 +495,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     blocks.randomBuilder().buildNonCryptographicRandom(),
                     data -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
-                    getInitialRoster(),
+                    blocks.rosterHistory().getCurrentRoster(),
                     blocks.selfId(),
                     blocks.appVersion(),
                     blocks.transactionPoolNexus());
@@ -559,7 +532,8 @@ public class PlatformComponentBuilder {
     @NonNull
     public ConsensusEngine buildConsensusEngine() {
         if (consensusEngine == null) {
-            consensusEngine = new DefaultConsensusEngine(blocks.platformContext(), getInitialRoster(), blocks.selfId());
+            consensusEngine = new DefaultConsensusEngine(
+                    blocks.platformContext(), blocks.rosterHistory().getCurrentRoster(), blocks.selfId());
         }
         return consensusEngine;
     }
@@ -591,23 +565,11 @@ public class PlatformComponentBuilder {
     @NonNull
     public ConsensusEventStream buildConsensusEventStream() {
         if (consensusEventStream == null) {
-
-            // Required for conformity with legacy behavior. This sort of funky logic is normally something
-            // we'd try to move away from, but since we will be removing the CES entirely, it's simpler
-            // to just wait until the entire component disappears.
-            final Address address = blocks.initialAddressBook().getAddress(blocks.selfId());
-            final String consensusEventStreamName;
-            if (!address.getMemo().isEmpty()) {
-                consensusEventStreamName = address.getMemo();
-            } else {
-                consensusEventStreamName = String.valueOf(blocks.selfId());
-            }
-
             consensusEventStream = new DefaultConsensusEventStream(
                     blocks.platformContext(),
                     blocks.selfId(),
                     (byte[] data) -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
-                    consensusEventStreamName,
+                    blocks.consensusEventStreamName(),
                     (CesEvent event) -> event.isLastInRoundReceived()
                             && blocks.isInFreezePeriodReference()
                                     .get()
@@ -1059,7 +1021,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     AdHocThreadManager.getStaticThreadManager(),
                     blocks.keysAndCerts(),
-                    getInitialRoster(),
+                    blocks.rosterHistory().getCurrentRoster(),
                     blocks.selfId(),
                     blocks.appVersion(),
                     blocks.swirldStateManager(),
@@ -1198,7 +1160,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public BranchDetector buildBranchDetector() {
         if (branchDetector == null) {
-            branchDetector = new DefaultBranchDetector(getInitialRoster());
+            branchDetector = new DefaultBranchDetector(blocks.rosterHistory().getCurrentRoster());
         }
         return branchDetector;
     }
@@ -1230,7 +1192,8 @@ public class PlatformComponentBuilder {
     @NonNull
     public BranchReporter buildBranchReporter() {
         if (branchReporter == null) {
-            branchReporter = new DefaultBranchReporter(blocks.platformContext(), getInitialRoster());
+            branchReporter = new DefaultBranchReporter(
+                    blocks.platformContext(), blocks.rosterHistory().getCurrentRoster());
         }
         return branchReporter;
     }
