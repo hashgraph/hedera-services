@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,16 +32,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
-import com.hedera.node.app.blocks.BlockItemsTranslator;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -50,6 +46,7 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -138,23 +135,10 @@ class ChildDispatchFactoryTest {
     @Mock
     private ExchangeRateManager exchangeRateManager;
 
-    @Mock
-    private BlockItemsTranslator recordTranslator;
-
     private ChildDispatchFactory subject;
 
     private static final AccountID payerId =
             AccountID.newBuilder().accountNum(1_234L).build();
-    private static final CryptoTransferTransactionBody transferBody = CryptoTransferTransactionBody.newBuilder()
-            .tokenTransfers(TokenTransferList.newBuilder()
-                    .token(TokenID.DEFAULT)
-                    .nftTransfers(NftTransfer.newBuilder()
-                            .receiverAccountID(AccountID.DEFAULT)
-                            .senderAccountID(AccountID.DEFAULT)
-                            .serialNumber(1)
-                            .build())
-                    .build())
-            .build();
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
 
     private final Predicate<Key> callback = key -> true;
@@ -186,13 +170,13 @@ class ChildDispatchFactoryTest {
 
     @Test
     void keyVerifierWithNullCallbackIsNoOp() {
-        assertThat(ChildDispatchFactory.getKeyVerifier(null, DEFAULT_CONFIG))
+        assertThat(ChildDispatchFactory.getKeyVerifier(null, DEFAULT_CONFIG, emptySet()))
                 .isInstanceOf(ChildDispatchFactory.NoOpKeyVerifier.class);
     }
 
     @Test
     void keyVerifierOnlySupportsKeyVerification() {
-        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG);
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG, emptySet());
         assertThatThrownBy(() -> derivedVerifier.verificationFor(Key.DEFAULT, assistant))
                 .isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> derivedVerifier.verificationFor(Bytes.EMPTY))
@@ -202,14 +186,14 @@ class ChildDispatchFactoryTest {
 
     @Test
     void keyVerifierPassesImmediatelyGivenTrueCallback() {
-        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG);
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG, emptySet());
         given(verifierCallback.test(AN_ED25519_KEY)).willReturn(true);
         assertThat(derivedVerifier.verificationFor(AN_ED25519_KEY).passed()).isTrue();
     }
 
     @Test
     void keyVerifierUsesDelegateIfNotImmediatePass() {
-        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG);
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG, emptySet());
         given(verifierCallback.test(A_THRESHOLD_KEY)).willReturn(false);
         given(verifierCallback.test(AN_ED25519_KEY)).willReturn(true);
         assertThat(derivedVerifier.verificationFor(A_THRESHOLD_KEY).passed()).isTrue();
@@ -217,7 +201,7 @@ class ChildDispatchFactoryTest {
 
     @Test
     void keyVerifierDetectsNoPass() {
-        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG);
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG, emptySet());
         assertThat(derivedVerifier.verificationFor(A_THRESHOLD_KEY).passed()).isFalse();
         verify(verifierCallback).test(AN_ED25519_KEY);
         verify(verifierCallback).test(A_CONTRACT_ID_KEY);
@@ -233,12 +217,6 @@ class ChildDispatchFactoryTest {
         Exception exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> subject.createChildDispatch(
-                        txBody,
-                        callback,
-                        payerId,
-                        HandleContext.TransactionCategory.SCHEDULED,
-                        customizer,
-                        reversingBehavior,
                         configuration,
                         savepointStack,
                         readableStoreFactory,
@@ -247,7 +225,8 @@ class ChildDispatchFactoryTest {
                         throttleAdviser,
                         Instant.ofEpochSecond(12345L),
                         blockRecordInfo,
-                        HandleContext.ConsensusThrottling.ON));
+                        DispatchOptions.subDispatch(
+                                payerId, txBody, callback, StreamBuilder.class, DispatchOptions.StakingRewards.ON)));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }

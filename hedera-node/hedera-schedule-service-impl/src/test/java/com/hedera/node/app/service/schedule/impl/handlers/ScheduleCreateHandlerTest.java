@@ -151,7 +151,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     void handleRejectsNonWhitelist() throws HandleException, PreCheckException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
-        given(keyVerifier.signingCryptoKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
+        given(keyVerifier.authorizingSimpleKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
         for (final Schedule next : listOfScheduledOptions) {
             final TransactionBody createTransaction = next.originalCreateTransaction();
             final TransactionID createId = createTransaction.transactionID();
@@ -213,7 +213,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             // all keys are "valid" with this mock setup
             given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                     .willReturn(new SignatureVerificationImpl(nullKey, null, true));
-            given(keyVerifier.signingCryptoKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
+            given(keyVerifier.authorizingSimpleKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
             final int startCount = scheduleMapById.size();
             if (configuredWhitelist.contains(functionType)) {
                 subject.handle(mockContext);

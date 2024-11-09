@@ -75,7 +75,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Predicate;
 
 /**
  * The {@link HandleContext} implementation.
@@ -351,16 +350,29 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public <T extends StreamBuilder> T dispatch(@NonNull final DispatchOptions<T> options) {
         requireNonNull(options);
-        return dispatchForRecord(
-                options.body(),
-                options.streamBuilderType(),
-                options.effectiveKeyVerifier(),
-                options.payerId(),
-                options.transactionCustomizer(),
-                options.category(),
-                options.reversingBehavior(),
-                options.commitImmediately(),
-                options.throttling());
+        final var childDispatch = childDispatchFactory.createChildDispatch(
+                config,
+                stack,
+                storeFactory.asReadOnly(),
+                creatorInfo,
+                topLevelFunction,
+                throttleAdviser,
+                consensusNow,
+                blockRecordInfo,
+                options);
+        dispatchProcessor.processDispatch(childDispatch);
+        if (options.commitImmediately()) {
+            stack.commitTransaction(childDispatch.recordBuilder());
+        }
+        // This can be non-empty for SCHEDULED dispatches, if rewards are paid for the triggered transaction
+        final var paidStakingRewards = childDispatch.recordBuilder().getPaidStakingRewards();
+        if (!paidStakingRewards.isEmpty()) {
+            if (dispatchPaidRewards == null) {
+                dispatchPaidRewards = new LinkedHashMap<>();
+            }
+            paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
+        }
+        return castBuilder(childDispatch.recordBuilder(), options.streamBuilderType());
     }
 
     @NonNull
@@ -384,46 +396,5 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public NodeInfo creatorInfo() {
         return creatorInfo;
-    }
-
-    private <T> T dispatchForRecord(
-            @NonNull final TransactionBody childTxBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> childVerifier,
-            @NonNull final AccountID syntheticPayer,
-            @NonNull final StreamBuilder.TransactionCustomizer customizer,
-            @NonNull final TransactionCategory category,
-            @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
-            final boolean commitStack,
-            @NonNull final ConsensusThrottling throttleStrategy) {
-        final var childDispatch = childDispatchFactory.createChildDispatch(
-                childTxBody,
-                childVerifier,
-                syntheticPayer,
-                category,
-                customizer,
-                reversingBehavior,
-                config,
-                stack,
-                storeFactory.asReadOnly(),
-                creatorInfo,
-                topLevelFunction,
-                throttleAdviser,
-                consensusNow,
-                blockRecordInfo,
-                throttleStrategy);
-        dispatchProcessor.processDispatch(childDispatch);
-        if (commitStack) {
-            stack.commitTransaction(childDispatch.recordBuilder());
-        }
-        // This can be non-empty for SCHEDULED dispatches, if rewards are paid for the triggered transaction
-        final var paidStakingRewards = childDispatch.recordBuilder().getPaidStakingRewards();
-        if (!paidStakingRewards.isEmpty()) {
-            if (dispatchPaidRewards == null) {
-                dispatchPaidRewards = new LinkedHashMap<>();
-            }
-            paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
-        }
-        return castBuilder(childDispatch.recordBuilder(), recordBuilderClass);
     }
 }

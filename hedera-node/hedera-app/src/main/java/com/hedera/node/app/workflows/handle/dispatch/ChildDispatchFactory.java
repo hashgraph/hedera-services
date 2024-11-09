@@ -23,6 +23,7 @@ import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -55,6 +56,7 @@ import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -69,7 +71,6 @@ import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.RecordDispatch;
-import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
@@ -84,6 +85,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Set;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -129,12 +131,6 @@ public class ChildDispatchFactory {
      * Creates a child dispatch. This method computes the transaction info and initializes record builder for the child
      * transaction. This method also computes a pre-handle result for the child transaction.
      *
-     * @param txBody the transaction body
-     * @param callback the key verifier for child dispatch
-     * @param syntheticPayerId the synthetic payer id
-     * @param category the transaction category
-     * @param customizer the externalized record customizer
-     * @param reversingBehavior the reversing behavior
      * @param config the configuration
      * @param stack the savepoint stack
      * @param readableStoreFactory the readable store factory
@@ -142,17 +138,11 @@ public class ChildDispatchFactory {
      * @param topLevelFunction the top level functionality
      * @param consensusNow the consensus time
      * @param blockRecordInfo the block record info
-     * @param throttleStrategy     the throttle strategy
+     * @param options the dispatch options
      * @return the child dispatch
      * @throws HandleException if the child stack base builder cannot be created
      */
     public Dispatch createChildDispatch(
-            @NonNull final TransactionBody txBody,
-            @Nullable final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId,
-            @NonNull final HandleContext.TransactionCategory category,
-            @NonNull final StreamBuilder.TransactionCustomizer customizer,
-            @NonNull final RecordStreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final Configuration config,
             @NonNull final SavepointStackImpl stack,
             @NonNull final ReadableStoreFactory readableStoreFactory,
@@ -161,19 +151,29 @@ public class ChildDispatchFactory {
             @NonNull final ThrottleAdviser throttleAdviser,
             @NonNull final Instant consensusNow,
             @NonNull final BlockRecordInfo blockRecordInfo,
-            @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
-        final var preHandleResult = preHandleChild(txBody, syntheticPayerId, config, readableStoreFactory);
-        final var childVerifier = getKeyVerifier(callback, config);
-        final var childTxnInfo = getTxnInfoFrom(syntheticPayerId, txBody);
+            @NonNull final DispatchOptions<?> options) {
+        requireNonNull(config);
+        requireNonNull(stack);
+        requireNonNull(readableStoreFactory);
+        requireNonNull(creatorInfo);
+        requireNonNull(topLevelFunction);
+        requireNonNull(throttleAdviser);
+        requireNonNull(consensusNow);
+        requireNonNull(blockRecordInfo);
+        requireNonNull(options);
+
+        final var preHandleResult = preHandleChild(options.body(), options.payerId(), config, readableStoreFactory);
+        final var childVerifier = getKeyVerifier(options.effectiveKeyVerifier(), config, emptySet());
+        final var childTxnInfo = getTxnInfoFrom(options.payerId(), options.body());
         final var streamMode = config.getConfigData(BlockStreamConfig.class).streamMode();
-        final var childStack =
-                SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer, streamMode);
+        final var childStack = SavepointStackImpl.newChildStack(
+                stack, options.reversingBehavior(), options.category(), options.transactionCustomizer(), streamMode);
         final var streamBuilder = initializedForChild(childStack.getBaseBuilder(StreamBuilder.class), childTxnInfo);
         return newChildDispatch(
                 streamBuilder,
                 childTxnInfo,
-                syntheticPayerId,
-                category,
+                options.payerId(),
+                options.category(),
                 childStack,
                 preHandleResult,
                 childVerifier,
@@ -191,7 +191,7 @@ public class ChildDispatchFactory {
                 storeMetricsService,
                 exchangeRateManager,
                 dispatcher,
-                throttleStrategy);
+                options.throttling());
     }
 
     private RecordDispatch newChildDispatch(
@@ -399,10 +399,13 @@ public class ChildDispatchFactory {
      *
      * @param callback the callback
      * @param config the configuration
+     * @param authorizingKeys any simple keys that authorized this verifier
      * @return the key verifier
      */
     public static AppKeyVerifier getKeyVerifier(
-            @Nullable final Predicate<Key> callback, @NonNull final Configuration config) {
+            @Nullable final Predicate<Key> callback,
+            @NonNull final Configuration config,
+            @NonNull final Set<Key> authorizingKeys) {
         return callback == null
                 ? NO_OP_KEY_VERIFIER
                 : new AppKeyVerifier() {
