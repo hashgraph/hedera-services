@@ -25,6 +25,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.address.AddressBookInitializer;
@@ -234,7 +235,17 @@ public class AddressBookUtils {
             }
             final Address address1 = addressBook1.getAddress(nodeId1);
             final Address address2 = addressBook2.getAddress(nodeId2);
-            if (!address1.equals(address2)) {
+
+            // With a switch from AddressBook to Roster, only a subset of fields in Address are truly comparable
+            // because the AddressBook instance that the PlatformBuilder passes to the reconnect classes is built
+            // from a Roster which is missing certain fields (custom names, memos, etc.)
+            // When the AB to Roster refactoring is complete, and specifically when the reconnect code migrates
+            // to using rosters, this method will be replaced with the one comparing the Rosters directly.
+            // For now, we're modifying the implementation here to only compare the fields in Address that are present
+            // in the Roster.
+            final RosterEntry rosterEntry1 = RosterRetriever.buildRosterEntry(address1);
+            final RosterEntry rosterEntry2 = RosterRetriever.buildRosterEntry(address2);
+            if (!rosterEntry1.equals(rosterEntry2)) {
                 throw new IllegalStateException("The address books do not have the same addresses.");
             }
         }
@@ -363,5 +374,39 @@ public class AddressBookUtils {
             throw new IllegalStateException("The current address book of the initial state is null.");
         }
         return addressBook;
+    }
+
+    /**
+     * Format a "consensusEventStreamName" using the "memo" field from the self-Address.
+     *
+     * !!! IMPORTANT !!!: It's imperative to retain the logic that is based on the current content of the "memo" field,
+     * even if the code is updated to source the content of "memo" from another place. The "consensusEventStreamName" is used
+     * as a directory name to save some files on disk, and the directory name should remain unchanged for now.
+     * <p>
+     * Per @lpetrovic05 : "As far as I know, CES isn't really used for anything.
+     * It is however, uploaded to google storage, so maybe the name change might affect the uploader."
+     * <p>
+     * This logic could and should eventually change to use the nodeId only (see the else{} branch below.)
+     * However, this change needs to be coordinated with DevOps and NodeOps to ensure the data continues to be uploaded.
+     * Replacing the directory and starting with an empty one may or may not affect the DefaultConsensusEventStream
+     * which will need to be tested when this change takes place.
+     *
+     * @param addressBook an AddressBook
+     * @param selfId a NodeId for self
+     * @return consensusEventStreamName
+     */
+    @NonNull
+    public static String formatConsensusEventStreamName(
+            @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
+        // !!!!! IMPORTANT !!!!! Read the javadoc above and the comment below before modifying this code.
+        // Required for conformity with legacy behavior. This sort of funky logic is normally something
+        // we'd try to move away from, but since we will be removing the CES entirely, it's simpler
+        // to just wait until the entire component disappears.
+        final Address address = addressBook.getAddress(selfId);
+        if (!address.getMemo().isEmpty()) {
+            return address.getMemo();
+        } else {
+            return String.valueOf(selfId);
+        }
     }
 }

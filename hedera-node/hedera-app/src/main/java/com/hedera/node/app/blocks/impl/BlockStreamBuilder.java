@@ -184,6 +184,10 @@ public class BlockStreamBuilder
     @Nullable
     private HederaFunctionality functionality;
     /**
+     * The exchange rate set to add to the record stream transaction receipt.
+     */
+    private ExchangeRateSet translationContextExchangeRates;
+    /**
      * The memo from the transaction, set explicitly to avoid parsing the transaction again.
      */
     private String memo;
@@ -839,7 +843,10 @@ public class BlockStreamBuilder
     @NonNull
     @Override
     public BlockStreamBuilder exchangeRate(@Nullable final ExchangeRateSet exchangeRate) {
-        transactionResultBuilder.exchangeRate(exchangeRate);
+        // Block Stream doesn't include exchange rate in output (it's in state
+        // changes when it is updated), so store exchange rate for the
+        // translation context
+        translationContextExchangeRates = exchangeRate;
         return this;
     }
 
@@ -1170,27 +1177,58 @@ public class BlockStreamBuilder
                     CONTRACT_DELETE,
                     CONTRACT_UPDATE,
                     ETHEREUM_TRANSACTION -> new ContractOpContext(
-                    memo, transactionId, transaction, functionality, contractId);
+                    memo, translationContextExchangeRates, transactionId, transaction, functionality, contractId);
             case CRYPTO_CREATE, CRYPTO_UPDATE -> new CryptoOpContext(
-                    memo, transactionId, transaction, functionality, accountId, evmAddress);
-            case FILE_CREATE -> new FileOpContext(memo, transactionId, transaction, functionality, fileId);
-            case NODE_CREATE -> new NodeOpContext(memo, transactionId, transaction, functionality, nodeId);
-            case SCHEDULE_DELETE -> new ScheduleOpContext(memo, transactionId, transaction, functionality, scheduleId);
+                    memo,
+                    translationContextExchangeRates,
+                    transactionId,
+                    transaction,
+                    functionality,
+                    accountId,
+                    evmAddress);
+            case FILE_CREATE -> new FileOpContext(
+                    memo, translationContextExchangeRates, transactionId, transaction, functionality, fileId);
+            case NODE_CREATE -> new NodeOpContext(
+                    memo, translationContextExchangeRates, transactionId, transaction, functionality, nodeId);
+            case SCHEDULE_DELETE -> new ScheduleOpContext(
+                    memo, translationContextExchangeRates, transactionId, transaction, functionality, scheduleId);
             case CONSENSUS_SUBMIT_MESSAGE -> new SubmitOpContext(
-                    memo, transactionId, transaction, functionality, runningHash, runningHashVersion, sequenceNumber);
+                    memo,
+                    translationContextExchangeRates,
+                    transactionId,
+                    transaction,
+                    functionality,
+                    runningHash,
+                    runningHashVersion,
+                    sequenceNumber);
             case TOKEN_AIRDROP -> {
                 if (!pendingAirdropRecords.isEmpty()) {
                     pendingAirdropRecords.sort(PENDING_AIRDROP_RECORD_COMPARATOR);
                 }
-                yield new AirdropOpContext(memo, transactionId, transaction, functionality, pendingAirdropRecords);
+                yield new AirdropOpContext(
+                        memo,
+                        translationContextExchangeRates,
+                        transactionId,
+                        transaction,
+                        functionality,
+                        pendingAirdropRecords);
             }
             case TOKEN_MINT -> new MintOpContext(
-                    memo, transactionId, transaction, functionality, serialNumbers, newTotalSupply);
+                    memo,
+                    translationContextExchangeRates,
+                    transactionId,
+                    transaction,
+                    functionality,
+                    serialNumbers,
+                    newTotalSupply);
             case TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> new SupplyChangeOpContext(
-                    memo, transactionId, transaction, functionality, newTotalSupply);
-            case TOKEN_CREATE -> new TokenOpContext(memo, transactionId, transaction, functionality, tokenId);
-            case CONSENSUS_CREATE_TOPIC -> new TopicOpContext(memo, transactionId, transaction, functionality, topicId);
-            default -> new BaseOpContext(memo, transactionId, transaction, functionality);
+                    memo, translationContextExchangeRates, transactionId, transaction, functionality, newTotalSupply);
+            case TOKEN_CREATE -> new TokenOpContext(
+                    memo, translationContextExchangeRates, transactionId, transaction, functionality, tokenId);
+            case CONSENSUS_CREATE_TOPIC -> new TopicOpContext(
+                    memo, translationContextExchangeRates, transactionId, transaction, functionality, topicId);
+            default -> new BaseOpContext(
+                    memo, translationContextExchangeRates, transactionId, transaction, functionality);
         };
     }
 }

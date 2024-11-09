@@ -23,6 +23,7 @@ import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 
@@ -36,6 +37,12 @@ public interface TranslationContext {
      * @return the memo
      */
     String memo();
+
+    /**
+     * The exchange rate set to include in the receipt for this transaction.
+     * @return an exchange rate set applicable to the transaction receipt.
+     */
+    ExchangeRateSet transactionExchangeRates();
 
     /**
      * Returns the transaction ID of the transaction.

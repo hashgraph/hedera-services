@@ -255,7 +255,7 @@ class SerializationTest extends MerkleTestBase {
     @Test
     void dualReadAndWrite() throws IOException, ConstructableRegistryException {
         final var schemaV1 = createV1Schema();
-        final var originalTree = (MerkleStateRoot) createMerkleHederaState(schemaV1);
+        final var originalTree = createMerkleHederaState(schemaV1);
 
         MerkleStateRoot copy = originalTree.copy(); // make a copy to make VM flushable
 

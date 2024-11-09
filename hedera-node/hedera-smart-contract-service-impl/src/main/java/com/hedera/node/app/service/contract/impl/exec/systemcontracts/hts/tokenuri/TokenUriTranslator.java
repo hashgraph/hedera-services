@@ -32,8 +32,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenUriTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for tokenURI(uint256) method. */
     public static final Function TOKEN_URI = new Function("tokenURI(uint256)", ReturnTypes.STRING);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenUriTranslator() {
         // Dagger2

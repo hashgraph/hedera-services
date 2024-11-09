@@ -188,7 +188,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         signingSet.addAll(allKeys);
         given(keyVerifier.authorizingSimpleKeys()).willReturn(signingSet);
         final TestTransactionKeys allRequired = new TestTransactionKeys(payerKey, allKeys, Collections.emptySet());
-        // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
+        // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(allRequired));
     }
