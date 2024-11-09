@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.workflows;
 
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -28,6 +29,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -38,6 +40,7 @@ public record DispatchOptions<T extends StreamBuilder>(
         @NonNull AccountID payerId,
         @NonNull TransactionBody body,
         @NonNull Predicate<Key> keyVerifier,
+        @NonNull Set<Key> authorizingKeys,
         @NonNull TransactionCategory category,
         @NonNull ConsensusThrottling throttling,
         @NonNull Class<T> streamBuilderType,
@@ -84,6 +87,7 @@ public record DispatchOptions<T extends StreamBuilder>(
         requireNonNull(keyVerifier);
         requireNonNull(category);
         requireNonNull(throttling);
+        requireNonNull(authorizingKeys);
         requireNonNull(streamBuilderType);
         requireNonNull(reversingBehavior);
         requireNonNull(transactionCustomizer);
@@ -129,6 +133,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 payerId,
                 body,
                 PREAUTHORIZED_KEYS,
+                emptySet(),
                 TransactionCategory.PRECEDING,
                 ConsensusThrottling.OFF,
                 streamBuilderType,
@@ -160,6 +165,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 payerId,
                 body,
                 PREAUTHORIZED_KEYS,
+                emptySet(),
                 TransactionCategory.PRECEDING,
                 ConsensusThrottling.ON,
                 streamBuilderType,
@@ -176,18 +182,20 @@ public record DispatchOptions<T extends StreamBuilder>(
      *     <li>Dispatching a native Hedera transaction from within the EVM via a system contract.</li>
      * </ul>
      *
+     * @param <T> the type of stream builder to use for the dispatch
      * @param payerId the account to pay for the dispatch
      * @param body the transaction to dispatch
-     * @param streamBuilderType the type of stream builder to use for the dispatch
      * @param keyVerifier the key verifier to use for the dispatch
+     * @param authorizingKeys the set of keys authorizing the dispatch
+     * @param streamBuilderType the type of stream builder to use for the dispatch
      * @param stakingRewards whether the dispatch can trigger staking rewards
      * @return the options for the sub-dispatch
-     * @param <T> the type of stream builder to use for the dispatch
      */
     public static <T extends StreamBuilder> DispatchOptions<T> subDispatch(
             @NonNull final AccountID payerId,
             @NonNull final TransactionBody body,
             @NonNull final Predicate<Key> keyVerifier,
+            @NonNull final Set<Key> authorizingKeys,
             @NonNull final Class<T> streamBuilderType,
             @NonNull final StakingRewards stakingRewards) {
         final var category =
@@ -200,6 +208,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 payerId,
                 body,
                 keyVerifier,
+                authorizingKeys,
                 category,
                 ConsensusThrottling.ON,
                 streamBuilderType,
@@ -231,6 +240,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 payerId,
                 body,
                 PREAUTHORIZED_KEYS,
+                emptySet(),
                 TransactionCategory.CHILD,
                 ConsensusThrottling.OFF,
                 streamBuilderType,

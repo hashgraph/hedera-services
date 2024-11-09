@@ -27,6 +27,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_S
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.subDispatch;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -261,6 +262,7 @@ abstract class AbstractScheduleHandler {
                             schedule.payerAccountIdOrThrow(),
                             body,
                             signatories::contains,
+                            emptySet(),
                             ScheduleStreamBuilder.class,
                             StakingRewards.ON))
                     .scheduleRef(schedule.scheduleId());

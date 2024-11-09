@@ -24,6 +24,8 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.emptySortedSet;
+import static java.util.Collections.unmodifiableSortedSet;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -51,6 +53,7 @@ import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -86,6 +89,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -96,6 +101,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ChildDispatchFactory {
+    private static final KeyComparator KEY_COMPARATOR = new KeyComparator();
     public static final NoOpKeyVerifier NO_OP_KEY_VERIFIER = new NoOpKeyVerifier();
 
     private final TransactionDispatcher dispatcher;
@@ -406,8 +412,16 @@ public class ChildDispatchFactory {
             @Nullable final Predicate<Key> callback,
             @NonNull final Configuration config,
             @NonNull final Set<Key> authorizingKeys) {
+        final var keys = asSortedSet(authorizingKeys);
         return callback == null
-                ? NO_OP_KEY_VERIFIER
+                ? authorizingKeys.isEmpty()
+                        ? NO_OP_KEY_VERIFIER
+                        : new NoOpKeyVerifier() {
+                            @Override
+                            public SortedSet<Key> authorizingSimpleKeys() {
+                                return keys;
+                            }
+                        }
                 : new AppKeyVerifier() {
                     private final AppKeyVerifier verifier =
                             new DefaultKeyVerifier(0, config.getConfigData(HederaConfig.class), emptyMap());
@@ -438,6 +452,11 @@ public class ChildDispatchFactory {
                     @Override
                     public int numSignaturesVerified() {
                         return 0;
+                    }
+
+                    @Override
+                    public SortedSet<Key> authorizingSimpleKeys() {
+                        return keys;
                     }
                 };
     }
@@ -499,5 +518,20 @@ public class ChildDispatchFactory {
             builder.transactionID(transactionID);
         }
         return builder;
+    }
+
+    /**
+     * Returns the given set of keys as a sorted set.
+     * @param keys the keys
+     * @return the sorted set
+     */
+    private static SortedSet<Key> asSortedSet(@NonNull final Set<Key> keys) {
+        return keys.isEmpty()
+                ? emptySortedSet()
+                : unmodifiableSortedSet(new TreeSet<>(KEY_COMPARATOR) {
+                    {
+                        addAll(keys);
+                    }
+                });
     }
 }

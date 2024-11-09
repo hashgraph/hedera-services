@@ -40,6 +40,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Set;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
@@ -82,7 +83,8 @@ public class HandleSystemContractOperations implements SystemContractOperations 
             @NonNull final TransactionBody syntheticBody,
             @NonNull final VerificationStrategy strategy,
             @NonNull final AccountID syntheticPayerId,
-            @NonNull final Class<T> streamBuilderType) {
+            @NonNull final Class<T> streamBuilderType,
+            @NonNull final Set<Key> authorizingKeys) {
         requireNonNull(syntheticBody);
         requireNonNull(strategy);
         requireNonNull(syntheticPayerId);
@@ -91,6 +93,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
                 syntheticPayerId,
                 syntheticBody,
                 primitiveSignatureTestWith(strategy),
+                authorizingKeys,
                 streamBuilderType,
                 StakingRewards.OFF));
     }

@@ -32,6 +32,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -580,10 +581,15 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         @Test
         void testDispatchWithInvalidArguments() {
             assertThatThrownBy(() -> subject.dispatch(subDispatch(
-                            AccountID.DEFAULT, null, VERIFIER_CALLBACK, StreamBuilder.class, StakingRewards.ON)))
+                            AccountID.DEFAULT,
+                            null,
+                            VERIFIER_CALLBACK,
+                            emptySet(),
+                            StreamBuilder.class,
+                            StakingRewards.ON)))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.dispatch(
-                            subDispatch(AccountID.DEFAULT, txBody, VERIFIER_CALLBACK, null, StakingRewards.ON)))
+            assertThatThrownBy(() -> subject.dispatch(subDispatch(
+                            AccountID.DEFAULT, txBody, VERIFIER_CALLBACK, emptySet(), null, StakingRewards.ON)))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -592,7 +598,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     (Consumer<HandleContext>) context ->
                             context.dispatch(independentDispatch(ALICE.accountID(), txBody, StreamBuilder.class)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatch(DispatchOptions.subDispatch(
-                            ALICE.accountID(), txBody, VERIFIER_CALLBACK, StreamBuilder.class, StakingRewards.OFF))),
+                            ALICE.accountID(),
+                            txBody,
+                            VERIFIER_CALLBACK,
+                            emptySet(),
+                            StreamBuilder.class,
+                            StakingRewards.OFF))),
                     Arguments.of((Consumer<HandleContext>) context ->
                             context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class)))));
         }
@@ -683,8 +694,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                                     .build()));
             assertThat(context.dispatchPaidRewards()).isSameAs(Collections.emptyMap());
 
-            context.dispatch(
-                    subDispatch(ALICE.accountID(), txBody, VERIFIER_CALLBACK, StreamBuilder.class, StakingRewards.ON));
+            context.dispatch(subDispatch(
+                    ALICE.accountID(), txBody, VERIFIER_CALLBACK, emptySet(), StreamBuilder.class, StakingRewards.ON));
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();

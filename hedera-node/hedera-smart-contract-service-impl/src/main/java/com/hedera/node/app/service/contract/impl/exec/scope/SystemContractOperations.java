@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static java.util.Collections.emptySet;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -28,6 +30,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -40,6 +43,11 @@ public interface SystemContractOperations {
      * <p>If the result is {@code SUCCESS}, but this scope or any of its parents revert, the record
      * of this dispatch should have its stateful side effects cleared and its result set to {@code REVERTED_SUCCESS}.
      *
+     * <p><b>Note:</b> As of release 0.57, all system contracts used this overload, hence forwarding an empty set of
+     * authorizing keys with the dispatch. However, <a href="https://hips.hedera.com/hip/hip-755">HIP-755</a>
+     * will soon make use the overload below so the HRC-755 system contracts can forward non-empty sets of authorizing
+     * keys to the {@link HederaFunctionality#SCHEDULE_SIGN} handler.
+     *
      * @param syntheticBody the synthetic transaction to dispatch
      * @param strategy             the non-cryptographic signature verification to use
      * @param syntheticPayerId     the payer of the synthetic transaction
@@ -47,11 +55,37 @@ public interface SystemContractOperations {
      * @return the result of the dispatch
      */
     @NonNull
+    default <T extends StreamBuilder> T dispatch(
+            @NonNull TransactionBody syntheticBody,
+            @NonNull VerificationStrategy strategy,
+            @NonNull AccountID syntheticPayerId,
+            @NonNull Class<T> streamBuilderType) {
+        return dispatch(syntheticBody, strategy, syntheticPayerId, streamBuilderType, emptySet());
+    }
+
+    /**
+     * Attempts to dispatch the given {@code syntheticTransaction} in the context of the current
+     * {@link HandleHederaOperations}, performing signature verification with priority given to the included
+     * {@code VerificationStrategy}, and exposing the given {@code authorizingKeys} as the set of keys
+     * authorizing the dispatch.
+     *
+     * <p>If the result is {@code SUCCESS}, but this scope or any of its parents revert, the record
+     * of this dispatch should have its stateful side effects cleared and its result set to {@code REVERTED_SUCCESS}.
+     *
+     * @param syntheticBody the synthetic transaction to dispatch
+     * @param strategy             the non-cryptographic signature verification to use
+     * @param syntheticPayerId     the payer of the synthetic transaction
+     * @param streamBuilderType  the class of the stream builder to use
+     * @param authorizingKeys     the keys authorizing the dispatch
+     * @return the result of the dispatch
+     */
+    @NonNull
     <T extends StreamBuilder> T dispatch(
             @NonNull TransactionBody syntheticBody,
             @NonNull VerificationStrategy strategy,
             @NonNull AccountID syntheticPayerId,
-            @NonNull Class<T> streamBuilderType);
+            @NonNull Class<T> streamBuilderType,
+            @NonNull Set<Key> authorizingKeys);
 
     /**
      * Externalizes the preemption of the given {@code syntheticTransaction} hat would have otherwise been

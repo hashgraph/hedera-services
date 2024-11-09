@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_SECP256K1_KEY;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -31,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -53,6 +55,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,6 +124,22 @@ class HandleSystemContractOperationsTest {
     }
 
     @Test
+    void dispatchesWithEmptySetOfAuthorizingKeysByDefault() {
+        final var mockSubject = mock(HandleSystemContractOperations.class);
+        doCallRealMethod().when(mockSubject).dispatch(any(), any(), any(), any());
+
+        mockSubject.dispatch(TransactionBody.DEFAULT, strategy, A_NEW_ACCOUNT_ID, CryptoTransferStreamBuilder.class);
+
+        verify(mockSubject)
+                .dispatch(
+                        TransactionBody.DEFAULT,
+                        strategy,
+                        A_NEW_ACCOUNT_ID,
+                        CryptoTransferStreamBuilder.class,
+                        Set.of());
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void dispatchesRespectingGivenStrategy() {
         final var captor = forClass(DispatchOptions.class);
@@ -135,14 +154,21 @@ class HandleSystemContractOperationsTest {
         given(keyVerifier.verificationFor(TestHelpers.B_SECP256K1_KEY)).willReturn(failed);
         doCallRealMethod().when(strategy).asPrimitiveSignatureTestIn(context, A_SECP256K1_KEY);
 
-        subject.dispatch(TransactionBody.DEFAULT, strategy, A_NEW_ACCOUNT_ID, CryptoTransferStreamBuilder.class);
+        subject.dispatch(
+                TransactionBody.DEFAULT,
+                strategy,
+                A_NEW_ACCOUNT_ID,
+                CryptoTransferStreamBuilder.class,
+                Set.of(AN_ED25519_KEY));
 
         verify(context).dispatch(captor.capture());
-        final var test = captor.getValue().keyVerifier();
+        final var options = captor.getValue();
+        final var test = options.keyVerifier();
         assertTrue(test.test(TestHelpers.A_CONTRACT_KEY));
         assertTrue(test.test(AN_ED25519_KEY));
         assertFalse(test.test(TestHelpers.A_SECP256K1_KEY));
         assertFalse(test.test(TestHelpers.B_SECP256K1_KEY));
+        assertThat(options.authorizingKeys()).containsExactly(AN_ED25519_KEY);
     }
 
     @Test

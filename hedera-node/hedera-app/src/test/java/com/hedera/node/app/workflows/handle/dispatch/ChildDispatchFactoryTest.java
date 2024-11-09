@@ -53,7 +53,6 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -61,6 +60,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import java.time.Instant;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -142,8 +142,6 @@ class ChildDispatchFactoryTest {
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
 
     private final Predicate<Key> callback = key -> true;
-    private final StreamBuilder.TransactionCustomizer customizer = recordBuilder -> recordBuilder;
-    private final RecordStreamBuilder.ReversingBehavior reversingBehavior = StreamBuilder.ReversingBehavior.REMOVABLE;
 
     @BeforeEach
     public void setUp() {
@@ -172,6 +170,18 @@ class ChildDispatchFactoryTest {
     void keyVerifierWithNullCallbackIsNoOp() {
         assertThat(ChildDispatchFactory.getKeyVerifier(null, DEFAULT_CONFIG, emptySet()))
                 .isInstanceOf(ChildDispatchFactory.NoOpKeyVerifier.class);
+    }
+
+    @Test
+    void keyVerifierWithNullCallbackAndAuthorizingKeysAsExpected() {
+        final var derivedVerifier =
+                ChildDispatchFactory.getKeyVerifier(null, DEFAULT_CONFIG, Set.of(A_CONTRACT_ID_KEY));
+        assertThat(derivedVerifier.verificationFor(Key.DEFAULT).passed()).isTrue();
+        assertThat(derivedVerifier.verificationFor(Key.DEFAULT, (k, v) -> false).passed())
+                .isTrue();
+        assertThat(derivedVerifier.verificationFor(Bytes.EMPTY).passed()).isTrue();
+        assertThat(derivedVerifier.numSignaturesVerified()).isEqualTo(0L);
+        assertThat(derivedVerifier.authorizingSimpleKeys()).containsExactly(A_CONTRACT_ID_KEY);
     }
 
     @Test
@@ -226,7 +236,12 @@ class ChildDispatchFactoryTest {
                         Instant.ofEpochSecond(12345L),
                         blockRecordInfo,
                         DispatchOptions.subDispatch(
-                                payerId, txBody, callback, StreamBuilder.class, DispatchOptions.StakingRewards.ON)));
+                                payerId,
+                                txBody,
+                                callback,
+                                emptySet(),
+                                StreamBuilder.class,
+                                DispatchOptions.StakingRewards.ON)));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }
