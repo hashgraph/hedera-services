@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -33,7 +34,6 @@ import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -167,8 +167,8 @@ public class HollowAccountCompletions {
                                 .key(verification.key())
                                 .build())
                         .build();
-                final var streamBuilder = context.dispatch(DispatchOptions.independentDispatch(
-                        context.payer(), syntheticUpdateTxn, CryptoUpdateStreamBuilder.class));
+                final var streamBuilder = context.dispatch(
+                        independentDispatch(context.payer(), syntheticUpdateTxn, CryptoUpdateStreamBuilder.class));
                 streamBuilder.accountID(hollowAccount.accountIdOrThrow());
             }
         }

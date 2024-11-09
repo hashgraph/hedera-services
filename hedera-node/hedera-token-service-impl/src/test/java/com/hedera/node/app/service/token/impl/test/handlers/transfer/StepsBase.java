@@ -24,7 +24,7 @@ import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Acco
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.nftTransferWithAllowance;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -210,7 +210,6 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(handleContext.dispatch(any())).willReturn(cryptoCreateRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
@@ -221,8 +220,9 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(syntheticPayer), any()))
+        given(handleContext.dispatch(
+                        argThat(options -> options.streamBuilderType().equals(CryptoCreateStreamBuilder.class)
+                                && syntheticPayer.equals(options.payerId()))))
                 .will((invocation) -> {
                     final var copy = writableAccountStore
                             .get(hbarReceiverId)

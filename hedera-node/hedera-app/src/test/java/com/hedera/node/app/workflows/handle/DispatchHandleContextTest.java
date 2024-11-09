@@ -26,7 +26,7 @@ import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBLE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
-import static com.hedera.node.app.spi.workflows.DispatchOptions.stepDispatch;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
 import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
@@ -593,8 +593,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             context.dispatch(independentDispatch(ALICE.accountID(), txBody, StreamBuilder.class)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
                             txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), CHILD, ON)),
-                    Arguments.of((Consumer<HandleContext>) context -> context.dispatch(stepDispatch(
-                            ALICE.accountID(), txBody, StreamBuilder.class, (ignore) -> Transaction.DEFAULT)))));
+                    Arguments.of((Consumer<HandleContext>) context ->
+                            context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class)))));
         }
 
         @ParameterizedTest
@@ -659,8 +659,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
-            context.dispatchRemovablePrecedingTransaction(
-                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), ON);
+            context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class));
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();

@@ -249,40 +249,6 @@ public interface HandleContext {
             @NonNull ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel);
 
     /**
-     * Dispatches preceding transaction that can be removed.
-     *
-     * <p>A removable preceding transaction depends on the current transaction. That means if the user transaction
-     * fails, a removable preceding transaction is automatically removed and not exported. The state changes introduced by a
-     * removable preceding transaction are automatically committed together with the parent transaction.
-     *
-     * <p>This method can only be called by a {@link TransactionCategory#USER}-transaction and only as long as no state
-     * changes have been introduced by the user transaction (either by storing state or by calling a child
-     * transaction).
-     *
-     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
-     * any of the {@code verificationFor} methods.
-     *
-     * @param txBody             the {@link TransactionBody} of the transaction to dispatch
-     * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier           if non-null, a {@link Predicate} that will be used to validate primitive keys
-     * @param syntheticPayer     the payer of the transaction
-     * @param consensusThrottling whether to throttle the child transaction at consensus
-     * @return the record builder of the transaction
-     * @throws NullPointerException     if {@code txBody} is {@code null}
-     * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
-     *                                  the record builder type is unknown to the app
-     * @throws IllegalStateException    if the current transaction has already introduced state changes
-     * @throws HandleException          if the base builder for the dispatch cannot be created
-     */
-    @NonNull
-    <T> T dispatchRemovablePrecedingTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @Nullable Predicate<Key> verifier,
-            AccountID syntheticPayer,
-            @NonNull ConsensusThrottling consensusThrottling);
-
-    /**
      * Dispatches a child transaction.
      *
      * <p>A child transaction depends on the current transaction. That means if the current transaction fails,
