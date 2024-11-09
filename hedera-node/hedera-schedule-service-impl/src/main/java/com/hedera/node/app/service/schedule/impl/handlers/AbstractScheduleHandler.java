@@ -26,7 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
-import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.subDispatch;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -39,8 +39,8 @@ import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
@@ -70,6 +70,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Gets the {@link TransactionKeys} summarizing a schedule's signing requirements.
+     *
      * @param schedule the schedule
      * @param fn the function to get required keys by category
      * @return the schedule's signing requirements
@@ -88,6 +89,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Gets the {@link TransactionKeys} summarizing a schedule's signing requirements.
+     *
      * @param schedule the schedule
      * @param fn the function to get required keys by category
      * @return the schedule's signing requirements
@@ -113,6 +115,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Gets all required keys for a transaction, including the payer key and all non-payer keys.
+     *
      * @param keys the transaction keys
      * @return the required keys
      */
@@ -127,6 +130,7 @@ abstract class AbstractScheduleHandler {
      * Given a set of signing crypto keys, a list of signatories, and a list of required keys, returns a new list of
      * signatories that includes all the original signatories and any crypto keys that are both constituents of the
      * required keys and in the signing crypto keys set.
+     *
      * @param signingCryptoKeys the signing crypto keys
      * @param signatories the original signatories
      * @param requiredKeys the required keys
@@ -182,6 +186,7 @@ abstract class AbstractScheduleHandler {
      *     <li>Is not deleted.</li>
      *     <li>Has not expired.</li>
      * </ul>
+     *
      * @param schedule the schedule to validate
      * @param consensusNow the current consensus time
      * @param isLongTermEnabled whether long term scheduling is enabled
@@ -216,6 +221,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Indicates if the given validation result is one that may allow a validated schedule to be executed.
+     *
      * @param validationResult the validation result
      * @return if the schedule might be executable
      */
@@ -225,6 +231,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Tries to execute a schedule, if all conditions are met. Returns true if the schedule was executed.
+     *
      * @param context the context
      * @param schedule the schedule to execute
      * @param validationResult the validation result
@@ -250,13 +257,12 @@ abstract class AbstractScheduleHandler {
         final boolean isExpired = validationResult == SCHEDULE_PENDING_EXPIRATION;
         if (canExecute(schedule, remainingKeys, isExpired, isLongTermEnabled)) {
             final var body = childAsOrdinary(schedule);
-            context.dispatchChildTransaction(
-                            body,
-                            ScheduleStreamBuilder.class,
-                            signatories::contains,
+            context.dispatch(subDispatch(
                             schedule.payerAccountIdOrThrow(),
-                            TransactionCategory.SCHEDULED,
-                            ON)
+                            body,
+                            signatories::contains,
+                            ScheduleStreamBuilder.class,
+                            StakingRewards.ON))
                     .scheduleRef(schedule.scheduleId());
             context.savepointStack()
                     .getBaseBuilder(ScheduleStreamBuilder.class)
@@ -269,6 +275,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Returns a version of the given schedule marked as executed at the given time.
+     *
      * @param schedule the schedule to mark as executed
      * @param consensusNow the time to mark the schedule as executed
      * @return the marked schedule
@@ -312,6 +319,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Accumulates the valid signatories from a key structure into a set of signatories.
+     *
      * @param signatories the set of signatories to accumulate into
      * @param signingCryptoKeys the signing crypto keys
      * @param key the key structure to accumulate signatories from

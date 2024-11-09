@@ -43,7 +43,7 @@ public interface SystemContractOperations {
      * @param syntheticBody the synthetic transaction to dispatch
      * @param strategy             the non-cryptographic signature verification to use
      * @param syntheticPayerId     the payer of the synthetic transaction
-     * @param recordBuilderClass  the class of the record builder to use
+     * @param streamBuilderType  the class of the stream builder to use
      * @return the result of the dispatch
      */
     @NonNull
@@ -51,7 +51,7 @@ public interface SystemContractOperations {
             @NonNull TransactionBody syntheticBody,
             @NonNull VerificationStrategy strategy,
             @NonNull AccountID syntheticPayerId,
-            @NonNull Class<T> recordBuilderClass);
+            @NonNull Class<T> streamBuilderType);
 
     /**
      * Externalizes the preemption of the given {@code syntheticTransaction} hat would have otherwise been

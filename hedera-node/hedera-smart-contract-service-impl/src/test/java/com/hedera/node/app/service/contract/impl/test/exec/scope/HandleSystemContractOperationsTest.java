@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_SECP256K1_KEY;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -52,6 +51,7 @@ import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
@@ -123,7 +123,7 @@ class HandleSystemContractOperationsTest {
     @Test
     @SuppressWarnings("unchecked")
     void dispatchesRespectingGivenStrategy() {
-        final var captor = forClass(Predicate.class);
+        final var captor = forClass(DispatchOptions.class);
         given(strategy.decideForPrimitive(TestHelpers.A_CONTRACT_KEY)).willReturn(Decision.VALID);
         given(strategy.decideForPrimitive(AN_ED25519_KEY)).willReturn(Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
         given(strategy.decideForPrimitive(TestHelpers.B_SECP256K1_KEY))
@@ -137,15 +137,8 @@ class HandleSystemContractOperationsTest {
 
         subject.dispatch(TransactionBody.DEFAULT, strategy, A_NEW_ACCOUNT_ID, CryptoTransferStreamBuilder.class);
 
-        verify(context)
-                .dispatchChildTransaction(
-                        eq(TransactionBody.DEFAULT),
-                        eq(CryptoTransferStreamBuilder.class),
-                        captor.capture(),
-                        eq(A_NEW_ACCOUNT_ID),
-                        eq(CHILD),
-                        any());
-        final var test = captor.getValue();
+        verify(context).dispatch(captor.capture());
+        final var test = captor.getValue().keyVerifier();
         assertTrue(test.test(TestHelpers.A_CONTRACT_KEY));
         assertTrue(test.test(AN_ED25519_KEY));
         assertFalse(test.test(TestHelpers.A_SECP256K1_KEY));

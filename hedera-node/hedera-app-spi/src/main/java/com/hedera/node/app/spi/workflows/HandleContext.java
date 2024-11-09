@@ -18,7 +18,6 @@ package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -36,10 +35,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Map;
-import java.util.function.Predicate;
 
 /**
  * Represents the context of a single {@code handle()}-call.
@@ -249,45 +246,6 @@ public interface HandleContext {
             @NonNull ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel);
 
     /**
-     * Dispatches a child transaction.
-     *
-     * <p>A child transaction depends on the current transaction. That means if the current transaction fails,
-     * a child transaction is automatically rolled back. The state changes introduced by a child transaction are
-     * automatically committed together with the parent transaction.
-     *
-     * <p>A child transaction will run with the current state. It will see all state changes introduced by the current
-     * transaction or preceding child transactions. If successful, a new entry will be added to the
-     * {@link SavepointStack}. This enables the current transaction to commit or roll back the state changes. Please be
-     * aware that any state changes introduced by storing data in one of the stores after calling a child transaction
-     * will also be rolled back if the child transaction is rolled back.
-     *
-     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
-     * any of the {@code verificationFor} methods.
-     *
-     * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
-     *
-     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
-     * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback           a {@link Predicate} callback function that will observe each primitive key
-     * @param syntheticPayerId   the payer of the child transaction
-     * @param childCategory      the category of the child transaction
-     * @param consensusThrottling whether to throttle the child transaction at consensus
-     * @return the record builder of the child transaction
-     * @throws NullPointerException     if any of the arguments is {@code null}
-     * @throws IllegalArgumentException if the current transaction is a
-     * @throws HandleException          if the base builder for the dispatch cannot be created
-     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T dispatchChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @Nullable Predicate<Key> callback,
-            @NonNull AccountID syntheticPayerId,
-            @NonNull TransactionCategory childCategory,
-            @NonNull ConsensusThrottling consensusThrottling);
-
-    /**
      * Dispatches a child transaction with the given options.
      * @param options the options to use
      * @return the stream builder of the child transaction
@@ -390,12 +348,6 @@ public interface HandleContext {
         @NonNull
         <T> T addRemovableChildRecordBuilder(
                 @NonNull Class<T> recordBuilderClass, @NonNull HederaFunctionality functionality);
-    }
-
-    static void throwIfMissingPayerId(@NonNull final TransactionBody body) {
-        if (!body.hasTransactionID() || !body.transactionIDOrThrow().hasAccountID()) {
-            throw new IllegalArgumentException("Transaction id must be set if dispatching without an explicit payer");
-        }
     }
 
     /**

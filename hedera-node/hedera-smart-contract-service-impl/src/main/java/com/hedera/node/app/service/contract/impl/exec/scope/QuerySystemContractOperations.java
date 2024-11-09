@@ -62,7 +62,7 @@ public class QuerySystemContractOperations implements SystemContractOperations {
             @NonNull final TransactionBody syntheticTransaction,
             @NonNull final VerificationStrategy strategy,
             @NonNull final AccountID syntheticPayerId,
-            @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final Class<T> streamBuilderType) {
         throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
     }
 

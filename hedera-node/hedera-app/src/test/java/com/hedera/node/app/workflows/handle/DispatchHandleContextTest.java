@@ -27,9 +27,7 @@ import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBL
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
-import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.subDispatch;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
@@ -95,6 +93,8 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
+import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -579,11 +579,11 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         @SuppressWarnings("ConstantConditions")
         @Test
         void testDispatchWithInvalidArguments() {
-            assertThatThrownBy(() -> subject.dispatchChildTransaction(
-                            null, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD, ON))
+            assertThatThrownBy(() -> subject.dispatch(subDispatch(
+                            AccountID.DEFAULT, null, VERIFIER_CALLBACK, StreamBuilder.class, StakingRewards.ON)))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.dispatchChildTransaction(
-                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD, ON))
+            assertThatThrownBy(() -> subject.dispatch(
+                            subDispatch(AccountID.DEFAULT, txBody, VERIFIER_CALLBACK, null, StakingRewards.ON)))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -591,8 +591,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             return Stream.of(Arguments.of(
                     (Consumer<HandleContext>) context ->
                             context.dispatch(independentDispatch(ALICE.accountID(), txBody, StreamBuilder.class)),
-                    Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
-                            txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), CHILD, ON)),
+                    Arguments.of((Consumer<HandleContext>) context -> context.dispatch(DispatchOptions.subDispatch(
+                            ALICE.accountID(), txBody, VERIFIER_CALLBACK, StreamBuilder.class, StakingRewards.OFF))),
                     Arguments.of((Consumer<HandleContext>) context ->
                             context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class)))));
         }
@@ -683,8 +683,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                                     .build()));
             assertThat(context.dispatchPaidRewards()).isSameAs(Collections.emptyMap());
 
-            context.dispatchChildTransaction(
-                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), SCHEDULED, ON);
+            context.dispatch(
+                    subDispatch(ALICE.accountID(), txBody, VERIFIER_CALLBACK, StreamBuilder.class, StakingRewards.ON));
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();

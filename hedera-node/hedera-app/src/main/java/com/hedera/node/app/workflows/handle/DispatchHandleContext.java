@@ -348,32 +348,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return txBody;
     }
 
-    @NonNull
-    @Override
-    public <T> T dispatchChildTransaction(
-            @NonNull final TransactionBody childTxBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> childCallback,
-            @NonNull final AccountID childSyntheticPayerId,
-            @NonNull final TransactionCategory childCategory,
-            @NonNull final ConsensusThrottling consensusThrottling) {
-        requireNonNull(childTxBody, "childTxBody must not be null");
-        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
-        requireNonNull(childCategory, "childCategory must not be null");
-
-        return dispatchForRecord(
-                childTxBody,
-                recordBuilderClass,
-                childCallback,
-                childSyntheticPayerId,
-                StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER,
-                childCategory,
-                StreamBuilder.ReversingBehavior.REVERSIBLE,
-                false,
-                consensusThrottling);
-    }
-
     @Override
     public <T extends StreamBuilder> T dispatch(@NonNull final DispatchOptions<T> options) {
         requireNonNull(options);

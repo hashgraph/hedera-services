@@ -23,12 +23,13 @@ import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBe
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
@@ -46,7 +47,6 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
@@ -56,7 +56,6 @@ import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.Set;
-import java.util.function.Predicate;
 import org.assertj.core.api.BDDAssertions;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -180,13 +179,8 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         given(keyVerifier.verificationFor(eq(schedulerKey), any())).willReturn(failedVerification(schedulerKey));
         given(keyVerifier.verificationFor(eq(optionKey), any())).willReturn(failedVerification(optionKey));
         given(keyVerifier.verificationFor(eq(otherKey), any())).willReturn(failedVerification(otherKey));
-        given(mockContext.dispatchChildTransaction(
-                        any(),
-                        eq(ScheduleStreamBuilder.class),
-                        any(Predicate.class),
-                        any(AccountID.class),
-                        any(TransactionCategory.class),
-                        any()))
+        given(mockContext.dispatch(
+                        assertArg(options -> assertEquals(ScheduleStreamBuilder.class, options.streamBuilderType()))))
                 .willReturn(new RecordStreamBuilder(REVERSIBLE, NOOP_TRANSACTION_CUSTOMIZER, USER));
 
         final var mockStack = mock(HandleContext.SavepointStack.class);
