@@ -185,7 +185,8 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
             triggerThreadDump();
             return true;
         } catch (Exception e) {
-            log.warn("Unable to dump threads for node{}", metadata.nodeId(), e);
+            log.warn("Unable to dump threads for node{}, assuming it was stopped", metadata.nodeId(), e);
+            processHandle = null;
             return false;
         }
     }

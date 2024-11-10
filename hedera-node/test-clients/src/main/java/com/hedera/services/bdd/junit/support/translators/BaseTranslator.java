@@ -95,8 +95,6 @@ public class BaseTranslator {
     /**
      * These fields are used to translate a single "unit" of block items connected to a {@link TransactionID}.
      */
-    private long prevHighestKnownNodeId = 0L;
-
     private long prevHighestKnownEntityNum = 0L;
 
     private Instant userTimestamp;
@@ -167,7 +165,6 @@ public class BaseTranslator {
      */
     public void prepareForUnit(@NonNull final BlockTransactionalUnit unit) {
         this.prevHighestKnownEntityNum = highestKnownEntityNum;
-        this.prevHighestKnownNodeId = highestKnownNodeId;
         numMints.clear();
         highestPutSerialNos.clear();
         nextCreatedNums.clear();
@@ -189,7 +186,7 @@ public class BaseTranslator {
             serialNos.sort(Comparator.naturalOrder());
         });
         if (nextCreatedNums.containsKey(NODE)) {
-            highestKnownNodeId = nextCreatedNums.remove(NODE).getLast();
+            highestKnownNodeId = nextCreatedNums.get(NODE).getLast();
         }
         highestKnownEntityNum =
                 nextCreatedNums.values().stream().mapToLong(List::getLast).max().orElse(highestKnownEntityNum);
@@ -203,16 +200,6 @@ public class BaseTranslator {
      */
     public boolean entityCreatedThisUnit(final long num) {
         return num > prevHighestKnownEntityNum;
-    }
-
-    /**
-     * Determines if the given node id was created in the ongoing transactional unit.
-     *
-     * @param nodeId the node id to query
-     * @return true if the node was created
-     */
-    public boolean nodeCreatedThisUnit(final long nodeId) {
-        return nodeId > prevHighestKnownNodeId;
     }
 
     /**
