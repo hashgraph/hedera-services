@@ -64,6 +64,9 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class FrameBuilder {
     private static final int MAX_STACK_SIZE = 1024;
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public FrameBuilder() {
         // Dagger2
@@ -76,6 +79,7 @@ public class FrameBuilder {
      * @param worldUpdater the world updater for the transaction
      * @param context the Hedera EVM context (gas price, block values, etc.)
      * @param config the active Hedera configuration
+     * @param featureFlags the feature flag currently used
      * @param from the sender of the transaction
      * @param to the recipient of the transaction
      * @param intrinsicGas the intrinsic gas cost, needed to calculate remaining gas

@@ -39,6 +39,11 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 public class CustomLogOperation extends AbstractOperation {
     private final int numTopics;
 
+    /**
+     * Constructor for custom log operations.
+     * @param numTopics number of topics
+     * @param gasCalculator the gas calculator to use
+     */
     public CustomLogOperation(final int numTopics, @NonNull final GasCalculator gasCalculator) {
         super(
                 switch (numTopics) {

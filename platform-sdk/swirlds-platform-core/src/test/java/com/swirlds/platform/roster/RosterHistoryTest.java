@@ -54,28 +54,26 @@ class RosterHistoryTest {
     private static final long ROUND_2 = 2983745987L;
 
     /**
-     * Build identical RosterHistory objects using different constructors.
+     * Build RosterHistory object(s) for tests.
      * @return stream of arguments
      */
     private static Stream<Arguments> provideArguments() {
         final Bytes hash1 = RosterUtils.hash(ROSTER_1).getBytes();
         final Bytes hash2 = RosterUtils.hash(ROSTER_2).getBytes();
 
-        return Stream.of(
-                Arguments.of(new RosterHistory(
-                        List.of(
-                                RoundRosterPair.newBuilder()
-                                        .roundNumber(ROUND_2)
-                                        .activeRosterHash(hash2)
-                                        .build(),
-                                RoundRosterPair.newBuilder()
-                                        .roundNumber(ROUND_1)
-                                        .activeRosterHash(hash1)
-                                        .build()),
-                        Map.of(
-                                hash1, ROSTER_1,
-                                hash2, ROSTER_2))),
-                Arguments.of(new RosterHistory(ROSTER_2, ROUND_2, ROSTER_1, ROUND_1)));
+        return Stream.of(Arguments.of(new RosterHistory(
+                List.of(
+                        RoundRosterPair.newBuilder()
+                                .roundNumber(ROUND_2)
+                                .activeRosterHash(hash2)
+                                .build(),
+                        RoundRosterPair.newBuilder()
+                                .roundNumber(ROUND_1)
+                                .activeRosterHash(hash1)
+                                .build()),
+                Map.of(
+                        hash1, ROSTER_1,
+                        hash2, ROSTER_2))));
     }
 
     @ParameterizedTest
@@ -120,9 +118,5 @@ class RosterHistoryTest {
                                 .build()),
                         Map.of()));
         assertTrue(iae1.getMessage().startsWith("Roster history refers to roster hashes not found in the roster map"));
-
-        final IllegalArgumentException iae2 = assertThrows(
-                IllegalArgumentException.class, () -> new RosterHistory(ROSTER_2, ROUND_1 - 1, ROSTER_1, ROUND_1));
-        assertTrue(iae2.getMessage().startsWith("Current round must be greater than or equal to the previous round"));
     }
 }

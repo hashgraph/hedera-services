@@ -30,14 +30,15 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.CancunGasCalculator;
 
-// FUTURE(#12991): GasCalculators for specific EVM versions should be injected based on
-//  `evm.version` configuration setting, just like EVM modules themselves.  Right now (0.49-0.50
-//  timeframe) it is ok to just fix our CustomGasCalculator at Besu's Cancun level because the only
-//  changes it has over Besu's Shanghai level is that it has defaults for blob gas prices, and those
-//  methods are never called at the Shanghai level anyway, nor at the Cancun level because we don't
-//  support blobs.
-
-// too many parents
+/**
+ * FUTURE(#12991): GasCalculators for specific EVM versions should be injected based on
+ * `evm.version` configuration setting, just like EVM modules themselves.  Right now (0.49-0.50
+ * timeframe) it is ok to just fix our CustomGasCalculator at Besu's Cancun level because the only
+ * changes it has over Besu's Shanghai level is that it has defaults for blob gas prices, and those
+ * methods are never called at the Shanghai level anyway, nor at the Cancun level because we don't
+ * support blobs.
+ * too many parents
+ */
 @SuppressWarnings("java:S110")
 @Singleton
 public class CustomGasCalculator extends CancunGasCalculator {
@@ -48,6 +49,9 @@ public class CustomGasCalculator extends CancunGasCalculator {
     private static final int LOG_TOPIC_SIZE = 32;
     private static final int LOG_BLOOM_SIZE = 256;
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public CustomGasCalculator() {
         // Dagger2
@@ -97,6 +101,7 @@ public class CustomGasCalculator extends CancunGasCalculator {
      *
      * FUTURE: Gas for system contract method calls needs to be a) determined by measurement of
      * resources consumed, and b) incorporated into the fee schedule.
+     * @return the hardcoded gas cost for ED verification
      */
     public long getEdSignatureVerificationSystemContractGasCost() {
         return 1_500_000L;

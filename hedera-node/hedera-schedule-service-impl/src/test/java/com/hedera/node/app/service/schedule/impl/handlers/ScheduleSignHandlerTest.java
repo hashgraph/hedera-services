@@ -173,7 +173,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         final var signingSet = new ConcurrentSkipListSet<>(new KeyComparator());
         signingSet.addAll(acceptedKeys);
         given(keyVerifier.signingCryptoKeys()).willReturn(signingSet);
-        // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
+        // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(accepted));
         return Set.of(payerKey); // return the expected set of signatories after the transaction is handled.
@@ -188,7 +188,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         signingSet.addAll(allKeys);
         given(keyVerifier.signingCryptoKeys()).willReturn(signingSet);
         final TestTransactionKeys allRequired = new TestTransactionKeys(payerKey, allKeys, Collections.emptySet());
-        // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
+        // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(allRequired));
     }

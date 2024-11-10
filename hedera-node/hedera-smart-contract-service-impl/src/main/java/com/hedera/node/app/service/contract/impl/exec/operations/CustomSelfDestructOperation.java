@@ -56,7 +56,13 @@ public class CustomSelfDestructOperation extends AbstractOperation {
      * contract if the contract was created in the same transaction.
      */
     public enum UseEIP6780Semantics {
+        /**
+         * Use EIP-6780 behaviour
+         */
         NO,
+        /**
+         * Do not use EIP-6780 behaviour
+         */
         YES
     };
 
@@ -64,6 +70,12 @@ public class CustomSelfDestructOperation extends AbstractOperation {
 
     private final AddressChecks addressChecks;
 
+    /**
+     * Constructor
+     * @param gasCalculator the gas calculator to be used
+     * @param addressChecks checks against addresses reserved for Hedera
+     * @param eip6780Semantics whether to use EIP-6780 behaviour
+     */
     public CustomSelfDestructOperation(
             @NonNull final GasCalculator gasCalculator,
             @NonNull final AddressChecks addressChecks,

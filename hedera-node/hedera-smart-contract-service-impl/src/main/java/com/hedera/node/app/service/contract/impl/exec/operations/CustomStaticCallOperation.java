@@ -36,6 +36,13 @@ public class CustomStaticCallOperation extends StaticCallOperation implements Ba
     private final AddressChecks addressChecks;
     private final FeatureFlags featureFlags;
 
+    /**
+     * Constructor for custom static call operations.
+     *
+     * @param gasCalculator the gas calculator to use
+     * @param addressChecks checks against addresses reserved for Hedera
+     * @param featureFlags current evm module feature flags
+     */
     public CustomStaticCallOperation(
             @NonNull final GasCalculator gasCalculator,
             @NonNull final AddressChecks addressChecks,
