@@ -69,10 +69,9 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
-import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.tss.TssKeyMaterialAccessor;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -87,7 +86,6 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
@@ -139,7 +137,7 @@ public class HandleWorkflow {
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
-    private TssKeyMaterialAccessor privateKeysAccessor;
+    private TssBaseService tssBaseService;
 
     @Inject
     public HandleWorkflow(
@@ -163,7 +161,7 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
-            @NonNull final TssKeyMaterialAccessor privateKeysAccessor) {
+            @NonNull final TssBaseService tssBaseService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -187,7 +185,7 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
-        this.privateKeysAccessor = requireNonNull(privateKeysAccessor);
+        this.tssBaseService = requireNonNull(tssBaseService);
     }
 
     /**
@@ -370,14 +368,12 @@ public class HandleWorkflow {
                             userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
                     final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
 
-                    privateKeysAccessor.reset();
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                     // Generate key material for the active roster once it is switched
-                    privateKeysAccessor.generateKeyMaterialForActiveRoster(
-                            userTxn.state(),
+                    tssBaseService.regenerateKeyMaterial(
+                            userTxn.stack(),
                             userTxn.config(),
-                            userTxn.creatorInfo().nodeId(),
-                            rosterStore);
+                            userTxn.creatorInfo().nodeId());
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
                             userTxn.tokenContextImpl(),
@@ -398,11 +394,10 @@ public class HandleWorkflow {
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
                     // Generate key material for the active roster once it is switched
-                    privateKeysAccessor.generateKeyMaterialForActiveRoster(
-                            userTxn.state(),
+                    tssBaseService.regenerateKeyMaterial(
+                            userTxn.stack(),
                             userTxn.config(),
-                            userTxn.creatorInfo().nodeId(),
-                            new ReadableStoreFactory(userTxn.state()).getStore(ReadableRosterStore.class));
+                            userTxn.creatorInfo().nodeId());
                 }
 
                 final var baseBuilder = initializeBuilderInfo(

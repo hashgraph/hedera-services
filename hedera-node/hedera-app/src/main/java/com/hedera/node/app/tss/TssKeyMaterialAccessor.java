@@ -40,10 +40,11 @@ import javax.inject.Singleton;
 
 @Singleton
 public class TssKeyMaterialAccessor {
+    private final TssLibrary tssLibrary;
+
     private List<TssPrivateShare> activeRosterShares;
     private List<TssPublicShare> activeRosterPublicShares;
     private Bytes activeRosterHash;
-    private final TssLibrary tssLibrary;
     private TssParticipantDirectory activeParticipantDirectory;
 
     @Inject
@@ -56,15 +57,13 @@ public class TssKeyMaterialAccessor {
      * @param state the state
      * @param configuration the configuration
      * @param selfId the node id
-     * @param rosterStore the roster store
      */
     public void generateKeyMaterialForActiveRoster(
-            @NonNull final State state,
-            @NonNull final Configuration configuration,
-            final long selfId,
-            @NonNull final ReadableRosterStore rosterStore) {
+            @NonNull final State state, @NonNull final Configuration configuration, final long selfId) {
+        reset();
         final var storeFactory = new ReadableStoreFactory(state);
         final var tssStore = storeFactory.getStore(ReadableTssStore.class);
+        final var rosterStore = storeFactory.getStore(ReadableRosterStore.class);
         final var maxSharesPerNode =
                 configuration.getConfigData(TssConfig.class).maxSharesPerNode();
         this.activeRosterHash = requireNonNull(rosterStore.getActiveRosterHash());
@@ -96,7 +95,7 @@ public class TssKeyMaterialAccessor {
     /**
      * Resets the key material.
      */
-    public void reset() {
+    private void reset() {
         if (activeRosterShares != null) {
             activeRosterShares.clear();
         }

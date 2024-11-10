@@ -43,7 +43,6 @@ public interface TssBaseServiceComponent {
                 @BindsInstance Executor submissionExecutor,
                 @BindsInstance @TssLibraryExecutor Executor libraryExecutor,
                 @BindsInstance Metrics metrics,
-                @BindsInstance TssKeyMaterialAccessor privateKeysAccessor,
                 @BindsInstance Configuration configuration,
                 @BindsInstance LongSupplier selfId,
                 @BindsInstance TssBaseService tssBaseService);
@@ -58,4 +57,6 @@ public interface TssBaseServiceComponent {
     TssShareSignatureHandler tssShareSignatureHandler();
 
     TssSubmissions tssSubmissions();
+
+    TssKeyMaterialAccessor tssKeyMaterialAccessor();
 }

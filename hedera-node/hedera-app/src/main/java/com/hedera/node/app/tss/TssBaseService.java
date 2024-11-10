@@ -134,4 +134,7 @@ public interface TssBaseService extends Service {
             @NonNull ServiceMigrator serviceMigrator,
             @NonNull ServicesSoftwareVersion version,
             @NonNull Configuration configuration);
+
+    void regenerateKeyMaterial(
+            @NonNull final State state, @NonNull final Configuration configuration, final long selfId);
 }

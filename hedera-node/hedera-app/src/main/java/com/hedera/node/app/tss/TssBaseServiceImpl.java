@@ -101,7 +101,6 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
-        this.keyMaterialAccessor = new TssKeyMaterialAccessor(tssLibrary);
         this.configuration = requireNonNull(appContext.configuration());
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
@@ -111,10 +110,10 @@ public class TssBaseServiceImpl implements TssBaseService {
                         submissionExecutor,
                         tssLibraryExecutor,
                         metrics,
-                        keyMaterialAccessor,
                         appContext.configuration(),
                         appContext.selfIdSupplier(),
                         this);
+        this.keyMaterialAccessor = component.tssKeyMaterialAccessor();
         this.tssMetrics = component.tssMetrics();
         this.tssHandlers = new TssHandlers(
                 component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
@@ -289,6 +288,12 @@ public class TssBaseServiceImpl implements TssBaseService {
             }
         }
         return activeRoster;
+    }
+
+    @Override
+    public void regenerateKeyMaterial(
+            @NonNull final State state, @NonNull final Configuration configuration, final long selfId) {
+        keyMaterialAccessor.generateKeyMaterialForActiveRoster(state, configuration, selfId);
     }
 
     /**

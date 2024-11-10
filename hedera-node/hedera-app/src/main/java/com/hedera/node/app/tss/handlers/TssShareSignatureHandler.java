@@ -82,9 +82,11 @@ public class TssShareSignatureHandler implements TransactionHandler {
         final var shareIndex = body.shareIndex();
         final var rosterHash = body.rosterHash();
 
-        // verify if signature is already present
-        final var isPresent = signatures.get(messageHash).get(rosterHash).stream()
-                .anyMatch(sig -> sig.shareId().idElement() == shareIndex);
+        // verify if the signature is already present
+        final var isPresent = signatures.containsKey(messageHash)
+                && signatures.get(messageHash).containsKey(rosterHash)
+                && signatures.get(messageHash).get(rosterHash).stream()
+                        .anyMatch(sig -> sig.shareId().idElement() == shareIndex);
 
         // For each signature not already present for this message hash, verify with
         // tssLibrary and accumulate in map

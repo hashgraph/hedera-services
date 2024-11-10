@@ -241,4 +241,10 @@ public class FakeTssBaseService implements TssBaseService {
             @NonNull final Configuration configuration) {
         return delegate.chooseRosterForNetwork(state, trigger, serviceMigrator, version, configuration);
     }
+
+    @Override
+    public void regenerateKeyMaterial(
+            @NonNull final State state, @NonNull final Configuration configuration, final long selfId) {
+        delegate.regenerateKeyMaterial(state, configuration, selfId);
+    }
 }
