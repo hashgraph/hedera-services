@@ -25,5 +25,6 @@ public enum EntityType {
     TOKEN,
     TOKEN_ASSOCIATION,
     TOPIC,
-    AIRDROP
+    AIRDROP,
+    NODE
 }

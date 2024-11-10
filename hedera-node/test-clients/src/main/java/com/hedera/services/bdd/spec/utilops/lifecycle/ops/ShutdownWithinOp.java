@@ -47,8 +47,11 @@ public class ShutdownWithinOp extends AbstractLifecycleOp {
         try {
             node.stopFuture().orTimeout(timeout.toMillis(), MILLISECONDS).join();
         } catch (CompletionException e) {
-            node.dumpThreads();
-            throw new IllegalStateException("Failed to stop '" + node.getName() + "'", e);
+            // If this returns false, the node process is not actually running any longer,
+            // even though we failed to reap its exit status for some reason
+            if (node.dumpThreads()) {
+                throw new IllegalStateException("Failed to stop '" + node.getName() + "'", e);
+            }
         }
         log.info("Stopped node '{}'", node.getName());
     }

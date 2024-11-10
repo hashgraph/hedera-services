@@ -24,6 +24,7 @@ import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.config.types.EntityType.ACCOUNT;
 import static com.hedera.node.config.types.EntityType.FILE;
+import static com.hedera.node.config.types.EntityType.NODE;
 import static com.hedera.node.config.types.EntityType.SCHEDULE;
 import static com.hedera.node.config.types.EntityType.TOKEN;
 import static com.hedera.node.config.types.EntityType.TOPIC;
@@ -83,6 +84,8 @@ public class BaseTranslator {
      */
     private long highestKnownEntityNum = 0L;
 
+    private long highestKnownNodeId;
+
     private ExchangeRateSet activeRates;
     private final Map<TokenID, Long> totalSupplies = new HashMap<>();
     private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
@@ -92,6 +95,8 @@ public class BaseTranslator {
     /**
      * These fields are used to translate a single "unit" of block items connected to a {@link TransactionID}.
      */
+    private long prevHighestKnownNodeId = 0L;
+
     private long prevHighestKnownEntityNum = 0L;
 
     private Instant userTimestamp;
@@ -108,6 +113,14 @@ public class BaseTranslator {
     public interface Spec {
         void accept(
                 @NonNull TransactionReceipt.Builder receiptBuilder, @NonNull TransactionRecord.Builder recordBuilder);
+    }
+
+    /**
+     * Constructs a translator with the given highest known node ID.
+     * @param highestKnownNodeId the highest known node ID
+     */
+    public BaseTranslator(final long highestKnownNodeId) {
+        this.highestKnownNodeId = highestKnownNodeId;
     }
 
     /**
@@ -154,6 +167,7 @@ public class BaseTranslator {
      */
     public void prepareForUnit(@NonNull final BlockTransactionalUnit unit) {
         this.prevHighestKnownEntityNum = highestKnownEntityNum;
+        this.prevHighestKnownNodeId = highestKnownNodeId;
         numMints.clear();
         highestPutSerialNos.clear();
         nextCreatedNums.clear();
@@ -174,6 +188,9 @@ public class BaseTranslator {
             serialNos.addAll(mintedHere.subList(0, numMints.getOrDefault(tokenId, 0)));
             serialNos.sort(Comparator.naturalOrder());
         });
+        if (nextCreatedNums.containsKey(NODE)) {
+            highestKnownNodeId = nextCreatedNums.remove(NODE).getLast();
+        }
         highestKnownEntityNum =
                 nextCreatedNums.values().stream().mapToLong(List::getLast).max().orElse(highestKnownEntityNum);
     }
@@ -184,8 +201,18 @@ public class BaseTranslator {
      * @param num the number to query
      * @return true if the number was created
      */
-    public boolean createdThisUnit(final long num) {
+    public boolean entityCreatedThisUnit(final long num) {
         return num > prevHighestKnownEntityNum;
+    }
+
+    /**
+     * Determines if the given node id was created in the ongoing transactional unit.
+     *
+     * @param nodeId the node id to query
+     * @return true if the node was created
+     */
+    public boolean nodeCreatedThisUnit(final long nodeId) {
+        return nodeId > prevHighestKnownNodeId;
     }
 
     /**
@@ -426,6 +453,16 @@ public class BaseTranslator {
                         nextCreatedNums
                                 .computeIfAbsent(ACCOUNT, ignore -> new LinkedList<>())
                                 .add(num);
+                    }
+                } else if (key.hasEntityNumberKey()) {
+                    final var value = mapUpdate.valueOrThrow();
+                    if (value.hasNodeValue()) {
+                        final long nodeId = key.entityNumberKeyOrThrow();
+                        if (nodeId > highestKnownNodeId) {
+                            nextCreatedNums
+                                    .computeIfAbsent(NODE, ignore -> new LinkedList<>())
+                                    .add(nodeId);
+                        }
                     }
                 } else if (key.hasNftIdKey()) {
                     final var nftId = key.nftIdKeyOrThrow();
