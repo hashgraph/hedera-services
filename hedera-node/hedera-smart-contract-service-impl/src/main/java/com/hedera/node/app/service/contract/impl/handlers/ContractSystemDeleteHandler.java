@@ -39,10 +39,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ContractSystemDeleteHandler implements TransactionHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public ContractSystemDeleteHandler() {
-        // Exists for injection
-    }
+    public ContractSystemDeleteHandler() {}
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {

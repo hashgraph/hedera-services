@@ -126,7 +126,7 @@ message BlockHeader {
      *               same order that the block items are encountered
      *               in the stream.</li>
      *           <li>The fourth leaf MUST be the merkle tree root hash for
-     *               network state at the end of the block, and is a single
+     *               network state at the start of the block, and is a single
      *               48-byte value.</li>
      *         </ol>
      *       </li>

@@ -69,10 +69,24 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
     private final TransactionProcessor processor;
     private final EvmActionTracer evmActionTracer;
     private final RootProxyWorldUpdater rootProxyWorldUpdater;
-    public final HevmTransactionFactory hevmTransactionFactory;
+    private final HevmTransactionFactory hevmTransactionFactory;
     private final Supplier<HederaWorldUpdater> feesOnlyUpdater;
     private final CustomGasCharging gasCharging;
 
+    /**
+     * @param hydratedEthTxData the hydrated Ethereum transaction data
+     * @param context the context of the transaction
+     * @param contractsConfig the contracts configuration to use
+     * @param configuration the configuration to use
+     * @param hederaEvmContext the hedera EVM context
+     * @param addOnTracers all operation tracer callbacks
+     * @param evmActionTracer the EVM action tracer
+     * @param worldUpdater the world updater for the transaction
+     * @param hevmTransactionFactory the factory for EVM transaction
+     * @param feesOnlyUpdater if base commit fails, a fees-only updater
+     * @param processor a map from the version of the Hedera EVM to the transaction processor
+     * @param customGasCharging the Hedera gas charging logic
+     */
     @Inject
     public ContextTransactionProcessor(
             @Nullable final HydratedEthTxData hydratedEthTxData,

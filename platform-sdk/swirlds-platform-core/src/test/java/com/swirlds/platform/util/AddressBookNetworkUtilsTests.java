@@ -29,11 +29,8 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
-import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
@@ -94,19 +91,11 @@ class AddressBookNetworkUtilsTests {
 
     @Test
     void testCreateRosterFromNonEmptyAddressBook() {
-        final PlatformBuilder platformBuilder = PlatformBuilder.create(
-                "name",
-                "swirldName",
-                new BasicSoftwareVersion(1),
-                ReservedSignedState.createNullReservation(),
-                NodeId.of(0));
-
         final Address address1 = new Address(NodeId.of(1), "", "", 10, null, 77, null, 88, null, null, "");
         final Address address2 = new Address(NodeId.of(2), "", "", 10, null, 77, null, 88, null, null, "");
         final AddressBook addressBook = new AddressBook();
         addressBook.add(address1);
         addressBook.add(address2);
-        platformBuilder.withAddressBook(addressBook);
         final Roster roster = AddressBookUtils.createRoster(addressBook);
 
         assertNotNull(roster);
@@ -125,14 +114,7 @@ class AddressBookNetworkUtilsTests {
 
     @Test
     void testCreateRosterFromEmptyAddressBook() {
-        final PlatformBuilder platformBuilder = PlatformBuilder.create(
-                "name",
-                "swirldName",
-                new BasicSoftwareVersion(1),
-                ReservedSignedState.createNullReservation(),
-                NodeId.of(0));
         final AddressBook addressBook = new AddressBook();
-        platformBuilder.withAddressBook(addressBook);
         final Roster roster = AddressBookUtils.createRoster(addressBook);
 
         assertNotNull(roster);

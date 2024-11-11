@@ -38,10 +38,15 @@ import javax.inject.Singleton;
 @Singleton
 public class HbarApproveTranslator extends AbstractCallTranslator<HasCallAttempt> {
 
+    /** Selector for hbarApprove(address,int256) method. */
     public static final Function HBAR_APPROVE_PROXY = new Function("hbarApprove(address,int256)", ReturnTypes.INT_64);
 
+    /** Selector for hbarApprove(address,address,int256) method. */
     public static final Function HBAR_APPROVE = new Function("hbarApprove(address,address,int256)", ReturnTypes.INT_64);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public HbarApproveTranslator() {
         // Dagger2

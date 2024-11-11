@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -457,9 +458,20 @@ public class HandleHederaOperations implements HederaOperations {
     private ContractCreateTransactionBody standardized(
             final long createdNumber, @NonNull final ContractCreateTransactionBody op) {
         if (needsStandardization(op)) {
+            Key newAdminKey = op.adminKey();
+            // If the admin key is not set, we set it to the contract itself for externalization
+            // Typically, the op will not have an adminkey if the transaction's HederaFunctionality is
+            // ETHEREUM_TRANSACTION
+            if (!op.hasAdminKey()) {
+                newAdminKey = Key.newBuilder()
+                        .contractID(ContractID.newBuilder()
+                                .contractNum(createdNumber)
+                                .build())
+                        .build();
+            }
             return new ContractCreateTransactionBody(
                     com.hedera.hapi.node.contract.codec.ContractCreateTransactionBodyProtoCodec.INITCODE_SOURCE_UNSET,
-                    op.adminKey(),
+                    newAdminKey,
                     0L,
                     0L,
                     op.proxyAccountID(),
