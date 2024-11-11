@@ -22,7 +22,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.utility.StackTrace;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -169,20 +168,20 @@ public class PayloadCfgSimple extends PartialMerkleLeaf implements MerkleLeaf {
     private float ratioOfFCMTransaction;
 
     public PayloadCfgSimple() {
-        logger.info(
-                LOGM_DEMO_INFO,
-                "PayloadCfgSimple.<init>, immutable: {}, StackTrace: {}",
-                isImmutable(),
-                StackTrace.getStackTrace());
+        //        logger.info(
+        //                LOGM_DEMO_INFO,
+        //                "PayloadCfgSimple.<init>, immutable: {}, StackTrace: {}",
+        //                isImmutable(),
+        //                StackTrace.getStackTrace());
     }
 
     private PayloadCfgSimple(final PayloadCfgSimple sourcePayload) {
         super(sourcePayload);
-        logger.info(
-                LOGM_DEMO_INFO,
-                "PayloadCfgSimple.<init>(COPY), immutable: {}, StackTrace: {}",
-                isImmutable(),
-                StackTrace.getStackTrace());
+        //        logger.info(
+        //                LOGM_DEMO_INFO,
+        //                "PayloadCfgSimple.<init>(COPY), immutable: {}, StackTrace: {}",
+        //                isImmutable(),
+        //                StackTrace.getStackTrace());
         setAppendSig(sourcePayload.appendSig);
         setInvalidSigRatio(sourcePayload.invalidSigRatio);
         setInsertSeq(sourcePayload.insertSeq);
@@ -400,11 +399,11 @@ public class PayloadCfgSimple extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public PayloadCfgSimple copy() {
-        logger.info(
-                LOGM_DEMO_INFO,
-                "PayloadCfgSimple.copy(), immutable: {}, StackTrace: {}",
-                isImmutable(),
-                StackTrace.getStackTrace());
+        //        logger.info(
+        //                LOGM_DEMO_INFO,
+        //                "PayloadCfgSimple.copy(), immutable: {}, StackTrace: {}",
+        //                isImmutable(),
+        //                StackTrace.getStackTrace());
         throwIfImmutable();
         return new PayloadCfgSimple(this);
     }

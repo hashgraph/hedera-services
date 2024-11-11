@@ -20,7 +20,6 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.utility.StackTrace;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +31,7 @@ import org.apache.logging.log4j.MarkerManager;
  */
 public class TransactionCounter implements Cloneable, FastCopyable, SelfSerializable {
 
-    private static final Marker LOGM_DEMO_INFO = MarkerManager.getMarker("DEMO_INFO");
+    //    private static final Marker LOGM_DEMO_INFO = MarkerManager.getMarker("DEMO_INFO");
 
     /**
      * The version history of this class.
@@ -105,11 +104,11 @@ public class TransactionCounter implements Cloneable, FastCopyable, SelfSerializ
     public TransactionCounter() {}
 
     private TransactionCounter(final TransactionCounter sourceTransactionCounter) {
-        logger.info(
-                LOGM_DEMO_INFO,
-                "TransactionCounter.<init>(COPY), immutable: {}, StackTrace: {}",
-                isImmutable(),
-                StackTrace.getStackTrace());
+        //        logger.info(
+        //                LOGM_DEMO_INFO,
+        //                "TransactionCounter.<init>(COPY), immutable: {}, StackTrace: {}",
+        //                isImmutable(),
+        //                StackTrace.getStackTrace());
 
         this.fcmCreateAmount = sourceTransactionCounter.fcmCreateAmount;
         this.fcmUpdateAmount = sourceTransactionCounter.fcmUpdateAmount;
@@ -138,11 +137,11 @@ public class TransactionCounter implements Cloneable, FastCopyable, SelfSerializ
 
     @Override
     public TransactionCounter copy() {
-        logger.info(
-                LOGM_DEMO_INFO,
-                "TransactionCounter.copy(), immutable: {}, StackTrace: {}",
-                isImmutable(),
-                StackTrace.getStackTrace());
+        //        logger.info(
+        //                LOGM_DEMO_INFO,
+        //                "TransactionCounter.copy(), immutable: {}, StackTrace: {}",
+        //                isImmutable(),
+        //                StackTrace.getStackTrace());
         //        throwIfImmutable();
         return new TransactionCounter(this);
     }

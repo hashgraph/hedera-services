@@ -40,7 +40,6 @@ import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.FCMFamily;
@@ -252,11 +251,11 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
 
-        logger.info(
-                LOGM_DEMO_INFO,
-                "PlatformTestingToolState.<init>, immutable: {}, StackTrace: {}",
-                isImmutable(),
-                StackTrace.getStackTrace());
+        //        logger.info(
+        //                LOGM_DEMO_INFO,
+        //                "PlatformTestingToolState.<init>, immutable: {}, StackTrace: {}",
+        //                isImmutable(),
+        //                StackTrace.getStackTrace());
 
         expectedFCMFamily = new ExpectedFCMFamilyImpl();
 
@@ -266,11 +265,11 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     protected PlatformTestingToolState(final PlatformTestingToolState sourceState) {
         super(sourceState);
 
-        logger.info(
-                LOGM_DEMO_INFO,
-                "PlatformTestingToolState.<init>(COPY), immutable: {}, StackTrace: {}",
-                isImmutable(),
-                StackTrace.getStackTrace());
+        //        logger.info(
+        //                LOGM_DEMO_INFO,
+        //                "PlatformTestingToolState.<init>(COPY), immutable: {}, StackTrace: {}",
+        //                isImmutable(),
+        //                StackTrace.getStackTrace());
 
         this.initialized.set(sourceState.initialized.get());
         this.platform = sourceState.platform;
@@ -449,12 +448,12 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      */
     @Override
     public boolean childHasExpectedType(final int index, final long childClassId) {
-        logger.info(
-                DEMO_INFO.getMarker(),
-                "Checking if childHasExpectedType for index: {}, childClassId: {}, StackTrace: {}",
-                index,
-                childClassId,
-                StackTrace.getStackTrace());
+        //        logger.info(
+        //                DEMO_INFO.getMarker(),
+        //                "Checking if childHasExpectedType for index: {}, childClassId: {}, StackTrace: {}",
+        //                index,
+        //                childClassId,
+        //                StackTrace.getStackTrace());
 
         switch (index) {
             case ChildIndices.UNUSED:
@@ -669,11 +668,11 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      */
     @Override
     public synchronized PlatformTestingToolState copy() {
-        logger.info(
-                LOGM_DEMO_INFO,
-                "PlatformTestingToolState.copy() immutable: {}, StackTrace: {}",
-                isImmutable(),
-                StackTrace.getStackTrace());
+        //        logger.info(
+        //                LOGM_DEMO_INFO,
+        //                "PlatformTestingToolState.copy() immutable: {}, StackTrace: {}",
+        //                isImmutable(),
+        //                StackTrace.getStackTrace());
 
         throwIfImmutable();
         //        setImmutable(true);
