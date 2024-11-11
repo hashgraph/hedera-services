@@ -37,12 +37,21 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Standardizes the failure status of a call to a HTS transfer system contract.
  */
 public class CallStatusStandardizer {
+    /**
+     * Default CallStatusStandardizer to use.
+     */
     public static final CallStatusStandardizer CALL_STATUS_STANDARDIZER = new CallStatusStandardizer();
 
     private CallStatusStandardizer() {
         // Singleton
     }
 
+    /**
+     * @param status the response code to return before treatment
+     * @param frame the current message frame that is used
+     * @param op the body of crypto transfer operation
+     * @return the response code after treatment
+     */
     public ResponseCodeEnum codeForFailure(
             @NonNull final ResponseCodeEnum status,
             @NonNull final MessageFrame frame,

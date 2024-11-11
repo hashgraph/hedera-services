@@ -37,10 +37,19 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class Erc20TransfersTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /**
+     * Selector for transfer(address,uint256) method.
+     */
     public static final Function ERC_20_TRANSFER = new Function("transfer(address,uint256)", ReturnTypes.BOOL);
+    /**
+     * Selector for transferFrom(address,address,uint256) method.
+     */
     public static final Function ERC_20_TRANSFER_FROM =
             new Function("transferFrom(address,address,uint256)", ReturnTypes.BOOL);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public Erc20TransfersTranslator() {
         // Dagger2

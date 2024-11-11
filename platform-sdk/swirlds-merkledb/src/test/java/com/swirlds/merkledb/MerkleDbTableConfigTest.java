@@ -16,9 +16,10 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
+
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -37,11 +38,15 @@ class MerkleDbTableConfigTest {
 
     @Test
     void deserializeDefaultsTest() throws IOException {
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
+        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                (short) 1,
+                DigestType.SHA_384,
+                merkleDbConfig.maxNumOfKeys(),
+                merkleDbConfig.hashesRamToDiskThreshold());
 
-        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-        Assertions.assertEquals(dbConfig.maxNumOfKeys(), tableConfig.getMaxNumberOfKeys());
-        Assertions.assertEquals(dbConfig.hashesRamToDiskThreshold(), tableConfig.getHashesRamToDiskThreshold());
+        Assertions.assertEquals(merkleDbConfig.maxNumOfKeys(), tableConfig.getMaxNumberOfKeys());
+        Assertions.assertEquals(merkleDbConfig.hashesRamToDiskThreshold(), tableConfig.getHashesRamToDiskThreshold());
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> tableConfig.maxNumberOfKeys(0));
         Assertions.assertThrows(IllegalArgumentException.class, () -> tableConfig.maxNumberOfKeys(-1));
@@ -61,7 +66,7 @@ class MerkleDbTableConfigTest {
             restored = new MerkleDbTableConfig(in);
         }
 
-        Assertions.assertEquals(dbConfig.maxNumOfKeys(), restored.getMaxNumberOfKeys());
+        Assertions.assertEquals(merkleDbConfig.maxNumOfKeys(), restored.getMaxNumberOfKeys());
         // Fields that aren't deserialized should have default protobuf values (e.g. zero), not
         // default MerkleDbConfig values
         Assertions.assertEquals(0, restored.getHashesRamToDiskThreshold());

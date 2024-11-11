@@ -65,6 +65,8 @@ public class FullLeafRehashHashListener<K extends VirtualKey, V extends VirtualV
      * 		The last leaf path. Must be a valid path.
      * @param dataSource
      * 		The data source. Cannot be null.
+     * @param flushInterval
+     *      The number of nodes to hash before they are flushed to disk.
      * @param statistics
      *      Virtual map stats. Cannot be null.
      */
@@ -74,8 +76,9 @@ public class FullLeafRehashHashListener<K extends VirtualKey, V extends VirtualV
             final KeySerializer<K> keySerializer,
             final ValueSerializer<V> valueSerializer,
             @NonNull final VirtualDataSource dataSource,
+            final int flushInterval,
             @NonNull final VirtualMapStatistics statistics) {
-        super(firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource, statistics);
+        super(firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource, flushInterval, statistics);
     }
 
     /**

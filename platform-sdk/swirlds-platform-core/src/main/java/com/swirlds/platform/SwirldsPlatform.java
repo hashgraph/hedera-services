@@ -58,7 +58,6 @@ import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
-import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -219,7 +218,7 @@ public class SwirldsPlatform implements Platform {
         notificationEngine = blocks.notificationEngine();
 
         currentAddressBook = initialState.getAddressBook();
-        currentRoster = RosterRetriever.buildRoster(currentAddressBook);
+        currentRoster = blocks.rosterHistory().getCurrentRoster();
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
 
