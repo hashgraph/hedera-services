@@ -635,7 +635,8 @@ public class HandleWorkflow {
                 scheduleIterator.remove();
                 consensusNanosOffset++;
             }
-
+            // this will commit the purge of the schedules
+            userTxn.stack().commitSystemStateChanges();
             return true;
         }
         return false;
