@@ -23,6 +23,7 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.FCMTRANSACTION;
 import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
@@ -249,13 +250,16 @@ public class PlatformTestingToolState extends MerkleStateRoot {
 
     static {
         try {
+            logger.info(STARTUP.getMarker(), "Registering PlatformTestingToolState with ConstructableRegistry");
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(
                             PlatformTestingToolState.class,
                             () -> new PlatformTestingToolState(
                                     NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
                                     version -> new BasicSoftwareVersion(version.major()))));
+            logger.info(STARTUP.getMarker(), "PlatformTestingToolState is registered with ConstructableRegistry");
         } catch (ConstructableRegistryException e) {
+            logger.error(STARTUP.getMarker(), "Failed to register PlatformTestingToolState", e);
             throw new RuntimeException(e);
         }
     }
