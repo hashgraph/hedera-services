@@ -60,7 +60,7 @@ public class TssBaseServiceTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext handleContext;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private AppContext appContext;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
@@ -80,9 +80,6 @@ public class TssBaseServiceTest {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
-
-    @Mock
-    private TssKeysAccessor keyMaterialAccessor;
 
     private TssBaseService subject;
 

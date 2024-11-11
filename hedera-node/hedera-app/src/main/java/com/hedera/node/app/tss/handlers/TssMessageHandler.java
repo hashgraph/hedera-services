@@ -83,7 +83,7 @@ public class TssMessageHandler implements TransactionHandler {
         tssStore.put(key, op);
 
         // Obtain the directory of participants for the target roster
-        final var directory = tssKeysAccessor.activeRosterParticipantDirectory();
+        final var directory = tssKeysAccessor.accessTssKeys().activeParticipantDirectory();
         // Schedule work to potentially compute a signed vote for the new key material of the target
         // roster, if this message was valid and passed the threshold number of messages required
         tssCryptographyManager

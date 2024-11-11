@@ -88,9 +88,9 @@ public class TssCryptographyManagerTest {
 
     @BeforeEach
     void setUp() {
+        when(appContext.gossip()).thenReturn(gossip);
         subject = new TssCryptographyManager(
                 tssLibrary, appContext, ForkJoinPool.commonPool(), tssMetrics, InstantSource.system());
-        when(appContext.gossip()).thenReturn(gossip);
         when(handleContext.networkInfo()).thenReturn(networkInfo);
         when(networkInfo.selfNodeInfo()).thenReturn(new NodeInfoImpl(0, AccountID.DEFAULT, 0, null, null));
     }

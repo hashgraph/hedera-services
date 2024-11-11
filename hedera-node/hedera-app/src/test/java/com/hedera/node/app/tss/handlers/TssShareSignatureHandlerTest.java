@@ -41,6 +41,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,18 +68,23 @@ public class TssShareSignatureHandlerTest {
     private TssShareSignatureHandler handler;
 
     private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
-    private static final PairingPrivateKey PRIVATE_KEY =
+    public static final PairingPrivateKey PRIVATE_KEY =
             new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
     private static final PairingSignature SIGNATURE =
             new PairingSignature(new FakeGroupElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    private static final TssKeysAccessor.TssKeys TSS_KEYS = new TssKeysAccessor.TssKeys(
+            List.of(),
+            List.of(),
+            Bytes.EMPTY,
+            TssParticipantDirectory.createBuilder()
+                    .withParticipant(0, 1, PRIVATE_KEY.createPublicKey())
+                    .withSelf(0, PRIVATE_KEY)
+                    .build(SIGNATURE_SCHEMA),
+            1);
 
     @BeforeEach
     void setUp() {
-        given(rosterKeyMaterialAccessor.activeRosterParticipantDirectory())
-                .willReturn(TssParticipantDirectory.createBuilder()
-                        .withParticipant(0, 1, PRIVATE_KEY.createPublicKey())
-                        .withSelf(0, PRIVATE_KEY)
-                        .build(SIGNATURE_SCHEMA));
+        given(rosterKeyMaterialAccessor.accessTssKeys()).willReturn(TSS_KEYS);
         given(instantSource.instant()).willReturn(Instant.ofEpochSecond(1_234_567L));
         handler = new TssShareSignatureHandler(tssLibrary, instantSource, rosterKeyMaterialAccessor, tssBaseService);
     }

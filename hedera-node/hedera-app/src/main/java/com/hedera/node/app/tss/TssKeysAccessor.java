@@ -44,11 +44,7 @@ import javax.inject.Singleton;
 public class TssKeysAccessor {
     private final TssLibrary tssLibrary;
     // FUTURE: Change all this to one record and provide access to it.
-    private List<TssPrivateShare> activeRosterShares;
-    private List<TssPublicShare> activeRosterPublicShares;
-    private Bytes activeRosterHash;
-    private TssParticipantDirectory activeParticipantDirectory;
-    private long totalShares;
+    private TssKeysAccessor.TssKeys tssKeys;
 
     @Inject
     public TssKeysAccessor(@NonNull final TssLibrary tssLibrary) {
@@ -69,17 +65,25 @@ public class TssKeysAccessor {
         final var rosterStore = storeFactory.getStore(ReadableRosterStore.class);
         final var maxSharesPerNode =
                 configuration.getConfigData(TssConfig.class).maxSharesPerNode();
-        this.activeRosterHash = requireNonNull(rosterStore.getActiveRosterHash());
+        final var activeRosterHash = requireNonNull(rosterStore.getActiveRosterHash());
         final var activeRoster = requireNonNull(rosterStore.getActiveRoster());
-        this.activeParticipantDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, (int) selfId);
-        this.activeRosterShares = getTssPrivateShares(activeParticipantDirectory, tssStore, activeRosterHash);
+        final var activeParticipantDirectory =
+                computeParticipantDirectory(activeRoster, maxSharesPerNode, (int) selfId);
+        final var activeRosterShares = getTssPrivateShares(activeParticipantDirectory, tssStore, activeRosterHash);
 
         final var tssMessageBodies = tssStore.getTssMessageBodies(activeRosterHash);
         final var validTssMessages = getTssMessages(tssMessageBodies);
-        this.activeRosterPublicShares = tssLibrary.computePublicShares(activeParticipantDirectory, validTssMessages);
-        this.totalShares = activeParticipantDirectory.getSharesById().values().stream()
+        final var activeRosterPublicShares =
+                tssLibrary.computePublicShares(activeParticipantDirectory, validTssMessages);
+        final var totalShares = activeParticipantDirectory.getSharesById().values().stream()
                 .mapToLong(List::size)
                 .sum();
+        this.tssKeys = new TssKeysAccessor.TssKeys(
+                activeRosterShares,
+                activeRosterPublicShares,
+                activeRosterHash,
+                activeParticipantDirectory,
+                totalShares);
     }
 
     @NonNull
@@ -99,7 +103,7 @@ public class TssKeysAccessor {
      * @return the active roster public shares
      */
     public List<TssPublicShare> activeRosterPublicShares() {
-        return requireNonNull(activeRosterPublicShares);
+        return tssKeys.activeRosterPublicShares();
     }
 
     /**
@@ -108,28 +112,21 @@ public class TssKeysAccessor {
      * @return the active roster participant directory
      */
     public TssParticipantDirectory activeRosterParticipantDirectory() {
-        return requireNonNull(activeParticipantDirectory);
+        return tssKeys.activeParticipantDirectory();
     }
 
     /**
-     * Returns the active roster hash.
-     *
-     * @return the active roster hash
+     * Returns the TSS key material for the active roster.
+     * @return the TSS key material for the active roster
      */
-    public Bytes activeRosterHash() {
-        return requireNonNull(activeRosterHash);
+    public TssKeysAccessor.TssKeys accessTssKeys() {
+        return tssKeys;
     }
 
-    /**
-     * Returns the active roster shares.
-     *
-     * @return the active roster shares
-     */
-    public List<TssPrivateShare> activeRosterShares() {
-        return requireNonNull(activeRosterShares);
-    }
-
-    public long totalShares() {
-        return totalShares;
-    }
+    public record TssKeys(
+            @NonNull List<TssPrivateShare> activeRosterShares,
+            @NonNull List<TssPublicShare> activeRosterPublicShares,
+            @NonNull Bytes activeRosterHash,
+            @NonNull TssParticipantDirectory activeParticipantDirectory,
+            long totalShares) {}
 }

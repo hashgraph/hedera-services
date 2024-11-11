@@ -165,7 +165,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var activeRoster = requireNonNull(
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster());
         final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
-        final var tssPrivateShares = tssKeysAccessor.activeRosterShares();
+        final var tssPrivateShares = tssKeysAccessor.accessTssKeys().activeRosterShares();
 
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
         // FUTURE - instead of an arbitrary counter here, use the share index from the private share
@@ -224,8 +224,8 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     private void submitShareSignatures(final byte[] messageHash, final Instant lastUsedConsensusTime) {
-        final var tssPrivateShares = tssKeysAccessor.activeRosterShares();
-        final var activeRoster = tssKeysAccessor.activeRosterHash();
+        final var tssPrivateShares = tssKeysAccessor.accessTssKeys().activeRosterShares();
+        final var activeRoster = tssKeysAccessor.accessTssKeys().activeRosterHash();
         long nanosOffset = 1;
         for (final var privateShare : tssPrivateShares) {
             final var signature = tssLibrary.sign(privateShare, messageHash);

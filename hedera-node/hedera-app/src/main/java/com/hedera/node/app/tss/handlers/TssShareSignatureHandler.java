@@ -82,26 +82,22 @@ public class TssShareSignatureHandler implements TransactionHandler {
         final var rosterHash = body.rosterHash();
 
         // verify if the signature is already present
-        final var tssSignaturesMap = signatures.get(messageHash);
-        if (tssSignaturesMap != null) {
-            final var tssShareSignatures = tssSignaturesMap.get(rosterHash);
-            if (tssShareSignatures != null) {
-                final var isPresent = tssShareSignatures.stream()
-                        .anyMatch(sig -> sig.shareId().idElement() == shareIndex);
-                // For each signature not already present for this message hash, verify with
-                // tssLibrary and accumulate in map
-                if (!isPresent) {
-                    validateAndAccumulateSignatures(shareSignature, messageHash, rosterHash, shareIndex);
-                    // If message hash now has enough signatures to aggregate, do so and notify
-                    // tssBaseService of sign the message hash with ledger signature
-                    if (isThresholdMet(messageHash, rosterHash)) {
-                        final var ledgerSignature = tssLibrary.aggregateSignatures(
-                                tssShareSignatures.stream().toList());
-                        tssBaseService.notifySignature(
-                                messageHash.toByteArray(),
-                                ledgerSignature.signature().toBytes());
-                    }
-                }
+        final var tssSignaturesMap = signatures.computeIfAbsent(messageHash, k -> new ConcurrentHashMap<>());
+        final Set<TssShareSignature> tssShareSignatures =
+                tssSignaturesMap.computeIfAbsent(rosterHash, k -> ConcurrentHashMap.newKeySet());
+        final var isPresent =
+                tssShareSignatures.stream().anyMatch(sig -> sig.shareId().idElement() == shareIndex);
+        if (!isPresent) {
+            // For each signature not already present for this message hash, verify with
+            // tssLibrary and accumulate in map
+            validateAndAccumulateSignatures(shareSignature, messageHash, shareIndex, tssShareSignatures);
+            // If message hash now has enough signatures to aggregate, do so and notify
+            // tssBaseService of sign the message hash with ledger signature
+            if (isThresholdMet(messageHash, rosterHash)) {
+                final var ledgerSignature = tssLibrary.aggregateSignatures(
+                        tssShareSignatures.stream().toList());
+                tssBaseService.notifySignature(
+                        messageHash.toByteArray(), ledgerSignature.signature().toBytes());
             }
         }
         // Purge any expired signature requests, at most once per second
@@ -114,21 +110,21 @@ public class TssShareSignatureHandler implements TransactionHandler {
     }
 
     private void validateAndAccumulateSignatures(
-            final Bytes shareSignature, final Bytes messageHash, final Bytes rosterHash, final long shareIndex) {
+            final Bytes shareSignature,
+            final Bytes messageHash,
+            final long shareIndex,
+            final Set<TssShareSignature> tssShareSignatures) {
         final var tssShareSignature = new TssShareSignature(
                 new TssShareId((int) shareIndex),
                 new PairingSignature(
                         new FakeGroupElement(BigInteger.valueOf(shareIndex)),
                         SignatureSchema.create(shareSignature.toByteArray())));
         final var isValid = tssLibrary.verifySignature(
-                rosterKeyMaterialAccessor.activeRosterParticipantDirectory(),
-                rosterKeyMaterialAccessor.activeRosterPublicShares(),
+                rosterKeyMaterialAccessor.accessTssKeys().activeParticipantDirectory(),
+                rosterKeyMaterialAccessor.accessTssKeys().activeRosterPublicShares(),
                 tssShareSignature);
         if (isValid) {
-            signatures
-                    .computeIfAbsent(messageHash, k -> new ConcurrentHashMap<>())
-                    .computeIfAbsent(rosterHash, k -> ConcurrentHashMap.newKeySet())
-                    .add(tssShareSignature);
+            tssShareSignatures.add(tssShareSignature);
             requests.computeIfAbsent(messageHash, k -> instantSource.instant());
         }
     }
@@ -136,7 +132,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
     private boolean isThresholdMet(final Bytes messageHash, final Bytes rosterHash) {
         final var shares = signatures.get(messageHash);
         final var getAllSignatures = shares != null ? shares.get(rosterHash) : Set.of();
-        final var totalShares = rosterKeyMaterialAccessor.totalShares();
+        final var totalShares = rosterKeyMaterialAccessor.accessTssKeys().totalShares();
         return getAllSignatures.size() >= getThresholdForTssMessages(totalShares);
     }
 

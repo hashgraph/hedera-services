@@ -61,7 +61,7 @@ class TssBaseServiceImplTest {
     @Mock
     private AppContext.Gossip gossip;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private AppContext appContext;
 
     @Mock
