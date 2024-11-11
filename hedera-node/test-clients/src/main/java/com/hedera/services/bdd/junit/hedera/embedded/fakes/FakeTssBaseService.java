@@ -237,7 +237,8 @@ public class FakeTssBaseService implements TssBaseService {
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
             @NonNull ServicesSoftwareVersion version,
-            @NonNull final Configuration configuration) {
-        return delegate.chooseRosterForNetwork(state, trigger, serviceMigrator, version, configuration);
+            @NonNull final Configuration configuration,
+            @NonNull final Roster overrideRoster) {
+        return delegate.chooseRosterForNetwork(state, trigger, serviceMigrator, version, configuration, overrideRoster);
     }
 }

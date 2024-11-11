@@ -22,7 +22,6 @@ import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirect
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static com.hedera.node.app.tss.handlers.TssVoteHandler.hasMetThreshold;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.roster.RosterRetriever.getCandidateRosterHash;
 import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
@@ -52,8 +51,6 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
@@ -254,13 +251,10 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
             @NonNull ServicesSoftwareVersion version,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            @NonNull final Roster overrideRoster) {
         if (!configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
-            final var readablePlatformStateStore =
-                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-            // FUTURE: Once TSS Roster is implemented in the future, this will be removed and use roster state
-            // instead of the address book
-            return buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
+            return overrideRoster;
         }
         final var activeRoster = retrieveActiveOrGenesisRoster(state);
         if (trigger != GENESIS) {
