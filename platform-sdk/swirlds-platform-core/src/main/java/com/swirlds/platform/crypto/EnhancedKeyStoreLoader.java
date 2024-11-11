@@ -310,8 +310,8 @@ public class EnhancedKeyStoreLoader {
     }
 
     /**
-     * Iterates over the local nodes and creates the agreement key and certificate for each.  This
-     * method should be called after {@link #scan()} and before {@link #verify()}.
+     * Iterates over the local nodes and creates the agreement key and certificate for each.  This method should be
+     * called after {@link #scan()} and before {@link #verify()}.
      *
      * @return this {@link EnhancedKeyStoreLoader} instance.
      * @throws NoSuchAlgorithmException if the algorithm required to generate the key pair is not available.
@@ -1476,7 +1476,7 @@ public class EnhancedKeyStoreLoader {
         if (sPublicPfx.exists()
                 && sPublicPfx.isFile()
                 && !sPublicPfx.renameTo(
-                        pfxArchiveDirectory.resolve(sPublicPfx.getName()).toFile())) {
+                        pfxDateDirectory.resolve(sPublicPfx.getName()).toFile())) {
             cleanupErrorCount.incrementAndGet();
         }
         if (cleanupErrorCount.get() > 0) {

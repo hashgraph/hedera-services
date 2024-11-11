@@ -57,8 +57,8 @@ import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -113,7 +113,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                         tssLibraryExecutor,
                         metrics);
         this.tssMetrics = component.tssMetrics();
-        this.tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
+        this.tssHandlers = new TssHandlers(
+                component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
         this.tssSubmissions = component.tssSubmissions();
     }
 

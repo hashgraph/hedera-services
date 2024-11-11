@@ -65,6 +65,13 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
     private final GasCalculator gasCalculator;
     private final InstantSource instantSource;
 
+    /**
+     *  Constructs a {@link ContractCreateHandler} with the given {@link Provider}, {@link GasCalculator} and {@link InstantSource}.
+     *
+     * @param provider the provider to be used
+     * @param gasCalculator the gas calculator to be used
+     * @param instantSource the source of the current instant
+     */
     @Inject
     public ContractCallLocalHandler(
             @NonNull final Provider<Factory> provider,

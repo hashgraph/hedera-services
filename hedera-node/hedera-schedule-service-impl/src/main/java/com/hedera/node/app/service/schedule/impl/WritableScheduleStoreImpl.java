@@ -132,6 +132,38 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         scheduleIdsByExpirationMutable.put(expirationSecond, newExpiryScheduleIdList);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void purgeExpiredSchedulesBetween(final long firstSecondToExpire, final long lastSecondToExpire) {
+        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
+            final var second = new ProtoLong(i);
+            final var scheduleIdList = scheduleIdsByExpirationMutable.get(second);
+            if (scheduleIdList != null) {
+                scheduleIdList.scheduleIds().forEach(this::purge);
+                scheduleIdsByExpirationMutable.remove(second);
+            }
+        }
+    }
+
+    /**
+     * Purge a schedule from the store.
+     *
+     * @param scheduleId The ID of the schedule to purge
+     */
+    private void purge(final ScheduleID scheduleId) {
+        final var schedule = schedulesByIdMutable.get(scheduleId);
+        if (schedule != null) {
+            final ProtoBytes hash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
+            scheduleIdByEqualityMutable.remove(hash);
+        } else {
+            logger.error("Schedule {} not found in state schedulesByIdMutable.", scheduleId);
+        }
+        schedulesByIdMutable.remove(scheduleId);
+        logger.debug("Purging expired schedule {} from state.", scheduleId);
+    }
+
     @NonNull
     private Schedule markDeleted(final Schedule schedule, final Instant consensusTime) {
         final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
@@ -151,30 +183,5 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),
                 schedule.signatories());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire) {
-        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
-            final var second = new ProtoLong(i);
-            final var scheduleIdList = scheduleIdsByExpirationMutable.get(second);
-            if (scheduleIdList != null) {
-                for (final var scheduleId : scheduleIdList.scheduleIds()) {
-                    final var schedule = schedulesByIdMutable.get(scheduleId);
-                    if (schedule != null) {
-                        final ProtoBytes hash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
-                        scheduleIdByEqualityMutable.remove(hash);
-                    } else {
-                        logger.error("Schedule {} not found in state schedulesByIdMutable.", scheduleId);
-                    }
-                    schedulesByIdMutable.remove(scheduleId);
-                    logger.debug("Purging expired schedule {} from state.", scheduleId);
-                }
-                scheduleIdsByExpirationMutable.remove(second);
-            }
-        }
     }
 }
