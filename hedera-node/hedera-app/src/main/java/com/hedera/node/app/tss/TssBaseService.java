@@ -133,7 +133,8 @@ public interface TssBaseService extends Service {
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
             @NonNull ServicesSoftwareVersion version,
-            @NonNull Configuration configuration);
+            @NonNull Configuration configuration,
+            @NonNull Roster overrideRoster);
 
     /**
      * Regenerates the key material for the active roster.

@@ -19,11 +19,10 @@ module com.hedera.node.app.service.addressbook.impl {
     provides com.hedera.node.app.service.addressbook.AddressBookService with
             AddressBookServiceImpl;
 
-    exports com.hedera.node.app.service.addressbook.impl to
-            com.hedera.node.app,
-            com.hedera.node.test.clients;
+    exports com.hedera.node.app.service.addressbook.impl;
     exports com.hedera.node.app.service.addressbook.impl.handlers;
     exports com.hedera.node.app.service.addressbook.impl.records;
     exports com.hedera.node.app.service.addressbook.impl.validators;
     exports com.hedera.node.app.service.addressbook.impl.schemas;
+    exports com.hedera.node.app.service.addressbook.impl.helpers;
 }
