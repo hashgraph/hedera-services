@@ -115,66 +115,151 @@ permissions:
   contents: read
 
 jobs:
-  determine-version:
-    name: Determine Version
+  validate:
+    name: Validate
     runs-on: network-node-linux-large
     outputs:
-      version: ${{ steps.semantic.outputs.new_release_version }}
-      version-major: ${{ steps.version-parts.outputs.major }}
-      version-minor: ${{ steps.version-parts.outputs.minor }}
-      version-patch: ${{ steps.version-parts.outputs.patch }}
-      version-prerelease: ${{ steps.version-parts.outputs.prerelease }}
-      commit-id: ${{ github.sha }}
-      commit-id-short: ${{ steps.commit-id.outputs.short }}
+      branch-name: ${{ steps.parameters.outputs.branch-name }}
+      branch-name-lower: ${{ steps.parameters.outputs.branch-name-lower }}
+      branch-name-safe: ${{ steps.parameters.outputs.branch-name-safe }}
+      commit-prefix: ${{ steps.parameters.outputs.commit-prefix }}
+      commit-id: ${{ steps.parameters.outputs.commit-id }}
+      commit-id-short: ${{ steps.parameters.outputs.commit-id-short }}
+      version: ${{ steps.effective-version.outputs.number }}
+      version-prefix: ${{ steps.effective-version.outputs.prefix }}
+      prerelease: ${{ steps.effective-version.outputs.prerelease }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
         with:
           egress-policy: audit
 
+      - name: Install Semantic Version Tools
+        run: |
+          echo "::group::Download SemVer Binary"
+          sudo curl -L -o /usr/local/bin/semver https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
+          echo "::endgroup::"
+          echo "::group::Change SemVer Binary Permissions"
+          sudo chmod -v +x /usr/local/bin/semver
+          echo "::endgroup::"
+          echo "::group::Show SemVer Binary Version Info"
+          semver --version
+          echo "::endgroup::"
+
+      - name: Setup Node
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: 18
+
+      - name: Install Semantic Release
+        run: |
+          npm install -g semantic-release@21.0.7 @semantic-release/git@10.0.1 @semantic-release/exec@6.0.3 gradle-semantic-release-plugin@1.7.6
+          npm install -g conventional-changelog-conventionalcommits@6.1.0 @commitlint/cli@17.6.6 @commitlint/config-conventional@17.6.6
+          npm install -g marked-mangle@1.0.1 marked-gfm-heading-id@3.0.4 semantic-release-conventional-commits@3.0.0
+
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.4
-        with:
-          node-version: 'lts/*'
-
-      - name: Install dependencies
-        run: |
-          npm ci
-          npm install --save-dev \
-            @semantic-release/changelog \
-            @semantic-release/git \
-            conventional-changelog-conventionalcommits
-
-      - name: Determine Version
-        id: semantic
-        uses: semantic-release/semantic-release@43df51b79ec9c8716b737804486b375459ea177e # v24.1.2
-        with:
-          dry_run: true
+      - name: Calculate Next Version
+        if: ${{ inputs.version-policy != 'specified' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.access-token }}
-
-      - name: Extract Version Parts
-        id: version-parts
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: ${{ secrets.GIT_USER_NAME }}
+          GIT_AUTHOR_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
+          GIT_COMMITTER_NAME: ${{ secrets.GIT_USER_NAME }}
+          GIT_COMMITTER_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
         run: |
-          VERSION="${{ steps.semantic.outputs.new_release_version }}"
-          echo "major=$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
-          echo "minor=$(echo $VERSION | cut -d. -f2)" >> $GITHUB_OUTPUT
-          echo "patch=$(echo $VERSION | cut -d. -f3 | cut -d- -f1)" >> $GITHUB_OUTPUT
-          echo "prerelease=$(echo $VERSION | grep -o -P '(?<=-).+' || echo '')" >> $GITHUB_OUTPUT
+          npx semantic-release --dry-run
+          ls -al
+          cat VERSION
 
-      - name: Get short commit ID
-        id: commit-id
-        run: echo "short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Verify Workflow Parameters
+        id: parameters
+        run: |
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          BRANCH_NAME="${BRANCH_NAME##origin/}"
+          BRANCH_NAME_LOWER="$(echo "${BRANCH_NAME}" | tr '[:upper:]' '[:lower:]')"
+          BRANCH_NAME_SAFE="$(echo "${BRANCH_NAME_LOWER}" | tr '/' '-' | tr '_' '.')"
+
+          COMMIT_PREFIX="adhoc"
+          [[ "${{ inputs.version-policy }}" == "branch-commit" ]] && COMMIT_PREFIX="${BRANCH_NAME_SAFE}"
+
+          echo "branch-name=${BRANCH_NAME}" >>"${GITHUB_OUTPUT}"
+          echo "branch-name-lower=${BRANCH_NAME_LOWER}" >>"${GITHUB_OUTPUT}"
+          echo "branch-name-safe=${BRANCH_NAME_SAFE}" >>"${GITHUB_OUTPUT}"
+          echo "commit-prefix=${COMMIT_PREFIX}" >>"${GITHUB_OUTPUT}"
+          echo "commit-id=${{ github.sha }}" >>"${GITHUB_OUTPUT}"
+          echo "commit-id-short=$(echo "${{ github.sha }}" | cut -c1-8)" >>"${GITHUB_OUTPUT}"
+
+      - name: Verify Version Update (As Specified)
+        if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+        run: |
+          VALID_VERSION="$(semver validate "${{ inputs.new-version }}")"
+
+          if [[ "${VALID_VERSION}" != "valid" ]]; then
+            echo "::error title=Version Error::The supplied new-version parameter (${{ inputs.new-version }}) is invalid and does not conform to the semantic versioning specifications."
+            exit 2
+          fi
+
+      - name: Setup Java
+        uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+
+      - name: Gradle Update Version (As Specified)
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
+        if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
+
+      - name: Gradle Update Version (Branch Commit)
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
+        if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
+
+      - name: Compute Final Effective Version
+        id: effective-version
+        run: |
+          if [[ "${{ inputs.version-policy }}" == "specified" ]]; then
+            EFF_VERSION="${{ inputs.new-version }}"
+          else
+            EFF_VERSION="$(cat VERSION | tr -d '[:space:]')"
+          fi
+
+          PRERELEASE_SUFFIX="$(semver get prerel "${EFF_VERSION}")"
+          PRERELEASE="false"
+          [[ -n "${PRERELEASE_SUFFIX}" ]] && PRERELEASE="true"
+
+          MAJOR_VERSION="$(semver get major "${EFF_VERSION}")"
+          MINOR_VERSION="$(semver get minor "${EFF_VERSION}")"
+
+          echo "number=${EFF_VERSION}" >>"${GITHUB_OUTPUT}"
+          echo "prefix=${MAJOR_VERSION}.${MINOR_VERSION}" >>"${GITHUB_OUTPUT}"
+          echo "prerelease=${PRERELEASE}" >>"${GITHUB_OUTPUT}"
+
+      - name: Cache Build Version
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+        with:
+          path: version.txt
+          key: node-build-version-${{ steps.effective-version.outputs.number }}-${{ github.sha }}
 
   build-artifact:
     name: Build Artifact
-    needs: determine-version
     runs-on: network-node-linux-large
+    needs:
+      - validate
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -336,10 +421,11 @@ jobs:
 
   local-node-images:
     name: Publish Local Node Images
-    needs:
-      - determine-version
-      - build-artifact
     runs-on: network-node-linux-large
+    needs:
+      - validate
+      - build-artifact
+
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -476,10 +562,11 @@ jobs:
     name: Publish Production Image
     uses: ./.github/workflows/zxc-publish-production-image.yaml
     needs:
-      - determine-version
+      - validate
       - build-artifact
     with:
-      version: ${{ needs.determine-version.outputs.version }}
+      version: ${{ needs.validate.outputs.version }}
+      version-policy: ${{ inputs.version-policy }}
       dry-run-enabled: ${{ inputs.dry-run-enabled }}
       registry-name: gcp
       custom-job-name: "Publish Production Image (GCP)"
@@ -493,10 +580,11 @@ jobs:
     name: Publish Production Image
     uses: ./.github/workflows/zxc-publish-production-image.yaml
     needs:
-      - determine-version
+      - validate
       - build-artifact
     with:
-      version: ${{ needs.determine-version.outputs.version }}
+      version: ${{ needs.validate.outputs.version }}
+      version-policy: ${{ inputs.version-policy }}
       dry-run-enabled: ${{ inputs.dry-run-enabled }}
       registry-name: jfrog
       custom-job-name: "Publish Production Image (JFrog)"
@@ -510,7 +598,6 @@ jobs:
     name: Validate Production Image
     runs-on: network-node-linux-large
     needs:
-      - determine-version
       - gcp-production-image
       - jfr-production-image
     if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
@@ -622,9 +709,10 @@ jobs:
           path: ${{ env.DOCKER_MANIFEST_PATH }}
 
   publish:
-    name: Publish to Maven Central or GCP Registry
+    name: Publish to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
     runs-on: network-node-linux-large
-    needs: determine-version
+    needs:
+      - validate
     if: ${{ inputs.release-profile != 'none' }}
     steps:
       - name: Harden Runner
@@ -803,11 +891,11 @@ jobs:
     name: Send Release Notifications
     runs-on: network-node-linux-large
     needs:
-      - determine-version
+      - validate
       - local-node-images
       - validate-production-image
       - publish
-    if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+    if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
