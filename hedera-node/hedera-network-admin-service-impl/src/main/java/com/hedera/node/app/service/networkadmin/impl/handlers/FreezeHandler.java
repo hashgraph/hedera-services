@@ -46,6 +46,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
@@ -156,6 +157,7 @@ public class FreezeHandler implements TransactionHandler {
         final ReadableNodeStore nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
         final ReadableStakingInfoStore stakingInfoStore = storeFactory.readableStore(ReadableStakingInfoStore.class);
         final WritableFreezeStore freezeStore = storeFactory.writableStore(WritableFreezeStore.class);
+        final WritableRosterStore rosterStore = storeFactory.writableStore(WritableRosterStore.class);
 
         final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
 
@@ -165,7 +167,13 @@ public class FreezeHandler implements TransactionHandler {
         final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
 
         final FreezeUpgradeActions upgradeActions = new FreezeUpgradeActions(
-                context.configuration(), freezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                context.configuration(),
+                freezeStore,
+                freezeExecutor,
+                upgradeFileStore,
+                nodeStore,
+                stakingInfoStore,
+                rosterStore);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
 
         switch (freezeTxn.freezeType()) {

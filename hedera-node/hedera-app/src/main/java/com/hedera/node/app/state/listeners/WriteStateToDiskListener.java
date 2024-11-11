@@ -23,11 +23,15 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
@@ -50,18 +54,18 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
     private final Supplier<AutoCloseableWrapper<State>> stateAccessor;
     private final Executor executor;
     private final ConfigProvider configProvider;
+    private final StoreMetricsService storeMetricsService;
 
     @Inject
     public WriteStateToDiskListener(
             @NonNull final Supplier<AutoCloseableWrapper<State>> stateAccessor,
             @NonNull @Named("FreezeService") final Executor executor,
-            @NonNull final ConfigProvider configProvider) {
-        requireNonNull(stateAccessor);
-        requireNonNull(executor);
-        requireNonNull(configProvider);
-        this.stateAccessor = stateAccessor;
-        this.executor = executor;
-        this.configProvider = configProvider;
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final StoreMetricsService storeMetricsService) {
+        this.stateAccessor = requireNonNull(stateAccessor);
+        this.executor = requireNonNull(executor);
+        this.configProvider = requireNonNull(configProvider);
+        this.storeMetricsService = requireNonNull(storeMetricsService);
     }
 
     @Override
@@ -74,19 +78,26 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                     notification.getRoundNumber(),
                     notification.getSequence());
             try (final var wrappedState = stateAccessor.get()) {
-                final var readableStoreFactory = new ReadableStoreFactory(wrappedState.get());
+                final State state = wrappedState.get();
+                final var configuration = configProvider.getConfiguration();
+                final var readableStoreFactory = new ReadableStoreFactory(state);
                 final var readableFreezeStore = readableStoreFactory.getStore(ReadableFreezeStore.class);
                 final var readableUpgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
                 final var readableNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
                 final var readableStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
 
+                final var writableStoreFactory =
+                        new WritableStoreFactory(state, RosterStateId.NAME, configuration, storeMetricsService);
+                final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
+
                 final var upgradeActions = new ReadableFreezeUpgradeActions(
-                        configProvider.getConfiguration(),
+                        configuration,
                         readableFreezeStore,
                         executor,
                         readableUpgradeFileStore,
                         readableNodeStore,
-                        readableStakingInfoStore);
+                        readableStakingInfoStore,
+                        rosterStore);
                 log.info("Externalizing freeze if upgrade is pending");
                 upgradeActions.externalizeFreezeIfUpgradePending();
             } catch (Exception e) {

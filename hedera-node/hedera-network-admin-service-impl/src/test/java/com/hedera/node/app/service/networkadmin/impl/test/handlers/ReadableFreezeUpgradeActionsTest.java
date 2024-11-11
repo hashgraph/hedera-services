@@ -59,6 +59,7 @@ import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -149,6 +150,9 @@ class ReadableFreezeUpgradeActionsTest {
     private ReadableStakingInfoStore stakingInfoStore;
 
     @Mock
+    private WritableRosterStore rosterStore;
+
+    @Mock
     protected ReadableStates readableStates;
 
     @Mock
@@ -179,7 +183,13 @@ class ReadableFreezeUpgradeActionsTest {
         freezeExecutor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
         subject = new FreezeUpgradeActions(
-                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration,
+                writableFreezeStore,
+                freezeExecutor,
+                upgradeFileStore,
+                nodeStore,
+                stakingInfoStore,
+                rosterStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
@@ -478,7 +488,13 @@ class ReadableFreezeUpgradeActionsTest {
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         nodeStore = new ReadableNodeStoreImpl(readableStates);
         subject = new FreezeUpgradeActions(
-                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration,
+                writableFreezeStore,
+                freezeExecutor,
+                upgradeFileStore,
+                nodeStore,
+                stakingInfoStore,
+                rosterStore);
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
         var stakingNodeInfo2 = mock(StakingNodeInfo.class);
         var stakingNodeInfo4 = mock(StakingNodeInfo.class);
@@ -602,7 +618,13 @@ class ReadableFreezeUpgradeActionsTest {
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         nodeStore = new ReadableNodeStoreImpl(readableStates);
         subject = new FreezeUpgradeActions(
-                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration,
+                writableFreezeStore,
+                freezeExecutor,
+                upgradeFileStore,
+                nodeStore,
+                stakingInfoStore,
+                rosterStore);
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
         var stakingNodeInfo2 = mock(StakingNodeInfo.class);
         var stakingNodeInfo3 = mock(StakingNodeInfo.class);
