@@ -35,6 +35,9 @@ import java.util.function.Predicate;
  * {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody}.
  */
 public class ApprovalSwitchHelper {
+    /**
+     * Singleton instance.
+     */
     public static final ApprovalSwitchHelper APPROVAL_SWITCH_HELPER = new ApprovalSwitchHelper();
 
     private ApprovalSwitchHelper() {

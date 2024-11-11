@@ -71,10 +71,19 @@ public class ActionStack {
      * Controls whether the stack should validate the next action it is finalizing.
      */
     public enum Validation {
+        /**
+         * Validate next action
+         */
         ON,
+        /**
+         * Do not validate next action
+         */
         OFF
     }
 
+    /**
+     * Default constructor.
+     */
     public ActionStack() {
         this(new ActionsHelper(), new ArrayList<>(), new ArrayDeque<>(), new ArrayList<>());
     }
@@ -294,6 +303,9 @@ public class ActionStack {
     /**
      * Given the initial {@link MessageFrame} for all operations applied to this stack,
      * sanitizes the final actions and logs any anomalies.
+     * @param frame the initial message frame applied to this stack
+     * @param log the logger
+     * @param level the logger level
      */
     public void sanitizeFinalActionsAndLogAnomalies(
             @NonNull final MessageFrame frame, @NonNull final Logger log, @NonNull final Level level) {

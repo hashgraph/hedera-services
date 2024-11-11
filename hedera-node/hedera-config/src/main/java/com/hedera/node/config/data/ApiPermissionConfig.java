@@ -261,7 +261,7 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenCancelAirdrop,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenClaimAirdrop,
         @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange createNode,
-        @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange updateNode,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange deleteNode,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssMessage,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssVote,

@@ -29,9 +29,12 @@ import javax.inject.Singleton;
 
 @Singleton
 public class IsAssociatedTranslator extends AbstractCallTranslator<HtsCallAttempt> {
-
+    /** Selector for isAssociated() method. */
     public static final Function IS_ASSOCIATED = new Function("isAssociated()", ReturnTypes.BOOL);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public IsAssociatedTranslator() {
         // Dagger2
