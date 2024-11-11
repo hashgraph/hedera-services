@@ -51,6 +51,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -166,7 +167,9 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
 
         final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
-        final var activeRosterHash = keyMaterialAccessor.activeRosterHash();
+        final var activeRoster = requireNonNull(
+                context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster());
+        final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
         final var tssPrivateShares = keyMaterialAccessor.activeRosterShares();
 
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();

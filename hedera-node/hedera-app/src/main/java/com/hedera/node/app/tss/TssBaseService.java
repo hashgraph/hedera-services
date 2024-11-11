@@ -135,6 +135,12 @@ public interface TssBaseService extends Service {
             @NonNull ServicesSoftwareVersion version,
             @NonNull Configuration configuration);
 
+    /**
+     * Regenerates the key material for the active roster.
+     * @param state the network state
+     * @param configuration the configuration
+     * @param selfId the self id
+     */
     void regenerateKeyMaterial(
             @NonNull final State state, @NonNull final Configuration configuration, final long selfId);
 }

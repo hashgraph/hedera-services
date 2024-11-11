@@ -37,6 +37,9 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Provides access to the key material for the threshold signature scheme (TSS) for the active roster.
+ */
 @Singleton
 public class TssKeyMaterialAccessor {
     private final TssLibrary tssLibrary;
@@ -120,7 +123,6 @@ public class TssKeyMaterialAccessor {
      * Returns the active roster hash.
      * @return the active roster hash
      */
-    // TODO: Delete this
     public Bytes activeRosterHash() {
         return requireNonNull(activeRosterHash);
     }
