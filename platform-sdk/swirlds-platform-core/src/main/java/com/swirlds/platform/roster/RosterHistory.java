@@ -53,6 +53,44 @@ public class RosterHistory {
     }
 
     /**
+     * Constructs a RosterHistory out of a current and previous Roster objects and their corresponding starting round numbers.
+     * This is a simplified version of the constructor to be used with the legacy, AddressBook/config.txt-driven startup lifecycle
+     * until the new, Roster-only-based lifecycle is fully implemented.
+     * @param currentRoster currentRoster
+     * @param currentRound {@code currentRound >= previousRound}
+     * @param previousRoster previousRoster
+     * @param previousRound {@code previousRound <= currentRound}
+     */
+    public RosterHistory(
+            @NonNull final Roster currentRoster,
+            final long currentRound,
+            @NonNull final Roster previousRoster,
+            final long previousRound) {
+        if (currentRound < previousRound) {
+            throw new IllegalArgumentException(
+                    "Current round must be greater than or equal to the previous round. currentRound: " + currentRound
+                            + ", previousRound: " + previousRound);
+        }
+
+        final Bytes currentHash = RosterUtils.hash(currentRoster).getBytes();
+        final Bytes previousHash = RosterUtils.hash(previousRoster).getBytes();
+
+        this.rosters = Map.of(
+                currentHash, currentRoster,
+                previousHash, previousRoster);
+
+        this.history = List.of(
+                RoundRosterPair.newBuilder()
+                        .activeRosterHash(currentHash)
+                        .roundNumber(currentRound)
+                        .build(),
+                RoundRosterPair.newBuilder()
+                        .activeRosterHash(previousHash)
+                        .roundNumber(previousRound)
+                        .build());
+    }
+
+    /**
      * Returns the current active roster, which is the very first (index == 0) entry in the history list.
      * @return the current active roster
      */

@@ -76,6 +76,7 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -298,26 +299,10 @@ public class ServicesMain implements SwirldMain {
                 recycleBin,
                 merkleCryptography);
 
-        // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
-        final var platformBuilder = PlatformBuilder.create(
-                        Hedera.APP_NAME,
-                        Hedera.SWIRLD_NAME,
-                        version,
-                        initialState,
-                        selfId,
-                        AddressBookUtils.formatConsensusEventStreamName(addressBook, selfId),
-                        // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
-                        // we need to choose the correct roster in the following cases:
-                        //  - At genesis, a roster loaded from disk
-                        //  - At restart, the active roster in the saved state
-                        //  - At upgrade boundary, the candidate roster in the saved state IF
-                        //    that state satisfies conditions (e.g. the roster has been keyed)
-                        RosterUtils.buildRosterHistory(
-                                initialState.get().getState().getReadablePlatformState()))
-                .withPlatformContext(platformContext)
-                .withConfiguration(configuration)
-                .withKeysAndCerts(keysAndCerts);
+        // Initialize the address book and set on platform builder
+        final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
 
+        final RosterHistory rosterHistory;
         if (addressbookUseRosterLifecycle) {
             final SignedState loadedSignedState = initialState.get();
             final var state = ((MerkleStateRoot) loadedSignedState.getState());
@@ -340,16 +325,30 @@ public class ServicesMain implements SwirldMain {
                     roster -> computeParticipantDirectory(roster, maxSharesPerNode, (int) selfId.id());
             final var rosterStartupLogic = new RosterStartupLogic(
                     rosterStore, addressBookStore, tssStore, diskAddressBook, tssLibrary, participantDirectoryProvider);
-            final var rosterHistory = rosterStartupLogic.determineRosterHistory(isGenesis.get(), softwareUpgrade);
-            platformBuilder.withRoster(
-                    rosterHistory
-                            .getCurrentRoster()); // FUTURE: pass the roster history instead of just the current roster
+            rosterHistory = rosterStartupLogic.determineRosterHistory(isGenesis.get(), softwareUpgrade);
         } else {
-            // Initialize the address book and set on platform builder
-            final var addressBook =
-                    initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
-            platformBuilder.withAddressBook(addressBook);
+            rosterHistory =
+                    RosterUtils.buildRosterHistory(initialState.get().getState().getReadablePlatformState());
         }
+
+        // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
+        final var platformBuilder = PlatformBuilder.create(
+                        Hedera.APP_NAME,
+                        Hedera.SWIRLD_NAME,
+                        version,
+                        initialState,
+                        selfId,
+                        AddressBookUtils.formatConsensusEventStreamName(addressBook, selfId),
+                        // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
+                        // we need to choose the correct roster in the following cases:
+                        //  - At genesis, a roster loaded from disk
+                        //  - At restart, the active roster in the saved state
+                        //  - At upgrade boundary, the candidate roster in the saved state IF
+                        //    that state satisfies conditions (e.g. the roster has been keyed)
+                        rosterHistory)
+                .withPlatformContext(platformContext)
+                .withConfiguration(configuration)
+                .withKeysAndCerts(keysAndCerts);
 
         final var stateHash = reservedState.hash();
         hedera.setInitialStateHash(stateHash);
