@@ -235,10 +235,10 @@ jobs:
   report-failure:
     name: Report XTS execution failure
     runs-on: network-node-linux-medium
-    # needs:
+    needs:
     #   - abbreviated-panel
     #   - extended-test-suite
-    #   - fetch-xts-candidate
+      - fetch-xts-candidate
     #   - hedera-node-jrs-panel
     #   - tag-for-promotion
 
