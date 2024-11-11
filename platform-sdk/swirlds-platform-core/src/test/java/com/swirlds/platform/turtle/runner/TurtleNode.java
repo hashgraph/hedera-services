@@ -20,7 +20,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -37,10 +36,12 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.util.RandomBuilder;
@@ -113,11 +114,16 @@ public class TurtleNode {
                 configuration, recycleBin, version, genesisStateSupplier, "foo", "bar", nodeId, addressBook);
         final var initialState = reservedState.state();
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
-                        "foo", "bar", new BasicSoftwareVersion(1), initialState, nodeId)
+                        "foo",
+                        "bar",
+                        new BasicSoftwareVersion(1),
+                        initialState,
+                        nodeId,
+                        AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
+                        RosterUtils.buildRosterHistory(
+                                initialState.get().getState().getReadablePlatformState()))
                 .withModel(model)
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
-                .withAddressBook(addressBook)
-                .withRoster(createRoster(addressBook))
                 .withKeysAndCerts(privateKeys)
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration);

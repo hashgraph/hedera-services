@@ -484,8 +484,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final State state,
             @NonNull final Metrics metrics,
             @NonNull final InitTrigger trigger,
-            @Nullable final AddressBook genesisAddressBook) {
+            @Nullable final AddressBook genesisAddressBook,
+            @NonNull final Configuration platformConfiguration) {
         requireNonNull(state);
+        requireNonNull(platformConfiguration);
         this.metrics = requireNonNull(metrics);
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
@@ -506,6 +508,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
                 version,
                 bootstrapConfigProvider.getConfiguration(),
+                platformConfiguration,
                 UNAVAILABLE_NETWORK_INFO,
                 UNAVAILABLE_METRICS);
         migrationStateChanges = new ArrayList<>();
@@ -528,7 +531,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         }
 
         try {
-            migrateAndInitialize(state, savedStateVersion, trigger, metrics, genesisAddressBook);
+            migrateAndInitialize(state, savedStateVersion, trigger, metrics, genesisAddressBook, platformConfiguration);
         } catch (final Throwable t) {
             logger.fatal("Critical failure during initialization", t);
             throw new IllegalStateException("Critical failure during initialization", t);
@@ -551,7 +554,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         }
         this.platform = requireNonNull(platform);
         if (state.getReadableStates(PlatformStateService.NAME).isEmpty()) {
-            initializeStatesApi(state, metrics, trigger, platform.getAddressBook());
+            initializeStatesApi(
+                    state,
+                    metrics,
+                    trigger,
+                    platform.getAddressBook(),
+                    platform.getContext().getConfiguration());
         }
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
@@ -570,6 +578,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param deserializedVersion version deserialized
      * @param trigger             trigger that is calling migration
      * @param genesisAddressBook
+     * @param platformConfiguration platform configuration
      * @return the state changes caused by the migration
      */
     private List<StateChanges.Builder> onMigrate(
@@ -577,7 +586,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @Nullable final ServicesSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
             @NonNull final Metrics metrics,
-            @Nullable final AddressBook genesisAddressBook) {
+            @Nullable final AddressBook genesisAddressBook,
+            @NonNull final Configuration platformConfiguration) {
+        requireNonNull(platformConfiguration);
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getPbjSemanticVersion();
         final var isUpgrade = version.compareTo(deserializedVersion) > 0;
         logger.info(
@@ -609,6 +620,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 deserializedVersion,
                 version,
                 configProvider.getConfiguration(),
+                platformConfiguration,
                 genesisNetworkInfo,
                 metrics);
         migrationStateChanges.addAll(migrationChanges);
@@ -893,7 +905,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @Nullable final ServicesSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
             @NonNull final Metrics metrics,
-            @Nullable final AddressBook genesisAddressBook) {
+            @Nullable final AddressBook genesisAddressBook,
+            @NonNull final Configuration platformConfiguration) {
+        requireNonNull(platformConfiguration);
         if (trigger != GENESIS) {
             requireNonNull(deserializedVersion, "Deserialized version cannot be null for trigger " + trigger);
         }
@@ -901,7 +915,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         // the States API, even if it already has all its children in the Merkle tree, as it will lack
         // state definitions for those children. (And note services may even require migrations for
         // those children to be usable with the current version of the software.)
-        final var changes = onMigrate(state, deserializedVersion, trigger, metrics, genesisAddressBook);
+        final var changes =
+                onMigrate(state, deserializedVersion, trigger, metrics, genesisAddressBook, platformConfiguration);
         requireNonNull(migrationStateChanges).addAll(changes);
         // Log the active configuration
         logConfiguration();
