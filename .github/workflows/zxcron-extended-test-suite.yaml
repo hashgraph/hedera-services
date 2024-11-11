@@ -100,8 +100,8 @@ jobs:
           set -e
 
           # Get commit author
-          AUTHOR_NAME=$(git log -1 --format='%an' $XTS_COMMIT)
-          AUTHOR_EMAIL=$(git log -1 --format='%ae' $XTS_COMMIT)
+          AUTHOR_NAME=$(git log -1 --format='%an' "${XTS_COMMIT}")
+          AUTHOR_EMAIL=$(git log -1 --format='%ae' "${XTS_COMMIT}")
 
           # If the tag exists on the Develop Branch set the output variables as appropriate
           # Otherwise cancel out
