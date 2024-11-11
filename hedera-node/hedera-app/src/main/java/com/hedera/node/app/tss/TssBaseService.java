@@ -94,7 +94,7 @@ public interface TssBaseService extends Service {
      * @param messageHash The hash of the message to be signed by the ledger.
      * @param lastUsedConsensusTime The last used consensus time in the round.
      */
-    void requestLedgerSignature(@NonNull byte[] messageHash, final Instant lastUsedConsensusTime);
+    void requestLedgerSignature(byte[] messageHash, final Instant lastUsedConsensusTime);
 
     /**
      * Registers a consumer of the message hash and the ledger signature on the message hash.

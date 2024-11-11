@@ -370,6 +370,7 @@ public class HandleWorkflow {
 
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                     // Generate key material for the active roster once it is switched
+                    // FUTURE: This should be set even for Restart and reconnect triggers
                     tssBaseService.regenerateKeyMaterial(
                             userTxn.stack(),
                             userTxn.config(),

@@ -122,7 +122,7 @@ public class BlockStreamManagerBenchmark {
                     Instant::now,
                     fakeSignatureVerifier(),
                     UNAVAILABLE_GOSSIP,
-                    configProvider.getConfiguration(),
+                    () -> configProvider.getConfiguration(),
                     () -> DEFAULT_NODE_ACCOUNT_ID),
             ForkJoinPool.commonPool(),
             ForkJoinPool.commonPool(),

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
@@ -28,7 +29,7 @@ import dagger.BindsInstance;
 import dagger.Component;
 import java.time.InstantSource;
 import java.util.concurrent.Executor;
-import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import javax.inject.Singleton;
 
 @Singleton
@@ -39,12 +40,12 @@ public interface TssBaseServiceComponent {
         TssBaseServiceComponent create(
                 @BindsInstance TssLibrary tssLibrary,
                 @BindsInstance InstantSource instantSource,
-                @BindsInstance AppContext.Gossip gossip,
+                @BindsInstance AppContext appContext,
                 @BindsInstance Executor submissionExecutor,
                 @BindsInstance @TssLibraryExecutor Executor libraryExecutor,
                 @BindsInstance Metrics metrics,
                 @BindsInstance Configuration configuration,
-                @BindsInstance LongSupplier selfId,
+                @BindsInstance Supplier<AccountID> selfId,
                 @BindsInstance TssBaseService tssBaseService);
     }
 

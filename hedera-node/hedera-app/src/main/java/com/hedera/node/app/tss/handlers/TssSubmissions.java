@@ -61,10 +61,8 @@ public class TssSubmissions {
      * The next offset to use for the transaction valid start time within the current {@link HandleContext}.
      */
     private final AtomicInteger nextOffset = new AtomicInteger(0);
-    /**
-     * The {@link AppContext.Gossip} to use for submitting transactions.
-     */
-    private final AppContext.Gossip gossip;
+
+    private final AppContext appContext;
 
     /**
      * Tracks which {@link HandleContext} we are currently submitting TSS transactions within, to
@@ -75,8 +73,8 @@ public class TssSubmissions {
     private HandleContext lastContextUsed;
 
     @Inject
-    public TssSubmissions(@NonNull final AppContext.Gossip gossip, @NonNull final Executor submissionExecutor) {
-        this.gossip = requireNonNull(gossip);
+    public TssSubmissions(@NonNull final AppContext appContext, @NonNull final Executor submissionExecutor) {
+        this.appContext = requireNonNull(appContext);
         this.submissionExecutor = requireNonNull(submissionExecutor);
     }
 
@@ -126,7 +124,11 @@ public class TssSubmissions {
     public CompletableFuture<Void> submitTssShareSignature(
             @NonNull final TssShareSignatureTransactionBody body, final Instant lastUsedConsensusTime) {
         requireNonNull(body);
-        return submit(b -> b.tssShareSignature(body), null, null, lastUsedConsensusTime);
+        return submit(
+                b -> b.tssShareSignature(body),
+                appContext.configSupplier().get(),
+                appContext.selfNodeAccountIdSupplier().get(),
+                lastUsedConsensusTime);
     }
 
     private CompletableFuture<Void> submit(
@@ -151,7 +153,7 @@ public class TssSubmissions {
                             spec.accept(builder);
                             body = builder.build();
                             try {
-                                gossip.submit(body);
+                                appContext.gossip().submit(body);
                                 return;
                             } catch (IllegalArgumentException iae) {
                                 failureReason = iae.getMessage();

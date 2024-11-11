@@ -66,6 +66,9 @@ public class TssCryptographyManagerTest {
     private TssParticipantDirectory tssParticipantDirectory;
 
     @Mock
+    private AppContext appContext;
+
+    @Mock
     private AppContext.Gossip gossip;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
@@ -86,7 +89,8 @@ public class TssCryptographyManagerTest {
     @BeforeEach
     void setUp() {
         subject = new TssCryptographyManager(
-                tssLibrary, gossip, ForkJoinPool.commonPool(), tssMetrics, InstantSource.system());
+                tssLibrary, appContext, ForkJoinPool.commonPool(), tssMetrics, InstantSource.system());
+        when(appContext.gossip()).thenReturn(gossip);
         when(handleContext.networkInfo()).thenReturn(networkInfo);
         when(networkInfo.selfNodeInfo()).thenReturn(new NodeInfoImpl(0, AccountID.DEFAULT, 0, null, null));
     }

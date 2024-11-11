@@ -129,8 +129,7 @@ class TssMessageHandlerTest {
                 .withParticipant(1, 10, pairingPublicKey)
                 .build(SIGNATURE_SCHEMA);
 
-        subject = new TssMessageHandler(
-                submissionManager, gossip, tssCryptographyManager, tssMetrics, keyMaterialAccessor);
+        subject = new TssMessageHandler(submissionManager, tssCryptographyManager, tssMetrics, keyMaterialAccessor);
     }
 
     @Test

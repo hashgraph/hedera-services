@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.standalone;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
@@ -280,8 +281,8 @@ class TransactionExecutorsTest {
                                 InstantSource.system(),
                                 signatureVerifier,
                                 UNAVAILABLE_GOSSIP,
-                                HederaTestConfigBuilder.createConfig(),
-                                () -> 3L)),
+                                () -> HederaTestConfigBuilder.createConfig(),
+                                () -> asAccount(3L))),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),

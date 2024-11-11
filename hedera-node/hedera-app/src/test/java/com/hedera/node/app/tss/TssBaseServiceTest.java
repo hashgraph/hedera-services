@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ACTIVE_ROSTER;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.CURRENT_CANDIDATE_ROSTER;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ROSTER_NODE_1;
@@ -89,8 +90,8 @@ public class TssBaseServiceTest {
     void setUp() {
         given(appContext.gossip()).willReturn(mock(AppContext.Gossip.class));
         given(appContext.instantSource()).willReturn(InstantSource.system());
-        given(appContext.selfIdSupplier()).willReturn(() -> 3L);
-        given(appContext.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
+        given(appContext.selfNodeAccountIdSupplier()).willReturn(() -> asAccount(3L));
+        given(appContext.configSupplier()).willReturn(() -> HederaTestConfigBuilder.createConfig());
 
         subject = new TssBaseServiceImpl(
                 appContext,

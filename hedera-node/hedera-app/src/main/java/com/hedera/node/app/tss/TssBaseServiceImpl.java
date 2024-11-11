@@ -18,6 +18,7 @@ package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
+import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static com.hedera.node.app.tss.handlers.TssVoteHandler.hasMetThreshold;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.roster.RosterRetriever.getCandidateRosterHash;
@@ -101,17 +102,17 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
-        this.configuration = requireNonNull(appContext.configuration());
+        this.configuration = requireNonNull(appContext.configSupplier().get());
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
                         tssLibrary,
                         appContext.instantSource(),
-                        appContext.gossip(),
+                        appContext,
                         submissionExecutor,
                         tssLibraryExecutor,
                         metrics,
-                        appContext.configuration(),
-                        appContext.selfIdSupplier(),
+                        appContext.configSupplier().get(),
+                        () -> appContext.selfNodeAccountIdSupplier().get(),
                         this);
         this.keyMaterialAccessor = component.tssKeyMaterialAccessor();
         this.tssMetrics = component.tssMetrics();
@@ -164,8 +165,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
 
-        final var candidateDirectory =
-                keyMaterialAccessor.candidateRosterParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
+        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
         final var activeRosterHash = keyMaterialAccessor.activeRosterHash();
         final var tssPrivateShares = keyMaterialAccessor.activeRosterShares();
 
@@ -305,20 +305,18 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void notifySignature(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
         requireNonNull(messageHash);
         requireNonNull(signature);
-        CompletableFuture.runAsync(
-                () -> consumers.forEach(consumer -> {
-                    try {
-                        consumer.accept(messageHash, signature);
-                    } catch (Exception e) {
-                        log.error(
-                                "Failed to provide signature {} on message {} to consumer {}",
-                                CommonUtils.hex(signature),
-                                CommonUtils.hex(messageHash),
-                                consumer,
-                                e);
-                    }
-                }),
-                signingExecutor);
+        consumers.forEach(consumer -> {
+            try {
+                consumer.accept(messageHash, signature);
+            } catch (Exception e) {
+                log.error(
+                        "Failed to provide signature {} on message {} to consumer {}",
+                        CommonUtils.hex(signature),
+                        CommonUtils.hex(messageHash),
+                        consumer,
+                        e);
+            }
+        });
     }
 
     /**
@@ -352,9 +350,5 @@ public class TssBaseServiceImpl implements TssBaseService {
             }
         }
         return false;
-    }
-
-    public TssKeyMaterialAccessor privateKeysAccessor() {
-        return keyMaterialAccessor;
     }
 }

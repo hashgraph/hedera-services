@@ -21,7 +21,6 @@ import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
@@ -76,11 +75,6 @@ public class TssKeyMaterialAccessor {
         this.activeRosterPublicShares = tssLibrary.computePublicShares(activeParticipantDirectory, validTssMessages);
     }
 
-    public TssParticipantDirectory candidateRosterParticipantDirectory(
-            @NonNull final Roster candidateRoster, final long maxSharesPerNode, final int selfId) {
-        return computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
-    }
-
     @NonNull
     private List<TssPrivateShare> getTssPrivateShares(
             @NonNull final TssParticipantDirectory activeRosterParticipantDirectory,
@@ -126,6 +120,7 @@ public class TssKeyMaterialAccessor {
      * Returns the active roster hash.
      * @return the active roster hash
      */
+    // TODO: Delete this
     public Bytes activeRosterHash() {
         return requireNonNull(activeRosterHash);
     }

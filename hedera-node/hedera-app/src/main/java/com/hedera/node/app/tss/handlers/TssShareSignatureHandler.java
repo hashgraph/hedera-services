@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss.handlers;
 
+import static com.hedera.node.app.tss.handlers.TssUtils.getThresholdForTssMessages;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -41,8 +42,6 @@ import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -56,7 +55,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
     private final TssLibrary tssLibrary;
     private final TssKeyMaterialAccessor rosterKeyMaterialAccessor;
     private final InstantSource instantSource;
-    private final SortedSet<SignatureRequest> requests = new TreeSet<>();
+    private final Map<Bytes, Instant> requests = new ConcurrentHashMap<>();
     private final Map<Bytes, Map<Bytes, Set<TssShareSignature>>> signatures = new ConcurrentHashMap<>();
     private Instant lastPurgeTime = Instant.EPOCH;
     private TssBaseServiceImpl tssBaseService;
@@ -106,10 +105,9 @@ public class TssShareSignatureHandler implements TransactionHandler {
         // Purge any expired signature requests, at most once per second
         final var now = instantSource.instant();
         if (now.getEpochSecond() > lastPurgeTime.getEpochSecond()) {
-            synchronized (requests) {
-                requests.removeIf(req -> req.timestamp().isBefore(now.minusSeconds(60)));
-            }
             lastPurgeTime = now;
+            Instant threshold = now.minusSeconds(60);
+            requests.entrySet().removeIf(entry -> threshold.isAfter(entry.getValue()));
         }
     }
 
@@ -129,6 +127,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
                     .computeIfAbsent(messageHash, k -> new ConcurrentHashMap<>())
                     .computeIfAbsent(rosterHash, k -> ConcurrentHashMap.newKeySet())
                     .add(tssShareSignature);
+            requests.computeIfAbsent(messageHash, k -> instantSource.instant());
         }
     }
 
@@ -139,7 +138,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
                 rosterKeyMaterialAccessor.activeRosterParticipantDirectory().getSharesById().values().stream()
                         .mapToLong(List::size)
                         .sum();
-        return getAllSignatures.size() >= (totalShares + 2) / 2;
+        return getAllSignatures.size() >= getThresholdForTssMessages(totalShares);
     }
 
     @Override
@@ -158,6 +157,4 @@ public class TssShareSignatureHandler implements TransactionHandler {
             return timestamp.compareTo(o.timestamp());
         }
     }
-
-    private record SignatureData(Bytes rosterHash, TssShareSignature signatures) {}
 }

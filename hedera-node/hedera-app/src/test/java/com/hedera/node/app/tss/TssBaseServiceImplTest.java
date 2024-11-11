@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
@@ -72,8 +73,8 @@ class TssBaseServiceImplTest {
     void setUp() {
         given(appContext.gossip()).willReturn(gossip);
         given(appContext.instantSource()).willReturn(InstantSource.system());
-        given(appContext.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
-        given(appContext.selfIdSupplier()).willReturn(() -> 3L);
+        given(appContext.configSupplier()).willReturn(() -> HederaTestConfigBuilder.createConfig());
+        given(appContext.selfNodeAccountIdSupplier()).willReturn(() -> asAccount(3L));
         subject = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),

@@ -22,7 +22,6 @@ import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
-import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -43,7 +42,6 @@ import javax.inject.Singleton;
 @Singleton
 public class TssMessageHandler implements TransactionHandler {
     private final TssSubmissions submissionManager;
-    private final AppContext.Gossip gossip;
     private final TssCryptographyManager tssCryptographyManager;
     private final TssMetrics tssMetrics;
     private final TssKeyMaterialAccessor keyMaterialAccessor;
@@ -51,12 +49,10 @@ public class TssMessageHandler implements TransactionHandler {
     @Inject
     public TssMessageHandler(
             @NonNull final TssSubmissions submissionManager,
-            @NonNull final AppContext.Gossip gossip,
             @NonNull final TssCryptographyManager tssCryptographyManager,
             @NonNull final TssMetrics metrics,
             @NonNull final TssKeyMaterialAccessor keyMaterialAccessor) {
         this.submissionManager = requireNonNull(submissionManager);
-        this.gossip = requireNonNull(gossip);
         this.tssCryptographyManager = requireNonNull(tssCryptographyManager);
         this.tssMetrics = requireNonNull(metrics);
         this.keyMaterialAccessor = requireNonNull(keyMaterialAccessor);

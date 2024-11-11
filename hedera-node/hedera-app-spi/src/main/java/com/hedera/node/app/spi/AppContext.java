@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
@@ -24,7 +25,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
-import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  * Gives context to {@link Service} implementations on how the application workflows will do
@@ -95,11 +96,11 @@ public interface AppContext {
      * The active configuration of the application.
      * @return the configuration
      */
-    Configuration configuration();
+    Supplier<Configuration> configSupplier();
 
     /**
      * The supplier of the node's id.
      * @return the supplier
      */
-    LongSupplier selfIdSupplier();
+    Supplier<AccountID> selfNodeAccountIdSupplier();
 }

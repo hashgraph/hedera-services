@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.workflows.standalone;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -48,7 +50,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  */
 public enum TransactionExecutors {
     TRANSACTION_EXECUTORS;
-    public static final long DEFAULT_NODE_ACCOUNT_ID = 3L;
+    public static final AccountID DEFAULT_NODE_ACCOUNT_ID = asAccount(3L);
 
     /**
      * A strategy to bind and retrieve {@link OperationTracer} scoped to a thread.
@@ -96,7 +98,7 @@ public enum TransactionExecutors {
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP,
-                bootstrapConfigProvider.getConfiguration(),
+                bootstrapConfigProvider::getConfiguration,
                 () -> DEFAULT_NODE_ACCOUNT_ID);
         final var tssBaseService = new TssBaseServiceImpl(
                 appContext,
