@@ -32,7 +32,10 @@ import static com.swirlds.metrics.api.FloatFormats.FORMAT_11_0;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -86,15 +89,13 @@ import com.swirlds.platform.Utilities;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.*;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.platform.util.NoOpMerkleStateLifecycles;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -245,6 +246,19 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     private QuorumTriggeredAction<ControlAction> controlQuorum;
 
     private long transactionsIgnoredByExpectedMap = 0;
+
+    static {
+        try {
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(
+                            PlatformTestingToolState.class,
+                            () -> new PlatformTestingToolState(
+                                    NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
+                                    version -> new BasicSoftwareVersion(version.major()))));
+        } catch (ConstructableRegistryException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public PlatformTestingToolState(
             @NonNull final MerkleStateLifecycles lifecycles,

@@ -840,7 +840,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         final MerkleStateRoot state = new PlatformTestingToolState(
                 NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
-        logger.info(LOGM_STARTUP, "Initializing platform state...");
+        //        logger.info(LOGM_STARTUP, "Initializing platform state...");
         NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         return state;
     }
