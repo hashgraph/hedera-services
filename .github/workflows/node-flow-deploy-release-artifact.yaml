@@ -214,9 +214,6 @@ jobs:
           git push --delete origin v${{ needs.prepare-tag-release.outputs.version }} || true
           git tag --delete v${{ needs.prepare-tag-release.outputs.version }} || true
           rsync -a --delete ../hapi/hedera-protobufs/services/ services/
-          rsync -a --delete ../hapi/hedera-protobufs/platform/ platform/
-          rsync -a --delete ../hapi/hedera-protobufs/streams/ streams/
-          rsync -a --delete ../hapi/hedera-protobufs/block/ block/
 
       - name: Import GPG key for commit signoff
         id: gpg_import
