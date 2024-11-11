@@ -36,11 +36,11 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.lifecycle.MigrationContext;
-import com.swirlds.state.lifecycle.Schema;
-import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
@@ -73,7 +73,7 @@ public class V056AddressBookSchema extends Schema {
             return;
         }
 
-        final var networkInfo = ctx.genesisNetworkInfo();
+        final NetworkInfo networkInfo = ctx.genesisNetworkInfo();
         if (networkInfo == null) {
             throw new IllegalStateException("Genesis network info is not found");
         }
