@@ -62,7 +62,6 @@ public class TssKeyMaterialAccessor {
      */
     public void generateKeyMaterialForActiveRoster(
             @NonNull final State state, @NonNull final Configuration configuration, final long selfId) {
-        reset();
         final var storeFactory = new ReadableStoreFactory(state);
         final var tssStore = storeFactory.getStore(ReadableTssStore.class);
         final var rosterStore = storeFactory.getStore(ReadableRosterStore.class);
@@ -88,21 +87,6 @@ public class TssKeyMaterialAccessor {
         final var validTssMessages = getTssMessages(validTssOps);
         return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
     }
-
-    /**
-     * Resets the key material.
-     */
-    private void reset() {
-        if (activeRosterShares != null) {
-            activeRosterShares.clear();
-        }
-        if (activeRosterPublicShares != null) {
-            activeRosterPublicShares.clear();
-        }
-        activeRosterHash = Bytes.EMPTY;
-        activeParticipantDirectory = null;
-    }
-
     /**
      * Returns the active roster public shares.
      * @return the active roster public shares

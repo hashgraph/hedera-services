@@ -40,6 +40,7 @@ import java.util.function.Consumer;
  */
 public interface TssBaseService extends Service {
     String NAME = "TssBaseService";
+
     /**
      * The status of the TSS service relative to a given roster and ledger id.
      */
@@ -63,8 +64,8 @@ public interface TssBaseService extends Service {
     /**
      * Returns the status of the TSS service relative to the given roster, ledger id, and given TSS base state.
      *
-     * @param roster the candidate roster
-     * @param ledgerId the expected ledger id
+     * @param roster       the candidate roster
+     * @param ledgerId     the expected ledger id
      * @param tssBaseStore the store to read the TSS base state from
      * @return the status of the TSS service
      */
@@ -72,8 +73,9 @@ public interface TssBaseService extends Service {
 
     /**
      * Bootstraps the TSS service for the given roster in the given context.
-     * @param roster the network genesis roster
-     * @param context the TSS context to use for bootstrapping
+     *
+     * @param roster           the network genesis roster
+     * @param context          the TSS context to use for bootstrapping
      * @param ledgerIdConsumer the consumer of the ledger id, to receive the ledger id as soon as it is available
      */
     void bootstrapLedgerId(
@@ -82,7 +84,7 @@ public interface TssBaseService extends Service {
     /**
      * Starts the process of keying a candidate roster with TSS key material.
      *
-     * @param roster the candidate roster to key
+     * @param roster  the candidate roster to key
      * @param context the TSS context
      */
     void setCandidateRoster(@NonNull Roster roster, @NonNull HandleContext context);
@@ -91,7 +93,7 @@ public interface TssBaseService extends Service {
      * Requests a ledger signature on a message hash.  The ledger signature is computed asynchronously and returned
      * to all consumers that have been registered through {@link #registerLedgerSignatureConsumer}.
      *
-     * @param messageHash The hash of the message to be signed by the ledger.
+     * @param messageHash           The hash of the message to be signed by the ledger.
      * @param lastUsedConsensusTime The last used consensus time in the round.
      */
     void requestLedgerSignature(byte[] messageHash, final Instant lastUsedConsensusTime);
@@ -112,6 +114,7 @@ public interface TssBaseService extends Service {
 
     /**
      * Returns the {@link TssHandlers} for this service.
+     *
      * @return the handlers
      */
     TssHandlers tssHandlers();
@@ -125,7 +128,7 @@ public interface TssBaseService extends Service {
      * @param trigger         the initialization trigger
      * @param serviceMigrator the service migrator
      * @param version         the services software version
-     * @param configuration  the configuration
+     * @param configuration   the configuration
      * @return the active roster
      */
     Roster chooseRosterForNetwork(
@@ -137,10 +140,11 @@ public interface TssBaseService extends Service {
             @NonNull Roster overrideRoster);
 
     /**
-     * Regenerates the key material for the active roster.
-     * @param state the network state
+     * Regenerates the key material for the active roster. This happens each time the active roster is updated.
+     *
+     * @param state         the network state
      * @param configuration the configuration
-     * @param selfId the self id
+     * @param selfId        the self id
      */
     void regenerateKeyMaterial(
             @NonNull final State state, @NonNull final Configuration configuration, final long selfId);
