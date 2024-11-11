@@ -36,5 +36,5 @@ import com.swirlds.platform.state.MinimumJudgeInfo;
 @ConfigData("consensus")
 public record ConsensusConfig(
         @ConfigProperty(defaultValue = "26") int roundsNonAncient,
-        @ConfigProperty(defaultValue = "500") int roundsExpired,
+        @ConfigProperty(defaultValue = "2500") int roundsExpired,
         @ConfigProperty(defaultValue = "12") int coinFreq) {}
