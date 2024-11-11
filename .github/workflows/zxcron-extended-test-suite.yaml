@@ -270,7 +270,7 @@ jobs:
                       "type": "header",
                       "text": {
                         "type": "plain_text",
-                        "text": "CI_TEST :grey_exclamation: Hedera Services - eXtended Test Suite Error Report CI_TEST",
+                        "text": ":grey_exclamation: Hedera Services - eXtended Test Suite Error Report",
                         "emoji": true
                       }
                     },
