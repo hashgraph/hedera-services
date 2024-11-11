@@ -260,6 +260,21 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
+    public static Function<HapiSpec, Function<Long, Optional<String>>> lessThan(final long expected) {
+        return spec -> actual -> {
+            if (actual == null) {
+                return Optional.of(
+                        String.format("Expected non-null numeric value less than <%d>, was <null>!", expected));
+            }
+
+            final var isLessThanExpected = actual < expected;
+
+            final var msg =
+                    isLessThanExpected ? null : String.format("Expected <%d> to be less than <%d>!", actual, expected);
+            return Optional.ofNullable(msg);
+        };
+    }
+
     public AccountInfoAsserts balance(Function<HapiSpec, Function<Long, Optional<String>>> dynamicCondition) {
         registerProvider((spec, o) -> {
             Function<Long, Optional<String>> expectation = dynamicCondition.apply(spec);

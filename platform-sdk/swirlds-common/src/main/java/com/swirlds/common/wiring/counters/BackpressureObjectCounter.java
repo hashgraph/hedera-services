@@ -16,6 +16,8 @@
 
 package com.swirlds.common.wiring.counters;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -39,10 +41,9 @@ public class BackpressureObjectCounter extends ObjectCounter {
     private final long capacity;
 
     /**
-     * When back pressure needs to be applied due to lack of capacity, this object is used to efficiently sleep on the
-     * fork join pool.
+     * The amount of time to sleep while waiting for capacity to become available, or 0 to not sleep.
      */
-    private final ManagedBlocker onRampBlocker;
+    private final long sleepNanos;
 
     /**
      * When waiting for the count to reach zero, this object is used to efficiently sleep on the fork join pool.
@@ -65,10 +66,8 @@ public class BackpressureObjectCounter extends ObjectCounter {
 
         this.name = Objects.requireNonNull(name);
         this.capacity = capacity;
+        this.sleepNanos = sleepDuration.toNanos();
 
-        final long sleepNanos = sleepDuration.toNanos();
-
-        onRampBlocker = new BackpressureBlocker(count, capacity, sleepNanos);
         waitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos);
     }
 
@@ -76,15 +75,9 @@ public class BackpressureObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public void onRamp() {
-        final long resultingCount = count.incrementAndGet();
-        if (resultingCount <= capacity) {
-            // We didn't violate capacity by incrementing the count, so we're done.
+    public void onRamp(final long delta) {
+        if (attemptOnRamp(delta)) {
             return;
-        } else {
-            // We may have violated capacity restrictions by incrementing the count.
-            // Decrement count and take the slow pathway.
-            count.decrementAndGet();
         }
 
         // Slow case. Capacity wasn't reserved, so we need to block.
@@ -107,7 +100,32 @@ public class BackpressureObjectCounter extends ObjectCounter {
                 // CPUs, blocking (e.g. Thread.sleep()) on a fork join pool may monopolize an entire CPU core.
                 // The managedBlock() pattern allows us to block while yielding the physical CPU core to other
                 // tasks.
-                ForkJoinPool.managedBlock(onRampBlocker);
+                ForkJoinPool.managedBlock(new ManagedBlocker() {
+
+                    @Override
+                    public boolean block() throws InterruptedException {
+                        if (sleepNanos > 0) {
+                            try {
+                                NANOSECONDS.sleep(sleepNanos);
+                            } catch (final InterruptedException e) {
+                                // Don't throw an interrupted exception, but allow the thread to maintain its
+                                // interrupted status.
+                                Thread.currentThread().interrupt();
+                            }
+                        }
+
+                        // Although we could technically check the count here and stop the back pressure if the count is
+                        // below the threshold, it's simpler not to. Immediately after this method is called,
+                        // isReleasable() will be called, which will do the checking for us. Easier to just let that
+                        // method do the work, and have this method only be responsible for sleeping.
+                        return false;
+                    }
+
+                    @Override
+                    public boolean isReleasable() {
+                        return attemptOnRamp(delta);
+                    }
+                });
                 return;
             } catch (final InterruptedException ex) {
                 // This should be impossible.
@@ -124,15 +142,15 @@ public class BackpressureObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public boolean attemptOnRamp() {
-        final long resultingCount = count.incrementAndGet();
+    public boolean attemptOnRamp(final long delta) {
+        final long resultingCount = count.addAndGet(delta);
         if (resultingCount <= capacity) {
             // We didn't violate capacity by incrementing the count, so we're done.
             return true;
         } else {
             // We may have violated capacity restrictions by incrementing the count.
             // Decrement count and return failure.
-            count.decrementAndGet();
+            count.addAndGet(-delta);
             return false;
         }
     }
@@ -141,16 +159,16 @@ public class BackpressureObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public void forceOnRamp() {
-        count.incrementAndGet();
+    public void forceOnRamp(final long delta) {
+        count.addAndGet(delta);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void offRamp() {
-        count.decrementAndGet();
+    public void offRamp(final long delta) {
+        count.addAndGet(-delta);
     }
 
     /**

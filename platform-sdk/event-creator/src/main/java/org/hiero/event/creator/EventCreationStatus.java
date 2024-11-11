@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.creation;
+package org.hiero.event.creator;
 
 /**
  * Describes various status that the event creator may be in.
