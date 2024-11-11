@@ -29,7 +29,7 @@ import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.TssKeyMaterialAccessor;
+import com.hedera.node.app.tss.TssKeysAccessor;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.FakeFieldElement;
@@ -53,7 +53,7 @@ public class TssShareSignatureHandlerTest {
     private TssLibrary tssLibrary;
 
     @Mock
-    private TssKeyMaterialAccessor rosterKeyMaterialAccessor;
+    private TssKeysAccessor rosterKeyMaterialAccessor;
 
     @Mock
     private InstantSource instantSource;

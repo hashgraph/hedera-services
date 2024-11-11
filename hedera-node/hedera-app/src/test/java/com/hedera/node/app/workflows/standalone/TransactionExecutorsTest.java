@@ -17,10 +17,10 @@
 package com.hedera.node.app.workflows.standalone;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
+import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.TRANSACTION_EXECUTORS;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -283,7 +283,7 @@ public class TransactionExecutorsTest {
                                 signatureVerifier,
                                 UNAVAILABLE_GOSSIP,
                                 () -> HederaTestConfigBuilder.createConfig(),
-                                () -> asAccount(3L))),
+                                () -> DEFAULT_NODE_INFO)),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),

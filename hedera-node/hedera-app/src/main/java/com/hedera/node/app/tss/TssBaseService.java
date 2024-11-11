@@ -96,7 +96,7 @@ public interface TssBaseService extends Service {
      * @param messageHash           The hash of the message to be signed by the ledger.
      * @param lastUsedConsensusTime The last used consensus time in the round.
      */
-    void requestLedgerSignature(byte[] messageHash, final Instant lastUsedConsensusTime);
+    void requestLedgerSignature(byte[] messageHash, Instant lastUsedConsensusTime);
 
     /**
      * Registers a consumer of the message hash and the ledger signature on the message hash.
@@ -143,9 +143,6 @@ public interface TssBaseService extends Service {
      * Regenerates the key material for the active roster. This happens each time the active roster is updated.
      *
      * @param state         the network state
-     * @param configuration the configuration
-     * @param selfId        the self id
      */
-    void regenerateKeyMaterial(
-            @NonNull final State state, @NonNull final Configuration configuration, final long selfId);
+    void regenerateKeyMaterial(@NonNull State state);
 }

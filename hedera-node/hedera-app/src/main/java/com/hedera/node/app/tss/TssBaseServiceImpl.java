@@ -86,8 +86,8 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssSubmissions tssSubmissions;
     private final Executor tssLibraryExecutor;
     private final ExecutorService signingExecutor;
-    private final TssKeyMaterialAccessor keyMaterialAccessor;
-    private final Configuration configuration;
+    private final TssKeysAccessor tssKeysAccessor;
+    private final AppContext appContext;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
@@ -100,7 +100,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
-        this.configuration = requireNonNull(appContext.configSupplier().get());
+        this.appContext = requireNonNull(appContext);
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
                         tssLibrary,
@@ -109,10 +109,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                         submissionExecutor,
                         tssLibraryExecutor,
                         metrics,
-                        appContext.configSupplier().get(),
-                        () -> appContext.selfNodeAccountIdSupplier().get(),
                         this);
-        this.keyMaterialAccessor = component.tssKeyMaterialAccessor();
+        this.tssKeysAccessor = component.tssKeysAccessor();
         this.tssMetrics = component.tssMetrics();
         this.tssHandlers = new TssHandlers(
                 component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
@@ -167,7 +165,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var activeRoster = requireNonNull(
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster());
         final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
-        final var tssPrivateShares = keyMaterialAccessor.activeRosterShares();
+        final var tssPrivateShares = tssKeysAccessor.activeRosterShares();
 
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
         // FUTURE - instead of an arbitrary counter here, use the share index from the private share
@@ -199,7 +197,11 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
                 () -> {
-                    if (configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
+                    if (appContext
+                            .configSupplier()
+                            .get()
+                            .getConfigData(TssConfig.class)
+                            .keyCandidateRoster()) {
                         submitShareSignatures(messageHash, lastUsedConsensusTime);
                     } else {
                         // This is only for testing purposes when the candidate roster is
@@ -222,8 +224,8 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     private void submitShareSignatures(final byte[] messageHash, final Instant lastUsedConsensusTime) {
-        final var tssPrivateShares = keyMaterialAccessor.activeRosterShares();
-        final var activeRoster = keyMaterialAccessor.activeRosterHash();
+        final var tssPrivateShares = tssKeysAccessor.activeRosterShares();
+        final var activeRoster = tssKeysAccessor.activeRosterHash();
         long nanosOffset = 1;
         for (final var privateShare : tssPrivateShares) {
             final var signature = tssLibrary.sign(privateShare, messageHash);
@@ -288,9 +290,11 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void regenerateKeyMaterial(
-            @NonNull final State state, @NonNull final Configuration configuration, final long selfId) {
-        keyMaterialAccessor.generateKeyMaterialForActiveRoster(state, configuration, selfId);
+    public void regenerateKeyMaterial(@NonNull final State state) {
+        tssKeysAccessor.generateKeyMaterialForActiveRoster(
+                state,
+                appContext.configSupplier().get(),
+                appContext.selfNodeInfoSupplier().get().nodeId());
     }
 
     /**

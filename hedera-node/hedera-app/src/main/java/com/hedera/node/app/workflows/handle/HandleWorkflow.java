@@ -377,10 +377,7 @@ public class HandleWorkflow {
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                     // Generate key material for the active roster once it is switched
                     // FUTURE: This should be set even for Restart and reconnect triggers
-                    tssBaseService.regenerateKeyMaterial(
-                            userTxn.stack(),
-                            userTxn.config(),
-                            userTxn.creatorInfo().nodeId());
+                    tssBaseService.regenerateKeyMaterial(userTxn.stack());
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     final var writableStoreFactory = new WritableStoreFactory(
                             userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
@@ -410,10 +407,7 @@ public class HandleWorkflow {
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
                     // Generate key material for the active roster once it is switched
-                    tssBaseService.regenerateKeyMaterial(
-                            userTxn.stack(),
-                            userTxn.config(),
-                            userTxn.creatorInfo().nodeId());
+                    tssBaseService.regenerateKeyMaterial(userTxn.stack());
                 }
 
                 final var baseBuilder = initializeBuilderInfo(

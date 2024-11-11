@@ -41,24 +41,26 @@ import javax.inject.Singleton;
  * Provides access to the key material for the threshold signature scheme (TSS) for the active roster.
  */
 @Singleton
-public class TssKeyMaterialAccessor {
+public class TssKeysAccessor {
     private final TssLibrary tssLibrary;
-
+    // FUTURE: Change all this to one record and provide access to it.
     private List<TssPrivateShare> activeRosterShares;
     private List<TssPublicShare> activeRosterPublicShares;
     private Bytes activeRosterHash;
     private TssParticipantDirectory activeParticipantDirectory;
+    private long totalShares;
 
     @Inject
-    public TssKeyMaterialAccessor(@NonNull final TssLibrary tssLibrary) {
+    public TssKeysAccessor(@NonNull final TssLibrary tssLibrary) {
         this.tssLibrary = requireNonNull(tssLibrary);
     }
 
     /**
      * Generates the key material for the active roster.
-     * @param state the state
+     *
+     * @param state         the state
      * @param configuration the configuration
-     * @param selfId the node id
+     * @param selfId        the node id
      */
     public void generateKeyMaterialForActiveRoster(
             @NonNull final State state, @NonNull final Configuration configuration, final long selfId) {
@@ -75,6 +77,9 @@ public class TssKeyMaterialAccessor {
         final var tssMessageBodies = tssStore.getTssMessageBodies(activeRosterHash);
         final var validTssMessages = getTssMessages(tssMessageBodies);
         this.activeRosterPublicShares = tssLibrary.computePublicShares(activeParticipantDirectory, validTssMessages);
+        this.totalShares = activeParticipantDirectory.getSharesById().values().stream()
+                .mapToLong(List::size)
+                .sum();
     }
 
     @NonNull
@@ -87,8 +92,10 @@ public class TssKeyMaterialAccessor {
         final var validTssMessages = getTssMessages(validTssOps);
         return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
     }
+
     /**
      * Returns the active roster public shares.
+     *
      * @return the active roster public shares
      */
     public List<TssPublicShare> activeRosterPublicShares() {
@@ -97,6 +104,7 @@ public class TssKeyMaterialAccessor {
 
     /**
      * Returns the active roster participant directory.
+     *
      * @return the active roster participant directory
      */
     public TssParticipantDirectory activeRosterParticipantDirectory() {
@@ -105,6 +113,7 @@ public class TssKeyMaterialAccessor {
 
     /**
      * Returns the active roster hash.
+     *
      * @return the active roster hash
      */
     public Bytes activeRosterHash() {
@@ -113,9 +122,14 @@ public class TssKeyMaterialAccessor {
 
     /**
      * Returns the active roster shares.
+     *
      * @return the active roster shares
      */
     public List<TssPrivateShare> activeRosterShares() {
         return requireNonNull(activeRosterShares);
+    }
+
+    public long totalShares() {
+        return totalShares;
     }
 }

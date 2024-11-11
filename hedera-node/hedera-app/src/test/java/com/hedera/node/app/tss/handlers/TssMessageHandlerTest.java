@@ -37,7 +37,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.tss.TssCryptographyManager;
 import com.hedera.node.app.tss.TssCryptographyManager.Vote;
-import com.hedera.node.app.tss.TssKeyMaterialAccessor;
+import com.hedera.node.app.tss.TssKeysAccessor;
 import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.FakeGroupElement;
@@ -109,7 +109,7 @@ class TssMessageHandlerTest {
     private TssMetrics tssMetrics;
 
     @Mock
-    private TssKeyMaterialAccessor keyMaterialAccessor;
+    private TssKeysAccessor keyMaterialAccessor;
 
     private Roster roster;
     private TssMessageHandler subject;

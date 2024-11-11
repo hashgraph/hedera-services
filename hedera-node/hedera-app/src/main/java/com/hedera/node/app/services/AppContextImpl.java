@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.services;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.function.Supplier;
@@ -30,12 +30,12 @@ import java.util.function.Supplier;
  * @param signatureVerifier The verifier of signatures.
  * @param gossip The gossip interface.
  * @param configSupplier The configuration.
- * @param selfNodeAccountIdSupplier The supplier of the self-node account id.
+ * @param selfNodeInfoSupplier The supplier of the self-node info
  */
 public record AppContextImpl(
         @NonNull InstantSource instantSource,
         @NonNull SignatureVerifier signatureVerifier,
         @NonNull Gossip gossip,
         @NonNull Supplier<Configuration> configSupplier,
-        @NonNull Supplier<AccountID> selfNodeAccountIdSupplier)
+        @NonNull Supplier<NodeInfo> selfNodeInfoSupplier)
         implements AppContext {}

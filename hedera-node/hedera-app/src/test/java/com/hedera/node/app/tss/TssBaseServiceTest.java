@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.tss;
 
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ACTIVE_ROSTER;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.CURRENT_CANDIDATE_ROSTER;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ROSTER_NODE_1;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ROSTER_NODE_2;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ROSTER_NODE_3;
+import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -82,7 +82,7 @@ public class TssBaseServiceTest {
     private NetworkInfo networkInfo;
 
     @Mock
-    private TssKeyMaterialAccessor keyMaterialAccessor;
+    private TssKeysAccessor keyMaterialAccessor;
 
     private TssBaseService subject;
 
@@ -90,7 +90,7 @@ public class TssBaseServiceTest {
     void setUp() {
         given(appContext.gossip()).willReturn(mock(AppContext.Gossip.class));
         given(appContext.instantSource()).willReturn(InstantSource.system());
-        given(appContext.selfNodeAccountIdSupplier()).willReturn(() -> asAccount(3L));
+        given(appContext.selfNodeInfoSupplier()).willReturn(() -> DEFAULT_NODE_INFO);
         given(appContext.configSupplier()).willReturn(() -> HederaTestConfigBuilder.createConfig());
 
         subject = new TssBaseServiceImpl(

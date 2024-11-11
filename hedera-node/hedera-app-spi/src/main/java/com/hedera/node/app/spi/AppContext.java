@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.spi;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.function.Supplier;
@@ -99,8 +99,8 @@ public interface AppContext {
     Supplier<Configuration> configSupplier();
 
     /**
-     * The supplier of the node's id.
+     * The supplier of the self node info.
      * @return the supplier
      */
-    Supplier<AccountID> selfNodeAccountIdSupplier();
+    Supplier<NodeInfo> selfNodeInfoSupplier();
 }

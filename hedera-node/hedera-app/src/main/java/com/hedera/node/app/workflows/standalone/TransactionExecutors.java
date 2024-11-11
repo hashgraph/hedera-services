@@ -20,9 +20,9 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
@@ -33,9 +33,11 @@ import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
@@ -50,7 +52,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  */
 public enum TransactionExecutors {
     TRANSACTION_EXECUTORS;
-    public static final AccountID DEFAULT_NODE_ACCOUNT_ID = asAccount(3L);
+    public static final NodeInfo DEFAULT_NODE_INFO = new NodeInfoImpl(0, asAccount(3L), 10, List.of(), Bytes.EMPTY);
 
     /**
      * A strategy to bind and retrieve {@link OperationTracer} scoped to a thread.
@@ -99,7 +101,7 @@ public enum TransactionExecutors {
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP,
                 bootstrapConfigProvider::getConfiguration,
-                () -> DEFAULT_NODE_ACCOUNT_ID);
+                () -> DEFAULT_NODE_INFO);
         final var tssBaseService = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),

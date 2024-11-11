@@ -27,7 +27,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.TssKeyMaterialAccessor;
+import com.hedera.node.app.tss.TssKeysAccessor;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssShareId;
 import com.hedera.node.app.tss.api.TssShareSignature;
@@ -39,7 +39,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.InstantSource;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,7 +53,7 @@ import javax.inject.Singleton;
 public class TssShareSignatureHandler implements TransactionHandler {
     private static final int PURGE_INTERVAL_SECS = 60;
     private final TssLibrary tssLibrary;
-    private final TssKeyMaterialAccessor rosterKeyMaterialAccessor;
+    private final TssKeysAccessor rosterKeyMaterialAccessor;
     private final InstantSource instantSource;
     private final Map<Bytes, Instant> requests = new ConcurrentHashMap<>();
     private final Map<Bytes, Map<Bytes, Set<TssShareSignature>>> signatures = new ConcurrentHashMap<>();
@@ -65,7 +64,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
     public TssShareSignatureHandler(
             @NonNull final TssLibrary tssLibrary,
             @NonNull final InstantSource instantSource,
-            @NonNull final TssKeyMaterialAccessor rosterKeyMaterialAccessor,
+            @NonNull final TssKeysAccessor rosterKeyMaterialAccessor,
             @NonNull final TssBaseService tssBaseService) {
         this.tssLibrary = tssLibrary;
         this.instantSource = instantSource;
@@ -83,26 +82,28 @@ public class TssShareSignatureHandler implements TransactionHandler {
         final var rosterHash = body.rosterHash();
 
         // verify if the signature is already present
-        final var isPresent = signatures.containsKey(messageHash)
-                && signatures.get(messageHash).containsKey(rosterHash)
-                && signatures.get(messageHash).get(rosterHash).stream()
+        final var tssSignaturesMap = signatures.get(messageHash);
+        if (tssSignaturesMap != null) {
+            final var tssShareSignatures = tssSignaturesMap.get(rosterHash);
+            if (tssShareSignatures != null) {
+                final var isPresent = tssShareSignatures.stream()
                         .anyMatch(sig -> sig.shareId().idElement() == shareIndex);
-
-        // For each signature not already present for this message hash, verify with
-        // tssLibrary and accumulate in map
-        if (!isPresent) {
-            validateAndAccumulateSignatures(shareSignature, messageHash, rosterHash, shareIndex);
-            // If message hash now has enough signatures to aggregate, do so and notify
-            // tssBaseService of sign the message hash with ledger signature
-            if (isThresholdMet(messageHash, rosterHash)) {
-                final var tssShareSignatures = this.signatures.get(messageHash).get(rosterHash);
-                final var ledgerSignature = tssLibrary.aggregateSignatures(
-                        tssShareSignatures.stream().toList());
-                tssBaseService.notifySignature(
-                        messageHash.toByteArray(), ledgerSignature.signature().toBytes());
+                // For each signature not already present for this message hash, verify with
+                // tssLibrary and accumulate in map
+                if (!isPresent) {
+                    validateAndAccumulateSignatures(shareSignature, messageHash, rosterHash, shareIndex);
+                    // If message hash now has enough signatures to aggregate, do so and notify
+                    // tssBaseService of sign the message hash with ledger signature
+                    if (isThresholdMet(messageHash, rosterHash)) {
+                        final var ledgerSignature = tssLibrary.aggregateSignatures(
+                                tssShareSignatures.stream().toList());
+                        tssBaseService.notifySignature(
+                                messageHash.toByteArray(),
+                                ledgerSignature.signature().toBytes());
+                    }
+                }
             }
         }
-
         // Purge any expired signature requests, at most once per second
         final var now = instantSource.instant();
         if (now.getEpochSecond() > lastPurgeTime.getEpochSecond()) {
@@ -135,10 +136,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
     private boolean isThresholdMet(final Bytes messageHash, final Bytes rosterHash) {
         final var shares = signatures.get(messageHash);
         final var getAllSignatures = shares != null ? shares.get(rosterHash) : Set.of();
-        final var totalShares =
-                rosterKeyMaterialAccessor.activeRosterParticipantDirectory().getSharesById().values().stream()
-                        .mapToLong(List::size)
-                        .sum();
+        final var totalShares = rosterKeyMaterialAccessor.totalShares();
         return getAllSignatures.size() >= getThresholdForTssMessages(totalShares);
     }
 

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.tss;
 
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
@@ -26,7 +26,6 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -68,12 +67,6 @@ class TssBaseServiceImplTest {
     @Mock
     private Metrics metrics;
 
-    @Mock
-    private State state;
-
-    @Mock
-    private TssKeyMaterialAccessor keyMaterialAccessor;
-
     private TssBaseServiceImpl subject;
 
     @BeforeEach
@@ -81,7 +74,7 @@ class TssBaseServiceImplTest {
         given(appContext.gossip()).willReturn(gossip);
         given(appContext.instantSource()).willReturn(InstantSource.system());
         given(appContext.configSupplier()).willReturn(HederaTestConfigBuilder::createConfig);
-        given(appContext.selfNodeAccountIdSupplier()).willReturn(() -> asAccount(3L));
+        given(appContext.selfNodeInfoSupplier()).willReturn(() -> DEFAULT_NODE_INFO);
         subject = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),

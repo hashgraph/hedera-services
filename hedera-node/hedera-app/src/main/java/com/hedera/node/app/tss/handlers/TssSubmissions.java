@@ -127,7 +127,7 @@ public class TssSubmissions {
         return submit(
                 b -> b.tssShareSignature(body),
                 appContext.configSupplier().get(),
-                appContext.selfNodeAccountIdSupplier().get(),
+                appContext.selfNodeInfoSupplier().get().accountId(),
                 lastUsedConsensusTime);
     }
 

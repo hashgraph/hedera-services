@@ -16,20 +16,17 @@
 
 package com.hedera.node.app.tss;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
 import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.handlers.TssVoteHandler;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.time.InstantSource;
 import java.util.concurrent.Executor;
-import java.util.function.Supplier;
 import javax.inject.Singleton;
 
 @Singleton
@@ -44,8 +41,6 @@ public interface TssBaseServiceComponent {
                 @BindsInstance Executor submissionExecutor,
                 @BindsInstance @TssLibraryExecutor Executor libraryExecutor,
                 @BindsInstance Metrics metrics,
-                @BindsInstance Configuration configuration,
-                @BindsInstance Supplier<AccountID> selfId,
                 @BindsInstance TssBaseService tssBaseService);
     }
 
@@ -59,5 +54,5 @@ public interface TssBaseServiceComponent {
 
     TssSubmissions tssSubmissions();
 
-    TssKeyMaterialAccessor tssKeyMaterialAccessor();
+    TssKeysAccessor tssKeysAccessor();
 }
