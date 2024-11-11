@@ -66,6 +66,9 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * Implements the token redirect {@code createToken()} call of the HTS system contract.
+ */
 public class ClassicCreatesCall extends AbstractCall {
     /**
      * The mono-service stipulated gas cost for a token creation (remaining fee is collected by sent value)
@@ -78,6 +81,13 @@ public class ClassicCreatesCall extends AbstractCall {
     private final VerificationStrategy verificationStrategy;
     private final AccountID spenderId;
 
+    /**
+     * @param systemContractGasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to be used
+     * @param syntheticCreate the body of synthetic create operation
+     * @param verificationStrategy the verification strategy to use
+     * @param spender the spender account id
+     */
     public ClassicCreatesCall(
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,

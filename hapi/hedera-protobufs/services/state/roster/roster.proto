@@ -66,11 +66,9 @@ message RosterEntry {
   /**
    * A consensus weight.
    * <p>
-   * Each node SHALL have a weight of zero or more in consensus
-   * calculations.<br/>
-   * The sum of the weights of all nodes in the roster SHALL form the total
-   * weight of the system, and each node's individual weight SHALL be
-   * proportional to that sum.<br/>
+   * Each node SHALL have a weight of zero or more in consensus calculations.<br/>
+   * The sum of the weights of all nodes in the roster SHALL form the total weight of the system,
+   * and each node's individual weight SHALL be proportional to that sum.<br/>
    */
   uint64 weight = 2;
 
