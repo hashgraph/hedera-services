@@ -54,6 +54,9 @@ import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -133,6 +136,7 @@ public class HandleWorkflow {
     private final StakePeriodManager stakePeriodManager;
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
+    private final AddressBookHelper addressBookHelper;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -158,7 +162,8 @@ public class HandleWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
-            @NonNull final UserTxnFactory userTxnFactory) {
+            @NonNull final UserTxnFactory userTxnFactory,
+            final AddressBookHelper addressBookHelper) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -182,6 +187,7 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.addressBookHelper = requireNonNull(addressBookHelper);
     }
 
     /**
@@ -365,13 +371,21 @@ public class HandleWorkflow {
                     final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
+                    final var writableStoreFactory = new WritableStoreFactory(
+                            userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
+                    final var nodeStore = writableStoreFactory.getStore(WritableNodeStore.class);
+                    final var writableStakingInfoStore =
+                            new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME));
+                    final var writableNetworkStakingRewardsStore = new WritableNetworkStakingRewardsStore(
+                            userTxn.stack().getWritableStates(TokenService.NAME));
                     final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
                             userTxn.tokenContextImpl(),
                             networkInfo,
                             userTxn.config(),
-                            new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME)),
-                            new WritableNetworkStakingRewardsStore(
-                                    userTxn.stack().getWritableStates(TokenService.NAME)));
+                            writableStakingInfoStore,
+                            writableNetworkStakingRewardsStore);
+                    addressBookHelper.adjustPostUpgradeNodeMetadata(networkInfo, userTxn.config(), nodeStore);
+
                     if (streamMode != RECORDS) {
                         // Only externalize this if we are streaming blocks
                         streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
@@ -379,6 +393,7 @@ public class HandleWorkflow {
                     } else {
                         // Only update this if we are relying on RecordManager state for post-upgrade processing
                         blockRecordManager.markMigrationRecordsStreamed();
+                        userTxn.stack().commitSystemStateChanges();
                     }
                     // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
                     // here we may need to switch the newly adopted candidate roster
