@@ -17,33 +17,52 @@
 package com.hedera.node.app.roster;
 
 import static com.hedera.node.app.ServicesMain.loadAddressBook;
+import static com.hedera.node.app.tss.TssCryptographyManager.isThresholdMet;
+import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static com.swirlds.platform.builder.PlatformBuildConstants.GENESIS_CONFIG_FILE_NAME;
 import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.api.TssParticipantDirectory;
+import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.swirlds.platform.roster.RosterHistory;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Function;
 
 public class RosterStartupLogic {
     private final WritableRosterStore rosterStore;
-    private final AddressBook diskAddressBook;
     private final ReadableNodeStore addressBookStore;
+    private final ReadableTssStore tssStore;
+    private final AddressBook diskAddressBook;
+    private final TssLibrary tssLibrary;
+    private final Function<Roster, TssParticipantDirectory> participantDirectoryProvider;
 
     public RosterStartupLogic(
             @NonNull final WritableRosterStore rosterStore,
             @NonNull final ReadableNodeStore addressBookStore,
-            @NonNull final AddressBook diskAddressBook) {
+            @NonNull final ReadableTssStore tssStore,
+            @NonNull final AddressBook diskAddressBook,
+            @NonNull final TssLibrary tssLibrary,
+            @NonNull final Function<Roster, TssParticipantDirectory> participantDirectoryProvider) {
         requireNonNull(rosterStore);
         requireNonNull(addressBookStore);
+        requireNonNull(tssStore);
         requireNonNull(diskAddressBook);
+        requireNonNull(tssLibrary);
+        requireNonNull(participantDirectoryProvider);
 
         this.rosterStore = rosterStore;
         this.addressBookStore = addressBookStore;
+        this.tssStore = tssStore;
         this.diskAddressBook = diskAddressBook;
+        this.tssLibrary = tssLibrary;
+        this.participantDirectoryProvider = participantDirectoryProvider;
     }
 
     /**
@@ -87,7 +106,7 @@ public class RosterStartupLogic {
         // Subsequent Software Upgrades
         // There is a candidate roster in the roster state
         // No override-config.txt file is present on disk
-        if (candidateRoster != null && !overrideConfigExists) {
+        if (candidateRoster != null && !overrideConfigExists && hasEnoughKeyMaterial(candidateRoster)) {
             return handleRegularUpgrade(candidateRoster);
         }
 
@@ -165,5 +184,13 @@ public class RosterStartupLogic {
 
         // new rosterHistory := [(candidateRoster, currentRound), (previousRoster, previousRound)]
         return new RosterHistory(candidateRoster, currentRound, previousRoster, previousRound);
+    }
+
+    private boolean hasEnoughKeyMaterial(@NonNull final Roster roster) {
+        final var rosterHash = RosterUtils.hash(roster).getBytes();
+        final var tssMessageBodies = tssStore.getTssMessageBodies(rosterHash);
+        final var tssParticipantDirectory = participantDirectoryProvider.apply(roster);
+        final var validTssOps = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
+        return isThresholdMet(validTssOps, tssParticipantDirectory);
     }
 }
