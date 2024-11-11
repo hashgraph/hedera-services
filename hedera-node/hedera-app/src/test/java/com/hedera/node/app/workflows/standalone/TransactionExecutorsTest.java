@@ -238,6 +238,7 @@ class TransactionExecutorsTest {
                 new ServicesSoftwareVersion(
                         bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
                 new ConfigProviderImpl().getConfiguration(),
+                DEFAULT_CONFIG,
                 networkInfo,
                 new NoOpMetrics());
         final var writableStates = state.getWritableStates(FileService.NAME);
