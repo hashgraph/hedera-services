@@ -586,58 +586,56 @@ public class HandleWorkflow {
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
         } else if (lastProcessTime.getEpochSecond() < userTxn.consensusNow().getEpochSecond()) {
+            // There is at least one unprocessed second since the last processing time
             final var scheduleConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
-            if (scheduleConfig.longTermEnabled()) {
-                // try to execute expired
-                final var readableStoreFactory = new ReadableStoreFactory(userTxn.stack());
-                final var writableStoreFactory = new WritableStoreFactory(
-                        userTxn.stack(), scheduleService.getServiceName(), userTxn.config(), storeMetricsService);
-                final var serviceApiFactory =
-                        new ServiceApiFactory(userTxn.stack(), userTxn.config(), storeMetricsService);
-                final var storeFactory =
-                        new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
-                final var scheduleIterator = scheduleService.iterTxnsForInterval(
-                        lastProcessTime, userTxn.consensusNow(), () -> storeFactory);
-                // todo: consensus nanos offset will be calculated more precisely in following PR,
-                //  for now just add 1 nano on each iteration.
-                var consensusNanosOffset = 1;
-                while (scheduleIterator.hasNext()) {
-                    // get schedule
-                    final var schedule = scheduleIterator.next();
-                    // update schedule consensus
-                    final var scheduleConsensus =
-                            Instant.from(userTxn.consensusNow().plusNanos(consensusNanosOffset));
-                    final var txnBody = schedule.body();
-                    final var scheduleUserTnx = userTxnFactory.createUserTxn(
-                            userTxn.state(),
-                            userTxn.event(),
-                            userTxn.creatorInfo(),
-                            scheduleConsensus,
-                            userTxn.type(),
-                            schedule.payerId(),
-                            txnBody);
-                    final var baseBuilder = initializeBuilderInfo(
-                            scheduleUserTnx.baseBuilder(),
-                            scheduleUserTnx.txnInfo(),
-                            exchangeRateManager.exchangeRates());
-                    ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
-                    final var scheduleDispatch = userTxnFactory.createDispatch(
-                            scheduleUserTnx, baseBuilder, schedule.verificationAssistant(), SCHEDULED);
-                    dispatchProcessor.processDispatch(scheduleDispatch);
-                    // add record to the record cache
-                    final var handleOutput = scheduleUserTnx
-                            .stack()
-                            .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
-                    recordCache.addRecordSource(
-                            scheduleUserTnx.creatorInfo().nodeId(),
-                            scheduleUserTnx.txnInfo().transactionID(),
-                            DueDiligenceFailure.NO,
-                            handleOutput.preferringBlockRecordSource());
 
-                    scheduleIterator.remove();
-                    consensusNanosOffset++;
-                }
+            // try to execute schedules
+            final var readableStoreFactory = new ReadableStoreFactory(userTxn.stack());
+            final var writableStoreFactory = new WritableStoreFactory(
+                    userTxn.stack(), scheduleService.getServiceName(), userTxn.config(), storeMetricsService);
+            final var serviceApiFactory = new ServiceApiFactory(userTxn.stack(), userTxn.config(), storeMetricsService);
+            final var storeFactory =
+                    new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
+            final var scheduleIterator =
+                    scheduleService.iterTxnsForInterval(lastProcessTime, userTxn.consensusNow(), () -> storeFactory);
+            // todo: consensus nanos offset will be calculated more precisely in following PR,
+            //  for now just add 1 nano on each iteration.
+            var consensusNanosOffset = 1;
+            while (scheduleIterator.hasNext()) {
+                // get schedule
+                final var schedule = scheduleIterator.next();
+                // update schedule consensus
+                final var scheduleConsensus =
+                        Instant.from(userTxn.consensusNow().plusNanos(consensusNanosOffset));
+                final var txnBody = schedule.body();
+                final var scheduleUserTnx = userTxnFactory.createUserTxn(
+                        userTxn.state(),
+                        userTxn.event(),
+                        userTxn.creatorInfo(),
+                        scheduleConsensus,
+                        userTxn.type(),
+                        schedule.payerId(),
+                        txnBody);
+                final var baseBuilder = initializeBuilderInfo(
+                        scheduleUserTnx.baseBuilder(), scheduleUserTnx.txnInfo(), exchangeRateManager.exchangeRates());
+                ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
+                final var scheduleDispatch = userTxnFactory.createDispatch(
+                        scheduleUserTnx, baseBuilder, schedule.verificationAssistant(), SCHEDULED);
+                dispatchProcessor.processDispatch(scheduleDispatch);
+                // add record to the record cache
+                final var handleOutput = scheduleUserTnx
+                        .stack()
+                        .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
+                recordCache.addRecordSource(
+                        scheduleUserTnx.creatorInfo().nodeId(),
+                        scheduleUserTnx.txnInfo().transactionID(),
+                        DueDiligenceFailure.NO,
+                        handleOutput.preferringBlockRecordSource());
+
+                scheduleIterator.remove();
+                consensusNanosOffset++;
             }
+
             return true;
         }
         return false;
