@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.tss.handlers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,7 +33,9 @@ import com.hedera.node.app.tss.TssKeyMaterialAccessor;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.FakeFieldElement;
+import com.hedera.node.app.tss.pairings.FakeGroupElement;
 import com.hedera.node.app.tss.pairings.PairingPrivateKey;
+import com.hedera.node.app.tss.pairings.PairingSignature;
 import com.hedera.node.app.tss.pairings.SignatureSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.math.BigInteger;
@@ -64,6 +69,8 @@ public class TssShareSignatureHandlerTest {
     private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
     private static final PairingPrivateKey PRIVATE_KEY =
             new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    private static final PairingSignature SIGNATURE =
+            new PairingSignature(new FakeGroupElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
 
     @BeforeEach
     void setUp() {
@@ -80,9 +87,45 @@ public class TssShareSignatureHandlerTest {
     void testPreHandleValidSignatureAndThresholdMet() throws PreCheckException {
         when(context.body()).thenReturn(mockTransactionBody());
         when(tssLibrary.verifySignature(any(), any(), any())).thenReturn(true);
+        when(tssLibrary.aggregateSignatures(anyList())).thenReturn(SIGNATURE);
 
         handler.preHandle(context);
         verify(tssBaseService).notifySignature(any(), any());
+        assertEquals(
+                1,
+                handler.getSignatures()
+                        .get(Bytes.wrap("message"))
+                        .get(Bytes.wrap("roster"))
+                        .size());
+        assertEquals(1, handler.getRequests().size());
+    }
+
+    @Test
+    void testPreHandleSignatureAlreadyPresent() throws PreCheckException {
+        when(context.body()).thenReturn(mockTransactionBody());
+        when(tssLibrary.verifySignature(any(), any(), any())).thenReturn(true);
+        when(tssLibrary.aggregateSignatures(anyList())).thenReturn(SIGNATURE);
+
+        handler.preHandle(context);
+        verify(tssBaseService).notifySignature(any(), any());
+        assertEquals(
+                1,
+                handler.getSignatures()
+                        .get(Bytes.wrap("message"))
+                        .get(Bytes.wrap("roster"))
+                        .size());
+        assertEquals(1, handler.getRequests().size());
+
+        // Signature is already present
+        handler.preHandle(context);
+        verify(tssBaseService, times(1)).notifySignature(any(), any());
+        assertEquals(
+                1,
+                handler.getSignatures()
+                        .get(Bytes.wrap("message"))
+                        .get(Bytes.wrap("roster"))
+                        .size());
+        assertEquals(1, handler.getRequests().size());
     }
 
     private TransactionBody mockTransactionBody() {

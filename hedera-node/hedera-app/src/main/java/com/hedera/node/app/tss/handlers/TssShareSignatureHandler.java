@@ -52,6 +52,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TssShareSignatureHandler implements TransactionHandler {
+    private static final int PURGE_INTERVAL_SECS = 60;
     private final TssLibrary tssLibrary;
     private final TssKeyMaterialAccessor rosterKeyMaterialAccessor;
     private final InstantSource instantSource;
@@ -91,22 +92,22 @@ public class TssShareSignatureHandler implements TransactionHandler {
         // tssLibrary and accumulate in map
         if (!isPresent) {
             validateAndAccumulateSignatures(shareSignature, messageHash, rosterHash, shareIndex);
-        }
-        // If message hash now has enough signatures to aggregate, do so and notify
-        // tssBaseService of sign the message hash with ledger signature
-        if (isThresholdMet(messageHash, rosterHash)) {
-            final var tssShareSignatures = this.signatures.get(messageHash).get(rosterHash);
-            final var ledgerSignature =
-                    tssLibrary.aggregateSignatures(tssShareSignatures.stream().toList());
-            tssBaseService.notifySignature(
-                    messageHash.toByteArray(), ledgerSignature.signature().toBytes());
+            // If message hash now has enough signatures to aggregate, do so and notify
+            // tssBaseService of sign the message hash with ledger signature
+            if (isThresholdMet(messageHash, rosterHash)) {
+                final var tssShareSignatures = this.signatures.get(messageHash).get(rosterHash);
+                final var ledgerSignature = tssLibrary.aggregateSignatures(
+                        tssShareSignatures.stream().toList());
+                tssBaseService.notifySignature(
+                        messageHash.toByteArray(), ledgerSignature.signature().toBytes());
+            }
         }
 
         // Purge any expired signature requests, at most once per second
         final var now = instantSource.instant();
         if (now.getEpochSecond() > lastPurgeTime.getEpochSecond()) {
             lastPurgeTime = now;
-            Instant threshold = now.minusSeconds(60);
+            Instant threshold = now.minusSeconds(PURGE_INTERVAL_SECS);
             requests.entrySet().removeIf(entry -> threshold.isAfter(entry.getValue()));
         }
     }
@@ -151,10 +152,15 @@ public class TssShareSignatureHandler implements TransactionHandler {
         requireNonNull(context);
     }
 
-    private record SignatureRequest(Bytes message, Instant timestamp) implements Comparable<SignatureRequest> {
-        @Override
-        public int compareTo(@NonNull final SignatureRequest o) {
-            return timestamp.compareTo(o.timestamp());
-        }
+    public Map<Bytes, Map<Bytes, Set<TssShareSignature>>> getSignatures() {
+        return signatures;
+    }
+
+    public Map<Bytes, Instant> getRequests() {
+        return requests;
+    }
+
+    public Instant getLastPurgeTime() {
+        return lastPurgeTime;
     }
 }
