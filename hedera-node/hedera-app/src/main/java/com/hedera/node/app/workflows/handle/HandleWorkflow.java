@@ -58,7 +58,6 @@ import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
-import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -587,13 +586,6 @@ public class HandleWorkflow {
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
         } else if (lastProcessTime.getEpochSecond() < userTxn.consensusNow().getEpochSecond()) {
-            // There is at least one unprocessed second since the last processing time
-            final var startSecond = lastProcessTime.getEpochSecond();
-            final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
-            final var scheduleStore = new WritableStoreFactory(
-                            userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
-                    .getStore(WritableScheduleStore.class);
-
             final var scheduleConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
             if (scheduleConfig.longTermEnabled()) {
                 // try to execute expired
@@ -606,7 +598,8 @@ public class HandleWorkflow {
                         new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
                 final var scheduleIterator = scheduleService.iterTxnsForInterval(
                         lastProcessTime, userTxn.consensusNow(), () -> storeFactory);
-                // todo
+                // todo: consensus nanos offset will be calculated more precisely in following PR,
+                //  for now just add 1 nano on each iteration.
                 var consensusNanosOffset = 1;
                 while (scheduleIterator.hasNext()) {
                     // get schedule
