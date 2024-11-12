@@ -378,8 +378,8 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         return false;
     }
 
-    public int buildersSize() {
-        return builderSink == null ? 0 : builderSink.allBuilders().size();
+    public int numPreceding() {
+        return builderSink == null ? 0 : builderSink.numPreceding();
     }
 
     /**
@@ -489,10 +489,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                 builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
                         .syncBodyIdFromRecordId();
             }
-            var consensusNow = consensusTime.plusNanos((long) i - indexOfUserRecord);
-//            if(builder.category() == SCHEDULED) {
-//                consensusNow = consensusTime.plusNanos(i);
-//            }
+            final var consensusNow = consensusTime.plusNanos((long) i - indexOfUserRecord);
             lastAssignedConsenusTime = consensusNow;
             builder.consensusTimestamp(consensusNow);
             if (i > indexOfUserRecord) {

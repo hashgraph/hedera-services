@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.hip423;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -50,8 +52,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_DELETE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
@@ -86,10 +86,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -121,6 +123,7 @@ public class ScheduleLongTermExecutionTest {
     private static final String FAILED_XFER = "failedXfer";
     private static final String WEIRDLY_POPULAR_KEY_TXN = "weirdlyPopularKeyTxn";
     private static final String PAYER_TXN = "payerTxn";
+    private static final String ADMIN_KEY = "adminKey";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -177,25 +180,11 @@ public class ScheduleLongTermExecutionTest {
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
                                     SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
 
-                            Instant triggerTime = Instant.ofEpochSecond(
-                                    triggeringTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getSeconds(),
-                                    triggeringTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getNanos());
+                            Instant triggerTime =
+                                    Instant.ofEpochSecond(getRecordSeconds(triggeringTx), getRecordNanos(triggeringTx));
 
-                            Instant triggeredTime = Instant.ofEpochSecond(
-                                    triggeredTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getSeconds(),
-                                    triggeredTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getNanos());
+                            Instant triggeredTime =
+                                    Instant.ofEpochSecond(getRecordSeconds(triggeredTx), getRecordNanos(triggeredTx));
 
                             Assertions.assertTrue(triggerTime.isBefore(triggeredTime), WRONG_CONSENSUS_TIMESTAMP);
 
@@ -286,25 +275,11 @@ public class ScheduleLongTermExecutionTest {
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
                                     SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
 
-                            Instant triggerTime = Instant.ofEpochSecond(
-                                    triggeringTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getSeconds(),
-                                    triggeringTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getNanos());
+                            Instant triggerTime =
+                                    Instant.ofEpochSecond(getRecordSeconds(triggeringTx), getRecordNanos(triggeringTx));
 
-                            Instant triggeredTime = Instant.ofEpochSecond(
-                                    triggeredTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getSeconds(),
-                                    triggeredTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getNanos());
+                            Instant triggeredTime =
+                                    Instant.ofEpochSecond(getRecordSeconds(triggeredTx), getRecordNanos(triggeredTx));
 
                             Assertions.assertTrue(triggerTime.isBefore(triggeredTime), WRONG_CONSENSUS_TIMESTAMP);
 
@@ -394,25 +369,11 @@ public class ScheduleLongTermExecutionTest {
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
                                     SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
 
-                            Instant triggerTime = Instant.ofEpochSecond(
-                                    triggeringTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getSeconds(),
-                                    triggeringTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getNanos());
+                            Instant triggerTime =
+                                    Instant.ofEpochSecond(getRecordSeconds(triggeringTx), getRecordNanos(triggeringTx));
 
-                            Instant triggeredTime = Instant.ofEpochSecond(
-                                    triggeredTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getSeconds(),
-                                    triggeredTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getNanos());
+                            Instant triggeredTime =
+                                    Instant.ofEpochSecond(getRecordSeconds(triggeredTx), getRecordNanos(triggeredTx));
 
                             Assertions.assertTrue(triggerTime.isBefore(triggeredTime), WRONG_CONSENSUS_TIMESTAMP);
 
@@ -498,25 +459,11 @@ public class ScheduleLongTermExecutionTest {
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
                                     SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
 
-                            Instant triggerTime = Instant.ofEpochSecond(
-                                    triggeringTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getSeconds(),
-                                    triggeringTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getNanos());
+                            Instant triggerTime =
+                                    Instant.ofEpochSecond(getRecordSeconds(triggeringTx), getRecordNanos(triggeringTx));
 
-                            Instant triggeredTime = Instant.ofEpochSecond(
-                                    triggeredTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getSeconds(),
-                                    triggeredTx
-                                            .getResponseRecord()
-                                            .getConsensusTimestamp()
-                                            .getNanos());
+                            Instant triggeredTime =
+                                    Instant.ofEpochSecond(getRecordSeconds(triggeredTx), getRecordNanos(triggeredTx));
 
                             Assertions.assertTrue(triggerTime.isBefore(triggeredTime), WRONG_CONSENSUS_TIMESTAMP);
 
@@ -1310,7 +1257,6 @@ public class ScheduleLongTermExecutionTest {
     //                                .payingWith(GENESIS));
     //    }
 
-
     @HapiTest
     @Order(23)
     final Stream<DynamicTest> settingTheRightNanosecondsOnConsensusTimestamp() {
@@ -1318,52 +1264,123 @@ public class ScheduleLongTermExecutionTest {
         final var receiver2 = "receiver2";
         final var receiver3 = "receiver3";
         final var receiver4 = "receiver4";
+        final var contract = "TestContract";
         return hapiTest(
                 cryptoCreate(PAYING_ACCOUNT).via("createPayerTxn"),
-                newKeyNamed(receiver1), newKeyNamed(receiver2), newKeyNamed(receiver3), newKeyNamed(receiver4),
-                scheduleCreate(VALID_SCHEDULE, cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver1, ONE_HBAR, false)))
+                newKeyNamed(receiver1),
+                newKeyNamed(receiver2),
+                newKeyNamed(receiver3),
+                newKeyNamed(receiver4),
+                newKeyNamed(ADMIN_KEY),
+                scheduleCreate(
+                                VALID_SCHEDULE,
+                                cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver1, ONE_HBAR, false)))
                         .withEntityMemo(randomUppercase(100))
                         .payingWith(PAYING_ACCOUNT)
                         .waitForExpiry()
                         .withRelativeExpiry("createPayerTxn", 4)
                         .recordingScheduledTxn()
                         .via("firstSchedule"),
-                scheduleCreate(VALID_SCHEDULE, cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver2, ONE_HBAR, false), tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver4, ONE_HBAR, false)))
+                scheduleCreate(
+                                VALID_SCHEDULE,
+                                cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver2, ONE_HBAR, false),
+                                        tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver4, ONE_HBAR, false)))
                         .withEntityMemo(randomUppercase(100))
                         .payingWith(PAYING_ACCOUNT)
                         .waitForExpiry()
                         .withRelativeExpiry("createPayerTxn", 4)
                         .recordingScheduledTxn()
                         .via("secondSchedule"),
+//                uploadInitCode(contract),
+//                tokenCreate(NON_FUNGIBLE_TOKEN).treasury(PAYING_ACCOUNT),
+//                contractCreate(
+//                        contract,
+//                        idAsHeadlongAddress(
+//                                AccountID.newBuilder().setAccountNum(2).build()),
+//                        BigInteger.ONE)
+//                        .balance(ONE_HBAR),
+//                scheduleCreate(
+//                                VALID_SCHEDULE,
+//                        contractCall(
+//                                contract,
+//                                "balanceOf",
+//                                idAsHeadlongAddress(AccountID.getDefaultInstance())))
+//                        .withEntityMemo(randomUppercase(100))
+//                        .payingWith(DEFAULT_PAYER)
+//                        .waitForExpiry()
+//                        .withRelativeExpiry("createPayerTxn", 4)
+//                        .recordingScheduledTxn()
+//                        .via("thirdSchedule"),
                 sleepFor(5000),
-                cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver3, ONE_HBAR, false)).via("trigger"),
+                cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver3, ONE_HBAR, false))
+                        .via("trigger"),
                 withOpContext((spec, opLog) -> {
                     // get all records
                     final var trigger = getTxnRecord("trigger").andAllChildRecords();
-                    final var firstSchedule = getTxnRecord("firstSchedule").scheduled().andAllChildRecords();
-                    final var secondSchedule = getTxnRecord("secondSchedule").scheduled().andAllChildRecords();
+                    final var firstSchedule =
+                            getTxnRecord("firstSchedule").scheduled().andAllChildRecords();
+                    final var secondSchedule =
+                            getTxnRecord("secondSchedule").scheduled().andAllChildRecords();
+//                    final var thirdSchedule =
+//                            getTxnRecord("thirdSchedule").scheduled().andAllChildRecords();
                     allRunFor(spec, trigger, firstSchedule, secondSchedule);
 
                     // get all nanoseconds
-                    final var triggerSeconds = trigger.getResponseRecord().getConsensusTimestamp().getSeconds();
-                    final var firstScheduleSeconds = firstSchedule.getResponseRecord().getConsensusTimestamp().getSeconds();
-                    final var secondScheduleSeconds = secondSchedule.getResponseRecord().getConsensusTimestamp().getSeconds();
+                    final var triggerSeconds = getRecordSeconds(trigger);
+                    final var firstScheduleSeconds = getRecordSeconds(firstSchedule);
+                    final var secondScheduleSeconds = getRecordSeconds(secondSchedule);
+//                    final var thirdScheduleSeconds = getRecordSeconds(thirdSchedule);
 
-                    final var triggerChildNanos = trigger.getFirstNonStakingChildRecord().getConsensusTimestamp().getNanos();
-                    final var triggerNanos = trigger.getResponseRecord().getConsensusTimestamp().getNanos();
+                    final var triggerChildNanos = getChildNanos(trigger, 0);
+                    final var triggerNanos = getRecordNanos(trigger);
 
-                    final var firstScheduleChildNanos = firstSchedule.getFirstNonStakingChildRecord().getConsensusTimestamp().getNanos();
-                    final var firstScheduleNanos = firstSchedule.getResponseRecord().getConsensusTimestamp().getNanos();
+                    final var firstScheduleChildNanos = getChildNanos(firstSchedule, 0);
+                    final var firstScheduleNanos = getRecordNanos(firstSchedule);
 
-                    final var secondScheduleChildNanos = secondSchedule.getFirstNonStakingChildRecord().getConsensusTimestamp().getNanos();
-                    final var secondScheduleSChildNanos = secondSchedule.getChildRecord(1).getConsensusTimestamp().getNanos();
-                    final var secondScheduleNanos = secondSchedule.getResponseRecord().getConsensusTimestamp().getNanos();
+                    final var secondScheduleFirstChildNanos = getChildNanos(secondSchedule, 0);
+                    final var secondScheduleSecondChildNanos = getChildNanos(secondSchedule, 1);
+                    final var secondScheduleNanos = getRecordNanos(secondSchedule);
 
-                    Assertions.assertTrue(triggerSeconds == firstScheduleSeconds && triggerSeconds == secondScheduleSeconds, WRONG_CONSENSUS_TIMESTAMP);
+//                    final var thirdScheduleNanos = getRecordNanos(thirdSchedule);
+//                    final var thirdScheduleFirstChildNanos = thirdSchedule.getFirstNonStakingChildRecord().getConsensusTimestamp().getNanos();
 
-                    // todo add assertions of child nanos
-//                    Assertions.assertTrue(, WRONG_CONSENSUS_TIMESTAMP);
-                })
-        );
+                    assertThat(triggerSeconds)
+                            .as(WRONG_CONSENSUS_TIMESTAMP)
+                            .isEqualTo(firstScheduleSeconds)
+                            .isEqualTo(secondScheduleSeconds);
+                    assertThat(triggerChildNanos).as(WRONG_CONSENSUS_TIMESTAMP).isLessThan(triggerNanos);
+                    assertThat(triggerNanos).as(WRONG_CONSENSUS_TIMESTAMP).isLessThan(firstScheduleChildNanos);
+                    assertThat(firstScheduleChildNanos)
+                            .as(WRONG_CONSENSUS_TIMESTAMP)
+                            .isLessThan(firstScheduleNanos);
+                    assertThat(firstScheduleNanos)
+                            .as(WRONG_CONSENSUS_TIMESTAMP)
+                            .isLessThan(secondScheduleFirstChildNanos);
+                    assertThat(secondScheduleFirstChildNanos)
+                            .as(WRONG_CONSENSUS_TIMESTAMP)
+                            .isLessThan(secondScheduleSecondChildNanos);
+                    assertThat(secondScheduleSecondChildNanos)
+                            .as(WRONG_CONSENSUS_TIMESTAMP)
+                            .isLessThan(secondScheduleNanos);
+//                    assertThat(secondScheduleSeconds)
+//                            .as(WRONG_CONSENSUS_TIMESTAMP)
+//                            .isLessThan(thirdScheduleNanos);
+//                    assertThat(thirdScheduleNanos)
+//                            .as(WRONG_CONSENSUS_TIMESTAMP)
+//                            .isLessThan(thirdScheduleFirstChildNanos);
+                }));
+    }
+
+    private static int getChildNanos(HapiGetTxnRecord scheduleRecord, int childIndex) {
+        return scheduleRecord.getChildRecord(childIndex).getConsensusTimestamp().getNanos();
+    }
+
+    private static long getRecordSeconds(HapiGetTxnRecord scheduleRecord) {
+        return scheduleRecord.getResponseRecord().getConsensusTimestamp().getSeconds();
+    }
+
+    private static int getRecordNanos(HapiGetTxnRecord scheduleRecord) {
+        return scheduleRecord.getResponseRecord().getConsensusTimestamp().getNanos();
     }
 }

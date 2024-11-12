@@ -74,6 +74,12 @@ public interface BuilderSink {
     int precedingCapacity();
 
     /**
+     * Returns the number of preceding builders that have been added to this sink.
+     * @return the number of preceding builders that have been added to this sink
+     */
+    int numPreceding();
+
+    /**
      * Returns the number of following builders that can be added to this sink, as controlled by both the total
      * and following builder limits.
      * @return the number of following builders that can be added to this sink

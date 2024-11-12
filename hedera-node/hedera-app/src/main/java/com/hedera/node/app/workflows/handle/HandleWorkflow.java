@@ -90,7 +90,6 @@ import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
-import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
@@ -452,7 +451,7 @@ public class HandleWorkflow {
                     : DueDiligenceFailure.NO;
             recordCache.addRecordSource(
                     userTxn.creatorInfo().nodeId(),
-                    userTxn.txnInfo().transactionID(),
+                    requireNonNull(userTxn.txnInfo().transactionID()),
                     dueDiligenceFailure,
                     handleOutput.preferringBlockRecordSource());
             return handleOutput;
@@ -503,7 +502,7 @@ public class HandleWorkflow {
 
         recordCache.addRecordSource(
                 userTxn.creatorInfo().nodeId(),
-                userTxn.txnInfo().transactionID(),
+                requireNonNull(userTxn.txnInfo().transactionID()),
                 DueDiligenceFailure.NO,
                 requireNonNull(cacheableRecordSource));
         return new HandleOutput(blockRecordSource, recordSource, null);
@@ -601,25 +600,26 @@ public class HandleWorkflow {
         // If we have never processed an interval, treat this time as the last processed time
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
-        } else if (lastProcessTime.getEpochSecond() < userTxn.consensusNow().getEpochSecond()) {
-            // There is at least one unprocessed second since the last processing time
-            final var readableStoreFactory = new ReadableStoreFactory(userTxn.stack());
-            final var writableStoreFactory = new WritableStoreFactory(
-                    userTxn.stack(), scheduleService.getServiceName(), userTxn.config(), storeMetricsService);
-            final var serviceApiFactory = new ServiceApiFactory(userTxn.stack(), userTxn.config(), storeMetricsService);
-            final var storeFactory =
-                    new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
+        }
+
+        // Check if there are unprocessed intervals since the last processing time
+        if (lastProcessTime.getEpochSecond() < userTxn.consensusNow().getEpochSecond()) {
+            final var storeFactory = getStoreFactory(userTxn);
             final var scheduleIterator =
                     scheduleService.iterTxnsForInterval(lastProcessTime, userTxn.consensusNow(), () -> storeFactory);
 
             final var consensusConfig = configProvider.getConfiguration().getConfigData(ConsensusConfig.class);
             final var maxChildTransactions = consensusConfig.handleMaxFollowingRecords();
+
             // reserve first timestamp slots for userTxn child transactions
             var lastAssignedConsensusTime = userTxn.consensusNow().plusNanos(maxChildTransactions);
+
             while (scheduleIterator.hasNext()) {
-                // get schedule
+                // Get the next schedule
                 final var schedule = scheduleIterator.next();
                 final var txnBody = schedule.body();
+
+                // Create new user transaction for the schedule
                 final var scheduleUserTnx = userTxnFactory.createUserTxn(
                         userTxn.state(),
                         userTxn.event(),
@@ -628,31 +628,40 @@ public class HandleWorkflow {
                         userTxn.type(),
                         schedule.payerId(),
                         txnBody);
+
+                // Initialize builder for scheduled transaction
                 final var baseBuilder = initializeBuilderInfo(
                         scheduleUserTnx.baseBuilder(), scheduleUserTnx.txnInfo(), exchangeRateManager.exchangeRates());
                 ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
+
+                // Dispatch the scheduled transaction
                 final var scheduleDispatch = userTxnFactory.createDispatch(
                         scheduleUserTnx, baseBuilder, schedule.verificationAssistant(), SCHEDULED);
                 dispatchProcessor.processDispatch(scheduleDispatch);
 
-                // offset the starting consensus with the number of preceding transactions in order to get
-                // todo try to obtain the number of preceding records from the stack
-                // scheduleUserTnx.stack().preceidingBuildersSize();
-                final var consensusNanosOffset = 1 + 1;
+                // Calculate the new consensus time offset based on preceding transactions
+                final var numberOfPrecedingTransactions =
+                        scheduleUserTnx.stack().numPreceding();
+                final var consensusNanosOffset = numberOfPrecedingTransactions + 1;
+
+                // Generate handle output for the scheduled transaction
                 final var handleOutput = scheduleUserTnx
                         .stack()
-                        .buildHandleOutput(scheduleUserTnx.consensusNow().plusNanos(consensusNanosOffset), exchangeRateManager.exchangeRates());
+                        .buildHandleOutput(
+                                scheduleUserTnx.consensusNow().plusNanos(consensusNanosOffset),
+                                exchangeRateManager.exchangeRates());
 
-                // update last Assigned consensus time
+                // Update the last assigned consensus time
                 lastAssignedConsensusTime = handleOutput.lastAssignedConsensusTime();
 
-                // add record to the record cache
+                // Add the record source to the record cache
                 recordCache.addRecordSource(
                         scheduleUserTnx.creatorInfo().nodeId(),
-                        scheduleUserTnx.txnInfo().transactionID(),
+                        requireNonNull(scheduleUserTnx.txnInfo().transactionID()),
                         DueDiligenceFailure.NO,
                         handleOutput.preferringBlockRecordSource());
 
+                // Mark the schedule as deleted
                 scheduleIterator.remove();
             }
             // this will commit the purge of the schedules
@@ -660,6 +669,14 @@ public class HandleWorkflow {
             return true;
         }
         return false;
+    }
+
+    private StoreFactoryImpl getStoreFactory(@NonNull UserTxn userTxn) {
+        final var readableStoreFactory = new ReadableStoreFactory(userTxn.stack());
+        final var writableStoreFactory = new WritableStoreFactory(
+                userTxn.stack(), scheduleService.getServiceName(), userTxn.config(), storeMetricsService);
+        final var serviceApiFactory = new ServiceApiFactory(userTxn.stack(), userTxn.config(), storeMetricsService);
+        return new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
     }
 
     /**
