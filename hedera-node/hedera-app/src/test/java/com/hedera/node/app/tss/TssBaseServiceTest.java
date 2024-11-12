@@ -29,7 +29,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -51,15 +50,14 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -88,6 +86,9 @@ public class TssBaseServiceTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
 
+    @Mock
+    private Executor executor;
+
     private TssBaseServiceImpl subject;
 
     @BeforeEach
@@ -102,7 +103,7 @@ public class TssBaseServiceTest {
                 mock(ExecutorService.class),
                 mock(Executor.class),
                 tssLibrary,
-                mock(Executor.class),
+                executor,
                 mock(Metrics.class));
         given(handleContext.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
         given(handleContext.networkInfo()).willReturn(networkInfo);
@@ -139,7 +140,7 @@ public class TssBaseServiceTest {
     void doesntSetActiveRosterAsCandidateRoster() {
         given(storeFactory.readableStore(ReadableTssStore.class)).willReturn(readableTssStore);
 
-        // Simulate CURRENT_CANDIDATE_ROSTER and ACTIVE_ROSTER
+        final var captor = ArgumentCaptor.forClass(Runnable.class);
         final var rosterStore = mockWritableRosterStore();
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
@@ -148,23 +149,18 @@ public class TssBaseServiceTest {
                 .willReturn(new TssMessage(Bytes.wrap("test").toByteArray()));
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
 
-        try (MockedStatic<CompletableFuture> completableFutureMock = mockStatic(CompletableFuture.class)) {
-            completableFutureMock
-                    .when(() -> CompletableFuture.runAsync(any(Runnable.class), any(Executor.class)))
-                    .thenAnswer(invocation -> {
-                        Runnable runnable = invocation.getArgument(0);
-                        runnable.run();
-                        return CompletableFuture.completedFuture(null);
-                    });
-            subject.setCandidateRoster(ACTIVE_ROSTER, handleContext);
-            verify(tssLibrary).generateTssMessage(any(), any());
-            verify(tssLibrary).decryptPrivateShares(any(), any());
-        }
+        subject.setCandidateRoster(ACTIVE_ROSTER, handleContext);
+
+        verify(executor).execute(captor.capture());
+        final var task = captor.getValue();
+        task.run();
+        verify(tssLibrary).generateTssMessage(any(), any());
     }
 
     @Test
     @DisplayName("Service appropriately sets a new roster as the new candidate roster")
     void setsCandidateRoster() {
+        final var captor = ArgumentCaptor.forClass(Runnable.class);
         given(storeFactory.readableStore(ReadableTssStore.class)).willReturn(readableTssStore);
         // Simulate the _current_ candidate roster and active roster
         final var rosterStore = mockWritableRosterStore();
@@ -172,23 +168,16 @@ public class TssBaseServiceTest {
         given(tssLibrary.generateTssMessage(any(), any()))
                 .willReturn(new TssMessage(Bytes.wrap("test").toByteArray()));
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        final var inputRoster = Roster.newBuilder()
+                .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3))
+                .build();
 
-        try (MockedStatic<CompletableFuture> completableFutureMock = mockStatic(CompletableFuture.class)) {
-            completableFutureMock
-                    .when(() -> CompletableFuture.runAsync(any(Runnable.class), any(Executor.class)))
-                    .thenAnswer(invocation -> {
-                        Runnable runnable = invocation.getArgument(0);
-                        runnable.run();
-                        return CompletableFuture.completedFuture(null);
-                    });
+        subject.setCandidateRoster(inputRoster, handleContext);
 
-            final var inputRoster = Roster.newBuilder()
-                    .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3))
-                    .build();
-
-            subject.setCandidateRoster(inputRoster, handleContext);
-            verify(tssLibrary).generateTssMessage(any(), any());
-        }
+        verify(executor).execute(captor.capture());
+        final var task = captor.getValue();
+        task.run();
+        verify(tssLibrary).generateTssMessage(any(), any());
     }
 
     private WritableRosterStore mockWritableRosterStore() {

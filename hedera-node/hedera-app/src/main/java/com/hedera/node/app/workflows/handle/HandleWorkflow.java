@@ -99,7 +99,6 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -107,7 +106,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -325,8 +323,7 @@ public class HandleWorkflow {
             type = switch (blockStreamManager.pendingWork()) {
                 case GENESIS_WORK -> GENESIS_TRANSACTION;
                 case POST_UPGRADE_WORK -> POST_UPGRADE_TRANSACTION;
-                default -> ORDINARY_TRANSACTION;
-            };
+                default -> ORDINARY_TRANSACTION;};
         }
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
         final var handleOutput = execute(userTxn);
@@ -610,7 +607,7 @@ public class HandleWorkflow {
             final var startSecond = lastProcessTime.getEpochSecond();
             final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
             final var scheduleStore = new WritableStoreFactory(
-                    userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
+                            userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
             userTxn.stack().commitSystemStateChanges();
