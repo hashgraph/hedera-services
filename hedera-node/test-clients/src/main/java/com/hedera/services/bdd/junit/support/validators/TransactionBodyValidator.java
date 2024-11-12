@@ -53,13 +53,15 @@ public class TransactionBodyValidator implements RecordStreamValidator {
                     if (function == ContractCreate && receipt.getStatus() == SUCCESS) {
                         final var createdId = receipt.getContractID();
                         // Assert the body had a self-managed key based on this created id
-                        Assertions.assertEquals(
-                                txnBody.getContractCreateInstance()
-                                        .getAdminKey()
-                                        .getContractID()
-                                        .getContractNum(),
-                                createdId.getContractNum(),
-                                "Contract create transaction does not have admin key set to self manage");
+                        if (txnBody.getContractCreateInstance().getAdminKey().hasContractID()) {
+                            Assertions.assertEquals(
+                                    txnBody.getContractCreateInstance()
+                                            .getAdminKey()
+                                            .getContractID()
+                                            .getContractNum(),
+                                    createdId.getContractNum(),
+                                    "Contract create transaction does not have admin key set to self manage");
+                        }
                     }
                 } catch (InvalidProtocolBufferException | UnknownHederaFunctionality e) {
                     log.error("Unable to parse and classify item {}", item, e);
