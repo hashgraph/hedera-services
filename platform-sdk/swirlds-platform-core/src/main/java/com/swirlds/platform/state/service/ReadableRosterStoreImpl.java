@@ -27,6 +27,7 @@ import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -58,7 +59,9 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         this.rosterMap = readableStates.get(RosterStateId.ROSTER_KEY);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Roster getCandidateRoster() {
@@ -70,7 +73,9 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         return rosterMap.get(ProtoBytes.newBuilder().value(candidateRosterHash).build());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Roster getActiveRoster() {
@@ -81,13 +86,18 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         return rosterMap.get(ProtoBytes.newBuilder().value(activeRosterHash).build());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Roster get(@NonNull final Bytes rosterHash) {
         return rosterMap.get(ProtoBytes.newBuilder().value(rosterHash).build());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Bytes getActiveRosterHash() {
