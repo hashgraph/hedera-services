@@ -53,13 +53,10 @@ module com.hedera.node.app {
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
     requires java.annotation;
-    requires jdk.jdi;
     requires org.apache.commons.lang3;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires static java.compiler;
-    requires static org.jetbrains.annotations;
-    // javax.annotation.processing.Generated
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app;
     exports com.hedera.node.app.state;
