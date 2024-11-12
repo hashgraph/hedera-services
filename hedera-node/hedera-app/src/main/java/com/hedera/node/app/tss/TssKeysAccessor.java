@@ -60,6 +60,9 @@ public class TssKeysAccessor {
      */
     public void generateKeyMaterialForActiveRoster(
             @NonNull final State state, @NonNull final Configuration configuration, final long selfId) {
+        if (tssKeys != null) {
+            return;
+        }
         final var storeFactory = new ReadableStoreFactory(state);
         final var tssStore = storeFactory.getStore(ReadableTssStore.class);
         final var rosterStore = storeFactory.getStore(ReadableRosterStore.class);
