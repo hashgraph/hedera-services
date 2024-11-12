@@ -59,7 +59,6 @@ public class ConsistencyTestingToolMain implements SwirldMain {
         }
     }
 
-
     /**
      * The default software version of this application
      */
