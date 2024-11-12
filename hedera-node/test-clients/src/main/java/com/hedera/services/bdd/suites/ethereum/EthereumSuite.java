@@ -204,11 +204,11 @@ public class EthereumSuite {
                             .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
                     allRunFor(spec, call);
                 }),
-                withOpContext((spec, opLog) -> validateSelfAdminContractKey(
-                        spec, tokenCreateContractID.get().getContractNum())),
                 // Quick assertion to verify top-level HAPI fees were still charged after aborting
                 getTxnRecord("createTokenTxn")
-                        .hasPriority(recordWith().transfers(includingDeduction("HAPI fees", RELAYER))));
+                        .hasPriority(recordWith().transfers(includingDeduction("HAPI fees", RELAYER))),
+                withOpContext((spec, opLog) -> validateSelfAdminContractKey(
+                        spec, tokenCreateContractID.get().getContractNum())));
     }
 
     @HapiTest
