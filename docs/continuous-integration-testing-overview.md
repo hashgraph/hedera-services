@@ -35,8 +35,7 @@ candidate. XTS are intended to complete within a given 3-hour window. These test
 ### Dry-Running XTS Tests
 
 There is an additional workflow: `ZXF: Extended Test Suite - Dry Run` which is available for use within the
-`hashgraph/hedera-services` repository. This workflow is encouraged to be used by developers before merging code to 
-the develop branch.
+`hashgraph/hedera-services` repository. 
 
 The XTS Dry-Run workflow runs a provided commit on any branch through the same XTS tests that would be run against the
 latest on develop every three hours. This workflow is run with a manual trigger and will execute in parallel to any
@@ -46,7 +45,7 @@ A developer can manually trigger a run using the parameters in the web UI:
 
 ```text
 Use Workflow From
-  Branch: develop
+  Branch: develop # this should always be `develop`
 The commit sha to check out
   <your current commit hash>
 The branch name, for JRS Panel output
@@ -59,3 +58,5 @@ Or manually using the github CLI:
 cd ${REPO_ROOT}/hedera-services
 gh workflow run ./.github/workflows/zxf-dry-run-extended-test-suite.yaml -f commit_sha=`git rev-parse HEAD` -f branch_name='<branch_name>'
 ```
+
+**Every developer is encouraged to run the XTS Dry-Run workflow against their branch commits prior to merging a PR to default**.
