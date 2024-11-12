@@ -49,6 +49,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -179,6 +180,12 @@ public class EthereumTransactionHandler implements TransactionHandler {
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
+        final var zeroHapiFeeEnabled =
+                feeContext.configuration().getConfigData(ContractsConfig.class).ethTransactionZeroHapiFeesEnabled();
+        return zeroHapiFeeEnabled ? Fees.FREE : getLegacyCalculateFees(feeContext);
+    }
+
+    private Fees getLegacyCalculateFees(@NonNull final FeeContext feeContext) {
         final var body = feeContext.body();
         return feeContext
                 .feeCalculatorFactory()
