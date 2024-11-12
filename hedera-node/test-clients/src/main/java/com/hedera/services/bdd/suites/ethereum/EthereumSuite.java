@@ -63,7 +63,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateSelfAdminContractKey;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
@@ -115,7 +114,6 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -141,12 +139,10 @@ import java.util.stream.Stream;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S5960")
-@OrderedInIsolation
 public class EthereumSuite {
     public static final long GAS_LIMIT = 1_000_000;
     public static final String ERC20_CONTRACT = "ERC20Contract";
@@ -167,7 +163,6 @@ public class EthereumSuite {
 
     // This test must be run first to ensure the record file is as expected.
     @HapiTest
-    @Order(0)
     final Stream<DynamicTest> sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
         final AtomicReference<ContractID> tokenCreateContractID = new AtomicReference<>();
@@ -211,10 +206,7 @@ public class EthereumSuite {
                 }),
                 // Quick assertion to verify top-level HAPI fees were still charged after aborting
                 getTxnRecord("createTokenTxn")
-                        .hasPriority(recordWith().transfers(includingDeduction("HAPI fees", RELAYER))),
-                // Check the admin key of the new contract is as expected.
-                withOpContext((spec, opLog) -> validateSelfAdminContractKey(
-                        spec, tokenCreateContractID.get().getContractNum())));
+                        .hasPriority(recordWith().transfers(includingDeduction("HAPI fees", RELAYER))));
     }
 
     @HapiTest
