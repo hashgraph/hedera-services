@@ -24,7 +24,11 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.logging.legacy.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +37,8 @@ import java.util.Objects;
 
 /** Utility class for working with states. */
 public final class StateUtils {
+
+    private static final Logger logger = LogManager.getLogger(StateUtils.class);
 
     /** Prevent instantiation */
     private StateUtils() {}
@@ -176,7 +182,9 @@ public final class StateUtils {
         // Normalize the string so things are deterministic (different JVMs might be using different
         // default internal representation for strings, and we need to normalize that)
         final var data = getNormalisedStringBytes(s);
-        return hashBytes(data);
+        long l = hashBytes(data);
+        logger.info(LogMarker.STARTUP.getMarker(), "Hashed string {} to {}", s, l);
+        return l;
     }
 
     // Will be moved to `NonCryptographicHashing` with
