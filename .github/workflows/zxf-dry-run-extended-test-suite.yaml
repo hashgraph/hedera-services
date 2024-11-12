@@ -60,7 +60,7 @@ jobs:
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
-      ref: ${{ inputs.commid_sha }} # pass the xts-candidate tag to the JRS panel for checkout
+      ref: ${{ inputs.commid_sha }}
       branch-name: ${{ inputs.branch_name }}
       base-branch-name: ${{ inputs.branch_name }}
       slack-results-channel: "regression-test"
@@ -83,7 +83,7 @@ jobs:
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       custom-job-name: "Abbrev Update Test"
-      ref: ${{ inputs.commid_sha }} # pass the xts-candidate tag to the JRS panel for checkout
+      ref: ${{ inputs.commid_sha }}
       branch-name: ${{ inputs.branch_name }}
       hedera-tests-enabled: true
       use-branch-for-slack-channel: false
