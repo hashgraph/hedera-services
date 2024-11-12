@@ -173,13 +173,12 @@ jobs:
           repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
           ref: develop # ensure we are always using the workflow definition from the develop branch
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          inputs: |
-            {
+          inputs: '{
               "ref": "${{ inputs.ref }}",
               "author": "${{ inputs.author }}",
               "msg": "${{ inputs.msg }}",
               "sha": "${{ inputs.sha }}"
-            }
+            }'
 
   update-hedera-protobufs:
     name: Update Hedera Protobufs
