@@ -30,6 +30,7 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThr
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
@@ -43,6 +44,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.constructable.NoArgsConstructor;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -136,6 +141,30 @@ public class PlatformTestingToolMain implements SwirldMain {
 
     private static final String FCM_CATEGORY = "FCM";
     private static final String VM_CATEGORY = "VM";
+
+    static {
+        try {
+            logger.info(STARTUP.getMarker(), "Registering PlatformTestingToolState with ConstructableRegistry");
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(
+                            PlatformTestingToolState.class,
+                            () -> new PlatformTestingToolState(
+                                    NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
+                                    version -> new BasicSoftwareVersion(version.major()))));
+            logger.info(
+                    STARTUP.getMarker(),
+                    "PlatformTestingToolState is registered with ConstructableRegistry: {}",
+                    ConstructableRegistry.getInstance()
+                            .getRegistry(NoArgsConstructor.class)
+                            .getConstructor(PlatformTestingToolState.CLASS_ID)
+                            .get()
+                            .getClassId());
+        } catch (ConstructableRegistryException e) {
+            logger.error(STARTUP.getMarker(), "Failed to register PlatformTestingToolState", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * save internal file logs and expected map to file while freezing;
      * for restart test we should set `saveExpectedMapAtFreeze` to be true, so that

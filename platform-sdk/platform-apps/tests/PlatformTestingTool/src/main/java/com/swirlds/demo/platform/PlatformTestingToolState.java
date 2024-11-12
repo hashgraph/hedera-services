@@ -130,7 +130,7 @@ import org.apache.logging.log4j.MarkerManager;
 @ConstructableIgnored
 public class PlatformTestingToolState extends MerkleStateRoot {
 
-    private static final long CLASS_ID = 0xc0900cfa7a24db76L;
+    static final long CLASS_ID = 0xc0900cfa7a24db76L;
     private static final Logger logger = LogManager.getLogger(PlatformTestingToolState.class);
     private static final Marker LOGM_DEMO_INFO = MarkerManager.getMarker("DEMO_INFO");
     private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
@@ -244,29 +244,6 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     private QuorumTriggeredAction<ControlAction> controlQuorum;
 
     private long transactionsIgnoredByExpectedMap = 0;
-
-    static {
-        try {
-            logger.info(STARTUP.getMarker(), "Registering PlatformTestingToolState with ConstructableRegistry");
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(
-                            PlatformTestingToolState.class,
-                            () -> new PlatformTestingToolState(
-                                    NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
-                                    version -> new BasicSoftwareVersion(version.major()))));
-            logger.info(
-                    STARTUP.getMarker(),
-                    "PlatformTestingToolState is registered with ConstructableRegistry: {}",
-                    ConstructableRegistry.getInstance()
-                            .getRegistry(NoArgsConstructor.class)
-                            .getConstructor(CLASS_ID)
-                            .get()
-                            .getClassId());
-        } catch (ConstructableRegistryException e) {
-            logger.error(STARTUP.getMarker(), "Failed to register PlatformTestingToolState", e);
-            throw new RuntimeException(e);
-        }
-    }
 
     public PlatformTestingToolState(
             @NonNull final MerkleStateLifecycles lifecycles,
