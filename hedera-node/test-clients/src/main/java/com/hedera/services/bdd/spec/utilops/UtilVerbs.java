@@ -154,6 +154,7 @@ import com.hedera.services.bdd.spec.utilops.mod.SubmitModificationsOp;
 import com.hedera.services.bdd.spec.utilops.mod.TxnModification;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
+import com.hedera.services.bdd.spec.utilops.streams.ContractSelfAdminKeyValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp;
 import com.hedera.services.bdd.spec.utilops.streams.LogValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.StreamValidationOp;
@@ -2349,5 +2350,13 @@ public class UtilVerbs {
                 / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
                 * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
                 / 100;
+    }
+
+    /**
+     * Validates that the contract created have admin key set to self-manage.
+     */
+    public static void validateSelfAdminContractKey(@NonNull final HapiSpec spec, final long newContractNum) {
+        final var op = new ContractSelfAdminKeyValidationOp(newContractNum);
+        allRunFor(spec, op);
     }
 }
