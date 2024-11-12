@@ -157,7 +157,7 @@ public final class BootstrapUtils {
      * Add classes to the constructable registry which need the configuration.
      * @param configuration configuration
      */
-    public static void setupConstructableRegistryWithConfiguration(Configuration configuration)
+    public static void setupConstructableRegistryWithConfiguration(final Configuration configuration)
             throws ConstructableRegistryException {
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(

@@ -265,7 +265,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
             if (Files.exists(indexFile) && !forceIndexRebuilding) {
                 bucketIndexToBucketLocation = preferDiskBasedIndex
                         ? new LongListDisk(indexFile, configuration)
-                        : new LongListOffHeap(indexFile, configuration);
+                        : new LongListOffHeap(indexFile);
                 loadedDataCallback = null;
             } else {
                 // create new index and setup call back to rebuild

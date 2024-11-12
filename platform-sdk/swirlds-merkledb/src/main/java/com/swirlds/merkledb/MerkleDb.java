@@ -364,7 +364,7 @@ public final class MerkleDb {
         final int tableId = getNextTableId();
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
         final MerkleDbDataSource dataSource =
-                new MerkleDbDataSource(this, label, tableId, tableConfig, dbCompactionEnabled, configuration);
+                new MerkleDbDataSource(this, label, tableId, tableConfig, dbCompactionEnabled);
         dataSources.set(tableId, dataSource);
         // New tables are always primary
         primaryTables.add(tableId);
@@ -455,8 +455,7 @@ public final class MerkleDb {
                 return ds;
             }
             try {
-                return new MerkleDbDataSource(
-                        this, tableName, tableId, tableConfig, dbCompactionEnabled, configuration);
+                return new MerkleDbDataSource(this, tableName, tableId, tableConfig, dbCompactionEnabled);
             } catch (final IOException z) {
                 rethrowIO.set(z);
                 return null;

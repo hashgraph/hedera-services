@@ -37,7 +37,6 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.collections.HashListByteBuffer;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
@@ -183,8 +182,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             final String tableName,
             final int tableId,
             final MerkleDbTableConfig tableConfig,
-            final boolean compactionEnabled,
-            final Configuration configuration)
+            final boolean compactionEnabled)
             throws IOException {
         this.database = database;
         this.tableName = tableName;
@@ -246,8 +244,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             pathToDiskLocationInternalNodes =
                     new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile, database.getConfiguration());
         } else if (Files.exists(dbPaths.pathToDiskLocationInternalNodesFile) && !forceIndexRebuilding) {
-            pathToDiskLocationInternalNodes =
-                    new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile, database.getConfiguration());
+            pathToDiskLocationInternalNodes = new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile);
         } else {
             pathToDiskLocationInternalNodes = new LongListOffHeap();
         }
@@ -256,8 +253,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             pathToDiskLocationLeafNodes =
                     new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile, database.getConfiguration());
         } else if (Files.exists(dbPaths.pathToDiskLocationLeafNodesFile) && !forceIndexRebuilding) {
-            pathToDiskLocationLeafNodes =
-                    new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile, database.getConfiguration());
+            pathToDiskLocationLeafNodes = new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile);
         } else {
             pathToDiskLocationLeafNodes = new LongListOffHeap(merkleDbConfig.reservedBufferLengthForLeafList());
         }
