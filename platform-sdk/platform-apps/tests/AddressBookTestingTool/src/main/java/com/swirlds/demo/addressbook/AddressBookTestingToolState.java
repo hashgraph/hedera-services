@@ -36,6 +36,7 @@ import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_AD
 import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -397,7 +398,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
-        if (equalsAsRoster(stateAddressBook, configAddressBook)) {
+        if (equalsAsRosterWithoutCert(stateAddressBook, configAddressBook)) {
             // This is a new node.
             return equalsAsRoster(platformAddressBook, configAddressBook, true)
                     // genesis state uses the config address book.
@@ -576,14 +577,31 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     }
 
     /**
-     * Compare two AddressBooks after converting them to Rosters to avoid mismatches for fields absent from the Roster.
+     * Remove certificates from a roster.
+     * @param roster an input roster
+     * @return the same roster as input but with all gossip certs removed
+     */
+    private Roster removeCerts(@NonNull final Roster roster) {
+        return roster.copyBuilder()
+                .rosterEntries(roster.rosterEntries().stream()
+                        .map(re -> re.copyBuilder()
+                                .gossipCaCertificate(Bytes.EMPTY)
+                                .build())
+                        .toList())
+                .build();
+    }
+
+    /**
+     * Compare two AddressBooks after converting them to Rosters and removing all certificates
+     * to avoid mismatches for fields absent from the Roster.
      * @param addressBook1 the first address book
      * @param addressBook2 the second address book
      * @return true if equals, false otherwise
      */
-    private boolean equalsAsRoster(@NonNull final AddressBook addressBook1, @NonNull final AddressBook addressBook2) {
-        final Roster roster1 = RosterRetriever.buildRoster(addressBook1);
-        final Roster roster2 = RosterRetriever.buildRoster(addressBook2);
+    private boolean equalsAsRosterWithoutCert(
+            @NonNull final AddressBook addressBook1, @NonNull final AddressBook addressBook2) {
+        final Roster roster1 = removeCerts(RosterRetriever.buildRoster(addressBook1));
+        final Roster roster2 = removeCerts(RosterRetriever.buildRoster(addressBook2));
         return roster1.equals(roster2);
     }
 
@@ -598,7 +616,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             @NonNull final AddressBook addressBook1,
             @NonNull final AddressBook addressBook2,
             final boolean expectedResult) {
-        final boolean pass = equalsAsRoster(addressBook1, addressBook2) == expectedResult;
+        final boolean pass = equalsAsRosterWithoutCert(addressBook1, addressBook2) == expectedResult;
         if (!pass) {
             if (expectedResult) {
                 logger.error(
