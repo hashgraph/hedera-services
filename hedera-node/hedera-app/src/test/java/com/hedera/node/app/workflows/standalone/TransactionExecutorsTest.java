@@ -20,6 +20,7 @@ import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
+import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.TRANSACTION_EXECUTORS;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -68,6 +69,7 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -276,8 +278,12 @@ public class TransactionExecutorsTest {
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(
-                                new AppContextImpl(InstantSource.system(), signatureVerifier, UNAVAILABLE_GOSSIP)),
+                        new ContractServiceImpl(new AppContextImpl(
+                                InstantSource.system(),
+                                signatureVerifier,
+                                UNAVAILABLE_GOSSIP,
+                                () -> HederaTestConfigBuilder.createConfig(),
+                                () -> DEFAULT_NODE_INFO)),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
