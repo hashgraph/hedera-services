@@ -800,6 +800,25 @@ public class ConversionUtils {
     }
 
     /**
+     * Given a {@link ContractCreateTransactionBody} and a new account number, returns a creation body
+     * that contains a self-managed admin key (contract key with the new account number).
+     *
+     * @param op the creation body
+     * @param accountNum the new account number for the about to be newly created contract
+     * @return the fully customized creation body
+     */
+    public static @NonNull ContractCreateTransactionBody selfManagedCustomizedCreation(
+            @NonNull final ContractCreateTransactionBody op, final long accountNum) {
+        requireNonNull(op);
+        final var builder = op.copyBuilder();
+        return builder.adminKey(Key.newBuilder()
+                        .contractID(
+                                ContractID.newBuilder().contractNum(accountNum).build())
+                        .build())
+                .build();
+    }
+
+    /**
      * Returns a tuple of the {@code KeyValue} struct
      * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L92">Link</a>
      * @param key the key to get the tuple for

@@ -63,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateSelfAdminContractKey;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
@@ -121,6 +122,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -163,6 +165,7 @@ public class EthereumSuite {
     @HapiTest
     final Stream<DynamicTest> sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
+        final AtomicReference<ContractID> tokenCreateContractID = new AtomicReference<>();
 
         return hapiTest(
                 newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -181,7 +184,9 @@ public class EthereumSuite {
                         .hasKnownStatusFrom(SUCCESS)
                         .via("deployTokenCreateContract"),
                 getContractInfo(TOKEN_CREATE_CONTRACT)
-                        .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))),
+                        .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb)))
+                        .exposingContractId(tokenCreateContractID::set)
+                        .has(contractWith().defaultAdminKey()),
                 withOpContext((spec, opLog) -> {
                     var call = ethereumCall(
                                     TOKEN_CREATE_CONTRACT,
@@ -199,6 +204,8 @@ public class EthereumSuite {
                             .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
                     allRunFor(spec, call);
                 }),
+                withOpContext((spec, opLog) -> validateSelfAdminContractKey(
+                        spec, tokenCreateContractID.get().getContractNum())),
                 // Quick assertion to verify top-level HAPI fees were still charged after aborting
                 getTxnRecord("createTokenTxn")
                         .hasPriority(recordWith().transfers(includingDeduction("HAPI fees", RELAYER))));
@@ -471,6 +478,7 @@ public class EthereumSuite {
                         .exposingNumTo(num -> contractID.set(asHexedSolidityAddress(0, 0, num)))
                         .gasLimit(1_000_000L)
                         .hasKnownStatus(SUCCESS),
+                getContractInfo(PAY_RECEIVABLE_CONTRACT).has(contractWith().defaultAdminKey()),
                 ethereumCall(PAY_RECEIVABLE_CONTRACT, "getBalance")
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -675,6 +683,7 @@ public class EthereumSuite {
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .gasLimit(GAS_LIMIT)
                         .via(txn),
+                getContractInfo(contract).has(contractWith().defaultAdminKey()),
                 withOpContext((spec, opLog) -> {
                     final var op = getTxnRecord(txn);
                     allRunFor(spec, op);
@@ -743,6 +752,7 @@ public class EthereumSuite {
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .gasLimit(GAS_LIMIT)
                         .via(txn),
+                getContractInfo(contract).has(contractWith().defaultAdminKey()),
                 withOpContext((spec, opLog) -> {
                     final var getBytecode = getContractBytecode(contract).saveResultTo("contractByteCode");
                     allRunFor(spec, getBytecode);

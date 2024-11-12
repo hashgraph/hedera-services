@@ -160,8 +160,7 @@ public class StreamValidationOp extends UtilOp {
         return Optional.ofNullable(blocks);
     }
 
-    private static Optional<StreamFileAccess.RecordStreamData> readMaybeRecordStreamDataFor(
-            @NonNull final HapiSpec spec) {
+    static Optional<StreamFileAccess.RecordStreamData> readMaybeRecordStreamDataFor(@NonNull final HapiSpec spec) {
         StreamFileAccess.RecordStreamData data = null;
         final var streamLocs = spec.getNetworkNodes().stream()
                 .map(node -> node.getExternalPath(RECORD_STREAMS_DIR))
