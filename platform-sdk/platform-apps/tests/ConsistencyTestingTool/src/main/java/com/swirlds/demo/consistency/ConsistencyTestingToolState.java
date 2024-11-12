@@ -181,6 +181,14 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
+    public int getMinimumSupportedVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     @NonNull
     public synchronized ConsistencyTestingToolState copy() {
         throwIfImmutable();
