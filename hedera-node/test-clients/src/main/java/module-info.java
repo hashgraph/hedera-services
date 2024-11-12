@@ -98,6 +98,7 @@ module com.hedera.node.test.clients {
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.merkledb;
     requires com.swirlds.platform.core.test.fixtures;
+    requires com.swirlds.state.impl;
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
