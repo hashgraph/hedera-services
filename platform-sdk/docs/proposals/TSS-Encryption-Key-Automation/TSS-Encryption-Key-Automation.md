@@ -55,7 +55,7 @@ roster nightly. The `TSS-Ledger-ID` capability cannot be turned on until enough 
 
 * The private `tssEncryptionKey` will be stored in the same directory as the node's private gossip signing key.
 * The public `tssEncryptionKey` will be stored in the `TssBaseService` state.
-* A new `TssEncryptionKeyTransaction` will be, gossiped, come to consensus, and handled by the `TssBaseService` to
+* A new `TssEncryptionKeyTransaction` will be gossiped, come to consensus, and handled by the `TssBaseService` to
   update the public `tssEncryptionKey` in the state.
 
 #### Alternatives Considered
