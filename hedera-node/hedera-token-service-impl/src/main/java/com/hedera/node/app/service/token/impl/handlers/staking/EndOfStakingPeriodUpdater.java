@@ -135,7 +135,7 @@ public class EndOfStakingPeriodUpdater {
         final Map<Long, StakingNodeInfo> newNodeInfos = new LinkedHashMap<>();
         final var stakingInfoStore = context.writableStore(WritableStakingInfoStore.class);
         for (final var nodeId : context.knownNodeIds().stream().sorted().toList()) {
-            // The node's staking info at the e end of the period, non-final because
+            // The node's staking info at the end of the period, non-final because
             // we iteratively update its reward sum history,
             var nodeInfo = requireNonNull(stakingInfoStore.getForModify(nodeId));
 

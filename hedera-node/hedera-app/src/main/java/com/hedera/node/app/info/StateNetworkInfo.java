@@ -22,6 +22,7 @@ import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
@@ -42,6 +43,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides information about the network, including the ledger ID, which may be
@@ -50,6 +53,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StateNetworkInfo implements NetworkInfo {
+    private static final Logger log = LogManager.getLogger(StateNetworkInfo.class);
     private final long selfId;
     private final Bytes ledgerId;
     private Roster activeRoster;
@@ -143,11 +147,22 @@ public class StateNetworkInfo implements NetworkInfo {
             // At genesis the node store is derived from the roster, hence must have info for every
             // node id; and from then on, the roster is derived from the node store, and hence the
             // node store must have every node id in the roster.
-            final var node = requireNonNull(nodeState.get(new EntityNumber(rosterEntry.nodeId())));
-            // Notice it's possible the node could be deleted here, because a DAB transaction removed
-            // it from the future address book; that doesn't mean we should stop using it in the current
-            // version of the software
-            nodeInfos.put(rosterEntry.nodeId(), fromRosterEntry(rosterEntry, node));
+            final var node = nodeState.get(new EntityNumber(rosterEntry.nodeId()));
+            if (node != null) {
+                // Notice it's possible the node could be deleted here, because a DAB transaction removed
+                // it from the future address book; that doesn't mean we should stop using it in the current
+                // version of the software
+                nodeInfos.put(rosterEntry.nodeId(), fromRosterEntry(rosterEntry, node));
+            } else {
+                nodeInfos.put(
+                        rosterEntry.nodeId(),
+                        fromRosterEntry(
+                                rosterEntry,
+                                AccountID.newBuilder()
+                                        .accountNum(rosterEntry.nodeId() + 3)
+                                        .build()));
+                log.warn("Node {} not found in node store", rosterEntry.nodeId());
+            }
         }
         return nodeInfos;
     }

@@ -961,7 +961,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
 
         final var activeRoster = tssBaseService.chooseRosterForNetwork(
-                state, trigger, serviceMigrator, version, configProvider.getConfiguration());
+                state,
+                trigger,
+                serviceMigrator,
+                version,
+                configProvider.getConfiguration(),
+                createRoster(platform.getAddressBook()));
         final var networkInfo =
                 new StateNetworkInfo(state, activeRoster, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc

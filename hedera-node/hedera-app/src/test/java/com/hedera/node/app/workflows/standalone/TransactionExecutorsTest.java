@@ -121,7 +121,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * </ol>
  */
 @ExtendWith(MockitoExtension.class)
-class TransactionExecutorsTest {
+public class TransactionExecutorsTest {
     private static final long GAS = 100_000L;
     private static final long EXPECTED_LUCKY_NUMBER = 42L;
     private static final AccountID TREASURY_ID =
@@ -374,7 +374,7 @@ class TransactionExecutorsTest {
         }
     }
 
-    private static Bytes getCertBytes(X509Certificate certificate) {
+    public static Bytes getCertBytes(X509Certificate certificate) {
         try {
             return Bytes.wrap(certificate.getEncoded());
         } catch (CertificateEncodingException e) {
