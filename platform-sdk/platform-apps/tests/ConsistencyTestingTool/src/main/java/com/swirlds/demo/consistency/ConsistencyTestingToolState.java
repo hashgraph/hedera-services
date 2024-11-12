@@ -64,21 +64,7 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
         public static final int ORIGINAL = 1;
     }
 
-    static {
-        try {
-            logger.info(STARTUP.getMarker(), "Registering ConsistencyTestingToolState with ConstructableRegistry");
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(
-                            ConsistencyTestingToolState.class,
-                            () -> new ConsistencyTestingToolState(
-                                    NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
-                                    version -> new BasicSoftwareVersion(version.major()))));
-            logger.info(STARTUP.getMarker(), "ConsistencyTestingToolState is registered with ConstructableRegistry");
-        } catch (ConstructableRegistryException e) {
-            logger.error(STARTUP.getMarker(), "Failed to register ConsistencyTestingToolState", e);
-            throw new RuntimeException(e);
-        }
-    }
+
 
     /**
      * The history of transactions that have been handled by this app.

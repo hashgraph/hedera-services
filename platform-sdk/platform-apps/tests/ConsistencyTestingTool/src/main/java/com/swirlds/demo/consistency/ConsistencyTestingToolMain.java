@@ -18,6 +18,9 @@ package com.swirlds.demo.consistency;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -39,6 +42,23 @@ import org.apache.logging.log4j.Logger;
 public class ConsistencyTestingToolMain implements SwirldMain {
 
     private static final Logger logger = LogManager.getLogger(ConsistencyTestingToolMain.class);
+
+    static {
+        try {
+            logger.info(STARTUP.getMarker(), "Registering ConsistencyTestingToolState with ConstructableRegistry");
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(
+                            ConsistencyTestingToolState.class,
+                            () -> new ConsistencyTestingToolState(
+                                    NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
+                                    version -> new BasicSoftwareVersion(version.major()))));
+            logger.info(STARTUP.getMarker(), "ConsistencyTestingToolState is registered with ConstructableRegistry");
+        } catch (ConstructableRegistryException e) {
+            logger.error(STARTUP.getMarker(), "Failed to register ConsistencyTestingToolState", e);
+            throw new RuntimeException(e);
+        }
+    }
+
 
     /**
      * The default software version of this application
