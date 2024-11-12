@@ -57,6 +57,8 @@ roster nightly. The `TSS-Ledger-ID` capability cannot be turned on until enough 
 * The public `tssEncryptionKey` will be stored in the `TssBaseService` state.
 * A new `TssEncryptionKeyTransaction` will be gossiped, come to consensus, and handled by the `TssBaseService` to
   update the public `tssEncryptionKey` in the state.
+  * This new transaction is system generated only and not user generated.  It should be rejected at the HAPI gateway
+    for user generated transactions.
 
 #### Alternatives Considered
 
@@ -171,7 +173,7 @@ message TssEncryptionKeyTransaction {
 }
 ```
 
-#### TssBaseService New State Protobuf
+#### TssBaseService New State
 
 The `TssBaseService` state will be extended with a new map of the public `tssEncryptionKey` for each node.
 
