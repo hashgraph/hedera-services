@@ -129,7 +129,7 @@ private key will always be provided, but the public key may be null. There are t
 At the end of the `TssBaseService` initialization there will be two outcomes:
 
 1. The public key in the state matches the private key and the `TssBaseService` is ready to execute normally.
-2. At the start of `TssBaseService` execution, it needs to updated the public key on the network and cannot perform
+2. At the start of `TssBaseService` execution, it needs to update the public key on the network and cannot perform
    its normal execution until the public key has been gossiped, handled, and updated in the state.
 
 #### TssBaseService Start Of Execution
