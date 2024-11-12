@@ -17,6 +17,7 @@
 package com.swirlds.demo.consistency;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.util.NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -27,7 +28,6 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.util.NoOpMerkleStateLifecycles;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SecureRandom;
@@ -43,6 +43,11 @@ public class ConsistencyTestingToolMain implements SwirldMain {
 
     private static final Logger logger = LogManager.getLogger(ConsistencyTestingToolMain.class);
 
+    /**
+     * The default software version of this application
+     */
+    private static final SoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
+
     static {
         try {
             logger.info(STARTUP.getMarker(), "Registering ConsistencyTestingToolState with ConstructableRegistry");
@@ -50,19 +55,18 @@ public class ConsistencyTestingToolMain implements SwirldMain {
                     .registerConstructable(new ClassConstructorPair(
                             ConsistencyTestingToolState.class,
                             () -> new ConsistencyTestingToolState(
-                                    NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
+                                    NO_OP_MERKLE_STATE_LIFECYCLES,
                                     version -> new BasicSoftwareVersion(version.major()))));
             logger.info(STARTUP.getMarker(), "ConsistencyTestingToolState is registered with ConstructableRegistry");
+
+            // to register platform state classes with the ConstructableRegistry
+            NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(new MerkleStateRoot(
+                    NO_OP_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(softwareVersion.getVersion())));
         } catch (ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register ConsistencyTestingToolState", e);
             throw new RuntimeException(e);
         }
     }
-
-    /**
-     * The default software version of this application
-     */
-    private static final SoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
     /**
      * The platform instance
@@ -109,9 +113,8 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     @NonNull
     public MerkleStateRoot newMerkleStateRoot() {
         final MerkleStateRoot state = new ConsistencyTestingToolState(
-                NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
-        NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+                NO_OP_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
+        NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         return state;
     }
 
