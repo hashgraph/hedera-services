@@ -141,8 +141,9 @@ public interface TssBaseService extends Service {
 
     /**
      * Regenerates the key material for the active roster. This happens each time the active roster is updated.
+     * This is only called when the tss key candidate roster feature flag is enabled.
      *
-     * @param state         the network state
+     * @param state the network state
      */
     void regenerateKeyMaterial(@NonNull State state);
 }

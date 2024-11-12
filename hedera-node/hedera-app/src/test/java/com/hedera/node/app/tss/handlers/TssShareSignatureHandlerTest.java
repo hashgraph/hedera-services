@@ -32,6 +32,9 @@ import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.TssKeysAccessor;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
+import com.hedera.node.app.tss.api.TssPrivateShare;
+import com.hedera.node.app.tss.api.TssPublicShare;
+import com.hedera.node.app.tss.api.TssShareId;
 import com.hedera.node.app.tss.pairings.FakeFieldElement;
 import com.hedera.node.app.tss.pairings.FakeGroupElement;
 import com.hedera.node.app.tss.pairings.PairingPrivateKey;
@@ -72,9 +75,9 @@ public class TssShareSignatureHandlerTest {
             new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
     private static final PairingSignature SIGNATURE =
             new PairingSignature(new FakeGroupElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
-    private static final TssKeysAccessor.TssKeys TSS_KEYS = new TssKeysAccessor.TssKeys(
-            List.of(),
-            List.of(),
+    public static final TssKeysAccessor.TssKeys TSS_KEYS = new TssKeysAccessor.TssKeys(
+            List.of(new TssPrivateShare(new TssShareId(0), PRIVATE_KEY)),
+            List.of(new TssPublicShare(new TssShareId(0), PRIVATE_KEY.createPublicKey())),
             Bytes.EMPTY,
             TssParticipantDirectory.createBuilder()
                     .withParticipant(0, 1, PRIVATE_KEY.createPublicKey())

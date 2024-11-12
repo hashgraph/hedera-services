@@ -86,6 +86,7 @@ import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
@@ -365,6 +366,8 @@ public class HandleWorkflow {
                 // Flushes the BUSY builder to the stream, no other side effects
                 userTxn.stack().commitTransaction(userTxn.baseBuilder());
             } else {
+                final var keyCandidateRoster =
+                        userTxn.config().getConfigData(TssConfig.class).keyCandidateRoster();
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     systemSetup.externalizeInitSideEffects(
@@ -377,7 +380,9 @@ public class HandleWorkflow {
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                     // Generate key material for the active roster once it is switched
                     // FUTURE: This should be set even for Restart and reconnect triggers
-                    tssBaseService.regenerateKeyMaterial(userTxn.stack());
+                    if (keyCandidateRoster) {
+                        tssBaseService.regenerateKeyMaterial(userTxn.stack());
+                    }
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     final var writableStoreFactory = new WritableStoreFactory(
                             userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
@@ -407,7 +412,9 @@ public class HandleWorkflow {
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
                     // Generate key material for the active roster once it is switched
-                    tssBaseService.regenerateKeyMaterial(userTxn.stack());
+                    if (keyCandidateRoster) {
+                        tssBaseService.regenerateKeyMaterial(userTxn.stack());
+                    }
                 }
 
                 final var baseBuilder = initializeBuilderInfo(

@@ -25,6 +25,7 @@ import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesi
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
@@ -351,5 +352,10 @@ public class TssBaseServiceImpl implements TssBaseService {
             }
         }
         return false;
+    }
+
+    @VisibleForTesting
+    public TssKeysAccessor getTssKeysAccessor() {
+        return tssKeysAccessor;
     }
 }

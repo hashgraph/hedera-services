@@ -21,6 +21,7 @@ import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
@@ -43,7 +44,6 @@ import javax.inject.Singleton;
 @Singleton
 public class TssKeysAccessor {
     private final TssLibrary tssLibrary;
-    // FUTURE: Change all this to one record and provide access to it.
     private TssKeysAccessor.TssKeys tssKeys;
 
     @Inject
@@ -98,35 +98,32 @@ public class TssKeysAccessor {
     }
 
     /**
-     * Returns the active roster public shares.
-     *
-     * @return the active roster public shares
-     */
-    public List<TssPublicShare> activeRosterPublicShares() {
-        return tssKeys.activeRosterPublicShares();
-    }
-
-    /**
-     * Returns the active roster participant directory.
-     *
-     * @return the active roster participant directory
-     */
-    public TssParticipantDirectory activeRosterParticipantDirectory() {
-        return tssKeys.activeParticipantDirectory();
-    }
-
-    /**
      * Returns the TSS key material for the active roster.
+     *
      * @return the TSS key material for the active roster
      */
     public TssKeysAccessor.TssKeys accessTssKeys() {
         return tssKeys;
     }
 
+    /**
+     * Represents the TSS key material for the active roster.
+     *
+     * @param activeRosterShares         the active roster private shares
+     * @param activeRosterPublicShares   the active roster public shares
+     * @param activeRosterHash           the active roster hash
+     * @param activeParticipantDirectory the active participant directory
+     * @param totalShares                the total number of shares
+     */
     public record TssKeys(
             @NonNull List<TssPrivateShare> activeRosterShares,
             @NonNull List<TssPublicShare> activeRosterPublicShares,
             @NonNull Bytes activeRosterHash,
             @NonNull TssParticipantDirectory activeParticipantDirectory,
             long totalShares) {}
+
+    @VisibleForTesting
+    void setTssKeys(@NonNull final TssKeys tssKeys) {
+        this.tssKeys = tssKeys;
+    }
 }
