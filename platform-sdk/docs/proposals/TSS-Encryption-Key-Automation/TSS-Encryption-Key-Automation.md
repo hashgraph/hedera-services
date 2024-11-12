@@ -122,7 +122,7 @@ private key will always be provided, but the public key may be null. There are t
    1. Once execution is live, a `TssEncryptionKeyTransaction` will need to be sent periodically until the state
       reflects the correct public key.
 2. The public `tssEncryptionKey` is not provided indicating only the private key was loaded from disk.
-   1. If there is no public key in the state, or the public key in the state does not matching the loaded
+   1. If there is no public key in the state, or the public key in the state does not match the loaded
       private key, a new public/private `tssEncryptionKey` will need to be generated through a call back to
       `CryptoStatic.java` to generate the key and persist the new private key to disk. The new public key will need
       to be distributed to the rest of the network as in `1.1` above.
