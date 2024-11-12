@@ -113,4 +113,23 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         final RoundRosterPair latestRoundRosterPair = rostersAndRounds.getFirst();
         return latestRoundRosterPair.activeRosterHash();
     }
+
+    /** {@inheritDoc} */
+    @Nullable
+    @Override
+    public List<RoundRosterPair> getRosterHistory() {
+        final RosterState rosterStateSingleton = rosterState.get();
+        if (rosterStateSingleton != null
+                && !rosterStateSingleton.roundRosterPairs().isEmpty()) {
+            boolean allHashesPresent = rosterStateSingleton.roundRosterPairs().stream()
+                    .allMatch(pair -> rosterMap.get(ProtoBytes.newBuilder()
+                                    .value(pair.activeRosterHash())
+                                    .build())
+                            != null);
+            if (allHashesPresent) {
+                return rosterStateSingleton.roundRosterPairs();
+            }
+        }
+        return null;
+    }
 }

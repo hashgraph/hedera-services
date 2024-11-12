@@ -33,7 +33,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Provides access to the key material for the threshold signature scheme (TSS) for the active roster.
+ * Provides access to the {@link TssParticipantDirectory} for the active roster.
  */
 @Singleton
 public class TssDirectoryAccessor {
