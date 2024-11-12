@@ -84,7 +84,7 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
 
     private static final RunningAverageMetric.Config AVG_CREATED_RECEIVED_CONSENSUS_TIME_CONFIG =
             new RunningAverageMetric.Config(PLATFORM_CATEGORY, "secC2RC")
-                    .withDescription("time from another member creating an event to it being received and and knowing "
+                    .withDescription("time from another member creating an event to it being received and knowing "
                             + "consensus for it (in seconds)")
                     .withFormat(FORMAT_10_3);
     private final RunningAverageMetric avgCreatedReceivedConsensusTime;
