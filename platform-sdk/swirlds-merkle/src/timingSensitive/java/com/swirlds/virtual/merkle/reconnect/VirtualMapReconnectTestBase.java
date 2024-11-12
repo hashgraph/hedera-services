@@ -135,7 +135,6 @@ public class VirtualMapReconnectTestBase {
     public static void startup() throws ConstructableRegistryException, FileNotFoundException {
         loadLog4jContext();
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.virtualmap");
         registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
@@ -147,7 +146,6 @@ public class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
-
         new TestConfigBuilder()
                 .withValue(ReconnectConfig_.ACTIVE, "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.

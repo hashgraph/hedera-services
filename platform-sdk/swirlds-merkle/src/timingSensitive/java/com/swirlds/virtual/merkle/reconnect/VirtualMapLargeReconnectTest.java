@@ -40,15 +40,12 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.14")})
     @DisplayName("Permutations of very large trees reconnecting")
     void largeTeacherLargerLearnerPermutations(int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {
-
         for (int i = teacherStart; i < teacherEnd; i++) {
             teacherMap.put(new TestKey(i), new TestValue(i));
         }
-
         for (int i = learnerStart; i < learnerEnd; i++) {
             learnerMap.put(new TestKey(i), new TestValue(i));
         }
-
         assertDoesNotThrow(this::reconnect, "Should not throw a Exception");
     }
 
@@ -60,14 +57,11 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
         for (int i = teacherStart; i < teacherEnd; i++) {
             teacherMap.put(new TestKey(i), new TestValue(i));
         }
-
         for (int i = learnerStart; i < learnerEnd; i++) {
             learnerMap.put(new TestKey(i), new TestValue(i));
         }
-
         learnerBuilder.setNumCallsBeforeThrow((teacherEnd - teacherStart) / 2);
         learnerBuilder.setNumTimesToBreak(2);
-
         reconnectMultipleTimes(3);
     }
 
