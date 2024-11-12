@@ -18,7 +18,7 @@ name: "ZXF: Extended Test Suite - Dry Run"
 on:
   workflow_dispatch:
     inputs:
-      commid_sha:
+      commit_sha:
         required: true
         description: 'The commit sha to check out'
       branch_name:
@@ -48,7 +48,7 @@ jobs:
       enable-hammer-tests: true
       enable-hapi-tests-time-consuming: true
       enable-network-log-capture: true
-      ref: ${{ inputs.commid_sha }}
+      ref: ${{ inputs.commit_sha }}
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
@@ -60,7 +60,7 @@ jobs:
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
-      ref: ${{ inputs.commid_sha }}
+      ref: ${{ inputs.commit_sha }}
       branch-name: ${{ inputs.branch_name }}
       base-branch-name: ${{ inputs.branch_name }}
       slack-results-channel: "regression-test"
@@ -83,7 +83,7 @@ jobs:
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       custom-job-name: "Abbrev Update Test"
-      ref: ${{ inputs.commid_sha }}
+      ref: ${{ inputs.commit_sha }}
       branch-name: ${{ inputs.branch_name }}
       hedera-tests-enabled: true
       use-branch-for-slack-channel: false
