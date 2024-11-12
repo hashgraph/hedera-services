@@ -331,24 +331,44 @@ jobs:
                     },
                     {
                       "type": "section",
-                        "text": {
-                              "type": "mrkdwn",
-                              "text": "*Source Commit*: \n<${{ github.server_url }}/${{ github.repository }}/commit/${{ needs.fetch-xts-candidate.outputs.xts-tag-commit }}>"
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Workflow and Commit Information*"
+                      },
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Source Commit*:"
                         },
-                        fields: [
-                          {
-                                "type": "mrkdwn",
-                                "text": "*Workflow run ID*: ${{ github.run_id }}"
-                          },
-                          {
-                                "type": "mrkdwn",
-                                "text": "*Workflow run URL*: \n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
-                          },
-                          {
-                                "type": "mrkdwn",
-                                "text": "*Commit author*: ${{ needs.fetch-xts-candidate.outputs.xts-tag-commit-author }}"
-                          }
-                        ]
+                        {
+                          "type": "mrkdwn",
+                          "text": "<${{ github.server_url }}/${{ github.repository }}/commit/${{ needs.fetch-xts-candidate.outputs.xts-tag-commit }}>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Commit author*:"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "${{ needs.fetch-xts-candidate.outputs.xts-tag-commit-author }}"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Workflow run ID*:"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": " ${{ github.run_id }}"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Workflow run URL*:"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
+                        }
+                      ]
                     }
                   ]
                 }
