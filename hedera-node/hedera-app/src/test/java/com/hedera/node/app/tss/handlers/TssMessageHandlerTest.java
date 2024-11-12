@@ -35,6 +35,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.tss.TssCryptographyManager;
 import com.hedera.node.app.tss.TssCryptographyManager.Vote;
+import com.hedera.node.app.tss.TssDirectoryAccessor;
 import com.hedera.node.app.tss.TssKeysAccessor;
 import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
@@ -96,7 +97,7 @@ class TssMessageHandlerTest {
     private TssMetrics tssMetrics;
 
     @Mock
-    private TssKeysAccessor keyMaterialAccessor;
+    private TssDirectoryAccessor directoryAccessor;
 
     private TssMessageHandler subject;
     private Vote vote;
@@ -112,7 +113,7 @@ class TssMessageHandlerTest {
         final var voteBitSet = new BitSet(8);
         voteBitSet.set(2);
         vote = new Vote(pairingPublicKey, signature, voteBitSet);
-        subject = new TssMessageHandler(submissionManager, tssCryptographyManager, tssMetrics, keyMaterialAccessor);
+        subject = new TssMessageHandler(submissionManager, tssCryptographyManager, tssMetrics, directoryAccessor);
     }
 
     @Test
@@ -141,7 +142,7 @@ class TssMessageHandlerTest {
                         eq(handleContext)))
                 .willReturn(CompletableFuture.completedFuture(vote));
         given(signature.getBytes()).willReturn(Bytes.wrap("test"));
-        given(keyMaterialAccessor.accessTssKeys()).willReturn(TSS_KEYS);
+        given(directoryAccessor.activeParticipantDirectory()).willReturn(TSS_KEYS.activeParticipantDirectory());
 
         subject.handle(handleContext);
 

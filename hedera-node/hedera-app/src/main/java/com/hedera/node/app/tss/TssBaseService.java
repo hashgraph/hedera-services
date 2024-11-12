@@ -146,4 +146,10 @@ public interface TssBaseService extends Service {
      * @param state the network state
      */
     void regenerateKeyMaterial(@NonNull State state);
+
+    /**
+     * Generates the participant directory for the active roster.
+     * @param state the network state
+     */
+    void generateParticipantDirectory(@NonNull State state);
 }

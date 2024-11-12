@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.tss;
 
-import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static java.util.Objects.requireNonNull;
@@ -28,13 +27,12 @@ import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.api.TssPrivateShare;
 import com.hedera.node.app.tss.api.TssPublicShare;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
-import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.concurrent.Executor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -45,37 +43,36 @@ import javax.inject.Singleton;
 public class TssKeysAccessor {
     private final TssLibrary tssLibrary;
     private TssKeysAccessor.TssKeys tssKeys;
+    private final Executor libraryExecutor;
+    private final TssDirectoryAccessor tssDirectoryAccessor;
 
     @Inject
-    public TssKeysAccessor(@NonNull final TssLibrary tssLibrary) {
+    public TssKeysAccessor(
+            @NonNull final TssLibrary tssLibrary,
+            @NonNull @TssLibraryExecutor final Executor libraryExecutor,
+            @NonNull final TssDirectoryAccessor tssDirectoryAccessor) {
         this.tssLibrary = requireNonNull(tssLibrary);
+        this.libraryExecutor = requireNonNull(libraryExecutor);
+        this.tssDirectoryAccessor = requireNonNull(tssDirectoryAccessor);
     }
 
     /**
      * Generates the key material for the active roster.
      *
-     * @param state         the state
-     * @param configuration the configuration
-     * @param selfId        the node id
+     * @param state the state
      */
-    public void generateKeyMaterialForActiveRoster(
-            @NonNull final State state, @NonNull final Configuration configuration, final long selfId) {
+    public void generateKeyMaterialForActiveRoster(@NonNull final State state) {
         if (tssKeys != null) {
             return;
         }
         final var storeFactory = new ReadableStoreFactory(state);
         final var tssStore = storeFactory.getStore(ReadableTssStore.class);
         final var rosterStore = storeFactory.getStore(ReadableRosterStore.class);
-        final var maxSharesPerNode =
-                configuration.getConfigData(TssConfig.class).maxSharesPerNode();
         final var activeRosterHash = requireNonNull(rosterStore.getActiveRosterHash());
-        final var activeRoster = requireNonNull(rosterStore.getActiveRoster());
-        final var activeParticipantDirectory =
-                computeParticipantDirectory(activeRoster, maxSharesPerNode, (int) selfId);
-        final var activeRosterShares = getTssPrivateShares(activeParticipantDirectory, tssStore, activeRosterHash);
-
+        final var activeParticipantDirectory = tssDirectoryAccessor.activeParticipantDirectory();
         final var tssMessageBodies = tssStore.getTssMessageBodies(activeRosterHash);
         final var validTssMessages = getTssMessages(tssMessageBodies);
+        final var activeRosterShares = getTssPrivateShares(activeParticipantDirectory, tssStore, activeRosterHash);
         final var activeRosterPublicShares =
                 tssLibrary.computePublicShares(activeParticipantDirectory, validTssMessages);
         final var totalShares = activeParticipantDirectory.getSharesById().values().stream()

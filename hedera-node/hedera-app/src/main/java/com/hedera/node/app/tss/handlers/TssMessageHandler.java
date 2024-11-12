@@ -28,7 +28,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssCryptographyManager;
-import com.hedera.node.app.tss.TssKeysAccessor;
+import com.hedera.node.app.tss.TssDirectoryAccessor;
 import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,18 +44,18 @@ public class TssMessageHandler implements TransactionHandler {
     private final TssSubmissions submissionManager;
     private final TssCryptographyManager tssCryptographyManager;
     private final TssMetrics tssMetrics;
-    private final TssKeysAccessor tssKeysAccessor;
+    private final TssDirectoryAccessor tssDirectoryAccessor;
 
     @Inject
     public TssMessageHandler(
             @NonNull final TssSubmissions submissionManager,
             @NonNull final TssCryptographyManager tssCryptographyManager,
             @NonNull final TssMetrics metrics,
-            @NonNull final TssKeysAccessor tssKeysAccessor) {
+            @NonNull final TssDirectoryAccessor tssDirectoryAccessor) {
         this.submissionManager = requireNonNull(submissionManager);
         this.tssCryptographyManager = requireNonNull(tssCryptographyManager);
         this.tssMetrics = requireNonNull(metrics);
-        this.tssKeysAccessor = requireNonNull(tssKeysAccessor);
+        this.tssDirectoryAccessor = requireNonNull(tssDirectoryAccessor);
     }
 
     @Override
@@ -83,7 +83,7 @@ public class TssMessageHandler implements TransactionHandler {
         tssStore.put(key, op);
 
         // Obtain the directory of participants for the target roster
-        final var directory = tssKeysAccessor.accessTssKeys().activeParticipantDirectory();
+        final var directory = tssDirectoryAccessor.activeParticipantDirectory();
         // Schedule work to potentially compute a signed vote for the new key material of the target
         // roster, if this message was valid and passed the threshold number of messages required
         tssCryptographyManager

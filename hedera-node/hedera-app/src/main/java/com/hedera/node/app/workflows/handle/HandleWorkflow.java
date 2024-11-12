@@ -143,6 +143,7 @@ public class HandleWorkflow {
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
     private TssBaseService tssBaseService;
+    private final ConfigProvider configProvider;
 
     @Inject
     public HandleWorkflow(
@@ -187,6 +188,7 @@ public class HandleWorkflow {
         this.stakePeriodManager = requireNonNull(stakePeriodManager);
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
         this.userTxnFactory = requireNonNull(userTxnFactory);
+        this.configProvider = requireNonNull(configProvider);
         this.streamMode = configProvider
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
@@ -204,9 +206,9 @@ public class HandleWorkflow {
     public void handleRound(@NonNull final State state, @NonNull final Round round) {
         logStartRound(round);
         cacheWarmer.warm(state, round);
-        // We lazy initialize the key material for the active roster. So calling it on each round
-        // is okay. The key material is needed to sign each block.
-        tssBaseService.regenerateKeyMaterial(state);
+        if (configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
+            tssBaseService.generateParticipantDirectory(state);
+        }
         if (streamMode != RECORDS) {
             blockStreamManager.startRound(round, state);
             blockStreamManager.writeItem(BlockItem.newBuilder()
@@ -411,7 +413,6 @@ public class HandleWorkflow {
                     // in the RosterService state to become the active roster
                     // Generate key material for the active roster once it is switched
                 }
-
                 final var baseBuilder = initializeBuilderInfo(
                         userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
                 final var dispatch = userTxnFactory.createDispatch(userTxn, baseBuilder);

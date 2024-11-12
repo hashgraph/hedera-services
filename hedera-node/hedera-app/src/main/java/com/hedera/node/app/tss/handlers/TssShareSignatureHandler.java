@@ -153,8 +153,4 @@ public class TssShareSignatureHandler implements TransactionHandler {
     public Map<Bytes, Instant> getRequests() {
         return requests;
     }
-
-    public Instant getLastPurgeTime() {
-        return lastPurgeTime;
-    }
 }

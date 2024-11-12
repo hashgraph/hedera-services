@@ -247,4 +247,9 @@ public class FakeTssBaseService implements TssBaseService {
     public void regenerateKeyMaterial(@NonNull final State state) {
         delegate.regenerateKeyMaterial(state);
     }
+
+    @Override
+    public void generateParticipantDirectory(@NonNull final State state) {
+        delegate.generateParticipantDirectory(state);
+    }
 }

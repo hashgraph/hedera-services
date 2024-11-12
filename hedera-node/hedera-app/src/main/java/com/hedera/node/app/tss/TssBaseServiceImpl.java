@@ -88,6 +88,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final Executor tssLibraryExecutor;
     private final ExecutorService signingExecutor;
     private final TssKeysAccessor tssKeysAccessor;
+    private final TssDirectoryAccessor tssDirectoryAccessor;
     private final AppContext appContext;
 
     public TssBaseServiceImpl(
@@ -112,6 +113,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                         metrics,
                         this);
         this.tssKeysAccessor = component.tssKeysAccessor();
+        this.tssDirectoryAccessor = component.tssDirectoryAccessor();
         this.tssMetrics = component.tssMetrics();
         this.tssHandlers = new TssHandlers(
                 component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
@@ -166,6 +168,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var activeRoster = requireNonNull(
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster());
         final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
+
         final var tssPrivateShares = tssKeysAccessor.accessTssKeys().activeRosterShares();
 
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
@@ -202,7 +205,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                             .configSupplier()
                             .get()
                             .getConfigData(TssConfig.class)
-                            .keyCandidateRoster()) {
+                            .signWithLedgerId()) {
                         submitShareSignatures(messageHash, lastUsedConsensusTime);
                     } else {
                         // This is only for testing purposes when the candidate roster is
@@ -292,10 +295,12 @@ public class TssBaseServiceImpl implements TssBaseService {
 
     @Override
     public void regenerateKeyMaterial(@NonNull final State state) {
-        tssKeysAccessor.generateKeyMaterialForActiveRoster(
-                state,
-                appContext.configSupplier().get(),
-                appContext.selfNodeInfoSupplier().get().nodeId());
+        tssKeysAccessor.generateKeyMaterialForActiveRoster(state);
+    }
+
+    @Override
+    public void generateParticipantDirectory(@NonNull final State state) {
+        tssDirectoryAccessor.generateTssParticipantDirectory(state);
     }
 
     /**

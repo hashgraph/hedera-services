@@ -55,4 +55,6 @@ public interface TssBaseServiceComponent {
     TssSubmissions tssSubmissions();
 
     TssKeysAccessor tssKeysAccessor();
+
+    TssDirectoryAccessor tssDirectoryAccessor();
 }
