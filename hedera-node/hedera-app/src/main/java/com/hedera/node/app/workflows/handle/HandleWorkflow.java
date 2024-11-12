@@ -86,9 +86,11 @@ import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
@@ -401,7 +403,12 @@ public class HandleWorkflow {
                     // in the RosterService state to become the active roster
                 }
 
-                if (userTxn.functionality() == HederaFunctionality.FREEZE) {
+                final var tssConfig = userTxn.config().getConfigData(TssConfig.class);
+                final var addressBookConfig = userTxn.config().getConfigData(AddressBookConfig.class);
+
+                if (!tssConfig.keyCandidateRoster()
+                        && addressBookConfig.useRosterLifecycle()
+                        && userTxn.functionality() == HederaFunctionality.FREEZE) {
                     // Set the candidate roster in state on network upgrade
                     final var candidateRoster = nodeStore.snapshotOfFutureRoster();
                     final var rosterStore = writableRosterStoreFactory.getStore(WritableRosterStore.class);
