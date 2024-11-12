@@ -279,52 +279,52 @@ jobs:
                     },
                     {
                       "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "*XTS Job Resulted in failure. See status below.*"
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*XTS Job Resulted in failure. See status below.*"
+                      },
+                      "fields": [
+                        {
+                          "type": "plain_text",
+                          "text": "Fetch XTS Candidate Tag"
                         },
-                        "fields": [
-                            {
-                                "type": "plain_text",
-                                "text": "Fetch XTS Candidate Tag"
-                            },
-                            {
-                                "type": "plain_text",
-                                "text": "${{ needs.fetch-xts-candidate.result }}"
-                            },
-                            {
-                                "type": "plain_text",
-                                "text": "Execute eXtended Test Suite"
-                            },
-                            {
-                                "type": "plain_text",
-                                "text": "${{ needs.extended-test-suite.result }}"
-                            },
-                            {
-                                "type": "plain_text",
-                                "text": "JRS Panel"
-                            },
-                            {
-                                "type": "plain_text",
-                                "text": "${{ needs.abbreviated-panel.result }}"
-                            },
-                            {
-                                "type": "plain_text",
-                                "text": "Hedera Node JRS Panel"
-                            },
-                            {
-                                "type": "plain_text",
-                                "text": "${{ needs.hedera-node-jrs-panel.result }}"
-                            },
-                            {
-                                "type": "plain_text",
-                                "text": "Tag as XTS-Passing"
-                            },
-                            {
-                                "type": "plain_text",
-                                "text": "${{ needs.tag-for-promotion.result }}"
-                            }
-                        ]
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.fetch-xts-candidate.result }}"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "Execute eXtended Test Suite"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.extended-test-suite.result }}"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "JRS Panel"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.abbreviated-panel.result }}"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "Hedera Node JRS Panel"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.hedera-node-jrs-panel.result }}"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "Tag as XTS-Passing"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.tag-for-promotion.result }}"
+                        }
+                      ]
                     },
                     {
                       "type": "divider"
