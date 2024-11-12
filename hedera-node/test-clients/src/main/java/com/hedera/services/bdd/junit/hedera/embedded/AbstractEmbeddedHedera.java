@@ -141,6 +141,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     public void start() {
         final Configuration configuration =
                 ConfigurationBuilder.create().autoDiscoverExtensions().build();
+
         hedera.initializeStatesApi(
                 state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);

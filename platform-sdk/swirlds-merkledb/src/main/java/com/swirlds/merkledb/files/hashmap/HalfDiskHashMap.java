@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.wiring.tasks.AbstractTask;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.FileStatisticAware;
@@ -92,7 +91,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     /** The limit on the number of concurrent read tasks in {@code endWriting()} */
     private static final int MAX_IN_FLIGHT = 1024;
 
-    /** MerkleDb configuration */
+    /** Platform configuration */
     @NonNull
     private final MerkleDbConfig merkleDbConfig;
 
@@ -167,14 +166,23 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     /** Fork-join pool for HDHM.endWriting() */
     private static volatile ForkJoinPool flushingPool = null;
 
-    private static ForkJoinPool getFlushingPool() {
+    /**
+     * This method is invoked from a non-static method and uses the provided configuration.
+     * Consequently, the flushing pool will be initialized using the configuration provided
+     * by the first instance of HalfDiskHashMap class that calls the relevant non-static method.
+     * Subsequent calls will reuse the same pool, regardless of any new configurations provided.
+     * </br>
+     * FUTURE WORK: it can be moved to MerkleDb.
+     */
+    private static ForkJoinPool getFlushingPool(final @NonNull MerkleDbConfig merkleDbConfig) {
+        requireNonNull(merkleDbConfig);
+
         ForkJoinPool pool = flushingPool;
         if (pool == null) {
             synchronized (HalfDiskHashMap.class) {
                 pool = flushingPool;
                 if (pool == null) {
-                    final MerkleDbConfig vmConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-                    final int hashingThreadCount = vmConfig.getNumHalfDiskHashMapFlushThreads();
+                    final int hashingThreadCount = merkleDbConfig.getNumHalfDiskHashMapFlushThreads();
                     pool = new ForkJoinPool(hashingThreadCount);
                     flushingPool = pool;
                 }
@@ -186,7 +194,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     /**
      * Construct a new HalfDiskHashMap
      *
-     * @param configuration Platform configuration.
+     * @param configuration                  Platform configuration.
      * @param mapSize                        The maximum map number of entries. This should be more than big enough to
      *                                       avoid too many key collisions.
      * @param storeDir                       The directory to use for storing data files.
@@ -294,7 +302,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         bucketIndexToBucketLocation.updateValidRange(0, numOfBuckets - 1);
         // create file collection
         fileCollection = new DataFileCollection(
-                // Need: propagate MerkleDb config from the database
+                // Need: propagate MerkleDb merkleDbConfig from the database
                 merkleDbConfig, storeDir, storeName, legacyStoreName, loadedDataCallback);
     }
 
@@ -482,7 +490,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 final Iterator<IntObjectPair<BucketMutation>> it =
                         oneTransactionsData.keyValuesView().iterator();
                 fileCollection.startWriting();
-                final ForkJoinPool pool = getFlushingPool();
+                final ForkJoinPool pool = getFlushingPool(merkleDbConfig);
                 resetEndWriting(pool, size);
                 // Create a task to submit bucket processing tasks. This initial submit task
                 // is scheduled to run right away. Subsequent submit tasks will be run only

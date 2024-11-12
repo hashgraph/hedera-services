@@ -68,6 +68,7 @@ import javax.management.MBeanServer;
 
 @SuppressWarnings("unused")
 public class MerkleDbTestUtils {
+
     /**
      * The amount of direct memory used by JVM and caches. This needs to be big enough to allow for
      * variations in test runs while being small enough to catch leaks in tests.

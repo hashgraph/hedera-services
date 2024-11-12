@@ -81,6 +81,8 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     /**
      * Create a {@link LongListDisk} with default parameters.
+     *
+     * @param configuration platform configuration
      */
     public LongListDisk(@NonNull final Configuration configuration) {
         this(DEFAULT_NUM_LONGS_PER_CHUNK, DEFAULT_MAX_LONGS_TO_STORE, DEFAULT_RESERVED_BUFFER_LENGTH, configuration);

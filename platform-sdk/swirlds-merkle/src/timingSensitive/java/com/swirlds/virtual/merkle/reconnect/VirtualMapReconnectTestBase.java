@@ -118,8 +118,12 @@ public class VirtualMapReconnectTestBase {
         // The tests create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new (temp) database location for every run
         testFileSystemManager.resetMerkleDb("merkledb");
+        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
+                (short) 1,
+                DigestType.SHA_384,
+                merkleDbConfig.maxNumOfKeys(),
+                merkleDbConfig.hashesRamToDiskThreshold());
         tableConfig.hashesRamToDiskThreshold(0);
         return new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
     }
@@ -161,8 +165,7 @@ public class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
         registry.registerConstructable(new ClassConstructorPair(Lesson.class, Lesson::new));
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap<>(CONFIGURATION)));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
         registry.registerConstructable(new ClassConstructorPair(
                 VirtualRootNode.class,

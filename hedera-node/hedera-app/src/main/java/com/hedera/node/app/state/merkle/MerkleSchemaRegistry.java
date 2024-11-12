@@ -347,8 +347,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                     final MerkleDbConfig merkleDbConfig =
                                             platformConfiguration.getConfigData(MerkleDbConfig.class);
                                     final var tableConfig = new MerkleDbTableConfig(
-                                                    (short) 1, DigestType.SHA_384, merkleDbConfig)
-                                            .maxNumberOfKeys(def.maxKeysHint());
+                                            (short) 1,
+                                            DigestType.SHA_384,
+                                            def.maxKeysHint(),
+                                            merkleDbConfig.hashesRamToDiskThreshold());
                                     final var label = StateUtils.computeLabel(serviceName, stateKey);
                                     final var dsBuilder =
                                             new MerkleDbDataSourceBuilder(tableConfig, platformConfiguration);

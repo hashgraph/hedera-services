@@ -53,14 +53,17 @@ public class VirtualMerkleTransactionHandlerTest {
 
     @BeforeAll
     public static void beforeAll() {
-
         // Should storage dir be set to a certain value?
 
         final long maximumNumberOfKeyValuePairsCreation = 28750;
         final SmartContractMapKeySerializer keySerializer = new SmartContractMapKeySerializer();
         final SmartContractMapValueSerializer valueSerializer = new SmartContractMapValueSerializer();
+        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                        (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class))
+                        (short) 1,
+                        DigestType.SHA_384,
+                        merkleDbConfig.maxNumOfKeys(),
+                        merkleDbConfig.hashesRamToDiskThreshold())
                 .maxNumberOfKeys(maximumNumberOfKeyValuePairsCreation)
                 .hashesRamToDiskThreshold(0)
                 .preferDiskIndices(false);
@@ -74,7 +77,10 @@ public class VirtualMerkleTransactionHandlerTest {
         final SmartContractByteCodeMapKeySerializer keySerializer2 = new SmartContractByteCodeMapKeySerializer();
         final SmartContractByteCodeMapValueSerializer valueSerializer2 = new SmartContractByteCodeMapValueSerializer();
         final MerkleDbTableConfig tableConfig2 = new MerkleDbTableConfig(
-                        (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class))
+                        (short) 1,
+                        DigestType.SHA_384,
+                        merkleDbConfig.maxNumOfKeys(),
+                        merkleDbConfig.hashesRamToDiskThreshold())
                 .maxNumberOfKeys(totalSmartContractCreations)
                 .hashesRamToDiskThreshold(0)
                 .preferDiskIndices(false);

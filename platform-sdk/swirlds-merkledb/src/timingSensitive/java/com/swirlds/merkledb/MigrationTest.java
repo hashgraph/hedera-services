@@ -161,10 +161,15 @@ class MigrationTest {
     private static MerkleDbDataSourceBuilder constructBuilder() throws IOException {
         // The tests below create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new database location for every map
-        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source");
+        final Path defaultVirtualMapPath =
+                LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source", CONFIGURATION);
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
+        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                        (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class))
+                        (short) 1,
+                        DigestType.SHA_384,
+                        merkleDbConfig.maxNumOfKeys(),
+                        merkleDbConfig.hashesRamToDiskThreshold())
                 .preferDiskIndices(false)
                 .hashesRamToDiskThreshold(Long.MAX_VALUE)
                 .maxNumberOfKeys(1234);

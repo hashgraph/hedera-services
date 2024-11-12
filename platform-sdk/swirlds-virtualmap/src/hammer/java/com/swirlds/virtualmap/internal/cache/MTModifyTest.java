@@ -30,9 +30,9 @@ import org.junit.jupiter.api.Test;
 
 public class MTModifyTest {
 
-    private static final Random rand = new Random();
-
     private static final VirtualMapConfig VIRTUAL_MAP_CONFIG = CONFIGURATION.getConfigData(VirtualMapConfig.class);
+
+    private static final Random rand = new Random();
 
     @Test
     public void mtModifyTest() throws Exception {

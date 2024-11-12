@@ -122,7 +122,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
     private static final Logger logger = LogManager.getLogger(VirtualNodeCache.class);
 
-    private static final long CLASS_ID = 0x493743f0ace96d2cL;
+    @SuppressWarnings("ProtectedMemberInFinalClass")
+    public static final long CLASS_ID = 0x493743f0ace96d2cL;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -162,6 +163,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     private static synchronized Executor getCleaningPool(@NonNull final VirtualMapConfig virtualMapConfig) {
         requireNonNull(virtualMapConfig);
+
         if (cleaningPool == null) {
             cleaningPool = Boolean.getBoolean("syncCleaningPool")
                     ? Runnable::run
@@ -323,6 +325,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     private final AtomicLong lastReleased;
 
     /** Platform configuration for VirtualMap */
+    @NonNull
     private final VirtualMapConfig virtualMapConfig;
 
     /**
@@ -1292,6 +1295,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * Called by one of the purge threads to purge entries from the index that no longer have a referent
      * for the mutation list. This can be called concurrently.
      *
+     * BE AWARE: this method is called from the other NON-static method with providing the configuration.
+     *
      * @param index
      * 		The index to look through for entries to purge
      * @param <K>
@@ -1329,6 +1334,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * This method iterates over the given list of mutations and marks all obsolete mutations as
      * filtered. Later all marked mutations can be easily removed. A mutation is considered
      * obsolete, if there is a newer mutation for the same key.
+     *
+     * BE AWARE: this method is called from the other NON-static method with providing the configuration.
      *
      * @param array
      * @param <K>

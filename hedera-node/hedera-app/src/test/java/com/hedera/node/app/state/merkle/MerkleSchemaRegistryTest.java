@@ -102,10 +102,10 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         lenient().when(fileSystemManagerConfig.rootPath()).thenReturn(tempDir.toString());
         lenient()
                 .when(fileSystemManagerConfig.tmpDir())
-                .thenReturn(tempDir.toString() + "/" + FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME);
+                .thenReturn(tempDir + "/" + FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME);
         lenient()
                 .when(fileSystemManagerConfig.userDataDir())
-                .thenReturn(tempDir.toString() + "/" + FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME);
+                .thenReturn(tempDir + "/" + FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME);
     }
 
     @Nested
@@ -274,8 +274,26 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("Calling migrate with a null config throws NPE")
-        void nullConfigVersionThrows() {
+        @DisplayName("Calling migrate with a null node config throws NPE")
+        void nullNodeConfigVersionThrows() {
+            //noinspection ConstantConditions
+            assertThatThrownBy(() -> schemaRegistry.migrate(
+                            merkleTree,
+                            versions[0],
+                            versions[1],
+                            null,
+                            null,
+                            networkInfo,
+                            mock(Metrics.class),
+                            mock(WritableEntityIdStore.class),
+                            new HashMap<>(),
+                            migrationStateChanges))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("Calling migrate with a null node config throws NPE")
+        void nullNodeConfigVersionThrows1() {
             //noinspection ConstantConditions
             assertThatThrownBy(() -> schemaRegistry.migrate(
                             merkleTree,

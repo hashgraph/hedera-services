@@ -119,8 +119,12 @@ class MerkleDbSnapshotTest {
     }
 
     private static MerkleDbTableConfig fixedConfig() {
+        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         return new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
+                (short) 1,
+                DigestType.SHA_384,
+                merkleDbConfig.maxNumOfKeys(),
+                merkleDbConfig.hashesRamToDiskThreshold());
     }
 
     private void verify(final MerkleInternal stateRoot) {
@@ -292,8 +296,8 @@ class MerkleDbSnapshotTest {
     }
 
     private static void registerMetrics(VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm) {
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final Configuration CONFIGURATION = new TestConfigBuilder().getOrCreateConfig();
+        MetricsConfig metricsConfig = CONFIGURATION.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         Metrics metrics = new DefaultPlatformMetrics(
@@ -303,7 +307,7 @@ class MerkleDbSnapshotTest {
                 new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
         MerkleDbStatistics statistics =
-                new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), "test");
+                new MerkleDbStatistics(CONFIGURATION.getConfigData(MerkleDbConfig.class), "test");
         statistics.registerMetrics(metrics);
         vm.getDataSource().registerMetrics(metrics);
     }

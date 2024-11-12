@@ -29,8 +29,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class NameTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for name() method. */
     public static final Function NAME = new Function("name()", ReturnTypes.STRING);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public NameTranslator() {
         // Dagger2

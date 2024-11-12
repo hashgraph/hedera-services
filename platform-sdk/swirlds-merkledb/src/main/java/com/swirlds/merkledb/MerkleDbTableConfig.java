@@ -30,10 +30,8 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -149,20 +147,30 @@ public final class MerkleDbTableConfig implements SelfSerializable {
      *      Hash version
      * @param hashType
      *      Hash type
-     * @param merkleDbConfig platform config for MerkleDbDataSource
+     * @param maxNumberOfKeys
+     *      Max number of keys that can be stored in a table.
+     * @param hashesRamToDiskThreshold
+     *      Threshold where we switch from storing internal hashes in ram to storing them on disk.
      */
     public MerkleDbTableConfig(
-            final short hashVersion, final DigestType hashType, @NonNull final MerkleDbConfig merkleDbConfig) {
-        requireNonNull(merkleDbConfig);
-
+            final short hashVersion,
+            final DigestType hashType,
+            final long maxNumberOfKeys,
+            final long hashesRamToDiskThreshold) {
         // Mandatory fields
         this.hashVersion = hashVersion;
         this.hashType = hashType;
 
         // Optional hints, may be set explicitly using setters later. Defaults are loaded from
         // MerkleDb configuration
-        maxNumberOfKeys = merkleDbConfig.maxNumOfKeys();
-        hashesRamToDiskThreshold = merkleDbConfig.hashesRamToDiskThreshold();
+        if (maxNumberOfKeys <= 0) {
+            throw new IllegalArgumentException("Max number of keys must be greater than 0");
+        }
+        this.maxNumberOfKeys = maxNumberOfKeys;
+        if (hashesRamToDiskThreshold < 0) {
+            throw new IllegalArgumentException("Hashes RAM/disk threshold must be greater or equal to 0");
+        }
+        this.hashesRamToDiskThreshold = hashesRamToDiskThreshold;
     }
 
     public MerkleDbTableConfig(final ReadableSequentialData in) {
@@ -430,15 +438,16 @@ public final class MerkleDbTableConfig implements SelfSerializable {
     /**
      * Creates a copy of this table config.
      *
-     * @param merkleDbConfig platform config for MerkleDbDataSource
+     * @param maxNumberOfKeys
+     *      Max number of keys that can be stored in a table.
+     * @param hashesRamToDiskThreshold
+     *      Threshold where we switch from storing internal hashes in ram to storing them on disk.
      * @return Table config copy
      */
-    public MerkleDbTableConfig copy(@NonNull final MerkleDbConfig merkleDbConfig) {
-        requireNonNull(merkleDbConfig);
-        final MerkleDbTableConfig copy = new MerkleDbTableConfig(hashVersion, hashType, merkleDbConfig);
+    public MerkleDbTableConfig copy(final long maxNumberOfKeys, final long hashesRamToDiskThreshold) {
+        final MerkleDbTableConfig copy =
+                new MerkleDbTableConfig(hashVersion, hashType, maxNumberOfKeys, hashesRamToDiskThreshold);
         copy.preferDiskIndices(preferDiskBasedIndices);
-        copy.hashesRamToDiskThreshold(hashesRamToDiskThreshold);
-        copy.maxNumberOfKeys(maxNumberOfKeys);
         return copy;
     }
 

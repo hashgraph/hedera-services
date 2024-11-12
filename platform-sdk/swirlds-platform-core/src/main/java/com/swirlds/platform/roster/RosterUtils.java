@@ -19,16 +19,21 @@ package com.swirlds.platform.roster;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.PbjRecordHasher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -191,6 +196,37 @@ public final class RosterUtils {
             }
         }
         throw new RosterEntryNotFoundException("No RosterEntry with nodeId: " + nodeId + " in Roster: " + roster);
+    }
+
+    /**
+     * Build an instance of RosterHistory from the current/previous AddressBook found in the PlatformState.
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
+     * @param readablePlatformState
+     * @return a RosterHistory
+     */
+    @Deprecated(forRemoval = true)
+    @NonNull
+    public static RosterHistory buildRosterHistory(final PlatformStateAccessor readablePlatformState) {
+        if (readablePlatformState.getAddressBook() == null) {
+            throw new IllegalStateException("Address book is null");
+        }
+
+        final List<RoundRosterPair> roundRosterPairList = new ArrayList<>();
+        final Map<Bytes, Roster> rosterMap = new HashMap<>();
+
+        final Roster currentRoster = RosterRetriever.buildRoster(readablePlatformState.getAddressBook());
+        final Bytes currentHash = RosterUtils.hash(currentRoster).getBytes();
+        roundRosterPairList.add(new RoundRosterPair(readablePlatformState.getRound(), currentHash));
+        rosterMap.put(currentHash, currentRoster);
+
+        if (readablePlatformState.getPreviousAddressBook() != null) {
+            final Roster previousRoster = RosterRetriever.buildRoster(readablePlatformState.getPreviousAddressBook());
+            final Bytes previousHash = RosterUtils.hash(previousRoster).getBytes();
+            roundRosterPairList.add(new RoundRosterPair(0, previousHash));
+            rosterMap.put(previousHash, previousRoster);
+        }
+
+        return new RosterHistory(roundRosterPairList, rosterMap);
     }
 
     /**

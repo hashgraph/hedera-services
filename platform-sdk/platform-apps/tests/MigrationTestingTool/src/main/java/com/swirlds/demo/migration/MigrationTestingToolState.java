@@ -19,9 +19,7 @@ package com.swirlds.demo.migration;
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
@@ -203,15 +201,15 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      * Do genesis initialization.
      */
     private void genesisInit(final Platform platform) {
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
-                .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
-                .build();
+        final Configuration configuration =
+                ConfigurationBuilder.create().autoDiscoverExtensions().build();
         setMerkleMap(new MerkleMap<>());
+        final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
+                (short) 1,
+                DigestType.SHA_384,
+                merkleDbConfig.maxNumOfKeys(),
+                merkleDbConfig.hashesRamToDiskThreshold());
         // to make it work for the multiple node in one JVM case, we need reset the default instance path every time
         // we create another instance of MerkleDB.
         MerkleDb.resetDefaultInstancePath();

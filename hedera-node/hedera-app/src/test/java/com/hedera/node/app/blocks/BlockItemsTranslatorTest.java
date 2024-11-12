@@ -142,7 +142,6 @@ class BlockItemsTranslatorTest {
             .nextRate(new ExchangeRate(3, 4, TimestampSeconds.DEFAULT))
             .build();
     private static final TransactionResult TRANSACTION_RESULT = TransactionResult.newBuilder()
-            .exchangeRate(RATES)
             .consensusTimestamp(CONSENSUS_TIME)
             .parentConsensusTimestamp(PARENT_CONSENSUS_TIME)
             .scheduleRef(SCHEDULE_REF)
@@ -216,7 +215,7 @@ class BlockItemsTranslatorTest {
                 "TOKEN_BURN",
             })
     void mostOpsUseJustUseBaseOpContextForReceipt(@NonNull final HederaFunctionality function) {
-        final var context = new BaseOpContext(MEMO, TXN_ID, Transaction.DEFAULT, function);
+        final var context = new BaseOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, function);
 
         final var actualReceipt = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECEIPT, actualReceipt);
@@ -233,7 +232,7 @@ class BlockItemsTranslatorTest {
                 "ETHEREUM_TRANSACTION",
             })
     void contractOpsUseContractOpContext(@NonNull final HederaFunctionality function) {
-        final var context = new ContractOpContext(MEMO, TXN_ID, Transaction.DEFAULT, function, CONTRACT_ID);
+        final var context = new ContractOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, function, CONTRACT_ID);
 
         final var actualReceipt = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECEIPT.copyBuilder().contractID(CONTRACT_ID).build(), actualReceipt);
@@ -247,35 +246,37 @@ class BlockItemsTranslatorTest {
                 "CRYPTO_UPDATE",
             })
     void certainCryptoOpsUseCryptoOpContext(@NonNull final HederaFunctionality function) {
-        final var context = new CryptoOpContext(MEMO, TXN_ID, Transaction.DEFAULT, function, ACCOUNT_ID, EVM_ADDRESS);
+        final var context =
+                new CryptoOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, function, ACCOUNT_ID, EVM_ADDRESS);
         final var actualReceipt = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECEIPT.copyBuilder().accountID(ACCOUNT_ID).build(), actualReceipt);
     }
 
     @Test
     void fileCreateUsesFileOpContext() {
-        final var context = new FileOpContext(MEMO, TXN_ID, Transaction.DEFAULT, FILE_CREATE, FILE_ID);
+        final var context = new FileOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, FILE_CREATE, FILE_ID);
         final var actualReceipt = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECEIPT.copyBuilder().fileID(FILE_ID).build(), actualReceipt);
     }
 
     @Test
     void nodeCreateUsesNodeOpContext() {
-        final var context = new NodeOpContext(MEMO, TXN_ID, Transaction.DEFAULT, NODE_CREATE, NODE_ID);
+        final var context = new NodeOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, NODE_CREATE, NODE_ID);
         final var actualReceipt = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECEIPT.copyBuilder().nodeId(NODE_ID).build(), actualReceipt);
     }
 
     @Test
     void tokenCreateUsesTokenOpContext() {
-        final var context = new TokenOpContext(MEMO, TXN_ID, Transaction.DEFAULT, TOKEN_CREATE, TOKEN_ID);
+        final var context = new TokenOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, TOKEN_CREATE, TOKEN_ID);
         final var actualReceipt = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECEIPT.copyBuilder().tokenID(TOKEN_ID).build(), actualReceipt);
     }
 
     @Test
     void topicCreateUsesTopicOpContext() {
-        final var context = new TopicOpContext(MEMO, TXN_ID, Transaction.DEFAULT, CONSENSUS_CREATE_TOPIC, TOPIC_ID);
+        final var context =
+                new TopicOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, CONSENSUS_CREATE_TOPIC, TOPIC_ID);
         final var actualReceipt = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECEIPT.copyBuilder().topicID(TOPIC_ID).build(), actualReceipt);
     }
@@ -285,7 +286,7 @@ class BlockItemsTranslatorTest {
         final var output = TransactionOutput.newBuilder()
                 .createSchedule(new CreateScheduleOutput(SCHEDULE_ID, SCHEDULED_TXN_ID))
                 .build();
-        final var context = new BaseOpContext(MEMO, TXN_ID, Transaction.DEFAULT, SCHEDULE_CREATE);
+        final var context = new BaseOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, SCHEDULE_CREATE);
 
         final var actualReceiptNoOutput = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECEIPT, actualReceiptNoOutput);
@@ -306,7 +307,7 @@ class BlockItemsTranslatorTest {
         final var output = TransactionOutput.newBuilder()
                 .signSchedule(new SignScheduleOutput(SCHEDULED_TXN_ID))
                 .build();
-        final var context = new BaseOpContext(MEMO, TXN_ID, Transaction.DEFAULT, SCHEDULE_SIGN);
+        final var context = new BaseOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, SCHEDULE_SIGN);
 
         final var actualReceiptNoOutput = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECEIPT, actualReceiptNoOutput);
@@ -323,7 +324,8 @@ class BlockItemsTranslatorTest {
 
     @Test
     void scheduleDeleteUsesScheduleOpContext() {
-        final var context = new ScheduleOpContext(MEMO, TXN_ID, Transaction.DEFAULT, SCHEDULE_DELETE, SCHEDULE_ID);
+        final var context =
+                new ScheduleOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, SCHEDULE_DELETE, SCHEDULE_ID);
 
         final var actualReceipt = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECEIPT.copyBuilder().scheduleID(SCHEDULE_ID).build(), actualReceipt);
@@ -333,6 +335,7 @@ class BlockItemsTranslatorTest {
     void submitMessageUsesSubmitOpContext() {
         final var context = new SubmitOpContext(
                 MEMO,
+                RATES,
                 TXN_ID,
                 Transaction.DEFAULT,
                 CONSENSUS_SUBMIT_MESSAGE,
@@ -354,7 +357,7 @@ class BlockItemsTranslatorTest {
     @Test
     void tokenMintUsesMintOpContext() {
         final var context =
-                new MintOpContext(MEMO, TXN_ID, Transaction.DEFAULT, TOKEN_MINT, SERIAL_NOS, NEW_TOTAL_SUPPLY);
+                new MintOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, TOKEN_MINT, SERIAL_NOS, NEW_TOTAL_SUPPLY);
 
         final var actualReceipt = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(
@@ -374,7 +377,8 @@ class BlockItemsTranslatorTest {
                 "TOKEN_BURN",
             })
     void supplyChangeOpsUseSupplyChangeContext(@NonNull final HederaFunctionality function) {
-        final var context = new SupplyChangeOpContext(MEMO, TXN_ID, Transaction.DEFAULT, function, NEW_TOTAL_SUPPLY);
+        final var context =
+                new SupplyChangeOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, function, NEW_TOTAL_SUPPLY);
         final var actualReceipt = BLOCK_ITEMS_TRANSLATOR.translateReceipt(context, TRANSACTION_RESULT);
         assertEquals(
                 EXPECTED_BASE_RECEIPT
@@ -391,7 +395,7 @@ class BlockItemsTranslatorTest {
         final var output = TransactionOutput.newBuilder()
                 .contractCall(new CallContractOutput(List.of(), FUNCTION_RESULT))
                 .build();
-        final var context = new ContractOpContext(MEMO, TXN_ID, Transaction.DEFAULT, CONTRACT_CALL, CONTRACT_ID);
+        final var context = new ContractOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, CONTRACT_CALL, CONTRACT_ID);
 
         final var actualRecordNoOutput = BLOCK_ITEMS_TRANSLATOR.translateRecord(context, TRANSACTION_RESULT);
         assertEquals(
@@ -423,7 +427,8 @@ class BlockItemsTranslatorTest {
         final var output = TransactionOutput.newBuilder()
                 .contractCreate(new CreateContractOutput(List.of(), FUNCTION_RESULT))
                 .build();
-        final var context = new ContractOpContext(MEMO, TXN_ID, Transaction.DEFAULT, CONTRACT_CREATE, CONTRACT_ID);
+        final var context =
+                new ContractOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, CONTRACT_CREATE, CONTRACT_ID);
 
         final var actualRecordNoOutput = BLOCK_ITEMS_TRANSLATOR.translateRecord(context, TRANSACTION_RESULT);
         assertEquals(
@@ -458,7 +463,8 @@ class BlockItemsTranslatorTest {
                         .ethereumCallResult(FUNCTION_RESULT)
                         .build())
                 .build();
-        final var context = new ContractOpContext(MEMO, TXN_ID, Transaction.DEFAULT, ETHEREUM_TRANSACTION, CONTRACT_ID);
+        final var context =
+                new ContractOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, ETHEREUM_TRANSACTION, CONTRACT_ID);
 
         final var actualRecordNoOutput = BLOCK_ITEMS_TRANSLATOR.translateRecord(context, TRANSACTION_RESULT);
         assertEquals(
@@ -494,7 +500,8 @@ class BlockItemsTranslatorTest {
                         .ethereumCreateResult(FUNCTION_RESULT)
                         .build())
                 .build();
-        final var context = new ContractOpContext(MEMO, TXN_ID, Transaction.DEFAULT, ETHEREUM_TRANSACTION, CONTRACT_ID);
+        final var context =
+                new ContractOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, ETHEREUM_TRANSACTION, CONTRACT_ID);
 
         final var actualRecordNoOutput = BLOCK_ITEMS_TRANSLATOR.translateRecord(context, TRANSACTION_RESULT);
         assertEquals(
@@ -527,7 +534,7 @@ class BlockItemsTranslatorTest {
         final var output = TransactionOutput.newBuilder()
                 .contractCall(new CallContractOutput(List.of(), FUNCTION_RESULT))
                 .build();
-        final var context = new BaseOpContext(MEMO, TXN_ID, Transaction.DEFAULT, CRYPTO_TRANSFER);
+        final var context = new BaseOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, CRYPTO_TRANSFER);
 
         final var actualRecordNoOutput = BLOCK_ITEMS_TRANSLATOR.translateRecord(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECORD, actualRecordNoOutput);
@@ -546,7 +553,7 @@ class BlockItemsTranslatorTest {
         final var output = TransactionOutput.newBuilder()
                 .cryptoTransfer(new CryptoTransferOutput(ASSESSED_CUSTOM_FEES))
                 .build();
-        final var context = new BaseOpContext(MEMO, TXN_ID, Transaction.DEFAULT, CRYPTO_TRANSFER);
+        final var context = new BaseOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, CRYPTO_TRANSFER);
 
         final var actualRecordNoOutput = BLOCK_ITEMS_TRANSLATOR.translateRecord(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECORD, actualRecordNoOutput);
@@ -568,7 +575,8 @@ class BlockItemsTranslatorTest {
                 "CRYPTO_UPDATE",
             })
     void certainCryptoOpsUseEvmAddressFromContext(@NonNull final HederaFunctionality function) {
-        final var context = new CryptoOpContext(MEMO, TXN_ID, Transaction.DEFAULT, function, ACCOUNT_ID, EVM_ADDRESS);
+        final var context =
+                new CryptoOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, function, ACCOUNT_ID, EVM_ADDRESS);
         final var actualRecord = BLOCK_ITEMS_TRANSLATOR.translateRecord(context, TRANSACTION_RESULT);
         assertEquals(
                 EXPECTED_BASE_RECORD
@@ -585,7 +593,7 @@ class BlockItemsTranslatorTest {
     @Test
     void tokenAirdropUsesPendingFromContext() {
         final var context =
-                new AirdropOpContext(MEMO, TXN_ID, Transaction.DEFAULT, TOKEN_AIRDROP, PENDING_AIRDROP_RECORDS);
+                new AirdropOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, TOKEN_AIRDROP, PENDING_AIRDROP_RECORDS);
         final var actualRecord = BLOCK_ITEMS_TRANSLATOR.translateRecord(context, TRANSACTION_RESULT);
         assertEquals(
                 EXPECTED_BASE_RECORD
@@ -603,7 +611,7 @@ class BlockItemsTranslatorTest {
         final var seedOutput = TransactionOutput.newBuilder()
                 .utilPrng(UtilPrngOutput.newBuilder().prngBytes(RUNNING_HASH).build())
                 .build();
-        final var context = new BaseOpContext(MEMO, TXN_ID, Transaction.DEFAULT, UTIL_PRNG);
+        final var context = new BaseOpContext(MEMO, RATES, TXN_ID, Transaction.DEFAULT, UTIL_PRNG);
 
         final var actualRecordNoOutput = BLOCK_ITEMS_TRANSLATOR.translateRecord(context, TRANSACTION_RESULT);
         assertEquals(EXPECTED_BASE_RECORD, actualRecordNoOutput);

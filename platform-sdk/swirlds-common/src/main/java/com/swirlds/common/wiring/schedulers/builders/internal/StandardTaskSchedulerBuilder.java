@@ -153,6 +153,8 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
                             model,
                             name,
                             buildUncaughtExceptionHandler(),
+                            counters.onRamp(),
+                            counters.offRamp(),
                             dataCounter,
                             busyFractionTimer,
                             sleepDuration,

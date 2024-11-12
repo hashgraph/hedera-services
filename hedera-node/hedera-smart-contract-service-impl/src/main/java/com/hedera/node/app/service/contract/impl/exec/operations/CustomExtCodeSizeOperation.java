@@ -34,12 +34,20 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeSizeOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
+/**
+ * A Hedera customization of the Besu {@link org.hyperledger.besu.evm.operation.ExtCodeSizeOperation}.
+ */
 public class CustomExtCodeSizeOperation extends ExtCodeSizeOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
     private final AddressChecks addressChecks;
     private final FeatureFlags featureFlags;
 
+    /**
+     * @param gasCalculator the gas calculator to use
+     * @param addressChecks checks against addresses reserved for Hedera
+     * @param featureFlags current evm module feature flags
+     */
     public CustomExtCodeSizeOperation(
             @NonNull final GasCalculator gasCalculator,
             @NonNull final AddressChecks addressChecks,

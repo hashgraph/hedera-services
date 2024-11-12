@@ -66,7 +66,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
     private final Configuration configuration;
 
     /**
-     * Default constructor for deserialization purposes.
+     * Constructor for deserialization purposes.
      */
     public MerkleDbDataSourceBuilder(@NonNull final Configuration configuration) {
         // for deserialization
@@ -78,6 +78,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      *
      * @param tableConfig
      *      Table configuration to use to create new data sources
+     * @param configuration platform configuration
      */
     public MerkleDbDataSourceBuilder(
             final MerkleDbTableConfig tableConfig, @NonNull final Configuration configuration) {

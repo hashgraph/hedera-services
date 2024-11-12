@@ -23,9 +23,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.signed.SignedState;
@@ -42,8 +40,7 @@ import org.junit.jupiter.api.Test;
 class BirthRoundStateMigrationTests {
 
     @NonNull
-    private SignedState generateSignedState(
-            @NonNull final Random random, @NonNull final PlatformContext platformContext) {
+    private SignedState generateSignedState(@NonNull final Random random) {
 
         final long round = random.nextLong(1, 1_000_000);
 
@@ -77,10 +74,7 @@ class BirthRoundStateMigrationTests {
     @Test
     void generationModeTest() {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-
-        final SignedState signedState = generateSignedState(random, platformContext);
+        final SignedState signedState = generateSignedState(random);
         final Hash originalHash = signedState.getState().getHash();
 
         final SoftwareVersion previousSoftwareVersion =
@@ -89,7 +83,7 @@ class BirthRoundStateMigrationTests {
         final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
         BirthRoundStateMigration.modifyStateForBirthRoundMigration(
-                signedState, AncientMode.GENERATION_THRESHOLD, newSoftwareVersion, platformContext.getConfiguration());
+                signedState, AncientMode.GENERATION_THRESHOLD, newSoftwareVersion);
 
         assertEquals(originalHash, signedState.getState().getHash());
 
@@ -102,10 +96,8 @@ class BirthRoundStateMigrationTests {
     @Test
     void alreadyMigratedTest() {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
 
-        final SignedState signedState = generateSignedState(random, platformContext);
+        final SignedState signedState = generateSignedState(random);
 
         final SoftwareVersion previousSoftwareVersion =
                 signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
@@ -120,7 +112,7 @@ class BirthRoundStateMigrationTests {
         final Hash originalHash = signedState.getState().getHash();
 
         BirthRoundStateMigration.modifyStateForBirthRoundMigration(
-                signedState, AncientMode.BIRTH_ROUND_THRESHOLD, newSoftwareVersion, platformContext.getConfiguration());
+                signedState, AncientMode.BIRTH_ROUND_THRESHOLD, newSoftwareVersion);
 
         assertEquals(originalHash, signedState.getState().getHash());
 
@@ -138,10 +130,7 @@ class BirthRoundStateMigrationTests {
     @Test
     void migrationTest() {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-
-        final SignedState signedState = generateSignedState(random, platformContext);
+        final SignedState signedState = generateSignedState(random);
         final Hash originalHash = signedState.getState().getHash();
 
         final SoftwareVersion previousSoftwareVersion =
@@ -158,7 +147,7 @@ class BirthRoundStateMigrationTests {
                 .minimumJudgeAncientThreshold();
 
         BirthRoundStateMigration.modifyStateForBirthRoundMigration(
-                signedState, AncientMode.BIRTH_ROUND_THRESHOLD, newSoftwareVersion, platformContext.getConfiguration());
+                signedState, AncientMode.BIRTH_ROUND_THRESHOLD, newSoftwareVersion);
 
         assertNotEquals(originalHash, signedState.getState().getHash());
 

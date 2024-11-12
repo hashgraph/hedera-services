@@ -17,9 +17,9 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
@@ -52,7 +52,7 @@ class DataFileReaderCloseTest {
     static void setup() throws IOException {
         testFileSystemManager = new TestFileSystemManager(tempDirectory);
         final Path dir = testFileSystemManager.resolve(Path.of("readerIsOpenTest"));
-        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+        final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         collection = new DataFileCollection(dbConfig, dir, "store", null);
     }
 
@@ -120,7 +120,7 @@ class DataFileReaderCloseTest {
     @Test
     void readWhileFinishWritingTest() throws IOException {
         final var tmpDir = Files.createDirectory(testFileSystemManager.resolve(Path.of("readWhileFinishWritingTest")));
-        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+        final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         for (int i = 0; i < 100; i++) {
             Path filePath = null;
             final int fi = i;

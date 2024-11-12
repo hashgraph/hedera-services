@@ -27,12 +27,20 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates {@code getApproved()} calls to the HTS system contract.
+ */
 @Singleton
 public class GetApprovedTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    /** Selector for getApproved(address,uint256) method. */
     public static final Function HAPI_GET_APPROVED = new Function("getApproved(address,uint256)", "(int32,address)");
+    /** Selector for getApproved(uint256) method. */
     public static final Function ERC_GET_APPROVED = new Function("getApproved(uint256)", ReturnTypes.ADDRESS);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public GetApprovedTranslator() {
         // Dagger2

@@ -188,6 +188,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private static final int MAX_FULL_REHASHING_TIMEOUT = 3600; // 1 hour
 
     /** Virtual Map platform configuration */
+    @NonNull
     private final VirtualMapConfig virtualMapConfig;
 
     /**
@@ -375,17 +376,13 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             @NonNull final ValueSerializer<V> valueSerializer,
             @NonNull final VirtualDataSourceBuilder dataSourceBuilder,
             @NonNull final VirtualMapConfig virtualMapConfig) {
-        requireNonNull(keySerializer);
-        requireNonNull(valueSerializer);
-        requireNonNull(dataSourceBuilder);
-        requireNonNull(virtualMapConfig);
         this.fastCopyVersion = 0;
         this.hasher = new VirtualHasher<>();
+        this.virtualMapConfig = requireNonNull(virtualMapConfig);
         this.flushThreshold.set(virtualMapConfig.copyFlushThreshold());
-        this.keySerializer = keySerializer;
-        this.valueSerializer = valueSerializer;
-        this.dataSourceBuilder = dataSourceBuilder;
-        this.virtualMapConfig = virtualMapConfig;
+        this.keySerializer = requireNonNull(keySerializer);
+        this.valueSerializer = requireNonNull(valueSerializer);
+        this.dataSourceBuilder = requireNonNull(dataSourceBuilder);
         // All other fields are initialized in postInit()
     }
 
@@ -512,15 +509,26 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 lastLeafPath,
                 getRoute());
         final FullLeafRehashHashListener<K, V> hashListener = new FullLeafRehashHashListener<>(
-                firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource, statistics);
+                firstLeafPath,
+                lastLeafPath,
+                keySerializer,
+                valueSerializer,
+                dataSource,
+                virtualMapConfig.flushInterval(),
+                statistics);
 
         // This background thread will be responsible for hashing the tree and sending the
         // data to the hash listener to flush.
         new ThreadConfiguration(getStaticThreadManager())
                 .setComponent("virtualmap")
                 .setThreadName("leafRehasher")
-                .setRunnable(() -> fullRehashFuture.complete(
-                        hasher.hash(records::findHash, rehashIterator, firstLeafPath, lastLeafPath, hashListener)))
+                .setRunnable(() -> fullRehashFuture.complete(hasher.hash(
+                        records::findHash,
+                        rehashIterator,
+                        firstLeafPath,
+                        lastLeafPath,
+                        hashListener,
+                        virtualMapConfig)))
                 .setExceptionHandler((thread, exception) -> {
                     // Shut down the iterator.
                     rehashIterator.close();
@@ -1380,7 +1388,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         .iterator(),
                 state.getFirstLeafPath(),
                 state.getLastLeafPath(),
-                hashListener);
+                hashListener,
+                virtualMapConfig);
 
         if (virtualHash == null) {
             final Hash rootHash = (state.size() == 0) ? null : records.findHash(0);
@@ -1605,6 +1614,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 keySerializer,
                 valueSerializer,
                 reconnectRecords.getDataSource(),
+                virtualMapConfig.flushInterval(),
                 statistics,
                 nodeRemover);
 
@@ -1614,7 +1624,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 .setComponent("virtualmap")
                 .setThreadName("hasher")
                 .setRunnable(() -> reconnectHashingFuture.complete(hasher.hash(
-                        reconnectRecords::findHash, reconnectIterator, firstLeafPath, lastLeafPath, hashListener)))
+                        reconnectRecords::findHash,
+                        reconnectIterator,
+                        firstLeafPath,
+                        lastLeafPath,
+                        hashListener,
+                        virtualMapConfig)))
                 .setExceptionHandler((thread, exception) -> {
                     // Shut down the iterator. This will cause reconnect to terminate.
                     reconnectIterator.close();
@@ -1701,6 +1716,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         if ((currentSize > maxSizeReachedTriggeringWarning)
                 && (remainingCapacity <= virtualMapConfig.virtualMapWarningThreshold())
                 && (remainingCapacity % virtualMapConfig.virtualMapWarningInterval() == 0)) {
+
             maxSizeReachedTriggeringWarning = currentSize;
             logger.warn(
                     VIRTUAL_MERKLE_STATS.getMarker(),

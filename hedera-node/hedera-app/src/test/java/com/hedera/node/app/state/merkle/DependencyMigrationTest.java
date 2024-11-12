@@ -116,7 +116,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         }
 
         @Test
-        void versionedConfigRequired() {
+        void configRequired2() {
             final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
                             merkleTree,

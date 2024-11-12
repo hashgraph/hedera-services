@@ -31,6 +31,7 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
  */
 public final class ConstructableUtils {
     private ConstructableUtils() {}
+
     /**
      * Add Virtual Map classes to the constructable registry which need the configuration.
      * @param configuration configuration

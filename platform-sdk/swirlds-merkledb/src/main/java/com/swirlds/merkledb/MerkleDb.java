@@ -20,6 +20,7 @@ import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
@@ -100,6 +101,8 @@ public final class MerkleDb {
     /** Label for database component used in logging, stats, etc. */
     public static final String MERKLEDB_COMPONENT = "merkledb";
 
+    /** Platform configuration */
+    @NonNull
     private final Configuration configuration;
 
     /**
@@ -157,10 +160,12 @@ public final class MerkleDb {
      * created first. If the path is {@code null}, the default MerkleDb path is used instead.
      *
      * @param path Database storage dir. If {@code null}, the default MerkleDb path is used
-     * @param configuration The configuration to use
+     * @param configuration platform configuration
      * @return Virtual database instance that stores its data in the specified path
      */
-    public static MerkleDb getInstance(final Path path, final Configuration configuration) {
+    public static MerkleDb getInstance(final Path path, @NonNull final Configuration configuration) {
+        requireNonNull(configuration);
+
         return instances.computeIfAbsent(
                 path != null ? path : getDefaultPath(configuration), p -> new MerkleDb(p, configuration));
     }
@@ -168,10 +173,12 @@ public final class MerkleDb {
     /**
      * A database path (storage dir) to use for new or restored data sources
      *
-     * @param configuration The configuration to use
+     * @param configuration platform configuration
      * @return Default instance path
      */
-    private static Path getDefaultPath(final Configuration configuration) {
+    private static Path getDefaultPath(@NonNull final Configuration configuration) {
+        requireNonNull(configuration);
+
         return defaultInstancePath.updateAndGet(p -> {
             if (p == null) {
                 p = FileSystemManager.create(configuration).resolveNewTemp(MERKLEDB_COMPONENT);
@@ -189,7 +196,7 @@ public final class MerkleDb {
      * @param value The new default database path
      */
     public static void setDefaultPath(@NonNull Path value) {
-        Objects.requireNonNull(value);
+        requireNonNull(value);
         // It probably makes sense to let change default instance path only before the first call
         // to getDefaultInstance(). Update: in the tests, this method may be called multiple times,
         // if a test needs to create multiple maps with the same name
@@ -212,10 +219,11 @@ public final class MerkleDb {
      * Gets a default database instance. Used by virtual data source builder to create new data
      * sources or restore data sources from snapshots.
      *
-     * @param configuration The configuration to use
+     * @param configuration platform configuration
      * @return Default database instance
      */
-    public static MerkleDb getDefaultInstance(final Configuration configuration) {
+    public static MerkleDb getDefaultInstance(@NonNull final Configuration configuration) {
+        requireNonNull(configuration);
         return getInstance(getDefaultPath(configuration), configuration);
     }
 
@@ -224,9 +232,10 @@ public final class MerkleDb {
      * file exists in the specified folder, it gets loaded into the tables map.
      *
      * @param storageDir A folder to store database files in
-     * @param configuration The configuration to use
+     * @param configuration platform configuration
      */
-    private MerkleDb(final Path storageDir, final Configuration configuration) {
+    private MerkleDb(final Path storageDir, @NonNull final Configuration configuration) {
+        requireNonNull(configuration);
         this.configuration = configuration;
         if (storageDir == null) {
             throw new IllegalArgumentException("Cannot create a MerkleDatabase instance with null storageDir");
@@ -320,8 +329,12 @@ public final class MerkleDb {
         return getTablesDir(baseDir).resolve(tableName + "-" + tableId);
     }
 
-    public MerkleDbConfig getConfig() {
-        return configuration.getConfigData(MerkleDbConfig.class);
+    /**
+     * Get Platform Configuration
+     * @return configuration platform configuration
+     */
+    public Configuration getConfiguration() {
+        return configuration;
     }
 
     /**
@@ -390,8 +403,10 @@ public final class MerkleDb {
             final boolean makeCopyPrimary)
             throws IOException {
         final String label = dataSource.getTableName();
-        final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
-        final MerkleDbTableConfig tableConfig = dataSource.getTableConfig().copy(merkleDbConfig);
+        final MerkleDbConfig merkleDbConfig = getConfiguration().getConfigData(MerkleDbConfig.class);
+        final MerkleDbTableConfig tableConfig = dataSource
+                .getTableConfig()
+                .copy(merkleDbConfig.maxNumOfKeys(), merkleDbConfig.hashesRamToDiskThreshold());
         if (tableConfigs.get(tableId) != null) {
             throw new IllegalStateException("Table with ID " + tableId + " already exists");
         }
@@ -539,13 +554,14 @@ public final class MerkleDb {
      *
      * @param source Source folder
      * @param target Target folder, optional. If {@code null}, the default MerkleDb folder is used
-     * @param configuration The configuration to use
+     * @param configuration platform configuration
      * @return Default database instance
      * @throws IOException If an I/O error occurs
      * @throws IllegalStateException If the default database instance is already created
      */
-    public static MerkleDb restore(final Path source, final Path target, final Configuration configuration)
+    public static MerkleDb restore(final Path source, final Path target, @NonNull final Configuration configuration)
             throws IOException {
+        requireNonNull(configuration);
         final Path defaultInstancePath = (target != null) ? target : getDefaultPath(configuration);
         if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
             Files.createDirectories(defaultInstancePath);
@@ -771,8 +787,8 @@ public final class MerkleDb {
                 }
             }
 
-            Objects.requireNonNull(tableName, "Null table name");
-            Objects.requireNonNull(tableConfig, "Null table config");
+            requireNonNull(tableName, "Null table name");
+            requireNonNull(tableConfig, "Null table config");
 
             this.tableId = tableId;
             this.tableName = tableName;

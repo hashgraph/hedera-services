@@ -38,11 +38,15 @@ class MerkleDbTableConfigTest {
 
     @Test
     void deserializeDefaultsTest() throws IOException {
-        final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, dbConfig);
+        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                (short) 1,
+                DigestType.SHA_384,
+                merkleDbConfig.maxNumOfKeys(),
+                merkleDbConfig.hashesRamToDiskThreshold());
 
-        Assertions.assertEquals(dbConfig.maxNumOfKeys(), tableConfig.getMaxNumberOfKeys());
-        Assertions.assertEquals(dbConfig.hashesRamToDiskThreshold(), tableConfig.getHashesRamToDiskThreshold());
+        Assertions.assertEquals(merkleDbConfig.maxNumOfKeys(), tableConfig.getMaxNumberOfKeys());
+        Assertions.assertEquals(merkleDbConfig.hashesRamToDiskThreshold(), tableConfig.getHashesRamToDiskThreshold());
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> tableConfig.maxNumberOfKeys(0));
         Assertions.assertThrows(IllegalArgumentException.class, () -> tableConfig.maxNumberOfKeys(-1));
@@ -62,7 +66,7 @@ class MerkleDbTableConfigTest {
             restored = new MerkleDbTableConfig(in);
         }
 
-        Assertions.assertEquals(dbConfig.maxNumOfKeys(), restored.getMaxNumberOfKeys());
+        Assertions.assertEquals(merkleDbConfig.maxNumOfKeys(), restored.getMaxNumberOfKeys());
         // Fields that aren't deserialized should have default protobuf values (e.g. zero), not
         // default MerkleDbConfig values
         Assertions.assertEquals(0, restored.getHashesRamToDiskThreshold());

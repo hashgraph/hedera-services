@@ -410,7 +410,6 @@ class VirtualRootNodeTest extends VirtualTestBase {
                 .getOrCreateConfig();
 
         VirtualRootNode<TestKey, TestValue> root = createRoot(configuration);
-
         assertEquals(0, root.getFlushThreshold());
         final int flushInterval =
                 configuration.getConfigData(VirtualMapConfig.class).flushInterval();

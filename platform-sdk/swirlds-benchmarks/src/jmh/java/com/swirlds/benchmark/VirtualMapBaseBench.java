@@ -108,8 +108,12 @@ public abstract class VirtualMapBaseBench extends BaseBench {
     }
 
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap(String label) {
-        MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                        (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class))
+        final MerkleDbConfig merkleDbConfig = getConfig(MerkleDbConfig.class);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                        (short) 1,
+                        DigestType.SHA_384,
+                        merkleDbConfig.maxNumOfKeys(),
+                        merkleDbConfig.hashesRamToDiskThreshold())
                 .preferDiskIndices(false);
         MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig, configuration);
         return new VirtualMap<>(
@@ -173,7 +177,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
                                 virtualMap.serialize(out, savedDir);
                             }
                             virtualMap.release();
-                            if (!getConfig().saveDataDirectory()) {
+                            if (!getBenchmarkConfig().saveDataDirectory()) {
                                 Utils.deleteRecursively(savedDir);
                             }
 
@@ -211,7 +215,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
         }
         logger.info("Flushed map in {} ms", System.currentTimeMillis() - start);
 
-        if (getConfig().saveDataDirectory()) {
+        if (getBenchmarkConfig().saveDataDirectory()) {
             curMap = saveMap(curMap);
         }
 

@@ -33,6 +33,10 @@ public class EitherOrVerificationStrategy implements VerificationStrategy {
     private final VerificationStrategy firstStrategy;
     private final VerificationStrategy secondStrategy;
 
+    /**
+     * @param firstStrategy the first verification strategy to be used
+     * @param secondStrategy the second verification strategy to be used
+     */
     public EitherOrVerificationStrategy(
             @NonNull final VerificationStrategy firstStrategy, @NonNull final VerificationStrategy secondStrategy) {
         this.firstStrategy = firstStrategy;

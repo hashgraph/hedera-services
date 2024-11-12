@@ -58,16 +58,19 @@ final class MapTest {
             .withConfigDataType(FileSystemManagerConfig.class)
             .build();
 
+    private static final MerkleDbConfig MERKLE_DB_CONFIG = CONFIGURATION.getConfigData(MerkleDbConfig.class);
+    private static final MerkleDbTableConfig TABLE_CONFIG = new MerkleDbTableConfig(
+            (short) 1,
+            DigestType.SHA_384,
+            MERKLE_DB_CONFIG.maxNumOfKeys(),
+            MERKLE_DB_CONFIG.hashesRamToDiskThreshold());
+
     VirtualDataSourceBuilder createLongBuilder() {
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
-        return new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
+        return new MerkleDbDataSourceBuilder(TABLE_CONFIG, CONFIGURATION);
     }
 
     VirtualDataSourceBuilder createGenericBuilder() {
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
-        return new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
+        return new MerkleDbDataSourceBuilder(TABLE_CONFIG, CONFIGURATION);
     }
 
     VirtualMap<TestKey, TestValue> createLongMap(String label) {

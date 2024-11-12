@@ -68,7 +68,7 @@ public class CloseFlushTest {
 
     @BeforeAll
     public static void setup() throws IOException {
-        tmpFileDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        tmpFileDir = LegacyTemporaryFileBuilder.buildTemporaryFile(CONFIGURATION);
         Configurator.setRootLevel(Level.WARN);
     }
 

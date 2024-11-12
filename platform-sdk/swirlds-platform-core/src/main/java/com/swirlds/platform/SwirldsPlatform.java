@@ -57,6 +57,7 @@ import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -189,7 +190,7 @@ public class SwirldsPlatform implements Platform {
 
         // This method is a no-op if we are not in birth round mode, or if we have already migrated.
         final SoftwareVersion appVersion = blocks.appVersion();
-        modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion, platformContext.getConfiguration());
+        modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion);
 
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             try {
@@ -211,7 +212,7 @@ public class SwirldsPlatform implements Platform {
         initialPcesFiles = blocks.initialPcesFiles();
         notificationEngine = blocks.notificationEngine();
 
-        currentAddressBook = initialState.getAddressBook();
+        currentAddressBook = RosterUtils.buildAddressBook(blocks.rosterHistory().getCurrentRoster());
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
 

@@ -172,7 +172,8 @@ public abstract class AbstractLongList<C> implements LongList {
      * @param configuration platform configuration
      * @throws IOException If there was a problem reading the file
      */
-    protected AbstractLongList(final Path path, final long reservedBufferLength, final Configuration configuration)
+    protected AbstractLongList(
+            final Path path, final long reservedBufferLength, @NonNull final Configuration configuration)
             throws IOException {
         requireNonNull(configuration);
         this.configuration = configuration;
