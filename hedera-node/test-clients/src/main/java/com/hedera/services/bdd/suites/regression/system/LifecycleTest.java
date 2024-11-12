@@ -66,7 +66,7 @@ public interface LifecycleTest {
     int MIXED_OPS_BURST_TPS = 50;
     Duration FREEZE_TIMEOUT = Duration.ofSeconds(90);
     Duration RESTART_TIMEOUT = Duration.ofSeconds(180);
-    Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(60);
+    Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
     Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
     Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
     Duration RESTART_TO_ACTIVE_TIMEOUT = Duration.ofSeconds(210);
