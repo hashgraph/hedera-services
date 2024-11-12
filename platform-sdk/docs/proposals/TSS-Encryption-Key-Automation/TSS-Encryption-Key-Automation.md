@@ -57,7 +57,7 @@ roster nightly. The `TSS-Ledger-ID` capability cannot be turned on until enough 
 * The public `tssEncryptionKey` will be stored in the `TssBaseService` state.
 * A new `TssEncryptionKeyTransaction` will be gossiped, come to consensus, and handled by the `TssBaseService` to
   update the public `tssEncryptionKey` in the state.
-  * This new transaction is system generated only and not user generated.  It should be rejected at the HAPI gateway
+  * This new transaction is system generated only and not user generated. It should be rejected at the HAPI gateway
     for user generated transactions.
 
 #### Alternatives Considered
@@ -78,14 +78,17 @@ The following changes to the system are required.
 
 The `TssBaseService` already exists with its own state.
 
-* This proposal adds a new `Map<Long, Bytes>` to the state for storing the public key of each node.
+* This proposal adds a new virtual map to the `TssBaseService` state with type structure equivalent to
+  `Map<NodeId,TssEncryptionKeyTransaction>` for storing the public key of each node.
 * This proposal modifies the normal execution of the `TssBaseService` when its current public `tssEncryptionKey` is not
   in the state.
 
 Cryptography Changes:
 
-* The `KeysAndCerts.java` record is extended with `byte[] privateTssEncryptionKey` and `byte[] publicTssEncryptionKey`.
-* The cryptography system adds a dependency on the TSS-Library to generate `tssEncryptionKey` pairs.
+* The cryptography system adds a dependency on the TSS-Library to generate the `tssEncryptionKey` in the form of a
+  `(BlsPrivateKey, BlsPublicKey)` pair.
+* The `KeysAndCerts.java` record is extended with `BlsPrivateKey privateTssEncryptionKey` and
+  `BlsPublicKey publicTssEncryptionKey`.
 
 ### Core Behaviors
 
@@ -183,7 +186,9 @@ The `TssBaseService` state will be extended with a new map of the public `tssEnc
 Data Lifecycle:
 
 * When a node id is not present in any of the `active rosters` or a `candidate roster`, the entry for that node id
-  should be removed. This cleanup task should trigger any time there is a candidate or active roster state change.
+  should be removed. This cleanup task could be eagerly triggered any time there is a roster state change or lazily
+  triggered whenever a candidate roster is set. If this cleanup happens at startup, it must happen through a schema.
+  If it happens during execution, it must be on the transaction handling thread.
 
 ### Configuration
 
