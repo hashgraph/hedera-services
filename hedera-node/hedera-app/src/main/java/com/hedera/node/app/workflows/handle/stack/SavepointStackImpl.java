@@ -378,6 +378,10 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         return false;
     }
 
+    public int buildersSize() {
+        return builderSink == null ? 0 : builderSink.allBuilders().size();
+    }
+
     /**
      * For each stream builder in this stack other than the designated base builder, invokes the given consumer
      * with the builder cast to the given type.
@@ -485,7 +489,10 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                 builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
                         .syncBodyIdFromRecordId();
             }
-            final var consensusNow = consensusTime.plusNanos((long) i - indexOfUserRecord);
+            var consensusNow = consensusTime.plusNanos((long) i - indexOfUserRecord);
+//            if(builder.category() == SCHEDULED) {
+//                consensusNow = consensusTime.plusNanos(i);
+//            }
             lastAssignedConsenusTime = consensusNow;
             builder.consensusTimestamp(consensusNow);
             if (i > indexOfUserRecord) {
@@ -522,7 +529,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             blockRecordSource = new BlockRecordSource(outputs);
         }
         final var recordSource = streamMode != BLOCKS ? new LegacyListRecordSource(records, receipts) : null;
-        return new HandleOutput(blockRecordSource, recordSource);
+        return new HandleOutput(blockRecordSource, recordSource, lastAssignedConsenusTime);
     }
 
     private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {

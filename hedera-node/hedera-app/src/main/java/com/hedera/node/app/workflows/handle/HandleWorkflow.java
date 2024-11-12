@@ -89,6 +89,7 @@ import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -505,7 +506,7 @@ public class HandleWorkflow {
                 userTxn.txnInfo().transactionID(),
                 DueDiligenceFailure.NO,
                 requireNonNull(cacheableRecordSource));
-        return new HandleOutput(blockRecordSource, recordSource);
+        return new HandleOutput(blockRecordSource, recordSource, null);
     }
 
     /**
@@ -602,9 +603,6 @@ public class HandleWorkflow {
             return true;
         } else if (lastProcessTime.getEpochSecond() < userTxn.consensusNow().getEpochSecond()) {
             // There is at least one unprocessed second since the last processing time
-            final var scheduleConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
-
-            // try to execute schedules
             final var readableStoreFactory = new ReadableStoreFactory(userTxn.stack());
             final var writableStoreFactory = new WritableStoreFactory(
                     userTxn.stack(), scheduleService.getServiceName(), userTxn.config(), storeMetricsService);
@@ -613,21 +611,20 @@ public class HandleWorkflow {
                     new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
             final var scheduleIterator =
                     scheduleService.iterTxnsForInterval(lastProcessTime, userTxn.consensusNow(), () -> storeFactory);
-            // todo: consensus nanos offset will be calculated more precisely in following PR,
-            //  for now just add 1 nano on each iteration.
-            var consensusNanosOffset = 1;
+
+            final var consensusConfig = configProvider.getConfiguration().getConfigData(ConsensusConfig.class);
+            final var maxChildTransactions = consensusConfig.handleMaxFollowingRecords();
+            // reserve first timestamp slots for userTxn child transactions
+            var lastAssignedConsensusTime = userTxn.consensusNow().plusNanos(maxChildTransactions);
             while (scheduleIterator.hasNext()) {
                 // get schedule
                 final var schedule = scheduleIterator.next();
-                // update schedule consensus
-                final var scheduleConsensus =
-                        Instant.from(userTxn.consensusNow().plusNanos(consensusNanosOffset));
                 final var txnBody = schedule.body();
                 final var scheduleUserTnx = userTxnFactory.createUserTxn(
                         userTxn.state(),
                         userTxn.event(),
                         userTxn.creatorInfo(),
-                        scheduleConsensus,
+                        lastAssignedConsensusTime,
                         userTxn.type(),
                         schedule.payerId(),
                         txnBody);
@@ -637,10 +634,19 @@ public class HandleWorkflow {
                 final var scheduleDispatch = userTxnFactory.createDispatch(
                         scheduleUserTnx, baseBuilder, schedule.verificationAssistant(), SCHEDULED);
                 dispatchProcessor.processDispatch(scheduleDispatch);
-                // add record to the record cache
+
+                // offset the starting consensus with the number of preceding transactions in order to get
+                // todo try to obtain the number of preceding records from the stack
+                // scheduleUserTnx.stack().preceidingBuildersSize();
+                final var consensusNanosOffset = 1 + 1;
                 final var handleOutput = scheduleUserTnx
                         .stack()
-                        .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
+                        .buildHandleOutput(scheduleUserTnx.consensusNow().plusNanos(consensusNanosOffset), exchangeRateManager.exchangeRates());
+
+                // update last Assigned consensus time
+                lastAssignedConsensusTime = handleOutput.lastAssignedConsensusTime();
+
+                // add record to the record cache
                 recordCache.addRecordSource(
                         scheduleUserTnx.creatorInfo().nodeId(),
                         scheduleUserTnx.txnInfo().transactionID(),
@@ -648,7 +654,6 @@ public class HandleWorkflow {
                         handleOutput.preferringBlockRecordSource());
 
                 scheduleIterator.remove();
-                consensusNanosOffset++;
             }
             // this will commit the purge of the schedules
             userTxn.stack().commitSystemStateChanges();

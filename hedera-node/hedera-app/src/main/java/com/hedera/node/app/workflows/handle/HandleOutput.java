@@ -22,6 +22,7 @@ import com.hedera.node.app.spi.records.RecordSource;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 
 /**
  * A temporary wrapper class as we transition from the V6 record stream to the block stream;
@@ -29,8 +30,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  *
  * @param blockRecordSource maybe the block stream output items
  * @param recordSource maybe record source derived from the V6 record stream items
+ * @param lastAssignedConsensusTime the last assigned consensus time after handling any scheduled or child transactions
  */
-public record HandleOutput(@Nullable BlockRecordSource blockRecordSource, @Nullable RecordSource recordSource) {
+public record HandleOutput(
+        @Nullable BlockRecordSource blockRecordSource,
+        @Nullable RecordSource recordSource,
+        @Nullable Instant lastAssignedConsensusTime) {
     public HandleOutput {
         if (blockRecordSource == null) {
             requireNonNull(recordSource);
@@ -47,5 +52,9 @@ public record HandleOutput(@Nullable BlockRecordSource blockRecordSource, @Nulla
 
     public @NonNull RecordSource preferringBlockRecordSource() {
         return blockRecordSource != null ? blockRecordSource : requireNonNull(recordSource);
+    }
+
+    public @NonNull Instant lastAssignedConsensusTime() {
+        return requireNonNull(lastAssignedConsensusTime);
     }
 }

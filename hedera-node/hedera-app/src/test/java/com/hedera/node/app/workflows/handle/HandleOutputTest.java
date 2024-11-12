@@ -35,34 +35,34 @@ class HandleOutputTest {
 
     @Test
     void throwsIfMissingRecordSourceWhenRequired() {
-        final var subject = new HandleOutput(blockRecordSource, null);
+        final var subject = new HandleOutput(blockRecordSource, null, null);
         assertThrows(NullPointerException.class, subject::recordSourceOrThrow);
     }
 
     @Test
     void throwsIfMissingBlockRecordSourceWhenRequired() {
-        final var subject = new HandleOutput(null, recordSource);
+        final var subject = new HandleOutput(null, recordSource, null);
         assertThrows(NullPointerException.class, subject::blockRecordSourceOrThrow);
     }
 
     @Test
     void returnsRecordSourceWhenPresent() {
-        final var subject = new HandleOutput(null, recordSource);
+        final var subject = new HandleOutput(null, recordSource, null);
         assertEquals(recordSource, subject.recordSourceOrThrow());
     }
 
     @Test
     void returnsBlockRecordSourceWhenPresent() {
-        final var subject = new HandleOutput(blockRecordSource, null);
+        final var subject = new HandleOutput(blockRecordSource, null, null);
         assertEquals(blockRecordSource, subject.blockRecordSourceOrThrow());
     }
 
     @Test
     void returnsBlockRecordSourceWhenPresentOtherwiseRecordSource() {
-        final var withBlockSource = new HandleOutput(blockRecordSource, recordSource);
+        final var withBlockSource = new HandleOutput(blockRecordSource, recordSource, null);
         assertEquals(blockRecordSource, withBlockSource.preferringBlockRecordSource());
 
-        final var withoutBlockSource = new HandleOutput(null, recordSource);
+        final var withoutBlockSource = new HandleOutput(null, recordSource, null);
         assertEquals(recordSource, withoutBlockSource.preferringBlockRecordSource());
     }
 }
