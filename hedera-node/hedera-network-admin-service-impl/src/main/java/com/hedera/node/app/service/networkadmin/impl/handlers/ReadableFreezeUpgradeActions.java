@@ -39,7 +39,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
-import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -75,7 +74,6 @@ public class ReadableFreezeUpgradeActions {
     private final ReadableNodeStore nodeStore;
 
     private final ReadableStakingInfoStore stakingInfoStore;
-    private final WritableRosterStore rosterStore;
 
     private final Executor executor;
 
@@ -97,15 +95,13 @@ public class ReadableFreezeUpgradeActions {
             @NonNull final Executor executor,
             @NonNull final ReadableUpgradeFileStore upgradeFileStore,
             @NonNull final ReadableNodeStore nodeStore,
-            @NonNull final ReadableStakingInfoStore stakingInfoStore,
-            @NonNull final WritableRosterStore rosterStore) {
+            @NonNull final ReadableStakingInfoStore stakingInfoStore) {
         requireNonNull(configuration, "configuration is required for freeze upgrade actions");
         requireNonNull(freezeStore, "Freeze store is required for freeze upgrade actions");
         requireNonNull(executor, "Executor is required for freeze upgrade actions");
         requireNonNull(upgradeFileStore, "Upgrade file store is required for freeze upgrade actions");
         requireNonNull(nodeStore, "Node store is required for freeze upgrade actions");
         requireNonNull(stakingInfoStore, "Staking info store is required for freeze upgrade actions");
-        requireNonNull(rosterStore, "Roster store is required for freeze upgrade actions");
 
         this.adminServiceConfig = configuration.getConfigData(NetworkAdminConfig.class);
         this.nodesConfig = configuration.getConfigData(NodesConfig.class);
@@ -115,7 +111,6 @@ public class ReadableFreezeUpgradeActions {
         this.upgradeFileStore = upgradeFileStore;
         this.nodeStore = nodeStore;
         this.stakingInfoStore = stakingInfoStore;
-        this.rosterStore = rosterStore;
     }
 
     /**
@@ -280,10 +275,7 @@ public class ReadableFreezeUpgradeActions {
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             if (nodes != null && nodesConfig.enableDAB()) {
-                if (addressBookConfig.useRosterLifecycle()) {
-                    final var candidateRoster = nodeStore.snapshotOfFutureRoster();
-                    rosterStore.putCandidateRoster(candidateRoster);
-                } else {
+                if (!addressBookConfig.useRosterLifecycle()) {
                     generateConfigPem(artifactsLoc, keysLoc, nodes);
                     log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
                 }

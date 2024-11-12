@@ -59,7 +59,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.service.WritableRosterStore;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -95,9 +94,6 @@ class FreezeHandlerTest {
 
     @Mock(strictness = LENIENT)
     private ReadableNodeStore nodeStore;
-
-    @Mock(strictness = LENIENT)
-    private WritableRosterStore rosterStore;
 
     @Mock
     private ReadableStakingInfoStore stakingInfoStore;
@@ -135,7 +131,6 @@ class FreezeHandlerTest {
         given(storeFactory.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
         given(storeFactory.readableStore(ReadableStakingInfoStore.class)).willReturn(stakingInfoStore);
-        given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
     }
 
     @Test

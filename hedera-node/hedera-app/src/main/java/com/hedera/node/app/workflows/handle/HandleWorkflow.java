@@ -43,6 +43,7 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.input.EventHeader;
 import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
@@ -361,19 +362,19 @@ public class HandleWorkflow {
                 // Flushes the BUSY builder to the stream, no other side effects
                 userTxn.stack().commitTransaction(userTxn.baseBuilder());
             } else {
+                final var writableRosterStoreFactory = new WritableStoreFactory(
+                        userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
+                final var writableStoreFactory = new WritableStoreFactory(
+                        userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
+                final var nodeStore = writableStoreFactory.getStore(WritableNodeStore.class);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     systemSetup.externalizeInitSideEffects(
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                     // Set the genesis roster in state
-                    final var writableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
-                    final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
+                    final var rosterStore = writableRosterStoreFactory.getStore(WritableRosterStore.class);
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
-                    final var writableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
-                    final var nodeStore = writableStoreFactory.getStore(WritableNodeStore.class);
                     final var writableStakingInfoStore =
                             new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME));
                     final var writableNetworkStakingRewardsStore = new WritableNetworkStakingRewardsStore(
@@ -398,6 +399,13 @@ public class HandleWorkflow {
                     // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
+                }
+
+                if (userTxn.functionality() == HederaFunctionality.FREEZE) {
+                    // Set the candidate roster in state on network upgrade
+                    final var candidateRoster = nodeStore.snapshotOfFutureRoster();
+                    final var rosterStore = writableRosterStoreFactory.getStore(WritableRosterStore.class);
+                    rosterStore.putCandidateRoster(candidateRoster);
                 }
 
                 final var baseBuilder = initializeBuilderInfo(

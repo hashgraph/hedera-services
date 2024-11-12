@@ -23,15 +23,11 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
-import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
@@ -50,16 +46,12 @@ public class ReconnectListener implements ReconnectCompleteListener {
 
     private final Executor executor;
     private final ConfigProvider configProvider;
-    private final StoreMetricsService storeMetricsService;
 
     @Inject
     public ReconnectListener(
-            @NonNull @Named("FreezeService") final Executor executor,
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final StoreMetricsService storeMetricsService) {
+            @NonNull @Named("FreezeService") final Executor executor, @NonNull final ConfigProvider configProvider) {
         this.executor = requireNonNull(executor);
         this.configProvider = requireNonNull(configProvider);
-        this.storeMetricsService = requireNonNull(storeMetricsService);
     }
 
     @Override
@@ -72,26 +64,19 @@ public class ReconnectListener implements ReconnectCompleteListener {
                 notification.getRoundNumber(),
                 notification.getSequence());
         final State state = notification.getState().cast();
-        final var configuration = configProvider.getConfiguration();
         final var readableStoreFactory = new ReadableStoreFactory(state);
         final var freezeStore = readableStoreFactory.getStore(ReadableFreezeStore.class);
         final var upgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
         final var upgradeNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
         final var upgradeStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
         final var platformStateStore = readableStoreFactory.getStore(ReadablePlatformStateStore.class);
-
-        final var writableStoreFactory =
-                new WritableStoreFactory(state, RosterStateId.NAME, configuration, storeMetricsService);
-        final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
-
         final var upgradeActions = new ReadableFreezeUpgradeActions(
-                configuration,
+                configProvider.getConfiguration(),
                 freezeStore,
                 executor,
                 upgradeFileStore,
                 upgradeNodeStore,
-                upgradeStakingInfoStore,
-                rosterStore);
+                upgradeStakingInfoStore);
         try {
             // Because we only leave the latest Dagger infrastructure registered with the platform
             // notification system when the reconnect state is initialized, this platform state
