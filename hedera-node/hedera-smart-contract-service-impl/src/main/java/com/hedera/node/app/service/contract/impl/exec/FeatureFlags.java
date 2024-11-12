@@ -42,6 +42,7 @@ public interface FeatureFlags {
      * Whether the sidecar of a given type is enabled.
      *
      * @param frame the {@link MessageFrame} to check
+     * @param sidecarType the type of the sidecar
      * @return whether the given sidecar type is enabled
      */
     default boolean isSidecarEnabled(@NonNull MessageFrame frame, @NonNull SidecarType sidecarType) {
@@ -82,6 +83,7 @@ public interface FeatureFlags {
 
     /**
      *  If true, charge intrinsic gas for calls that fail with a pre-EVM exception.
+     * @param config the active configuration
      * @return true whether to  charge intrinsic gas for calls that fail with a pre-EVM exception.
      */
     default boolean isChargeGasOnPreEvmException(@NonNull Configuration config) {
@@ -90,12 +92,17 @@ public interface FeatureFlags {
 
     /**
      *  If true, enable calls to the Hedera Account Service system contract
+     * @param config the active configuration
      * @return true whether calls to Hedera Account Service system contract are enabled.
      */
     default boolean isHederaAccountServiceEnabled(@NonNull Configuration config) {
         return false;
     }
 
+    /**
+     * @param config the active configuration
+     * @return true whether authorized raw method is enabled.
+     */
     default boolean isAuthorizedRawMethodEnabled(@NonNull Configuration config) {
         return false;
     }

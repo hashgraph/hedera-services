@@ -54,7 +54,7 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
     }
 
     @Override
-    public Roster newRosterFromNodes() {
+    public Roster snapshotOfFutureRoster() {
         return constructFromNodesState(nodesState());
     }
 
@@ -98,12 +98,12 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
                         .weight(node.weight())
                         .gossipCaCertificate(node.gossipCaCertificate())
                         .gossipEndpoint(node.gossipEndpoint())
-                        .tssEncryptionKey(node.tssEncryptionKey())
+                        // (TSS-FUTURE) Enable node's TSS encryption key
+                        // .tssEncryptionKey(node.tssEncryptionKey())
                         .build();
                 rosterEntries.add(entry);
             }
         }
-
         rosterEntries.sort(Comparator.comparingLong(RosterEntry::nodeId));
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }

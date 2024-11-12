@@ -50,18 +50,18 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
-import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableSingletonState;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
-import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
@@ -101,7 +101,6 @@ class SerializationTest extends MerkleTestBase {
     void setUp() throws IOException {
         setupConstructableRegistry();
 
-        this.dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
         this.config = new TestConfigBuilder()
                 .withSource(new SimpleConfigSource()
                         .withValue(VirtualMapConfig_.FLUSH_INTERVAL, 1 + "")
@@ -110,6 +109,7 @@ class SerializationTest extends MerkleTestBase {
                 .withConfigDataType(HederaConfig.class)
                 .withConfigDataType(CryptoConfig.class)
                 .getOrCreateConfig();
+        this.dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(config);
         this.networkInfo = mock(NetworkInfo.class);
     }
 
@@ -255,7 +255,7 @@ class SerializationTest extends MerkleTestBase {
     @Test
     void dualReadAndWrite() throws IOException, ConstructableRegistryException {
         final var schemaV1 = createV1Schema();
-        final var originalTree = (MerkleStateRoot) createMerkleHederaState(schemaV1);
+        final var originalTree = createMerkleHederaState(schemaV1);
 
         MerkleStateRoot copy = originalTree.copy(); // make a copy to make VM flushable
 
@@ -272,7 +272,7 @@ class SerializationTest extends MerkleTestBase {
 
         CRYPTO.digestTreeSync(loadedTree);
         // refreshing the dir
-        dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(config);
         final byte[] serializedBytesWithCache = writeTree(loadedTree, dir);
 
         // let's load it again and see if it works
@@ -309,6 +309,7 @@ class SerializationTest extends MerkleTestBase {
                 schemaV1.getVersion(),
                 schemaV1.getVersion(),
                 config,
+                config,
                 networkInfo,
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
@@ -329,6 +330,7 @@ class SerializationTest extends MerkleTestBase {
                 originalTree,
                 null,
                 v1,
+                config,
                 config,
                 networkInfo,
                 mock(Metrics.class),

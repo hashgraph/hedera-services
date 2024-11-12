@@ -27,23 +27,27 @@ import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
-import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -84,6 +88,18 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         networkInfo = mock(NetworkInfo.class);
         final var hederaConfig = mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
+        final var merkleDbConfig = mock(MerkleDbConfig.class);
+        lenient().when(config.getConfigData(MerkleDbConfig.class)).thenReturn(merkleDbConfig);
+        final var virtualMapConfig = mock(VirtualMapConfig.class);
+        lenient().when(config.getConfigData(VirtualMapConfig.class)).thenReturn(virtualMapConfig);
+        lenient().when(virtualMapConfig.maximumVirtualMapSize()).thenReturn(Long.valueOf(Integer.MAX_VALUE));
+        final var temporaryFileDbConfig = mock(TemporaryFileConfig.class);
+        lenient().when(config.getConfigData(TemporaryFileConfig.class)).thenReturn(temporaryFileDbConfig);
+        final var stateCommonConfig = mock(StateCommonConfig.class);
+        lenient().when(config.getConfigData(StateCommonConfig.class)).thenReturn(stateCommonConfig);
+        lenient()
+                .when(temporaryFileDbConfig.getTemporaryFilePath(stateCommonConfig))
+                .thenReturn("test");
     }
 
     @Nested
@@ -181,6 +197,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     version(9, 0, 0),
                     latestVersion,
                     config,
+                    config,
                     networkInfo,
                     mock(Metrics.class),
                     mock(WritableEntityIdStore.class),
@@ -215,6 +232,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             versions[0],
                             versions[1],
                             config,
+                            config,
                             networkInfo,
                             mock(Metrics.class),
                             mock(WritableEntityIdStore.class),
@@ -232,6 +250,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             versions[0],
                             null,
                             config,
+                            config,
                             networkInfo,
                             mock(Metrics.class),
                             mock(WritableEntityIdStore.class),
@@ -241,14 +260,33 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("Calling migrate with a null config throws NPE")
-        void nullConfigVersionThrows() {
+        @DisplayName("Calling migrate with a null node config throws NPE")
+        void nullNodeConfigVersionThrows() {
             //noinspection ConstantConditions
             assertThatThrownBy(() -> schemaRegistry.migrate(
                             merkleTree,
                             versions[0],
                             versions[1],
                             null,
+                            null,
+                            networkInfo,
+                            mock(Metrics.class),
+                            mock(WritableEntityIdStore.class),
+                            new HashMap<>(),
+                            migrationStateChanges))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("Calling migrate with a null node config throws NPE")
+        void nullNodeConfigVersionThrows1() {
+            //noinspection ConstantConditions
+            assertThatThrownBy(() -> schemaRegistry.migrate(
+                            merkleTree,
+                            versions[0],
+                            versions[1],
+                            null,
+                            config,
                             networkInfo,
                             mock(Metrics.class),
                             mock(WritableEntityIdStore.class),
@@ -266,6 +304,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             versions[0],
                             versions[1],
                             config,
+                            config,
                             networkInfo,
                             null,
                             mock(WritableEntityIdStore.class),
@@ -282,6 +321,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             merkleTree,
                             versions[5],
                             versions[4],
+                            config,
                             config,
                             networkInfo,
                             mock(Metrics.class),
@@ -303,6 +343,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     merkleTree,
                     versions[1],
                     versions[1],
+                    config,
                     config,
                     networkInfo,
                     mock(Metrics.class),
@@ -327,6 +368,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     versions[1],
                     versions[5],
                     config,
+                    config,
                     networkInfo,
                     mock(Metrics.class),
                     mock(WritableEntityIdStore.class),
@@ -350,6 +392,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     merkleTree,
                     null,
                     versions[5],
+                    config,
                     config,
                     networkInfo,
                     mock(Metrics.class),
@@ -382,6 +425,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     merkleTree,
                     null,
                     versions[7],
+                    config,
                     config,
                     networkInfo,
                     mock(Metrics.class),
@@ -553,6 +597,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         versions[0],
                         versions[1],
                         config,
+                        config,
                         networkInfo,
                         mock(Metrics.class),
                         mock(WritableEntityIdStore.class),
@@ -580,6 +625,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         merkleTree,
                         versions[0],
                         versions[2],
+                        config,
                         config,
                         networkInfo,
                         mock(Metrics.class),
@@ -619,6 +665,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         merkleTree,
                         versions[0],
                         versions[3],
+                        config,
                         config,
                         networkInfo,
                         mock(Metrics.class),
@@ -663,6 +710,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                                 merkleTree,
                                 versions[0],
                                 versions[2],
+                                config,
                                 config,
                                 networkInfo,
                                 mock(Metrics.class),

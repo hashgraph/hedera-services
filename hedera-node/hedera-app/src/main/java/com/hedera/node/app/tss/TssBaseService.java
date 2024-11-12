@@ -26,7 +26,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.Service;
+import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -131,5 +131,6 @@ public interface TssBaseService extends Service {
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
             @NonNull ServicesSoftwareVersion version,
-            @NonNull Configuration configuration);
+            @NonNull Configuration configuration,
+            @NonNull Roster overrideRoster);
 }

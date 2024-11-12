@@ -36,7 +36,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NOD
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
-import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -54,6 +54,9 @@ import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -77,7 +80,7 @@ import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
-import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
+import com.hedera.node.app.workflows.handle.steps.StakePeriodChanges;
 import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
@@ -91,8 +94,8 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -115,7 +118,7 @@ public class HandleWorkflow {
 
     private final StreamMode streamMode;
     private final NetworkInfo networkInfo;
-    private final NodeStakeUpdates nodeStakeUpdates;
+    private final StakePeriodChanges stakePeriodChanges;
     private final DispatchProcessor dispatchProcessor;
     private final StoreMetricsService storeMetricsService;
     private final BlockRecordManager blockRecordManager;
@@ -133,6 +136,7 @@ public class HandleWorkflow {
     private final StakePeriodManager stakePeriodManager;
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
+    private final AddressBookHelper addressBookHelper;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -140,7 +144,7 @@ public class HandleWorkflow {
     @Inject
     public HandleWorkflow(
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final NodeStakeUpdates nodeStakeUpdates,
+            @NonNull final StakePeriodChanges stakePeriodChanges,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
@@ -158,9 +162,10 @@ public class HandleWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
-            @NonNull final UserTxnFactory userTxnFactory) {
+            @NonNull final UserTxnFactory userTxnFactory,
+            final AddressBookHelper addressBookHelper) {
         this.networkInfo = requireNonNull(networkInfo);
-        this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
+        this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.blockRecordManager = requireNonNull(blockRecordManager);
@@ -182,6 +187,7 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.addressBookHelper = requireNonNull(addressBookHelper);
     }
 
     /**
@@ -365,13 +371,21 @@ public class HandleWorkflow {
                     final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
+                    final var writableStoreFactory = new WritableStoreFactory(
+                            userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
+                    final var nodeStore = writableStoreFactory.getStore(WritableNodeStore.class);
+                    final var writableStakingInfoStore =
+                            new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME));
+                    final var writableNetworkStakingRewardsStore = new WritableNetworkStakingRewardsStore(
+                            userTxn.stack().getWritableStates(TokenService.NAME));
                     final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
                             userTxn.tokenContextImpl(),
                             networkInfo,
                             userTxn.config(),
-                            new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME)),
-                            new WritableNetworkStakingRewardsStore(
-                                    userTxn.stack().getWritableStates(TokenService.NAME)));
+                            writableStakingInfoStore,
+                            writableNetworkStakingRewardsStore);
+                    addressBookHelper.adjustPostUpgradeNodeMetadata(networkInfo, userTxn.config(), nodeStore);
+
                     if (streamMode != RECORDS) {
                         // Only externalize this if we are streaming blocks
                         streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
@@ -379,6 +393,7 @@ public class HandleWorkflow {
                     } else {
                         // Only update this if we are relying on RecordManager state for post-upgrade processing
                         blockRecordManager.markMigrationRecordsStreamed();
+                        userTxn.stack().commitSystemStateChanges();
                     }
                     // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
                     // here we may need to switch the newly adopted candidate roster
@@ -536,9 +551,9 @@ public class HandleWorkflow {
                 .memo(txnInfo.txBody().memo());
     }
 
-    private void updateNodeStakes(@NonNull final UserTxn userTxn, final Dispatch dispatch) {
+    private void updateNodeStakes(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
         try {
-            nodeStakeUpdates.process(
+            stakePeriodChanges.process(
                     dispatch,
                     userTxn.stack(),
                     userTxn.tokenContextImpl(),

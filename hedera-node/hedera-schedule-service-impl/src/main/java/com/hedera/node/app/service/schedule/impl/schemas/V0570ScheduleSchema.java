@@ -28,10 +28,10 @@ import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
-import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -61,7 +61,6 @@ public final class V0570ScheduleSchema extends Schema {
      * Instantiates a new V0570 (version 0.57.0) schedule schema.
      */
     public V0570ScheduleSchema() {
-
         super(VERSION);
     }
 
@@ -69,14 +68,14 @@ public final class V0570ScheduleSchema extends Schema {
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(scheduleIdsByExpirySec(), schedulesByEquality());
+        return Set.of(scheduleIdsByExpirySec(), scheduleIdByEquality());
     }
 
-    //    @NonNull
-    //    @Override
-    //    public Set<String> statesToRemove() {
-    //        return Set.of(SCHEDULES_BY_EXPIRY_SEC_KEY, SCHEDULES_BY_EQUALITY_KEY);
-    //    }
+    @NonNull
+    @Override
+    public Set<String> statesToRemove() {
+        return Set.of(SCHEDULES_BY_EXPIRY_SEC_KEY, SCHEDULES_BY_EQUALITY_KEY);
+    }
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
@@ -137,7 +136,7 @@ public final class V0570ScheduleSchema extends Schema {
                 MAX_SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
     }
 
-    private static StateDefinition<ProtoBytes, ScheduleID> schedulesByEquality() {
+    private static StateDefinition<ProtoBytes, ScheduleID> scheduleIdByEquality() {
         return StateDefinition.onDisk(
                 SCHEDULE_ID_BY_EQUALITY_KEY, ProtoBytes.PROTOBUF, ScheduleID.PROTOBUF, MAX_SCHEDULE_ID_BY_EQUALITY);
     }

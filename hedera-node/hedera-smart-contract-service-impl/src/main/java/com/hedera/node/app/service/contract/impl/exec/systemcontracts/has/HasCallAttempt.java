@@ -32,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -45,10 +46,14 @@ import org.hyperledger.besu.datatypes.Address;
  * everything it will need to execute.
  */
 public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
+    /** Selector for redirectForAccount(address,bytes) method. */
     public static final Function REDIRECT_FOR_ACCOUNT = new Function("redirectForAccount(address,bytes)");
 
     @Nullable
     private final Account redirectAccount;
+
+    @NonNull
+    private final SignatureVerifier signatureVerifier;
 
     // too many parameters
     @SuppressWarnings("java:S107")
@@ -61,6 +66,7 @@ public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
             @NonNull final Configuration configuration,
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies,
+            @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final List<CallTranslator<HasCallAttempt>> callTranslators,
             final boolean isStaticCall) {
@@ -82,6 +88,7 @@ public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
         } else {
             this.redirectAccount = null;
         }
+        this.signatureVerifier = requireNonNull(signatureVerifier);
     }
 
     @Override
@@ -152,5 +159,9 @@ public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
                     .resolveAlias(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(evmAddress));
             return enhancement.nativeOperations().getAccount(addressNum);
         }
+    }
+
+    public @NonNull SignatureVerifier signatureVerifier() {
+        return signatureVerifier;
     }
 }

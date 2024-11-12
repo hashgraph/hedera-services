@@ -77,10 +77,10 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -121,7 +121,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * </ol>
  */
 @ExtendWith(MockitoExtension.class)
-class TransactionExecutorsTest {
+public class TransactionExecutorsTest {
     private static final long GAS = 100_000L;
     private static final long EXPECTED_LUCKY_NUMBER = 42L;
     private static final AccountID TREASURY_ID =
@@ -238,6 +238,7 @@ class TransactionExecutorsTest {
                 new ServicesSoftwareVersion(
                         bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
                 new ConfigProviderImpl().getConfiguration(),
+                DEFAULT_CONFIG,
                 networkInfo,
                 new NoOpMetrics());
         final var writableStates = state.getWritableStates(FileService.NAME);
@@ -373,7 +374,7 @@ class TransactionExecutorsTest {
         }
     }
 
-    private static Bytes getCertBytes(X509Certificate certificate) {
+    public static Bytes getCertBytes(X509Certificate certificate) {
         try {
             return Bytes.wrap(certificate.getEncoded());
         } catch (CertificateEncodingException e) {

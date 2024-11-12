@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -42,7 +43,7 @@ import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
-import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
+import com.hedera.node.app.workflows.handle.steps.StakePeriodChanges;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -53,8 +54,8 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -72,7 +73,7 @@ class HandleWorkflowTest {
     private NetworkInfo networkInfo;
 
     @Mock
-    private NodeStakeUpdates nodeStakeUpdates;
+    private StakePeriodChanges stakePeriodChanges;
 
     @Mock
     private DispatchProcessor dispatchProcessor;
@@ -187,7 +188,7 @@ class HandleWorkflowTest {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
         subject = new HandleWorkflow(
                 networkInfo,
-                nodeStakeUpdates,
+                stakePeriodChanges,
                 dispatchProcessor,
                 configProvider,
                 storeMetricsService,
@@ -205,6 +206,7 @@ class HandleWorkflowTest {
                 exchangeRateManager,
                 stakePeriodManager,
                 migrationStateChanges,
-                userTxnFactory);
+                userTxnFactory,
+                new AddressBookHelper());
     }
 }

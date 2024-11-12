@@ -66,6 +66,9 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
 
     private final InstantSource instantSource;
 
+    /**
+     * @param instantSource the source of the current instant
+     */
     @Inject
     public ContractGetInfoHandler(@NonNull final InstantSource instantSource) {
         this.instantSource = requireNonNull(instantSource);

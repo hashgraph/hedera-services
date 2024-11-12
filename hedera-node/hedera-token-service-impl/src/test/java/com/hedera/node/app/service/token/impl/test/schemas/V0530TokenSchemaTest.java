@@ -43,7 +43,7 @@ import com.hedera.node.app.services.MigrationContextImpl;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.test.fixtures.MapWritableKVState;

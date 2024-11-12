@@ -50,6 +50,8 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.roster.RosterRetriever;
@@ -137,8 +139,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     @Override
     public void start() {
-        hedera.initializeStatesApi(state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook);
+        final Configuration configuration =
+                ConfigurationBuilder.create().autoDiscoverExtensions().build();
 
+        hedera.initializeStatesApi(
+                state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
         final WritableSingletonState<PlatformState> platformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
         final var currentState = requireNonNull(platformState.get());
