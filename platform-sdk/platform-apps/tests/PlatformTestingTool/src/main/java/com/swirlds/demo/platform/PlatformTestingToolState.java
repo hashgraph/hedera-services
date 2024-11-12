@@ -33,10 +33,7 @@ import static com.swirlds.metrics.api.FloatFormats.FORMAT_11_0;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableIgnored;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.constructable.*;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -257,7 +254,14 @@ public class PlatformTestingToolState extends MerkleStateRoot {
                             () -> new PlatformTestingToolState(
                                     NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES,
                                     version -> new BasicSoftwareVersion(version.major()))));
-            logger.info(STARTUP.getMarker(), "PlatformTestingToolState is registered with ConstructableRegistry");
+            logger.info(
+                    STARTUP.getMarker(),
+                    "PlatformTestingToolState is registered with ConstructableRegistry: {}",
+                    ConstructableRegistry.getInstance()
+                            .getRegistry(NoArgsConstructor.class)
+                            .getConstructor(CLASS_ID)
+                            .get()
+                            .getClassId());
         } catch (ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register PlatformTestingToolState", e);
             throw new RuntimeException(e);
