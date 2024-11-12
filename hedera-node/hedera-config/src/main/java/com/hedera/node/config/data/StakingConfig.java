@@ -29,7 +29,7 @@ public record StakingConfig(
         // Set<StakeStartupHelper.RecomputeType> startupHelperRecompute
         @ConfigProperty(value = "fees.nodeRewardPercentage", defaultValue = "10") @NetworkProperty
                 int feesNodeRewardPercentage,
-        @ConfigProperty(value = "fees.stakingRewardPercentage", defaultValue = "10") @NetworkProperty
+        @ConfigProperty(value = "fees.stakingRewardPercentage", defaultValue = "50") @NetworkProperty
                 int feesStakingRewardPercentage,
         // @ConfigProperty(defaultValue = "") Map<Long, Long> nodeMaxToMinStakeRatios,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean isEnabled,
