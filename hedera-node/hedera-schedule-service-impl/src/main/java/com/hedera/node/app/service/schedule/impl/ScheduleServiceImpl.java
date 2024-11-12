@@ -16,12 +16,24 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
+
+import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.RpcService;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.function.Supplier;
 
 /**
  * Standard implementation of the {@link ScheduleService} {@link RpcService}.
@@ -31,5 +43,81 @@ public final class ScheduleServiceImpl implements ScheduleService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490ScheduleSchema());
         registry.register(new V0570ScheduleSchema());
+    }
+
+    @Override
+    public Iterator<ExecutableTxn> iterTxnsForInterval(
+            final Instant start, final Instant end, final Supplier<StoreFactory> cleanupStoreFactory) {
+        final var store = cleanupStoreFactory.get().readableStore(ReadableScheduleStore.class);
+
+        // Get transactions from state that are not executed/deleted
+        final var executableTxns = store.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()).stream()
+                .filter(schedule -> !schedule.executed() && !schedule.deleted())
+                .toList();
+
+        // Return a custom iterator that supports the remove() method
+        return new Iterator<>() {
+            private int currentIndex = -1;
+            private ExecutableTxn lastReturned;
+            private boolean shouldCleanUp = true;
+            private final List<Schedule> transactions = executableTxns;
+            private final long startSecond = start.getEpochSecond();
+            private final long endSecond = end.getEpochSecond();
+
+            @Override
+            public boolean hasNext() {
+                var hasNext = currentIndex + 1 < transactions.size();
+                if (!hasNext && shouldCleanUp) {
+                    // After we finish iterating, clean up the expired schedules
+                    cleanUpExpiredSchedules();
+                }
+                return hasNext;
+            }
+
+            @Override
+            public ExecutableTxn next() {
+                if (!hasNext()) {
+                    if (shouldCleanUp) {
+                        // If excessive next() calls are made without calling hasNext(), clean up the expired schedules
+                        cleanUpExpiredSchedules();
+                    }
+                    throw new NoSuchElementException();
+                }
+                lastReturned = toExecutableTxn(transactions.get(++currentIndex));
+                return lastReturned;
+            }
+
+            @Override
+            public void remove() {
+                if (lastReturned == null) {
+                    throw new IllegalStateException("No transaction to remove");
+                }
+
+                // Use the StoreFactory to mark a schedule as deleted
+                final var iteratorStore = cleanupStoreFactory.get().writableStore(WritableScheduleStore.class);
+                final var scheduleId = transactions.get(currentIndex).scheduleId();
+                iteratorStore.delete(scheduleId, Instant.now());
+            }
+
+            private void cleanUpExpiredSchedules() {
+                if (shouldCleanUp) {
+                    // After we finish iterating, clean up the expired schedules
+                    final var cleanUpStore = cleanupStoreFactory.get().writableStore(WritableScheduleStore.class);
+                    cleanUpStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+                    shouldCleanUp = false;
+                }
+            }
+
+            private ExecutableTxn toExecutableTxn(final Schedule schedule) {
+                final var signatories = schedule.signatories();
+                final VerificationAssistant callback = (k, ignore) -> signatories.contains(k);
+                return new ExecutableTxn(
+                        childAsOrdinary(schedule),
+                        callback,
+                        schedule.payerAccountId(),
+                        schedule.scheduleId(),
+                        Instant.ofEpochSecond(schedule.calculatedExpirationSecond()));
+            }
+        };
     }
 }

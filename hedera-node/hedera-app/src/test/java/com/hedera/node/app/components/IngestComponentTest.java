@@ -38,6 +38,7 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.signature.AppSignatureVerifier;
@@ -136,6 +137,7 @@ class IngestComponentTest {
                 .tssBaseService(tssBaseService)
                 .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .networkInfo(mock(NetworkInfo.class))
+                .scheduleService(new ScheduleServiceImpl())
                 .build();
 
         final var state = new FakeState();

@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
-import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
@@ -56,10 +55,12 @@ import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
-import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -72,6 +73,9 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.ServiceApiFactory;
+import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
@@ -138,6 +142,8 @@ public class HandleWorkflow {
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
     private final ConfigProvider configProvider;
+    private final ScheduleService scheduleService;
+    private final AddressBookHelper addressBookHelper;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -163,7 +169,9 @@ public class HandleWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
-            @NonNull final UserTxnFactory userTxnFactory) {
+            @NonNull final UserTxnFactory userTxnFactory,
+            @NonNull final AddressBookHelper addressBookHelper,
+            @NonNull final ScheduleService scheduleService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -188,6 +196,8 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.addressBookHelper = requireNonNull(addressBookHelper);
+        this.scheduleService = requireNonNull(scheduleService);
     }
 
     /**
@@ -371,13 +381,21 @@ public class HandleWorkflow {
                     final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
+                    final var writableStoreFactory = new WritableStoreFactory(
+                            userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
+                    final var nodeStore = writableStoreFactory.getStore(WritableNodeStore.class);
+                    final var writableStakingInfoStore =
+                            new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME));
+                    final var writableNetworkStakingRewardsStore = new WritableNetworkStakingRewardsStore(
+                            userTxn.stack().getWritableStates(TokenService.NAME));
                     final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
                             userTxn.tokenContextImpl(),
                             networkInfo,
                             userTxn.config(),
-                            new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME)),
-                            new WritableNetworkStakingRewardsStore(
-                                    userTxn.stack().getWritableStates(TokenService.NAME)));
+                            writableStakingInfoStore,
+                            writableNetworkStakingRewardsStore);
+                    addressBookHelper.adjustPostUpgradeNodeMetadata(networkInfo, userTxn.config(), nodeStore);
+
                     if (streamMode != RECORDS) {
                         // Only externalize this if we are streaming blocks
                         streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
@@ -385,6 +403,7 @@ public class HandleWorkflow {
                     } else {
                         // Only update this if we are relying on RecordManager state for post-upgrade processing
                         blockRecordManager.markMigrationRecordsStreamed();
+                        userTxn.stack().commitSystemStateChanges();
                     }
                     // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
                     // here we may need to switch the newly adopted candidate roster
@@ -583,56 +602,55 @@ public class HandleWorkflow {
             return true;
         } else if (lastProcessTime.getEpochSecond() < userTxn.consensusNow().getEpochSecond()) {
             // There is at least one unprocessed second since the last processing time
-            final var startSecond = lastProcessTime.getEpochSecond();
-            final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
-            final var scheduleStore = new WritableStoreFactory(
-                            userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
-                    .getStore(WritableScheduleStore.class);
-
             final var scheduleConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
-            if (scheduleConfig.longTermEnabled()) {
-                // try to execute expired
-                final var schedules = scheduleStore.getByExpirationBetween(startSecond, endSecond);
-                for (int i = 0; i < schedules.size(); i++) {
-                    // get schedule
-                    final var schedule = schedules.get(i);
-                    // update schedule consensus
-                    final var scheduleConsensus =
-                            Instant.from(userTxn.consensusNow().plusNanos(i + 1));
-                    if (schedule.waitForExpiry()) {
-                        final var txnBody = childAsOrdinary(schedule);
-                        final var scheduleUserTnx = userTxnFactory.createUserTxn(
-                                userTxn.state(),
-                                userTxn.event(),
-                                userTxn.creatorInfo(),
-                                scheduleConsensus,
-                                userTxn.type(),
-                                schedule.payerAccountId(),
-                                txnBody);
-                        final var baseBuilder = initializeBuilderInfo(
-                                scheduleUserTnx.baseBuilder(),
-                                scheduleUserTnx.txnInfo(),
-                                exchangeRateManager.exchangeRates());
-                        ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
-                        final var signatures = schedule.signatories();
-                        final var scheduleDispatch = userTxnFactory.createDispatch(
-                                scheduleUserTnx, baseBuilder, signatures::contains, SCHEDULED);
-                        dispatchProcessor.processDispatch(scheduleDispatch);
-                        // add record to the record cache
-                        final var handleOutput = scheduleUserTnx
-                                .stack()
-                                .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
-                        recordCache.addRecordSource(
-                                scheduleUserTnx.creatorInfo().nodeId(),
-                                scheduleUserTnx.txnInfo().transactionID(),
-                                DueDiligenceFailure.NO,
-                                handleOutput.preferringBlockRecordSource());
-                    }
-                }
-            }
 
-            // purge expired
-            scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+            // try to execute schedules
+            final var readableStoreFactory = new ReadableStoreFactory(userTxn.stack());
+            final var writableStoreFactory = new WritableStoreFactory(
+                    userTxn.stack(), scheduleService.getServiceName(), userTxn.config(), storeMetricsService);
+            final var serviceApiFactory = new ServiceApiFactory(userTxn.stack(), userTxn.config(), storeMetricsService);
+            final var storeFactory =
+                    new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
+            final var scheduleIterator =
+                    scheduleService.iterTxnsForInterval(lastProcessTime, userTxn.consensusNow(), () -> storeFactory);
+            // todo: consensus nanos offset will be calculated more precisely in following PR,
+            //  for now just add 1 nano on each iteration.
+            var consensusNanosOffset = 1;
+            while (scheduleIterator.hasNext()) {
+                // get schedule
+                final var schedule = scheduleIterator.next();
+                // update schedule consensus
+                final var scheduleConsensus =
+                        Instant.from(userTxn.consensusNow().plusNanos(consensusNanosOffset));
+                final var txnBody = schedule.body();
+                final var scheduleUserTnx = userTxnFactory.createUserTxn(
+                        userTxn.state(),
+                        userTxn.event(),
+                        userTxn.creatorInfo(),
+                        scheduleConsensus,
+                        userTxn.type(),
+                        schedule.payerId(),
+                        txnBody);
+                final var baseBuilder = initializeBuilderInfo(
+                        scheduleUserTnx.baseBuilder(), scheduleUserTnx.txnInfo(), exchangeRateManager.exchangeRates());
+                ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
+                final var scheduleDispatch = userTxnFactory.createDispatch(
+                        scheduleUserTnx, baseBuilder, schedule.verificationAssistant(), SCHEDULED);
+                dispatchProcessor.processDispatch(scheduleDispatch);
+                // add record to the record cache
+                final var handleOutput = scheduleUserTnx
+                        .stack()
+                        .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
+                recordCache.addRecordSource(
+                        scheduleUserTnx.creatorInfo().nodeId(),
+                        scheduleUserTnx.txnInfo().transactionID(),
+                        DueDiligenceFailure.NO,
+                        handleOutput.preferringBlockRecordSource());
+
+                scheduleIterator.remove();
+                consensusNanosOffset++;
+            }
+            // this will commit the purge of the schedules
             userTxn.stack().commitSystemStateChanges();
             return true;
         }
