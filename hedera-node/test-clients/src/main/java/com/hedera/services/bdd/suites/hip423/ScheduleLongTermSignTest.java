@@ -356,7 +356,7 @@ public class ScheduleLongTermSignTest {
                         cryptoCreate(receiver).balance(0L).receiverSigRequired(true),
                         scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 5)
+                                .withRelativeExpiry(SENDER_TXN, 10)
                                 .recordingScheduledTxn()
                                 .payingWith(PAYER),
                         scheduleSign(schedule)
@@ -422,9 +422,9 @@ public class ScheduleLongTermSignTest {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 5)
+                                .hasRelativeExpiry(SENDER_TXN, 10)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(6000),
+                        sleepFor(11000),
                         cryptoCreate("foo"),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(receiver).hasTinyBars(1L));
