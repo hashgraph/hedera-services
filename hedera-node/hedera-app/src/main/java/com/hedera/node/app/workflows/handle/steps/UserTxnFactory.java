@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.functionOfTxn;
@@ -343,7 +344,9 @@ public class UserTxnFactory {
                 transactionCategory,
                 tokenContextImpl,
                 preHandleResult,
-                HandleContext.ConsensusThrottling.ON);
+                SCHEDULED.equals(transactionCategory)
+                        ? HandleContext.ConsensusThrottling.OFF
+                        : HandleContext.ConsensusThrottling.ON);
     }
 
     private SavepointStackImpl createRootSavepointStack(
