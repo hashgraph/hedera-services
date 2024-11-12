@@ -23,8 +23,9 @@ For more background and theory, please read the `TSS-Ledger-ID` and `TSS-Library
 Each node must maintain a long-term BLS encryption key, called the `tssEncryptionKey`, for receiving its private TSS
 shares used in signing. The public portion of this key must be available to every consensus node in the network
 that is participating in TSS signing. A node's public `tssEncryptionKey` is used to encrypt the private
-`shares of shares` intended for that node. Aggregating the decrypted `shares of shares` allows the node to recover
-its private share keys.
+`shares of shares` intended for that node. The receiving node uses their private `tssEncryptionKey` to decrypt its
+`shares of shares`. Aggregating the decrypted `shares of shares` allows the node to recover its private
+share keys.
 
 While the public key must be known by all nodes, the private `tssEncryptionKey` must not be known by any other node.
 The security of the ledger id and the ledger's private signing key is dependent on the private `tssEncryptionKey`
@@ -34,9 +35,9 @@ recover the ledger's private signing key.
 
 The reason that the `tssEncryptionKey` must be maintained long-term is that the public key must be known by other
 nodes before they can generate private shares for the node. If the `tssEncryptionKey` were to change, the node would
-not be able to participate in TSS signing until the next candidate roster is keyed and adopted.
+not be able to participate in TSS signing or re-keying until the next candidate roster is keyed and adopted.
 
-To minimize the number of node operator touch points, the life-cycle of the `tssEncryptionKey` should be automated.
+To minimize the number of node operator touch points, the life-cycle of the `tssEncryptionKey` will be automated.
 
 ### Dependencies, Interactions, and Implications
 
@@ -46,7 +47,7 @@ roster nightly. The `TSS-Ledger-ID` capability cannot be turned on until enough 
 
 ### Requirements
 
-1. The public `tssEncryptionKey` of a node must be recorded in the state and publicly knowable by other nodes.
+1. The public `tssEncryptionKey` of a node must be recorded in the state and publicly known by other nodes.
 2. The private `tssEncryptionKey` of a node must be kept private to that node.
 3. The lifecycle of the `tssEncryptionKey` should be automated.
 
@@ -195,12 +196,11 @@ A health metric should be created to indicate the state the `TssBaseService` is 
 3. Able to participate in signing with the active roster. (Private shares are decryptable with current
    `tssEncryptionKey`.)
 
-A health metric should be created that indicates the number of active shares available for signing. Nodes which are
-offline or have bad status in the above health metric should not have their shares counted towards the available
-active shares for signing. A warning should be generated if the number of active shares drops close to the
+A health metric should be created that indicates the number of active shares available for signing from each node.
+Nodes which are offline or have bad status in the above health metric should not have their shares counted towards
+the available active shares for signing. A warning should be generated if the number of active shares drops close to the
 aggregation threshold required to create a ledger signature. A critical error should be generated if the number of
-available shares drops below the aggregation threshold.  For this metric each node submits its model of the number of
-available shares on the network.
+available shares drops below the aggregation threshold.
 
 ### Performance
 
@@ -211,7 +211,7 @@ There are no expected performance impacts from this proposal.
 ## Test Plan
 
 The behavior of this proposal is fundamental to the operation of TSS. It is sufficient that the TSS capability
-comes live with existing TSS tests once this proposal is deliverable.
+comes live with existing TSS integration tests once this proposal is deliverable.
 
 ---
 
