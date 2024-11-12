@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -269,14 +270,29 @@ class WritableRosterStoreTest {
                 roster2,
                 "Returned active roster should be the same as the one set");
 
-        writableRosterStore.putActiveRoster(roster1, 3);
+        final Roster roster3 = createValidTestRoster(2);
+        writableRosterStore.putActiveRoster(roster3, 3);
         assertSame(
                 readableRosterStore.getActiveRoster(),
-                roster1,
-                "3rd active roster with hash collision with first returns the first roster");
+                roster3,
+                "Returned active roster should be the same as the one set");
 
         final List<RoundRosterPair> rosterHistory = readableRosterStore.getRosterHistory();
         assertEquals(2, rosterHistory.size(), "Roster history should contain 2 entries");
+
+        final Bytes roster2Hash = RosterUtils.hash(roster2).getBytes();
+        final Bytes roster3Hash = RosterUtils.hash(roster3).getBytes();
+
+        assertTrue(
+                rosterHistory.contains(new RoundRosterPair(2, roster2Hash)),
+                "Roster history should contain the second roster");
+        assertTrue(
+                rosterHistory.contains(new RoundRosterPair(3, roster3Hash)),
+                "Roster history should contain the third roster");
+        assertFalse(
+                rosterHistory.contains(
+                        new RoundRosterPair(1, RosterUtils.hash(roster1).getBytes())),
+                "Roster history should not contain the first roster");
     }
 
     /**
