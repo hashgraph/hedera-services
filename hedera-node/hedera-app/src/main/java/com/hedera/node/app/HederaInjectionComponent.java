@@ -168,10 +168,10 @@ public interface HederaInjectionComponent {
         Builder platform(Platform platform);
 
         @BindsInstance
-        Builder self(final NodeInfo self);
+        Builder self(NodeInfo self);
 
         @BindsInstance
-        Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
+        Builder maxSignedTxnSize(@MaxSignedTxnSize int maxSignedTxnSize);
 
         @BindsInstance
         Builder currentPlatformStatus(CurrentPlatformStatus currentPlatformStatus);

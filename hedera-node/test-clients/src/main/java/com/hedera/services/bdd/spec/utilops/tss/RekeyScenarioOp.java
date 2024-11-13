@@ -16,49 +16,6 @@
 
 package com.hedera.services.bdd.spec.utilops.tss;
 
-import com.hedera.hapi.block.stream.Block;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.tss.TssMessageMapKey;
-import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.node.transaction.SignedTransaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
-import com.hedera.node.app.tss.api.TssMessage;
-import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.bdd.junit.hedera.HederaNode;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.SpecOperation;
-import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
-
-import java.security.cert.CertificateEncodingException;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.function.LongFunction;
-import java.util.function.LongUnaryOperator;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.scaleStakeToWeight;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeNodeShares;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeSharesFromWeights;
@@ -88,6 +45,48 @@ import static com.swirlds.platform.roster.RosterRetriever.retrieveActive;
 import static java.lang.Long.parseLong;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import com.hedera.hapi.block.stream.Block;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
+import com.hedera.node.app.tss.api.TssMessage;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.utilops.UtilOp;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.cert.CertificateEncodingException;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.LongFunction;
+import java.util.function.LongUnaryOperator;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * A convenience operation to test TSS roster rekeying scenarios in repeatable embedded mode. A scenario is built

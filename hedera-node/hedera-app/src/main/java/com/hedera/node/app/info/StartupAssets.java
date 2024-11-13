@@ -39,9 +39,15 @@ public interface StartupAssets {
     Optional<Network> overrideNetworkFor(long roundNumber);
 
     /**
+     * Called by a node after applying override network details to the state from a given round.
+     * @param roundNumber the round number for which the override was applied
+     */
+    void setOverrideRound(long roundNumber);
+
+    /**
      * Archives any assets used in constructing this instance. Maybe a no-op.
      */
-    void archiveAssets();
+    void archiveJsonFiles();
 
     /**
      * Called by a node at an upgrade boundary that finds itself with an empty Roster service state, and is
