@@ -18,9 +18,16 @@ package com.hedera.node.app.roster;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class RosterStartupLogic {
     private final ReadableRosterStore rosterStore;
@@ -49,11 +56,19 @@ public class RosterStartupLogic {
             // Read the active rosters and construct the existing rosterHistory from roster state
             final var current = roundRosterPairs.get(0);
             final var previous = roundRosterPairs.get(1);
-            return new RosterHistory(
-                    rosterStore.get(current.activeRosterHash()),
-                    current.roundNumber(),
-                    rosterStore.get(previous.activeRosterHash()),
-                    previous.roundNumber());
+
+            final List<RoundRosterPair> roundRosterPairList = new ArrayList<>();
+            final Map<Bytes, Roster> rosterMap = new HashMap<>();
+
+            final Bytes currentHash = current.activeRosterHash();
+            roundRosterPairList.add(current);
+            rosterMap.put(currentHash, rosterStore.get(currentHash));
+
+            final Bytes previousHash = previous.activeRosterHash();
+            roundRosterPairList.add(previous);
+            rosterMap.put(previousHash, rosterStore.get(previousHash));
+
+            return new RosterHistory(roundRosterPairList, rosterMap);
         } else {
             // If there is no roster state content, this is a fatal error: The migration did not happen on software
             // upgrade.
