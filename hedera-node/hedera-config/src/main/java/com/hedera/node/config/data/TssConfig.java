@@ -23,7 +23,6 @@ import java.time.Duration;
 
 /**
  * Configuration for the TSS service.
- *
  * @param maxSharesPerNode                The maximum number of shares that can be assigned to a node.
  * @param timesToTrySubmission            The number of times to retry a submission on getting an {@link IllegalStateException}
  * @param retryDelay                      The delay between retries
@@ -40,10 +39,11 @@ import java.time.Duration;
 @ConfigData("tss")
 public record TssConfig(
         @ConfigProperty(defaultValue = "3") @NetworkProperty long maxSharesPerNode,
-        @ConfigProperty(defaultValue = "5") @NetworkProperty int timesToTrySubmission,
+        @ConfigProperty(defaultValue = "50") @NetworkProperty int timesToTrySubmission,
         @ConfigProperty(defaultValue = "5s") @NetworkProperty Duration retryDelay,
         @ConfigProperty(defaultValue = "10") @NetworkProperty int distinctTxnIdsToTry,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean keyCandidateRoster,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean signWithLedgerId,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean keyActiveRoster,
         @ConfigProperty(defaultValue = "5") @NetworkProperty int signatureLivenessPeriodMinutes,
         @ConfigProperty(defaultValue = "2") @NetworkProperty int ledgerSignatureFailureThreshold) {}
