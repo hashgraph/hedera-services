@@ -58,13 +58,12 @@ public interface MigrationContext {
     Configuration configuration();
 
     /**
-     * Information about the network itself. Generally, this is not useful information for migrations, but is used at
-     * genesis for the file service. In the future, this may no longer be required.
+     * Information about the current active network itself.
      *
      * @return The {@link NetworkInfo} of the network at the time of migration.
      */
     @Nullable
-    NetworkInfo genesisNetworkInfo();
+    NetworkInfo activeNetworkInfo();
 
     /**
      * Consumes and returns the next entity number. For use by migrations that need to create entities.

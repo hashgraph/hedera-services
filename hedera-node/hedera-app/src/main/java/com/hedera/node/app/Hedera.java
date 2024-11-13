@@ -148,7 +148,6 @@ import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.spi.WritableSingletonStateBase;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
@@ -589,17 +588,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         .orElse(null)),
                 () -> HapiUtils.toString(version.getPbjSemanticVersion()),
                 () -> trigger);
-        // This is set only when the trigger is genesis. Because, only in those cases
-        // the migration code is using the network info values.
-        NetworkInfo genesisNetworkInfo = null;
-        if (trigger == GENESIS) {
-            final var config = configProvider.getConfiguration();
-            final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-            final var readableStore =
-                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-            final var genesisRoster = createRoster(requireNonNull(readableStore.getAddressBook()));
-            genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
-        }
+
+        final var config = configProvider.getConfiguration();
+        final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+        final var readableStore = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+        final var genesisRoster = createRoster(requireNonNull(readableStore.getAddressBook()));
+        final var activeNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
         if (isNotEmbedded()) {
             if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
@@ -617,7 +611,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 deserializedVersion,
                 version,
                 configProvider.getConfiguration(),
-                genesisNetworkInfo,
+                activeNetworkInfo,
                 metrics);
         migrationStateChanges.addAll(migrationChanges);
         kvStateChangeListener.reset();

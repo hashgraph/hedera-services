@@ -93,7 +93,7 @@ public class V053AddressBookSchema extends Schema {
                 ? parseEd25519NodeAdminKeysFrom(
                         ctx.configuration().getConfigData(BootstrapConfig.class).nodeAdminKeysPath())
                 : emptyMap();
-        final var networkInfo = ctx.genesisNetworkInfo();
+        final var networkInfo = ctx.activeNetworkInfo();
         if (networkInfo == null) {
             throw new IllegalStateException("Genesis network info is not found");
         }

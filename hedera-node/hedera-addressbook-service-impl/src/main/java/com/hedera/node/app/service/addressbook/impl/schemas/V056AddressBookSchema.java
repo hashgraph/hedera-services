@@ -73,9 +73,9 @@ public class V056AddressBookSchema extends Schema {
             return;
         }
 
-        final NetworkInfo networkInfo = ctx.genesisNetworkInfo();
+        final NetworkInfo networkInfo = ctx.activeNetworkInfo();
         if (networkInfo == null) {
-            throw new IllegalStateException("Genesis network info is not found");
+            throw new IllegalStateException("Active network info is not found");
         }
         final WritableKVState<EntityNumber, Node> writableNodes =
                 ctx.newStates().get(NODES_KEY);

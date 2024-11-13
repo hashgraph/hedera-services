@@ -240,7 +240,7 @@ public class V0490TokenSchema extends Schema {
         final var config = ctx.configuration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var stakingConfig = config.getConfigData(StakingConfig.class);
-        final var addressBook = ctx.genesisNetworkInfo().addressBook();
+        final var addressBook = ctx.activeNetworkInfo().addressBook();
         final var numberOfNodes = addressBook.size();
 
         final long maxStakePerNode = ledgerConfig.totalTinyBarFloat() / numberOfNodes;

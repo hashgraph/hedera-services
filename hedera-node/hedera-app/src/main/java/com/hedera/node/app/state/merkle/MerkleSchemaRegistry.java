@@ -179,7 +179,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param currentVersion The current version. Never null. Must be newer than {@code
      * previousVersion}.
      * @param config The system configuration to use at the time of migration
-     * @param genesisNetworkInfo The network information to use at the time of migration
+     * @param activeNetworkInfo The network information to use at the time of migration
      * @param sharedValues A map of shared values for cross-service migration patterns
      * @param migrationStateChanges Tracker for state changes during migration
      * @throws IllegalArgumentException if the {@code currentVersion} is not at least the
@@ -192,7 +192,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @Nullable final SemanticVersion previousVersion,
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,
-            @Nullable final NetworkInfo genesisNetworkInfo,
+            @Nullable final NetworkInfo activeNetworkInfo,
             @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore,
             @NonNull final Map<String, Object> sharedValues,
@@ -257,13 +257,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             }
 
             final var migrationContext = new MigrationContextImpl(
-                    previousStates,
-                    newStates,
-                    config,
-                    genesisNetworkInfo,
-                    entityIdStore,
-                    previousVersion,
-                    sharedValues);
+                    previousStates, newStates, config, activeNetworkInfo, entityIdStore, previousVersion, sharedValues);
             if (applications.contains(MIGRATION)) {
                 schema.migrate(migrationContext);
             }

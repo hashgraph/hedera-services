@@ -131,7 +131,7 @@ class V056AddressBookSchemaTest extends AddressBookTestBase {
     @Test
     void failedNullNetworkInfo() {
         given(migrationContext.previousVersion()).willReturn(version);
-        given(migrationContext.genesisNetworkInfo()).willReturn(null);
+        given(migrationContext.activeNetworkInfo()).willReturn(null);
         assertThatCode(() -> subject.migrate(migrationContext))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Genesis network info is not found");
@@ -238,7 +238,7 @@ class V056AddressBookSchemaTest extends AddressBookTestBase {
                 List.of(endpointFor("23.45.34.243", 45), endpointFor("127.0.0.3", 124)),
                 Bytes.wrap(grpcCertificateHash));
         given(networkInfo.addressBook()).willReturn(List.of(nodeInfo1, nodeInfo2, nodeInfo3));
-        given(migrationContext.genesisNetworkInfo()).willReturn(networkInfo);
+        given(migrationContext.activeNetworkInfo()).willReturn(networkInfo);
 
         writableStates = MapWritableStates.builder().state(writableNodes).build();
         given(migrationContext.newStates()).willReturn(writableStates);

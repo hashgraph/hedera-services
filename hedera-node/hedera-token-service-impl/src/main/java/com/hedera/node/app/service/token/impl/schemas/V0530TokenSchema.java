@@ -58,7 +58,7 @@ public class V0530TokenSchema extends Schema {
 
     private void setMinStakeToZero(final MigrationContext ctx) {
         final var stakingInfoState = ctx.newStates().get(STAKING_INFO_KEY);
-        final var addressBook = ctx.genesisNetworkInfo().addressBook();
+        final var addressBook = ctx.activeNetworkInfo().addressBook();
         logger.info("Setting minStake to 0 for all nodes in the address book");
         for (final var node : addressBook) {
             final var nodeNumber =
