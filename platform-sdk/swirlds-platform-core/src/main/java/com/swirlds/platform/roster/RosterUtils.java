@@ -25,6 +25,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.PbjRecordHasher;
@@ -227,6 +228,45 @@ public final class RosterUtils {
         }
 
         return new RosterHistory(roundRosterPairList, rosterMap);
+    }
+
+    /**
+     * Determining the Roster History.
+     * There are three non-genesis modes that a node can start in:
+     * <ul>
+     *   <li> Genesis Network - The node is started with a genesis roster and no pre-existing state on disk. </li>
+     *   <li> Network Transplant - The node is started with a state on disk and an overriding roster for a different network. </li>
+     *   <li> Software Upgrade - The node is restarted with the same state on disk and a software upgrade is happening. </li>
+     *   <li> Normal Restart - The node is restarted with the same state on disk and no software upgrade is happening. </li>
+     * </ul>
+     *
+     * @return the roster history if able to determine it, otherwise IllegalStateException is thrown
+     */
+    public static RosterHistory determineRosterHistory(@NonNull final ReadableRosterStore rosterStore) {
+        final var roundRosterPairs = rosterStore.getRosterHistory();
+        // If there exists active rosters in the roster state.
+        if (roundRosterPairs != null) {
+            // Read the active rosters and construct the existing rosterHistory from roster state
+            final var current = roundRosterPairs.get(0);
+            final var previous = roundRosterPairs.get(1);
+
+            final List<RoundRosterPair> roundRosterPairList = new ArrayList<>();
+            final Map<Bytes, Roster> rosterMap = new HashMap<>();
+
+            final Bytes currentHash = current.activeRosterHash();
+            roundRosterPairList.add(current);
+            rosterMap.put(currentHash, rosterStore.get(currentHash));
+
+            final Bytes previousHash = previous.activeRosterHash();
+            roundRosterPairList.add(previous);
+            rosterMap.put(previousHash, rosterStore.get(previousHash));
+
+            return new RosterHistory(roundRosterPairList, rosterMap);
+        } else {
+            // If there is no roster state content, this is a fatal error: The migration did not happen on software
+            // upgrade.
+            throw new IllegalStateException("No active rosters found in the roster state");
+        }
     }
 
     /**

@@ -35,7 +35,6 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.roster.RosterStartupLogic;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -298,8 +297,7 @@ public class ServicesMain implements SwirldMain {
             final SignedState loadedSignedState = initialState.get();
             final var state = ((MerkleStateRoot) loadedSignedState.getState());
             final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
-            final var rosterStartupLogic = new RosterStartupLogic(rosterStore);
-            rosterHistory = rosterStartupLogic.determineRosterHistory();
+            rosterHistory = RosterUtils.determineRosterHistory(rosterStore);
         } else {
             rosterHistory =
                     RosterUtils.buildRosterHistory(initialState.get().getState().getReadablePlatformState());
