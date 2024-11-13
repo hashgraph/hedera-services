@@ -32,11 +32,6 @@ public final class PlatformBuildConstants {
     public static final String DEFAULT_CONFIG_FILE_NAME = "config.txt";
 
     /**
-     * The name of the genesis configuration file (i.e. where the genesis roster can be specified).
-     */
-    public static final String GENESIS_CONFIG_FILE_NAME = "genesis-config.txt";
-
-    /**
      * The name of the default settings file (i.e. where configuration comes from... we know this is confusing, API is a
      * work in progress).
      */

@@ -288,6 +288,8 @@ public class ServicesMain implements SwirldMain {
                 recycleBin,
                 merkleCryptography);
 
+        final var stateHash = reservedState.hash();
+
         // Initialize the address book and set on platform builder
         final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
 
@@ -322,7 +324,6 @@ public class ServicesMain implements SwirldMain {
                 .withConfiguration(configuration)
                 .withKeysAndCerts(keysAndCerts);
 
-        final var stateHash = reservedState.hash();
         hedera.setInitialStateHash(stateHash);
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
@@ -417,7 +418,7 @@ public class ServicesMain implements SwirldMain {
      * @param addressBookPath the relative path and file name of the address book.
      * @return the address book.
      */
-    public static AddressBook loadAddressBook(@NonNull final String addressBookPath) {
+    private static AddressBook loadAddressBook(@NonNull final String addressBookPath) {
         requireNonNull(addressBookPath);
         try {
             final LegacyConfigProperties props =

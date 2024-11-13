@@ -167,7 +167,7 @@ public class TssCryptographyManager {
      * @param tssParticipantDirectory the TSS participant directory
      * @return true if the threshold is met, false otherwise
      */
-    private static boolean isThresholdMet(
+    private boolean isThresholdMet(
             @NonNull final List<TssMessageTransactionBody> validTssMessages,
             @NonNull final TssParticipantDirectory tssParticipantDirectory) {
         final var numShares = tssParticipantDirectory.getShareIds().size();
