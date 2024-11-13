@@ -31,6 +31,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.List;
 import java.util.concurrent.Executor;
 import javax.inject.Inject;
@@ -41,6 +44,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TssKeysAccessor {
+    private static final Logger log = LogManager.getLogger(TssKeysAccessor.class);
     private final TssLibrary tssLibrary;
     private TssKeysAccessor.TssKeys tssKeys;
     private final Executor libraryExecutor;
@@ -70,6 +74,10 @@ public class TssKeysAccessor {
         final var rosterStore = storeFactory.getStore(ReadableRosterStore.class);
         final var activeRosterHash = requireNonNull(rosterStore.getActiveRosterHash());
         final var activeParticipantDirectory = tssDirectoryAccessor.activeParticipantDirectory();
+        if(activeParticipantDirectory == null) {
+            log.warn("Active participant directory is null. Tss is not enabled yet and could not generate key material.");
+            return;
+        }
         final var tssMessageBodies = tssStore.getTssMessageBodies(activeRosterHash);
         final var validTssMessages = getTssMessages(tssMessageBodies);
         final var activeRosterShares = getTssPrivateShares(activeParticipantDirectory, tssStore, activeRosterHash);

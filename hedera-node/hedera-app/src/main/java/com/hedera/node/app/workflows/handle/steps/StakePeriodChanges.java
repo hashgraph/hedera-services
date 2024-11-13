@@ -136,10 +136,14 @@ public class StakePeriodChanges {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
             }
-            if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
-                tssBaseService.regenerateKeyMaterial(stack);
-                startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
-            }
+            keyRoster(dispatch, stack, config);
+        }
+    }
+
+    private void keyRoster(final @NonNull Dispatch dispatch, final @NonNull SavepointStackImpl stack, final Configuration config) {
+        if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
+            tssBaseService.regenerateKeyMaterial(stack);
+            startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
         }
     }
 

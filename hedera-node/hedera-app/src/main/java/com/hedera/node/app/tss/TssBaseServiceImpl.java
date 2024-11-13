@@ -153,6 +153,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public void setCandidateRoster(@NonNull final Roster candidateRoster, @NonNull final HandleContext context) {
         requireNonNull(candidateRoster);
+        final var ledgerIdExists = checkLedgerIdExists(context);
 
         // we keep track of the starting point of the candidate roster's lifecycle
         final Instant candidateRosterLifecycleStart = InstantSource.system().instant();
