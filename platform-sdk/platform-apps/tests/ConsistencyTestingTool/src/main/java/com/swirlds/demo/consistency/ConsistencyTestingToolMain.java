@@ -24,10 +24,23 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.merkle.StateMetadata;
+import com.swirlds.state.merkle.disk.OnDiskKey;
+import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
+import com.swirlds.state.merkle.disk.OnDiskValue;
+import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
+import com.swirlds.state.merkle.memory.InMemoryValue;
+import com.swirlds.state.merkle.queue.QueueNode;
+import com.swirlds.state.merkle.singleton.SingletonNode;
+import com.swirlds.state.merkle.singleton.StringLeaf;
+import com.swirlds.state.merkle.singleton.ValueLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SecureRandom;
@@ -51,17 +64,74 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     static {
         try {
             logger.info(STARTUP.getMarker(), "Registering ConsistencyTestingToolState with ConstructableRegistry");
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(
-                            ConsistencyTestingToolState.class,
-                            () -> new ConsistencyTestingToolState(
-                                    NO_OP_MERKLE_STATE_LIFECYCLES,
-                                    version -> new BasicSoftwareVersion(version.major()))));
+            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    ConsistencyTestingToolState.class,
+                    () -> new ConsistencyTestingToolState(
+                            NO_OP_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
             logger.info(STARTUP.getMarker(), "ConsistencyTestingToolState is registered with ConstructableRegistry");
+            final var schema = new V0540PlatformStateSchema();
+            final StateDefinition def = schema.statesToCreate().iterator().next();
+            final var md = new StateMetadata<>(PlatformStateService.NAME, schema, def);
+            try {
+                constructableRegistry.registerConstructable(new ClassConstructorPair(
+                        InMemoryValue.class,
+                        () -> new InMemoryValue(
+                                md.inMemoryValueClassId(),
+                                md.stateDefinition().keyCodec(),
+                                md.stateDefinition().valueCodec())));
+                constructableRegistry.registerConstructable(new ClassConstructorPair(
+                        OnDiskKey.class,
+                        () -> new OnDiskKey<>(
+                                md.onDiskKeyClassId(), md.stateDefinition().keyCodec())));
+                constructableRegistry.registerConstructable(new ClassConstructorPair(
+                        OnDiskKeySerializer.class,
+                        () -> new OnDiskKeySerializer<>(
+                                md.onDiskKeySerializerClassId(),
+                                md.onDiskKeyClassId(),
+                                md.stateDefinition().keyCodec())));
+                constructableRegistry.registerConstructable(new ClassConstructorPair(
+                        OnDiskValue.class,
+                        () -> new OnDiskValue<>(
+                                md.onDiskValueClassId(), md.stateDefinition().valueCodec())));
+                constructableRegistry.registerConstructable(new ClassConstructorPair(
+                        OnDiskValueSerializer.class,
+                        () -> new OnDiskValueSerializer<>(
+                                md.onDiskValueSerializerClassId(),
+                                md.onDiskValueClassId(),
+                                md.stateDefinition().valueCodec())));
+                constructableRegistry.registerConstructable(new ClassConstructorPair(
+                        SingletonNode.class,
+                        () -> new SingletonNode<>(
+                                md.serviceName(),
+                                md.stateDefinition().stateKey(),
+                                md.singletonClassId(),
+                                md.stateDefinition().valueCodec(),
+                                null)));
+                constructableRegistry.registerConstructable(new ClassConstructorPair(
+                        QueueNode.class,
+                        () -> new QueueNode<>(
+                                md.serviceName(),
+                                md.stateDefinition().stateKey(),
+                                md.queueNodeClassId(),
+                                md.singletonClassId(),
+                                md.stateDefinition().valueCodec())));
+                constructableRegistry.registerConstructable(
+                        new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
+                constructableRegistry.registerConstructable(new ClassConstructorPair(
+                        ValueLeaf.class,
+                        () -> new ValueLeaf<>(
+                                md.singletonClassId(), md.stateDefinition().valueCodec())));
+            } catch (ConstructableRegistryException e) {
+                // This is a fatal error.
+                throw new IllegalStateException(
+                        "Failed to register with the system 'PlatformService'"
+                                + ":"
+                                + md.stateDefinition().stateKey()
+                                + "'",
+                        e);
+            }
 
-            // to register platform state classes with the ConstructableRegistry
-            NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(new MerkleStateRoot(
-                    NO_OP_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(softwareVersion.getVersion())));
         } catch (ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register ConsistencyTestingToolState", e);
             throw new RuntimeException(e);
@@ -115,6 +185,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
         final MerkleStateRoot state = new ConsistencyTestingToolState(
                 NO_OP_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
         NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+
         return state;
     }
 
