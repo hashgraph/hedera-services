@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
@@ -109,6 +110,17 @@ public class TssSubmissions {
         requireNonNull(context);
         return submit(
                 b -> b.tssVote(body),
+                context.configuration(),
+                context.networkInfo().selfNodeInfo().accountId(),
+                nextValidStartFor(context));
+    }
+
+    public CompletableFuture<Void> submitTssEncryptionKey(
+            @NonNull final TssEncryptionKeyTransactionBody body, @NonNull final HandleContext context) {
+        requireNonNull(body);
+        requireNonNull(context);
+        return submit(
+                b -> b.tssEncryptionKey(body),
                 context.configuration(),
                 context.networkInfo().selfNodeInfo().accountId(),
                 nextValidStartFor(context));

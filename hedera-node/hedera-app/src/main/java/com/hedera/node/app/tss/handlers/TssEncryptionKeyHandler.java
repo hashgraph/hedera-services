@@ -18,12 +18,14 @@ package com.hedera.node.app.tss.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -63,5 +65,10 @@ public class TssEncryptionKeyHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var op = context.body().tssEncryptionKeyOrThrow();
+        final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
+        final var nodeEntityNumber =
+                EntityNumber.newBuilder().number(context.creatorInfo().nodeId()).build();
+        tssStore.put(nodeEntityNumber, op);
+        // (TSS-FUTURE) Check condition for resuming normal execution of TssBaseService
     }
 }
