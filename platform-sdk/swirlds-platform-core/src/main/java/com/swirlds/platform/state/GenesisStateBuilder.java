@@ -42,7 +42,6 @@ public final class GenesisStateBuilder {
             final PlatformStateModifier platformState,
             final AddressBook addressBook,
             final SoftwareVersion appVersion) {
-        // FUTURE: Set (genesisRoster, 0) as the new active roster in the roster state.
         platformState.bulkUpdate(v -> {
             v.setAddressBook(addressBook.copy());
             v.setCreationSoftwareVersion(appVersion);
