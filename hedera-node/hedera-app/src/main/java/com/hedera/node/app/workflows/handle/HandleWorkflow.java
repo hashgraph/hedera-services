@@ -144,7 +144,7 @@ public class HandleWorkflow {
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
-    private TssBaseService tssBaseService;
+    private final TssBaseService tssBaseService;
     private final ConfigProvider configProvider;
 
     @Inject
@@ -413,9 +413,14 @@ public class HandleWorkflow {
                     // Generate key material for the active roster once it is switched
                 }
 
-                final var keyCandidateRoster =
-                        userTxn.config().getConfigData(TssConfig.class).keyCandidateRoster();
-                final var useRosterLifecycle = userTxn.config().getConfigData(AddressBookConfig.class).useRosterLifecycle();
+                final var keyCandidateRoster = configProvider
+                        .getConfiguration()
+                        .getConfigData(TssConfig.class)
+                        .keyCandidateRoster();
+                final var useRosterLifecycle = configProvider
+                        .getConfiguration()
+                        .getConfigData(AddressBookConfig.class)
+                        .useRosterLifecycle();
 
                 if (!keyCandidateRoster
                         && useRosterLifecycle
