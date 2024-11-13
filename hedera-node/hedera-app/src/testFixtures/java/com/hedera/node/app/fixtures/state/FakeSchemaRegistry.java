@@ -197,7 +197,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             }
 
             @Override
-            public NetworkInfo genesisNetworkInfo() {
+            public NetworkInfo activeNetworkInfo() {
                 return networkInfo;
             }
 

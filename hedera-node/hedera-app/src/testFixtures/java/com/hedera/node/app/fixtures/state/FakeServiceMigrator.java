@@ -51,14 +51,14 @@ public class FakeServiceMigrator implements ServiceMigrator {
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration nodeConfiguration,
             @NonNull final Configuration platformConfiguration,
-            @NonNull final NetworkInfo networkInfo,
+            @NonNull final NetworkInfo activeNetworkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(servicesRegistry);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);
         requireNonNull(platformConfiguration);
-        requireNonNull(networkInfo);
+        requireNonNull(activeNetworkInfo);
         requireNonNull(metrics);
 
         if (!(state instanceof FakeState fakeState)) {
@@ -86,7 +86,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
                 NAME_OF_ENTITY_ID_SERVICE,
                 fakeState,
                 deserializedPbjVersion,
-                networkInfo,
+                activeNetworkInfo,
                 nodeConfiguration,
                 sharedValues,
                 prevEntityNum);
@@ -100,7 +100,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
                             registration.serviceName(),
                             fakeState,
                             deserializedPbjVersion,
-                            networkInfo,
+                            activeNetworkInfo,
                             nodeConfiguration,
                             sharedValues,
                             prevEntityNum);

@@ -64,7 +64,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
      * @param currentVersion The current version of the state
      * @param nodeConfiguration The system configuration to use at the time of migration
      * @param platformConfiguration The platform configuration to use for subsequent object initializations
-     * @param genesisNetworkInfo The network information to use for the migrations.
+     * @param activeNetworkInfo The network information to use for the migrations.
      *                           This is only used in genesis case
      * @param metrics The metrics to use for the migrations
      * @return The list of state changes that occurred during the migrations
@@ -77,7 +77,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration nodeConfiguration,
             @NonNull final Configuration platformConfiguration,
-            @Nullable final NetworkInfo genesisNetworkInfo,
+            @Nullable final NetworkInfo activeNetworkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(currentVersion);
@@ -102,7 +102,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                 currentVersion.getPbjSemanticVersion(),
                 nodeConfiguration,
                 platformConfiguration,
-                genesisNetworkInfo,
+                activeNetworkInfo,
                 metrics,
                 // We call with null here because we're migrating the entity ID service itself
                 null,
@@ -140,7 +140,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                             currentVersion.getPbjSemanticVersion(),
                             nodeConfiguration,
                             platformConfiguration,
-                            genesisNetworkInfo,
+                            activeNetworkInfo,
                             metrics,
                             entityIdStore,
                             sharedValues,

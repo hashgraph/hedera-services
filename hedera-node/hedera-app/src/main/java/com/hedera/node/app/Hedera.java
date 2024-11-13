@@ -147,7 +147,6 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
-import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -601,16 +600,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         .orElse(null)),
                 () -> HapiUtils.toString(version.getPbjSemanticVersion()),
                 () -> trigger);
-        // This is set only when the trigger is genesis. Because, only in those cases
-        // the migration code is using the network info values.
-        NetworkInfo genesisNetworkInfo = null;
-        if (trigger == GENESIS) {
-            final var config = configProvider.getConfiguration();
-            final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-            final var genesisRoster = createRoster(requireNonNull(genesisAddressBook));
 
-            genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
-        }
+        final var config = configProvider.getConfiguration();
+        final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+        final var genesisRoster = createRoster(requireNonNull(genesisAddressBook));
+        final var activeNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
+
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
         // (FUTURE) In principle, the FileService could actually change the active configuration during a
         // migration, which implies we should be passing the config provider and not a static configuration
@@ -623,7 +618,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 version,
                 configProvider.getConfiguration(),
                 platformConfiguration,
-                genesisNetworkInfo,
+                activeNetworkInfo,
                 metrics);
         migrationStateChanges.addAll(migrationChanges);
         kvStateChangeListener.reset();
