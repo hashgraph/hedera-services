@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.test.fixtures;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -82,8 +83,8 @@ public enum TestType {
 
     public Metrics getMetrics() {
         if (metrics == null) {
-            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-            MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+            final Configuration CONFIGURATION = new TestConfigBuilder().getOrCreateConfig();
+            MetricsConfig metricsConfig = CONFIGURATION.getConfigData(MetricsConfig.class);
 
             final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
             when(registry.register(any(), any(), any())).thenReturn(true);
@@ -94,7 +95,7 @@ public enum TestType {
                     new PlatformMetricsFactoryImpl(metricsConfig),
                     metricsConfig);
             MerkleDbStatistics statistics =
-                    new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), "test");
+                    new MerkleDbStatistics(CONFIGURATION.getConfigData(MerkleDbConfig.class), "test");
             statistics.registerMetrics(metrics);
         }
         return metrics;
@@ -220,8 +221,13 @@ public enum TestType {
                 final boolean enableMerging,
                 boolean preferDiskBasedIndexes)
                 throws IOException {
-            final MerkleDb database = MerkleDb.getInstance(dbPath);
-            final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+            final MerkleDb database = MerkleDb.getInstance(dbPath, CONFIGURATION);
+            final MerkleDbConfig merkleDbConfig = database.getConfiguration().getConfigData(MerkleDbConfig.class);
+            final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                            (short) 1,
+                            DigestType.SHA_384,
+                            merkleDbConfig.maxNumOfKeys(),
+                            merkleDbConfig.hashesRamToDiskThreshold())
                     .preferDiskIndices(preferDiskBasedIndexes)
                     .maxNumberOfKeys(size * 10L)
                     .hashesRamToDiskThreshold(hashesRamToDiskThreshold);
@@ -232,7 +238,7 @@ public enum TestType {
 
         public MerkleDbDataSource getDataSource(final Path dbPath, final String name, final boolean enableMerging)
                 throws IOException {
-            final MerkleDb database = MerkleDb.getInstance(dbPath);
+            final MerkleDb database = MerkleDb.getInstance(dbPath, CONFIGURATION);
             return database.getDataSource(name, enableMerging);
         }
 

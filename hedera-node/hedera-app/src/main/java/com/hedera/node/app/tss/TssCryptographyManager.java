@@ -60,12 +60,12 @@ public class TssCryptographyManager {
     @Inject
     public TssCryptographyManager(
             @NonNull final TssLibrary tssLibrary,
-            @NonNull final AppContext.Gossip gossip,
+            @NonNull final AppContext appContext,
             @NonNull @TssLibraryExecutor final Executor libraryExecutor,
             @NonNull final TssMetrics tssMetrics,
             @NonNull final InstantSource instantSource) {
         this.tssLibrary = requireNonNull(tssLibrary);
-        this.gossip = requireNonNull(gossip);
+        this.gossip = requireNonNull(appContext.gossip());
         this.libraryExecutor = requireNonNull(libraryExecutor);
         this.tssMetrics = requireNonNull(tssMetrics);
         this.instantSource = requireNonNull(instantSource);

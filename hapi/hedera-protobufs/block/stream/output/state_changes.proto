@@ -364,6 +364,16 @@ enum StateIdentifier {
     STATE_ID_SCHEDULE_ID_BY_EQUALITY = 30;
 
     /**
+     * A state identifier for TSS messages.
+     */
+    STATE_ID_TSS_MESSAGES = 31;
+
+    /**
+     * A state identifier for TSS votes.
+     */
+    STATE_ID_TSS_VOTES = 32;
+
+    /**
      * A state identifier for the round receipts queue.
      */
     STATE_ID_TRANSACTION_RECEIPTS_QUEUE = 126;

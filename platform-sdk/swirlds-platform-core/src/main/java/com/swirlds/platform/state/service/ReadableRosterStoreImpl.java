@@ -58,7 +58,9 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         this.rosterMap = readableStates.get(RosterStateId.ROSTER_KEY);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Roster getCandidateRoster() {
@@ -70,10 +72,34 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         return rosterMap.get(ProtoBytes.newBuilder().value(candidateRosterHash).build());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Roster getActiveRoster() {
+        final var activeRosterHash = getActiveRosterHash();
+        if (activeRosterHash == null) {
+            return null;
+        }
+        return rosterMap.get(ProtoBytes.newBuilder().value(activeRosterHash).build());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Nullable
+    @Override
+    public Roster get(@NonNull final Bytes rosterHash) {
+        return rosterMap.get(ProtoBytes.newBuilder().value(rosterHash).build());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Nullable
+    @Override
+    public Bytes getActiveRosterHash() {
         final RosterState rosterStateSingleton = rosterState.get();
         if (rosterStateSingleton == null) {
             return null;
@@ -85,37 +111,25 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         // by design, the first round roster pair is the active roster
         // this may need to be revisited when we reach DAB
         final RoundRosterPair latestRoundRosterPair = rostersAndRounds.getFirst();
-        final Bytes activeRosterHash = latestRoundRosterPair.activeRosterHash();
-        return rosterMap.get(ProtoBytes.newBuilder().value(activeRosterHash).build());
+        return latestRoundRosterPair.activeRosterHash();
     }
 
     /** {@inheritDoc} */
     @Nullable
     @Override
-    public Roster get(@NonNull final Bytes rosterHash) {
-        return rosterMap.get(ProtoBytes.newBuilder().value(rosterHash).build());
-    }
-
-    /** {@inheritDoc} */
-    @Nullable
     public List<RoundRosterPair> getRosterHistory() {
-        final var rosterStateSingleton = rosterState.get();
-        if (rosterStateSingleton == null) {
-            return null;
-        }
-
-        final var roundRosterPairs = rosterStateSingleton.roundRosterPairs();
-        if (roundRosterPairs.isEmpty()) {
-            return null;
-        }
-
-        for (final RoundRosterPair roundRosterPair : roundRosterPairs) {
-            final Bytes activeRosterHash = roundRosterPair.activeRosterHash();
-            if (rosterMap.get(ProtoBytes.newBuilder().value(activeRosterHash).build()) == null) {
-                return null;
+        final RosterState rosterStateSingleton = rosterState.get();
+        if (rosterStateSingleton != null
+                && !rosterStateSingleton.roundRosterPairs().isEmpty()) {
+            boolean allHashesPresent = rosterStateSingleton.roundRosterPairs().stream()
+                    .allMatch(pair -> rosterMap.get(ProtoBytes.newBuilder()
+                                    .value(pair.activeRosterHash())
+                                    .build())
+                            != null);
+            if (allHashesPresent) {
+                return rosterStateSingleton.roundRosterPairs();
             }
         }
-
-        return roundRosterPairs;
+        return null;
     }
 }

@@ -23,7 +23,7 @@ import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("tokens")
 public record TokensConfig(
-        @ConfigProperty(defaultValue = "50000000") @NetworkProperty long maxAggregateRels,
+        @ConfigProperty(defaultValue = "200000000") @NetworkProperty long maxAggregateRels,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean storeRelsOnDisk,
         @ConfigProperty(defaultValue = "1000000") @NetworkProperty long maxNumber,
         @ConfigProperty(defaultValue = "1000") @NetworkProperty int maxPerAccount,

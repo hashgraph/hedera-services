@@ -23,7 +23,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
-import static com.swirlds.platform.builder.PlatformBuildConstants.GENESIS_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
@@ -228,6 +227,10 @@ public class ServicesMain implements SwirldMain {
         final NodeId selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
 
         final var configuration = buildConfiguration();
+
+        // Register with the ConstructableRegistry classes which need configuration.
+        BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
+
         final var keysAndCerts =
                 initNodeSecurity(diskAddressBook, configuration).get(selfId);
 
@@ -255,16 +258,12 @@ public class ServicesMain implements SwirldMain {
                 () -> {
                     isGenesis.set(true);
                     final var genesisState = hedera.newMerkleStateRoot();
-                    if (addressbookUseRosterLifecycle) {
-                        // Translate genesis-config.txt to a genesisRoster.
-                        final var genesisAddressBook = loadAddressBook(GENESIS_CONFIG_FILE_NAME);
-                        // Create a genesis state with the genesisRoster.
-                        hedera.initializeStatesApi(
-                                (MerkleStateRoot) genesisState, metrics, InitTrigger.GENESIS, genesisAddressBook);
-                    } else {
-                        hedera.initializeStatesApi(
-                                (MerkleStateRoot) genesisState, metrics, InitTrigger.GENESIS, diskAddressBook);
-                    }
+                    hedera.initializeStatesApi(
+                            (MerkleStateRoot) genesisState,
+                            metrics,
+                            InitTrigger.GENESIS,
+                            diskAddressBook,
+                            configuration);
                     return genesisState;
                 },
                 Hedera.APP_NAME,
@@ -277,7 +276,8 @@ public class ServicesMain implements SwirldMain {
                     (MerkleStateRoot) initialState.get().getState().getSwirldState(),
                     metrics,
                     InitTrigger.RESTART,
-                    null);
+                    null,
+                    configuration);
         }
 
         final var cryptography = CryptographyFactory.create();
