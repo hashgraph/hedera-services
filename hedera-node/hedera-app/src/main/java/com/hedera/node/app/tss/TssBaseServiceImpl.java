@@ -117,7 +117,10 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssDirectoryAccessor = component.tssDirectoryAccessor();
         this.tssMetrics = component.tssMetrics();
         this.tssHandlers = new TssHandlers(
-                component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
+                component.tssMessageHandler(),
+                component.tssVoteHandler(),
+                component.tssShareSignatureHandler(),
+                component.tssEncryptionKeyHandler());
         this.tssSubmissions = component.tssSubmissions();
     }
 

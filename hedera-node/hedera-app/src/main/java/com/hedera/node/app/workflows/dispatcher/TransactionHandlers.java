@@ -70,6 +70,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateNftsHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.tss.handlers.TssEncryptionKeyHandler;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
 import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
 import com.hedera.node.app.tss.handlers.TssVoteHandler;
@@ -136,4 +137,5 @@ public record TransactionHandlers(
         @NonNull UtilPrngHandler utilPrngHandler,
         @NonNull TssMessageHandler tssMessageHandler,
         @NonNull TssVoteHandler tssVoteHandler,
-        @NonNull TssShareSignatureHandler tssShareSignatureHandler) {}
+        @NonNull TssShareSignatureHandler tssShareSignatureHandler,
+        @NonNull TssEncryptionKeyHandler tssEncryptionKeyHandler) {}

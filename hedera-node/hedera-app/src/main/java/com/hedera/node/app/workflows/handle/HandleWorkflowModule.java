@@ -156,6 +156,7 @@ public interface HandleWorkflowModule {
                 utilHandlers.prngHandler(),
                 tssHandlers.get().tssMessageHandler(),
                 tssHandlers.get().tssVoteHandler(),
-                tssHandlers.get().tssShareSignatureHandler());
+                tssHandlers.get().tssShareSignatureHandler(),
+                tssHandlers.get().tssEncryptionKeyHandler());
     }
 }

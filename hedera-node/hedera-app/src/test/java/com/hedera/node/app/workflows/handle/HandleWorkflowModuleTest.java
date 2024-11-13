@@ -76,6 +76,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.tss.handlers.TssEncryptionKeyHandler;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
 import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
@@ -268,6 +269,9 @@ class HandleWorkflowModuleTest {
     @Mock
     private TssShareSignatureHandler tssShareSignatureHandler;
 
+    @Mock
+    private TssEncryptionKeyHandler tssEncryptionKeyHandler;
+
     @Test
     void usesComponentsToGetHandlers() {
         given(consensusHandlers.consensusCreateTopicHandler()).willReturn(consensusCreateTopicHandler);
@@ -325,7 +329,8 @@ class HandleWorkflowModuleTest {
                 consensusHandlers,
                 fileHandlers,
                 () -> contractHandlers,
-                () -> new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler),
+                () -> new TssHandlers(
+                        tssMessageHandler, tssVoteHandler, tssShareSignatureHandler, tssEncryptionKeyHandler),
                 scheduleHandlers,
                 tokenHandlers,
                 utilHandlers,

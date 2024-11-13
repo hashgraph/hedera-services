@@ -18,11 +18,7 @@ package com.hedera.node.app.tss.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.tss.TssMessageMapKey;
-import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
-import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,11 +49,10 @@ public class V0570TssBaseSchema extends Schema {
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(
-                StateDefinition.onDisk(
-                        TSS_ENCRYPTION_KEY_MAP_KEY,
-                        EntityNumber.PROTOBUF,
-                        TssEncryptionKeyTransactionBody.PROTOBUF,
-                        MAX_TSS_ENCRYPTION_KEYS));
+        return Set.of(StateDefinition.onDisk(
+                TSS_ENCRYPTION_KEY_MAP_KEY,
+                EntityNumber.PROTOBUF,
+                TssEncryptionKeyTransactionBody.PROTOBUF,
+                MAX_TSS_ENCRYPTION_KEYS));
     }
 }

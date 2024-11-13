@@ -18,10 +18,12 @@ package com.hedera.node.app.tss.stores;
 
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 public interface ReadableTssStore {
@@ -77,4 +79,12 @@ public interface ReadableTssStore {
      * @return The list of Tss votes, or an empty list if not found.
      */
     List<TssVoteTransactionBody> getTssVoteBodies(Bytes rosterHash);
+
+    /**
+     * Get the Tss encryption key transaction body for the given node ID.
+     * @param nodeID The node ID to look up.
+     * @return The Tss encryption key transaction body, or null if not found.
+     */
+    @Nullable
+    TssEncryptionKeyTransactionBody getTssEncryptionKey(final long nodeID);
 }
