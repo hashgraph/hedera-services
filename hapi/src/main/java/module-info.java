@@ -40,6 +40,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.token;
     exports com.hedera.hapi.node.state.common;
     exports com.hedera.hapi.node.state.contract;
+    exports com.hedera.hapi.node.state;
     exports com.hedera.hapi.node.state.file;
     exports com.hedera.hapi.node.state.recordcache;
     exports com.hedera.hapi.node.state.recordcache.codec;

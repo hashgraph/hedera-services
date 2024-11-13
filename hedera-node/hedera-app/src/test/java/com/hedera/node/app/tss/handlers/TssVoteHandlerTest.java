@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.tss.handlers;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -35,6 +38,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.tss.TssMetrics;
+import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
@@ -146,7 +150,7 @@ class TssVoteHandlerTest {
 
         // Mock behavior
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssBaseStore);
+        when(storeFactory.readableStore(ReadableTssStore.class)).thenReturn(tssBaseStore);
         when(storeFactory.readableStore(ReadableRosterStore.class)).thenReturn(rosterStore);
         when(rosterStore.getActiveRoster()).thenReturn(roster);
         when(tssBaseStore.exists(any(TssVoteMapKey.class)))
@@ -181,7 +185,7 @@ class TssVoteHandlerTest {
 
         // Mock behavior
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssBaseStore);
+        when(storeFactory.readableStore(ReadableTssStore.class)).thenReturn(tssBaseStore);
         when(storeFactory.readableStore(ReadableRosterStore.class)).thenReturn(rosterStore);
         when(rosterStore.getActiveRoster()).thenReturn(roster);
         when(tssBaseStore.exists(any(TssVoteMapKey.class)))

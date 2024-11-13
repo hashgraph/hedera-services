@@ -20,8 +20,13 @@ import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.node.state.Network;
+import com.hedera.hapi.node.state.NodeMetadata;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -33,19 +38,30 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.LongUnaryOperator;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -175,20 +191,69 @@ public class StakePeriodChanges {
         if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
             return isLaterUtcDay(currentConsensusTime, previousConsensusTime);
         } else {
-            return getPeriod(currentConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
-                    > getPeriod(previousConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
+            final var periodMs = stakingPeriod * MINUTES_TO_MILLISECONDS;
+            return getPeriod(currentConsensusTime, periodMs) > getPeriod(previousConsensusTime, periodMs);
         }
     }
 
     private void startKeyingCandidateRoster(
             @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
-        final var nodeStore = handleContext.storeFactory().readableStore(ReadableNodeStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var tssStore = storeFactory.readableStore(ReadableTssStore.class);
+        final var nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
+        writeNetworkInfo(tssStore, nodeStore, rosterStore);
+
         final var roster = nodeStore.snapshotOfFutureRoster();
         if (!Objects.equals(roster, rosterStore.getCandidateRoster())
                 && !Objects.equals(roster, rosterStore.getActiveRoster())) {
             rosterStore.putCandidateRoster(roster);
             tssBaseService.setCandidateRoster(roster, handleContext);
         }
+    }
+
+    private void writeNetworkInfo(
+            @NonNull final ReadableTssStore tssStore,
+            @NonNull final ReadableNodeStore nodeStore,
+            @NonNull final ReadableRosterStore rosterStore) {
+        Optional.ofNullable(rosterStore.getActiveRoster()).ifPresent(activeRoster -> {
+            final var network = Network.newBuilder();
+            final List<NodeMetadata> nodeMetadata = new ArrayList<>();
+            rosterStore.getActiveRoster().rosterEntries().forEach(entry -> {
+                final var node = requireNonNull(nodeStore.get(entry.nodeId()));
+                nodeMetadata.add(new NodeMetadata(node, Bytes.EMPTY));
+            });
+            network.nodeMetadata(nodeMetadata);
+            final var sourceRosterHash = Optional.ofNullable(rosterStore.getRosterHistory())
+                    .filter(history -> history.size() == 2)
+                    .map(List::getFirst)
+                    .map(RoundRosterPair::activeRosterHash)
+                    .orElse(Bytes.EMPTY);
+            final long sourceRosterWeight;
+            final LongUnaryOperator nodeWeightFn;
+            if (Bytes.EMPTY.equals(sourceRosterHash)) {
+                sourceRosterWeight = activeRoster.rosterEntries().size();
+                nodeWeightFn = nodeId -> 1;
+            } else {
+                final var entries =
+                        requireNonNull(rosterStore.get(sourceRosterHash)).rosterEntries();
+                sourceRosterWeight =
+                        entries.stream().mapToLong(RosterEntry::weight).sum();
+                final var weights = entries.stream().collect(toMap(RosterEntry::nodeId, RosterEntry::weight));
+                nodeWeightFn = weights::get;
+            }
+            tssStore.consensusRosterKeys(
+                            sourceRosterHash,
+                            requireNonNull(rosterStore.getActiveRosterHash()),
+                            sourceRosterWeight,
+                            nodeWeightFn)
+                    .ifPresent(rosterKeys ->
+                            network.ledgerId(rosterKeys.ledgerId()).tssMessages(rosterKeys.tssMessages()));
+            try (final var fout = Files.newOutputStream(Paths.get("network.json"))) {
+                Network.JSON.write(network.build(), new WritableStreamingData(fout));
+            } catch (IOException e) {
+                logger.error("Failed to write network info", e);
+            }
+        });
     }
 
     private WritableRosterStore newWritableRosterStore(

@@ -16,15 +16,75 @@
 
 package com.hedera.node.app.tss.stores;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.BitSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.LongUnaryOperator;
+import java.util.stream.IntStream;
 
 public interface ReadableTssStore {
+    /**
+     * The selected TSS messages and implied ledger id for some roster.
+     * @param tssMessages the selected TSS messages
+     * @param ledgerId the implied ledger id
+     */
+    record RosterKeys(@NonNull List<TssMessageTransactionBody> tssMessages, @NonNull Bytes ledgerId) {
+        public RosterKeys {
+            requireNonNull(tssMessages);
+            requireNonNull(ledgerId);
+        }
+    }
+
+    /**
+     * If available, returns the roster keys that the given source roster voted to assign to the given target roster.
+     *
+     * @param sourceRosterHash the source roster hash
+     * @param targetRosterHash the target roster hash
+     * @param sourceRosterWeight the total weight of the source roster
+     * @param nodeWeightFn a function that returns the weight of a node in the source roster given its id
+     */
+    default Optional<RosterKeys> consensusRosterKeys(
+            @NonNull final Bytes sourceRosterHash,
+            @NonNull final Bytes targetRosterHash,
+            final long sourceRosterWeight,
+            @NonNull final LongUnaryOperator nodeWeightFn) {
+        return anyWinningVoteFrom(sourceRosterHash, targetRosterHash, sourceRosterWeight, nodeWeightFn)
+                .map(vote -> {
+                    final var tssMessages = getTssMessageBodies(vote.targetRosterHash());
+                    final var selections = BitSet.valueOf(vote.tssVote().toByteArray());
+                    final var selectedMessages = IntStream.range(0, tssMessages.size())
+                            .filter(selections::get)
+                            .sorted()
+                            .mapToObj(tssMessages::get)
+                            .toList();
+                    return new RosterKeys(selectedMessages, vote.ledgerId());
+                });
+    }
+
+    /**
+     * If present, returns one of the winning votes for the given source roster hash and total weight. There is no
+     * guarantee of ordering between multiple winning votes.
+     *
+     * @param sourceRosterHash the source roster hash the vote must be from
+     * @param targetRosterHash the target roster hash the vote must be for
+     * @param rosterWeight the total weight of the source the vote must be from
+     * @param nodeWeightFn a function that returns the weight of a node in the source roster given its id
+     * @return a winning vote, if present
+     */
+    Optional<TssVoteTransactionBody> anyWinningVoteFrom(
+            @NonNull Bytes sourceRosterHash,
+            @NonNull Bytes targetRosterHash,
+            long rosterWeight,
+            @NonNull LongUnaryOperator nodeWeightFn);
+
     /**
      * Get the TSS message for the given key.
      *

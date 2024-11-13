@@ -371,8 +371,6 @@ public class HandleWorkflow {
                 // Flushes the BUSY builder to the stream, no other side effects
                 userTxn.stack().commitTransaction(userTxn.baseBuilder());
             } else {
-                final var keyCandidateRoster =
-                        userTxn.config().getConfigData(TssConfig.class).keyCandidateRoster();
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     systemSetup.externalizeInitSideEffects(

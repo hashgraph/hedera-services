@@ -16,9 +16,15 @@
 
 package com.hedera.node.app.tss.stores;
 
+import static com.hedera.node.app.tss.handlers.TssVoteHandler.hasMetThreshold;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
 import static java.util.Objects.requireNonNull;
+import static java.util.Spliterator.NONNULL;
+import static java.util.Spliterators.spliterator;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
@@ -30,6 +36,8 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.LongUnaryOperator;
 
 /**
  * Provides read-only access to the TSS base store.
@@ -51,6 +59,39 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
         requireNonNull(states);
         this.readableTssMessageState = states.get(TSS_MESSAGE_MAP_KEY);
         this.readableTssVoteState = states.get(TSS_VOTE_MAP_KEY);
+    }
+
+    @Override
+    public Optional<TssVoteTransactionBody> anyWinningVoteFrom(
+            @NonNull final Bytes sourceRosterHash,
+            @NonNull final Bytes targetRosterHash,
+            final long sourceRosterWeight,
+            @NonNull final LongUnaryOperator nodeWeightFn) {
+        requireNonNull(sourceRosterHash);
+        requireNonNull(targetRosterHash);
+        requireNonNull(nodeWeightFn);
+        return stream(spliterator(readableTssVoteState.keys(), readableTssVoteState.size(), NONNULL), false)
+                .filter(key -> sourceRosterHash.equals(key.rosterHash()))
+                .map(key -> new WeightedVote(
+                        nodeWeightFn.applyAsLong(key.nodeId()), requireNonNull(readableTssVoteState.get(key))))
+                .filter(vote -> targetRosterHash.equals(vote.vote().targetRosterHash()))
+                .collect(groupingBy(WeightedVote::tssVote, toList()))
+                .values()
+                .stream()
+                .filter(weightedVotes -> hasMetThreshold(
+                        weightedVotes.stream().mapToLong(WeightedVote::weight).sum(), sourceRosterWeight))
+                .findAny()
+                .map(weightedVotes -> weightedVotes.getFirst().vote());
+    }
+
+    private record WeightedVote(long weight, @NonNull TssVoteTransactionBody vote) {
+        public WeightedVote {
+            requireNonNull(vote);
+        }
+
+        public Bytes tssVote() {
+            return vote.tssVote();
+        }
     }
 
     /**
