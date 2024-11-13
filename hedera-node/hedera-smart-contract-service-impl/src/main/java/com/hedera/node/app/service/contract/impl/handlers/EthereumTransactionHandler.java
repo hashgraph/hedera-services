@@ -73,6 +73,12 @@ public class EthereumTransactionHandler implements TransactionHandler {
     private final GasCalculator gasCalculator;
     private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
 
+    /**
+     * @param ethereumSignatures the ethereum signatures
+     * @param callDataHydration the ethereum call data hydratino utility to be used for EthTxData
+     * @param provider the provider to be used
+     * @param gasCalculator the gas calculator to be used
+     */
     @Inject
     public EthereumTransactionHandler(
             @NonNull final EthTxSigsCache ethereumSignatures,

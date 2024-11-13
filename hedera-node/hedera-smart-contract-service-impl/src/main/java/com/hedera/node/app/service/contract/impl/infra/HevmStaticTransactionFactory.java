@@ -50,6 +50,10 @@ public class HevmStaticTransactionFactory {
     private final QueryContext context;
     private final AccountID payerId;
 
+    /**
+     * @param context the context of this query
+     * @param gasCalculator the gas calculator for this query
+     */
     @Inject
     public HevmStaticTransactionFactory(
             @NonNull final QueryContext context, @NonNull final GasCalculator gasCalculator) {

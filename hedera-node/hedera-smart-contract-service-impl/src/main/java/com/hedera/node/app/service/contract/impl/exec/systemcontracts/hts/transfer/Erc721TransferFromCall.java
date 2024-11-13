@@ -57,6 +57,18 @@ public class Erc721TransferFromCall extends AbstractCall {
     private final AddressIdConverter addressIdConverter;
     private final SpecialRewardReceivers specialRewardReceivers;
 
+    /**
+     * @param serialNo the serial number of the ERC721 token
+     * @param from the address of the account from which the token will be transferred
+     * @param to the address of the account to which the token will be transferred
+     * @param tokenId the token id of the token to be transferred
+     * @param verificationStrategy the verification strategy used in this call
+     * @param enhancement the enhancement used in this call
+     * @param gasCalculator the gas calculator used in this call
+     * @param senderId the sender id of the sending account
+     * @param addressIdConverter the address ID converter for this call
+     * @param specialRewardReceivers the special reward receiver
+     */
     // too many parameters
     @SuppressWarnings("java:S107")
     public Erc721TransferFromCall(

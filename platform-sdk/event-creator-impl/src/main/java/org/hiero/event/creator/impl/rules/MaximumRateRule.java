@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.creation.rules;
+package org.hiero.event.creator.impl.rules;
 
-import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
+import static org.hiero.event.creator.EventCreationStatus.RATE_LIMITED;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimiter;
-import com.swirlds.platform.event.creation.EventCreationConfig;
-import com.swirlds.platform.event.creation.EventCreationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hiero.event.creator.EventCreationRule;
+import org.hiero.event.creator.EventCreationStatus;
+import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Throttles event creation rate over time.
