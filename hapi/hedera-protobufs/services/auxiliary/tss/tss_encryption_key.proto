@@ -35,7 +35,7 @@ option java_multiple_files = true;
 /**
  * A transaction body for sending the public TSS encryption key.
  */
-message TssEncryptionKeyTransaction {
+message TssEncryptionKeyTransactionBody {
   /**
    * The raw bytes of the public TSS encryption key of the node sending the transaction.
    * <p>
