@@ -35,7 +35,7 @@ candidate. XTS are intended to complete within a given 3-hour window. These test
 ### Dry-Running XTS Tests
 
 There is an additional workflow: `ZXF: Extended Test Suite - Dry Run` which is available for use within the
-`hashgraph/hedera-services` repository. 
+`hashgraph/hedera-services` repository.
 
 The XTS Dry-Run workflow runs a provided commit on any branch through the same XTS tests that would be run against the
 latest on develop every three hours. This workflow is run with a manual trigger and will execute in parallel to any
