@@ -16,7 +16,6 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -37,21 +36,14 @@ import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.roster.RosterStartupLogic;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
-import com.hedera.node.config.data.TssConfig;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.context.PlatformContext;
@@ -79,7 +71,7 @@ import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -95,7 +87,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -307,24 +298,10 @@ public class ServicesMain implements SwirldMain {
             final SignedState loadedSignedState = initialState.get();
             final var state = ((MerkleStateRoot) loadedSignedState.getState());
             final boolean softwareUpgrade = detectSoftwareUpgrade(version, loadedSignedState);
-            final var writableStoreFactory = new WritableStoreFactory(
-                    state,
-                    RosterStateId.NAME,
-                    configuration,
-                    new StoreMetricsServiceImpl(metrics)); // TODO: proper storeMetricsService instance?
-            final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
+            final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
             final var addressBookStore = new ReadableStoreFactory(state).getStore(ReadableNodeStore.class);
-            final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStoreImpl.class);
 
-            // FUTURE: get the same TssLibrary instance that we use for the Hedera instance
-            final var tssLibrary = new PlaceholderTssLibrary();
-
-            final long maxSharesPerNode =
-                    configuration.getConfigData(TssConfig.class).maxSharesPerNode();
-            final Function<Roster, TssParticipantDirectory> participantDirectoryProvider =
-                    roster -> computeParticipantDirectory(roster, maxSharesPerNode, (int) selfId.id());
-            final var rosterStartupLogic = new RosterStartupLogic(
-                    rosterStore, addressBookStore, tssStore, diskAddressBook, tssLibrary, participantDirectoryProvider);
+            final var rosterStartupLogic = new RosterStartupLogic(rosterStore, addressBookStore, diskAddressBook);
             rosterHistory = rosterStartupLogic.determineRosterHistory(isGenesis.get(), softwareUpgrade);
         } else {
             rosterHistory =
