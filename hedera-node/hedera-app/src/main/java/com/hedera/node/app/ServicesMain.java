@@ -32,12 +32,10 @@ import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
-import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.roster.RosterStartupLogic;
-import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -297,12 +295,9 @@ public class ServicesMain implements SwirldMain {
         if (addressbookUseRosterLifecycle) {
             final SignedState loadedSignedState = initialState.get();
             final var state = ((MerkleStateRoot) loadedSignedState.getState());
-            final boolean softwareUpgrade = detectSoftwareUpgrade(version, loadedSignedState);
             final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
-            final var addressBookStore = new ReadableStoreFactory(state).getStore(ReadableNodeStore.class);
-
-            final var rosterStartupLogic = new RosterStartupLogic(rosterStore, addressBookStore, diskAddressBook);
-            rosterHistory = rosterStartupLogic.determineRosterHistory(isGenesis.get(), softwareUpgrade);
+            final var rosterStartupLogic = new RosterStartupLogic(rosterStore);
+            rosterHistory = rosterStartupLogic.determineRosterHistory();
         } else {
             rosterHistory =
                     RosterUtils.buildRosterHistory(initialState.get().getState().getReadablePlatformState());
