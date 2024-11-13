@@ -28,6 +28,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.TssKeysAccessor;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssShareId;
 import com.hedera.node.app.tss.api.TssShareSignature;
@@ -37,6 +38,7 @@ import com.hedera.node.app.tss.pairings.SignatureSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Map;
@@ -59,17 +61,20 @@ public class TssShareSignatureHandler implements TransactionHandler {
     private final Map<Bytes, Map<Bytes, Set<TssShareSignature>>> signatures = new ConcurrentHashMap<>();
     private Instant lastPurgeTime = Instant.EPOCH;
     private TssBaseServiceImpl tssBaseService;
+    private final TssMetrics tssMetrics;
 
     @Inject
     public TssShareSignatureHandler(
             @NonNull final TssLibrary tssLibrary,
             @NonNull final InstantSource instantSource,
             @NonNull final TssKeysAccessor rosterKeyMaterialAccessor,
-            @NonNull final TssBaseService tssBaseService) {
+            @NonNull final TssBaseService tssBaseService,
+            final TssMetrics tssMetrics) {
         this.tssLibrary = tssLibrary;
         this.instantSource = instantSource;
         this.rosterKeyMaterialAccessor = rosterKeyMaterialAccessor;
         this.tssBaseService = (TssBaseServiceImpl) tssBaseService;
+        this.tssMetrics = requireNonNull(tssMetrics);
     }
 
     @Override
@@ -94,8 +99,13 @@ public class TssShareSignatureHandler implements TransactionHandler {
             // If message hash now has enough signatures to aggregate, do so and notify
             // tssBaseService of sign the message hash with ledger signature
             if (isThresholdMet(messageHash, rosterHash)) {
+                final var aggregationStart = instantSource.instant();
                 final var ledgerSignature = tssLibrary.aggregateSignatures(
                         tssShareSignatures.stream().toList());
+                final var aggregationEnd = instantSource.instant();
+                // Update the time it took to aggregate the signatures and generate ledger signature
+                tssMetrics.updateLedgerSignatureTime(
+                        Duration.between(aggregationStart, aggregationEnd).toMillis());
                 tssBaseService.notifySignature(
                         messageHash.toByteArray(), ledgerSignature.signature().toBytes());
             }

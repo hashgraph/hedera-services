@@ -30,6 +30,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.TssKeysAccessor;
+import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.api.TssPrivateShare;
@@ -67,6 +68,8 @@ public class TssShareSignatureHandlerTest {
 
     @Mock
     private PreHandleContext context;
+    @Mock
+    private TssMetrics tssMetrics;
 
     private TssShareSignatureHandler handler;
 
@@ -89,7 +92,7 @@ public class TssShareSignatureHandlerTest {
     void setUp() {
         given(rosterKeyMaterialAccessor.accessTssKeys()).willReturn(TSS_KEYS);
         given(instantSource.instant()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        handler = new TssShareSignatureHandler(tssLibrary, instantSource, rosterKeyMaterialAccessor, tssBaseService);
+        handler = new TssShareSignatureHandler(tssLibrary, instantSource, rosterKeyMaterialAccessor, tssBaseService, tssMetrics);
     }
 
     @Test
