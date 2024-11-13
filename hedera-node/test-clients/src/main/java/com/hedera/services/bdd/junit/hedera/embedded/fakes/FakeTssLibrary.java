@@ -42,7 +42,7 @@ public class FakeTssLibrary implements TssLibrary {
     private static final String INVALID_MESSAGE_PREFIX = "INVALID";
 
     private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
-    private static final PairingPrivateKey PRIVATE_KEY =
+    public static final PairingPrivateKey PRIVATE_KEY =
             new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
 
     public interface DirectoryAssertion {

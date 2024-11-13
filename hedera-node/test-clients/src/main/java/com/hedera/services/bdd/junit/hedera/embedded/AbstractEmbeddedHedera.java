@@ -147,18 +147,22 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
         hedera.initializeStatesApi(
                 state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
+
+        // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done,
+        // so that platform and roster states are ready by the time the State API is initialized
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
-        final var writableRosterStates = state.getWritableStates(RosterStateId.NAME);
         final WritableSingletonState<PlatformState> platformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
-        final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
         final var currentState = requireNonNull(platformState.get());
         platformState.put(currentState
                 .copyBuilder()
                 .addressBook(toPbjAddressBook(addressBook))
                 .build());
-        writableRosterStore.putActiveRoster(createRoster(addressBook), 0);
         ((CommittableWritableStates) writableStates).commit();
+        final var writableRosterStates = state.getWritableStates(RosterStateId.NAME);
+        final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
+        writableRosterStore.putActiveRoster(createRoster(addressBook), 0);
         ((CommittableWritableStates) writableRosterStates).commit();
+        // --- end of temporary code block ---
 
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
         hedera.onStateInitialized(state, fakePlatform(), GENESIS);

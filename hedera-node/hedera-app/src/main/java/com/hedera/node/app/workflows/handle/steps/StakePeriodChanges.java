@@ -26,7 +26,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.Network;
 import com.hedera.hapi.node.state.NodeMetadata;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -223,14 +222,12 @@ public class StakePeriodChanges {
                 nodeMetadata.add(new NodeMetadata(node, Bytes.EMPTY));
             });
             network.nodeMetadata(nodeMetadata);
-            final var sourceRosterHash = Optional.ofNullable(rosterStore.getRosterHistory())
-                    .filter(history -> history.size() == 2)
-                    .map(List::getFirst)
-                    .map(RoundRosterPair::activeRosterHash)
-                    .orElse(Bytes.EMPTY);
+            final var sourceRosterHash =
+                    Optional.ofNullable(rosterStore.getPreviousRosterHash()).orElse(Bytes.EMPTY);
             final long sourceRosterWeight;
             final LongUnaryOperator nodeWeightFn;
             if (Bytes.EMPTY.equals(sourceRosterHash)) {
+                // For the genesis roster, we give all "source" nodes equal weight of 1
                 sourceRosterWeight = activeRoster.rosterEntries().size();
                 nodeWeightFn = nodeId -> 1;
             } else {
@@ -243,7 +240,7 @@ public class StakePeriodChanges {
             }
             tssStore.consensusRosterKeys(
                             sourceRosterHash,
-                            requireNonNull(rosterStore.getActiveRosterHash()),
+                            requireNonNull(rosterStore.getCurrentRosterHash()),
                             sourceRosterWeight,
                             nodeWeightFn)
                     .ifPresent(rosterKeys ->

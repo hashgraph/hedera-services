@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.state.service;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
@@ -28,7 +30,6 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -53,7 +54,7 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
      * @param readableStates The state to use.
      */
     public ReadableRosterStoreImpl(@NonNull final ReadableStates readableStates) {
-        Objects.requireNonNull(readableStates);
+        requireNonNull(readableStates);
         this.rosterState = readableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
         this.rosterMap = readableStates.get(RosterStateId.ROSTER_KEY);
     }
@@ -78,7 +79,7 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
     @Nullable
     @Override
     public Roster getActiveRoster() {
-        final var activeRosterHash = getActiveRosterHash();
+        final var activeRosterHash = getCurrentRosterHash();
         if (activeRosterHash == null) {
             return null;
         }
@@ -99,7 +100,7 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
      */
     @Nullable
     @Override
-    public Bytes getActiveRosterHash() {
+    public Bytes getCurrentRosterHash() {
         final RosterState rosterStateSingleton = rosterState.get();
         if (rosterStateSingleton == null) {
             return null;
@@ -114,22 +115,16 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         return latestRoundRosterPair.activeRosterHash();
     }
 
-    /** {@inheritDoc} */
     @Nullable
     @Override
-    public List<RoundRosterPair> getRosterHistory() {
-        final RosterState rosterStateSingleton = rosterState.get();
-        if (rosterStateSingleton != null
-                && !rosterStateSingleton.roundRosterPairs().isEmpty()) {
-            boolean allHashesPresent = rosterStateSingleton.roundRosterPairs().stream()
-                    .allMatch(pair -> rosterMap.get(ProtoBytes.newBuilder()
-                                    .value(pair.activeRosterHash())
-                                    .build())
-                            != null);
-            if (allHashesPresent) {
-                return rosterStateSingleton.roundRosterPairs();
-            }
-        }
-        return null;
+    public Bytes getPreviousRosterHash() {
+        final var rosterHistory = getRosterHistory();
+        return rosterHistory.size() > 1 ? rosterHistory.getLast().activeRosterHash() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @NonNull List<RoundRosterPair> getRosterHistory() {
+        return requireNonNull(rosterState.get()).roundRosterPairs();
     }
 }

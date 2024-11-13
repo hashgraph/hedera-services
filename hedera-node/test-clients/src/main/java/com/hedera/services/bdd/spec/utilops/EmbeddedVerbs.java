@@ -31,7 +31,9 @@ import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
@@ -40,6 +42,7 @@ import com.hedera.services.bdd.spec.utilops.embedded.MutateScheduleExpiriesOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateStakingInfosOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTokenOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTssMessagesOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateTssVotesOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewPendingAirdropOp;
@@ -115,6 +118,16 @@ public final class EmbeddedVerbs {
         return new MutateTssMessagesOp(mutation);
     }
 
+    /**
+     * Returns an operation that allows the test author to directly mutate the TSS votes.
+     *
+     * @param mutation the mutation to apply to the TSS votes
+     * @return the operation that will mutate the TSS votes
+     */
+    public static MutateTssVotesOp mutateTssVotes(
+            @NonNull final Consumer<WritableKVState<TssVoteMapKey, TssVoteTransactionBody>> mutation) {
+        return new MutateTssVotesOp(mutation);
+    }
     /**
      * Returns an operation that allows the test author to directly mutate an account.
      *

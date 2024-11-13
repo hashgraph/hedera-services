@@ -75,15 +75,15 @@ public interface ReadableTssStore {
      *
      * @param sourceRosterHash the source roster hash the vote must be from
      * @param targetRosterHash the target roster hash the vote must be for
-     * @param rosterWeight the total weight of the source the vote must be from
-     * @param nodeWeightFn a function that returns the weight of a node in the source roster given its id
+     * @param sourceRosterWeight the total weight of the source the vote must be from
+     * @param sourceRosterWeightFn a function that returns the weight of a node in the source roster given its id
      * @return a winning vote, if present
      */
     Optional<TssVoteTransactionBody> anyWinningVoteFrom(
             @NonNull Bytes sourceRosterHash,
             @NonNull Bytes targetRosterHash,
-            long rosterWeight,
-            @NonNull LongUnaryOperator nodeWeightFn);
+            long sourceRosterWeight,
+            @NonNull LongUnaryOperator sourceRosterWeightFn);
 
     /**
      * Get the TSS message for the given key.

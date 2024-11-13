@@ -66,15 +66,15 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
             @NonNull final Bytes sourceRosterHash,
             @NonNull final Bytes targetRosterHash,
             final long sourceRosterWeight,
-            @NonNull final LongUnaryOperator nodeWeightFn) {
+            @NonNull final LongUnaryOperator sourceRosterWeightFn) {
         requireNonNull(sourceRosterHash);
         requireNonNull(targetRosterHash);
-        requireNonNull(nodeWeightFn);
+        requireNonNull(sourceRosterWeightFn);
         return stream(spliterator(readableTssVoteState.keys(), readableTssVoteState.size(), NONNULL), false)
-                .filter(key -> sourceRosterHash.equals(key.rosterHash()))
+                .filter(key -> targetRosterHash.equals(key.rosterHash()))
                 .map(key -> new WeightedVote(
-                        nodeWeightFn.applyAsLong(key.nodeId()), requireNonNull(readableTssVoteState.get(key))))
-                .filter(vote -> targetRosterHash.equals(vote.vote().targetRosterHash()))
+                        sourceRosterWeightFn.applyAsLong(key.nodeId()), requireNonNull(readableTssVoteState.get(key))))
+                .filter(vote -> sourceRosterHash.equals(vote.vote().sourceRosterHash()))
                 .collect(groupingBy(WeightedVote::tssVote, toList()))
                 .values()
                 .stream()
