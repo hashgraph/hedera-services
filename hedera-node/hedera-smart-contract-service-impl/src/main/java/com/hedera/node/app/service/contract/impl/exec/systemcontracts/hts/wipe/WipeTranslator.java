@@ -36,10 +36,13 @@ import javax.inject.Singleton;
 @Singleton
 public class WipeTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    /** Selector for wipeTokenAccount(address,address,uint32) method. */
     public static final Function WIPE_FUNGIBLE_V1 =
             new Function("wipeTokenAccount(address,address,uint32)", ReturnTypes.INT);
+    /** Selector for wipeTokenAccount(address,address,int64) method. */
     public static final Function WIPE_FUNGIBLE_V2 =
             new Function("wipeTokenAccount(address,address,int64)", ReturnTypes.INT);
+    /** Selector for wipeTokenAccountNFT(address,address,int64[]) method. */
     public static final Function WIPE_NFT =
             new Function("wipeTokenAccountNFT(address,address,int64[])", ReturnTypes.INT);
 

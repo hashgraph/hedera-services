@@ -21,6 +21,7 @@ import static io.grpc.Status.fromThrowable;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.block.protoc.BlockItemSet;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
@@ -175,9 +176,10 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
         PublishStreamRequest request = PublishStreamRequest.newBuilder().build();
         try {
-            request = PublishStreamRequest.newBuilder()
-                    .setBlockItem(BlockItem.parseFrom(bytes))
+            BlockItemSet items = BlockItemSet.newBuilder()
+                    .addBlockItems(BlockItem.parseFrom(bytes))
                     .build();
+            request = PublishStreamRequest.newBuilder().setBlockItems(items).build();
             requestObserver.onNext(request);
         } catch (IOException e) {
             final String message = INVALID_MESSAGE.formatted("PublishStreamResponse", request);
@@ -196,9 +198,10 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
         PublishStreamRequest request = PublishStreamRequest.newBuilder().build();
         try {
-            request = PublishStreamRequest.newBuilder()
-                    .setBlockItem(BlockItem.parseFrom(data.asInputStream()))
+            BlockItemSet items = BlockItemSet.newBuilder()
+                    .addBlockItems(BlockItem.parseFrom(data.asInputStream()))
                     .build();
+            request = PublishStreamRequest.newBuilder().setBlockItems(items).build();
             requestObserver.onNext(request);
         } catch (IOException e) {
             final String message = INVALID_MESSAGE.formatted("PublishStreamResponse", request);

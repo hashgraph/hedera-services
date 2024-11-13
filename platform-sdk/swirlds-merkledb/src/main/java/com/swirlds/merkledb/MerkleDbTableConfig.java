@@ -17,6 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
@@ -24,13 +25,11 @@ import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.IOException;
@@ -145,17 +144,30 @@ public final class MerkleDbTableConfig implements SelfSerializable {
      *      Hash version
      * @param hashType
      *      Hash type
+     * @param maxNumberOfKeys
+     *      Max number of keys that can be stored in a table.
+     * @param hashesRamToDiskThreshold
+     *      Threshold where we switch from storing internal hashes in ram to storing them on disk.
      */
-    public MerkleDbTableConfig(final short hashVersion, final DigestType hashType) {
+    public MerkleDbTableConfig(
+            final short hashVersion,
+            final DigestType hashType,
+            final long maxNumberOfKeys,
+            final long hashesRamToDiskThreshold) {
         // Mandatory fields
         this.hashVersion = hashVersion;
         this.hashType = hashType;
 
         // Optional hints, may be set explicitly using setters later. Defaults are loaded from
         // MerkleDb configuration
-        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-        maxNumberOfKeys = dbConfig.maxNumOfKeys();
-        hashesRamToDiskThreshold = dbConfig.hashesRamToDiskThreshold();
+        if (maxNumberOfKeys <= 0) {
+            throw new IllegalArgumentException("Max number of keys must be greater than 0");
+        }
+        this.maxNumberOfKeys = maxNumberOfKeys;
+        if (hashesRamToDiskThreshold < 0) {
+            throw new IllegalArgumentException("Hashes RAM/disk threshold must be greater or equal to 0");
+        }
+        this.hashesRamToDiskThreshold = hashesRamToDiskThreshold;
     }
 
     public MerkleDbTableConfig(final ReadableSequentialData in) {
@@ -202,7 +214,7 @@ public final class MerkleDbTableConfig implements SelfSerializable {
         }
 
         // Check that all mandatory fields have been loaded from the stream
-        Objects.requireNonNull(hashType, "Null or wrong hash type");
+        requireNonNull(hashType, "Null or wrong hash type");
         if (maxNumberOfKeys <= 0) {
             throw new IllegalArgumentException("Missing or wrong max number of keys");
         }
@@ -394,10 +406,7 @@ public final class MerkleDbTableConfig implements SelfSerializable {
      * @return Table config copy
      */
     public MerkleDbTableConfig copy() {
-        final MerkleDbTableConfig copy = new MerkleDbTableConfig(hashVersion, hashType);
-        copy.hashesRamToDiskThreshold(hashesRamToDiskThreshold);
-        copy.maxNumberOfKeys(maxNumberOfKeys);
-        return copy;
+        return new MerkleDbTableConfig(hashVersion, hashType, maxNumberOfKeys, hashesRamToDiskThreshold);
     }
 
     /**

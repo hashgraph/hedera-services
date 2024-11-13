@@ -23,8 +23,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * This utility class performs checks on the parent of the frame (the initial caller)
+ */
 @Singleton
 public class CallAddressChecks {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public CallAddressChecks() {
         // Dagger2

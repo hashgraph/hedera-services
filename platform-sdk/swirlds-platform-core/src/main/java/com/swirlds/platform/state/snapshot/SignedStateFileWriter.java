@@ -221,7 +221,8 @@ public final class SignedStateFileWriter {
 
             executeAndRename(
                     savedStateDirectory,
-                    directory -> writeSignedStateFilesToDirectory(platformContext, selfId, directory, signedState));
+                    directory -> writeSignedStateFilesToDirectory(platformContext, selfId, directory, signedState),
+                    platformContext.getConfiguration());
 
             logger.info(STATE_TO_DISK.getMarker(), () -> new StateSavedToDiskPayload(
                             signedState.getRound(),
