@@ -69,6 +69,7 @@ val maven =
                     .reader()
             )
 
+            name.set(project.name)
             url = "https://www.hashgraph.com/"
             inceptionYear = "2016"
 
