@@ -35,7 +35,7 @@ public class TestingConstants {
 
     static final byte[] CHAINID_TESTNET = unhex("0128");
 
-    static final BigInteger WEIBARS_IN_TINYBAR = BigInteger.valueOf(10_000_000_000L);
+    static final BigInteger WEIBARS_IN_TINYBAR = BigInteger.valueOf(1L);
 
     static final byte[] TINYBARS_57_IN_WEIBARS =
             BigInteger.valueOf(57).multiply(WEIBARS_IN_TINYBAR).toByteArray();

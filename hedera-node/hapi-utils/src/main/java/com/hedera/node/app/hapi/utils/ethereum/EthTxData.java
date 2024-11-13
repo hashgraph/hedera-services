@@ -31,6 +31,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
+import org.bouncycastle.util.BigIntegers;
 
 public record EthTxData(
         byte[] rawTx,
@@ -55,7 +56,7 @@ public record EthTxData(
      * transactions come in with transfer amounts in units of weibar.  Elsewhere in Hedera we use
      * units of tinybar (10⁻⁸ of an hbar), and here is the conversion factor:
      */
-    public static final BigInteger WEIBARS_IN_A_TINYBAR = BigInteger.valueOf(10_000_000_000L);
+    public static final BigInteger WEIBARS_IN_A_TINYBAR = BigInteger.valueOf(1L);
 
     // Copy of constants from besu-native, remove when next besu-native publishes
     static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;
@@ -385,7 +386,7 @@ public record EthTxData(
         if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
             // after EIP155 the chain id is equal to
             // CHAIN_ID = (v - {0,1} - 35) / 2
-            chainId = vBI.subtract(BigInteger.valueOf(35)).shiftRight(1).toByteArray();
+            chainId = BigIntegers.asUnsignedByteArray(vBI.subtract(BigInteger.valueOf(35)).shiftRight(1));
         } else if (isLegacyUnprotectedEtx(vBI)) {
             // before EIP155 the chain id is considered equal to 0
             chainId = new byte[0];
