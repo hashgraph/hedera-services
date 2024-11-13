@@ -187,7 +187,7 @@ Data Lifecycle:
 
 * When a node id is not present in any of the `active rosters` or a `candidate roster`, the entry for that node id
   should be removed. This cleanup task could be eagerly triggered any time there is a roster state change or lazily
-  triggered whenever a candidate roster is set. If this cleanup happens at startup, it must happen through a schema.
+  triggered whenever a candidate roster is set. If this cleanup happens at startup, it must happen through a schema in order for the corresponding state changes to be made visible in the output stream.
   If it happens during execution, it must be on the transaction handling thread.
 
 ### Configuration
