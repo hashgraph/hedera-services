@@ -74,6 +74,7 @@ import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -85,6 +86,7 @@ import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
@@ -140,6 +142,8 @@ public class HandleWorkflow {
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
+    private TssBaseService tssBaseService;
+    private final ConfigProvider configProvider;
 
     @Inject
     public HandleWorkflow(
@@ -163,7 +167,8 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
-            final AddressBookHelper addressBookHelper) {
+            final AddressBookHelper addressBookHelper,
+            @NonNull final TssBaseService tssBaseService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -183,11 +188,13 @@ public class HandleWorkflow {
         this.stakePeriodManager = requireNonNull(stakePeriodManager);
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
         this.userTxnFactory = requireNonNull(userTxnFactory);
+        this.configProvider = requireNonNull(configProvider);
         this.streamMode = configProvider
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
         this.addressBookHelper = requireNonNull(addressBookHelper);
+        this.tssBaseService = requireNonNull(tssBaseService);
     }
 
     /**
@@ -199,6 +206,9 @@ public class HandleWorkflow {
     public void handleRound(@NonNull final State state, @NonNull final Round round) {
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        if (configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
+            tssBaseService.generateParticipantDirectory(state);
+        }
         if (streamMode != RECORDS) {
             blockStreamManager.startRound(round, state);
             blockStreamManager.writeItem(BlockItem.newBuilder()
@@ -289,10 +299,10 @@ public class HandleWorkflow {
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
      * {@link BlockRecordManager} to be externalized.
      *
-     * @param state the writable {@link State} that this transaction will work on
-     * @param event the {@link ConsensusEvent} that this transaction belongs to
+     * @param state   the writable {@link State} that this transaction will work on
+     * @param event   the {@link ConsensusEvent} that this transaction belongs to
      * @param creator the {@link NodeInfo} of the creator of the transaction
-     * @param txn the {@link ConsensusTransaction} to be handled
+     * @param txn     the {@link ConsensusTransaction} to be handled
      */
     private void handlePlatformTransaction(
             @NonNull final State state,
@@ -361,6 +371,8 @@ public class HandleWorkflow {
                 // Flushes the BUSY builder to the stream, no other side effects
                 userTxn.stack().commitTransaction(userTxn.baseBuilder());
             } else {
+                final var keyCandidateRoster =
+                        userTxn.config().getConfigData(TssConfig.class).keyCandidateRoster();
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     systemSetup.externalizeInitSideEffects(
@@ -369,6 +381,7 @@ public class HandleWorkflow {
                     final var writableStoreFactory = new WritableStoreFactory(
                             userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
                     final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
+
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     final var writableStoreFactory = new WritableStoreFactory(
@@ -398,8 +411,8 @@ public class HandleWorkflow {
                     // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
+                    // Generate key material for the active roster once it is switched
                 }
-
                 final var baseBuilder = initializeBuilderInfo(
                         userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
                 final var dispatch = userTxnFactory.createDispatch(userTxn, baseBuilder);
@@ -523,8 +536,8 @@ public class HandleWorkflow {
      * information. The record builder is initialized with the transaction, transaction bytes, transaction ID,
      * exchange rate, and memo.
      *
-     * @param builder the base builder
-     * @param txnInfo the transaction information
+     * @param builder         the base builder
+     * @param txnInfo         the transaction information
      * @param exchangeRateSet the active exchange rate set
      * @return the initialized base builder
      */
@@ -582,7 +595,7 @@ public class HandleWorkflow {
     /**
      * Process all time-based events that are due since the last processing time.
      *
-     * @param userTxn the user transaction
+     * @param userTxn         the user transaction
      * @param lastProcessTime an upper bound on the last time that time-based events were processed
      * @return true if the interval was processed
      */
