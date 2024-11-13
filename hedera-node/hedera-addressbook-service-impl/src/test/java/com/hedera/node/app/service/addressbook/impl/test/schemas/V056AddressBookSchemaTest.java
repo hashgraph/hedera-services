@@ -134,7 +134,7 @@ class V056AddressBookSchemaTest extends AddressBookTestBase {
         given(migrationContext.activeNetworkInfo()).willReturn(null);
         assertThatCode(() -> subject.migrate(migrationContext))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Genesis network info is not found");
+                .hasMessage("Active network info is not found");
     }
 
     private void assertWritableNodes() {
