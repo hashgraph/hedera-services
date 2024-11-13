@@ -71,4 +71,12 @@ public interface ReadableRosterStore {
      */
     @Nullable
     List<RoundRosterPair> getRosterHistory();
+
+    /**
+     * Get the active roster hash.
+     *
+     * @return The active roster hash.
+     */
+    @Nullable
+    Bytes getActiveRosterHash();
 }
