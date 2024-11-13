@@ -274,11 +274,9 @@ public class ReadableFreezeUpgradeActions {
             FileUtils.cleanDirectory(keysDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
-            if (nodes != null && nodesConfig.enableDAB()) {
-                if (!addressBookConfig.useRosterLifecycle()) {
-                    generateConfigPem(artifactsLoc, keysLoc, nodes);
-                    log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
-                }
+            if (nodes != null && nodesConfig.enableDAB() && !addressBookConfig.useRosterLifecycle()) {
+                generateConfigPem(artifactsLoc, keysLoc, nodes);
+                log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
         } catch (final Exception t) {

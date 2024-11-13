@@ -409,7 +409,7 @@ public class HandleWorkflow {
                 if (!tssConfig.keyCandidateRoster()
                         && addressBookConfig.useRosterLifecycle()
                         && userTxn.functionality() == HederaFunctionality.FREEZE) {
-                    // Set the candidate roster in state on network upgrade
+                    // Set the candidate roster in state on network upgrade only if the tss is disabled
                     final var candidateRoster = nodeStore.snapshotOfFutureRoster();
                     final var rosterStore = writableRosterStoreFactory.getStore(WritableRosterStore.class);
                     rosterStore.putCandidateRoster(candidateRoster);
