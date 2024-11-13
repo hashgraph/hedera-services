@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.hip423;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -36,7 +35,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -76,6 +74,7 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_TRANSFER_LIST;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.scheduleFakeUpgrade;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
+import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -84,6 +83,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -91,9 +91,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -1264,7 +1262,7 @@ public class ScheduleLongTermExecutionTest {
         final var receiver2 = "receiver2";
         final var receiver3 = "receiver3";
         final var receiver4 = "receiver4";
-        final var contract = "TestContract";
+        final var contract = "HollowAccountCreator";
         return hapiTest(
                 cryptoCreate(PAYING_ACCOUNT).via("createPayerTxn"),
                 newKeyNamed(receiver1),
@@ -1281,6 +1279,25 @@ public class ScheduleLongTermExecutionTest {
                         .withRelativeExpiry("createPayerTxn", 4)
                         .recordingScheduledTxn()
                         .via("firstSchedule"),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                scheduleCreate(
+                                VALID_SCHEDULE,
+                                contractCall(
+                                                contract,
+                                                "testCallFoo",
+                                                randomHeadlongAddress(),
+                                                BigInteger.valueOf(500_000L))
+                                        .sending(ONE_HBAR)
+                                        .gas(2_000_000L)
+                                        .via("callTransaction")
+                                        .hasKnownStatusFrom(SUCCESS, INVALID_SOLIDITY_ADDRESS))
+                        .withEntityMemo(randomUppercase(100))
+                        .payingWith(DEFAULT_PAYER)
+                        .waitForExpiry()
+                        .withRelativeExpiry("createPayerTxn", 4)
+                        .recordingScheduledTxn()
+                        .via("secondSchedule"),
                 scheduleCreate(
                                 VALID_SCHEDULE,
                                 cryptoTransfer(
@@ -1291,27 +1308,7 @@ public class ScheduleLongTermExecutionTest {
                         .waitForExpiry()
                         .withRelativeExpiry("createPayerTxn", 4)
                         .recordingScheduledTxn()
-                        .via("secondSchedule"),
-//                uploadInitCode(contract),
-//                tokenCreate(NON_FUNGIBLE_TOKEN).treasury(PAYING_ACCOUNT),
-//                contractCreate(
-//                        contract,
-//                        idAsHeadlongAddress(
-//                                AccountID.newBuilder().setAccountNum(2).build()),
-//                        BigInteger.ONE)
-//                        .balance(ONE_HBAR),
-//                scheduleCreate(
-//                                VALID_SCHEDULE,
-//                        contractCall(
-//                                contract,
-//                                "balanceOf",
-//                                idAsHeadlongAddress(AccountID.getDefaultInstance())))
-//                        .withEntityMemo(randomUppercase(100))
-//                        .payingWith(DEFAULT_PAYER)
-//                        .waitForExpiry()
-//                        .withRelativeExpiry("createPayerTxn", 4)
-//                        .recordingScheduledTxn()
-//                        .via("thirdSchedule"),
+                        .via("thirdSchedule"),
                 sleepFor(5000),
                 cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver3, ONE_HBAR, false))
                         .via("trigger"),
@@ -1322,15 +1319,15 @@ public class ScheduleLongTermExecutionTest {
                             getTxnRecord("firstSchedule").scheduled().andAllChildRecords();
                     final var secondSchedule =
                             getTxnRecord("secondSchedule").scheduled().andAllChildRecords();
-//                    final var thirdSchedule =
-//                            getTxnRecord("thirdSchedule").scheduled().andAllChildRecords();
-                    allRunFor(spec, trigger, firstSchedule, secondSchedule);
+                    final var thirdSchedule =
+                            getTxnRecord("thirdSchedule").scheduled().andAllChildRecords();
+                    allRunFor(spec, trigger, firstSchedule, secondSchedule, thirdSchedule);
 
                     // get all nanoseconds
                     final var triggerSeconds = getRecordSeconds(trigger);
                     final var firstScheduleSeconds = getRecordSeconds(firstSchedule);
                     final var secondScheduleSeconds = getRecordSeconds(secondSchedule);
-//                    final var thirdScheduleSeconds = getRecordSeconds(thirdSchedule);
+                    final var thirdScheduleSeconds = getRecordSeconds(thirdSchedule);
 
                     final var triggerChildNanos = getChildNanos(trigger, 0);
                     final var triggerNanos = getRecordNanos(trigger);
@@ -1338,37 +1335,36 @@ public class ScheduleLongTermExecutionTest {
                     final var firstScheduleChildNanos = getChildNanos(firstSchedule, 0);
                     final var firstScheduleNanos = getRecordNanos(firstSchedule);
 
-                    final var secondScheduleFirstChildNanos = getChildNanos(secondSchedule, 0);
-                    final var secondScheduleSecondChildNanos = getChildNanos(secondSchedule, 1);
                     final var secondScheduleNanos = getRecordNanos(secondSchedule);
+                    final var secondScheduleChildNanos = getChildNanos(secondSchedule, 0);
 
-//                    final var thirdScheduleNanos = getRecordNanos(thirdSchedule);
-//                    final var thirdScheduleFirstChildNanos = thirdSchedule.getFirstNonStakingChildRecord().getConsensusTimestamp().getNanos();
+                    final var thirdScheduleFirstChildNanos = getChildNanos(thirdSchedule, 0);
+                    final var thirdScheduleSecondChildNanos = getChildNanos(thirdSchedule, 1);
+                    final var thirdScheduleNanos = getRecordNanos(thirdSchedule);
 
                     assertThat(triggerSeconds)
                             .as(WRONG_CONSENSUS_TIMESTAMP)
                             .isEqualTo(firstScheduleSeconds)
-                            .isEqualTo(secondScheduleSeconds);
+                            .isEqualTo(secondScheduleSeconds)
+                            .isEqualTo(thirdScheduleSeconds);
                     assertThat(triggerChildNanos).as(WRONG_CONSENSUS_TIMESTAMP).isLessThan(triggerNanos);
                     assertThat(triggerNanos).as(WRONG_CONSENSUS_TIMESTAMP).isLessThan(firstScheduleChildNanos);
                     assertThat(firstScheduleChildNanos)
                             .as(WRONG_CONSENSUS_TIMESTAMP)
                             .isLessThan(firstScheduleNanos);
-                    assertThat(firstScheduleNanos)
+                    assertThat(firstScheduleNanos).as(WRONG_CONSENSUS_TIMESTAMP).isLessThan(secondScheduleNanos);
+                    assertThat(secondScheduleNanos)
                             .as(WRONG_CONSENSUS_TIMESTAMP)
-                            .isLessThan(secondScheduleFirstChildNanos);
-                    assertThat(secondScheduleFirstChildNanos)
+                            .isLessThan(secondScheduleChildNanos);
+                    assertThat(secondScheduleChildNanos)
                             .as(WRONG_CONSENSUS_TIMESTAMP)
-                            .isLessThan(secondScheduleSecondChildNanos);
-                    assertThat(secondScheduleSecondChildNanos)
+                            .isLessThan(thirdScheduleFirstChildNanos);
+                    assertThat(thirdScheduleFirstChildNanos)
                             .as(WRONG_CONSENSUS_TIMESTAMP)
-                            .isLessThan(secondScheduleNanos);
-//                    assertThat(secondScheduleSeconds)
-//                            .as(WRONG_CONSENSUS_TIMESTAMP)
-//                            .isLessThan(thirdScheduleNanos);
-//                    assertThat(thirdScheduleNanos)
-//                            .as(WRONG_CONSENSUS_TIMESTAMP)
-//                            .isLessThan(thirdScheduleFirstChildNanos);
+                            .isLessThan(thirdScheduleSecondChildNanos);
+                    assertThat(thirdScheduleSecondChildNanos)
+                            .as(WRONG_CONSENSUS_TIMESTAMP)
+                            .isLessThan(thirdScheduleNanos);
                 }));
     }
 
