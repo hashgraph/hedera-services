@@ -21,12 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -38,7 +36,6 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
@@ -101,12 +98,12 @@ public class VirtualMapReconnectTestBase {
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
 
-    protected static Configuration CONFIGURATION = ConfigurationBuilder.create()
-            .withConfigDataType(VirtualMapConfig.class)
-            .withConfigDataType(MerkleDbConfig.class)
-            .withConfigDataType(TemporaryFileConfig.class)
-            .withConfigDataType(StateCommonConfig.class)
-            .build();
+    protected static Configuration CONFIGURATION = new TestConfigBuilder()
+            .withValue(ReconnectConfig_.ACTIVE, "true")
+            // This is lower than the default, helps test that is supposed to fail to finish faster.
+            .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
+            .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
+            .getOrCreateConfig();
 
     VirtualDataSourceBuilder createBuilder() throws IOException {
         // The tests create maps with identical names. They would conflict with each other in the default
@@ -165,13 +162,6 @@ public class VirtualMapReconnectTestBase {
                 () -> new VirtualRootNode<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
-
-        new TestConfigBuilder()
-                .withValue(ReconnectConfig_.ACTIVE, "true")
-                // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
-                .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
-                .getOrCreateConfig();
     }
 
     protected MerkleInternal createTreeForMap(final MerkleNode map) {
