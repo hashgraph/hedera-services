@@ -17,13 +17,22 @@
 package com.hedera.node.app.info;
 
 import com.hedera.hapi.node.state.Network;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.tss.api.TssParticipantDirectory;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
 /**
  * Encapsulates the {@link Network} information that may or may not be present on disk
  * when starting a node.
  */
-public interface StartupAssets {
+public interface StartupNetworks {
+    @FunctionalInterface
+    interface TssDirectoryFactory {
+        @NonNull
+        TssParticipantDirectory create(@NonNull Roster roster, long maxSharesPerNode, int selfNodeId);
+    }
+
     /**
      * Called by a node that finds itself with a completely empty state.
      * @return the network information that should be used to populate the node's genesis state

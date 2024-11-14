@@ -36,6 +36,8 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.api.TssMessage;
+import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
@@ -195,8 +197,10 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void requestLedgerSignature(final byte[] messageHash, final Instant lastUsedConsensusTime) {
+    public void requestLedgerSignature(
+            @NonNull final byte[] messageHash, @NonNull final Instant lastUsedConsensusTime) {
         requireNonNull(messageHash);
+        requireNonNull(lastUsedConsensusTime);
         // (TSS-FUTURE) Initiate an asynchronous process of creating a ledger signature
         final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
@@ -301,6 +305,16 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public void generateParticipantDirectory(@NonNull final State state) {
         tssDirectoryAccessor.generateTssParticipantDirectory(state);
+    }
+
+    @Override
+    public Bytes ledgerIdFrom(
+            @NonNull final TssParticipantDirectory directory, @NonNull final List<TssMessage> tssMessages) {
+        requireNonNull(directory);
+        requireNonNull(tssMessages);
+        final var publicShares = tssLibrary.computePublicShares(directory, tssMessages);
+        final var publicKey = tssLibrary.aggregatePublicShares(publicShares);
+        return Bytes.wrap(publicKey.publicKey().toBytes());
     }
 
     /**

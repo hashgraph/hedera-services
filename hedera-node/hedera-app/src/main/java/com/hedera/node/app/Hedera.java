@@ -74,7 +74,9 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
+import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.info.GenesisNetworkInfo;
+import com.hedera.node.app.info.StartupNetworks;
 import com.hedera.node.app.info.StateNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterService;
@@ -102,10 +104,12 @@ import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.handlers.TssUtils;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -162,7 +166,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -270,6 +273,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     private final StreamMode streamMode;
 
     /**
+     * The factory for the startup networks.
+     */
+    private final StartupNetworksFactory startupNetworksFactory;
+
+    /**
      * The Hashgraph Platform. This is set during state initialization.
      */
     private Platform platform;
@@ -327,6 +335,25 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @Nullable
     private List<StateChanges.Builder> migrationStateChanges;
 
+    @Nullable
+    private StartupNetworks startupNetworks;
+
+    @FunctionalInterface
+    public interface TssBaseServiceFactory {
+        @NonNull
+        TssBaseService apply(@NonNull AppContext appContext);
+    }
+
+    @FunctionalInterface
+    public interface StartupNetworksFactory {
+        @NonNull
+        StartupNetworks apply(
+                long selfNodeId,
+                @NonNull ConfigProvider configProvider,
+                @NonNull TssBaseService tssBaseService,
+                @NonNull DiskStartupNetworks.TssDirectoryFactory tssDirectoryFactory);
+    }
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -341,20 +368,23 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * steps that try to create or deserialize a {@link MerkleStateRoot}.
      *
      * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
-     * @param registryFactory       the factory to use for creating the services registry
-     * @param migrator              the migrator to use with the services
+     * @param registryFactory the factory to use for creating the services registry
+     * @param migrator the migrator to use with the services
      * @param tssBaseServiceFactory the factory for the TSS base service
+     * @param startupNetworksFactory the factory for the startup networks
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
-            @NonNull final Function<AppContext, TssBaseService> tssBaseServiceFactory) {
+            @NonNull final TssBaseServiceFactory tssBaseServiceFactory,
+            @NonNull final StartupNetworksFactory startupNetworksFactory) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         this.serviceMigrator = requireNonNull(migrator);
         this.instantSource = requireNonNull(instantSource);
+        this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         logger.info(
                 """
 
@@ -492,6 +522,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         requireNonNull(platformConfiguration);
         this.metrics = requireNonNull(metrics);
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
+        // FUTURE - make this available to the platform state and roster schemas for migration
+        startupNetworks =
+                startupNetworksFactory.apply(0L, configProvider, tssBaseService, TssUtils::computeParticipantDirectory);
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",

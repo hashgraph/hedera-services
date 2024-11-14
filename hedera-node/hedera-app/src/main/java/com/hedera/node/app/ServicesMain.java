@@ -36,6 +36,7 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
@@ -118,7 +119,8 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
-                        new NoOpMetrics()));
+                        new NoOpMetrics()),
+                DiskStartupNetworks::new);
     }
 
     /**
@@ -427,6 +429,7 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
-                        metrics));
+                        metrics),
+                DiskStartupNetworks::new);
     }
 }

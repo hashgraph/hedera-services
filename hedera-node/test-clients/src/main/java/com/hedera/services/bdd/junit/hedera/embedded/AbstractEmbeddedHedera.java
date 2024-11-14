@@ -41,6 +41,7 @@ import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeStartupNetworks;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
@@ -134,7 +135,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 appContext -> {
                     this.tssBaseService = new FakeTssBaseService(appContext);
                     return tssBaseService;
-                });
+                },
+                FakeStartupNetworks::new);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));

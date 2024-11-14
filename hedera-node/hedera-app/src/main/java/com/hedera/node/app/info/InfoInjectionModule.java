@@ -34,7 +34,7 @@ public abstract class InfoInjectionModule {
     }
 
     @Provides
-    static DiskStartupAssets.TssDirectoryFactory tssDirectoryFactory() {
+    static DiskStartupNetworks.TssDirectoryFactory tssDirectoryFactory() {
         return TssUtils::computeParticipantDirectory;
     }
 }

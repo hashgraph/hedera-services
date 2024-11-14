@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
-import static com.hedera.node.app.info.DiskStartupAssets.writeNetworkInfo;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
@@ -34,7 +33,6 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
@@ -44,7 +42,6 @@ import com.swirlds.common.RosterStateId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -186,10 +183,7 @@ public class StakePeriodChanges {
     private void startKeyingCandidateRoster(
             @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
         final var storeFactory = handleContext.storeFactory();
-        final var tssStore = storeFactory.readableStore(ReadableTssStore.class);
         final var nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
-        writeNetworkInfo(tssStore, nodeStore, rosterStore, Paths.get("network.json"));
-
         final var roster = nodeStore.snapshotOfFutureRoster();
         if (!Objects.equals(roster, rosterStore.getCandidateRoster())
                 && !Objects.equals(roster, rosterStore.getActiveRoster())) {

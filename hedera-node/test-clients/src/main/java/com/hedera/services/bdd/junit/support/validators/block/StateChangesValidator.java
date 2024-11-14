@@ -61,6 +61,7 @@ import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeStartupNetworks;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
@@ -226,7 +227,8 @@ public class StateChangesValidator implements BlockStreamValidator {
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
-                        metrics));
+                        metrics),
+                FakeStartupNetworks::new);
         this.state = (MerkleStateRoot) hedera.newMerkleStateRoot();
         final Configuration platformConfig = ConfigurationBuilder.create()
                 .withConfigDataType(MetricsConfig.class)
