@@ -24,8 +24,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class DefaultInlinePcesWriter implements InlinePcesWriter {
     private final CommonPcesWriter commonPcesWriter;
@@ -38,7 +36,8 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
      * @param fileManager     manages all preconsensus event stream files currently on disk
      */
     public DefaultInlinePcesWriter(
-            @NonNull final PlatformContext platformContext, @NonNull final PcesFileManager fileManager,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final PcesFileManager fileManager,
             @NonNull final NodeId selfId) {
         Objects.requireNonNull(platformContext, "platformContext is required");
         Objects.requireNonNull(fileManager, "fileManager is required");
