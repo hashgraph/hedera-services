@@ -38,12 +38,12 @@ import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -607,7 +607,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (trigger == GENESIS) {
             final var config = configProvider.getConfiguration();
             final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-            final var genesisRoster = createRoster(requireNonNull(genesisAddressBook));
+            final var genesisRoster = buildRoster(requireNonNull(genesisAddressBook));
 
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
@@ -972,7 +972,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 serviceMigrator,
                 version,
                 configProvider.getConfiguration(),
-                createRoster(platform.getAddressBook()));
+                buildRoster(platform.getAddressBook()));
         final var networkInfo =
                 new StateNetworkInfo(state, activeRoster, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc
