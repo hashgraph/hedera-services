@@ -57,7 +57,7 @@ Additionally, participants will need access to each other's public key. While th
 - Implement support for elliptic curve arithmetic in Java.
 - Support any system/architecture other than Windows amd64, Linux amd64 and arm64, and MacOS amd64 and arm64.
 - Creation of the building artifacts and plugins for rust code.
-- This proposal covers the implementation of a tool similar to ssh-keygen to generate those keys. Still, the generation, persistence, distribution, and loading of those keys are outside the scope of this proposal.
+- (_decommissioned_) This proposal covers the implementation of a tool similar to ssh-keygen to generate those keys. Still, the generation, persistence, distribution, and loading of those keys are outside the scope of this proposal.
 
 ## Changes
 
@@ -109,7 +109,7 @@ Although the library is designed to be agnostic from the client, this section de
 3. **Pairings API**: An API definition for the arithmetic operations required to work with specific EC curves and the underlying Groups, Fields, and Pairings concepts. This API minimizes the impact of changing to different curves.
 4. **Bilinear Pairings Impl**: Implementing the Bilinear Pairings API that will be loaded at runtime using Java’s service provider (SPI) mechanism. Multiple implementations can be provided to support different curves, and the Java service provider approach facilitates easily changing between implementations and dependencies.
 5. **Native Support Library**: Provides a set of generic functions for loading native libraries in different system architectures when packaged in a jar, using a predefined organization so they can be accessed with JNI.
-6. **BLS-KeyGen:** is a CLI utility that enables the generation of bls public/private keys.
+6. **BLS-KeyGen:** is a CLI utility that enables the generation of bls public/private keys. (_decommissioned_)
 
 ### Module organization and repositories
 
