@@ -100,7 +100,7 @@ There are two new behaviors that will be added to the system.
 1. At `System Startup`, during cryptography loading, the `tssEncryptionKey` will be loaded from disk or generated if it
    does not exist.
 2. At the start of `TssBaseService`, the `TssBaseService` will verify that the public `tssEncryptionKey`
-   is in the state, and if not, send a transaction to update the public key in the state.  The `TssBaseService`
+   is in the state, and if not, send a transaction to update the public key in the state. The `TssBaseService`
    cannot proceed with normal execution until the public key is in the state and it is able to decrypt private shares.
 
 #### Loading Cryptography
@@ -123,14 +123,14 @@ key will be on disk.
 #### TssBaseService Initialization
 
 At the initialization of the `TssBaseService` the private `tssEncryptionKey` loaded from disk and matching public key
-will be provided.  There are two scenarios:
+will be provided. There are two scenarios:
 
 1. The provided `BlsPublicKey` for the loaded `BlsPrivateKey` is already in the state.
    1. This is the happy path and the `TssBaseService` can continue as normal.
 2. The state does not have a `BlsPublicKey` for this node or the provided `BlsPublicKey` does not match the
    `BlsPublicKey` in the state for this node:
    1. Once execution is live, a `TssEncryptionKeyTransaction` will need to be sent periodically until the state
-      reflects the correct public key.  The `TssBaseService` cannot continue execution as normal.
+      reflects the correct public key. The `TssBaseService` cannot continue execution as normal.
 
 #### TssBaseService Start Of Execution
 
@@ -196,14 +196,15 @@ A health metric should be created to indicate the state the `TssBaseService` is 
 
 1. State 1: distributing the public `tssEncryptionKey` to the network.
 2. State 2: the latest `tssEncryptionKey` is in the state, waiting to receive private shares.
-3. State 3: Private shares exist for this node in the latest `active roster` and the `TssBaseService` can execute
-   normally.
+3. State 3: This node's private shares related to the `active roster` have been decrypted and the `TssBaseService` can
+   execute normally.
 
 A health metric should be created that indicates the number of active shares available for signing from each node.
+
 * Nodes which are offline or have bad status in the above health metric should not have their shares counted towards
-the available active shares for signing.
+  the available active shares for signing.
 * A warning alarm should be generated if the number of active shares drops close to the aggregation threshold
-required to create a ledger signature.
+  required to create a ledger signature.
 * A critical error alarm should be generated if the number of available shares drops below the aggregation threshold.
 
 ### Performance
@@ -232,5 +233,5 @@ candidate roster is adopted.
 It is possible to manually force a rotation of the `tssEncryptionKey` by deleting the private key from disk and
 restarting the node. This will cause the node to generate a new key pair and distribute the public key to the network.
 The node will not be able to participate in signing until the public key is adopted and the next candidate roster is
-keyed using the new public key.  A more robust rotation mechanism that does not interfere with the node's ability to
+keyed using the new public key. A more robust rotation mechanism that does not interfere with the node's ability to
 participate in signing is a future enhancement.
