@@ -152,7 +152,6 @@ public class HandleWorkflow {
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
     private final TssBaseService tssBaseService;
-    private final ConfigProvider configProvider;
 
     @Inject
     public HandleWorkflow(
