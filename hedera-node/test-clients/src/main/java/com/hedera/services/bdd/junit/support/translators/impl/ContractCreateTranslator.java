@@ -57,7 +57,7 @@ public class ContractCreateTranslator implements BlockTransactionPartsTranslator
                 final var output = parts.createContractOutputOrThrow();
                 final var contractNum =
                         output.contractCreateResultOrThrow().contractIDOrThrow().contractNumOrThrow();
-                if (baseTranslator.createdThisUnit(contractNum)) {
+                if (baseTranslator.entityCreatedThisUnit(contractNum)) {
                     final var createdNum = baseTranslator.nextCreatedNum(ACCOUNT);
                     if (createdNum != contractNum) {
                         log.error("Expected {} to be the next created account, but got {}", createdNum, contractNum);

@@ -40,6 +40,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManage
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
@@ -136,6 +137,9 @@ class HandleWorkflowTest {
     @Mock
     private ScheduleService scheduleService;
 
+    @Mock
+    private TssBaseService tssBaseService;
+
     private HandleWorkflow subject;
 
     @BeforeEach
@@ -212,6 +216,7 @@ class HandleWorkflowTest {
                 migrationStateChanges,
                 userTxnFactory,
                 new AddressBookHelper(),
+                tssBaseService,
                 scheduleService);
     }
 }

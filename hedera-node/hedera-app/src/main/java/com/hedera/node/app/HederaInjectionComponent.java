@@ -94,7 +94,7 @@ import javax.inject.Singleton;
             BlockStreamModule.class,
             PlatformModule.class,
             ThrottleServiceModule.class,
-            FacilityInitModule.class,
+            FacilityInitModule.class
         })
 public interface HederaInjectionComponent {
     InitTrigger initTrigger();

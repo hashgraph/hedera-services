@@ -389,7 +389,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         bootstrapConfig.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
-                this);
+                this,
+                bootstrapConfigProvider::getConfiguration,
+                () -> daggerApp.networkInfo().selfNodeInfo());
         tssBaseService = tssBaseServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
         blockStreamService = new BlockStreamService();
@@ -581,9 +583,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started,
      * and thus all schemas will be executed.
      *
-     * @param state               current state
-     * @param deserializedVersion version deserialized
-     * @param trigger             trigger that is calling migration
+     * @param state                 current state
+     * @param deserializedVersion   version deserialized
+     * @param trigger               trigger that is calling migration
      * @param genesisAddressBook
      * @param platformConfiguration platform configuration
      * @return the state changes caused by the migration

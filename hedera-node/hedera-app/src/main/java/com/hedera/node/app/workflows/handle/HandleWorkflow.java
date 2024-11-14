@@ -44,6 +44,7 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.input.EventHeader;
 import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
@@ -79,6 +80,7 @@ import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -90,9 +92,11 @@ import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
@@ -147,6 +151,8 @@ public class HandleWorkflow {
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
+    private final TssBaseService tssBaseService;
+    private final ConfigProvider configProvider;
 
     @Inject
     public HandleWorkflow(
@@ -171,6 +177,7 @@ public class HandleWorkflow {
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
             @NonNull final AddressBookHelper addressBookHelper,
+            @NonNull final TssBaseService tssBaseService,
             @NonNull final ScheduleService scheduleService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
@@ -198,6 +205,7 @@ public class HandleWorkflow {
                 .streamMode();
         this.addressBookHelper = requireNonNull(addressBookHelper);
         this.scheduleService = requireNonNull(scheduleService);
+        this.tssBaseService = requireNonNull(tssBaseService);
     }
 
     /**
@@ -209,6 +217,9 @@ public class HandleWorkflow {
     public void handleRound(@NonNull final State state, @NonNull final Round round) {
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        if (configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
+            tssBaseService.generateParticipantDirectory(state);
+        }
         if (streamMode != RECORDS) {
             blockStreamManager.startRound(round, state);
             blockStreamManager.writeItem(BlockItem.newBuilder()
@@ -299,10 +310,10 @@ public class HandleWorkflow {
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
      * {@link BlockRecordManager} to be externalized.
      *
-     * @param state the writable {@link State} that this transaction will work on
-     * @param event the {@link ConsensusEvent} that this transaction belongs to
+     * @param state   the writable {@link State} that this transaction will work on
+     * @param event   the {@link ConsensusEvent} that this transaction belongs to
      * @param creator the {@link NodeInfo} of the creator of the transaction
-     * @param txn the {@link ConsensusTransaction} to be handled
+     * @param txn     the {@link ConsensusTransaction} to be handled
      */
     private void handlePlatformTransaction(
             @NonNull final State state,
@@ -379,19 +390,19 @@ public class HandleWorkflow {
                 // Flushes the BUSY builder to the stream, no other side effects
                 userTxn.stack().commitTransaction(userTxn.baseBuilder());
             } else {
+                final var writableRosterStoreFactory = new WritableStoreFactory(
+                        userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
+                final var writableStoreFactory = new WritableStoreFactory(
+                        userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
+                final var nodeStore = writableStoreFactory.getStore(WritableNodeStore.class);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     systemSetup.externalizeInitSideEffects(
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                     // Set the genesis roster in state
-                    final var writableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
-                    final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
+                    final var rosterStore = writableRosterStoreFactory.getStore(WritableRosterStore.class);
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
-                    final var writableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
-                    final var nodeStore = writableStoreFactory.getStore(WritableNodeStore.class);
                     final var writableStakingInfoStore =
                             new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME));
                     final var writableNetworkStakingRewardsStore = new WritableNetworkStakingRewardsStore(
@@ -416,6 +427,25 @@ public class HandleWorkflow {
                     // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
+                    // Generate key material for the active roster once it is switched
+                }
+
+                final var keyCandidateRoster = configProvider
+                        .getConfiguration()
+                        .getConfigData(TssConfig.class)
+                        .keyCandidateRoster();
+                final var useRosterLifecycle = configProvider
+                        .getConfiguration()
+                        .getConfigData(AddressBookConfig.class)
+                        .useRosterLifecycle();
+
+                if (!keyCandidateRoster
+                        && useRosterLifecycle
+                        && userTxn.functionality() == HederaFunctionality.FREEZE) {
+                    // Set the candidate roster in state on network upgrade only if the tss is disabled
+                    final var candidateRoster = nodeStore.snapshotOfFutureRoster();
+                    final var rosterStore = writableRosterStoreFactory.getStore(WritableRosterStore.class);
+                    rosterStore.putCandidateRoster(candidateRoster);
                 }
 
                 final var baseBuilder = initializeBuilderInfo(
@@ -534,8 +564,8 @@ public class HandleWorkflow {
      * information. The record builder is initialized with the transaction, transaction bytes, transaction ID,
      * exchange rate, and memo.
      *
-     * @param builder the base builder
-     * @param txnInfo the transaction information
+     * @param builder         the base builder
+     * @param txnInfo         the transaction information
      * @param exchangeRateSet the active exchange rate set
      * @return the initialized base builder
      */
