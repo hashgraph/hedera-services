@@ -61,6 +61,7 @@ import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -89,7 +90,6 @@ import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
-import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
@@ -327,6 +327,10 @@ public class HandleWorkflow {
                 case POST_UPGRADE_WORK -> POST_UPGRADE_TRANSACTION;
                 default -> ORDINARY_TRANSACTION;};
         }
+        // Save last processTimes before handling the transaction
+        final var lastRecordProcessTime = blockRecordManager.consTimeOfLastHandledTxn();
+        final var lastStreamProcessTime = blockStreamManager.lastIntervalProcessTime();
+
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
         final var handleOutput = execute(userTxn);
         if (streamMode != BLOCKS) {
@@ -337,6 +341,15 @@ public class HandleWorkflow {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+
+        if (streamMode == RECORDS) {
+            processInterval(state, event, creator, lastRecordProcessTime, consensusNow);
+        } else {
+            if (processInterval(state, event, creator, lastStreamProcessTime, consensusNow)) {
+                // TODO: is this needed?
+                blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
+            }
+        }
     }
 
     /**
@@ -358,13 +371,8 @@ public class HandleWorkflow {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 if (streamMode != BLOCKS) {
-                    final var lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
                     // This updates consTimeOfLastHandledTxn as a side-effect
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-                    if (streamMode == RECORDS) {
-                        // If relying on last-handled time to trigger interval processing, do so now
-                        processInterval(userTxn, lastRecordManagerTime);
-                    }
                 }
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
@@ -414,19 +422,12 @@ public class HandleWorkflow {
                         userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
                 final var dispatch = userTxnFactory.createDispatch(userTxn, baseBuilder);
                 updateNodeStakes(userTxn, dispatch);
-                var lastRecordManagerTime = Instant.EPOCH;
+
                 if (streamMode != BLOCKS) {
-                    lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
                     // This updates consTimeOfLastHandledTxn as a side-effect
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
-                if (streamMode == RECORDS) {
-                    processInterval(userTxn, lastRecordManagerTime);
-                } else {
-                    if (processInterval(userTxn, blockStreamManager.lastIntervalProcessTime())) {
-                        blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
-                    }
-                }
+
                 logPreDispatch(userTxn);
                 if (userTxn.type() != ORDINARY_TRANSACTION) {
                     if (userTxn.type() == GENESIS_TRANSACTION) {
@@ -592,27 +593,35 @@ public class HandleWorkflow {
     /**
      * Process all time-based events that are due since the last processing time.
      *
-     * @param userTxn the user transaction
      * @param lastProcessTime an upper bound on the last time that time-based events were processed
+     * @param consensusNow the current consensus time
      * @return true if the interval was processed
      */
-    private boolean processInterval(@NonNull final UserTxn userTxn, final Instant lastProcessTime) {
+    private boolean processInterval(
+            final State state,
+            final ConsensusEvent event,
+            final NodeInfo creator,
+            final Instant lastProcessTime,
+            final Instant consensusNow) {
         // If we have never processed an interval, treat this time as the last processed time
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
-        } else if (lastProcessTime.getEpochSecond() < userTxn.consensusNow().getEpochSecond()) {
+        } else if (lastProcessTime.getEpochSecond() < consensusNow.getEpochSecond()) {
             // There is at least one unprocessed second since the last processing time
-            final var scheduleConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
 
             // try to execute schedules
-            final var readableStoreFactory = new ReadableStoreFactory(userTxn.stack());
+            final var readableStoreFactory = new ReadableStoreFactory(state);
             final var writableStoreFactory = new WritableStoreFactory(
-                    userTxn.stack(), scheduleService.getServiceName(), userTxn.config(), storeMetricsService);
-            final var serviceApiFactory = new ServiceApiFactory(userTxn.stack(), userTxn.config(), storeMetricsService);
+                    state, scheduleService.getServiceName(), configProvider.getConfiguration(), storeMetricsService);
+            var store = writableStoreFactory.getStore(WritableScheduleStore.class);
+            store.purgeExpiredSchedulesBetween(lastProcessTime.getEpochSecond(), consensusNow.getEpochSecond());
+            final var cleanUpStack = userTxnFactory.createRootSavepointStack(state, ORDINARY_TRANSACTION);
+            final var serviceApiFactory =
+                    new ServiceApiFactory(cleanUpStack, configProvider.getConfiguration(), storeMetricsService);
             final var storeFactory =
                     new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
             final var scheduleIterator =
-                    scheduleService.iterTxnsForInterval(lastProcessTime, userTxn.consensusNow(), () -> storeFactory);
+                    scheduleService.iterTxnsForInterval(lastProcessTime, consensusNow, () -> storeFactory);
             // todo: consensus nanos offset will be calculated more precisely in following PR,
             //  for now just add 1 nano on each iteration.
             var consensusNanosOffset = 1;
@@ -620,17 +629,10 @@ public class HandleWorkflow {
                 // get schedule
                 final var schedule = scheduleIterator.next();
                 // update schedule consensus
-                final var scheduleConsensus =
-                        Instant.from(userTxn.consensusNow().plusNanos(consensusNanosOffset));
+                final var scheduleConsensus = Instant.from(consensusNow.plusNanos(consensusNanosOffset));
                 final var txnBody = schedule.body();
                 final var scheduleUserTnx = userTxnFactory.createUserTxn(
-                        userTxn.state(),
-                        userTxn.event(),
-                        userTxn.creatorInfo(),
-                        scheduleConsensus,
-                        userTxn.type(),
-                        schedule.payerId(),
-                        txnBody);
+                        state, event, creator, scheduleConsensus, ORDINARY_TRANSACTION, schedule.payerId(), txnBody);
                 final var baseBuilder = initializeBuilderInfo(
                         scheduleUserTnx.baseBuilder(), scheduleUserTnx.txnInfo(), exchangeRateManager.exchangeRates());
                 ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
@@ -651,7 +653,7 @@ public class HandleWorkflow {
                 consensusNanosOffset++;
             }
             // this will commit the purge of the schedules
-            userTxn.stack().commitSystemStateChanges();
+            cleanUpStack.commitSystemStateChanges();
             return true;
         }
         return false;
