@@ -819,7 +819,7 @@ public class PlatformComponentBuilder {
                         blocks.initialPcesFiles(),
                         blocks.selfId(),
                         blocks.initialState().get().getRound());
-                inlinePcesWriter = new DefaultInlinePcesWriter(blocks.platformContext(), preconsensusEventFileManager);
+                inlinePcesWriter = new DefaultInlinePcesWriter(blocks.platformContext(), preconsensusEventFileManager, blocks.selfId());
 
             } catch (final IOException e) {
                 throw new UncheckedIOException(e);
