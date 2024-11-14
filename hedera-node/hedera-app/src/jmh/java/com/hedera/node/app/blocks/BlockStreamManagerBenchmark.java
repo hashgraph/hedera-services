@@ -22,6 +22,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATF
 import static com.hedera.node.app.blocks.BlockStreamManager.ZERO_BLOCK_HASH;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
+import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -58,7 +59,7 @@ import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
-import com.swirlds.state.spi.Schema;
+import com.swirlds.state.lifecycle.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -117,7 +118,12 @@ public class BlockStreamManagerBenchmark {
                     "blockStream.serializationBatchSize", "32"));
     private final List<BlockItem> roundItems = new ArrayList<>();
     private final TssBaseServiceImpl tssBaseService = new TssBaseServiceImpl(
-            new AppContextImpl(Instant::now, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP),
+            new AppContextImpl(
+                    Instant::now,
+                    fakeSignatureVerifier(),
+                    UNAVAILABLE_GOSSIP,
+                    () -> configProvider.getConfiguration(),
+                    () -> DEFAULT_NODE_INFO),
             ForkJoinPool.commonPool(),
             ForkJoinPool.commonPool(),
             new PlaceholderTssLibrary(),

@@ -43,7 +43,7 @@ import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import java.math.BigInteger;
 import java.time.InstantSource;
 import java.util.List;
@@ -66,6 +66,9 @@ public class TssCryptographyManagerTest {
     private TssParticipantDirectory tssParticipantDirectory;
 
     @Mock
+    private AppContext appContext;
+
+    @Mock
     private AppContext.Gossip gossip;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
@@ -85,8 +88,9 @@ public class TssCryptographyManagerTest {
 
     @BeforeEach
     void setUp() {
+        when(appContext.gossip()).thenReturn(gossip);
         subject = new TssCryptographyManager(
-                tssLibrary, gossip, ForkJoinPool.commonPool(), tssMetrics, InstantSource.system());
+                tssLibrary, appContext, ForkJoinPool.commonPool(), tssMetrics, InstantSource.system());
         when(handleContext.networkInfo()).thenReturn(networkInfo);
         when(networkInfo.selfNodeInfo()).thenReturn(new NodeInfoImpl(0, AccountID.DEFAULT, 0, null, null));
     }

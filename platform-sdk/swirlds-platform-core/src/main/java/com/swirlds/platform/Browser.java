@@ -33,7 +33,6 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.setBrowserW
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
@@ -67,11 +66,13 @@ import com.swirlds.platform.gui.internal.WinBrowser;
 import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.GraphicsEnvironment;
@@ -210,6 +211,12 @@ public class Browser {
             BootstrapUtils.setupConfigBuilder(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
             final Configuration guiConfig = guiConfigBuilder.build();
 
+            final ConfigurationBuilder configBuilder = ConfigurationBuilder.create();
+            rethrowIO(() ->
+                    BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+            final Configuration configuration = configBuilder.build();
+
+            initNodeSecurity(appDefinition.getConfigAddressBook(), configuration);
             guiEventStorage = new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());
 
             guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
@@ -255,6 +262,9 @@ public class Browser {
             final var merkleCryptography = MerkleCryptographyFactory.create(configuration, CryptographyHolder.get());
             MerkleCryptoFactory.set(merkleCryptography);
 
+            // Register with the ConstructableRegistry classes which need configuration.
+            BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
+
             // Create platform context
             final var platformContext = PlatformContext.create(
                     configuration,
@@ -290,7 +300,9 @@ public class Browser {
                     appDefinition.getSwirldName(),
                     appMain.getSoftwareVersion(),
                     initialState,
-                    nodeId);
+                    nodeId,
+                    AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
+                    RosterUtils.buildRosterHistory(initialState.get().getState().getReadablePlatformState()));
             if (showUi && index == 0) {
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
@@ -300,8 +312,6 @@ public class Browser {
             final SwirldsPlatform platform = (SwirldsPlatform) builder.withConfiguration(configuration)
                     .withPlatformContext(platformContext)
                     .withConfiguration(configuration)
-                    .withAddressBook(addressBook)
-                    .withRoster(createRoster(appDefinition.getConfigAddressBook()))
                     .withKeysAndCerts(keysAndCerts)
                     .build();
             platforms.put(nodeId, platform);

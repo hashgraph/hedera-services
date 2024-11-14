@@ -37,8 +37,8 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
     private static final Logger log = LogManager.getLogger(TryToStartNodesOp.class);
 
     private final int configVersion;
-
     private final ReassignPorts reassignPorts;
+    private boolean nodeOperatorPortDisabled = false;
 
     public TryToStartNodesOp(@NonNull final NodeSelector selector) {
         this(selector, 0, ReassignPorts.NO);
@@ -55,6 +55,14 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
         this.reassignPorts = requireNonNull(reassignPorts);
     }
 
+    public TryToStartNodesOp(
+            @NonNull final NodeSelector selector, final int configVersion, boolean nodeOperatorPortDisabled) {
+        super(selector);
+        this.configVersion = configVersion;
+        this.reassignPorts = ReassignPorts.NO;
+        this.nodeOperatorPortDisabled = nodeOperatorPortDisabled;
+    }
+
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         if (reassignPorts == ReassignPorts.YES) {
@@ -62,6 +70,13 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
                 throw new IllegalStateException("Can only reassign ports for a SubProcessNetwork");
             }
             subProcessNetwork.assignNewMetadata(ReassignPorts.YES);
+        }
+
+        if (nodeOperatorPortDisabled) {
+            if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
+                throw new IllegalStateException("Can only reassign ports for a SubProcessNetwork");
+            }
+            subProcessNetwork.assignWithDisabledNodeOperatorPort();
         }
         return super.submitOp(spec);
     }

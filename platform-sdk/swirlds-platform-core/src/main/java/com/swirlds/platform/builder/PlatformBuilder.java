@@ -26,7 +26,6 @@ import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConf
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
@@ -48,6 +47,8 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.pool.TransactionPoolNexus;
+import com.swirlds.platform.roster.RosterHistory;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
@@ -91,11 +92,16 @@ public final class PlatformBuilder {
             (t, e) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception on thread {}: {}", t, e);
 
     /**
-     * An address book that is used to bootstrap the system. Traditionally read from config.txt.
+     * A RosterHistory that allows one to lookup a roster for a given round,
+     * or get the active/previous roster.
      */
-    private AddressBook addressBook;
+    private RosterHistory rosterHistory;
 
-    private Roster roster;
+    /**
+     * A consensusEventStreamName for DefaultConsensusEventStream.
+     * See javadoc and comments in AddressBookUtils.formatConsensusEventStreamName() for more details.
+     */
+    private final String consensusEventStreamName;
 
     /**
      * This node's cryptographic keys.
@@ -133,20 +139,18 @@ public final class PlatformBuilder {
     /**
      * Create a new platform builder.
      *
-     * <p>When this builder is used to create a platform, it tries to load an existing app state from
-     * a snapshot on disk, if exists, using the provided {@code snapshotStateReader} function. If there
-     * is no snapshot on disk, or the reader throws an exception trying to load the snapshot, a new
-     * genesis state is created using {@code genesisStateBuilder} supplier.
-     *
-     * <p>Note: if an existing snapshot can't be loaded, or a new genesist state can't be created, the
-     * corresponding functions must throw an exception rather than return a null value.
+     * <p>Before calling this method, the app would try and load a state snapshot from disk. If one exists,
+     * the app will pass the loaded state via the initialState argument to this method. If the snapshot doesn't exist,
+     * then the app will create a new genesis state and pass it via the same initialState argument.
      *
      * @param appName             the name of the application, currently used for deciding where to store states on
      *                            disk
      * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
      * @param selfId              the ID of this node
      * @param softwareVersion     the software version of the application
-     * @param initialState        the genesis state supplied by the application
+     * @param initialState        the initial state supplied by the application
+     * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
+     * @param rosterHistory       the roster history provided by the application to use at startup
      */
     @NonNull
     public static PlatformBuilder create(
@@ -154,8 +158,11 @@ public final class PlatformBuilder {
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final ReservedSignedState initialState,
-            @NonNull final NodeId selfId) {
-        return new PlatformBuilder(appName, swirldName, softwareVersion, initialState, selfId);
+            @NonNull final NodeId selfId,
+            @NonNull final String consensusEventStreamName,
+            @NonNull final RosterHistory rosterHistory) {
+        return new PlatformBuilder(
+                appName, swirldName, softwareVersion, initialState, selfId, consensusEventStreamName, rosterHistory);
     }
 
     /**
@@ -167,19 +174,25 @@ public final class PlatformBuilder {
      * @param softwareVersion       the software version of the application
      * @param initialState          the genesis state supplied by application
      * @param selfId                the ID of this node
+     * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
+     * @param rosterHistory         the roster history provided by the application to use at startup
      */
     private PlatformBuilder(
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final ReservedSignedState initialState,
-            @NonNull final NodeId selfId) {
+            @NonNull final NodeId selfId,
+            @NonNull final String consensusEventStreamName,
+            @NonNull final RosterHistory rosterHistory) {
 
         this.appName = Objects.requireNonNull(appName);
         this.swirldName = Objects.requireNonNull(swirldName);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.initialState = Objects.requireNonNull(initialState);
         this.selfId = Objects.requireNonNull(selfId);
+        this.consensusEventStreamName = Objects.requireNonNull(consensusEventStreamName);
+        this.rosterHistory = Objects.requireNonNull(rosterHistory);
 
         StaticSoftwareVersion.setSoftwareVersion(softwareVersion);
     }
@@ -266,34 +279,6 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Provide the address book to use for bootstrapping the system. If not provided then the address book is read from
-     * the config.txt file.
-     *
-     * @param bootstrapAddressBook the address book to use for bootstrapping
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withAddressBook(@NonNull final AddressBook bootstrapAddressBook) {
-        throwIfAlreadyUsed();
-        this.addressBook = Objects.requireNonNull(bootstrapAddressBook);
-        return this;
-    }
-
-    /**
-     * Provide the roster to use for bootstrapping the system. If not provided then the roster is created from the
-     * bootstrap address book.
-     *
-     * @param roster the roster to use for bootstrapping
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withRoster(@NonNull final Roster roster) {
-        throwIfAlreadyUsed();
-        this.roster = Objects.requireNonNull(roster);
-        return this;
-    }
-
-    /**
      * Provide the cryptographic keys to use for this node.
      *
      * @param keysAndCerts the cryptographic keys to use
@@ -373,6 +358,8 @@ public final class PlatformBuilder {
 
         checkNodesToRun(List.of(selfId));
 
+        final AddressBook addressBook = RosterUtils.buildAddressBook(rosterHistory.getCurrentRoster());
+
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
         if (syncConfig.waitForEventsInIntake()) {
@@ -413,7 +400,7 @@ public final class PlatformBuilder {
         final AtomicReference<StatusActionSubmitter> statusActionSubmitterAtomicReference = new AtomicReference<>();
         final SwirldStateManager swirldStateManager = new SwirldStateManager(
                 platformContext,
-                initialState.get().getAddressBook(),
+                addressBook,
                 selfId,
                 x -> statusActionSubmitterAtomicReference.get().submitStatusAction(x),
                 softwareVersion);
@@ -453,6 +440,7 @@ public final class PlatformBuilder {
                 swirldName,
                 softwareVersion,
                 initialState,
+                rosterHistory,
                 callbacks,
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
@@ -462,6 +450,7 @@ public final class PlatformBuilder {
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 initialPcesFiles,
+                consensusEventStreamName,
                 issScratchpad,
                 NotificationEngine.buildEngine(getStaticThreadManager()),
                 statusActionSubmitterAtomicReference,

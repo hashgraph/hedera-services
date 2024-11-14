@@ -19,6 +19,7 @@ package com.hedera.node.app.tss;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
+import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.handlers.TssVoteHandler;
 import com.swirlds.metrics.api.Metrics;
@@ -36,10 +37,11 @@ public interface TssBaseServiceComponent {
         TssBaseServiceComponent create(
                 @BindsInstance TssLibrary tssLibrary,
                 @BindsInstance InstantSource instantSource,
-                @BindsInstance AppContext.Gossip gossip,
+                @BindsInstance AppContext appContext,
                 @BindsInstance Executor submissionExecutor,
                 @BindsInstance @TssLibraryExecutor Executor libraryExecutor,
-                @BindsInstance Metrics metrics);
+                @BindsInstance Metrics metrics,
+                @BindsInstance TssBaseService tssBaseService);
     }
 
     TssMetrics tssMetrics();
@@ -48,5 +50,11 @@ public interface TssBaseServiceComponent {
 
     TssVoteHandler tssVoteHandler();
 
+    TssShareSignatureHandler tssShareSignatureHandler();
+
     TssSubmissions tssSubmissions();
+
+    TssKeysAccessor tssKeysAccessor();
+
+    TssDirectoryAccessor tssDirectoryAccessor();
 }

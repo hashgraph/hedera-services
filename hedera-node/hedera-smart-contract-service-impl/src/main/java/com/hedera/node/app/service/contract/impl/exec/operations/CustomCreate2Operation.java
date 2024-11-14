@@ -31,10 +31,18 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
+/**
+ * A Hedera customization of the Besu {@link org.hyperledger.besu.evm.operation.Create2Operation}.
+ */
 public class CustomCreate2Operation extends AbstractCustomCreateOperation {
     private static final Bytes EIP_1014_PREFIX = Bytes.fromHexString("0xFF");
     private final FeatureFlags featureFlags;
 
+    /**
+     * Constructor for custom create2 operations.
+     * @param gasCalculator the gas calculator to use
+     * @param featureFlags current evm module feature flags
+     */
     public CustomCreate2Operation(
             @NonNull final GasCalculator gasCalculator, @NonNull final FeatureFlags featureFlags) {
         super(CREATE2.opcode(), "ħCREATE2", 4, 1, gasCalculator);
