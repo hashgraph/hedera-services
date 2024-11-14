@@ -39,7 +39,7 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public interface HederaOperations {
     /**
-     * Default contract id to return when the searched one is not found,
+     * A contract id to indicate that a given ContractId has a mismatch with the config.
      */
     ContractID MISSING_CONTRACT_ID = ContractID.newBuilder().contractNum(0).build();
 

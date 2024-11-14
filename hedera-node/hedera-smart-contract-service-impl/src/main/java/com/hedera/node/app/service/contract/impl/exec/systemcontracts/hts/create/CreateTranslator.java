@@ -24,6 +24,7 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTION
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_V1;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_V2;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_V3;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_WITH_METADATA;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE_V2;
 
@@ -31,9 +32,11 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 
@@ -136,51 +139,85 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                     + ")",
             "(int64,address)");
 
+    public static final Function CREATE_FUNGIBLE_TOKEN_WITH_METADATA =
+            new Function("createFungibleToken(" + HEDERA_TOKEN_WITH_METADATA + ",int64,int32)", "(int64,address)");
+    public static final Function CREATE_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES = new Function(
+            "createFungibleTokenWithCustomFees("
+                    + HEDERA_TOKEN_WITH_METADATA
+                    + ",int64,int32,"
+                    + FIXED_FEE_V2
+                    + ARRAY_BRACKETS
+                    + ","
+                    + FRACTIONAL_FEE_V2
+                    + ARRAY_BRACKETS
+                    + ")",
+            "(int64,address)");
+    public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA =
+            new Function("createNonFungibleToken(" + HEDERA_TOKEN_WITH_METADATA + ")", "(int64,address)");
+    public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES = new Function(
+            "createNonFungibleTokenWithCustomFees("
+                    + HEDERA_TOKEN_WITH_METADATA
+                    + ","
+                    + FIXED_FEE_V2
+                    + ARRAY_BRACKETS
+                    + ","
+                    + ROYALTY_FEE_V2
+                    + ARRAY_BRACKETS
+                    + ")",
+            "(int64,address)");
+
     /**
      * A set of `Function` objects representing various create functions for fungible and non-fungible tokens.
      * This set is used in {@link com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor}
      * to determine if a given call attempt is a creation call, because we do not allow sending value to Hedera system contracts
      * except in the case of token creation
      */
-    public static final Set<Function> CREATE_FUNCTIONS = new HashSet<>(Set.of(
-            CREATE_FUNGIBLE_TOKEN_V1,
-            CREATE_FUNGIBLE_TOKEN_V2,
-            CREATE_FUNGIBLE_TOKEN_V3,
-            CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1,
-            CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2,
-            CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3,
-            CREATE_NON_FUNGIBLE_TOKEN_V1,
-            CREATE_NON_FUNGIBLE_TOKEN_V2,
-            CREATE_NON_FUNGIBLE_TOKEN_V3,
-            CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1,
-            CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2,
-            CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3));
-
-    private final CreateDecoder decoder;
+    public static final Map<Function, CreateDecoderFunction> createSelectorsMap = new HashMap<>();
 
     /**
      * Constructor for injection.
      * @param decoder the decoder used to decode create calls
      */
     @Inject
-    public CreateTranslator(CreateDecoder decoder) {
-        // Dagger2
-        this.decoder = decoder;
+    public CreateTranslator(final CreateDecoder decoder) {
+        createSelectorsMap.put(CREATE_FUNGIBLE_TOKEN_V1, decoder::decodeCreateFungibleTokenV1);
+        createSelectorsMap.put(CREATE_FUNGIBLE_TOKEN_V2, decoder::decodeCreateFungibleTokenV2);
+        createSelectorsMap.put(CREATE_FUNGIBLE_TOKEN_V3, decoder::decodeCreateFungibleTokenV3);
+        createSelectorsMap.put(CREATE_FUNGIBLE_TOKEN_WITH_METADATA, decoder::decodeCreateFungibleTokenWithMetadata);
+        createSelectorsMap.put(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1, decoder::decodeCreateFungibleTokenWithCustomFeesV1);
+        createSelectorsMap.put(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2, decoder::decodeCreateFungibleTokenWithCustomFeesV2);
+        createSelectorsMap.put(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3, decoder::decodeCreateFungibleTokenWithCustomFeesV3);
+        createSelectorsMap.put(
+                CREATE_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES,
+                decoder::decodeCreateFungibleTokenWithMetadataAndCustomFees);
+        createSelectorsMap.put(CREATE_NON_FUNGIBLE_TOKEN_V1, decoder::decodeCreateNonFungibleV1);
+        createSelectorsMap.put(CREATE_NON_FUNGIBLE_TOKEN_V2, decoder::decodeCreateNonFungibleV2);
+        createSelectorsMap.put(CREATE_NON_FUNGIBLE_TOKEN_V3, decoder::decodeCreateNonFungibleV3);
+        createSelectorsMap.put(CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA, decoder::decodeCreateNonFungibleWithMetadata);
+        createSelectorsMap.put(
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1, decoder::decodeCreateNonFungibleWithCustomFeesV1);
+        createSelectorsMap.put(
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2, decoder::decodeCreateNonFungibleWithCustomFeesV2);
+        createSelectorsMap.put(
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3, decoder::decodeCreateNonFungibleWithCustomFeesV3);
+        createSelectorsMap.put(
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES,
+                decoder::decodeCreateNonFungibleWithMetadataAndCustomFees);
     }
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return attempt.isSelector(CREATE_FUNGIBLE_TOKEN_V1, CREATE_FUNGIBLE_TOKEN_V2, CREATE_FUNGIBLE_TOKEN_V3)
-                || attempt.isSelector(
-                        CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1,
-                        CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2,
-                        CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3)
-                || attempt.isSelector(
-                        CREATE_NON_FUNGIBLE_TOKEN_V1, CREATE_NON_FUNGIBLE_TOKEN_V2, CREATE_NON_FUNGIBLE_TOKEN_V3)
-                || attempt.isSelector(
-                        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1,
-                        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2,
-                        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3);
+        final var metaConfigEnabled =
+                attempt.configuration().getConfigData(ContractsConfig.class).metadataKeyAndFieldEnabled();
+        final var metaSelectors = Set.of(
+                CREATE_FUNGIBLE_TOKEN_WITH_METADATA,
+                CREATE_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES,
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA,
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES);
+        return createSelectorsMap.keySet().stream()
+                .anyMatch(selector -> metaSelectors.contains(selector)
+                        ? attempt.isSelectorIfConfigEnabled(selector, metaConfigEnabled)
+                        : attempt.isSelector(selector));
     }
 
     @Override
@@ -190,8 +227,7 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                 attempt.enhancement(),
                 nominalBodyFor(attempt),
                 attempt.defaultVerificationStrategy(),
-                attempt.senderAddress(),
-                attempt.addressIdConverter());
+                attempt.senderId());
     }
 
     private @Nullable TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
@@ -200,36 +236,10 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
         final var nativeOperations = attempt.nativeOperations();
         final var addressIdConverter = attempt.addressIdConverter();
 
-        if (attempt.isSelector(CREATE_FUNGIBLE_TOKEN_V1)) {
-            return decoder.decodeCreateFungibleTokenV1(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (attempt.isSelector(CREATE_FUNGIBLE_TOKEN_V2)) {
-            return decoder.decodeCreateFungibleTokenV2(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (attempt.isSelector(CREATE_FUNGIBLE_TOKEN_V3)) {
-            return decoder.decodeCreateFungibleTokenV3(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (attempt.isSelector(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1)) {
-            return decoder.decodeCreateFungibleTokenWithCustomFeesV1(
-                    inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (attempt.isSelector(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2)) {
-            return decoder.decodeCreateFungibleTokenWithCustomFeesV2(
-                    inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (attempt.isSelector(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3)) {
-            return decoder.decodeCreateFungibleTokenWithCustomFeesV3(
-                    inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (attempt.isSelector(CREATE_NON_FUNGIBLE_TOKEN_V1)) {
-            return decoder.decodeCreateNonFungibleV1(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (attempt.isSelector(CREATE_NON_FUNGIBLE_TOKEN_V2)) {
-            return decoder.decodeCreateNonFungibleV2(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (attempt.isSelector(CREATE_NON_FUNGIBLE_TOKEN_V3)) {
-            return decoder.decodeCreateNonFungibleV3(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (attempt.isSelector(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1)) {
-            return decoder.decodeCreateNonFungibleWithCustomFeesV1(
-                    inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (attempt.isSelector(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2)) {
-            return decoder.decodeCreateNonFungibleWithCustomFeesV2(
-                    inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else {
-            return decoder.decodeCreateNonFungibleWithCustomFeesV3(
-                    inputBytes, senderId, nativeOperations, addressIdConverter);
-        }
+        return createSelectorsMap.entrySet().stream()
+                .filter(entry -> attempt.isSelector(entry.getKey()))
+                .map(entry -> entry.getValue().decode(inputBytes, senderId, nativeOperations, addressIdConverter))
+                .findFirst()
+                .orElse(null);
     }
 }

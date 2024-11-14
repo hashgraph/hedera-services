@@ -23,7 +23,7 @@ import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("tokens")
 public record TokensConfig(
-        @ConfigProperty(defaultValue = "50000000") @NetworkProperty long maxAggregateRels,
+        @ConfigProperty(defaultValue = "200000000") @NetworkProperty long maxAggregateRels,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean storeRelsOnDisk,
         @ConfigProperty(defaultValue = "1000000") @NetworkProperty long maxNumber,
         @ConfigProperty(defaultValue = "1000") @NetworkProperty int maxPerAccount,
@@ -31,7 +31,7 @@ public record TokensConfig(
         @ConfigProperty(defaultValue = "100") @NetworkProperty int maxTokenNameUtf8Bytes,
         @ConfigProperty(defaultValue = "10") @NetworkProperty int maxCustomFeesAllowed,
         @ConfigProperty(defaultValue = "2") @NetworkProperty int maxCustomFeeDepth,
-        @ConfigProperty(defaultValue = "1000") @NetworkProperty long maxRelsPerInfoQuery,
+        @ConfigProperty(defaultValue = "1000") @NetworkProperty int maxRelsPerInfoQuery,
         @ConfigProperty(value = "reject.enabled", defaultValue = "true") @NetworkProperty boolean tokenRejectEnabled,
         @ConfigProperty(value = "nfts.areEnabled", defaultValue = "true") @NetworkProperty boolean nftsAreEnabled,
         @ConfigProperty(value = "nfts.maxMetadataBytes", defaultValue = "100") @NetworkProperty
@@ -39,7 +39,7 @@ public record TokensConfig(
         @ConfigProperty(value = "nfts.maxBatchSizeBurn", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeBurn,
         @ConfigProperty(value = "nfts.maxBatchSizeWipe", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeWipe,
         @ConfigProperty(value = "nfts.maxBatchSizeMint", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeMint,
-        @ConfigProperty(value = "nfts.maxAllowedMints", defaultValue = "20000000") @NetworkProperty
+        @ConfigProperty(value = "nfts.maxAllowedMints", defaultValue = "100000000") @NetworkProperty
                 long nftsMaxAllowedMints,
         @ConfigProperty(value = "nfts.maxQueryRange", defaultValue = "100") @NetworkProperty long nftsMaxQueryRange,
         @ConfigProperty(value = "nfts.useTreasuryWildcards", defaultValue = "true") @NetworkProperty
@@ -66,4 +66,5 @@ public record TokensConfig(
         @ConfigProperty(value = "airdrops.claim.enabled", defaultValue = "true") @NetworkProperty
                 boolean airdropsClaimEnabled,
         @ConfigProperty(value = "nfts.maxBatchSizeUpdate", defaultValue = "10") @NetworkProperty
-                int nftsMaxBatchSizeUpdate) {}
+                int nftsMaxBatchSizeUpdate,
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean countingGetBalanceThrottleEnabled) {}

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.addressbook;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.roster.Roster;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
@@ -29,6 +30,14 @@ import java.util.Iterator;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
 public interface ReadableNodeStore {
+
+    /**
+     * Constructs a new {@link Roster} object using the current info for each node defined in state.
+     * Accordingly, be warned that <b>this method iterates over all nodes.</b>
+     *
+     * @return a new roster, representing the most current node configurations available
+     */
+    Roster snapshotOfFutureRoster();
 
     /**
      * Returns the node needed. If the node doesn't exist returns failureReason. If the

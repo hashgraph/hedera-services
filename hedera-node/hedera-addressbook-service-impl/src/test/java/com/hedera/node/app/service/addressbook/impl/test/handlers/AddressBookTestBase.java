@@ -38,6 +38,7 @@ import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchem
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.state.spi.ReadableStates;
@@ -92,6 +93,7 @@ public class AddressBookTestBase {
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     A_COMPLEX_KEY)))
             .build();
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
 
@@ -171,8 +173,7 @@ public class AddressBookTestBase {
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         readableStore = new ReadableNodeStoreImpl(readableStates);
-        final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableNodeStore(writableStates, configuration, storeMetricsService);
+        writableStore = new WritableNodeStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
     }
 
     protected void refreshStoresWithCurrentNodeInBothReadableAndWritable() {

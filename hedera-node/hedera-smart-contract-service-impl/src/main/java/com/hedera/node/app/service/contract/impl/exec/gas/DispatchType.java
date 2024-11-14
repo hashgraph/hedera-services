@@ -30,66 +30,143 @@ import java.util.Objects;
 /**
  * Enumerates the types of child transactions that can be dispatched to the HTS system contract.
  */
-@SuppressWarnings("MissingJavadoc")
 public enum DispatchType {
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera crypto create functionality with default resource prices.
+     */
     CRYPTO_CREATE(HederaFunctionality.CRYPTO_CREATE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera crypto update functionality with default resource prices.
+     */
     CRYPTO_UPDATE(HederaFunctionality.CRYPTO_UPDATE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera crypto transfer functionality with default resource prices.
+     */
     TRANSFER_HBAR(HederaFunctionality.CRYPTO_TRANSFER, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera crypto transfer functionality with resource prices on a fungible token.
+     */
     TRANSFER_FUNGIBLE(HederaFunctionality.CRYPTO_TRANSFER, TOKEN_FUNGIBLE_COMMON),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera crypto transfer functionality with resource prices on a non-fungible token.
+     */
     TRANSFER_NFT(HederaFunctionality.CRYPTO_TRANSFER, TOKEN_NON_FUNGIBLE_UNIQUE),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera crypto transfer functionality with resource prices on a fungible token with custom fees.
+     */
     TRANSFER_FUNGIBLE_CUSTOM_FEES(HederaFunctionality.CRYPTO_TRANSFER, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera crypto transfer functionality with resource prices on a non-fungible token with custom fees.
+     */
     TRANSFER_NFT_CUSTOM_FEES(HederaFunctionality.CRYPTO_TRANSFER, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token mint functionality with resource prices on a fungible token.
+     */
     MINT_FUNGIBLE(HederaFunctionality.TOKEN_MINT, TOKEN_FUNGIBLE_COMMON),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token mint functionality with resource prices on non-fungible token.
+     */
     MINT_NFT(HederaFunctionality.TOKEN_MINT, TOKEN_NON_FUNGIBLE_UNIQUE),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token burn functionality with resource prices on a fungible token.
+     */
     BURN_FUNGIBLE(HederaFunctionality.TOKEN_BURN, TOKEN_FUNGIBLE_COMMON),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token delete functionality with default resource prices.
+     */
     DELETE(HederaFunctionality.TOKEN_DELETE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token burn functionality with resource prices on a non-fungible token.
+     */
     BURN_NFT(HederaFunctionality.TOKEN_BURN, TOKEN_NON_FUNGIBLE_UNIQUE),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera associate token to account functionality with default resource prices.
+     */
     ASSOCIATE(HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera disassociate token to account functionality with default resource prices.
+     */
     DISSOCIATE(HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera approve allowance functionality with default resource prices.
+     */
     APPROVE(HederaFunctionality.CRYPTO_APPROVE_ALLOWANCE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera delete allowance functionality with default resource prices.
+     */
     DELETE_NFT_APPROVE(HederaFunctionality.CRYPTO_DELETE_ALLOWANCE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token grant kyc to account functionality with default resource prices.
+     */
     GRANT_KYC(HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token revoke kyc from account functionality with default resource prices.
+     */
     REVOKE_KYC(HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token pause functionality with default resource prices.
+     */
     PAUSE(HederaFunctionality.TOKEN_PAUSE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token unpause functionality with default resource prices.
+     */
     UNPAUSE(HederaFunctionality.TOKEN_UNPAUSE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token freeze account functionality with default resource prices.
+     */
     FREEZE(HederaFunctionality.TOKEN_FREEZE_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token unfreeze account functionality with default resource prices.
+     */
     UNFREEZE(HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token wipe account functionality with resource prices on a fungible token.
+     */
     WIPE_FUNGIBLE(HederaFunctionality.TOKEN_ACCOUNT_WIPE, TOKEN_FUNGIBLE_COMMON),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token wipe account functionality with resource prices on a non-fungible token.
+     */
     WIPE_NFT(HederaFunctionality.TOKEN_ACCOUNT_WIPE, TOKEN_NON_FUNGIBLE_UNIQUE),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token update functionality with default resource prices.
+     */
     UPDATE(HederaFunctionality.TOKEN_UPDATE, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera token update NFTs functionality with default resource prices.
+     */
     TOKEN_UPDATE_NFTS(HederaFunctionality.TOKEN_UPDATE_NFTS, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera pseudorandom number generation functionality with default resource prices.
+     */
     UTIL_PRNG(HederaFunctionality.UTIL_PRNG, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * Dispatch for Hedera get info of a token functionality with default resource prices.
+     */
     TOKEN_INFO(HederaFunctionality.TOKEN_GET_INFO, DEFAULT),
-    @SuppressWarnings("MissingJavadoc")
-    UPDATE_TOKEN_CUSTOM_FEES(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, DEFAULT);
+    /**
+     * Dispatch for Hedera update token fee schedule functionality with default resource prices.
+     */
+    UPDATE_TOKEN_CUSTOM_FEES(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, DEFAULT),
+    /**
+     * Dispatch for Hedera token airdrop functionality with default resource prices.
+     */
+    TOKEN_AIRDROP(HederaFunctionality.TOKEN_AIRDROP, DEFAULT),
+    /**
+     * Dispatch for Hedera token claim airdrop functionality with default resource prices.
+     */
+    TOKEN_CLAIM_AIRDROP(HederaFunctionality.TOKEN_CLAIM_AIRDROP, DEFAULT),
+    /**
+     * Dispatch for Hedera token cancel airdrop functionality with default resource prices.
+     */
+    TOKEN_CANCEL_AIRDROP(HederaFunctionality.TOKEN_CANCEL_AIRDROP, DEFAULT),
+    /**
+     * Dispatch for Hedera token reject functionality with resource prices on a fungible token.
+     */
+    TOKEN_REJECT_FT(HederaFunctionality.TOKEN_REJECT, TOKEN_FUNGIBLE_COMMON),
+    /**
+     * Dispatch for Hedera token reject functionality with resource prices on a non-fungible token.
+     */
+    TOKEN_REJECT_NFT(HederaFunctionality.TOKEN_REJECT, TOKEN_NON_FUNGIBLE_UNIQUE);
 
     private final HederaFunctionality functionality;
     private final SubType subtype;
@@ -99,12 +176,16 @@ public enum DispatchType {
         this.subtype = Objects.requireNonNull(subtype);
     }
 
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * @return the Hedera functionality of the {@link DispatchType}.
+     */
     public HederaFunctionality functionality() {
         return functionality;
     }
 
-    @SuppressWarnings("MissingJavadoc")
+    /**
+     * @return the subtype of the {@link DispatchType}.
+     */
     public SubType subtype() {
         return subtype;
     }

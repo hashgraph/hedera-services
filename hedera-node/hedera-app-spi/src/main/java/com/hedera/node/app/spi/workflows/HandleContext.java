@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import static com.hedera.node.app.spi.AppContext.*;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -37,7 +36,8 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -509,28 +509,31 @@ public interface HandleContext {
          * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
          * context) is rolled back, all child record builders will be reverted.
          *
-         * @param recordBuilderClass the record type
-         * @return the new child record builder
          * @param <T> the record type
+         * @param recordBuilderClass the record type
+         * @param functionality the functionality of the record
+         * @return the new child record builder
          * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
          * @throws IllegalArgumentException if the record builder type is unknown to the app
          */
         @NonNull
-        <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+        <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass, @NonNull HederaFunctionality functionality);
 
         /**
          * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
          * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
          * rolled back.
          *
-         * @param recordBuilderClass the record type
-         * @return the new child record builder
          * @param <T> the record type
+         * @param recordBuilderClass the record type
+         * @param functionality the functionality of the record
+         * @return the new child record builder
          * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
          * @throws IllegalArgumentException if the record builder type is unknown to the app
          */
         @NonNull
-        <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+        <T> T addRemovableChildRecordBuilder(
+                @NonNull Class<T> recordBuilderClass, @NonNull HederaFunctionality functionality);
     }
 
     static void throwIfMissingPayerId(@NonNull final TransactionBody body) {
@@ -547,6 +550,12 @@ public interface HandleContext {
      */
     @NonNull
     Map<AccountID, Long> dispatchPaidRewards();
+
+    /**
+     * Returns the {@link NodeInfo} for the node this transaction is created from.
+     * @return the node info
+     */
+    NodeInfo creatorInfo();
 
     /**
      * Whether a dispatch should be throttled at consensus. True for everything except certain dispatches

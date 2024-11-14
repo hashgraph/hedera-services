@@ -16,16 +16,17 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
-import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.addOrReplace;
+import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.add;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
+import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.SchedulingConfig;
@@ -51,8 +52,8 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     private static final String SCHEDULE_MISSING_FOR_DELETE_MESSAGE =
             "Schedule to be deleted, %1$s, not found in state.";
     private final WritableKVState<ScheduleID, Schedule> schedulesByIdMutable;
-    private final WritableKVState<ProtoBytes, ScheduleList> schedulesByEqualityMutable;
-    private final WritableKVState<ProtoLong, ScheduleList> schedulesByExpirationMutable;
+    private final WritableKVState<ProtoBytes, ScheduleID> scheduleIdByEqualityMutable;
+    private final WritableKVState<ProtoLong, ScheduleIdList> scheduleIdsByExpirationMutable;
 
     /**
      * Create a new {@link WritableScheduleStoreImpl} instance.
@@ -67,8 +68,8 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
             @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
         schedulesByIdMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
-        schedulesByEqualityMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY);
-        schedulesByExpirationMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY);
+        scheduleIdByEqualityMutable = states.get(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
+        scheduleIdsByExpirationMutable = states.get(V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
 
         final long maxCapacity =
                 configuration.getConfigData(SchedulingConfig.class).maxNumber();
@@ -121,16 +122,46 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         schedulesByIdMutable.put(scheduleToAdd.scheduleIdOrThrow(), scheduleToAdd);
 
         final ProtoBytes newHash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(scheduleToAdd));
-        final ScheduleList inStateEquality = schedulesByEqualityMutable.get(newHash);
-        final var newEqualityScheduleList = addOrReplace(scheduleToAdd, inStateEquality);
-        schedulesByEqualityMutable.put(newHash, newEqualityScheduleList);
+        scheduleIdByEqualityMutable.put(newHash, scheduleToAdd.scheduleIdOrThrow());
 
         // calculated expiration time is never null...
         final ProtoLong expirationSecond = new ProtoLong(scheduleToAdd.calculatedExpirationSecond());
-        final ScheduleList inStateExpiration = schedulesByExpirationMutable.get(expirationSecond);
-        // we should not be modifying the schedules list directly. This could cause ISS
-        final var newExpiryScheduleList = addOrReplace(scheduleToAdd, inStateExpiration);
-        schedulesByExpirationMutable.put(expirationSecond, newExpiryScheduleList);
+        final ScheduleIdList inStateExpiration = scheduleIdsByExpirationMutable.get(expirationSecond);
+        // we should not be modifying the scheduleIds list directly. This could cause ISS
+        final var newExpiryScheduleIdList = add(scheduleToAdd.scheduleId(), inStateExpiration);
+        scheduleIdsByExpirationMutable.put(expirationSecond, newExpiryScheduleIdList);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void purgeExpiredSchedulesBetween(final long firstSecondToExpire, final long lastSecondToExpire) {
+        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
+            final var second = new ProtoLong(i);
+            final var scheduleIdList = scheduleIdsByExpirationMutable.get(second);
+            if (scheduleIdList != null) {
+                scheduleIdList.scheduleIds().forEach(this::purge);
+                scheduleIdsByExpirationMutable.remove(second);
+            }
+        }
+    }
+
+    /**
+     * Purge a schedule from the store.
+     *
+     * @param scheduleId The ID of the schedule to purge
+     */
+    private void purge(final ScheduleID scheduleId) {
+        final var schedule = schedulesByIdMutable.get(scheduleId);
+        if (schedule != null) {
+            final ProtoBytes hash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
+            scheduleIdByEqualityMutable.remove(hash);
+        } else {
+            logger.error("Schedule {} not found in state schedulesByIdMutable.", scheduleId);
+        }
+        schedulesByIdMutable.remove(scheduleId);
+        logger.debug("Purging expired schedule {} from state.", scheduleId);
     }
 
     @NonNull
@@ -152,26 +183,5 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),
                 schedule.signatories());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire) {
-        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
-            final var second = new ProtoLong(i);
-            final var scheduleList = schedulesByExpirationMutable.get(second);
-            if (scheduleList != null) {
-                for (final var schedule : scheduleList.schedules()) {
-                    schedulesByIdMutable.remove(schedule.scheduleIdOrThrow());
-
-                    final ProtoBytes hash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
-                    schedulesByEqualityMutable.remove(hash);
-                    logger.info("Purging expired schedule {} from state.", schedule.scheduleIdOrThrow());
-                }
-                schedulesByExpirationMutable.remove(second);
-            }
-        }
     }
 }

@@ -20,17 +20,24 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.handlers.TssHandlers;
-import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
+import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
@@ -50,11 +57,20 @@ import org.apache.logging.log4j.Logger;
  *     <li>"Signs" messages by scheduling callback to its consumers using the SHA-384 hash of the
  *     message as the signature.</li>
  * </ul>
+ * <b>Important:</b> this class is not thread-safe, and should only be used as a mock in repeatable mode
+ * when specs are run one at a time.
  */
 public class FakeTssBaseService implements TssBaseService {
     private static final Logger log = LogManager.getLogger(FakeTssBaseService.class);
 
+    private final FakeTssLibrary tssLibrary = new FakeTssLibrary();
     private final TssBaseServiceImpl delegate;
+    private final Queue<Runnable> pendingTssSubmission = new ArrayDeque<>();
+    /**
+     * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
+     * itself in its callback.
+     */
+    private final List<BiConsumer<byte[], byte[]>> consumers = new CopyOnWriteArrayList<>();
 
     /**
      * The type of signing to perform.
@@ -71,19 +87,24 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     private Signing signing = Signing.FAKE;
-
-    /**
-     * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
-     * itself in its callback.
-     */
-    private final List<BiConsumer<byte[], byte[]>> consumers = new CopyOnWriteArrayList<>();
-
     private boolean ignoreRequests = false;
 
-    private final Queue<Runnable> pendingTssSubmission = new ArrayDeque<>();
-
     public FakeTssBaseService(@NonNull final AppContext appContext) {
-        delegate = new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), pendingTssSubmission::offer);
+        delegate = new TssBaseServiceImpl(
+                appContext,
+                ForkJoinPool.commonPool(),
+                pendingTssSubmission::offer,
+                tssLibrary,
+                pendingTssSubmission::offer,
+                new NoOpMetrics());
+    }
+
+    /**
+     * Returns the fake TSS library.
+     * @return the fake TSS library
+     */
+    public FakeTssLibrary fakeTssLibrary() {
+        return tssLibrary;
     }
 
     /**
@@ -134,17 +155,11 @@ public class FakeTssBaseService implements TssBaseService {
     public Status getStatus(
             @NonNull final Roster roster,
             @NonNull final Bytes ledgerId,
-            @NonNull final ReadableTssBaseStore tssBaseStore) {
+            @NonNull final ReadableTssStoreImpl tssBaseStore) {
         requireNonNull(roster);
         requireNonNull(ledgerId);
         requireNonNull(tssBaseStore);
         return delegate.getStatus(roster, ledgerId, tssBaseStore);
-    }
-
-    @Override
-    public void adopt(@NonNull final Roster roster) {
-        requireNonNull(roster);
-        delegate.adopt(roster);
     }
 
     @Override
@@ -159,7 +174,7 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void requestLedgerSignature(@NonNull final byte[] messageHash) {
+    public void requestLedgerSignature(@NonNull final byte[] messageHash, final Instant lastUsedConsensusTime) {
         requireNonNull(messageHash);
         switch (signing) {
             case FAKE -> {
@@ -181,7 +196,7 @@ public class FakeTssBaseService implements TssBaseService {
                     }
                 }));
             }
-            case DELEGATE -> delegate.requestLedgerSignature(messageHash);
+            case DELEGATE -> delegate.requestLedgerSignature(messageHash, lastUsedConsensusTime);
         }
     }
 
@@ -214,5 +229,27 @@ public class FakeTssBaseService implements TssBaseService {
     @Override
     public TssHandlers tssHandlers() {
         return delegate.tssHandlers();
+    }
+
+    @Override
+    @NonNull
+    public Roster chooseRosterForNetwork(
+            @NonNull State state,
+            @NonNull InitTrigger trigger,
+            @NonNull ServiceMigrator serviceMigrator,
+            @NonNull ServicesSoftwareVersion version,
+            @NonNull final Configuration configuration,
+            @NonNull final Roster overrideRoster) {
+        return delegate.chooseRosterForNetwork(state, trigger, serviceMigrator, version, configuration, overrideRoster);
+    }
+
+    @Override
+    public void regenerateKeyMaterial(@NonNull final State state) {
+        delegate.regenerateKeyMaterial(state);
+    }
+
+    @Override
+    public void generateParticipantDirectory(@NonNull final State state) {
+        delegate.generateParticipantDirectory(state);
     }
 }

@@ -17,26 +17,44 @@
 package com.hedera.node.app.tss;
 
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
+import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.handlers.TssVoteHandler;
+import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
 import dagger.Component;
+import java.time.InstantSource;
 import java.util.concurrent.Executor;
 import javax.inject.Singleton;
 
 @Singleton
-@Component()
+@Component
 public interface TssBaseServiceComponent {
     @Component.Factory
     interface Factory {
         TssBaseServiceComponent create(
-                @BindsInstance AppContext.Gossip gossip, @BindsInstance Executor submissionExecutor);
+                @BindsInstance TssLibrary tssLibrary,
+                @BindsInstance InstantSource instantSource,
+                @BindsInstance AppContext appContext,
+                @BindsInstance Executor submissionExecutor,
+                @BindsInstance @TssLibraryExecutor Executor libraryExecutor,
+                @BindsInstance Metrics metrics,
+                @BindsInstance TssBaseService tssBaseService);
     }
+
+    TssMetrics tssMetrics();
 
     TssMessageHandler tssMessageHandler();
 
     TssVoteHandler tssVoteHandler();
 
+    TssShareSignatureHandler tssShareSignatureHandler();
+
     TssSubmissions tssSubmissions();
+
+    TssKeysAccessor tssKeysAccessor();
+
+    TssDirectoryAccessor tssDirectoryAccessor();
 }

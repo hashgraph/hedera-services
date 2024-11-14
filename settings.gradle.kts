@@ -33,6 +33,10 @@ javaModules {
         module("swirlds") // not actually a Module as it has no module-info.java
         module("swirlds-benchmarks") // not actually a Module as it has no module-info.java
         module("swirlds-unit-tests/core/swirlds-platform-test") // nested module is not found automatically
+        module("consensus-gossip")  { artifact = "consensus-gossip" }
+        module("consensus-gossip-impl")  { artifact = "consensus-gossip-impl" }
+        module("event-creator") { artifact = "event-creator" }
+        module("event-creator-impl") { artifact = "event-creator-impl" }
     }
 
     // The Hedera services modules

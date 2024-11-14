@@ -15,7 +15,8 @@
 ##### HAPI protobuf #####
 #########################
 
-/hapi/                                          @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
+/hapi/                                          @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
+/hapi/hedera-protobufs/services                 @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @jsync-swirlds
 
 
 #########################
@@ -23,70 +24,70 @@
 #########################
 
 # Hedera Node Root Protections
-/hedera-node/                                   @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/README.md                          @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/devops-ci @hashgraph/release-engineering-managers
+/hedera-node/                                   @hashgraph/hedera-services
+/hedera-node/README.md                          @hashgraph/hedera-services @hashgraph/devops-ci @hashgraph/release-engineering-managers
 
 # Hedera Node Deployments - Configuration & Grafana Dashboards
 /hedera-node/configuration/**                   @rbair23 @dalvizu @poulok @netopyr @Nana-EC @SimiHunjan @steven-sheehy @nathanklick
-/hedera-node/configuration/dev/**               @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/infrastructure/**                  @hashgraph/release-engineering-managers @hashgraph/devops-ci @hashgraph/devops @hashgraph/hedera-base @hashgraph/hedera-services
+/hedera-node/configuration/dev/**               @hashgraph/hedera-services
+/hedera-node/infrastructure/**                  @hashgraph/release-engineering-managers @hashgraph/devops-ci @hashgraph/devops @hashgraph/hedera-services
 
 # Hedera Node Docker Definitions
-/hedera-node/docker/                            @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/devops-ci @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/hedera-node/docker/                            @hashgraph/hedera-services @hashgraph/devops-ci @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Modules
-/hedera-node/hapi*/                             @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-admin*/                     @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-app*/                       @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-consensus*/                 @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-file*/                      @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-network*/                   @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-schedule*/                  @hashgraph/hedera-base @hashgraph/hedera-services
+/hedera-node/hapi*/                             @hashgraph/hedera-services
+/hedera-node/hedera-admin*/                     @hashgraph/hedera-services
+/hedera-node/hedera-app*/                       @hashgraph/hedera-services
+/hedera-node/hedera-consensus*/                 @hashgraph/hedera-services
+/hedera-node/hedera-file*/                      @hashgraph/hedera-services
+/hedera-node/hedera-network*/                   @hashgraph/hedera-services
+/hedera-node/hedera-schedule*/                  @hashgraph/hedera-services
 /hedera-node/hedera-smart-contract*/            @hashgraph/hedera-smart-contracts-core @tinker-michaelj
-/hedera-node/hedera-token*/                     @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-util*/                      @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-staking*/                   @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/test-clients/                      @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
-/hedera-node/**/module-info.java                @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/devops-ci
+/hedera-node/hedera-token*/                     @hashgraph/hedera-services
+/hedera-node/hedera-util*/                      @hashgraph/hedera-services
+/hedera-node/hedera-staking*/                   @hashgraph/hedera-services
+/hedera-node/test-clients/                      @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
+/hedera-node/**/module-info.java                @hashgraph/hedera-services @hashgraph/devops-ci
 
 ###############################
 ##### Hedera Cryptography #####
 ###############################
-/hedera-cryptography/                           @hashgraph/platform-cryptography
+/hedera-cryptography/                               @hashgraph/platform-cryptography
 
 #########################
 ##### Platform SDK ######
 #########################
 
 # Platform SDK Root Protections
-/platform-sdk/                                  @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
-/platform-sdk/README.md                         @hashgraph/platform-hashgraph @hashgraph/devops-ci @hashgraph/release-engineering-managers
+/platform-sdk/                                      @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
+/platform-sdk/README.md                             @hashgraph/platform-hashgraph @hashgraph/devops-ci @hashgraph/release-engineering-managers
 
 # Platform SDK Modules
-/platform-sdk/platform-apps/                    @hashgraph/platform-hashgraph
-/platform-sdk/swirlds-base/                     @hashgraph/platform-base
-/platform-sdk/swirlds-benchmarks/               @hashgraph/platform-data @hashgraph/platform-architects
-/platform-sdk/swirlds-cli/                      @hashgraph/platform-hashgraph
-/platform-sdk/swirlds-common/                   @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/platform-data
-/platform-sdk/swirlds-config-*/                 @hashgraph/platform-base
-/platform-sdk/swirlds-fchashmap/                @hashgraph/platform-data @hashgraph/platform-architects
-/platform-sdk/swirlds-fcqueue/                  @hashgraph/platform-data @hashgraph/platform-architects
-/platform-sdk/swirlds-merkledb/                 @hashgraph/platform-data @hashgraph/platform-architects
-/platform-sdk/swirlds-logging/                  @hashgraph/platform-hashgraph @hashgraph/platform-base
-/platform-sdk/swirlds-logging-*/                @hashgraph/platform-base
-/platform-sdk/swirlds-merkle/                   @hashgraph/platform-data @hashgraph/platform-architects
-/platform-sdk/swirlds-platform-core/            @hashgraph/platform-hashgraph
-/platform-sdk/swirlds-unit-tests/common/        @hashgraph/platform-hashgraph @hashgraph/platform-base
-/platform-sdk/swirlds-unit-tests/core/          @hashgraph/platform-hashgraph @hashgraph/platform-base
-/platform-sdk/swirlds-unit-tests/structures/    @hashgraph/platform-data @hashgraph/platform-architects  @hashgraph/platform-base
-/platform-sdk/swirlds-virtualmap/               @hashgraph/platform-data @hashgraph/platform-architects
-/platform-sdk/**/module-info.java               @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/devops-ci @hashgraph/release-engineering-managers
+/platform-sdk/platform-apps/                        @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-base/                         @hashgraph/platform-base
+/platform-sdk/swirlds-benchmarks/                   @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/swirlds-cli/                          @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-common/                       @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/platform-data
+/platform-sdk/swirlds-config-*/                     @hashgraph/platform-base
+/platform-sdk/swirlds-fchashmap/                    @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/swirlds-fcqueue/                      @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/swirlds-merkledb/                     @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/swirlds-logging/                      @hashgraph/platform-hashgraph @hashgraph/platform-base
+/platform-sdk/swirlds-logging-*/                    @hashgraph/platform-base
+/platform-sdk/swirlds-merkle/                       @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/swirlds-platform-core/                @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-unit-tests/common/            @hashgraph/platform-hashgraph @hashgraph/platform-base
+/platform-sdk/swirlds-unit-tests/core/              @hashgraph/platform-hashgraph @hashgraph/platform-base
+/platform-sdk/swirlds-unit-tests/structures/        @hashgraph/platform-data @hashgraph/platform-architects  @hashgraph/platform-base
+/platform-sdk/swirlds-virtualmap/                   @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/**/module-info.java                   @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/devops-ci @hashgraph/release-engineering-managers
 
 # Documentation
-/platform-sdk/docs/platformWiki.md              @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base
-/platform-sdk/docs/base                         @hashgraph/platform-base
-/platform-sdk/docs/components                   @hashgraph/platform-hashgraph
-/platform-sdk/docs/core                         @hashgraph/platform-hashgraph
+/platform-sdk/docs/platformWiki.md                  @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base
+/platform-sdk/docs/base                             @hashgraph/platform-base
+/platform-sdk/docs/components                       @hashgraph/platform-hashgraph
+/platform-sdk/docs/core                             @hashgraph/platform-hashgraph
 
 #########################
 #####  Core Files  ######
@@ -95,38 +96,40 @@
 # NOTE: Must be placed last to ensure enforcement over all other rules
 
 # Protection Rules for Github Configuration Files and Actions Workflows
-/.github/                                       @hashgraph/devops-ci @hashgraph/release-engineering-managers
-/.github/workflows/                             @hashgraph/devops-ci @hashgraph/devops-ci-committers
+/.github/                                           @hashgraph/devops-ci @hashgraph/release-engineering-managers
+/.github/workflows/                                 @hashgraph/devops-ci @hashgraph/devops-ci-committers
+/.github/workflows/node-zxf-deploy-integration.yaml @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/devops
+/.github/workflows/node-zxf-deploy-preview.yaml     @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/devops
 
 # Legacy Maven project files
-**/pom.xml                                      @hashgraph/devops-ci
+**/pom.xml                                          @hashgraph/devops-ci @hashgraph/devops
 
 # Gradle project files and inline plugins
-/gradle/                                        @hashgraph/devops-ci @hashgraph/devops-ci-committers
-gradlew                                         @hashgraph/devops-ci @hashgraph/devops-ci-committers
-gradlew.bat                                     @hashgraph/devops-ci @hashgraph/devops-ci-committers
-**/build-logic/                                 @hashgraph/devops-ci @hashgraph/devops-ci-committers
-**/gradle.*                                     @hashgraph/devops-ci @hashgraph/devops-ci-committers
-**/*.gradle.*                                   @hashgraph/devops-ci @hashgraph/devops-ci-committers
+/gradle/                                            @hashgraph/devops-ci @hashgraph/devops-ci-committers
+gradlew                                             @hashgraph/devops-ci @hashgraph/devops-ci-committers
+gradlew.bat                                         @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/build-logic/                                     @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/gradle.*                                         @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/*.gradle.*                                       @hashgraph/devops-ci @hashgraph/devops-ci-committers
 
 # Codacy Tool Configurations
-/config/                                        @hashgraph/devops-ci @hashgraph/release-engineering-managers
-.remarkrc                                       @hashgraph/devops-ci @hashgraph/release-engineering-managers
+/config/                                            @hashgraph/devops-ci @hashgraph/release-engineering-managers
+.remarkrc                                           @hashgraph/devops-ci @hashgraph/release-engineering-managers
 
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
-/CODEOWNERS                                     @hashgraph/release-engineering-managers
+/CODEOWNERS                                         @hashgraph/release-engineering-managers
 
 # Protect the repository root files
-/README.md                                      @hashgraph/devops-ci @hashgraph/release-engineering-managers
-**/LICENSE                                      @hashgraph/release-engineering-managers
+/README.md                                          @hashgraph/devops-ci @hashgraph/release-engineering-managers
+**/LICENSE                                          @hashgraph/release-engineering-managers
 
 # CodeCov configuration
-**/codecov.yml                                  @hashgraph/devops-ci @hashgraph/release-engineering-managers
+**/codecov.yml                                      @hashgraph/devops-ci @hashgraph/release-engineering-managers
 
 # Git Ignore definitions
-**/.gitignore                                   @hashgraph/devops-ci @hashgraph/release-engineering-managers
-**/.gitignore.*                                 @hashgraph/devops-ci @hashgraph/release-engineering-managers
+**/.gitignore                                       @hashgraph/devops-ci @hashgraph/release-engineering-managers
+**/.gitignore.*                                     @hashgraph/devops-ci @hashgraph/release-engineering-managers
 
 # Legacy CircleCI configuration
-.circleci.settings.xml                          @hashgraph/devops-ci @hashgraph/release-engineering-managers
-/.circleci/                                     @hashgraph/devops-ci @hashgraph/release-engineering-managers
+.circleci.settings.xml                              @hashgraph/devops-ci @hashgraph/release-engineering-managers
+/.circleci/                                         @hashgraph/devops-ci @hashgraph/release-engineering-managers

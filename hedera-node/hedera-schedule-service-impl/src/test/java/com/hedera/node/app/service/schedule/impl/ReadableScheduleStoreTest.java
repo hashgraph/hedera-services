@@ -86,11 +86,11 @@ class ReadableScheduleStoreTest extends ScheduleTestBase {
 
     @Test
     void verifyGetByExpiration() {
-        final List<Schedule> schedulesBySecond = scheduleStore.getByExpirationSecond(expirationTime.seconds());
-        assertThat(schedulesBySecond).hasSize(1).containsExactly(scheduleInState);
+        final List<ScheduleID> scheduleIdsBySecond = scheduleStore.getByExpirationSecond(expirationTime.seconds());
+        assertThat(scheduleIdsBySecond).hasSize(1).containsExactly(scheduleInState.scheduleId());
         long altTime = testConsensusTime.getEpochSecond() + scheduleConfig.maxExpirationFutureSeconds();
-        final List<Schedule> altSchedulesBySecond = scheduleStore.getByExpirationSecond(altTime);
-        assertThat(altSchedulesBySecond).hasSize(1).containsExactly(otherScheduleInState);
+        final List<ScheduleID> altScheduleIdsBySecond = scheduleStore.getByExpirationSecond(altTime);
+        assertThat(altScheduleIdsBySecond).hasSize(1).containsExactly(otherScheduleInState.scheduleId());
         final int expandedSize = listOfScheduledOptions.size() + 1;
         final List<Schedule> expanded = new ArrayList<>(expandedSize);
         expanded.add(otherScheduleInState);
@@ -101,9 +101,56 @@ class ReadableScheduleStoreTest extends ScheduleTestBase {
             expanded.add(modified);
             writableSchedules.put(modified);
         }
+        final List<ScheduleID> expandedIds =
+                expanded.stream().map(Schedule::scheduleId).toList();
         // This works because write/read are the same object.  If that changes then we must commit and reset here
         // to update the underlying KV states.
-        final List<Schedule> expandedBySecond = scheduleStore.getByExpirationSecond(altTime);
-        assertThat(expandedBySecond).hasSize(expandedSize).containsExactlyInAnyOrderElementsOf(expanded);
+        final List<ScheduleID> expandedBySecond = scheduleStore.getByExpirationSecond(altTime);
+        assertThat(expandedBySecond).hasSize(expandedSize).containsExactlyInAnyOrderElementsOf(expandedIds);
+    }
+
+    @Test
+    void testSchedulesWithinRange() {
+        // Mocking data for specific expiration seconds
+        final long firstSecondToExpire = 100;
+        final long lastSecondToExpire = 102;
+
+        final Schedule schedule1 = scheduleInState
+                .copyBuilder()
+                .scheduleId(createScheduleWithId(1))
+                .calculatedExpirationSecond(firstSecondToExpire)
+                .build();
+        final Schedule schedule2 = scheduleInState
+                .copyBuilder()
+                .scheduleId(createScheduleWithId(2))
+                .calculatedExpirationSecond(lastSecondToExpire)
+                .build();
+
+        writableSchedules.put(schedule1);
+        writableSchedules.put(schedule2);
+
+        // Call the method under test
+        final List<Schedule> result = writableSchedules.getByExpirationBetween(firstSecondToExpire, lastSecondToExpire);
+
+        // Assert the result contains all the schedules within the specified range
+        assertThat(result).containsExactly(schedule1, schedule2);
+    }
+
+    @Test
+    void testHandlesEmptyExpirationRangeGracefully() {
+        final long firstSecondToExpire = 100;
+        final long lastSecondToExpire = 102;
+
+        // No schedules are added to writableSchedules
+
+        // Call the method under test
+        final List<Schedule> result = writableSchedules.getByExpirationBetween(firstSecondToExpire, lastSecondToExpire);
+
+        // Assert that the result is an empty list
+        assertThat(result).isEmpty();
+    }
+
+    private ScheduleID createScheduleWithId(long id) {
+        return ScheduleID.newBuilder().realmNum(0).shardNum(0).scheduleNum(id).build();
     }
 }

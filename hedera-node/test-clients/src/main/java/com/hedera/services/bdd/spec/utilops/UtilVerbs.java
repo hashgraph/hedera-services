@@ -22,7 +22,6 @@ import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubK
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -95,7 +94,6 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.addressbook.Node;
-import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -138,6 +136,7 @@ import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
+import com.hedera.services.bdd.spec.utilops.inventory.NewSpecThresholdKey;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromEcdsaFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
@@ -194,9 +193,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -204,6 +201,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.PrivateKey;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
@@ -533,38 +531,6 @@ public class UtilVerbs {
         };
     }
 
-    /**
-     * Returns an operation that changes the state of an embedded network to appear to be handling
-     * the first transaction after an upgrade.
-     *
-     * @return the operation that simulates the first transaction after an upgrade
-     */
-    public static SpecOperation simulatePostUpgradeTransaction() {
-        return withOpContext((spec, opLog) -> {
-            if (spec.targetNetworkOrThrow() instanceof EmbeddedNetwork embeddedNetwork) {
-                final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
-                final var fakeState = embeddedHedera.state();
-                // First make the freeze and last freeze times non-null and identical
-                final var aTime = spec.consensusTime();
-                // This store immediately commits mutations, hence no cast and call to commit
-                final var writablePlatformStateStore =
-                        new WritablePlatformStateStore(fakeState.getWritableStates("PlatformStateService"));
-                writablePlatformStateStore.setLastFrozenTime(aTime);
-                writablePlatformStateStore.setFreezeTime(aTime);
-                // Next mark the migration records as not streamed
-                final var writableBlockStates = fakeState.getWritableStates("BlockRecordService");
-                final var blockInfo = writableBlockStates.<BlockInfo>getSingleton("BLOCKS");
-                blockInfo.put(requireNonNull(blockInfo.get())
-                        .copyBuilder()
-                        .migrationRecordsStreamed(false)
-                        .build());
-                ((CommittableWritableStates) writableBlockStates).commit();
-            } else {
-                throw new IllegalStateException("Cannot simulate post-upgrade transaction on non-embedded network");
-            }
-        });
-    }
-
     public static WaitForStatusOp waitForFrozenNetwork(@NonNull final Duration timeout) {
         return new WaitForStatusOp(NodeSelector.allNodes(), FREEZE_COMPLETE, timeout);
     }
@@ -583,10 +549,9 @@ public class UtilVerbs {
                     allRunFor(
                             spec,
                             cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, 1))
-                                    .deferStatusResolution()
-                                    .hasAnyStatusAtAll()
-                                    .orUnavailableStatus()
+                                    .fireAndForget()
                                     .noLogging());
+                    spec.sleepConsensusTime(Duration.ofMillis(1L));
                 }
             });
             spec.targetNetworkOrThrow()
@@ -756,6 +721,10 @@ public class UtilVerbs {
         return new NewSpecKeyList(key, childKeys);
     }
 
+    public static NewSpecThresholdKey newThresholdKeyNamed(String key, int nRequired, List<String> childKeys) {
+        return new NewSpecThresholdKey(key, nRequired, childKeys);
+    }
+
     /**
      * Unless the {@link HapiSpec} is in a repeatable mode, returns an operation that will
      * run the given sub-operations in parallel.
@@ -767,7 +736,9 @@ public class UtilVerbs {
      * @return the operation that runs the sub-operations in parallel
      */
     public static GroupedOps<?> inParallel(@NonNull final SpecOperation... subs) {
-        return repeatableModeRequested() ? blockingOrder(subs) : new ParallelSpecOps(subs);
+        return "repeatable".equalsIgnoreCase(System.getProperty("hapi.spec.embedded.mode"))
+                ? blockingOrder(subs)
+                : new ParallelSpecOps(subs);
     }
 
     public static CustomSpecAssert assertionsHold(CustomSpecAssert.ThrowingConsumer custom) {
@@ -2339,6 +2310,14 @@ public class UtilVerbs {
         }
 
         return privateKeyByteArray;
+    }
+
+    public static PrivateKey getEd25519PrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
+        var key = spec.registry().getKey(privateKeyRef);
+        final var privateKey = spec.keys()
+                .getEd25519PrivateKey(com.swirlds.common.utility.CommonUtils.hex(
+                        key.getEd25519().toByteArray()));
+        return privateKey;
     }
 
     private static double getChargedUsed(@NonNull final HapiSpec spec, @NonNull final String txn) {

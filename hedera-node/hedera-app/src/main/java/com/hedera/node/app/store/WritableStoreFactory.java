@@ -43,7 +43,11 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.stores.WritableTssStore;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -103,7 +107,14 @@ public class WritableStoreFactory {
                 new StoreEntry(EntityIdService.NAME, (states, config, metrics) -> new WritableEntityIdStore(states)));
         // Schedule Service
         newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
-        newMap.put(WritableNodeStore.class, new StoreEntry(AddressBookService.NAME, WritableNodeStore::new));
+        // Roster Service
+        newMap.put(
+                WritableRosterStore.class,
+                new StoreEntry(RosterStateId.NAME, (states, config, metrics) -> new WritableRosterStore(states)));
+        // TSSBase Service
+        newMap.put(
+                WritableTssStore.class,
+                new StoreEntry(TssBaseService.NAME, (states, config, metrics) -> new WritableTssStore(states)));
         return Collections.unmodifiableMap(newMap);
     }
 

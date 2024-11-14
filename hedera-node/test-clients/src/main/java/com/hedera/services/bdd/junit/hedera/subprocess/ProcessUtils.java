@@ -132,6 +132,7 @@ public class ProcessUtils {
         environment.put("LANG", "en_US.UTF-8");
         environment.put("grpc.port", Integer.toString(metadata.grpcPort()));
         environment.put("grpc.nodeOperatorPort", Integer.toString(metadata.grpcNodeOperatorPort()));
+        environment.put("grpc.nodeOperatorPortEnabled", Boolean.toString(metadata.grpcNodeOperatorPortEnabled()));
         environment.put("hedera.config.version", Integer.toString(configVersion));
         try {
             final var redirectFile = guaranteedExtantFile(

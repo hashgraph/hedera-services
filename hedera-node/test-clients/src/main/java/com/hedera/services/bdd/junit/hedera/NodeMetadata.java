@@ -30,6 +30,7 @@ public record NodeMetadata(
         String host,
         int grpcPort,
         int grpcNodeOperatorPort,
+        boolean grpcNodeOperatorPortEnabled,
         int gossipPort,
         int gossipTlsPort,
         int prometheusPort,
@@ -40,7 +41,7 @@ public record NodeMetadata(
      * Create a new instance with the same values as this instance, but different ports.
      *
      * @param grpcPort the new grpc port
-     *                 @param grpcNodeOperatorPort the new grpc node operator port
+     * @param grpcNodeOperatorPort the new grpc node operator port
      * @param gossipPort the new gossip port
      * @param tlsGossipPort the new tls gossip port
      * @param prometheusPort the new prometheus port
@@ -59,6 +60,7 @@ public record NodeMetadata(
                 host,
                 grpcPort,
                 grpcNodeOperatorPort,
+                grpcNodeOperatorPortEnabled,
                 gossipPort,
                 tlsGossipPort,
                 prometheusPort,
@@ -79,6 +81,26 @@ public record NodeMetadata(
                 host,
                 grpcPort,
                 grpcNodeOperatorPort,
+                grpcNodeOperatorPortEnabled,
+                gossipPort,
+                gossipTlsPort,
+                prometheusPort,
+                workingDir);
+    }
+
+    /**
+     * @return a new instance with the same values as this instance, but with disabled node operator port
+     */
+    public NodeMetadata withNewNodeOperatorPortDisabled() {
+        requireNonNull(accountId);
+        return new NodeMetadata(
+                nodeId,
+                name,
+                accountId,
+                host,
+                grpcPort,
+                grpcNodeOperatorPort,
+                false,
                 gossipPort,
                 gossipTlsPort,
                 prometheusPort,

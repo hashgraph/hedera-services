@@ -43,9 +43,9 @@ import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.StateDefinition;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -241,6 +241,14 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .adminKey(anotherKey)
                         .build(),
                 writableNodes.get(EntityNumber.newBuilder().number(3).build()));
+    }
+
+    @Test
+    void failedNullNetworkinfo() {
+        given(migrationContext.genesisNetworkInfo()).willReturn(null);
+        assertThatCode(() -> subject.migrate(migrationContext))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Genesis network info is not found");
     }
 
     private void setupMigrationContext() {

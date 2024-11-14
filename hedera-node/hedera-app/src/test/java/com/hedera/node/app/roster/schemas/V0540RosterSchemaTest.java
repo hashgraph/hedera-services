@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.roster.schemas;
 
-import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
-import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
+import static com.swirlds.common.RosterStateId.ROSTER_KEY;
+import static com.swirlds.common.RosterStateId.ROSTER_STATES_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -28,8 +28,9 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,8 +69,7 @@ class V0540RosterSchemaTest {
     @DisplayName("For this version, migrate from existing state version returns default.")
     void testMigrateFromNullRosterStateReturnsDefault() {
         when(migrationContext.newStates()).thenReturn(mock(WritableStates.class));
-        when(migrationContext.newStates().getSingleton(V0540RosterSchema.ROSTER_STATES_KEY))
-                .thenReturn(rosterState);
+        when(migrationContext.newStates().getSingleton(ROSTER_STATES_KEY)).thenReturn(rosterState);
 
         subject.migrate(migrationContext);
         verify(rosterState, times(1)).put(RosterState.DEFAULT);
@@ -79,8 +79,7 @@ class V0540RosterSchemaTest {
     @DisplayName("Migrate from older state version returns default.")
     void testMigrateFromPreviousStateVersion() {
         when(migrationContext.newStates()).thenReturn(mock(WritableStates.class));
-        when(migrationContext.newStates().getSingleton(V0540RosterSchema.ROSTER_STATES_KEY))
-                .thenReturn(rosterState);
+        when(migrationContext.newStates().getSingleton(ROSTER_STATES_KEY)).thenReturn(rosterState);
         when(migrationContext.previousVersion())
                 .thenReturn(
                         SemanticVersion.newBuilder().major(0).minor(53).patch(0).build());

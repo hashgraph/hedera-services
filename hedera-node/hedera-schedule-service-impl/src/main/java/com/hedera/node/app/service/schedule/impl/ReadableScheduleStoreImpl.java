@@ -20,14 +20,16 @@ import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
+import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -41,8 +43,8 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
             "Null states instance passed to ReadableScheduleStore constructor, possible state corruption.";
 
     private final ReadableKVState<ScheduleID, Schedule> schedulesById;
-    private final ReadableKVState<ProtoLong, ScheduleList> schedulesByExpirationSecond;
-    private final ReadableKVState<ProtoBytes, ScheduleList> schedulesByStringHash;
+    private final ReadableKVState<ProtoLong, ScheduleIdList> scheduleIdsByExpirationSecond;
+    private final ReadableKVState<ProtoBytes, ScheduleID> scheduleIdByStringHash;
 
     /**
      * Create a new {@link ReadableScheduleStore} instance.
@@ -52,8 +54,8 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
     public ReadableScheduleStoreImpl(@NonNull final ReadableStates states) {
         Objects.requireNonNull(states, NULL_STATE_IN_CONSTRUCTOR_MESSAGE);
         schedulesById = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
-        schedulesByExpirationSecond = states.get(V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY);
-        schedulesByStringHash = states.get(V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY);
+        scheduleIdsByExpirationSecond = states.get(V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
+        scheduleIdByStringHash = states.get(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
     }
 
     /**
@@ -72,17 +74,30 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
 
     @Override
     @Nullable
-    public List<Schedule> getByEquality(final @NonNull Schedule scheduleToMatch) {
+    public ScheduleID getByEquality(final @NonNull Schedule scheduleToMatch) {
         Bytes bytesHash = ScheduleStoreUtility.calculateBytesHash(scheduleToMatch);
-        final ScheduleList inStateValue = schedulesByStringHash.get(new ProtoBytes(bytesHash));
-        return inStateValue != null ? inStateValue.schedules() : null;
+        return scheduleIdByStringHash.get(new ProtoBytes(bytesHash));
     }
 
     @Nullable
     @Override
-    public List<Schedule> getByExpirationSecond(final long expirationTime) {
-        final ScheduleList inStateValue = schedulesByExpirationSecond.get(new ProtoLong(expirationTime));
-        return inStateValue != null ? inStateValue.schedules() : null;
+    public List<ScheduleID> getByExpirationSecond(final long expirationTime) {
+        final ScheduleIdList inStateValue = scheduleIdsByExpirationSecond.get(new ProtoLong(expirationTime));
+        return inStateValue != null ? inStateValue.scheduleIds() : null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public List<Schedule> getByExpirationBetween(final long firstSecondToExpire, final long lastSecondToExpire) {
+        final var schedules = new ArrayList<Schedule>();
+        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
+            final var scheduleIdList = getByExpirationSecond(i);
+            if (scheduleIdList != null) {
+                schedules.addAll(scheduleIdList.stream().map(this::get).toList());
+            }
+        }
+        return schedules;
     }
 
     @Override

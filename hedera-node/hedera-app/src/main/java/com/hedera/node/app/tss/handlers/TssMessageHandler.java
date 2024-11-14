@@ -18,6 +18,7 @@ package com.hedera.node.app.tss.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
@@ -26,6 +27,10 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.tss.TssCryptographyManager;
+import com.hedera.node.app.tss.TssDirectoryAccessor;
+import com.hedera.node.app.tss.TssMetrics;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -37,10 +42,20 @@ import javax.inject.Singleton;
 @Singleton
 public class TssMessageHandler implements TransactionHandler {
     private final TssSubmissions submissionManager;
+    private final TssCryptographyManager tssCryptographyManager;
+    private final TssMetrics tssMetrics;
+    private final TssDirectoryAccessor tssDirectoryAccessor;
 
     @Inject
-    public TssMessageHandler(@NonNull final TssSubmissions submissionManager) {
+    public TssMessageHandler(
+            @NonNull final TssSubmissions submissionManager,
+            @NonNull final TssCryptographyManager tssCryptographyManager,
+            @NonNull final TssMetrics metrics,
+            @NonNull final TssDirectoryAccessor tssDirectoryAccessor) {
         this.submissionManager = requireNonNull(submissionManager);
+        this.tssCryptographyManager = requireNonNull(tssCryptographyManager);
+        this.tssMetrics = requireNonNull(metrics);
+        this.tssDirectoryAccessor = requireNonNull(tssDirectoryAccessor);
     }
 
     @Override
@@ -56,6 +71,35 @@ public class TssMessageHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
-        submissionManager.submitTssVote(TssVoteTransactionBody.DEFAULT, context);
+        final var op = context.body().tssMessageOrThrow();
+        final var targetRosterHash = op.targetRosterHash();
+        tssMetrics.updateMessagesPerCandidateRoster(targetRosterHash);
+
+        final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
+        final var messageSeqNo = tssStore.getTssMessageBodies(targetRosterHash).size();
+        // Nodes vote for a threshold set of TSS messages by their position in consensus order
+        final var key = new TssMessageMapKey(targetRosterHash, messageSeqNo);
+        // Store the latest message before potentially voting
+        tssStore.put(key, op);
+
+        // Obtain the directory of participants for the target roster
+        final var directory = tssDirectoryAccessor.activeParticipantDirectory();
+        // Schedule work to potentially compute a signed vote for the new key material of the target
+        // roster, if this message was valid and passed the threshold number of messages required
+        tssCryptographyManager
+                .getVoteFuture(op.targetRosterHash(), directory, context)
+                .thenAccept(vote -> {
+                    if (vote != null) {
+                        // FUTURE: Validate the ledgerId computed is same as the current ledgerId
+                        final var tssVote = TssVoteTransactionBody.newBuilder()
+                                .tssVote(vote.bitSet())
+                                .sourceRosterHash(op.sourceRosterHash())
+                                .targetRosterHash(targetRosterHash)
+                                .ledgerId(vote.ledgerId())
+                                .nodeSignature(vote.signature().getBytes())
+                                .build();
+                        submissionManager.submitTssVote(tssVote, context);
+                    }
+                });
     }
 }

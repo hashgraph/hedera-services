@@ -18,24 +18,33 @@ package com.hedera.node.app.info;
 
 import static com.hedera.node.app.info.NodeInfoImpl.fromRosterEntry;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
-import static com.swirlds.platform.roster.RosterRetriever.retrieve;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
+import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides information about the network, including the ledger ID, which may be
@@ -44,13 +53,30 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StateNetworkInfo implements NetworkInfo {
-    private final Bytes ledgerId;
-    private final Map<Long, NodeInfo> nodeInfos;
+    private static final Logger log = LogManager.getLogger(StateNetworkInfo.class);
     private final long selfId;
+    private final Bytes ledgerId;
+    private Roster activeRoster;
+    private final ConfigProvider configProvider;
+    private final Map<Long, NodeInfo> nodeInfos;
 
+    /**
+     * Constructs a new network information provider from the given state, roster, selfID, and configuration provider.
+     *
+     * @param state          the state to retrieve the network information from
+     * @param roster         the roster to retrieve the network information from
+     * @param selfId         the ID of the node
+     * @param configProvider the configuration provider to retrieve the ledger ID from
+     */
     public StateNetworkInfo(
-            @NonNull final State state, final long selfId, @NonNull final ConfigProvider configProvider) {
+            @NonNull final State state,
+            @NonNull final Roster roster,
+            final long selfId,
+            @NonNull final ConfigProvider configProvider) {
         this.selfId = selfId;
+        this.activeRoster = requireNonNull(roster);
+        // We keep this for now to check the keyCandidateRoster feature flag in updateFrom()
+        this.configProvider = requireNonNull(configProvider);
         this.nodeInfos = buildNodeInfoMap(state);
         // Load the ledger ID from configuration
         final var config = configProvider.getConfiguration();
@@ -89,6 +115,17 @@ public class StateNetworkInfo implements NetworkInfo {
 
     @Override
     public void updateFrom(@NonNull final State state) {
+        final var config = configProvider.getConfiguration();
+        if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
+            activeRoster = retrieveActiveOrGenesisRoster(state);
+        } else {
+            // When the feature flag is disabled, the rosters in RosterService state are not up-to-date
+            // FUTURE: Once TSS Roster is implemented in the future, this will be removed and use roster state
+            // instead of the address book
+            final var readablePlatformStateStore =
+                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+            activeRoster = buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
+        }
         nodeInfos.clear();
         nodeInfos.putAll(buildNodeInfoMap(state));
     }
@@ -103,16 +140,35 @@ public class StateNetworkInfo implements NetworkInfo {
      */
     private Map<Long, NodeInfo> buildNodeInfoMap(final State state) {
         final var nodeInfos = new LinkedHashMap<Long, NodeInfo>();
-        final var rosterEntries = retrieve(state).rosterEntries();
+        final var rosterEntries = activeRoster.rosterEntries();
         final ReadableKVState<EntityNumber, Node> nodeState =
                 state.getReadableStates(AddressBookService.NAME).get(NODES_KEY);
         for (final var rosterEntry : rosterEntries) {
-            final var node = nodeState.get(
-                    EntityNumber.newBuilder().number(rosterEntry.nodeId()).build());
+            // At genesis the node store is derived from the roster, hence must have info for every
+            // node id; and from then on, the roster is derived from the node store, and hence the
+            // node store must have every node id in the roster.
+            final var node = nodeState.get(new EntityNumber(rosterEntry.nodeId()));
             if (node != null) {
+                // Notice it's possible the node could be deleted here, because a DAB transaction removed
+                // it from the future address book; that doesn't mean we should stop using it in the current
+                // version of the software
                 nodeInfos.put(rosterEntry.nodeId(), fromRosterEntry(rosterEntry, node));
+            } else {
+                nodeInfos.put(
+                        rosterEntry.nodeId(),
+                        fromRosterEntry(
+                                rosterEntry,
+                                AccountID.newBuilder()
+                                        .accountNum(rosterEntry.nodeId() + 3)
+                                        .build()));
+                log.warn("Node {} not found in node store", rosterEntry.nodeId());
             }
         }
         return nodeInfos;
+    }
+
+    @Override
+    public Roster roster() {
+        return activeRoster;
     }
 }

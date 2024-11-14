@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.blocks;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
@@ -83,7 +85,7 @@ public class BlockStreamBuilderTest {
                 .assessedCustomFees(List.of(assessedCustomFee))
                 .functionality(HederaFunctionality.CRYPTO_TRANSFER);
 
-        List<BlockItem> blockItems = itemsBuilder.build();
+        List<BlockItem> blockItems = itemsBuilder.build().blockItems();
         validateTransactionBlockItems(blockItems);
         validateTransactionResult(blockItems);
 
@@ -101,8 +103,9 @@ public class BlockStreamBuilderTest {
             return;
         }
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
-            final var itemsBuilder = createBaseBuilder().entropyBytes(prngBytes);
-            List<BlockItem> blockItems = itemsBuilder.build();
+            final var itemsBuilder =
+                    createBaseBuilder().functionality(UTIL_PRNG).entropyBytes(prngBytes);
+            List<BlockItem> blockItems = itemsBuilder.build().blockItems();
             validateTransactionBlockItems(blockItems);
             validateTransactionResult(blockItems);
 
@@ -112,8 +115,9 @@ public class BlockStreamBuilderTest {
             assertTrue(output.hasUtilPrng());
             assertEquals(prngBytes, output.utilPrng().prngBytes());
         } else {
-            final var itemsBuilder = createBaseBuilder().entropyNumber(ENTROPY_NUMBER);
-            List<BlockItem> blockItems = itemsBuilder.build();
+            final var itemsBuilder =
+                    createBaseBuilder().functionality(UTIL_PRNG).entropyNumber(ENTROPY_NUMBER);
+            List<BlockItem> blockItems = itemsBuilder.build().blockItems();
             validateTransactionBlockItems(blockItems);
             validateTransactionResult(blockItems);
 
@@ -128,10 +132,11 @@ public class BlockStreamBuilderTest {
     @Test
     void testBlockItemsWithContractCallOutput() {
         final var itemsBuilder = createBaseBuilder()
+                .functionality(CONTRACT_CALL)
                 .contractCallResult(contractCallResult)
                 .addContractStateChanges(contractStateChanges, false);
 
-        List<BlockItem> blockItems = itemsBuilder.build();
+        List<BlockItem> blockItems = itemsBuilder.build().blockItems();
         validateTransactionBlockItems(blockItems);
         validateTransactionResult(blockItems);
 
@@ -149,7 +154,6 @@ public class BlockStreamBuilderTest {
         assertEquals(status, result.status());
         assertEquals(asTimestamp(CONSENSUS_TIME), result.consensusTimestamp());
         assertEquals(asTimestamp(PARENT_CONSENSUS_TIME), result.parentConsensusTimestamp());
-        assertEquals(exchangeRate, result.exchangeRate());
         assertEquals(scheduleRef, result.scheduleRef());
         assertEquals(TRANSACTION_FEE, result.transactionFeeCharged());
         assertEquals(transferList, result.transferList());

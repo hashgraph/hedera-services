@@ -23,7 +23,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- *
+ * This class contains all workflow-related handlers regarding contract operations in Hedera.
  */
 @Singleton
 public class ContractHandlers {

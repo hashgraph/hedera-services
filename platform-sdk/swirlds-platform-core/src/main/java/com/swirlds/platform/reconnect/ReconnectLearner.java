@@ -204,7 +204,7 @@ public class ReconnectLearner {
 
         final MerkleRoot state = (MerkleRoot) synchronizer.getRoot();
         final SignedState newSignedState = new SignedState(
-                platformContext,
+                platformContext.getConfiguration(),
                 CryptoStatic::verifySignature,
                 state,
                 "ReconnectLearner.reconnect()",
