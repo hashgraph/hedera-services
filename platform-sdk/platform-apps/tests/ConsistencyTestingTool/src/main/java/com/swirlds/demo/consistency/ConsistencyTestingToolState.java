@@ -34,6 +34,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -60,6 +61,9 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
         public static final int ORIGINAL = 1;
     }
 
+    private static final int STATE_LONG_INDEX = 0;
+    private static final int ROUND_HANDLED_INDEX = 1;
+
     /**
      * The history of transactions that have been handled by this app.
      * <p>
@@ -71,7 +75,7 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
     /**
      * The true "state" of this app. This long value is updated with every transaction, and with every round.
      * <p>
-     * Effects the hash of this node.
+     * Affects the hash of this node.
      */
     private long stateLong = 0;
 
@@ -158,6 +162,10 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
         final Path logFilePath = logFileDirectory.resolve("ConsistencyTestLog.csv");
 
         this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
+        this.roundsHandled = Long.getLong(((StringLeaf)getChild(ROUND_HANDLED_INDEX)).getLabel());
+        this.stateLong = Long.getLong(((StringLeaf)getChild(STATE_LONG_INDEX)).getLabel());
+        logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled and state long {}.",
+                roundsHandled, stateLong);
 
         transactionHandlingHistory.init(logFilePath);
         NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
@@ -264,5 +272,8 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
         stateLong = NonCryptographicHashing.hash64(stateLong, round.getRoundNum());
 
         transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round, stateLong));
+
+        setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
+        setChild(STATE_LONG_INDEX, new StringLeaf(Long.toString(stateLong)));
     }
 }

@@ -128,12 +128,9 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, @
         }
 
         if (other instanceof final ConsistencyTestingToolRound otherRound) {
-            var result = roundNumber == otherRound.roundNumber
+            return roundNumber == otherRound.roundNumber
                     && currentState == otherRound.currentState
                     && transactionsContents.equals(otherRound.transactionsContents);
-            if (!result) {
-                logger.error(EXCEPTION.getMarker(), "This round: {} \n Other round: {}", this, otherRound);
-            }
         }
 
         return false;
