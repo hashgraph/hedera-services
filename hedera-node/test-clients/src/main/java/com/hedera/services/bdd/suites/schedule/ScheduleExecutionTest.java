@@ -1892,7 +1892,7 @@ public class ScheduleExecutionTest {
     }
 
     @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
-    final Stream<DynamicTest> scheduledTestGetsDeletedIfNotExecuted(){
+    final Stream<DynamicTest> scheduledTestGetsDeletedIfNotExecuted() {
         return hapiTest(
                 cryptoCreate(PAYING_ACCOUNT),
                 cryptoCreate(SENDER),
