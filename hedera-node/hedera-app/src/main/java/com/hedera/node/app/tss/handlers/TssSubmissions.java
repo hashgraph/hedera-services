@@ -26,11 +26,13 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.TssConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
@@ -59,10 +61,8 @@ public class TssSubmissions {
      * The next offset to use for the transaction valid start time within the current {@link HandleContext}.
      */
     private final AtomicInteger nextOffset = new AtomicInteger(0);
-    /**
-     * The {@link AppContext.Gossip} to use for submitting transactions.
-     */
-    private final AppContext.Gossip gossip;
+
+    private final AppContext appContext;
 
     /**
      * Tracks which {@link HandleContext} we are currently submitting TSS transactions within, to
@@ -73,8 +73,8 @@ public class TssSubmissions {
     private HandleContext lastContextUsed;
 
     @Inject
-    public TssSubmissions(@NonNull final AppContext.Gossip gossip, @NonNull final Executor submissionExecutor) {
-        this.gossip = requireNonNull(gossip);
+    public TssSubmissions(@NonNull final AppContext appContext, @NonNull final Executor submissionExecutor) {
+        this.appContext = requireNonNull(appContext);
         this.submissionExecutor = requireNonNull(submissionExecutor);
     }
 
@@ -89,7 +89,11 @@ public class TssSubmissions {
             @NonNull final TssMessageTransactionBody body, @NonNull final HandleContext context) {
         requireNonNull(body);
         requireNonNull(context);
-        return submit(b -> b.tssMessage(body), context);
+        return submit(
+                b -> b.tssMessage(body),
+                context.configuration(),
+                context.networkInfo().selfNodeInfo().accountId(),
+                nextValidStartFor(context));
     }
 
     /**
@@ -103,17 +107,39 @@ public class TssSubmissions {
             @NonNull final TssVoteTransactionBody body, @NonNull final HandleContext context) {
         requireNonNull(body);
         requireNonNull(context);
-        return submit(b -> b.tssVote(body), context);
+        return submit(
+                b -> b.tssVote(body),
+                context.configuration(),
+                context.networkInfo().selfNodeInfo().accountId(),
+                nextValidStartFor(context));
+    }
+
+    /**
+     * Attempts to submit a TSS share signature to the network.
+     *
+     * @param body    the TSS share signature to submit
+     * @param lastUsedConsensusTime the last used consensus time
+     * @return a future that completes when the share signature has been submitted
+     */
+    public CompletableFuture<Void> submitTssShareSignature(
+            @NonNull final TssShareSignatureTransactionBody body, final Instant lastUsedConsensusTime) {
+        requireNonNull(body);
+        return submit(
+                b -> b.tssShareSignature(body),
+                appContext.configSupplier().get(),
+                appContext.selfNodeInfoSupplier().get().accountId(),
+                lastUsedConsensusTime);
     }
 
     private CompletableFuture<Void> submit(
-            @NonNull final Consumer<TransactionBody.Builder> spec, @NonNull final HandleContext context) {
-        final var config = context.configuration();
-        final var selfId = context.networkInfo().selfNodeInfo().accountId();
+            @NonNull final Consumer<TransactionBody.Builder> spec,
+            @NonNull final Configuration config,
+            @NonNull final AccountID selfId,
+            @NonNull final Instant consensusNow) {
         final var tssConfig = config.getConfigData(TssConfig.class);
         final var hederaConfig = config.getConfigData(HederaConfig.class);
         final var validDuration = new Duration(hederaConfig.transactionMaxValidDuration());
-        final var validStartTime = new AtomicReference<>(nextValidStartFor(context));
+        final var validStartTime = new AtomicReference<>(consensusNow);
         final var attemptsLeft = new AtomicInteger(tssConfig.timesToTrySubmission());
         return CompletableFuture.runAsync(
                 () -> {
@@ -127,7 +153,7 @@ public class TssSubmissions {
                             spec.accept(builder);
                             body = builder.build();
                             try {
-                                gossip.submit(body);
+                                appContext.gossip().submit(body);
                                 return;
                             } catch (IllegalArgumentException iae) {
                                 failureReason = iae.getMessage();

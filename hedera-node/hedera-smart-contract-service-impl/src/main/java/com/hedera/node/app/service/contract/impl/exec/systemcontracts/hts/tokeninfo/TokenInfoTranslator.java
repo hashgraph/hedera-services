@@ -55,7 +55,7 @@ public class TokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> 
         requireNonNull(attempt);
         final var v2Enabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractTokenInfoV2Enabled();
-        return attempt.isSelector(TOKEN_INFO) || attempt.isSelectorIfConfigEnabled(TOKEN_INFO_V2, v2Enabled);
+        return attempt.isSelector(TOKEN_INFO) || attempt.isSelectorIfConfigEnabled(v2Enabled, TOKEN_INFO_V2);
     }
 
     /**

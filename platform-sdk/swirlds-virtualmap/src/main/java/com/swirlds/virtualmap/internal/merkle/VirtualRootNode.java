@@ -1614,7 +1614,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 keySerializer,
                 valueSerializer,
                 reconnectRecords.getDataSource(),
-                virtualMapConfig.flushInterval(),
+                virtualMapConfig.reconnectFlushInterval(),
                 statistics,
                 nodeRemover);
 
