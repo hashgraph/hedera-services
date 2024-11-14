@@ -346,7 +346,7 @@ public class UserTxnFactory {
                 HandleContext.ConsensusThrottling.ON);
     }
 
-    private SavepointStackImpl createRootSavepointStack(
+    public SavepointStackImpl createRootSavepointStack(
             @NonNull final State state, @NonNull final TransactionType txnType) {
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);

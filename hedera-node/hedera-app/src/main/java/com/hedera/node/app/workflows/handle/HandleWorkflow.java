@@ -329,6 +329,10 @@ public class HandleWorkflow {
                 case POST_UPGRADE_WORK -> POST_UPGRADE_TRANSACTION;
                 default -> ORDINARY_TRANSACTION;};
         }
+        // Save last processTimes before handling the transaction
+        final var lastRecordProcessTime = blockRecordManager.consTimeOfLastHandledTxn();
+        final var lastStreamProcessTime = blockStreamManager.lastIntervalProcessTime();
+
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
         final var handleOutput = execute(userTxn);
         if (streamMode != BLOCKS) {
@@ -339,6 +343,14 @@ public class HandleWorkflow {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+
+        if (streamMode == RECORDS) {
+            processInterval(state, lastRecordProcessTime, consensusNow);
+        } else {
+            if (processInterval(state, lastStreamProcessTime, consensusNow)) {
+                blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
+            }
+        }
     }
 
     /**
@@ -360,13 +372,9 @@ public class HandleWorkflow {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 if (streamMode != BLOCKS) {
-                    final var lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
+                    // TODO is this still needed?
                     // This updates consTimeOfLastHandledTxn as a side-effect
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-                    if (streamMode == RECORDS) {
-                        // If relying on last-handled time to trigger interval processing, do so now
-                        processInterval(userTxn, lastRecordManagerTime);
-                    }
                 }
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
@@ -441,13 +449,6 @@ public class HandleWorkflow {
                     // This updates consTimeOfLastHandledTxn as a side-effect
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
-                if (streamMode == RECORDS) {
-                    processInterval(userTxn, lastRecordManagerTime);
-                } else {
-                    if (processInterval(userTxn, blockStreamManager.lastIntervalProcessTime())) {
-                        blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
-                    }
-                }
                 logPreDispatch(userTxn);
                 if (userTxn.type() != ORDINARY_TRANSACTION) {
                     if (userTxn.type() == GENESIS_TRANSACTION) {
@@ -472,7 +473,7 @@ public class HandleWorkflow {
                     : DueDiligenceFailure.NO;
             recordCache.addRecordSource(
                     userTxn.creatorInfo().nodeId(),
-                    userTxn.txnInfo().transactionID(),
+                    requireNonNull(userTxn.txnInfo().transactionID()),
                     dueDiligenceFailure,
                     handleOutput.preferringBlockRecordSource());
             return handleOutput;
@@ -523,7 +524,7 @@ public class HandleWorkflow {
 
         recordCache.addRecordSource(
                 userTxn.creatorInfo().nodeId(),
-                userTxn.txnInfo().transactionID(),
+                requireNonNull(userTxn.txnInfo().transactionID()),
                 DueDiligenceFailure.NO,
                 requireNonNull(cacheableRecordSource));
         return new HandleOutput(blockRecordSource, recordSource);
@@ -611,25 +612,32 @@ public class HandleWorkflow {
     }
 
     /**
-     * Process all time-based events that are due since the last processing time.
+     * Processes all time-based events that have become due since the last recorded processing time.
+     * This method identifies and handles events based on the elapsed time interval, using the
+     * provided `state` for necessary data access and cleanup.
      *
-     * @param userTxn         the user transaction
-     * @param lastProcessTime an upper bound on the last time that time-based events were processed
-     * @return true if the interval was processed
+     * @param state the merkle state object used for managing and cleaning up time-based event data
+     * @param lastProcessTime the upper bound timestamp of the last time the time-based events were processed;
+     *                        events due since this time will be processed in this call
+     * @param consensusNow the current consensus time at which the events are processed;
+     *                     used as the reference time for determining overdue events
+     * @return {@code true} if the events for the interval were successfully processed; {@code false} otherwise
      */
-    private boolean processInterval(@NonNull final UserTxn userTxn, final Instant lastProcessTime) {
+    private boolean processInterval(
+            @NonNull final State state, @NonNull final Instant lastProcessTime, @NonNull final Instant consensusNow) {
         // If we have never processed an interval, treat this time as the last processed time
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
-        } else if (lastProcessTime.getEpochSecond() < userTxn.consensusNow().getEpochSecond()) {
+        } else if (lastProcessTime.getEpochSecond() < consensusNow.getEpochSecond()) {
             // There is at least one unprocessed second since the last processing time
             final var startSecond = lastProcessTime.getEpochSecond();
-            final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
+            final var endSecond = consensusNow.getEpochSecond() - 1;
+            final var cleanUpStack = userTxnFactory.createRootSavepointStack(state, ORDINARY_TRANSACTION);
             final var scheduleStore = new WritableStoreFactory(
-                            userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
+                            cleanUpStack, ScheduleService.NAME, configProvider.getConfiguration(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
-            userTxn.stack().commitSystemStateChanges();
+            cleanUpStack.commitSystemStateChanges();
             return true;
         }
         return false;
