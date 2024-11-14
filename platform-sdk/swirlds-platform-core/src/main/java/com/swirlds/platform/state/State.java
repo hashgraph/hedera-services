@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 
 import com.swirlds.base.utility.ToStringBuilder;
@@ -24,6 +25,7 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -165,6 +167,8 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public void updatePlatformState(@NonNull final PlatformStateModifier modifier) {
+        logger.error(EXCEPTION.getMarker(), "State#getReadablePlatformState: {} ", StackTrace.getStackTrace());
+
         if (modifier instanceof PlatformState platformState) {
             setChild(ChildIndices.PLATFORM_STATE, platformState);
         } else {

@@ -37,6 +37,7 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -955,6 +956,9 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public PlatformStateAccessor getReadablePlatformState() {
+        logger.error(
+                EXCEPTION.getMarker(), "MerkleStateRoot#getReadablePlatformState: {} ", StackTrace.getStackTrace());
+
         return services.isEmpty()
                 ? new SnapshotPlatformStateAccessor(getPlatformState(), versionFactory)
                 : readablePlatformStateStore();
