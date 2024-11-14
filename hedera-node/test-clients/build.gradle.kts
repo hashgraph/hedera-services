@@ -19,6 +19,8 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     id("com.hedera.gradle.services")
     id("com.hedera.gradle.shadow-jar")
+    id("com.hedera.gradle.feature.benchmark")
+    id("com.hedera.gradle.feature.test-fixtures")
 }
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
