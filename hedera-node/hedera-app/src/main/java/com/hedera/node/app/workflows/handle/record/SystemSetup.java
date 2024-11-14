@@ -44,16 +44,25 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
+import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
+import com.hedera.node.app.workflows.handle.steps.NodeMetadataHelper;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -113,6 +122,9 @@ public class SystemSetup {
     private final AtomicInteger nextDispatchNonce = new AtomicInteger(1);
     private final FileServiceImpl fileService;
     private final SyntheticAccountCreator syntheticAccountCreator;
+    private final NetworkInfo networkInfo;
+    private final StoreMetricsService storeMetricsService;
+    private final NodeMetadataHelper nodeMetadataHelper;
 
     /**
      * Constructs a new {@link SystemSetup}.
@@ -120,9 +132,15 @@ public class SystemSetup {
     @Inject
     public SystemSetup(
             @NonNull final FileServiceImpl fileService,
-            @NonNull final SyntheticAccountCreator syntheticAccountCreator) {
+            @NonNull final SyntheticAccountCreator syntheticAccountCreator,
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final NodeMetadataHelper nodeMetadataHelper) {
         this.fileService = requireNonNull(fileService);
         this.syntheticAccountCreator = requireNonNull(syntheticAccountCreator);
+        this.networkInfo = requireNonNull(networkInfo);
+        this.storeMetricsService = requireNonNull(storeMetricsService);
+        this.nodeMetadataHelper = requireNonNull(nodeMetadataHelper);
     }
 
     /**
@@ -182,6 +200,20 @@ public class SystemSetup {
                 dispatch.stack().commitFullStack();
             }
         });
+        // Update the node metadata from pre-DAB state before applying any node admin key updates
+        if (config.getConfigData(NetworkAdminConfig.class).updateNodeMetadata()) {
+            nodeMetadataHelper.updateMetadata(
+                    networkInfo,
+                    dispatch.config(),
+                    new ReadableFileStoreImpl(dispatch.stack().getReadableStates(FileService.NAME)),
+                    new ReadableAccountStoreImpl(dispatch.stack().getReadableStates(TokenService.NAME)),
+                    new ReadableStakingInfoStoreImpl(dispatch.stack().getReadableStates(TokenService.NAME)),
+                    new WritableNodeStore(
+                            dispatch.stack().getWritableStates(AddressBookService.NAME),
+                            dispatch.config(),
+                            storeMetricsService));
+            dispatch.stack().commitSystemStateChanges();
+        }
         final var autoNodeAdminKeyUpdates = new AutoEntityUpdate<Map<Long, Key>>(
                 (ctx, nodeAdminKeys) -> nodeAdminKeys.forEach(
                         (nodeId, key) -> ctx.dispatchAdmin(b -> b.nodeUpdate(NodeUpdateTransactionBody.newBuilder()
