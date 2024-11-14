@@ -341,7 +341,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
+        uses: gradle/actions/setup-gradle@473878a77f1b98e2b5ac4af93489d1656a80a5ed # v4.2.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           gradle-home-cache-strict-match: false
@@ -412,14 +412,14 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
+        uses: gradle/actions/setup-gradle@473878a77f1b98e2b5ac4af93489d1656a80a5ed # v4.2.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble :test-clients:shadowJar --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
+        uses: gradle/actions/setup-gradle@473878a77f1b98e2b5ac4af93489d1656a80a5ed # v4.2.0
         with:
           build-root-directory: platform-sdk/regression
           gradle-version: ${{ inputs.gradle-version }}
