@@ -36,6 +36,7 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("networkAdmin")
 public record NetworkAdminConfig(
+        @ConfigProperty(defaultValue = "true") @NodeProperty boolean updateNodeMetadata,
         @ConfigProperty(defaultValue = "data/upgrade/current") @NodeProperty String upgradeArtifactsPath,
         @ConfigProperty(defaultValue = "data/upgrade/current/data/keys") @NodeProperty String keysPath,
         @ConfigProperty(defaultValue = "data/config") String upgradeSysFilesLoc,

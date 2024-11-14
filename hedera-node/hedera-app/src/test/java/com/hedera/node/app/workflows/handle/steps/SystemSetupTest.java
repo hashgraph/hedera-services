@@ -51,6 +51,7 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.SystemContext;
@@ -62,6 +63,7 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.info.NetworkInfo;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -119,6 +121,15 @@ class SystemSetupTest {
     private StoreFactory storeFactory;
 
     @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
+
+    @Mock
+    private NodeMetadataHelper nodeMetadataHelper;
+
+    @Mock
     private ReadableNodeStore readableNodeStore;
 
     @Mock
@@ -145,12 +156,14 @@ class SystemSetupTest {
         given(context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class, CRYPTO_CREATE))
                 .willReturn(genesisAccountRecordBuilder);
 
-        subject = new SystemSetup(fileService, syntheticAccountCreator);
+        subject = new SystemSetup(
+                fileService, syntheticAccountCreator, networkInfo, storeMetricsService, nodeMetadataHelper);
     }
 
     @Test
     void successfulAutoUpdatesAreDispatchedWithFilesAvailable() throws IOException {
         final var config = HederaTestConfigBuilder.create()
+                .withValue("networkAdmin.updateNodeMetadata", false)
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
                 .withValue("nodes.enableDAB", true)
                 .getOrCreateConfig();
@@ -182,6 +195,7 @@ class SystemSetupTest {
     @Test
     void onlyAddressBookAndNodeDetailsAutoUpdateIsDispatchedWithNoFilesAvailable() {
         final var config = HederaTestConfigBuilder.create()
+                .withValue("networkAdmin.updateNodeMetadata", false)
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
                 .withValue("nodes.enableDAB", true)
                 .getOrCreateConfig();
@@ -208,6 +222,7 @@ class SystemSetupTest {
     @Test
     void onlyAddressBookAndNodeDetailsAutoUpdateIsDispatchedWithInvalidFilesAvailable() throws IOException {
         final var config = HederaTestConfigBuilder.create()
+                .withValue("networkAdmin.updateNodeMetadata", false)
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
                 .withValue("nodes.enableDAB", true)
                 .getOrCreateConfig();

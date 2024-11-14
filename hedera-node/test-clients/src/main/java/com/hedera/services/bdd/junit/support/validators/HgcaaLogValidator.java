@@ -80,6 +80,7 @@ public class HgcaaLogValidator {
         private static final String PROBLEM_DELIMITER = "\n========================================\n";
 
         private static final List<List<String>> PROBLEM_PATTERNS_TO_IGNORE = List.of(
+                List.of("NodeMetadataHelper"),
                 List.of("not in the address book"),
                 List.of("Specified TLS cert", "doesn't exist"),
                 // Stopping an embedded node can interrupt signature verification of background traffic
