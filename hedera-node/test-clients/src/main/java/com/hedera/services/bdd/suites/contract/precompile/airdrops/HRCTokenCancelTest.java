@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.contract.precompile;
+package com.hedera.services.bdd.suites.contract.precompile.airdrops;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.dsl.contracts.TokenRedirectContract.HRC904CANCEL;
+import static com.hedera.services.bdd.spec.dsl.contracts.TokenRedirectContract.HRC904;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
@@ -76,7 +76,7 @@ public class HRCTokenCancelTest {
                 receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 0L)),
                 tokenAirdrop(moving(10L, token.name()).between(sender.name(), receiver.name()))
                         .payingWith(sender.name()),
-                token.call(HRC904CANCEL, "cancelAirdropFT", receiver).with(call -> call.payingWith(sender.name())));
+                token.call(HRC904, "cancelAirdropFT", receiver).with(call -> call.payingWith(sender.name())));
     }
 
     @HapiTest
@@ -87,14 +87,14 @@ public class HRCTokenCancelTest {
                 receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 0L)),
                 tokenAirdrop(TokenMovement.movingUnique(nft.name(), 1L).between(sender.name(), receiver.name()))
                         .payingWith(sender.name()),
-                nft.call(HRC904CANCEL, "cancelAirdropNFT", receiver, 1L).with(call -> call.payingWith(sender.name())));
+                nft.call(HRC904, "cancelAirdropNFT", receiver, 1L).with(call -> call.payingWith(sender.name())));
     }
 
     @HapiTest
     @Order(3)
     @DisplayName("Cannot cancel airdrop if not existing")
     public Stream<DynamicTest> cannotCancelAirdropWhenNotExisting() {
-        return hapiTest(token.call(HRC904CANCEL, "cancelAirdropFT", receiver)
+        return hapiTest(token.call(HRC904, "cancelAirdropFT", receiver)
                 .with(call -> call.payingWith(sender.name()))
                 .andAssert(txn -> txn.hasKnownStatuses(SUCCESS, INVALID_PENDING_AIRDROP_ID)));
     }
@@ -103,7 +103,7 @@ public class HRCTokenCancelTest {
     @Order(4)
     @DisplayName("Cannot cancel airdrop if receiver not existing")
     public Stream<DynamicTest> cannotCancelAirdropWhenReceiverNotExisting() {
-        return hapiTest(token.call(HRC904CANCEL, "cancelAirdropFT", token)
+        return hapiTest(token.call(HRC904, "cancelAirdropFT", token)
                 .with(call -> call.payingWith(sender.name()))
                 .andAssert(txn -> txn.hasKnownStatuses(SUCCESS, INVALID_PENDING_AIRDROP_ID)));
     }
@@ -112,7 +112,7 @@ public class HRCTokenCancelTest {
     @Order(5)
     @DisplayName("Cannot cancel nft airdrop if not existing")
     public Stream<DynamicTest> cannotCancelNftAirdropWhenNotExisting() {
-        return hapiTest(nft.call(HRC904CANCEL, "cancelAirdropNFT", receiver, 1L)
+        return hapiTest(nft.call(HRC904, "cancelAirdropNFT", receiver, 1L)
                 .with(call -> call.payingWith(sender.name()))
                 .andAssert(txn -> txn.hasKnownStatuses(SUCCESS, INVALID_PENDING_AIRDROP_ID)));
     }
@@ -121,7 +121,7 @@ public class HRCTokenCancelTest {
     @Order(6)
     @DisplayName("Cannot cancel nft airdrop if receiver not existing")
     public Stream<DynamicTest> cannotCancelNftAirdropWhenReceiverNotExisting() {
-        return hapiTest(nft.call(HRC904CANCEL, "cancelAirdropNFT", nft, 1L)
+        return hapiTest(nft.call(HRC904, "cancelAirdropNFT", nft, 1L)
                 .with(call -> call.payingWith(sender.name()))
                 .andAssert(txn -> txn.hasKnownStatuses(SUCCESS, INVALID_PENDING_AIRDROP_ID)));
     }
