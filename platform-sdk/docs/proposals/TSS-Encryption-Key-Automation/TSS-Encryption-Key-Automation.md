@@ -53,7 +53,10 @@ roster nightly. The `TSS-Ledger-ID` capability cannot be turned on until enough 
 
 ### Design Decisions
 
-* The private `tssEncryptionKey` will be stored in the same directory as the node's private gossip signing key.
+* The private `tssEncryptionKey` will be stored in the same directory as the node's private gossip signing key. The
+  file format will be `Armored ASCII`, a `Base64` encoding of the raw bytes of the key bookended by leading and
+  trailing markers. The filename will be `t-private-<alias>.tss` where `<alias>` is the word `node` followed by the
+  node's id + 1.
 * The public `tssEncryptionKey` will be stored in the `TssBaseService` state.
 * A new `TssEncryptionKeyTransaction` will be gossiped, come to consensus, and handled by the `TssBaseService` to
   update the public `tssEncryptionKey` in the state.
@@ -86,8 +89,8 @@ The `TssBaseService` already exists with its own state.
 Cryptography Changes:
 
 * The cryptography system adds a dependency on the TSS-Library to generate the `tssEncryptionKey` in the form of a
-  `(BlsPrivateKey, BlsPublicKey)` pair.
-* The `KeysAndCerts.java` record is extended with `BlsPrivateKey privateTssEncryptionKey` and
+  `(BlsPrivateKey, BlsPublicKey)` pair which can be encapsulated as `BlsKeyPair`.
+* The `KeysAndCerts` record is extended with `BlsPrivateKey privateTssEncryptionKey` and
   `BlsPublicKey publicTssEncryptionKey`.
 
 ### Core Behaviors
@@ -96,9 +99,9 @@ There are two new behaviors that will be added to the system.
 
 1. At `System Startup`, during cryptography loading, the `tssEncryptionKey` will be loaded from disk or generated if it
    does not exist.
-2. At the start of `TssBaseService` execution, the `TssBaseService` will verify that the public `tssEncryptionKey`
-   is in the state, or possibly generate a new `tssEncryptionKey` pair and send a transaction to update the public
-   key in the state.
+2. At the start of `TssBaseService`, the `TssBaseService` will verify that the public `tssEncryptionKey`
+   is in the state, and if not, send a transaction to update the public key in the state.  The `TssBaseService`
+   cannot proceed with normal execution until the public key is in the state and it is able to decrypt private shares.
 
 #### Loading Cryptography
 
@@ -107,35 +110,27 @@ The cryptography library will add a dependency on the `Tss-Library` to generate 
 In the `EnhancedKeystoreLoader`:
 
 1. During the `scan()` phase, the private `tssEncryptionKey` will be loaded from disk if present.
-2. During the `generate()` phase, if the private `tssEncryptionKey` is not present:
-   1. Create a new public/private key pair.
-   2. Write the private key to disk.
+2. During the `generate()` phase,
+   1. if the private `tssEncryptionKey` is not present:
+      1. Create a new public/private key pair.
+      2. Write the private key to disk.
+   2. if the private `tssEncryptionKey` is present:
+      1. Create the `BlsPublicKey` from the private key.
 
-At the end of loading cryptography, the `KeysAndCerts` record will be in one of two states:
-
-1. The private `tssEncryptionKey` is loaded from disk and there is no public `tssEncryptionKey`.
-2. The private and public `tssEncryptionKey` were generated, are present, and match each other.
+At the end of loading cryptography, both the `BlsPrivateKey` and `BlsPublicKey` will be in memory and the private
+key will be on disk.
 
 #### TssBaseService Initialization
 
-At the initialization of the `TssBaseService` the loaded public/private `tssEncryptionKey` will be provided. The
-private key will always be provided, but the public key may be null. There are three scenarios:
+At the initialization of the `TssBaseService` the private `tssEncryptionKey` loaded from disk and matching public key
+will be provided.  There are two scenarios:
 
-1. The public `tssEncryptionKey` is provided indicating a new key-pair was generated.
+1. The provided `BlsPublicKey` for the loaded `BlsPrivateKey` is already in the state.
+   1. This is the happy path and the `TssBaseService` can continue as normal.
+2. The state does not have a `BlsPublicKey` for this node or the provided `BlsPublicKey` does not match the
+   `BlsPublicKey` in the state for this node:
    1. Once execution is live, a `TssEncryptionKeyTransaction` will need to be sent periodically until the state
-      reflects the correct public key.
-2. The public `tssEncryptionKey` is not provided indicating only the private key was loaded from disk.
-   1. If there is no public key in the state, or the public key in the state does not match the loaded
-      private key, a new public/private `tssEncryptionKey` will need to be generated through a call back to
-      `CryptoStatic.java` to generate the key and persist the new private key to disk. The new public key will need
-      to be distributed to the rest of the network as in `1.1` above.
-   2. If the public key in the state matches the loaded private key, all is good.
-
-At the end of the `TssBaseService` initialization there will be two outcomes:
-
-1. The public key in the state matches the private key and the `TssBaseService` is ready to execute normally.
-2. At the start of `TssBaseService` execution, it needs to update the public key on the network and cannot perform
-   its normal execution until the public key has been gossiped, handled, and updated in the state.
+      reflects the correct public key.  The `TssBaseService` cannot continue execution as normal.
 
 #### TssBaseService Start Of Execution
 
@@ -150,9 +145,9 @@ If there is a public key update needing to happen:
 New `TssEncryptionKeyTransaction` handle workflow:
 
 * Upon receipt of a `TssEncryptionKeyTransaction`:
-  1. Add the public key to the `TssBaseService` state.
-  2. Disable any mechanism created for resending the transaction.
-  3. Check condition for resuming normal execution.
+  1. Add the transaction to the `TssBaseService` state for the node sending it
+  2. If the public key added belongs to this node, disable any mechanism created for resending the transaction.
+  3. Check the conditions for resuming normal execution.
 
 Resuming / Proceeding with Normal Execution:
 
@@ -163,9 +158,9 @@ Resuming / Proceeding with Normal Execution:
 
 #### TssEncryptionKeyTransaction Protobuf
 
-The `TssEncryptionKeyTransaction` will only appear in events created from the node sending the transaction. The
-signature on the event and the creator identifier of the event are sufficient to provide authenticity of the
-transaction.
+The `TssEncryptionKeyTransaction` will only appear in events created from the node sending the transaction. The RSA
+signature on the event from the node's gossip signing key and the creator node identifier on the event are
+sufficient to provide authenticity of the transaction.
 
 ```protobuf
 message TssEncryptionKeyTransaction {
@@ -178,17 +173,18 @@ message TssEncryptionKeyTransaction {
 
 #### TssBaseService New State
 
-The `TssBaseService` state will be extended with a new map of the public `tssEncryptionKey` for each node.
+The `TssBaseService` state will be extended with a new virtual map of the public `tssEncryptionKey` for each node.
 
-1. The keys of the map are Longs/UInt64 for the `nodeId` of the nodes
+1. The keys of the map are UInt64 for the `nodeId` of the nodes
 2. The values of the map are the latest `TssEncryptionKeyTransaction` from each node.
 
 Data Lifecycle:
 
 * When a node id is not present in any of the `active rosters` or a `candidate roster`, the entry for that node id
   should be removed. This cleanup task could be eagerly triggered any time there is a roster state change or lazily
-  triggered whenever a candidate roster is set. If this cleanup happens at startup, it must happen through a schema in order for the corresponding state changes to be made visible in the output stream.
-  If it happens during execution, it must be on the transaction handling thread.
+  triggered whenever a candidate roster is set. If this cleanup happens at startup, it must happen through a schema
+  in order for the corresponding state changes to be made visible in the output stream. If it happens during
+  execution, it must be on the transaction handling thread.
 
 ### Configuration
 
@@ -198,16 +194,17 @@ No new configuration is needed.
 
 A health metric should be created to indicate the state the `TssBaseService` is in:
 
-1. distributing the public `tssEncryptionKey` to the network.
-2. public `tssEncryptionKey` is good, waiting for the next candidate roster to be keyed and adopted.
-3. Able to participate in signing with the active roster. (Private shares are decryptable with current
-   `tssEncryptionKey`.)
+1. State 1: distributing the public `tssEncryptionKey` to the network.
+2. State 2: the latest `tssEncryptionKey` is in the state, waiting to receive private shares.
+3. State 3: Private shares exist for this node in the latest `active roster` and the `TssBaseService` can execute
+   normally.
 
 A health metric should be created that indicates the number of active shares available for signing from each node.
-Nodes which are offline or have bad status in the above health metric should not have their shares counted towards
-the available active shares for signing. A warning should be generated if the number of active shares drops close to the
-aggregation threshold required to create a ledger signature. A critical error should be generated if the number of
-available shares drops below the aggregation threshold.
+* Nodes which are offline or have bad status in the above health metric should not have their shares counted towards
+the available active shares for signing.
+* A warning alarm should be generated if the number of active shares drops close to the aggregation threshold
+required to create a ledger signature.
+* A critical error alarm should be generated if the number of available shares drops below the aggregation threshold.
 
 ### Performance
 
@@ -235,4 +232,5 @@ candidate roster is adopted.
 It is possible to manually force a rotation of the `tssEncryptionKey` by deleting the private key from disk and
 restarting the node. This will cause the node to generate a new key pair and distribute the public key to the network.
 The node will not be able to participate in signing until the public key is adopted and the next candidate roster is
-keyed using the new public key.
+keyed using the new public key.  A more robust rotation mechanism that does not interfere with the node's ability to
+participate in signing is a future enhancement.
