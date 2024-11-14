@@ -401,16 +401,6 @@ public class HandleWorkflow {
                     systemSetup.externalizeInitSideEffects(
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
-                    nodeMetadataHelper.updateMetadata(
-                            networkInfo,
-                            userTxn.config(),
-                            new ReadableFileStoreImpl(userTxn.stack().getReadableStates(FileService.NAME)),
-                            new ReadableAccountStoreImpl(userTxn.stack().getReadableStates(TokenService.NAME)),
-                            new ReadableStakingInfoStoreImpl(userTxn.stack().getReadableStates(TokenService.NAME)),
-                            new WritableNodeStore(
-                                    userTxn.stack().getWritableStates(AddressBookService.NAME),
-                                    userTxn.config(),
-                                    storeMetricsService));
                     final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
                             userTxn.tokenContextImpl(),
                             networkInfo,
@@ -453,6 +443,17 @@ public class HandleWorkflow {
                     } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                         logger.info("Doing post-upgrade setup @ {}", userTxn.consensusNow());
                         systemSetup.doPostUpgradeSetup(dispatch);
+                        nodeMetadataHelper.updateMetadata(
+                                networkInfo,
+                                userTxn.config(),
+                                new ReadableFileStoreImpl(userTxn.stack().getReadableStates(FileService.NAME)),
+                                new ReadableAccountStoreImpl(userTxn.stack().getReadableStates(TokenService.NAME)),
+                                new ReadableStakingInfoStoreImpl(userTxn.stack().getReadableStates(TokenService.NAME)),
+                                new WritableNodeStore(
+                                        userTxn.stack().getWritableStates(AddressBookService.NAME),
+                                        userTxn.config(),
+                                        storeMetricsService));
+                        userTxn.stack().commitSystemStateChanges();
                     }
                     if (streamMode != RECORDS) {
                         blockStreamManager.confirmPendingWorkFinished();

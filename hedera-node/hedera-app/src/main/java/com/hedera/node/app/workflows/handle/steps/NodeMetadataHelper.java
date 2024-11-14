@@ -36,6 +36,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -80,6 +81,9 @@ public class NodeMetadataHelper {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableStakingInfoStore stakingInfoStore,
             @NonNull final WritableNodeStore nodeStore) {
+        if (!config.getConfigData(NetworkAdminConfig.class).updateNodeMetadata()) {
+            return;
+        }
         final List<EntityNumber> nodeIds = StreamSupport.stream(
                         spliteratorUnknownSize(nodeStore.keys(), NONNULL), false)
                 .sorted(comparingLong(EntityNumber::number))

@@ -139,7 +139,9 @@ public class SystemFileExportsTest {
                 given(() -> gossipCertificates.set(generateCertificates(CLASSIC_HAPI_TEST_NETWORK_SIZE))),
                 // This is the genesis transaction
                 cryptoCreate("firstUser"),
-                overriding("nodes.updateAccountIdAllowed", "true"),
+                overridingTwo(
+                        "nodes.updateAccountIdAllowed", "true",
+                        "networkAdmin.updateNodeMetadata", "false"),
                 sourcing(() -> blockingOrder(nOps(CLASSIC_HAPI_TEST_NETWORK_SIZE, i -> nodeUpdate("" + i)
                         .description(DESCRIPTION_PREFIX + i)
                         .serviceEndpoint(endpointsFor(i))
@@ -162,7 +164,9 @@ public class SystemFileExportsTest {
                 given(() -> gossipCertificates.set(generateCertificates(CLASSIC_HAPI_TEST_NETWORK_SIZE))),
                 // This is the genesis transaction
                 cryptoCreate("firstUser"),
-                overriding("nodes.updateAccountIdAllowed", "true"),
+                overridingTwo(
+                        "nodes.updateAccountIdAllowed", "true",
+                        "networkAdmin.updateNodeMetadata", "false"),
                 sourcing(() -> blockingOrder(nOps(CLASSIC_HAPI_TEST_NETWORK_SIZE, i -> nodeUpdate("" + i)
                         .description(DESCRIPTION_PREFIX + i)
                         .serviceEndpoint(endpointsFor(i))
