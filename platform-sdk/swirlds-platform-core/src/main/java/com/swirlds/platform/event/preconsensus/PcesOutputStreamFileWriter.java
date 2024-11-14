@@ -71,18 +71,18 @@ public class PcesOutputStreamFileWriter implements PcesFileWriter {
     public void writeEvent(@NonNull final GossipEvent event) throws IOException {
         out.writePbjRecord(event, GossipEvent.PROTOBUF);
         if (syncEveryEvent) {
-            out.flush();
-            try {
-                fileDescriptor.sync();
-            } catch (final SyncFailedException e) {
-                logger.error(LogMarker.EXCEPTION.getMarker(), "Failed to sync file after writing event", e);
-            }
+            flush();
         }
     }
 
     @Override
     public void flush() throws IOException {
         out.flush();
+        try {
+            fileDescriptor.sync();
+        } catch (final SyncFailedException e) {
+            logger.error(LogMarker.EXCEPTION.getMarker(), "Failed to sync file after writing event", e);
+        }
     }
 
     @Override
