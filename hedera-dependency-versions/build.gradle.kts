@@ -173,10 +173,10 @@ dependencies.constraints {
     api("org.hamcrest:hamcrest:2.2") {
         because("org.hamcrest")
     }
-    api("org.hyperledger.besu:besu-datatypes:24.3.3") {
+    api("org.hyperledger.besu:besu-datatypes:23.10.0") {
         because("org.hyperledger.besu.datatypes")
     }
-    api("org.hyperledger.besu:evm:24.3.3") {
+    api("org.hyperledger.besu:evm:23.10.0") {
         because("org.hyperledger.besu.evm")
     }
     api("org.hyperledger.besu:secp256k1:0.8.2") {
