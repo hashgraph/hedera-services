@@ -16,7 +16,10 @@
 
 package com.hedera.services.bdd.junit.support;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static java.util.Comparator.comparing;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockItem;
@@ -26,10 +29,15 @@ import com.hedera.hapi.block.stream.output.MapUpdateChange;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.block.stream.output.TransactionResult;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.impl.BlockImplUtils;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,6 +47,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +57,7 @@ import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.units.qual.K;
 
 /**
  * Central utility for accessing blocks created by tests.
@@ -59,6 +69,84 @@ public enum BlockStreamAccess {
 
     private static final String UNCOMPRESSED_FILE_EXT = ".blk";
     private static final String COMPRESSED_FILE_EXT = UNCOMPRESSED_FILE_EXT + ".gz";
+
+    public static void main(String[] args) throws ParseException {
+        final var node0Dir = Paths.get("hedera-node/test-clients")
+                .resolve(workingDirFor(0, "hapi"))
+                .toAbsolutePath()
+                .normalize();
+        final var blocks =
+                BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/block-streams/block-0.0.3"));
+        SemanticVersion lastVersion = null;
+        boolean postUpgradeChangesPending = false;
+        for (final var block : blocks) {
+            final var items = block.items();
+            final var header = block.items().getFirst().blockHeaderOrThrow();
+            final var version = header.softwareVersionOrThrow();
+            if (!version.equals(lastVersion)) {
+                if (lastVersion != null) {
+                    // For every non-genesis upgrade we expect the state changes in the post-upgrade transaction
+                    // to include state changes for every node in the address book service node store
+                    if (!postUpgradeChangesPending) {
+                        System.out.println("Upgraded from " + lastVersion + " to " + version);
+                    }
+                    postUpgradeChangesPending = true;
+                } else {
+                    lastVersion = version;
+                }
+            }
+            if (postUpgradeChangesPending) {
+                TransactionParts postUpgradeParts = null;
+                int i = 0, n = items.size();
+                for (; i < n; i++) {
+                    final var item = items.get(i);
+                    if (item.hasEventTransaction()) {
+                        TransactionResult result = null;
+                        for (int j = i; j < n && result == null; j++) {
+                            final var nextItem = items.get(j);
+                            if (nextItem.hasTransactionResult()) {
+                                result = nextItem.transactionResultOrThrow();
+                            }
+                        }
+                        requireNonNull(result);
+                        if (result.status() != BUSY) {
+                            try {
+                                postUpgradeParts =
+                                        TransactionParts.from(CommonPbjConverters.fromPbj(Transaction.PROTOBUF.parse(
+                                                item.eventTransactionOrThrow().applicationTransactionOrThrow())));
+                                break;
+                            } catch (ParseException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    }
+                }
+                if (postUpgradeParts != null) {
+                    System.out.println("Post-upgrade transaction was type " + postUpgradeParts.function());
+                    postUpgradeChangesPending = false;
+                    lastVersion = version;
+                    StateChanges stateChanges = null;
+                    for (int j = i; j < n && stateChanges == null; j++) {
+                        final var item = items.get(j);
+                        if (item.hasStateChanges()) {
+                            stateChanges = item.stateChangesOrThrow();
+                        }
+                    }
+                    requireNonNull(stateChanges);
+                    for (final var changes : stateChanges.stateChanges()) {
+                        if (changes.hasMapUpdate()
+                                && changes.mapUpdateOrThrow().valueOrThrow().hasNodeValue()) {
+                            final var update = changes.mapUpdateOrThrow();
+                            final var key = update.keyOrThrow();
+                            final var value = update.valueOrThrow();
+                            System.out.println("Node " + key.entityNumberKeyOrThrow() + " has new data "
+                                    + value.nodeValueOrThrow());
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Reads all files matching the block file pattern from the given path and returns them in
@@ -123,6 +211,7 @@ public enum BlockStreamAccess {
 
     /**
      * Given a list of blocks, returns the final platform state generated by the state changes in these blocks.
+     *
      * @param blocks the list of blocks
      * @return the platform state
      */

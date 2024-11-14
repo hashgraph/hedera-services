@@ -97,6 +97,7 @@ public class NodeMetadataHelper {
             }
             if (node.deleted()) {
                 log.info("Node {} is deleted, skipping metadata update", nodeId.number());
+                return;
             }
             final var info = networkInfo.nodeInfo(nodeId.number());
             if (info == null) {
