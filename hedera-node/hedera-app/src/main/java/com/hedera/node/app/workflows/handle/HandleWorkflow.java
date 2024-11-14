@@ -43,6 +43,7 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.input.EventHeader;
 import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
@@ -90,6 +91,7 @@ import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
@@ -142,7 +144,7 @@ public class HandleWorkflow {
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
-    private TssBaseService tssBaseService;
+    private final TssBaseService tssBaseService;
     private final ConfigProvider configProvider;
 
     @Inject
@@ -371,22 +373,19 @@ public class HandleWorkflow {
                 // Flushes the BUSY builder to the stream, no other side effects
                 userTxn.stack().commitTransaction(userTxn.baseBuilder());
             } else {
-                final var keyCandidateRoster =
-                        userTxn.config().getConfigData(TssConfig.class).keyCandidateRoster();
+                final var writableRosterStoreFactory = new WritableStoreFactory(
+                        userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
+                final var writableStoreFactory = new WritableStoreFactory(
+                        userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
+                final var nodeStore = writableStoreFactory.getStore(WritableNodeStore.class);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     systemSetup.externalizeInitSideEffects(
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                     // Set the genesis roster in state
-                    final var writableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
-                    final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
-
+                    final var rosterStore = writableRosterStoreFactory.getStore(WritableRosterStore.class);
                     rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
-                    final var writableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
-                    final var nodeStore = writableStoreFactory.getStore(WritableNodeStore.class);
                     final var writableStakingInfoStore =
                             new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME));
                     final var writableNetworkStakingRewardsStore = new WritableNetworkStakingRewardsStore(
@@ -413,6 +412,25 @@ public class HandleWorkflow {
                     // in the RosterService state to become the active roster
                     // Generate key material for the active roster once it is switched
                 }
+
+                final var keyCandidateRoster = configProvider
+                        .getConfiguration()
+                        .getConfigData(TssConfig.class)
+                        .keyCandidateRoster();
+                final var useRosterLifecycle = configProvider
+                        .getConfiguration()
+                        .getConfigData(AddressBookConfig.class)
+                        .useRosterLifecycle();
+
+                if (!keyCandidateRoster
+                        && useRosterLifecycle
+                        && userTxn.functionality() == HederaFunctionality.FREEZE) {
+                    // Set the candidate roster in state on network upgrade only if the tss is disabled
+                    final var candidateRoster = nodeStore.snapshotOfFutureRoster();
+                    final var rosterStore = writableRosterStoreFactory.getStore(WritableRosterStore.class);
+                    rosterStore.putCandidateRoster(candidateRoster);
+                }
+
                 final var baseBuilder = initializeBuilderInfo(
                         userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
                 final var dispatch = userTxnFactory.createDispatch(userTxn, baseBuilder);
