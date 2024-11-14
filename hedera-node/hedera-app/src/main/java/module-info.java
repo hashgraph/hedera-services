@@ -116,6 +116,8 @@ module com.hedera.node.app {
     exports com.hedera.node.app.grpc.impl.netty;
     exports com.hedera.node.app.tss.schemas;
     exports com.hedera.node.app.blocks.schemas;
+    exports com.hedera.node.app.tss.cryptography.tss.api;
+    exports com.hedera.node.app.tss.cryptography.bls;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

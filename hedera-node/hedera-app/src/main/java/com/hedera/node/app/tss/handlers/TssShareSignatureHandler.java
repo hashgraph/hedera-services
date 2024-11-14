@@ -28,7 +28,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.TssKeysAccessor;
-import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssShareId;
 import com.hedera.node.app.tss.api.TssShareSignature;
 import com.hedera.node.app.tss.pairings.FakeGroupElement;

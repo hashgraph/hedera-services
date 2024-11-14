@@ -26,7 +26,6 @@ import com.hedera.hapi.services.auxiliary.tss.legacy.TssMessageTransactionBody;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp;

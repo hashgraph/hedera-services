@@ -26,9 +26,11 @@ import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.pairings.PairingPublicKey;
+import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
+import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
+import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
+import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.node.app.tss.cryptography.tss.api.TssPublicShare;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
@@ -75,11 +77,11 @@ public class TssCryptographyManager {
      * A signed vote containing the ledger id with a bit set denoting the threshold TSS messages used to compute it.
      */
     public record Vote(
-            @NonNull PairingPublicKey ledgerPublicKey,
+            @NonNull BlsPublicKey ledgerPublicKey,
             @NonNull Signature signature,
             @NonNull BitSet thresholdMessages) {
         public @NonNull Bytes ledgerId() {
-            return Bytes.wrap(ledgerPublicKey.publicKey().toBytes());
+            return Bytes.wrap(ledgerPublicKey.toBytes());
         }
 
         public @NonNull Bytes bitSet() {
@@ -89,7 +91,7 @@ public class TssCryptographyManager {
 
     /**
      * Schedules work to try to compute a signed vote for the new key material of a roster referenced by the
-     * given hash, based on incorporating all available {@link com.hedera.node.app.tss.api.TssMessage}s, if
+     * given hash, based on incorporating all available {@link TssMessage}s, if
      * the threshold number of messages are available. The signature is with the node's RSA key used for gossip.
      *
      * @param targetRosterHash the hash of the target roster
@@ -116,7 +118,7 @@ public class TssCryptographyManager {
 
     /**
      * Schedules work to compute and sign the ledger id if given {@link TssMessageTransactionBody} messages contain
-     * a threshold number of valid {@link com.hedera.node.app.tss.api.TssMessage}s.
+     * a threshold number of valid {@link TssMessage}s.
      *
      * @param tssMessageBodies the list of TSS message bodies
      * @param tssParticipantDirectory the TSS participant directory
@@ -133,9 +135,14 @@ public class TssCryptographyManager {
                     }
                     final var aggregationStart = instantSource.instant();
                     final var validTssMessages = getTssMessages(tssMessages);
-                    final var publicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
-                    final var ledgerId = tssLibrary.aggregatePublicShares(publicShares);
-                    final var signature = gossip.sign(ledgerId.publicKey().toBytes());
+                    final var shareExtractor = tssLibrary.rekeyStage()
+                            .shareExtractor(tssParticipantDirectory, validTssMessages);
+                    final var publicShares = shareExtractor.allPublicShares()
+                            .stream()
+                            .map(TssPublicShare::publicKey)
+                            .toList();
+                    final var ledgerId = BlsPublicKey.aggregate(publicShares);
+                    final var signature = gossip.sign(ledgerId.toBytes());
                     final var thresholdMessages = asBitSet(tssMessages);
                     final var aggregationEnd = instantSource.instant();
                     tssMetrics.updateAggregationTime(

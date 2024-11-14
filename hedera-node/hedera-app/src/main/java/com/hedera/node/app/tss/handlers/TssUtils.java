@@ -21,14 +21,16 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssMessage;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.pairings.FakeFieldElement;
-import com.hedera.node.app.tss.pairings.FakeGroupElement;
-import com.hedera.node.app.tss.pairings.PairingPrivateKey;
-import com.hedera.node.app.tss.pairings.PairingPublicKey;
-import com.hedera.node.app.tss.pairings.SignatureSchema;
+import com.hedera.node.app.tss.cryptography.altbn128.AltBn128GroupElement;
+import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
+import com.hedera.node.app.tss.cryptography.bls.GroupAssignment;
+import com.hedera.node.app.tss.cryptography.bls.SignatureSchema;
+import com.hedera.node.app.tss.cryptography.pairings.api.Curve;
+import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
+import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
+import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
+import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.node.app.tss.cryptography.tss.groth21.Groth21Message;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
@@ -37,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 
 public class TssUtils {
+    public static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(Curve.ALT_BN128,
+            GroupAssignment.SHORT_SIGNATURES);
     /**
      * Compute the TSS participant directory from the roster.
      *
@@ -53,21 +57,17 @@ public class TssUtils {
         final var threshold = getThresholdForTssMessages(totalShares);
 
         final var builder = TssParticipantDirectory.createBuilder().withThreshold(threshold);
-        // FUTURE: This private key must be loaded from disk
-        builder.withSelf(
-                selfNodeId,
-                new PairingPrivateKey(
-                        new FakeFieldElement(BigInteger.valueOf(10L)), SignatureSchema.create(new byte[] {1})));
         for (var rosterEntry : roster.rosterEntries()) {
             final int numSharesPerThisNode =
                     computedShares.get(rosterEntry.nodeId()).intValue();
             // FUTURE: Use the actual public key from the node
-            final var pairingPublicKey = new PairingPublicKey(
-                    new FakeGroupElement(BigInteger.valueOf(10L)), SignatureSchema.create(new byte[] {1}));
+            final var pairingPublicKey = new BlsPublicKey(
+                    new AltBn128GroupElement(BigInteger.valueOf(10L)) {
+                    }, SignatureSchema.create(new byte[]{1}));
             builder.withParticipant((int) rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
         }
         // FUTURE: Use the actual signature schema
-        return builder.build(SignatureSchema.create(new byte[] {1}));
+        return builder.build();
     }
 
     /**
@@ -92,15 +92,16 @@ public class TssUtils {
             @NonNull final List<TssMessageTransactionBody> tssMessages,
             @NonNull final TssParticipantDirectory tssParticipantDirectory,
             @NonNull final TssLibrary tssLibrary) {
-        final var validTssMessages = new LinkedList<TssMessageTransactionBody>();
+        final var validTssMessageOps = new LinkedList<TssMessageTransactionBody>();
         for (final var op : tssMessages) {
-            final var isValid = tssLibrary.verifyTssMessage(
-                    tssParticipantDirectory, new TssMessage(op.tssMessage().toByteArray()));
+            final var isValid = tssLibrary.rekeyStage().verifyTssMessage(
+                    tssParticipantDirectory, List.of(), Groth21Message.fromBytes(op.tssMessage().toByteArray(),
+                            tssParticipantDirectory, SIGNATURE_SCHEMA));
             if (isValid) {
-                validTssMessages.add(op);
+                validTssMessageOps.add(op);
             }
         }
-        return validTssMessages;
+        return validTssMessageOps;
     }
 
     /**
@@ -112,7 +113,7 @@ public class TssUtils {
     public static List<TssMessage> getTssMessages(List<TssMessageTransactionBody> validTssOps) {
         return validTssOps.stream()
                 .map(TssMessageTransactionBody::tssMessage)
-                .map(k -> new TssMessage(k.toByteArray()))
+                .map(k -> Groth21Message.fromBytes(k.toByteArray()))
                 .toList();
     }
 

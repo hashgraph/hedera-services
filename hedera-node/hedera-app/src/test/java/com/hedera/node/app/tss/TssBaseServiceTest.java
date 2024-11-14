@@ -38,7 +38,7 @@ import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
