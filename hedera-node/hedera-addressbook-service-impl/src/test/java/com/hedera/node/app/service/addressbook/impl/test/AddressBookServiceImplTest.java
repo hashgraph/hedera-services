@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
-import com.hedera.node.app.service.addressbook.impl.schemas.V056AddressBookSchema;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,8 +50,7 @@ class AddressBookServiceImplTest {
         subject.registerSchemas(schemaRegistry);
         verify(schemaRegistry, times(2)).register(schemaCaptor.capture());
         final var schemas = schemaCaptor.getAllValues();
-        assertThat(schemas).hasSize(2);
+        assertThat(schemas).hasSize(1);
         assertThat(schemas.getFirst()).isInstanceOf(V053AddressBookSchema.class);
-        assertThat(schemas.get(1)).isInstanceOf(V056AddressBookSchema.class);
     }
 }

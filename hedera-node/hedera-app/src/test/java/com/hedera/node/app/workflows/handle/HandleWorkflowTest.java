@@ -43,6 +43,7 @@ import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
+import com.hedera.node.app.workflows.handle.steps.NodeMetadataHelper;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
@@ -92,6 +93,9 @@ class HandleWorkflowTest {
 
     @Mock
     private NetworkUtilizationManager networkUtilizationManager;
+
+    @Mock
+    private NodeMetadataHelper nodeMetadataHelper;
 
     @Mock
     private StakePeriodManager stakePeriodManager;
@@ -180,6 +184,7 @@ class HandleWorkflowTest {
                 hollowAccountCompletions,
                 systemSetup,
                 stakeInfoHelper,
+                nodeMetadataHelper,
                 recordCache,
                 exchangeRateManager,
                 preHandleWorkflow,
