@@ -288,6 +288,11 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
         return configEnabled && isSelector(function);
     }
 
+    /**
+     * @param configEnabled whether the config is enabled
+     * @param functions selectors to match against
+     * @return whether the selectors are matched
+     */
     public boolean isSelectorIfConfigEnabled(final boolean configEnabled, @NonNull final Function... functions) {
         return configEnabled && isSelector(functions);
     }

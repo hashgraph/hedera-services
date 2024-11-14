@@ -177,6 +177,7 @@ public final class CallAttemptHelpers {
      * @param enhancement the enhancement that is used
      * @param addressIdConverter the address ID converter for this call
      * @param verificationStrategies the verification strategy currently used
+     * @param signatureVerifier a function that verifies a signature
      * @param gasCalculator the gas calculator used for the system contract
      * @return the call attempt
      */
@@ -199,6 +200,17 @@ public final class CallAttemptHelpers {
                 DEFAULT_CONFIG);
     }
 
+    /**
+     * @param function the selector to match against
+     * @param translator the translator for this specific call attempt
+     * @param enhancement the enhancement that is used
+     * @param addressIdConverter the address ID converter for this call
+     * @param verificationStrategies the verification strategy currently used
+     * @param signatureVerifier a function that verifies a signature
+     * @param gasCalculator the gas calculator used for the system contract
+     * @param config the configuration being used
+     * @return the call attempt
+     */
     public static HasCallAttempt prepareHasAttemptWithSelectorAndCustomConfig(
             final Function function,
             final CallTranslator<HasCallAttempt> translator,
@@ -220,6 +232,18 @@ public final class CallAttemptHelpers {
                 config);
     }
 
+    /**
+     * @param function the selector to match against
+     * @param input the input in bytes
+     * @param translator the translator for this specific call attempt
+     * @param enhancement the enhancement that is used
+     * @param addressIdConverter the address ID converter for this call
+     * @param verificationStrategies the verification strategy currently used
+     * @param signatureVerifier a function that verifies a signature
+     * @param gasCalculator the gas calculator used for the system contract
+     * @param config the configuration being used
+     * @return the call attempt
+     */
     public static HasCallAttempt prepareHasAttemptWithSelectorAndInputAndCustomConfig(
             final Function function,
             final Bytes input,
