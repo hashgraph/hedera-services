@@ -119,7 +119,7 @@ public class NodeMetadataHelper {
                     .description(formatNodeName(details.nodeId()))
                     .gossipEndpoint(info.gossipEndpoints())
                     .gossipCaCertificate(info.sigCertBytes())
-                    .weight(details.stake())
+                    .weight(stakingInfo.weight())
                     .adminKey(addressBookAdminKey)
                     .serviceEndpoint(details.serviceEndpoint())
                     .grpcCertificateHash(details.nodeCertHash());
