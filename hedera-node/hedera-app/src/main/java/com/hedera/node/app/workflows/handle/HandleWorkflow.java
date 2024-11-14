@@ -345,6 +345,7 @@ public class HandleWorkflow {
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
 
         if (streamMode == RECORDS) {
+            blockRecordManager.advanceConsensusClock(consensusNow, state);
             processInterval(state, lastRecordProcessTime, consensusNow);
         } else {
             if (processInterval(state, lastStreamProcessTime, consensusNow)) {
@@ -371,11 +372,6 @@ public class HandleWorkflow {
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
-                if (streamMode != BLOCKS) {
-                    // TODO is this still needed?
-                    // This updates consTimeOfLastHandledTxn as a side-effect
-                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-                }
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
@@ -443,12 +439,7 @@ public class HandleWorkflow {
                         userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
                 final var dispatch = userTxnFactory.createDispatch(userTxn, baseBuilder);
                 updateNodeStakes(userTxn, dispatch);
-                var lastRecordManagerTime = Instant.EPOCH;
-                if (streamMode != BLOCKS) {
-                    lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
-                    // This updates consTimeOfLastHandledTxn as a side-effect
-                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-                }
+
                 logPreDispatch(userTxn);
                 if (userTxn.type() != ORDINARY_TRANSACTION) {
                     if (userTxn.type() == GENESIS_TRANSACTION) {
