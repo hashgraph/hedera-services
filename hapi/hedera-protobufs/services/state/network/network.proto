@@ -94,15 +94,7 @@ message NodeMetadata {
     * An elliptic curve public encryption key.<br/>
     * If set, the public part of a prescribed TSS encryption key for the node.
     * This is currently an ALT_BN128 curve, but the elliptic curve
-    * type may change in the future. For example,
-    * if the Ethereum ecosystem creates precompiles for BLS12_381,
-    * we may switch to that curve.
-    * <p>
-    * This value SHALL be specified according to EIP-196 and EIP-197 standards,
-    * See <a href='https://eips.ethereum.org/EIPS/eip-196#encoding'>EIP-196</a> and
-    * <a href='https://eips.ethereum.org/EIPS/eip-197#encoding'>EIP-197</a><br/>
-    * This field is _initially_ OPTIONAL (i.e. it can be unset _when created_)
-    * but once set, it is REQUIRED thereafter.
+    * type may change in the future.
     */
   bytes tss_encryption_key = 2;
 }
