@@ -250,6 +250,30 @@ public class UserTxnFactory {
     }
 
     /**
+     * Creates a new {@link SavepointStackImpl} instance for this user transaction.
+     *
+     * @param state the state the transaction will be applied to
+     * @param txnType the type of the transaction
+     * @return the new savepoint stack
+     */
+    public SavepointStackImpl createRootSavepointStack(
+            @NonNull final State state, @NonNull final TransactionType txnType) {
+        final var config = configProvider.getConfiguration();
+        final var consensusConfig = config.getConfigData(ConsensusConfig.class);
+        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
+        final var maxPrecedingRecords = (txnType == GENESIS_TRANSACTION || txnType == POST_UPGRADE_TRANSACTION)
+                ? Integer.MAX_VALUE
+                : consensusConfig.handleMaxPrecedingRecords();
+        return SavepointStackImpl.newRootStack(
+                state,
+                maxPrecedingRecords,
+                consensusConfig.handleMaxFollowingRecords(),
+                boundaryStateChangeListener,
+                kvStateChangeListener,
+                blockStreamConfig.streamMode());
+    }
+
+    /**
      * Creates a new {@link Dispatch} instance for this user transaction in the given context.
      *
      * @param userTxn user transaction
@@ -344,23 +368,6 @@ public class UserTxnFactory {
                 tokenContextImpl,
                 preHandleResult,
                 HandleContext.ConsensusThrottling.ON);
-    }
-
-    public SavepointStackImpl createRootSavepointStack(
-            @NonNull final State state, @NonNull final TransactionType txnType) {
-        final var config = configProvider.getConfiguration();
-        final var consensusConfig = config.getConfigData(ConsensusConfig.class);
-        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
-        final var maxPrecedingRecords = (txnType == GENESIS_TRANSACTION || txnType == POST_UPGRADE_TRANSACTION)
-                ? Integer.MAX_VALUE
-                : consensusConfig.handleMaxPrecedingRecords();
-        return SavepointStackImpl.newRootStack(
-                state,
-                maxPrecedingRecords,
-                consensusConfig.handleMaxFollowingRecords(),
-                boundaryStateChangeListener,
-                kvStateChangeListener,
-                blockStreamConfig.streamMode());
     }
 
     private PreHandleResult preHandleSyntheticTransaction(

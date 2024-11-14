@@ -344,8 +344,11 @@ public class HandleWorkflow {
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
 
+        if (streamMode != BLOCKS) {
+            blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+        }
+
         if (streamMode == RECORDS) {
-            blockRecordManager.advanceConsensusClock(consensusNow, state);
             processInterval(state, lastRecordProcessTime, consensusNow);
         } else {
             if (processInterval(state, lastStreamProcessTime, consensusNow)) {
