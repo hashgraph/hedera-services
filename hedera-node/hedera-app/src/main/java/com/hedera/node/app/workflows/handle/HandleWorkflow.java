@@ -333,18 +333,6 @@ public class HandleWorkflow {
         final var lastRecordProcessTime = blockRecordManager.consTimeOfLastHandledTxn();
         final var lastStreamProcessTime = blockStreamManager.lastIntervalProcessTime();
 
-        if (streamMode != BLOCKS) {
-            blockRecordManager.advanceConsensusClock(consensusNow, state);
-        }
-
-        if (streamMode == RECORDS) {
-            processInterval(state, lastRecordProcessTime, consensusNow);
-        } else {
-            if (processInterval(state, lastStreamProcessTime, consensusNow)) {
-                blockStreamManager.setLastIntervalProcessTime(consensusNow);
-            }
-        }
-
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
         final var handleOutput = execute(userTxn);
         if (streamMode != BLOCKS) {
@@ -355,6 +343,18 @@ public class HandleWorkflow {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+
+        if (streamMode != BLOCKS) {
+            blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+        }
+
+        if (streamMode == RECORDS) {
+            processInterval(state, lastRecordProcessTime, consensusNow);
+        } else {
+            if (processInterval(state, lastStreamProcessTime, consensusNow)) {
+                blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
+            }
+        }
     }
 
     /**
