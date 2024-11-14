@@ -25,6 +25,10 @@ import static com.swirlds.platform.crypto.CryptoStatic.createEmptyTrustStore;
 import static com.swirlds.platform.crypto.CryptoStatic.loadKeys;
 import static com.swirlds.platform.state.address.AddressBookNetworkUtils.isLocal;
 
+import com.hedera.cryptography.asciiarmored.AsciiArmoredFiles;
+import com.hedera.cryptography.bls.BlsKeyPair;
+import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -205,6 +209,16 @@ public class EnhancedKeyStoreLoader {
     private final Map<NodeId, PrivateKey> agrPrivateKeys;
 
     /**
+     * The private tss encryption keys loaded from disk.
+     */
+    private final Map<NodeId, BlsPrivateKey> tssPrivateKeys;
+
+    /**
+     * The public tss encryption keys.
+     */
+    private final Map<NodeId, BlsPublicKey> tssPublicKeys;
+
+    /**
      * The X.509 Certificates loaded from the key stores.
      */
     private final Map<NodeId, Certificate> agrCertificates;
@@ -244,6 +258,8 @@ public class EnhancedKeyStoreLoader {
         this.agrPrivateKeys = HashMap.newHashMap(addressBook.getSize());
         this.agrCertificates = HashMap.newHashMap(addressBook.getSize());
         this.localNodes = HashSet.newHashSet(addressBook.getSize());
+        this.tssPrivateKeys = HashMap.newHashMap(addressBook.getSize());
+        this.tssPublicKeys = HashMap.newHashMap(addressBook.getSize());
     }
 
     /**
@@ -298,6 +314,11 @@ public class EnhancedKeyStoreLoader {
                 localNodes.add(nodeId);
                 sigPrivateKeys.compute(
                         nodeId, (k, v) -> resolveNodePrivateKey(nodeId, nodeAlias, KeyCertPurpose.SIGNING));
+
+                BlsPrivateKey tssPrivateKey = resolveTssPrivateKey(nodeId, nodeAlias);
+                if (tssPrivateKey != null) {
+                    tssPrivateKeys.put(nodeId, tssPrivateKey);
+                }
             }
 
             sigCertificates.compute(
@@ -307,6 +328,29 @@ public class EnhancedKeyStoreLoader {
 
         logger.trace(STARTUP.getMarker(), "Completed key store enumeration");
         return this;
+    }
+
+    @Nullable
+    private BlsPrivateKey resolveTssPrivateKey(@NonNull final NodeId nodeId, @NonNull final String nodeAlias)
+            throws KeyLoadingException {
+        Objects.requireNonNull(nodeId, MSG_NODE_ID_NON_NULL);
+        Objects.requireNonNull(nodeAlias, MSG_NODE_ALIAS_NON_NULL);
+
+        Path keyLocation = keyStoreDirectory.resolve(String.format("t-private-%s.tss", nodeAlias));
+        if (Files.exists(keyLocation)) {
+            logger.trace(
+                    STARTUP.getMarker(),
+                    "Found tss encryption private key for node {} [ fileName = {} ]",
+                    nodeId,
+                    keyLocation.getFileName());
+            try {
+                return AsciiArmoredFiles.readPrivateKey(keyLocation);
+            } catch (final IOException e) {
+                logger.error(ERROR.getMarker(), "Failed to read TSS encryption private key from disk", e);
+                throw new KeyLoadingException("Failed to read TSS encryption private key from disk", e);
+            }
+        }
+        return null;
     }
 
     /**
@@ -348,6 +392,28 @@ public class EnhancedKeyStoreLoader {
                         signingKeyPair,
                         SecureRandom.getInstanceStrong());
                 agrCertificates.put(node, agrCert);
+            }
+
+            if (!tssPrivateKeys.containsKey(node)) {
+                // Create a new public/private key pair for the TSS encryption key
+                BlsKeyPair tssKeyPair = CryptoStatic.generateBlsKeyPair();
+                tssPrivateKeys.put(node, tssKeyPair.privateKey());
+                tssPublicKeys.put(node, tssKeyPair.publicKey());
+                // Write the private key to disk
+                final String nodeAlias =
+                        nameToAlias(addressBook.getAddress(node).getSelfName());
+                Path tssEncryptionPrivateKeyLocation =
+                        keyStoreDirectory.resolve(String.format("t-private-%s.tss", nodeAlias));
+                try {
+                    AsciiArmoredFiles.writeKey(tssEncryptionPrivateKeyLocation, tssKeyPair.privateKey());
+                } catch (IOException e) {
+                    logger.error(ERROR.getMarker(), "Failed to write TSS encryption private key to disk", e);
+                    throw new KeyGeneratingException("Failed to write TSS encryption private key to disk", e);
+                }
+            } else {
+                // Create the BlsPublicKey from the private TSS encryption key
+                BlsPrivateKey tssPrivateKey = tssPrivateKeys.get(node);
+                tssPublicKeys.put(node, tssPrivateKey.createPublicKey());
             }
         }
         return this;
@@ -405,6 +471,16 @@ public class EnhancedKeyStoreLoader {
                 if (!agrCertificates.containsKey(nodeId)) {
                     throw new KeyLoadingException("No certificate found for node %s [ alias = %s, purpose = %s ]"
                             .formatted(nodeId, nodeAlias, KeyCertPurpose.AGREEMENT));
+                }
+
+                if (!tssPrivateKeys.containsKey(nodeId)) {
+                    throw new KeyLoadingException(
+                            "No TSS private key found for node %s [ alias = %s ]".formatted(nodeId, nodeAlias));
+                }
+
+                if (!tssPublicKeys.containsKey(nodeId)) {
+                    throw new KeyLoadingException(
+                            "No TSS public key found for node %s [ alias = %s ]".formatted(nodeId, nodeAlias));
                 }
             }
 
@@ -481,7 +557,11 @@ public class EnhancedKeyStoreLoader {
                 final KeyPair sigKeyPair = new KeyPair(sigCert.getPublicKey(), sigPrivateKey);
                 final KeyPair agrKeyPair = new KeyPair(agrCert.getPublicKey(), agrPrivateKey);
 
-                final KeysAndCerts kc = new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores);
+                final BlsPrivateKey tssPrivateKey = tssPrivateKeys.get(nodeId);
+                final BlsPublicKey tssPublicKey = tssPublicKeys.get(nodeId);
+
+                final KeysAndCerts kc = new KeysAndCerts(
+                        sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores, tssPrivateKey, tssPublicKey);
 
                 keysAndCerts.put(nodeId, kc);
             }
@@ -887,6 +967,11 @@ public class EnhancedKeyStoreLoader {
         Objects.requireNonNull(nodeAlias, MSG_NODE_ALIAS_NON_NULL);
         Objects.requireNonNull(purpose, MSG_PURPOSE_NON_NULL);
         return keyStoreDirectory.resolve(String.format("%s-private-%s.pem", purpose.prefix(), nodeAlias));
+    }
+
+    private Path tssPrivateKeyPath(@NonNull String nodeAlias) {
+        Objects.requireNonNull(nodeAlias, MSG_NODE_ALIAS_NON_NULL);
+        return keyStoreDirectory.resolve(String.format("t-private-%s.tss", nodeAlias));
     }
 
     /**

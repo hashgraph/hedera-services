@@ -19,6 +19,7 @@ import org.gradlex.javamodule.dependencies.initialization.RootPluginsExtension
 
 pluginManagement {
     repositories {
+        mavenLocal()
         gradlePluginPortal()
         mavenCentral()
         maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }

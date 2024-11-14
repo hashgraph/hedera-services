@@ -24,6 +24,10 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
+import com.hedera.cryptography.bls.BlsKeyPair;
+import com.hedera.cryptography.bls.GroupAssignment;
+import com.hedera.cryptography.bls.SignatureSchema;
+import com.hedera.cryptography.pairings.api.Curve;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -622,5 +626,17 @@ public final class CryptoStatic {
             store.setCertificateEntry(SIGNING.storeName(name), sigCert);
         }
         return store;
+    }
+
+    /**
+     * Generate a {@link BlsKeyPair} using a {@link SignatureSchema} and a {@link SecureRandom} instance
+     * @return a new {@link BlsKeyPair}
+     * @throws NoSuchAlgorithmException the algorithm is not supported
+     */
+    public static BlsKeyPair generateBlsKeyPair() throws NoSuchAlgorithmException {
+        final SignatureSchema SIGNATURE_SCHEMA =
+                SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
+        final SecureRandom secureRandom = SecureRandom.getInstanceStrong();
+        return BlsKeyPair.generate(SIGNATURE_SCHEMA, secureRandom);
     }
 }
