@@ -41,7 +41,7 @@ public interface ServiceMigrator {
      * @param previousVersion The previous version of the state
      * @param currentVersion The current version of the state
      * @param config The configuration to use for the migrations
-     * @param activeNetworkInfo The network information to use for the migrations
+     * @param genesisNetworkInfo The network information to use for the migrations
      * @param metrics The metrics to use for the migrations
      * @return The list of builders for state changes that occurred during the migrations
      */
@@ -51,7 +51,7 @@ public interface ServiceMigrator {
             @Nullable SoftwareVersion previousVersion,
             @NonNull SoftwareVersion currentVersion,
             @NonNull Configuration config,
-            @Nullable NetworkInfo activeNetworkInfo,
+            @Nullable NetworkInfo genesisNetworkInfo,
             @NonNull Metrics metrics);
 
     /**

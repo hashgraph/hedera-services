@@ -46,7 +46,7 @@ public record MigrationContextImpl(
         @NonNull ReadableStates previousStates,
         @NonNull WritableStates newStates,
         @NonNull Configuration configuration,
-        @Nullable NetworkInfo activeNetworkInfo,
+        @Nullable NetworkInfo genesisNetworkInfo,
         @Nullable WritableEntityIdStore writableEntityIdStore,
         @Nullable SemanticVersion previousVersion,
         @NonNull Map<String, Object> sharedValues)

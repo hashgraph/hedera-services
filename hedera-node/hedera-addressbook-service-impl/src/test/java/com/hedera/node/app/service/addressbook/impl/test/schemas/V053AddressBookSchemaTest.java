@@ -270,7 +270,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
 
     @Test
     void failedNullNetworkinfo() {
-        given(migrationContext.activeNetworkInfo()).willReturn(null);
+        given(migrationContext.genesisNetworkInfo()).willReturn(null);
         assertThatCode(() -> subject.migrate(migrationContext))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Genesis network info is not found");
@@ -300,7 +300,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                 List.of(endpointFor("23.45.34.243", 45), endpointFor("127.0.0.3", 124)),
                 Bytes.wrap(grpcCertificateHash));
         given(networkInfo.addressBook()).willReturn(List.of(nodeInfo1, nodeInfo2, nodeInfo3));
-        given(migrationContext.activeNetworkInfo()).willReturn(networkInfo);
+        given(migrationContext.genesisNetworkInfo()).willReturn(networkInfo);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("bootstrap.genesisPublicKey", defaultAdminKeyBytes)
                 .getOrCreateConfig();

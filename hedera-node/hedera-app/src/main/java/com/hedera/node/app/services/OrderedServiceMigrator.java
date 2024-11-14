@@ -63,7 +63,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
      * @param previousVersion The previous version of the state
      * @param currentVersion The current version of the state
      * @param config The configuration to use for the migrations
-     * @param activeNetworkInfo The network information to use for the migrations.
+     * @param genesisNetworkInfo The network information to use for the migrations.
      *                           This is only used in genesis case
      * @param metrics The metrics to use for the migrations
      * @return The list of state changes that occurred during the migrations
@@ -75,7 +75,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
             @Nullable final SoftwareVersion previousVersion,
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration config,
-            @Nullable final NetworkInfo activeNetworkInfo,
+            @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(currentVersion);
@@ -98,7 +98,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                 deserializedPbjVersion,
                 currentVersion.getPbjSemanticVersion(),
                 config,
-                activeNetworkInfo,
+                genesisNetworkInfo,
                 metrics,
                 // We call with null here because we're migrating the entity ID service itself
                 null,
@@ -135,7 +135,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                             deserializedPbjVersion,
                             currentVersion.getPbjSemanticVersion(),
                             config,
-                            activeNetworkInfo,
+                            genesisNetworkInfo,
                             metrics,
                             entityIdStore,
                             sharedValues,
