@@ -62,7 +62,6 @@ import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
-import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -342,6 +341,15 @@ public class HandleWorkflow {
         final var lastStreamProcessTime = blockStreamManager.lastIntervalProcessTime();
 
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
+
+        if (streamMode == RECORDS) {
+            processInterval(state, event, creator, lastRecordProcessTime, consensusNow);
+        } else {
+            if (processInterval(state, event, creator, lastStreamProcessTime, consensusNow)) {
+                blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
+            }
+        }
+
         final var handleOutput = execute(userTxn);
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
@@ -351,15 +359,6 @@ public class HandleWorkflow {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
-
-        if (streamMode == RECORDS) {
-            processInterval(state, event, creator, lastRecordProcessTime, consensusNow);
-        } else {
-            if (processInterval(state, event, creator, lastStreamProcessTime, consensusNow)) {
-                // TODO: is this needed?
-                blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
-            }
-        }
     }
 
     /**
@@ -638,26 +637,30 @@ public class HandleWorkflow {
         } else if (lastProcessTime.getEpochSecond() < consensusNow.getEpochSecond()) {
             // There is at least one unprocessed second since the last processing time
 
-            // try to execute schedules
+            // Build store factory for the schedule service iterator
             final var readableStoreFactory = new ReadableStoreFactory(state);
-            final var writableStoreFactory = new WritableStoreFactory(
-                    state, scheduleService.getServiceName(), configProvider.getConfiguration(), storeMetricsService);
-            var store = writableStoreFactory.getStore(WritableScheduleStore.class);
-            store.purgeExpiredSchedulesBetween(lastProcessTime.getEpochSecond(), consensusNow.getEpochSecond());
             final var cleanUpStack = userTxnFactory.createRootSavepointStack(state, ORDINARY_TRANSACTION);
+            final var writableStoreFactory = new WritableStoreFactory(
+                    cleanUpStack,
+                    scheduleService.getServiceName(),
+                    configProvider.getConfiguration(),
+                    storeMetricsService);
             final var serviceApiFactory =
                     new ServiceApiFactory(cleanUpStack, configProvider.getConfiguration(), storeMetricsService);
             final var storeFactory =
                     new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
+
+            // Get schedule iterator
             final var scheduleIterator =
                     scheduleService.iterTxnsForInterval(lastProcessTime, consensusNow, () -> storeFactory);
             // todo: consensus nanos offset will be calculated more precisely in following PR,
             //  for now just add 1 nano on each iteration.
+
             var consensusNanosOffset = 1;
+            // try to execute schedules
             while (scheduleIterator.hasNext()) {
-                // get schedule
                 final var schedule = scheduleIterator.next();
-                // update schedule consensus
+                // update schedule consensus timestamp
                 final var scheduleConsensus = Instant.from(consensusNow.plusNanos(consensusNanosOffset));
                 final var txnBody = schedule.body();
                 final var scheduleUserTnx = userTxnFactory.createUserTxn(
@@ -668,10 +671,10 @@ public class HandleWorkflow {
                 final var scheduleDispatch = userTxnFactory.createDispatch(
                         scheduleUserTnx, baseBuilder, schedule.verificationAssistant(), SCHEDULED);
                 dispatchProcessor.processDispatch(scheduleDispatch);
-                // add record to the record cache
                 final var handleOutput = scheduleUserTnx
                         .stack()
                         .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
+                // add record to the record cache
                 recordCache.addRecordSource(
                         scheduleUserTnx.creatorInfo().nodeId(),
                         scheduleUserTnx.txnInfo().transactionID(),
