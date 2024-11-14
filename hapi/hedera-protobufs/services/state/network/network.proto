@@ -47,14 +47,7 @@ option java_multiple_files = true;
   * enabled and where the legacy address book is completely replaced by rosters.
   *
   * ### Block Stream Effects
-  * Every block in the Block Stream SHALL be signed via TSS and MUST be verified
-  * with the ledger identifier current at the _start_ of that block.
-  * A change to the ledger identifier SHALL be reported in a State Change for
-  * the block containing that change.
-  * A TssMessage transaction body will be present in the block stream.
-  * Including the metadata in the block stream guarantees that the ledger
-  * identifiers, and node-specific keys are consistently tracked and
-  * independently verifiable as part of the block history.
+  * None
  */
 message Network {
   /**
