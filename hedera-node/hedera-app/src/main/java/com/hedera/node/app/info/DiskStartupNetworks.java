@@ -254,7 +254,6 @@ public class DiskStartupNetworks implements StartupNetworks {
                             metadata.nodeOrThrow().nodeId(),
                             metadata.nodeOrThrow().weight(),
                             metadata.nodeOrThrow().gossipCaCertificate(),
-                            metadata.tssEncryptionKey(),
                             metadata.nodeOrThrow().gossipEndpoint()))
                     .toList());
             final var maxSharesPerNode = configProvider
