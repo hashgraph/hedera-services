@@ -23,8 +23,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Translates {@code signSchedule()} calls to the HSS system contract.
@@ -34,15 +34,14 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     /** Selector for signSchedule(address,bytes) method. */
     public static final Function SIGN_SCHEDULE = new Function("signSchedule(address,bytes)", ReturnTypes.INT_64);
 
-    // Future: implement fully in a future pr.  This stub class only used for testing purposes
     @Override
-    public boolean matches(@NotNull HssCallAttempt attempt) {
+    public boolean matches(@NonNull final HssCallAttempt attempt) {
         requireNonNull(attempt);
         return attempt.isSelector(SIGN_SCHEDULE);
     }
 
     @Override
-    public Call callFrom(@NotNull HssCallAttempt attempt) {
+    public Call callFrom(@NonNull HssCallAttempt attempt) {
         return new SignScheduleCall(attempt);
     }
 }

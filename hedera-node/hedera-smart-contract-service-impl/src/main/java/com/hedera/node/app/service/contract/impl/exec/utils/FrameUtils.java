@@ -272,7 +272,7 @@ public class FrameUtils {
         final var recipient = frame.getRecipientAddress();
         // Evaluate whether the recipient is either a token or on the permitted callers list.
         // This determines if we should treat this as a delegate call.
-        // We accept delegates if the token redirect contract calls us.
+        // We accept delegates if the entity redirect contract calls us.
         final CallType viableType;
         if (isExpectedEntityType(frame, recipient, expectedEntityType)) {
             viableType = CallType.DIRECT_OR_PROXY_REDIRECT;

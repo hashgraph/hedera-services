@@ -22,6 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class SignScheduleCall extends AbstractCall {
 
+    // Future: implement fully in a future pr.  This stub class only used for testing purposes
     public SignScheduleCall(@NonNull final HssCallAttempt attempt) {
         super(attempt.systemContractGasCalculator(), attempt.enhancement(), false);
     }
