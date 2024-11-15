@@ -193,7 +193,8 @@ public class SystemSetup {
             }
         });
         // Update the node metadata from pre-DAB state before applying any node admin key updates
-        if (config.getConfigData(NetworkAdminConfig.class).updateNodeMetadata() && config.getConfigData(HederaConfig.class).configVersion()==0) {
+        if (config.getConfigData(NetworkAdminConfig.class).updateNodeMetadata()
+                && config.getConfigData(HederaConfig.class).configVersion() == 0) {
             nodeMetadataHelper.updateMetadata(
                     networkInfo,
                     dispatch.config(),
