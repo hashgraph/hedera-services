@@ -62,6 +62,7 @@ import com.swirlds.platform.Browser;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -235,9 +236,6 @@ public class ServicesMain implements SwirldMain {
         final var recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
 
-        // FUTURE: use the new feature flag addressbook.useRosterLifecycle value when it is available
-        final boolean addressbookUseRosterLifecycle = false;
-
         // Create initial state for the platform
         final var isGenesis = new AtomicBoolean(false);
         final var reservedState = getInitialState(
@@ -294,7 +292,9 @@ public class ServicesMain implements SwirldMain {
         final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
 
         final RosterHistory rosterHistory;
-        if (addressbookUseRosterLifecycle) {
+        final boolean shouldUseRosterLifecycle =
+                configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle();
+        if (shouldUseRosterLifecycle) {
             final SignedState loadedSignedState = initialState.get();
             final var state = ((MerkleStateRoot) loadedSignedState.getState());
             final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
