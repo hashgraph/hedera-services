@@ -61,8 +61,8 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
         public static final int ORIGINAL = 1;
     }
 
-    private static final int STATE_LONG_INDEX = 0;
-    private static final int ROUND_HANDLED_INDEX = 1;
+    private static final int STATE_LONG_INDEX = 1;
+    private static final int ROUND_HANDLED_INDEX = 2;
 
     /**
      * The history of transactions that have been handled by this app.
@@ -163,15 +163,15 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
 
         this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
 
-        final StringLeaf roundsHandledLeaf = getChild(ROUND_HANDLED_INDEX);
-        if (roundsHandledLeaf != null) {
-            this.roundsHandled = Long.getLong(roundsHandledLeaf.getLabel());
-            logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled.", roundsHandled);
-        }
         final StringLeaf stateLongLeaf = getChild(STATE_LONG_INDEX);
         if (stateLongLeaf != null) {
             this.stateLong = Long.getLong(stateLongLeaf.getLabel());
             logger.info(STARTUP.getMarker(), "State initialized with state long {}.", stateLong);
+        }
+        final StringLeaf roundsHandledLeaf = getChild(ROUND_HANDLED_INDEX);
+        if (roundsHandledLeaf != null) {
+            this.roundsHandled = Long.getLong(roundsHandledLeaf.getLabel());
+            logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled.", roundsHandled);
         }
 
         transactionHandlingHistory.init(logFilePath);
