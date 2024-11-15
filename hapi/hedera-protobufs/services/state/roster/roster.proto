@@ -45,9 +45,15 @@ message Roster {
  *
  * Each roster entry SHALL encapsulate the elements required
  * to manage node participation in the Threshold Signature Scheme (TSS).<br/>
- * All fields except tss_encryption_key are REQUIRED.
+ * All fields are REQUIRED.
  */
 message RosterEntry {
+
+    // The tssEncryptionKey field has been reserved because it is no longer
+    // required to be stored in the Roster. The public portion of this key will
+    // continue to be stored in TssBaseService, but will, however, just be
+    // stored as raw bytes.
+    reserved 4;
 
     /**
      * A consensus node identifier.
@@ -75,21 +81,6 @@ message RosterEntry {
      * This field is REQUIRED and MUST NOT be empty.
      */
     bytes gossip_ca_certificate = 3;
-
-    /**
-     * An elliptic curve public encryption key.<br/>
-     * This is currently an ALT_BN128 curve, but the elliptic curve
-     * type may change in the future. For example,
-     * if the Ethereum ecosystem creates precompiles for BLS12_381,
-     * we may switch to that curve.
-     * <p>
-     * This value SHALL be specified according to EIP-196 and EIP-197 standards,
-     * See <a href='https://eips.ethereum.org/EIPS/eip-196#encoding'>EIP-196</a> and
-     * <a href='https://eips.ethereum.org/EIPS/eip-197#encoding'>EIP-197</a><br/>
-     * This field is _initially_ OPTIONAL (i.e. it can be unset _when created_)
-     * but once set, it is REQUIRED thereafter.
-     */
-    bytes tss_encryption_key = 4;
 
     /**
      * A list of service endpoints for gossip.
