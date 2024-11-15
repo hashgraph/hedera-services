@@ -16,8 +16,8 @@
 
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.HapiSpec.namedHapiTest;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -256,16 +256,21 @@ public class ProtectedFilesUpdateSuite {
             final boolean isFree,
             final UnaryOperator<byte[]> contentsTransformer) {
         final String newFileName = "NEW_" + specialFile;
-
-        return defaultHapiSpec(specialAccount + "CanUpdate" + specialFile)
-                .given(ArrayUtils.add(givenOps(specialAccount, specialFile), UtilVerbs.withOpContext((spec, ctxLog) -> {
-                    var origContents = spec.registry().getBytes(specialFile);
-                    var newContents = contentsTransformer.apply(origContents);
-                    spec.registry().saveBytes(newFileName, ByteString.copyFrom(newContents));
-                })))
-                .when(UtilVerbs.updateLargeFile(specialAccount, specialFile, newFileName))
-                .then(validateAndCleanUpOps(
-                        getFileContents(specialFile).hasContents(newFileName), specialAccount, specialFile, isFree));
+        return Stream.of(namedHapiTest(
+                specialAccount + "CanUpdate" + specialFile,
+                flattened(
+                        ArrayUtils.add(
+                                givenOps(specialAccount, specialFile), UtilVerbs.withOpContext((spec, ctxLog) -> {
+                                    var origContents = spec.registry().getBytes(specialFile);
+                                    var newContents = contentsTransformer.apply(origContents);
+                                    spec.registry().saveBytes(newFileName, ByteString.copyFrom(newContents));
+                                })),
+                        UtilVerbs.updateLargeFile(specialAccount, specialFile, newFileName),
+                        validateAndCleanUpOps(
+                                getFileContents(specialFile).hasContents(newFileName),
+                                specialAccount,
+                                specialFile,
+                                isFree))));
     }
 
     private HapiSpecOperation[] givenOps(String account, String fileName) {

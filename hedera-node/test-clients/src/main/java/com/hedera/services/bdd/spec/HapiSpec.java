@@ -1153,15 +1153,6 @@ public class HapiSpec implements Runnable, Executable {
         ciPropsSource = null;
     }
 
-    public static Def.Given defaultHapiSpec(String name) {
-        return internalDefaultHapiSpec(name, emptyList());
-    }
-
-    private static Def.Given internalDefaultHapiSpec(final String name, final List<String> propertiesToPreserve) {
-        final Stream<Map<String, String>> prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
-        return customizedHapiSpec(name, prioritySource, propertiesToPreserve).withProperties();
-    }
-
     public static Map<String, String> ciPropOverrides() {
         if (ciPropsSource == null) {
             // Make sure there is a port number specified for each node. Note that the node specification

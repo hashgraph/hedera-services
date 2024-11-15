@@ -19,8 +19,8 @@ package com.hedera.services.bdd.suites.hip632;
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPrivateKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.HapiSpec.namedHapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
@@ -65,6 +65,7 @@ import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.node.app.hapi.utils.SignatureGenerator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import com.hedera.services.bdd.suites.utils.contracts.BoolResult;
@@ -105,8 +106,6 @@ public class IsAuthorizedTest {
 
     private static final String HRC632_CONTRACT = "HRC632Contract";
     private static final String CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_RAW_ENABLED =
-            "contracts.systemContract.accountService.isAuthorizedRawEnabled";
-    private static final String CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED =
             "contracts.systemContract.accountService.isAuthorizedRawEnabled";
 
     @Nested
@@ -611,44 +610,43 @@ public class IsAuthorizedTest {
                         .formatted(testCase.gasAmount(), testCase.status());
                 final var recordName = "authorizeCallEC-%d".formatted(testCase.gasAmount());
 
-                final var throughWhen = defaultHapiSpec(testName)
-                        .given(
-                                overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_RAW_ENABLED, "true"),
-                                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
-                                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
-                                uploadInitCode(HRC632_CONTRACT),
-                                contractCreate(HRC632_CONTRACT))
-                        .when(withOpContext((spec, opLog) -> {
-                            final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
+                final var testOps = new SpecOperation[] {
+                    overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_RAW_ENABLED, "true"),
+                    newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
+                    cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                    uploadInitCode(HRC632_CONTRACT),
+                    contractCreate(HRC632_CONTRACT),
+                    withOpContext((spec, opLog) -> {
+                        final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
 
-                            final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
-                            final var addressBytes = recoverAddressFromPrivateKey(privateKey);
-                            final var signedBytes = Signing.signMessage(messageHash, privateKey);
+                        final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                        final var addressBytes = recoverAddressFromPrivateKey(privateKey);
+                        final var signedBytes = Signing.signMessage(messageHash, privateKey);
 
-                            var call = contractCall(
-                                            HRC632_CONTRACT,
-                                            "isAuthorizedRawCall",
-                                            asHeadlongAddress(addressBytes),
-                                            messageHash,
-                                            signedBytes)
-                                    .via(recordName)
-                                    .gas(testCase.gasAmount());
-                            if (testCase.status() == INSUFFICIENT_GAS) {
-                                call = call.hasKnownStatusFrom(
-                                        INSUFFICIENT_GAS, CONTRACT_REVERT_EXECUTED, REVERTED_SUCCESS);
-                            }
-                            allRunFor(spec, call);
-                        }));
-                final var hapiSpec = testCase.status() == SUCCESS
-                        ? throughWhen.then(getTxnRecord(recordName)
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))))
-                        : throughWhen.then(getTxnRecord(recordName)
-                                .hasPriority(recordWith()
-                                        .status(INSUFFICIENT_GAS)
-                                        .contractCallResult(resultWith().gasUsed(testCase.gasAmount()))));
-                dynamicTests.add(hapiSpec);
+                        var call = contractCall(
+                                        HRC632_CONTRACT,
+                                        "isAuthorizedRawCall",
+                                        asHeadlongAddress(addressBytes),
+                                        messageHash,
+                                        signedBytes)
+                                .via(recordName)
+                                .gas(testCase.gasAmount());
+                        if (testCase.status() == INSUFFICIENT_GAS) {
+                            call = call.hasKnownStatusFrom(
+                                    INSUFFICIENT_GAS, CONTRACT_REVERT_EXECUTED, REVERTED_SUCCESS);
+                        }
+                        allRunFor(spec, call);
+                    }),
+                    getTxnRecord(recordName)
+                            .hasPriority(recordWith()
+                                    .status(testCase.status())
+                                    .contractCallResult(
+                                            testCase.status() == INSUFFICIENT_GAS
+                                                    ? resultWith().gasUsed(testCase.gasAmount())
+                                                    : resultWith().contractCallResult(BoolResult.flag(true))))
+                };
+
+                dynamicTests.add(Stream.of(namedHapiTest(testName, testOps)));
             }
 
             return dynamicTests.stream().reduce(Stream::concat).get();
@@ -658,8 +656,7 @@ public class IsAuthorizedTest {
         final Stream<DynamicTest> isAuthorizedRawED25519CheckGasRequirements() {
 
             // Intrinsic gas is 21_000, hard-coded verification charge is 1_500_000, but there's also the contract
-            // itself
-            // that we're calling - allow 55K gas (actually, determined empirically)
+            // itself that we're calling - allow 55K gas (actually, determined empirically)
 
             final long GAS_BURNT_IN_ADDITION_TO_IS_AUTHORIZED_RAW_ALLOWANCE = 55_000L;
 
@@ -678,54 +675,53 @@ public class IsAuthorizedTest {
 
                 final AtomicReference<Address> accountNum = new AtomicReference<>();
 
-                final var throughWhen = defaultHapiSpec(testName)
-                        .given(
-                                newKeyNamed(ED25519_KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
-                                cryptoCreate(ACCOUNT)
-                                        .balance(ONE_MILLION_HBARS)
-                                        .key(ED25519_KEY)
-                                        .exposingCreatedIdTo(id -> accountNum.set(idAsHeadlongAddress(id))),
-                                uploadInitCode(HRC632_CONTRACT),
-                                contractCreate(HRC632_CONTRACT))
-                        .when(withOpContext((spec, opLog) -> {
-                            final var messageHash = new Digest().digest("submit".getBytes());
+                final var testOps = new SpecOperation[] {
+                    newKeyNamed(ED25519_KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
+                    cryptoCreate(ACCOUNT)
+                            .balance(ONE_MILLION_HBARS)
+                            .key(ED25519_KEY)
+                            .exposingCreatedIdTo(id -> accountNum.set(idAsHeadlongAddress(id))),
+                    uploadInitCode(HRC632_CONTRACT),
+                    contractCreate(HRC632_CONTRACT),
+                    withOpContext((spec, opLog) -> {
+                        final var messageHash = new Digest().digest("submit".getBytes());
 
-                            final var edKey = spec.registry().getKey(ED25519_KEY);
-                            final var privateKey = spec.keys()
-                                    .getEd25519PrivateKey(
-                                            com.swirlds.common.utility.CommonUtils.hex(edKey.toByteArray())
-                                                    .substring(4));
-                            final var signedBytes = SignatureGenerator.signBytes(messageHash, privateKey);
+                        final var edKey = spec.registry().getKey(ED25519_KEY);
+                        final var privateKey = spec.keys()
+                                .getEd25519PrivateKey(com.swirlds.common.utility.CommonUtils.hex(edKey.toByteArray())
+                                        .substring(4));
+                        final var signedBytes = SignatureGenerator.signBytes(messageHash, privateKey);
 
-                            var call = contractCall(
-                                            HRC632_CONTRACT,
-                                            "isAuthorizedRawCall",
-                                            accountNum.get(),
-                                            messageHash,
-                                            signedBytes)
-                                    .via(recordName)
-                                    .gas(testCase.gasAmount());
-                            if (testCase.status() == INSUFFICIENT_GAS) {
-                                call = call.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-                            }
-                            allRunFor(spec, call);
-                        }));
-                final var hapiSpec = testCase.status() == SUCCESS
-                        ? throughWhen.then(getTxnRecord(recordName)
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))))
-                        : throughWhen.then(childRecordsCheck(
-                                recordName,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INSUFFICIENT_GAS)
-                                        .contractCallResult(resultWith()
-                                                .gasUsedIsInRange(
-                                                        (testCase.gasAmount()
-                                                                - GAS_BURNT_IN_ADDITION_TO_IS_AUTHORIZED_RAW_ALLOWANCE),
-                                                        testCase.gasAmount()))));
-                dynamicTests.add(hapiSpec);
+                        var call = contractCall(
+                                        HRC632_CONTRACT,
+                                        "isAuthorizedRawCall",
+                                        accountNum.get(),
+                                        messageHash,
+                                        signedBytes)
+                                .via(recordName)
+                                .gas(testCase.gasAmount());
+                        if (testCase.status() == INSUFFICIENT_GAS) {
+                            call = call.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+                        }
+                        allRunFor(spec, call);
+                    }),
+                    testCase.status() == SUCCESS
+                            ? getTxnRecord(recordName)
+                                    .hasPriority(recordWith()
+                                            .status(SUCCESS)
+                                            .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true))))
+                            : childRecordsCheck(
+                                    recordName,
+                                    CONTRACT_REVERT_EXECUTED,
+                                    recordWith()
+                                            .status(INSUFFICIENT_GAS)
+                                            .contractCallResult(resultWith()
+                                                    .gasUsedIsInRange(
+                                                            (testCase.gasAmount()
+                                                                    - GAS_BURNT_IN_ADDITION_TO_IS_AUTHORIZED_RAW_ALLOWANCE),
+                                                            testCase.gasAmount())))
+                };
+                dynamicTests.add(Stream.of(namedHapiTest(testName, testOps)));
             }
 
             return dynamicTests.stream().reduce(Stream::concat).get();

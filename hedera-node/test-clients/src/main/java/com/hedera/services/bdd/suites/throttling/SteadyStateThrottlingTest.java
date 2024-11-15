@@ -17,9 +17,8 @@
 package com.hedera.services.bdd.suites.throttling;
 
 import static com.hedera.services.bdd.junit.TestTags.LONG_RUNNING;
-import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.HapiSpec.namedHapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.resourceAsString;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -35,6 +34,7 @@ import static com.hedera.services.bdd.spec.utilops.SysFileOverrideOp.Target.THRO
 import static com.hedera.services.bdd.spec.utilops.SysFileOverrideOp.withoutAutoRestoring;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -175,13 +175,11 @@ public class SteadyStateThrottlingTest {
     final Stream<DynamicTest> checkCustomNetworkTps(
             String txn, double expectedTps, Function<HapiSpec, OpProvider> provider, Map<String, String> custom) {
         final var name = "Throttles" + txn + "AsExpected";
-        final var baseSpec =
-                custom.isEmpty() ? defaultHapiSpec(name) : customHapiSpec(name).withProperties(custom);
-        return baseSpec.given()
-                .when(runWithProvider(provider)
-                        .lasting(duration::get, unit::get)
-                        .maxOpsPerSec(maxOpsPerSec::get))
-                .then(withOpContext((spec, opLog) -> {
+        return Stream.of(namedHapiTest(
+                name,
+                overridingAllOf(custom),
+                runWithProvider(provider).lasting(duration::get, unit::get).maxOpsPerSec(maxOpsPerSec::get),
+                withOpContext((spec, opLog) -> {
                     var actualTps = 1.0 * spec.finalAdhoc() / duration.get();
                     var percentDeviation = Math.abs(actualTps / expectedTps - 1.0) * 100.0;
                     opLog.info(
@@ -193,7 +191,7 @@ public class SteadyStateThrottlingTest {
                             String.format("%.3f", expectedTps),
                             String.format("%.3f", percentDeviation));
                     Assertions.assertEquals(0.0, percentDeviation, TOLERATED_PERCENT_DEVIATION);
-                }));
+                })));
     }
 
     final Stream<DynamicTest> checkBalanceQps(int burstSize, double expectedQps) {
