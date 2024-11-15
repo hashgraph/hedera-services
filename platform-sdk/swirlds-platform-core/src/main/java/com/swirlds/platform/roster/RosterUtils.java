@@ -242,7 +242,7 @@ public final class RosterUtils {
      *
      * @return the roster history if able to determine it, otherwise IllegalStateException is thrown
      */
-    public static RosterHistory determineRosterHistory(@NonNull final ReadableRosterStore rosterStore) {
+    public static RosterHistory createRosterHistory(@NonNull final ReadableRosterStore rosterStore) {
         final var roundRosterPairs = rosterStore.getRosterHistory();
         // If there exists active rosters in the roster state.
         if (roundRosterPairs != null) {

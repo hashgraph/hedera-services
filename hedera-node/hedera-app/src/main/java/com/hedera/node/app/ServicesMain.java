@@ -298,7 +298,7 @@ public class ServicesMain implements SwirldMain {
             final SignedState loadedSignedState = initialState.get();
             final var state = ((MerkleStateRoot) loadedSignedState.getState());
             final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
-            rosterHistory = RosterUtils.determineRosterHistory(rosterStore);
+            rosterHistory = RosterUtils.createRosterHistory(rosterStore);
         } else {
             rosterHistory =
                     RosterUtils.buildRosterHistory(initialState.get().getState().getReadablePlatformState());
