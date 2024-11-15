@@ -81,6 +81,7 @@ import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.config.api.validation.ConfigValidator;
+import com.swirlds.platform.config.AddressBookConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -95,6 +96,7 @@ public class ServicesConfigExtension implements ConfigurationExtension {
 
         return Set.of(
                 AccountsConfig.class,
+                AddressBookConfig.class,
                 NodesConfig.class,
                 ApiPermissionConfig.class,
                 AutoCreationConfig.class,
