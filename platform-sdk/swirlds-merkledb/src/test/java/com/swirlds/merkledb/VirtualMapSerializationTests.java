@@ -389,8 +389,8 @@ class VirtualMapSerializationTests {
                 .getOrCreateConfig();
         ConfigurationHolder.getInstance().setConfiguration(configuration);
 
-        VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map =
-                new VirtualMap<>("inMemoryModeSerde", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), configuration);
+        VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map = new VirtualMap<>(
+                "inMemoryModeSerde", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), configuration);
 
         // Copy 0
         for (int i = 0; i < 100; i++) {

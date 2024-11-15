@@ -1088,9 +1088,17 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         // counters will affect the estimated size
         final long version = getFastCopyVersion();
         final long lastReleasedVersion = lastReleased.get();
-        filterMutations(dirtyHashes, pathToDirtyHashIndex, version, lastReleasedVersion, filteredHashesCount, virtualMapConfig);
-        filterMutations(dirtyLeafPaths, pathToDirtyLeafIndex, version, lastReleasedVersion, filteredLeafPathsCount, virtualMapConfig);
-        filterMutations(dirtyLeaves, keyToDirtyLeafIndex, version, lastReleasedVersion, filteredLeavesCount, virtualMapConfig);
+        filterMutations(
+                dirtyHashes, pathToDirtyHashIndex, version, lastReleasedVersion, filteredHashesCount, virtualMapConfig);
+        filterMutations(
+                dirtyLeafPaths,
+                pathToDirtyLeafIndex,
+                version,
+                lastReleasedVersion,
+                filteredLeafPathsCount,
+                virtualMapConfig);
+        filterMutations(
+                dirtyLeaves, keyToDirtyLeafIndex, version, lastReleasedVersion, filteredLeavesCount, virtualMapConfig);
     }
 
     /**

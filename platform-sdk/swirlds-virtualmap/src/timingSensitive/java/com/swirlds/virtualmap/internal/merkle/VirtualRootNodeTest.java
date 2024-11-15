@@ -441,8 +441,10 @@ class VirtualRootNodeTest extends VirtualTestBase {
                 .getOrCreateConfig();
 
         VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
-                TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE,
-                new InMemoryBuilder(), configuration.getConfigData(VirtualMapConfig.class));
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                new InMemoryBuilder(),
+                configuration.getConfigData(VirtualMapConfig.class));
 
         final VirtualRootNode<TestKey, TestValue> copy0 = root;
         VirtualMapState state = new VirtualMapState("label");
@@ -512,8 +514,10 @@ class VirtualRootNodeTest extends VirtualTestBase {
                 .getOrCreateConfig();
 
         VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
-                TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE,
-                new InMemoryBuilder(), configuration.getConfigData(VirtualMapConfig.class));
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                new InMemoryBuilder(),
+                configuration.getConfigData(VirtualMapConfig.class));
 
         final int nCopies = 1000;
         final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
@@ -629,8 +633,10 @@ class VirtualRootNodeTest extends VirtualTestBase {
                 .getOrCreateConfig();
 
         VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
-                TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE,
-                new InMemoryBuilder(), configuration.getConfigData(VirtualMapConfig.class));
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                new InMemoryBuilder(),
+                configuration.getConfigData(VirtualMapConfig.class));
         VirtualMapState state = new VirtualMapState("label");
         root.postInit(new VirtualStateAccessorImpl(state));
 
