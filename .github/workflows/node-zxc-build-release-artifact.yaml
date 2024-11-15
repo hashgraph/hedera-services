@@ -146,6 +146,36 @@ jobs:
           semver --version
           echo "::endgroup::"
 
+      - name: Setup Node
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: 20
+
+      - name: Install Semantic Release
+        run: |
+          npm install -g semantic-release@21.0.7 @semantic-release/git@10.0.1 @semantic-release/exec@6.0.3 gradle-semantic-release-plugin@1.7.6
+          npm install -g conventional-changelog-conventionalcommits@6.1.0 @commitlint/cli@17.6.6 @commitlint/config-conventional@17.6.6
+          npm install -g marked-mangle@1.0.1 marked-gfm-heading-id@3.0.4 semantic-release-conventional-commits@3.0.0
+
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Calculate Next Version
+        if: ${{ inputs.version-policy == 'specified' }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: ${{ secrets.GIT_USER_NAME }}
+          GIT_AUTHOR_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
+          GIT_COMMITTER_NAME: ${{ secrets.GIT_USER_NAME }}
+          GIT_COMMITTER_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
+        run: |
+          npx semantic-release --dry-run
+          ls -al
+          cat VERSION
+
       - name: Verify Workflow Parameters
         id: parameters
         run: |
@@ -173,9 +203,6 @@ jobs:
             echo "::error title=Version Error::The supplied new-version parameter (${{ inputs.new-version }}) is invalid and does not conform to the semantic versioning specifications."
             exit 2
           fi
-
-      - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Java
         uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
@@ -205,7 +232,12 @@ jobs:
       - name: Compute Final Effective Version
         id: effective-version
         run: |
-          EFF_VERSION="$(./gradlew showVersion --quiet | tr -d '[:space:]')"
+          if [[ "${{ inputs.version-policy }}" == "specified" ]]; then
+            EFF_VERSION="${{ inputs.new-version }}"
+          else
+            EFF_VERSION="$(cat VERSION | tr -d '[:space:]')"
+          fi
+
           PRERELEASE_SUFFIX="$(semver get prerel "${EFF_VERSION}")"
           PRERELEASE="false"
           [[ -n "${PRERELEASE_SUFFIX}" ]] && PRERELEASE="true"

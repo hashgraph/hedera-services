@@ -22,12 +22,12 @@ plugins {
     id("signing")
 }
 
-tasks.withType<PublishToMavenRepository>().configureEach {
-    // Publishing tasks are only enabled if we publish to the matching group.
-    // Otherwise, Nexus configuration and credentials do not fit.
-    val publishingPackageGroup = providers.gradleProperty("publishingPackageGroup").orNull
-    enabled = publishingPackageGroup == project.group
-}
+// tasks.withType<PublishToMavenRepository>().configureEach {
+// Publishing tasks are only enabled if we publish to the matching group.
+// Otherwise, Nexus configuration and credentials do not fit.
+// val publishingPackageGroup = providers.gradleProperty("publishingPackageGroup").orNull
+// enabled = publishingPackageGroup == project.group
+// }
 
 java {
     withJavadocJar()
