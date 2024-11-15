@@ -163,18 +163,19 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
 
         this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
 
+        final StringLeaf roundsHandledLeaf = getChild(ROUND_HANDLED_INDEX);
+        if (roundsHandledLeaf != null) {
+            this.roundsHandled = Long.getLong(roundsHandledLeaf.getLabel());
+            logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled.", roundsHandled);
+        }
+        final StringLeaf stateLongLeaf = getChild(STATE_LONG_INDEX);
+        if (stateLongLeaf != null) {
+            this.stateLong = Long.getLong(stateLongLeaf.getLabel());
+            logger.info(STARTUP.getMarker(), "State initialized with state long {}.", stateLong);
+        }
+
         transactionHandlingHistory.init(logFilePath);
         NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
-
-        if (trigger != InitTrigger.GENESIS) {
-            this.roundsHandled = Long.getLong(((StringLeaf) getChild(ROUND_HANDLED_INDEX)).getLabel());
-            this.stateLong = Long.getLong(((StringLeaf) getChild(STATE_LONG_INDEX)).getLabel());
-            logger.info(
-                    STARTUP.getMarker(),
-                    "State initialized with {} rounds handled and state long {}.",
-                    roundsHandled,
-                    stateLong);
-        }
     }
 
     /**
