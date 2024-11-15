@@ -164,13 +164,13 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
         this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
 
         final StringLeaf stateLongLeaf = getChild(STATE_LONG_INDEX);
-        if (stateLongLeaf != null) {
-            this.stateLong = Long.getLong(stateLongLeaf.getLabel());
+        if (stateLongLeaf != null && stateLongLeaf.getLabel() != null) {
+            this.stateLong = Long.parseLong(stateLongLeaf.getLabel());
             logger.info(STARTUP.getMarker(), "State initialized with state long {}.", stateLong);
         }
         final StringLeaf roundsHandledLeaf = getChild(ROUND_HANDLED_INDEX);
-        if (roundsHandledLeaf != null) {
-            this.roundsHandled = Long.getLong(roundsHandledLeaf.getLabel());
+        if (roundsHandledLeaf != null && roundsHandledLeaf.getLabel() != null) {
+            this.roundsHandled = Long.parseLong(roundsHandledLeaf.getLabel());
             logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled.", roundsHandled);
         }
 
