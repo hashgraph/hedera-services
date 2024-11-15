@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.contract.precompile;
+package com.hedera.services.bdd.suites.contract.precompile.airdrops;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.dsl.contracts.TokenRedirectContract.HRC904CLAIM;
+import static com.hedera.services.bdd.spec.dsl.contracts.TokenRedirectContract.HRC904;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
@@ -76,7 +76,7 @@ public class HRCTokenClaimTest {
                 receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 0L)),
                 tokenAirdrop(moving(10L, token.name()).between(sender.name(), receiver.name()))
                         .payingWith(sender.name()),
-                token.call(HRC904CLAIM, "claimAirdropFT", sender)
+                token.call(HRC904, "claimAirdropFT", sender)
                         .payingWith(receiver)
                         .with(call -> call.signingWith(receiver.name())),
                 receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 10L)));
@@ -90,7 +90,7 @@ public class HRCTokenClaimTest {
                 receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
                 tokenAirdrop(TokenMovement.movingUnique(nft.name(), 1L).between(sender.name(), receiver.name()))
                         .payingWith(sender.name()),
-                nft.call(HRC904CLAIM, "claimAirdropNFT", sender, 1L)
+                nft.call(HRC904, "claimAirdropNFT", sender, 1L)
                         .payingWith(receiver)
                         .with(call -> call.signingWith(receiver.name())),
                 receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 1L)));
@@ -100,7 +100,7 @@ public class HRCTokenClaimTest {
     @HapiTest
     @DisplayName("Cannot claim airdrop if not existing")
     public Stream<DynamicTest> cannotClaimAirdropWhenNotExisting() {
-        return hapiTest(token.call(HRC904CLAIM, "claimAirdropFT", sender)
+        return hapiTest(token.call(HRC904, "claimAirdropFT", sender)
                 .payingWith(receiver)
                 .with(call -> call.signingWith(receiver.name()))
                 .andAssert(txn -> txn.hasKnownStatuses(SUCCESS, INVALID_PENDING_AIRDROP_ID)));
@@ -110,7 +110,7 @@ public class HRCTokenClaimTest {
     @HapiTest
     @DisplayName("Cannot claim airdrop if sender not existing")
     public Stream<DynamicTest> cannotClaimAirdropWhenSenderNotExisting() {
-        return hapiTest(token.call(HRC904CLAIM, "claimAirdropFT", token)
+        return hapiTest(token.call(HRC904, "claimAirdropFT", token)
                 .payingWith(receiver)
                 .with(call -> call.signingWith(receiver.name()))
                 .andAssert(txn -> txn.hasKnownStatuses(SUCCESS, INVALID_PENDING_AIRDROP_ID)));
@@ -120,7 +120,7 @@ public class HRCTokenClaimTest {
     @HapiTest
     @DisplayName("Cannot claim nft airdrop if not existing")
     public Stream<DynamicTest> cannotClaimNftAirdropWhenNotExisting() {
-        return hapiTest(nft.call(HRC904CLAIM, "claimAirdropNFT", sender, 1L)
+        return hapiTest(nft.call(HRC904, "claimAirdropNFT", sender, 1L)
                 .payingWith(receiver)
                 .with(call -> call.signingWith(receiver.name()))
                 .andAssert(txn -> txn.hasKnownStatuses(SUCCESS, INVALID_PENDING_AIRDROP_ID)));
@@ -130,7 +130,7 @@ public class HRCTokenClaimTest {
     @HapiTest
     @DisplayName("Cannot claim nft airdrop if sender not existing")
     public Stream<DynamicTest> cannotClaimNftAirdropWhenSenderNotExisting() {
-        return hapiTest(nft.call(HRC904CLAIM, "claimAirdropNFT", nft, 1L)
+        return hapiTest(nft.call(HRC904, "claimAirdropNFT", nft, 1L)
                 .payingWith(receiver)
                 .with(call -> call.signingWith(receiver.name()))
                 .andAssert(txn -> txn.hasKnownStatuses(SUCCESS, INVALID_PENDING_AIRDROP_ID)));
