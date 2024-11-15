@@ -3,6 +3,7 @@ import com.swirlds.config.api.ConfigurationExtension;
 
 module com.hedera.node.app {
     uses com.hedera.node.app.tss.cryptography.pairings.spi.PairingFriendlyCurveProvider;
+
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.addressbook.impl;
     requires transitive com.hedera.node.app.service.consensus.impl;
@@ -58,7 +59,7 @@ module com.hedera.node.app {
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires static java.compiler;// javax.annotation.processing.Generated
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app;
     exports com.hedera.node.app.state;
@@ -101,11 +102,12 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle.metric;
     exports com.hedera.node.app.roster;
     exports com.hedera.node.app.tss;
+    exports com.hedera.node.app.tss.api;
     exports com.hedera.node.app.tss.cryptography.altbn128;
+    exports com.hedera.node.app.tss.cryptography.altbn128.adapter;
     exports com.hedera.node.app.tss.cryptography.altbn128.adapter.jni;
     exports com.hedera.node.app.tss.cryptography.altbn128.facade;
     exports com.hedera.node.app.tss.cryptography.altbn128.spi;
-    exports com.hedera.node.app.tss.cryptography.altbn128.adapter;
     exports com.hedera.node.app.tss.cryptography.bls;
     exports com.hedera.node.app.tss.cryptography.blskeygen;
     exports com.hedera.node.app.tss.cryptography.blskeygen.pem;
@@ -113,11 +115,11 @@ module com.hedera.node.app {
     exports com.hedera.node.app.tss.cryptography.pairings.extensions;
     exports com.hedera.node.app.tss.cryptography.pairings.spi;
     exports com.hedera.node.app.tss.cryptography.tss.api;
-    exports com.hedera.node.app.tss.cryptography.tss.impl;
     exports com.hedera.node.app.tss.cryptography.tss.extensions;
-    exports com.hedera.node.app.tss.cryptography.tss.extensions.nizk;
     exports com.hedera.node.app.tss.cryptography.tss.extensions.elgamal;
+    exports com.hedera.node.app.tss.cryptography.tss.extensions.nizk;
     exports com.hedera.node.app.tss.cryptography.tss.groth21;
+    exports com.hedera.node.app.tss.cryptography.tss.impl;
     exports com.hedera.node.app.tss.cryptography.utils;
     exports com.hedera.node.app.tss.handlers;
     exports com.hedera.node.app.tss.stores;
@@ -132,9 +134,9 @@ module com.hedera.node.app {
     exports com.hedera.node.app.records.impl.producers;
     exports com.hedera.node.app.records.impl.producers.formats;
     exports com.hedera.node.app.grpc.impl.netty;
+    exports com.hedera.node.app.tss.api;
     exports com.hedera.node.app.tss.schemas;
     exports com.hedera.node.app.blocks.schemas;
-    exports com.hedera.node.app.tss.api;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;
