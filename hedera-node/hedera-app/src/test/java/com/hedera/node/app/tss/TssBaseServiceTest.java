@@ -38,11 +38,9 @@ import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssMessage;
+import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
@@ -85,6 +83,8 @@ public class TssBaseServiceTest {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
+    @Mock
+    private com.hedera.node.app.tss.cryptography.tss.api.TssMessage tssMessage;
 
     @Mock
     private Executor executor;
@@ -146,7 +146,7 @@ public class TssBaseServiceTest {
         given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
         given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
         given(tssLibrary.generateTssMessage(any(), any()))
-                .willReturn(new TssMessage(Bytes.wrap("test").toByteArray()));
+                .willReturn(tssMessage);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
 
         subject.setCandidateRoster(ACTIVE_ROSTER, handleContext);
@@ -166,7 +166,7 @@ public class TssBaseServiceTest {
         final var rosterStore = mockWritableRosterStore();
         given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
         given(tssLibrary.generateTssMessage(any(), any()))
-                .willReturn(new TssMessage(Bytes.wrap("test").toByteArray()));
+                .willReturn(tssMessage);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         final var inputRoster = Roster.newBuilder()
                 .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3))

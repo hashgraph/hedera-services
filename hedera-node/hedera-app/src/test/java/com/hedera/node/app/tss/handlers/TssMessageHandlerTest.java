@@ -17,8 +17,8 @@
 package com.hedera.node.app.tss.handlers;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.hedera.node.app.tss.PlaceholderTssLibrary.SIGNATURE_SCHEMA;
 import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PRIVATE_KEY;
+import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -38,9 +38,9 @@ import com.hedera.node.app.tss.TssCryptographyManager.Vote;
 import com.hedera.node.app.tss.TssDirectoryAccessor;
 import com.hedera.node.app.tss.TssKeysAccessor;
 import com.hedera.node.app.tss.TssMetrics;
+import com.hedera.node.app.tss.api.FakeGroupElement;
+import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
 import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.pairings.FakeGroupElement;
-import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
@@ -82,7 +82,7 @@ class TssMessageHandlerTest {
     private TssCryptographyManager tssCryptographyManager;
 
     @Mock
-    private PairingPublicKey pairingPublicKey;
+    private BlsPublicKey pairingPublicKey;
 
     @Mock
     private Signature signature;
@@ -103,8 +103,7 @@ class TssMessageHandlerTest {
     private Vote vote;
     private TssParticipantDirectory tssParticipantDirectory = TssParticipantDirectory.createBuilder()
             .withParticipant(0, 1, PRIVATE_KEY.createPublicKey())
-            .withSelf(0, PRIVATE_KEY)
-            .build(SIGNATURE_SCHEMA);
+            .build();
     private final TssKeysAccessor.TssKeys TSS_KEYS =
             new TssKeysAccessor.TssKeys(List.of(), List.of(), Bytes.EMPTY, tssParticipantDirectory, 1);
 
@@ -131,7 +130,7 @@ class TssMessageHandlerTest {
         given(nodeInfo.accountId()).willReturn(NODE_ACCOUNT_ID);
         given(nodeInfo.nodeId()).willReturn(1L);
         given(handleContext.body()).willReturn(getTssBody());
-        given(pairingPublicKey.publicKey()).willReturn(new FakeGroupElement(BigInteger.valueOf(10)));
+        given(pairingPublicKey.element()).willReturn(new FakeGroupElement(BigInteger.valueOf(10)));
 
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);

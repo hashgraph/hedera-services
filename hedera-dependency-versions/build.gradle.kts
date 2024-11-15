@@ -237,4 +237,9 @@ dependencies.constraints {
     }
     api("com.google.protobuf:protoc:3.25.4")
     api("io.grpc:protoc-gen-grpc-java:1.66.0")
+
+    // This will be removed once we could integrate with the cryptography library with snapshot
+    api("org.bouncycastle:bcprov-jdk18on:1.78.1") {
+        because("org.bouncycastle.provider")
+    }
 }

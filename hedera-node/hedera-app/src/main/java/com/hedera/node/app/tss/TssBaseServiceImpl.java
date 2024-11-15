@@ -35,7 +35,7 @@ import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
+import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
@@ -177,7 +177,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         for (final var tssPrivateShare : tssPrivateShares) {
             CompletableFuture.runAsync(
                             () -> {
-                                final var msg = tssLibrary.rekeyStage().generateTssMessage(candidateDirectory, tssPrivateShare);
+                                final var msg = tssLibrary.generateTssMessage(candidateDirectory, tssPrivateShare);
                                 final var tssMessage = TssMessageTransactionBody.newBuilder()
                                         .sourceRosterHash(activeRosterHash)
                                         .targetRosterHash(candidateRosterHash)
@@ -232,7 +232,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var activeRoster = tssKeysAccessor.accessTssKeys().activeRosterHash();
         long nanosOffset = 1;
         for (final var privateShare : tssPrivateShares) {
-            final var signature = privateShare.sign(messageHash);
+            final var signature = tssLibrary.sign(privateShare, messageHash);
             final var tssShareSignatureBody = TssShareSignatureTransactionBody.newBuilder()
                     .messageHash(Bytes.wrap(messageHash))
                     .shareSignature(Bytes.wrap(signature.signature().toBytes()))

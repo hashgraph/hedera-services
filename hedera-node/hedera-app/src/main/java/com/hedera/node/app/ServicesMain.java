@@ -38,6 +38,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.tss.TssLibraryImpl;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -115,7 +116,7 @@ public class ServicesMain implements SwirldMain {
                         appContext,
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
-                        new PlaceholderTssLibrary(),
+                        new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
                         new NoOpMetrics()));
     }
@@ -424,7 +425,7 @@ public class ServicesMain implements SwirldMain {
                         appContext,
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
-                        new PlaceholderTssLibrary(),
+                        new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
                         metrics));
     }

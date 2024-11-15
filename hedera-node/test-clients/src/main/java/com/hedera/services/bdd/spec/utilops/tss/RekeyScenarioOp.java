@@ -53,10 +53,11 @@ import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.node.app.tss.api.TssMessage;
+import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
@@ -363,7 +364,8 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             allRunFor(
                     spec,
                     nonEmbeddedTssMessages.stream()
-                            .map(m -> submitTssMessage(m.nodeId(), sourceRosterHash, targetRosterHash, m.tssMessage()))
+                            .map(m -> submitTssMessage(m.nodeId(), sourceRosterHash, targetRosterHash,
+                                    m.tssMessage()))
                             .toArray(SpecOperation[]::new));
         }));
     }
@@ -421,12 +423,12 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             spec.repeatableEmbeddedHederaOrThrow()
                     .tssBaseService()
                     .fakeTssLibrary()
-                    .setupRekeyGeneration(directory -> directory
-                            .getSharesById()
-                            .forEach((nodeId, shares) -> assertEquals(
-                                    expectedShares.get(Long.valueOf(nodeId)),
-                                    shares.size(),
-                                    "Wrong number of shares for node" + nodeId)));
+                    .setupRekeyGeneration(directory -> {
+                        expectedShares.forEach((nodeId, expectedNumShares) -> assertEquals(
+                                expectedNumShares,
+                                directory.ownedShares(nodeId).size(),
+                                "Wrong number of shares for node" + nodeId));
+                    });
         }));
     }
 
@@ -441,7 +443,7 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
                 for (int i = 0; i < numShares; i++) {
                     final var key = new TssMessageMapKey(sourceRosterHash, nextShareId.getAndIncrement());
                     final var tssMessage = Bytes.wrap(FakeTssLibrary.validMessage((int) key.sequenceNumber())
-                            .bytes());
+                            .toBytes());
                     final var value = TssMessageTransactionBody.newBuilder()
                             .sourceRosterHash(Bytes.EMPTY)
                             .targetRosterHash(sourceRosterHash)

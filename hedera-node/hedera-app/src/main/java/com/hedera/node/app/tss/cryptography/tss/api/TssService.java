@@ -27,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *       <li>Get a {@link TssServiceRekeyStage}: Returns the rekey stage.</li>
  *   </ul>
  */
-public interface TssLibrary {
+public interface TssService {
 
     /**
      * In this stage all participants collaborate to discover a shared polynomial.

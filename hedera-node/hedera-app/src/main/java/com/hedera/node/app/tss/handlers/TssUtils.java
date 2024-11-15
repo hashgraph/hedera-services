@@ -21,18 +21,19 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.cryptography.altbn128.AltBN128CurveGroup;
+import com.hedera.node.app.tss.cryptography.altbn128.AltBn128Group;
 import com.hedera.node.app.tss.cryptography.altbn128.AltBn128GroupElement;
 import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
 import com.hedera.node.app.tss.cryptography.bls.GroupAssignment;
 import com.hedera.node.app.tss.cryptography.bls.SignatureSchema;
 import com.hedera.node.app.tss.cryptography.pairings.api.Curve;
-import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
-import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
 import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
 import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.cryptography.tss.groth21.Groth21Message;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
+
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -62,8 +63,8 @@ public class TssUtils {
                     computedShares.get(rosterEntry.nodeId()).intValue();
             // FUTURE: Use the actual public key from the node
             final var pairingPublicKey = new BlsPublicKey(
-                    new AltBn128GroupElement(BigInteger.valueOf(10L)) {
-                    }, SignatureSchema.create(new byte[]{1}));
+                    new AltBn128GroupElement(new AltBn128Group(AltBN128CurveGroup.GROUP1), new byte[]{1}) {
+                    }, SIGNATURE_SCHEMA);
             builder.withParticipant((int) rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
         }
         // FUTURE: Use the actual signature schema
@@ -92,28 +93,29 @@ public class TssUtils {
             @NonNull final List<TssMessageTransactionBody> tssMessages,
             @NonNull final TssParticipantDirectory tssParticipantDirectory,
             @NonNull final TssLibrary tssLibrary) {
-        final var validTssMessageOps = new LinkedList<TssMessageTransactionBody>();
+        final var validTssMessages = new LinkedList<TssMessageTransactionBody>();
         for (final var op : tssMessages) {
-            final var isValid = tssLibrary.rekeyStage().verifyTssMessage(
-                    tssParticipantDirectory, List.of(), Groth21Message.fromBytes(op.tssMessage().toByteArray(),
+            final var isValid = tssLibrary.verifyTssMessage(
+                    tssParticipantDirectory, Groth21Message.fromBytes(op.tssMessage().toByteArray(),
                             tssParticipantDirectory, SIGNATURE_SCHEMA));
             if (isValid) {
-                validTssMessageOps.add(op);
+                validTssMessages.add(op);
             }
         }
-        return validTssMessageOps;
+        return validTssMessages;
     }
 
     /**
      * Get the TSS messages from the list of valid TSS Message bodies.
      *
-     * @param validTssOps list of valid TSS message bodies
+     * @param validTssOps             list of valid TSS message bodies
+     * @param tssParticipantDirectory
      * @return list of TSS messages
      */
-    public static List<TssMessage> getTssMessages(List<TssMessageTransactionBody> validTssOps) {
+    public static List<TssMessage> getTssMessages(List<TssMessageTransactionBody> validTssOps, final TssParticipantDirectory tssParticipantDirectory) {
         return validTssOps.stream()
                 .map(TssMessageTransactionBody::tssMessage)
-                .map(k -> Groth21Message.fromBytes(k.toByteArray()))
+                .map(k -> (TssMessage) Groth21Message.fromBytes(k.toByteArray(), tssParticipantDirectory, SIGNATURE_SCHEMA))
                 .toList();
     }
 

@@ -28,9 +28,10 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
-import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.node.app.tss.api.TssLibrary;
 import java.util.List;
+
+import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
 import org.junit.jupiter.api.Test;
 
 public class TssUtilsTest {
@@ -46,7 +47,7 @@ public class TssUtilsTest {
 
         assertNotNull(directory);
         assertEquals((15 + 2) / 2, directory.getThreshold());
-        assertEquals(10, directory.getCurrentParticipantOwnedShares().size());
+        assertEquals(10, directory.getTotalShares());
         assertEquals(15, directory.getShareIds().size());
     }
 
@@ -78,13 +79,21 @@ public class TssUtilsTest {
 
     @Test
     public void testGetTssMessages() {
+        RosterEntry rosterEntry1 = new RosterEntry(1L, 100L, null, null, null);
+        RosterEntry rosterEntry2 = new RosterEntry(2L, 50L, null, null, null);
+        long maxSharesPerNode = 10L;
+        int selfNodeId = 1;
+
+        TssParticipantDirectory directory = TssUtils.computeParticipantDirectory(
+                new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode, selfNodeId);
+
         final var body = getTssBody();
         final var validTssOps = List.of(body.tssMessageOrThrow());
-        final var tssMessages = TssUtils.getTssMessages(validTssOps);
+        final var tssMessages = TssUtils.getTssMessages(validTssOps, directory);
 
         assertEquals(1, tssMessages.size());
         assertThat(body.tssMessageOrThrow().tssMessage().toByteArray())
-                .isEqualTo(tssMessages.get(0).bytes());
+                .isEqualTo(tssMessages.get(0).toBytes());
     }
 
     @Test

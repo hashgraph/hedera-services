@@ -54,6 +54,7 @@ import com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.tss.TssLibraryImpl;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.converter.BytesConverter;
@@ -223,7 +224,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                         appContext,
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
-                        new PlaceholderTssLibrary(),
+                        new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
                         metrics));
         this.state = (MerkleStateRoot) hedera.newMerkleStateRoot();

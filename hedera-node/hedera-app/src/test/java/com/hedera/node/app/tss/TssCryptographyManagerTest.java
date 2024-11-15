@@ -34,12 +34,11 @@ import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
+import com.hedera.node.app.tss.api.FakeGroupElement;
+import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
 import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.cryptography.tss.api.TssPublicShare;
-import com.hedera.node.app.tss.api.TssShareId;
-import com.hedera.node.app.tss.pairings.FakeGroupElement;
-import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
@@ -121,8 +120,8 @@ public class TssCryptographyManagerTest {
 
     @Test
     void testWhenVoteNoVoteSubmittedAndThresholdMet() {
-        final var ledgerId = mock(PairingPublicKey.class);
-        final var mockPublicShares = List.of(new TssPublicShare(new TssShareId(10), mock(PairingPublicKey.class)));
+        final var ledgerId = mock(BlsPublicKey.class);
+        final var mockPublicShares = List.of(new TssPublicShare(10, mock(BlsPublicKey.class)));
         final var mockSignature = mock(Signature.class);
 
         final var body = getTssBody();
@@ -135,12 +134,12 @@ public class TssCryptographyManagerTest {
         when(tssLibrary.computePublicShares(any(), any())).thenReturn(mockPublicShares);
         when(tssLibrary.aggregatePublicShares(any())).thenReturn(ledgerId);
         when(gossip.sign(any())).thenReturn(mockSignature);
-        when(ledgerId.publicKey()).thenReturn(new FakeGroupElement(BigInteger.valueOf(5L)));
+        when(ledgerId.element()).thenReturn(new FakeGroupElement(BigInteger.valueOf(5L)));
 
         final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, handleContext);
 
         assertNotNull(result.join());
-        verify(gossip).sign(ledgerId.publicKey().toBytes());
+        verify(gossip).sign(ledgerId.toBytes());
     }
 
     @Test

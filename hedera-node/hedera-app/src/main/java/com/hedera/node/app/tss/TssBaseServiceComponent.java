@@ -17,7 +17,7 @@
 package com.hedera.node.app.tss;
 
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
+import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
 import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
 import com.hedera.node.app.tss.handlers.TssSubmissions;

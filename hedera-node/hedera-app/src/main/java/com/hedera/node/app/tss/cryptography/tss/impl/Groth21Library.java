@@ -17,10 +17,10 @@
 package com.hedera.node.app.tss.cryptography.tss.impl;
 
 import com.hedera.node.app.tss.cryptography.bls.SignatureSchema;
-import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
 import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
 import com.hedera.node.app.tss.cryptography.tss.api.TssMessageParsingException;
 import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.node.app.tss.cryptography.tss.api.TssService;
 import com.hedera.node.app.tss.cryptography.tss.api.TssServiceGenesisStage;
 import com.hedera.node.app.tss.cryptography.tss.api.TssServiceRekeyStage;
 import com.hedera.node.app.tss.cryptography.tss.groth21.Groth21GenesisStage;
@@ -38,7 +38,7 @@ import java.util.Random;
  *       <li>Get a {@link Groth21RekeyStage}</li>
  *   </ul>
  */
-public class Groth21Library implements TssLibrary {
+public class Groth21Library implements TssService {
     private final SignatureSchema signatureSchema;
     private final Groth21GenesisStage genesisStage;
     private final Groth21RekeyStage rekeyStage;

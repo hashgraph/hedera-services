@@ -22,9 +22,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
+import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantPrivateInfo;
 import com.hedera.node.app.tss.cryptography.tss.api.TssPrivateShare;
 import com.hedera.node.app.tss.cryptography.tss.api.TssPublicShare;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
@@ -44,13 +43,16 @@ import javax.inject.Singleton;
 public class TssKeysAccessor {
     private final TssLibrary tssLibrary;
     private TssKeysAccessor.TssKeys tssKeys;
+    private final Executor libraryExecutor;
     private final TssDirectoryAccessor tssDirectoryAccessor;
 
     @Inject
     public TssKeysAccessor(
             @NonNull final TssLibrary tssLibrary,
+            @NonNull @TssLibraryExecutor final Executor libraryExecutor,
             @NonNull final TssDirectoryAccessor tssDirectoryAccessor) {
         this.tssLibrary = requireNonNull(tssLibrary);
+        this.libraryExecutor = requireNonNull(libraryExecutor);
         this.tssDirectoryAccessor = requireNonNull(tssDirectoryAccessor);
     }
 
@@ -69,11 +71,10 @@ public class TssKeysAccessor {
         final var activeRosterHash = requireNonNull(rosterStore.getActiveRosterHash());
         final var activeParticipantDirectory = tssDirectoryAccessor.activeParticipantDirectory();
         final var tssMessageBodies = tssStore.getTssMessageBodies(activeRosterHash);
-        final var validTssMessages = getTssMessages(tssMessageBodies);
+        final var validTssMessages = getTssMessages(tssMessageBodies, activeParticipantDirectory);
         final var activeRosterShares = getTssPrivateShares(activeParticipantDirectory, tssStore, activeRosterHash);
         final var activeRosterPublicShares =
-                tssLibrary.rekeyStage().shareExtractor(activeParticipantDirectory, validTssMessages)
-                        .allPublicShares();
+                tssLibrary.computePublicShares(activeParticipantDirectory, validTssMessages);
         final var totalShares = activeParticipantDirectory.getTotalShares();
         this.tssKeys = new TssKeysAccessor.TssKeys(
                 activeRosterShares,
@@ -90,12 +91,8 @@ public class TssKeysAccessor {
             @NonNull final Bytes activeRosterHash) {
         final var validTssOps = validateTssMessages(
                 tssStore.getTssMessageBodies(activeRosterHash), activeRosterParticipantDirectory, tssLibrary);
-        final var validTssMessages = getTssMessages(validTssOps);
-        // FUTURE: Use node real tssDecryptPrivateKey
-        final var participantPrivateInfo = new TssParticipantPrivateInfo()
-        return tssLibrary.rekeyStage()
-                .shareExtractor(activeRosterParticipantDirectory, validTssMessages)
-                .ownedPrivateShares(TssParticipantPrivateInfo);
+        final var validTssMessages = getTssMessages(validTssOps, activeRosterParticipantDirectory);
+        return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
     }
 
     /**

@@ -28,12 +28,11 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.TssKeysAccessor;
-import com.hedera.node.app.tss.cryptography.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssShareId;
-import com.hedera.node.app.tss.api.TssShareSignature;
-import com.hedera.node.app.tss.pairings.FakeGroupElement;
-import com.hedera.node.app.tss.pairings.PairingSignature;
-import com.hedera.node.app.tss.pairings.SignatureSchema;
+import com.hedera.node.app.tss.api.FakeGroupElement;
+import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.cryptography.bls.BlsSignature;
+import com.hedera.node.app.tss.cryptography.bls.SignatureSchema;
+import com.hedera.node.app.tss.cryptography.tss.api.TssShareSignature;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -86,7 +85,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
         final Set<TssShareSignature> tssShareSignatures =
                 tssSignaturesMap.computeIfAbsent(rosterHash, k -> ConcurrentHashMap.newKeySet());
         final var isPresent =
-                tssShareSignatures.stream().anyMatch(sig -> sig.shareId().idElement() == shareIndex);
+                tssShareSignatures.stream().anyMatch(sig -> sig.shareId() == shareIndex);
         if (!isPresent) {
             // For each signature not already present for this message hash, verify with
             // tssLibrary and accumulate in map
@@ -97,7 +96,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
                 final var ledgerSignature = tssLibrary.aggregateSignatures(
                         tssShareSignatures.stream().toList());
                 tssBaseService.notifySignature(
-                        messageHash.toByteArray(), ledgerSignature.signature().toBytes());
+                        messageHash.toByteArray(), ledgerSignature.toBytes());
             }
         }
         // Purge any expired signature requests, at most once per second
@@ -114,9 +113,8 @@ public class TssShareSignatureHandler implements TransactionHandler {
             final Bytes messageHash,
             final long shareIndex,
             final Set<TssShareSignature> tssShareSignatures) {
-        final var tssShareSignature = new TssShareSignature(
-                new TssShareId((int) shareIndex),
-                new PairingSignature(
+        final var tssShareSignature = new TssShareSignature((int) shareIndex,
+                new BlsSignature(
                         new FakeGroupElement(BigInteger.valueOf(shareIndex)),
                         SignatureSchema.create(shareSignature.toByteArray())));
         final var isValid = tssLibrary.verifySignature(

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.tss.cryptography.nativesupport;
 
-import com.hedera.common.nativesupport.internal.RunOnlyOnce;
+import com.hedera.node.app.tss.cryptography.nativesupport.internal.RunOnlyOnce;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.io.File;
