@@ -49,6 +49,12 @@ message Roster {
  */
 message RosterEntry {
 
+    // The tssEncryptionKey field has been reserved because it is no longer
+    // required to be stored in the Roster. The public portion of this key will
+    // continue to be stored in TssBaseService, but will, however, just be
+    // stored as raw bytes.
+    reserved 4;
+
     /**
      * A consensus node identifier.
      * <p>
@@ -88,5 +94,5 @@ message RosterEntry {
      * SHALL NOT supply both values for the same endpoint.<br/>
      * This list SHALL NOT be empty.<br/>
      */
-    repeated proto.ServiceEndpoint gossip_endpoint = 4;
+    repeated proto.ServiceEndpoint gossip_endpoint = 5;
 }
