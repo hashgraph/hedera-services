@@ -76,6 +76,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -228,7 +229,8 @@ public class StateChangesValidator implements BlockStreamValidator {
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
                         metrics),
-                FakeStartupNetworks::new);
+                FakeStartupNetworks::new,
+                NodeId.of(0L));
         this.state = (MerkleStateRoot) hedera.newMerkleStateRoot();
         final Configuration platformConfig = ConfigurationBuilder.create()
                 .withConfigDataType(MetricsConfig.class)

@@ -275,6 +275,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     private final StartupNetworksFactory startupNetworksFactory;
 
     /**
+     * The id of this node.
+     */
+    private final NodeId selfNodeId;
+
+    /**
      * The Hashgraph Platform. This is set during state initialization.
      */
     private Platform platform;
@@ -366,6 +371,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param migrator the migrator to use with the services
      * @param tssBaseServiceFactory the factory for the TSS base service
      * @param startupNetworksFactory the factory for the startup networks
+     * @param selfNodeId the node ID of this node
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -373,9 +379,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
             @NonNull final TssBaseServiceFactory tssBaseServiceFactory,
-            @NonNull final StartupNetworksFactory startupNetworksFactory) {
+            @NonNull final StartupNetworksFactory startupNetworksFactory,
+            @NonNull final NodeId selfNodeId) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
+        this.selfNodeId = requireNonNull(selfNodeId);
         this.serviceMigrator = requireNonNull(migrator);
         this.instantSource = requireNonNull(instantSource);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
@@ -517,7 +525,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         this.metrics = requireNonNull(metrics);
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         // FUTURE - make this available to the platform state and roster schemas for migration
-        startupNetworks = startupNetworksFactory.apply(0L, configProvider, tssBaseService);
+        startupNetworks = startupNetworksFactory.apply(selfNodeId.id(), configProvider, tssBaseService);
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
