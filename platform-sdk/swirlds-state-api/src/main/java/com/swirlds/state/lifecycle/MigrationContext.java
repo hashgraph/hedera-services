@@ -69,6 +69,12 @@ public interface MigrationContext {
     NetworkInfo genesisNetworkInfo();
 
     /**
+     * Returns the startup networks in use.
+     */
+    @NonNull
+    StartupNetworks startupNetworks();
+
+    /**
      * Consumes and returns the next entity number. For use by migrations that need to create entities.
      * @return the next entity number
      */

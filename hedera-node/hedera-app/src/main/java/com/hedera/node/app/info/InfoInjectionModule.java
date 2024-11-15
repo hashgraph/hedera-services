@@ -18,7 +18,6 @@ package com.hedera.node.app.info;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.annotations.NodeSelfId;
-import com.hedera.node.app.tss.handlers.TssUtils;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import dagger.Module;
 import dagger.Provides;
@@ -31,10 +30,5 @@ public abstract class InfoInjectionModule {
     @NodeSelfId
     static AccountID selfAccountID(@NonNull final NodeInfo info) {
         return info.accountId();
-    }
-
-    @Provides
-    static DiskStartupNetworks.TssDirectoryFactory tssDirectoryFactory() {
-        return TssUtils::computeParticipantDirectory;
     }
 }

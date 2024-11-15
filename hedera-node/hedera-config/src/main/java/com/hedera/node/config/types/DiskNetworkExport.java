@@ -17,19 +17,20 @@
 package com.hedera.node.config.types;
 
 /**
- * When to write network data to disk.
+ * Whether and how network metadata should be exported to disk for use in a later network transplant.
  */
-public enum DiskNetworksExports {
+public enum DiskNetworkExport {
     /**
-     * Never write network data to disk.
+     * Never export network metadata to disk.
      */
     NEVER,
     /**
-     * Write network data to disk every time a state is saved.
+     * Export network metadata to disk every block, convenient for getting a file as quickly as possible in a
+     * development network that will serve as the target of a state transplant from a production network.
      */
-    EVERY_SAVED_STATE,
+    EVERY_BLOCK,
     /**
-     * Write network data to disk only from the freeze state.
+     * Export network metadata to disk only when the network is frozen.
      */
-    ONLY_FREEZE_STATE,
+    ONLY_FREEZE_BLOCK,
 }

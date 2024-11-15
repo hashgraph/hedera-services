@@ -27,7 +27,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.info.StartupNetworks;
 import com.hedera.node.app.services.MigrationContextImpl;
 import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
@@ -48,6 +47,7 @@ import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.StateMetadata;
@@ -270,7 +270,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     genesisNetworkInfo,
                     entityIdStore,
                     previousVersion,
-                    sharedValues);
+                    sharedValues,
+                    startupNetworks);
             if (applications.contains(MIGRATION)) {
                 schema.migrate(migrationContext);
             }

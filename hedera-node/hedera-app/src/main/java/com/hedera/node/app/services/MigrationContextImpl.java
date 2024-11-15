@@ -24,6 +24,7 @@ import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -49,7 +50,8 @@ public record MigrationContextImpl(
         @Nullable NetworkInfo genesisNetworkInfo,
         @Nullable WritableEntityIdStore writableEntityIdStore,
         @Nullable SemanticVersion previousVersion,
-        @NonNull Map<String, Object> sharedValues)
+        @NonNull Map<String, Object> sharedValues,
+        @NonNull StartupNetworks startupNetworks)
         implements MigrationContext {
     public MigrationContextImpl {
         requireNonNull(previousStates);

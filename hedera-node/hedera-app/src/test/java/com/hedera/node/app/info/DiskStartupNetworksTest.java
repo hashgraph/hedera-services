@@ -33,9 +33,6 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.Network;
@@ -76,6 +73,7 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -132,9 +130,6 @@ class DiskStartupNetworksTest {
     private ConfigProvider configProvider;
 
     @Mock
-    private StartupNetworks.TssDirectoryFactory tssDirectoryFactory;
-
-    @Mock
     private TssParticipantDirectory directory;
 
     @Mock
@@ -156,7 +151,7 @@ class DiskStartupNetworksTest {
 
     @BeforeEach
     void setUp() {
-        subject = new DiskStartupNetworks(NODE_ID, configProvider, tssBaseService, tssDirectoryFactory);
+        subject = new DiskStartupNetworks(NODE_ID, configProvider, tssBaseService);
     }
 
     @Test
@@ -283,8 +278,7 @@ class DiskStartupNetworksTest {
     }
 
     private void givenValidTssMessages() {
-        given(tssDirectoryFactory.create(any(), anyLong(), anyInt())).willReturn(directory);
-        given(tssBaseService.ledgerIdFrom(eq(directory), any())).willReturn(EXPECTED_LEDGER_ID);
+        given(tssBaseService.ledgerIdFrom(any(), any())).willReturn(EXPECTED_LEDGER_ID);
     }
 
     private void putJsonAt(@NonNull final String fileName, @NonNull final WithTssKeys withTssKeys) throws IOException {

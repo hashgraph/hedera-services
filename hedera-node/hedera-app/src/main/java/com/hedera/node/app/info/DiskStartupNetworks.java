@@ -30,6 +30,7 @@ import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.api.TssMessage;
+import com.hedera.node.app.tss.handlers.TssUtils;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.config.ConfigProvider;
@@ -42,6 +43,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -72,17 +74,14 @@ public class DiskStartupNetworks implements StartupNetworks {
     private final long selfNodeId;
     private final ConfigProvider configProvider;
     private final TssBaseService tssBaseService;
-    private final TssDirectoryFactory tssDirectoryFactory;
 
     public DiskStartupNetworks(
             final long selfNodeId,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final TssBaseService tssBaseService,
-            @NonNull final TssDirectoryFactory tssDirectoryFactory) {
+            @NonNull final TssBaseService tssBaseService) {
         this.selfNodeId = selfNodeId;
         this.configProvider = requireNonNull(configProvider);
         this.tssBaseService = tssBaseService;
-        this.tssDirectoryFactory = requireNonNull(tssDirectoryFactory);
     }
 
     @Override
@@ -255,7 +254,7 @@ public class DiskStartupNetworks implements StartupNetworks {
                     .getConfiguration()
                     .getConfigData(TssConfig.class)
                     .maxSharesPerNode();
-            final var directory = tssDirectoryFactory.create(roster, maxSharesPerNode, (int) selfNodeId);
+            final var directory = TssUtils.computeParticipantDirectory(roster, maxSharesPerNode, (int) selfNodeId);
             final var tssMessages = network.tssMessages().stream()
                     .map(TssMessageTransactionBody::tssMessage)
                     .map(Bytes::toByteArray)

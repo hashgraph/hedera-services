@@ -74,9 +74,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
-import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.info.GenesisNetworkInfo;
-import com.hedera.node.app.info.StartupNetworks;
 import com.hedera.node.app.info.StateNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterService;
@@ -104,7 +102,6 @@ import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.handlers.TssUtils;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
@@ -150,6 +147,7 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -347,10 +345,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     public interface StartupNetworksFactory {
         @NonNull
         StartupNetworks apply(
-                long selfNodeId,
-                @NonNull ConfigProvider configProvider,
-                @NonNull TssBaseService tssBaseService,
-                @NonNull DiskStartupNetworks.TssDirectoryFactory tssDirectoryFactory);
+                long selfNodeId, @NonNull ConfigProvider configProvider, @NonNull TssBaseService tssBaseService);
     }
 
     /*==================================================================================================================
@@ -522,8 +517,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         this.metrics = requireNonNull(metrics);
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         // FUTURE - make this available to the platform state and roster schemas for migration
-        startupNetworks =
-                startupNetworksFactory.apply(0L, configProvider, tssBaseService, TssUtils::computeParticipantDirectory);
+        startupNetworks = startupNetworksFactory.apply(0L, configProvider, tssBaseService);
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",

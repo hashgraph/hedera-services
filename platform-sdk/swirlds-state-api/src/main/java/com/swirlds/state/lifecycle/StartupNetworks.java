@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.info;
+package com.swirlds.state.lifecycle;
 
 import com.hedera.hapi.node.state.Network;
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
 /**
@@ -27,14 +24,9 @@ import java.util.Optional;
  * when starting a node.
  */
 public interface StartupNetworks {
-    @FunctionalInterface
-    interface TssDirectoryFactory {
-        @NonNull
-        TssParticipantDirectory create(@NonNull Roster roster, long maxSharesPerNode, int selfNodeId);
-    }
-
     /**
      * Called by a node that finds itself with a completely empty state.
+     *
      * @return the network information that should be used to populate the node's genesis state
      */
     Network genesisNetworkOrThrow();
@@ -43,12 +35,14 @@ public interface StartupNetworks {
      * Called by a node at a restart boundary to check if there is an override {@link Network}
      * that applies to the current round. This permits transplanting the state of one network
      * onto another nt network with a different roster and TSS keys.
+     *
      * @param roundNumber the round number to check for an override
      */
     Optional<Network> overrideNetworkFor(long roundNumber);
 
     /**
      * Called by a node after applying override network details to the state from a given round.
+     *
      * @param roundNumber the round number for which the override was applied
      */
     void setOverrideRound(long roundNumber);
@@ -61,6 +55,7 @@ public interface StartupNetworks {
     /**
      * Called by a node at an upgrade boundary that finds itself with an empty Roster service state, and is
      * thus at the migration boundary for adoption of the roster proposal.
+     *
      * @return the network information that should be used to populate the Roster service state
      * @throws UnsupportedOperationException if these startup assets do not support migration to the roster proposal
      */
