@@ -284,30 +284,4 @@ public interface PreHandleContext extends TransactionKeys {
     @NonNull
     TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull AccountID payerId)
             throws PreCheckException;
-
-    /**
-     * Creates a new {@link PreHandleContext} for a nested transaction. The nested transaction will be set on
-     * this context as the "inner context". There can only be one such at a time. The inner context is returned
-     * for convenience.
-     *
-     * @param nestedTxn the nested transaction
-     * @param payerForNested the payer for the nested transaction
-     * @return the inner context
-     * @throws PreCheckException If the payer is not valid
-     * @deprecated Use {@link #allKeysForTransaction(TransactionBody, AccountID)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    PreHandleContext createNestedContext(
-            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested) throws PreCheckException;
-
-    /**
-     * Gets the inner context, if any.
-     *
-     * @return The inner context.
-     * @deprecated Use {@link #allKeysForTransaction(TransactionBody, AccountID)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    PreHandleContext innerContext();
 }
