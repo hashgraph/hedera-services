@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.contract.precompile;
+package com.hedera.services.bdd.suites.contract.precompile.airdrops;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
@@ -57,7 +57,7 @@ public class HRCSetUnlimitedAutoAssociationsTest {
                                         getABIFor(
                                                 com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
                                                 "setUnlimitedAutomaticAssociations",
-                                                "IHRC904UnlimitedAutoAssociations"),
+                                                "HRC904"),
                                         true)
                                 .via("setUnlimitedAutoAssociations")
                                 .payingWith("account")
@@ -72,7 +72,7 @@ public class HRCSetUnlimitedAutoAssociationsTest {
                                                                 com.hedera.services.bdd.suites.contract.Utils
                                                                         .FunctionType.FUNCTION,
                                                                 "setUnlimitedAutomaticAssociations",
-                                                                "IHRC904UnlimitedAutoAssociations"),
+                                                                "HRC904"),
                                                         isLiteralResult(new Object[] {Long.valueOf(22)})))),
                         getAccountInfo("account").hasMaxAutomaticAssociations(-1))));
     }
@@ -92,7 +92,7 @@ public class HRCSetUnlimitedAutoAssociationsTest {
                                         getABIFor(
                                                 com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
                                                 "setUnlimitedAutomaticAssociations",
-                                                "IHRC904UnlimitedAutoAssociations"),
+                                                "HRC904"),
                                         false)
                                 .via("setUnlimitedAutoAssociations")
                                 .payingWith("account")
@@ -107,7 +107,7 @@ public class HRCSetUnlimitedAutoAssociationsTest {
                                                                 com.hedera.services.bdd.suites.contract.Utils
                                                                         .FunctionType.FUNCTION,
                                                                 "setUnlimitedAutomaticAssociations",
-                                                                "IHRC904UnlimitedAutoAssociations"),
+                                                                "HRC904"),
                                                         isLiteralResult(new Object[] {Long.valueOf(22)})))),
                         getAccountInfo("account").hasMaxAutomaticAssociations(0))));
     }
