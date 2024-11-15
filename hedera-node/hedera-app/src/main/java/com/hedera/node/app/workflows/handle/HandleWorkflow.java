@@ -329,9 +329,14 @@ public class HandleWorkflow {
                 case POST_UPGRADE_WORK -> POST_UPGRADE_TRANSACTION;
                 default -> ORDINARY_TRANSACTION;};
         }
-        // Save last processTimes before handling the transaction
-        final var lastRecordProcessTime = blockRecordManager.consTimeOfLastHandledTxn();
-        final var lastStreamProcessTime = blockStreamManager.lastIntervalProcessTime();
+        // Process time-based events that have become due since the last recorded processing time
+        if (streamMode == RECORDS) {
+            processInterval(state, blockRecordManager.consTimeOfLastHandledTxn(), consensusNow);
+        } else {
+            if (processInterval(state, blockStreamManager.lastIntervalProcessTime(), consensusNow)) {
+                blockStreamManager.setLastIntervalProcessTime(consensusNow);
+            }
+        }
 
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
         final var handleOutput = execute(userTxn);
@@ -343,18 +348,6 @@ public class HandleWorkflow {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
-
-        if (streamMode != BLOCKS) {
-            blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-        }
-
-        if (streamMode == RECORDS) {
-            processInterval(state, lastRecordProcessTime, consensusNow);
-        } else {
-            if (processInterval(state, lastStreamProcessTime, consensusNow)) {
-                blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
-            }
-        }
     }
 
     /**
@@ -375,6 +368,9 @@ public class HandleWorkflow {
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
+                if (streamMode != BLOCKS) {
+                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                }
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
@@ -442,7 +438,9 @@ public class HandleWorkflow {
                         userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
                 final var dispatch = userTxnFactory.createDispatch(userTxn, baseBuilder);
                 updateNodeStakes(userTxn, dispatch);
-
+                if (streamMode != BLOCKS) {
+                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                }
                 logPreDispatch(userTxn);
                 if (userTxn.type() != ORDINARY_TRANSACTION) {
                     if (userTxn.type() == GENESIS_TRANSACTION) {
