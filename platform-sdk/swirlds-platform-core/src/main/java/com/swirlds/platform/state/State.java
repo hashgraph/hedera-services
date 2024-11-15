@@ -167,7 +167,11 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public void updatePlatformState(@NonNull final PlatformStateModifier modifier) {
-        logger.error(EXCEPTION.getMarker(), "State#getReadablePlatformState: {} ", StackTrace.getStackTrace());
+        logger.error(
+                EXCEPTION.getMarker(),
+                "<{}> getReadablePlatformState: {} ",
+                Thread.currentThread().getName(),
+                StackTrace.getStackTrace());
 
         if (modifier instanceof PlatformState platformState) {
             setChild(ChildIndices.PLATFORM_STATE, platformState);

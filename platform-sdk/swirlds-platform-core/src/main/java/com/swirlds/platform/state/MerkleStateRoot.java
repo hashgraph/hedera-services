@@ -957,7 +957,10 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @Override
     public PlatformStateAccessor getReadablePlatformState() {
         logger.error(
-                EXCEPTION.getMarker(), "MerkleStateRoot#getReadablePlatformState: {} ", StackTrace.getStackTrace());
+                EXCEPTION.getMarker(),
+                "<{}> getReadablePlatformState: {} ",
+                Thread.currentThread().getName(),
+                StackTrace.getStackTrace());
 
         return services.isEmpty()
                 ? new SnapshotPlatformStateAccessor(getPlatformState(), versionFactory)
