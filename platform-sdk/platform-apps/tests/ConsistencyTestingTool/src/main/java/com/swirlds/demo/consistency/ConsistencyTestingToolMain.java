@@ -18,6 +18,7 @@ package com.swirlds.demo.consistency;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.util.NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.state.merkle.StateUtils.registerWithSystem;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -32,15 +33,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.merkle.StateMetadata;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
-import com.swirlds.state.merkle.disk.OnDiskValue;
-import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
-import com.swirlds.state.merkle.memory.InMemoryValue;
-import com.swirlds.state.merkle.queue.QueueNode;
-import com.swirlds.state.merkle.singleton.SingletonNode;
-import com.swirlds.state.merkle.singleton.StringLeaf;
-import com.swirlds.state.merkle.singleton.ValueLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SecureRandom;
@@ -83,66 +75,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
         final var schema = new V0540PlatformStateSchema();
         final StateDefinition def = schema.statesToCreate().iterator().next();
         final var md = new StateMetadata<>(PlatformStateService.NAME, schema, def);
-        try {
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    InMemoryValue.class,
-                    () -> new InMemoryValue(
-                            md.inMemoryValueClassId(),
-                            md.stateDefinition().keyCodec(),
-                            md.stateDefinition().valueCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskKey.class,
-                    () -> new OnDiskKey<>(
-                            md.onDiskKeyClassId(), md.stateDefinition().keyCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskKeySerializer.class,
-                    () -> new OnDiskKeySerializer<>(
-                            md.onDiskKeySerializerClassId(),
-                            md.onDiskKeyClassId(),
-                            md.stateDefinition().keyCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskValue.class,
-                    () -> new OnDiskValue<>(
-                            md.onDiskValueClassId(), md.stateDefinition().valueCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskValueSerializer.class,
-                    () -> new OnDiskValueSerializer<>(
-                            md.onDiskValueSerializerClassId(),
-                            md.onDiskValueClassId(),
-                            md.stateDefinition().valueCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    SingletonNode.class,
-                    () -> new SingletonNode<>(
-                            md.serviceName(),
-                            md.stateDefinition().stateKey(),
-                            md.singletonClassId(),
-                            md.stateDefinition().valueCodec(),
-                            null)));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    QueueNode.class,
-                    () -> new QueueNode<>(
-                            md.serviceName(),
-                            md.stateDefinition().stateKey(),
-                            md.queueNodeClassId(),
-                            md.singletonClassId(),
-                            md.stateDefinition().valueCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    ValueLeaf.class,
-                    () -> new ValueLeaf<>(
-                            md.singletonClassId(), md.stateDefinition().valueCodec())));
-            logger.info(
-                    STARTUP.getMarker(),
-                    "PlatformState classes are successfully registered with ConstructableRegistry");
-        } catch (ConstructableRegistryException e) {
-            // This is a fatal error.
-            throw new IllegalStateException(
-                    "Failed to register with the system 'PlatformService'"
-                            + ":"
-                            + md.stateDefinition().stateKey()
-                            + "'",
-                    e);
-        }
+        registerWithSystem(md, constructableRegistry);
     }
 
     /**
