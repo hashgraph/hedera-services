@@ -18,6 +18,7 @@ package com.swirlds.virtualmap.internal.merkle;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createRoot;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -105,8 +105,11 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final InMemoryDataSource ds = new InMemoryDataSource("mapWithExistingHashedDataHasNonNullRootHash");
         final VirtualDataSourceBuilder builder = new InMemoryBuilder();
 
-        final VirtualRootNode<TestKey, TestValue> fcm =
-                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder);
+        final VirtualRootNode<TestKey, TestValue> fcm = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                builder,
+                CONFIGURATION.getConfigData(VirtualMapConfig.class));
         fcm.postInit(new DummyVirtualStateAccessor());
         fcm.enableFlush();
         fcm.put(A_KEY, APPLE);
@@ -119,8 +122,11 @@ class VirtualRootNodeTest extends VirtualTestBase {
         fcm.release();
         fcm.waitUntilFlushed();
 
-        final VirtualRootNode<TestKey, TestValue> fcm2 =
-                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder);
+        final VirtualRootNode<TestKey, TestValue> fcm2 = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                builder,
+                CONFIGURATION.getConfigData(VirtualMapConfig.class));
         fcm2.postInit(copy.getState());
         assertNotNull(fcm2.getChild(0), "child should not be null");
         assertEquals(expectedHash, fcm2.getChild(0).getHash(), "hash should match expected");
@@ -335,8 +341,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
         paths.add(Path.of("asdf"));
         paths.add(null);
         for (final Path destination : paths) {
-            final VirtualMap<TestKey, TestValue> original =
-                    new VirtualMap<>("test", new TestKeySerializer(), new TestValueSerializer(), new InMemoryBuilder());
+            final VirtualMap<TestKey, TestValue> original = new VirtualMap<>(
+                    "test", new TestKeySerializer(), new TestValueSerializer(), new InMemoryBuilder(), CONFIGURATION);
             final VirtualMap<TestKey, TestValue> copy = original.copy();
 
             final VirtualRootNode<TestKey, TestValue> root = original.getChild(1);
@@ -404,13 +410,11 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, "0")
                 .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
-        final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
-
-        VirtualRootNode<TestKey, TestValue> root = createRoot();
+        VirtualRootNode<TestKey, TestValue> root = createRoot(configuration);
         assertEquals(0, root.getFlushThreshold());
-        final int flushInterval = config.flushInterval();
+        final int flushInterval =
+                configuration.getConfigData(VirtualMapConfig.class).flushInterval();
         for (int i = 0; i < flushInterval; i++) {
             VirtualRootNode<TestKey, TestValue> copy = root.copy();
             copy.postInit(root.getState());
@@ -435,10 +439,10 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
                 .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
-        VirtualRootNode<TestKey, TestValue> root =
-                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder());
+        VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE,
+                new InMemoryBuilder(), configuration.getConfigData(VirtualMapConfig.class));
 
         final VirtualRootNode<TestKey, TestValue> copy0 = root;
         VirtualMapState state = new VirtualMapState("label");
@@ -506,10 +510,10 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
                 .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
-        VirtualRootNode<TestKey, TestValue> root =
-                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder());
+        VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE,
+                new InMemoryBuilder(), configuration.getConfigData(VirtualMapConfig.class));
 
         final int nCopies = 1000;
         final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
@@ -623,10 +627,10 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
                 .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
-        VirtualRootNode<TestKey, TestValue> root =
-                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder());
+        VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE,
+                new InMemoryBuilder(), configuration.getConfigData(VirtualMapConfig.class));
         VirtualMapState state = new VirtualMapState("label");
         root.postInit(new VirtualStateAccessorImpl(state));
 

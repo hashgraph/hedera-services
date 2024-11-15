@@ -375,14 +375,16 @@ public class NodeUpdateTest {
     }
 
     @HapiTest
-    final Stream<DynamicTest> signedByCouncilAndAdminKeySuccess() throws CertificateEncodingException {
+    final Stream<DynamicTest> signedByAdminKeySuccess() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
+                cryptoCreate("payer").balance(10_000_000_000L),
                 nodeCreate("testNode")
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode")
-                        .signedBy(ADDRESS_BOOK_CONTROL, "adminKey")
+                        .payingWith("payer")
+                        .signedBy("payer", "adminKey")
                         .description("updated description")
                         .via("successUpdate"),
                 getTxnRecord("successUpdate").logged());

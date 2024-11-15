@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.FEE_SCHEDULE_UNITS_PER_TINYCENT;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.selfManagedCustomizedCreation;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
@@ -33,6 +34,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -298,7 +300,9 @@ public class HandleHederaOperations implements HederaOperations {
                 number,
                 synthAccountCreationFromHapi(
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, body),
-                functionality == HederaFunctionality.ETHEREUM_TRANSACTION ? body : null,
+                functionality == HederaFunctionality.ETHEREUM_TRANSACTION
+                        ? selfManagedCustomizedCreation(body, number)
+                        : null,
                 body.autoRenewAccountId(),
                 evmAddress,
                 body.hasInitcode() ? ExternalizeInitcodeOnSuccess.NO : ExternalizeInitcodeOnSuccess.YES);
@@ -457,9 +461,20 @@ public class HandleHederaOperations implements HederaOperations {
     private ContractCreateTransactionBody standardized(
             final long createdNumber, @NonNull final ContractCreateTransactionBody op) {
         if (needsStandardization(op)) {
+            Key newAdminKey = op.adminKey();
+            // If the admin key is not set, we set it to the contract itself for externalization
+            // Typically, the op will not have an adminkey if the transaction's HederaFunctionality is
+            // ETHEREUM_TRANSACTION
+            if (!op.hasAdminKey()) {
+                newAdminKey = Key.newBuilder()
+                        .contractID(ContractID.newBuilder()
+                                .contractNum(createdNumber)
+                                .build())
+                        .build();
+            }
             return new ContractCreateTransactionBody(
                     com.hedera.hapi.node.contract.codec.ContractCreateTransactionBodyProtoCodec.INITCODE_SOURCE_UNSET,
-                    op.adminKey(),
+                    newAdminKey,
                     0L,
                     0L,
                     op.proxyAccountID(),

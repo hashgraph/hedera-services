@@ -33,9 +33,11 @@ import javax.inject.Singleton;
 @Singleton
 public class HbarAllowanceTranslator extends AbstractCallTranslator<HasCallAttempt> {
 
+    /** Selector for hbarAllowance(address) method. */
     public static final Function HBAR_ALLOWANCE_PROXY =
             new Function("hbarAllowance(address)", ReturnTypes.RESPONSE_CODE_INT256);
 
+    /** Selector for hbarAllowance(address,address) method. */
     public static final Function HBAR_ALLOWANCE =
             new Function("hbarAllowance(address,address)", ReturnTypes.RESPONSE_CODE_INT256);
 

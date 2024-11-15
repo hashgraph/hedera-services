@@ -86,6 +86,20 @@ public class ClassicTransfersCall extends AbstractCall {
     private final VerificationStrategy verificationStrategy;
     private final SpecialRewardReceivers specialRewardReceivers;
 
+    /**
+     * @param gasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to be used
+     * @param selector the method selector
+     * @param senderId the account id of the sender
+     * @param preemptingFailureStatus the response code to revert with
+     * @param syntheticTransfer the body of synthetic transfer operation
+     * @param configuration the configuration to use
+     * @param approvalSwitchHelper the switcher between unauthorized debits to approvals in a synthetic transfer
+     * @param callStatusStandardizer the standardizer of failure statuses to an HTS transfer system contract
+     * @param verificationStrategy the verification strategy to use
+     * @param systemAccountCreditScreen the helper to screen if a transfer tries to credit a system account
+     * @param specialRewardReceivers the special reward receiver
+     */
     // too many parameters
     @SuppressWarnings("java:S107")
     public ClassicTransfersCall(

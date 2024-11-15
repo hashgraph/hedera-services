@@ -66,6 +66,9 @@ public class TssCryptographyManagerTest {
     private TssParticipantDirectory tssParticipantDirectory;
 
     @Mock
+    private AppContext appContext;
+
+    @Mock
     private AppContext.Gossip gossip;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
@@ -85,8 +88,9 @@ public class TssCryptographyManagerTest {
 
     @BeforeEach
     void setUp() {
+        when(appContext.gossip()).thenReturn(gossip);
         subject = new TssCryptographyManager(
-                tssLibrary, gossip, ForkJoinPool.commonPool(), tssMetrics, InstantSource.system());
+                tssLibrary, appContext, ForkJoinPool.commonPool(), tssMetrics, InstantSource.system());
         when(handleContext.networkInfo()).thenReturn(networkInfo);
         when(networkInfo.selfNodeInfo()).thenReturn(new NodeInfoImpl(0, AccountID.DEFAULT, 0, null, null));
     }
@@ -158,8 +162,8 @@ public class TssCryptographyManagerTest {
 
     @Test
     void testComputeNodeShares() {
-        RosterEntry entry1 = new RosterEntry(1L, 100L, null, null, null);
-        RosterEntry entry2 = new RosterEntry(2L, 50L, null, null, null);
+        RosterEntry entry1 = new RosterEntry(1L, 100L, null, null);
+        RosterEntry entry2 = new RosterEntry(2L, 50L, null, null);
 
         Map<Long, Long> result = computeNodeShares(List.of(entry1, entry2), 10L);
 
