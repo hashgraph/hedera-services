@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
@@ -60,8 +61,10 @@ import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -345,17 +348,26 @@ public class HandleWorkflow {
             // This updates consTimeOfLastHandledTxn as a side-effect
             blockRecordManager.advanceConsensusClock(consensusNow, state);
         }
-
-        if (streamMode == RECORDS) {
-            processInterval(state, event, creator, lastRecordProcessTime, consensusNow);
-        } else {
-            if (processInterval(state, event, creator, lastStreamProcessTime, consensusNow)) {
-                blockStreamManager.setLastIntervalProcessTime(consensusNow);
+        HandleOutput handleOutput = null;
+        final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
+        // try to execute time based events
+        try {
+            if (streamMode == RECORDS) {
+                processInterval(state, event, creator, lastRecordProcessTime, consensusNow);
+            } else {
+                if (processInterval(state, event, creator, lastStreamProcessTime, consensusNow)) {
+                    blockStreamManager.setLastIntervalProcessTime(consensusNow);
+                }
             }
+        } catch (final Exception e) {
+            logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
+            handleOutput = failInvalidStreamItems(userTxn);
         }
 
-        final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
-        final var handleOutput = execute(userTxn);
+        if (handleOutput == null) {
+            handleOutput = execute(userTxn);
+        }
+
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
             blockRecordManager.endUserTransaction(records.stream(), state);
@@ -633,40 +645,49 @@ public class HandleWorkflow {
         } else if (lastProcessTime.getEpochSecond() < consensusNow.getEpochSecond()) {
             // There is at least one unprocessed second since the last processing time
 
-            // Build store factory for the schedule service iterator
-            final var readableStoreFactory = new ReadableStoreFactory(state);
-            final var cleanUpStack = userTxnFactory.createRootSavepointStack(state, ORDINARY_TRANSACTION);
-            final var writableStoreFactory = new WritableStoreFactory(
-                    cleanUpStack,
-                    scheduleService.getServiceName(),
-                    configProvider.getConfiguration(),
-                    storeMetricsService);
-            final var serviceApiFactory =
-                    new ServiceApiFactory(cleanUpStack, configProvider.getConfiguration(), storeMetricsService);
-            final var storeFactory =
-                    new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
-
-            // Get schedule iterator
-            final var scheduleIterator =
-                    scheduleService.iterTxnsForInterval(lastProcessTime, consensusNow, () -> storeFactory);
+            final var readableStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
+            final var schedulesToExecute = readableStore.getByExpirationBetween(
+                    lastProcessTime.getEpochSecond(), consensusNow.getEpochSecond());
             // todo: consensus nanos offset will be calculated more precisely in following PR,
             //  for now just add 1 nano on each iteration.
 
             var consensusNanosOffset = 1;
             // try to execute schedules
-            while (scheduleIterator.hasNext()) {
-                final var schedule = scheduleIterator.next();
+            for (var i = 0; i < schedulesToExecute.size(); i++) {
                 // update schedule consensus timestamp
+                final var schedule = schedulesToExecute.get(i);
                 final var scheduleConsensus = Instant.from(consensusNow.plusNanos(consensusNanosOffset));
-                final var txnBody = schedule.body();
+                final var txnBody = childAsOrdinary(schedule);
                 final var scheduleUserTnx = userTxnFactory.createUserTxn(
-                        state, event, creator, scheduleConsensus, ORDINARY_TRANSACTION, schedule.payerId(), txnBody);
+                        state,
+                        event,
+                        creator,
+                        scheduleConsensus,
+                        ORDINARY_TRANSACTION,
+                        schedule.payerAccountIdOrThrow(),
+                        txnBody);
                 final var baseBuilder = initializeBuilderInfo(
                         scheduleUserTnx.baseBuilder(), scheduleUserTnx.txnInfo(), exchangeRateManager.exchangeRates());
                 ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
                 final var scheduleDispatch = userTxnFactory.createDispatch(
-                        scheduleUserTnx, baseBuilder, schedule.verificationAssistant(), SCHEDULED);
+                        scheduleUserTnx,
+                        baseBuilder,
+                        k -> schedule.signatories().contains(k),
+                        SCHEDULED);
+
+                // mark as deleted
+                final var scheduleStore = getStoreFactory(scheduleUserTnx).writableStore(WritableScheduleStore.class);
+                scheduleStore.delete(schedule.scheduleId(), consensusNow);
+
                 dispatchProcessor.processDispatch(scheduleDispatch);
+
+                // purge all schedules
+                if (i == schedulesToExecute.size() - 1) {
+                    scheduleStore.purgeExpiredSchedulesBetween(
+                            lastProcessTime.getEpochSecond(), consensusNow.getEpochSecond());
+                }
+                scheduleUserTnx.stack().commitSystemStateChanges();
+
                 final var handleOutput = scheduleUserTnx
                         .stack()
                         .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
@@ -685,15 +706,25 @@ public class HandleWorkflow {
                 if (streamMode != RECORDS) {
                     handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
                 }
-
-                scheduleIterator.remove();
                 consensusNanosOffset++;
             }
-            // this will commit the purge of the schedules
-            cleanUpStack.commitSystemStateChanges();
+
             return true;
         }
         return false;
+    }
+
+    private StoreFactoryImpl getStoreFactory(UserTxn userTxn) {
+        // Build store factory for the schedule service iterator
+        final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
+        final var writableStoreFactory = new WritableStoreFactory(
+                userTxn.stack(),
+                scheduleService.getServiceName(),
+                configProvider.getConfiguration(),
+                storeMetricsService);
+        final var serviceApiFactory =
+                new ServiceApiFactory(userTxn.stack(), configProvider.getConfiguration(), storeMetricsService);
+        return new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
     }
 
     /**

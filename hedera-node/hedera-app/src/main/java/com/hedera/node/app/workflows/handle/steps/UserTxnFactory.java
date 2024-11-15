@@ -21,7 +21,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.functionOfTxn;
-import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.getKeyVerifierWithAssistant;
+import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.getKeyVerifier;
 import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.getTxnInfoFrom;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -50,7 +50,6 @@ import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -86,6 +85,7 @@ import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -262,10 +262,10 @@ public class UserTxnFactory {
     public Dispatch createDispatch(
             @NonNull final UserTxn userTxn,
             @NonNull final StreamBuilder baseBuilder,
-            @NonNull final VerificationAssistant keyVerificationAssistant,
+            @NonNull final Predicate<Key> callback,
             @NonNull final HandleContext.TransactionCategory category) {
         final var config = userTxn.config();
-        final var keyVerifier = getKeyVerifierWithAssistant(keyVerificationAssistant, config);
+        final var keyVerifier = getKeyVerifier(callback, config);
         return createDispatch(userTxn, baseBuilder, keyVerifier, category);
     }
 
