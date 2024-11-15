@@ -246,22 +246,11 @@ public final class RosterUtils {
         final var roundRosterPairs = rosterStore.getRosterHistory();
         // If there exists active rosters in the roster state.
         if (roundRosterPairs != null) {
-            // Read the active rosters and construct the existing rosterHistory from roster state
-            final var current = roundRosterPairs.get(0);
-            final var previous = roundRosterPairs.get(1);
+            final var rosterMap = roundRosterPairs.stream()
+                    .collect(Collectors.toMap(
+                            RoundRosterPair::activeRosterHash, pair -> rosterStore.get(pair.activeRosterHash())));
 
-            final List<RoundRosterPair> roundRosterPairList = new ArrayList<>();
-            final Map<Bytes, Roster> rosterMap = new HashMap<>();
-
-            final Bytes currentHash = current.activeRosterHash();
-            roundRosterPairList.add(current);
-            rosterMap.put(currentHash, rosterStore.get(currentHash));
-
-            final Bytes previousHash = previous.activeRosterHash();
-            roundRosterPairList.add(previous);
-            rosterMap.put(previousHash, rosterStore.get(previousHash));
-
-            return new RosterHistory(roundRosterPairList, rosterMap);
+            return new RosterHistory(roundRosterPairs, rosterMap);
         } else {
             // If there is no roster state content, this is a fatal error: The migration did not happen on software
             // upgrade.
