@@ -49,7 +49,12 @@ public class FrameUtils {
     public static final String PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE = "propagatedCallFailure";
     public static final String SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE = "systemContractGasCalculator";
     public static final String PENDING_CREATION_BUILDER_CONTEXT_VARIABLE = "pendingCreationBuilder";
-    private static final long TOKEN_PROXY_ACCOUNT_NONCE = -1;
+
+    public enum EntityType {
+        TOKEN,
+        SCHEDULE_TXN,
+        REGULAR_ACCOUNT
+    }
 
     private FrameUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -260,7 +265,7 @@ public class FrameUtils {
         DIRECT_OR_PROXY_REDIRECT,
     }
 
-    public static CallType callTypeOf(final MessageFrame frame) {
+    public static CallType callTypeOf(final MessageFrame frame, final EntityType expectedEntityType) {
         if (!isDelegateCall(frame)) {
             return CallType.DIRECT_OR_PROXY_REDIRECT;
         }
@@ -269,7 +274,7 @@ public class FrameUtils {
         // This determines if we should treat this as a delegate call.
         // We accept delegates if the token redirect contract calls us.
         final CallType viableType;
-        if (isToken(frame, recipient)) {
+        if (isExpectedEntityType(frame, recipient, expectedEntityType)) {
             viableType = CallType.DIRECT_OR_PROXY_REDIRECT;
         } else if (isQualifiedDelegate(recipient, frame)) {
             viableType = CallType.QUALIFIED_DELEGATE;
@@ -278,23 +283,6 @@ public class FrameUtils {
         }
         // make sure we have a parent calling context
         return validateParentCallType(frame, viableType);
-    }
-
-    public static CallType callTypeForAccountOf(final MessageFrame frame) {
-        if (!isDelegateCall(frame)) {
-            return CallType.DIRECT_OR_PROXY_REDIRECT;
-        }
-        final var recipient = frame.getRecipientAddress();
-        // Evaluate whether the recipient is a regular account.
-        // This determines if we should treat this as a delegate call.
-        // We accept delegates if the account redirect contract calls us.
-        final CallType viableType;
-        if (isRegularAccount(frame, recipient)) {
-            viableType = CallType.DIRECT_OR_PROXY_REDIRECT;
-            return validateParentCallType(frame, viableType);
-        } else {
-            return CallType.UNQUALIFIED_DELEGATE;
-        }
     }
 
     private static CallType validateParentCallType(@NonNull MessageFrame frame, @NonNull CallType viableType) {
@@ -341,22 +329,26 @@ public class FrameUtils {
                 contractsConfigOf(frame), maybeGrandfatheredNumber);
     }
 
-    private static boolean isToken(final MessageFrame frame, final Address address) {
-        final var account = frame.getWorldUpdater().get(address);
-        if (account != null) {
-            return account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
-        }
-        return false;
-    }
-
-    private static boolean isRegularAccount(@NonNull final MessageFrame frame, @NonNull final Address address) {
+    /**
+     * Returns true if the given recipient address to the frame is of the expected entity type.
+     * @param frame current message frame
+     * @param address address to check
+     * @param expectedEntity expected entity type
+     * @return true if the address is of the expected entity type
+     */
+    private static boolean isExpectedEntityType(
+            final MessageFrame frame, final Address address, final EntityType expectedEntity) {
         requireNonNull(frame);
         requireNonNull(address);
 
         final var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
         final var recipient = updater.getHederaAccount(address);
         if (recipient != null) {
-            return recipient.isRegularAccount();
+            return switch (expectedEntity) {
+                case TOKEN -> recipient.isTokenFacade();
+                case SCHEDULE_TXN -> recipient.isScheduleTxnFacade();
+                case REGULAR_ACCOUNT -> recipient.isRegularAccount();
+            };
         }
         return false;
     }

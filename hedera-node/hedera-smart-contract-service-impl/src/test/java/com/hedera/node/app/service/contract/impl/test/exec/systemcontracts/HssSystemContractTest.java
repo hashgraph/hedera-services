@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSamePrecompileResult;
 import static org.mockito.Mockito.when;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HasSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HssSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.config.data.ContractsConfig;
@@ -39,7 +39,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HasSystemContractTest {
+class HssSystemContractTest {
     @Mock
     private MessageFrame frame;
 
@@ -54,13 +54,13 @@ class HasSystemContractTest {
 
     private MockedStatic<FrameUtils> frameUtils;
 
-    private HasSystemContract subject;
+    private HssSystemContract subject;
     private final Bytes validInput = Bytes.fromHexString("91548228");
 
     @BeforeEach
     void setUp() {
         frameUtils = Mockito.mockStatic(FrameUtils.class);
-        subject = new HasSystemContract(gasCalculator, attemptFactory);
+        subject = new HssSystemContract(gasCalculator, attemptFactory);
     }
 
     @AfterEach
@@ -69,13 +69,13 @@ class HasSystemContractTest {
     }
 
     /**
-     * The unit tests for HtsSystemContract are also valid for HasSystemContract.
+     * The unit tests for HtsSystemContract are also valid for HssSystemContract.
      * Only add tests for unique functionality.
      */
     @Test
     void haltsAndConsumesRemainingGasIfConfigIsOff() {
         frameUtils.when(() -> contractsConfigOf(frame)).thenReturn(contractsConfig);
-        when(contractsConfig.systemContractAccountServiceEnabled()).thenReturn(false);
+        when(contractsConfig.systemContractScheduleServiceEnabled()).thenReturn(false);
         final var expected = haltResult(NOT_SUPPORTED, frame.getRemainingGas());
         final var result = subject.computeFully(validInput, frame);
         assertSamePrecompileResult(expected, result);
