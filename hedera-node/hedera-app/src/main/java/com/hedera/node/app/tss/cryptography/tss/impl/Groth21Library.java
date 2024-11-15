@@ -27,7 +27,6 @@ import com.hedera.node.app.tss.cryptography.tss.groth21.Groth21GenesisStage;
 import com.hedera.node.app.tss.cryptography.tss.groth21.Groth21Message;
 import com.hedera.node.app.tss.cryptography.tss.groth21.Groth21RekeyStage;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Random;
 
 /**

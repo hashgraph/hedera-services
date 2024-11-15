@@ -21,7 +21,6 @@ import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
 import com.hedera.node.app.tss.cryptography.tss.api.TssPrivateShare;
 import com.hedera.node.app.tss.cryptography.tss.api.TssPublicShare;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;

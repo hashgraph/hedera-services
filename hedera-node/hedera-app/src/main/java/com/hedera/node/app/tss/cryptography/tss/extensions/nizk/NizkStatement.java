@@ -24,7 +24,6 @@ import com.hedera.node.app.tss.cryptography.tss.extensions.elgamal.CombinedCiphe
 import com.hedera.node.app.tss.cryptography.utils.HashUtils;
 import com.hedera.node.app.tss.cryptography.utils.HashUtils.HashCalculator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import java.util.Objects;
 

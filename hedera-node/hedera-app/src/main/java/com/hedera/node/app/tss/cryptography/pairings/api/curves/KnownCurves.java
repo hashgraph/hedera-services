@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.tss.cryptography.pairings.api.curves;
 
-
 import com.hedera.node.app.tss.cryptography.pairings.api.Curve;
 
 /**

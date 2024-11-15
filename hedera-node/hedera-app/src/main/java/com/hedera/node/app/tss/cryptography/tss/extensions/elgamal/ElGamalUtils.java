@@ -28,7 +28,6 @@ import com.hedera.node.app.tss.cryptography.tss.api.TssException;
 import com.hedera.node.app.tss.cryptography.tss.api.TssShareTable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

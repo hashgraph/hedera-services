@@ -19,7 +19,6 @@ package com.hedera.node.app.tss.cryptography.bls;
 import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
 import com.hedera.node.app.tss.cryptography.utils.ByteArrayUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import java.util.Objects;
 

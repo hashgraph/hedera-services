@@ -31,7 +31,6 @@ import com.hedera.node.app.tss.cryptography.tss.api.TssShareExtractor;
 import com.hedera.node.app.tss.cryptography.tss.extensions.elgamal.ElGamalSubstitutionTable;
 import com.hedera.node.app.tss.cryptography.tss.extensions.elgamal.ElGamalUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

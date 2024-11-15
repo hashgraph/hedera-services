@@ -16,16 +16,15 @@
 
 package com.hedera.node.app.tss.cryptography.tss.extensions;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Contains mappings useful for the {@link com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory}:

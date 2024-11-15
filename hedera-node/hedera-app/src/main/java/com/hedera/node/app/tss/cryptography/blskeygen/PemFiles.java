@@ -16,21 +16,20 @@
 
 package com.hedera.node.app.tss.cryptography.blskeygen;
 
+import static com.hedera.node.app.tss.cryptography.blskeygen.pem.PemType.PRIVATE_KEY;
+import static com.hedera.node.app.tss.cryptography.blskeygen.pem.PemType.PUBLIC_KEY;
+
 import com.hedera.node.app.tss.cryptography.bls.BlsPrivateKey;
 import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
 import com.hedera.node.app.tss.cryptography.blskeygen.pem.ParsedPemFile;
 import com.hedera.node.app.tss.cryptography.blskeygen.pem.PemType;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Base64;
 import java.util.Objects;
-
-import static com.hedera.node.app.tss.cryptography.blskeygen.pem.PemType.PRIVATE_KEY;
-import static com.hedera.node.app.tss.cryptography.blskeygen.pem.PemType.PUBLIC_KEY;
 
 /**
  * Writes and reads the base64 string in Pem files according to <a

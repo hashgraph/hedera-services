@@ -15,6 +15,7 @@
  */
 
 package com.hedera.node.app.tss.cryptography.tss.groth21;
+
 import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
 import com.hedera.node.app.tss.cryptography.bls.SignatureSchema;
 import com.hedera.node.app.tss.cryptography.pairings.api.FieldElement;
@@ -33,7 +34,6 @@ import com.hedera.node.app.tss.cryptography.tss.extensions.nizk.NizkStatement;
 import com.hedera.node.app.tss.cryptography.tss.extensions.nizk.NizkWitness;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;

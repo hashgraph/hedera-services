@@ -18,7 +18,6 @@ package com.hedera.node.app.tss.handlers;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PRIVATE_KEY;
-import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;

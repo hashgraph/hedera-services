@@ -364,8 +364,7 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             allRunFor(
                     spec,
                     nonEmbeddedTssMessages.stream()
-                            .map(m -> submitTssMessage(m.nodeId(), sourceRosterHash, targetRosterHash,
-                                    m.tssMessage()))
+                            .map(m -> submitTssMessage(m.nodeId(), sourceRosterHash, targetRosterHash, m.tssMessage()))
                             .toArray(SpecOperation[]::new));
         }));
     }

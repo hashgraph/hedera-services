@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.tss.cryptography.tss.extensions.nizk;
 
+import static com.hedera.node.app.tss.cryptography.tss.api.TssShareTable.getForShareId;
+
 import com.hedera.node.app.tss.cryptography.bls.SignatureSchema;
 import com.hedera.node.app.tss.cryptography.pairings.api.Field;
 import com.hedera.node.app.tss.cryptography.pairings.api.FieldElement;
@@ -23,15 +25,12 @@ import com.hedera.node.app.tss.cryptography.pairings.api.Group;
 import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
 import com.hedera.node.app.tss.cryptography.utils.HashUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Random;
-
-import static com.hedera.node.app.tss.cryptography.tss.api.TssShareTable.getForShareId;
 
 /**
  * A NizkProof allows a participant to prove that the encrypted values it is sharing are valid

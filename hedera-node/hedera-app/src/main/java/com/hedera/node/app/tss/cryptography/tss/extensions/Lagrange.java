@@ -21,7 +21,6 @@ import com.hedera.node.app.tss.cryptography.pairings.api.FieldElement;
 import com.hedera.node.app.tss.cryptography.pairings.api.Group;
 import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;

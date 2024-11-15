@@ -19,7 +19,6 @@ package com.hedera.node.app.tss.cryptography.tss.extensions.elgamal;
 import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
 import com.hedera.node.app.tss.cryptography.tss.api.TssShareTable;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 
 /**

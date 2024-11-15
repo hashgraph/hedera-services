@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.tss.cryptography.altbn128;
 
+import static com.hedera.node.app.tss.cryptography.utils.ValidationUtils.expectOrThrow;
+
 import com.hedera.node.app.tss.cryptography.pairings.api.BilinearPairing;
 import com.hedera.node.app.tss.cryptography.pairings.api.Curve;
 import com.hedera.node.app.tss.cryptography.pairings.api.Field;
@@ -24,8 +26,6 @@ import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
 import com.hedera.node.app.tss.cryptography.pairings.api.PairingFriendlyCurve;
 import com.hedera.node.app.tss.cryptography.pairings.api.curves.KnownCurves;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import static com.hedera.node.app.tss.cryptography.utils.ValidationUtils.expectOrThrow;
 
 /**
  * Represents a bilinear pairing friendly curve alt-bn-128 and its component

@@ -33,15 +33,14 @@ import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
 import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.cryptography.tss.groth21.Groth21Message;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 public class TssUtils {
-    public static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(Curve.ALT_BN128,
-            GroupAssignment.SHORT_SIGNATURES);
+    public static final SignatureSchema SIGNATURE_SCHEMA =
+            SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
     /**
      * Compute the TSS participant directory from the roster.
      *
@@ -63,8 +62,8 @@ public class TssUtils {
                     computedShares.get(rosterEntry.nodeId()).intValue();
             // FUTURE: Use the actual public key from the node
             final var pairingPublicKey = new BlsPublicKey(
-                    new AltBn128GroupElement(new AltBn128Group(AltBN128CurveGroup.GROUP1), new byte[]{1}) {
-                    }, SIGNATURE_SCHEMA);
+                    new AltBn128GroupElement(new AltBn128Group(AltBN128CurveGroup.GROUP1), new byte[] {1}) {},
+                    SIGNATURE_SCHEMA);
             builder.withParticipant((int) rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
         }
         // FUTURE: Use the actual signature schema
@@ -96,8 +95,8 @@ public class TssUtils {
         final var validTssMessages = new LinkedList<TssMessageTransactionBody>();
         for (final var op : tssMessages) {
             final var isValid = tssLibrary.verifyTssMessage(
-                    tssParticipantDirectory, Groth21Message.fromBytes(op.tssMessage().toByteArray(),
-                            tssParticipantDirectory, SIGNATURE_SCHEMA));
+                    tssParticipantDirectory,
+                    Groth21Message.fromBytes(op.tssMessage().toByteArray(), tssParticipantDirectory, SIGNATURE_SCHEMA));
             if (isValid) {
                 validTssMessages.add(op);
             }
@@ -112,10 +111,12 @@ public class TssUtils {
      * @param tssParticipantDirectory
      * @return list of TSS messages
      */
-    public static List<TssMessage> getTssMessages(List<TssMessageTransactionBody> validTssOps, final TssParticipantDirectory tssParticipantDirectory) {
+    public static List<TssMessage> getTssMessages(
+            List<TssMessageTransactionBody> validTssOps, final TssParticipantDirectory tssParticipantDirectory) {
         return validTssOps.stream()
                 .map(TssMessageTransactionBody::tssMessage)
-                .map(k -> (TssMessage) Groth21Message.fromBytes(k.toByteArray(), tssParticipantDirectory, SIGNATURE_SCHEMA))
+                .map(k -> (TssMessage)
+                        Groth21Message.fromBytes(k.toByteArray(), tssParticipantDirectory, SIGNATURE_SCHEMA))
                 .toList();
     }
 

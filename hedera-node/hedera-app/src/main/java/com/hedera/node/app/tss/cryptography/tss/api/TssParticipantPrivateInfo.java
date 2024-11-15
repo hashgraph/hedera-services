@@ -16,13 +16,12 @@
 
 package com.hedera.node.app.tss.cryptography.tss.api;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.tss.cryptography.bls.BlsPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Represents the private information of the participant executing the protocol.

@@ -21,7 +21,6 @@ import com.hedera.node.app.tss.cryptography.altbn128.adapter.jni.ArkBn254Adapter
 import com.hedera.node.app.tss.cryptography.pairings.api.Curve;
 import com.hedera.node.app.tss.cryptography.pairings.api.PairingFriendlyCurve;
 import com.hedera.node.app.tss.cryptography.pairings.spi.PairingFriendlyCurveProvider;
-
 import java.util.concurrent.atomic.AtomicReference;
 
 /**

@@ -16,13 +16,12 @@
 
 package com.hedera.node.app.tss.cryptography.altbn128.facade;
 
+import static com.hedera.node.app.tss.cryptography.altbn128.adapter.FieldElementsLibraryAdapter.SUCCESS;
+
 import com.hedera.node.app.tss.cryptography.altbn128.AltBn128Exception;
 import com.hedera.node.app.tss.cryptography.altbn128.adapter.FieldElementsLibraryAdapter;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
-
-import static com.hedera.node.app.tss.cryptography.altbn128.adapter.FieldElementsLibraryAdapter.SUCCESS;
 
 /**
  * This class acts as a facade that simplifies the interaction for operating with {@code FieldElement} {@code byte[]} representations.

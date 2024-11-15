@@ -17,7 +17,6 @@
 package com.hedera.node.app.tss.cryptography.nativesupport.internal;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.HashSet;
 import java.util.Set;
 

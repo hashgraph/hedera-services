@@ -18,7 +18,6 @@ package com.hedera.node.app.tss.cryptography.blskeygen;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.nio.file.Path;
 import java.util.Objects;
 

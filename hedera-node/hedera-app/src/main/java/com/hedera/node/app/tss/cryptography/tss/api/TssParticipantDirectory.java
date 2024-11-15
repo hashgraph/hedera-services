@@ -19,7 +19,6 @@ package com.hedera.node.app.tss.cryptography.tss.api;
 import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
 import com.hedera.node.app.tss.cryptography.tss.extensions.TssParticipantAssigmentMapping;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +141,8 @@ public final class TssParticipantDirectory implements TssShareTable<BlsPublicKey
      * A builder for creating {@link TssParticipantDirectory} instances.
      */
     public static class Builder {
-        private final Map<Long, TssParticipantAssigmentMapping.ParticipantMappingEntry> participantEntries = new HashMap<>();
+        private final Map<Long, TssParticipantAssigmentMapping.ParticipantMappingEntry> participantEntries =
+                new HashMap<>();
         private int threshold;
 
         private Builder() {}
@@ -182,7 +182,9 @@ public final class TssParticipantDirectory implements TssShareTable<BlsPublicKey
                         "Participant with participantId " + participantId + " was previously added to the directory");
 
             participantEntries.put(
-                    participantId, new TssParticipantAssigmentMapping.ParticipantMappingEntry(participantId, numberOfShares, tssEncryptionPublicKey));
+                    participantId,
+                    new TssParticipantAssigmentMapping.ParticipantMappingEntry(
+                            participantId, numberOfShares, tssEncryptionPublicKey));
             return this;
         }
 
@@ -209,10 +211,11 @@ public final class TssParticipantDirectory implements TssShareTable<BlsPublicKey
                 throw new IllegalStateException("Threshold exceeds the number of shares");
             }
 
-            final TssParticipantAssigmentMapping.ParticipantMappingEntry[] sortedEntries = participantEntries.entrySet().stream()
-                    .sorted(Entry.comparingByKey())
-                    .map(Entry::getValue)
-                    .toArray(TssParticipantAssigmentMapping.ParticipantMappingEntry[]::new);
+            final TssParticipantAssigmentMapping.ParticipantMappingEntry[] sortedEntries =
+                    participantEntries.entrySet().stream()
+                            .sorted(Entry.comparingByKey())
+                            .map(Entry::getValue)
+                            .toArray(TssParticipantAssigmentMapping.ParticipantMappingEntry[]::new);
 
             return new TssParticipantDirectory(
                     new TssParticipantAssigmentMapping(totalShares, sortedEntries), threshold);

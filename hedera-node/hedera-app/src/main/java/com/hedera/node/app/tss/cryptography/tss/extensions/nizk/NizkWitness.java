@@ -16,13 +16,12 @@
 
 package com.hedera.node.app.tss.cryptography.tss.extensions.nizk;
 
+import static com.hedera.node.app.tss.cryptography.tss.extensions.elgamal.ElGamalUtils.combineFieldRandomness;
+
 import com.hedera.node.app.tss.cryptography.pairings.api.FieldElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import java.util.Objects;
-
-import static com.hedera.node.app.tss.cryptography.tss.extensions.elgamal.ElGamalUtils.combineFieldRandomness;
 
 /**
  * Represents the private information in a Nizk proof.

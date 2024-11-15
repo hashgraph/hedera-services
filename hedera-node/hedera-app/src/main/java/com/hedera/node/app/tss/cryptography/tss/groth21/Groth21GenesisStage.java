@@ -26,7 +26,6 @@ import com.hedera.node.app.tss.cryptography.tss.api.TssPublicShare;
 import com.hedera.node.app.tss.cryptography.tss.api.TssServiceGenesisStage;
 import com.hedera.node.app.tss.cryptography.tss.api.TssShareExtractor;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import java.util.Random;
 

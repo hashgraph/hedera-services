@@ -16,17 +16,16 @@
 
 package com.hedera.node.app.tss.cryptography.tss.api;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.tss.cryptography.bls.BlsPrivateKey;
 import com.hedera.node.app.tss.cryptography.bls.SignatureSchema;
 import com.hedera.node.app.tss.cryptography.tss.extensions.Lagrange;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Represents a secret portion of a shared key.

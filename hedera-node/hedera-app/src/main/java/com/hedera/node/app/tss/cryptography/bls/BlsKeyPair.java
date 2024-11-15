@@ -17,7 +17,6 @@
 package com.hedera.node.app.tss.cryptography.bls;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Objects;

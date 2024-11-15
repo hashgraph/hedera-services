@@ -16,15 +16,14 @@
 
 package com.hedera.node.app.tss.cryptography.altbn128.facade;
 
+import static com.hedera.node.app.tss.cryptography.utils.ValidationUtils.validateSize;
+
 import com.hedera.node.app.tss.cryptography.altbn128.AltBn128Exception;
 import com.hedera.node.app.tss.cryptography.altbn128.adapter.FieldElementsLibraryAdapter;
 import com.hedera.node.app.tss.cryptography.altbn128.adapter.GroupElementsLibraryAdapter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Objects;
-
-import static com.hedera.node.app.tss.cryptography.utils.ValidationUtils.validateSize;
 
 /**
  * This class acts as a facade that simplifies the interaction for operating specifically with any of the alt-bn-128 {@code Group}s

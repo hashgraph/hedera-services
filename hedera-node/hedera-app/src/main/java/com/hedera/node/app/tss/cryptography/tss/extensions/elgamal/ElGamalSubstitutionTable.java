@@ -23,7 +23,6 @@ import com.hedera.node.app.tss.cryptography.pairings.api.Group;
 import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

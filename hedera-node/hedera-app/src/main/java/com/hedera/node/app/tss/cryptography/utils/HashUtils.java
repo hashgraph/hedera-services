@@ -17,7 +17,6 @@
 package com.hedera.node.app.tss.cryptography.utils;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;

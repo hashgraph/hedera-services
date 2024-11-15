@@ -17,7 +17,6 @@
 package com.hedera.node.app.tss.cryptography.utils;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;

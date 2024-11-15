@@ -21,7 +21,6 @@ import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
 import com.hedera.node.app.tss.cryptography.pairings.extensions.EcPolynomial;
 import com.hedera.node.app.tss.cryptography.tss.api.TssShareTable;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Arrays;
 import java.util.List;
 

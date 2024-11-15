@@ -83,6 +83,7 @@ public class TssBaseServiceTest {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
+
     @Mock
     private com.hedera.node.app.tss.cryptography.tss.api.TssMessage tssMessage;
 
@@ -145,8 +146,7 @@ public class TssBaseServiceTest {
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
         given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
-        given(tssLibrary.generateTssMessage(any(), any()))
-                .willReturn(tssMessage);
+        given(tssLibrary.generateTssMessage(any(), any())).willReturn(tssMessage);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
 
         subject.setCandidateRoster(ACTIVE_ROSTER, handleContext);
@@ -165,8 +165,7 @@ public class TssBaseServiceTest {
         // Simulate the _current_ candidate roster and active roster
         final var rosterStore = mockWritableRosterStore();
         given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
-        given(tssLibrary.generateTssMessage(any(), any()))
-                .willReturn(tssMessage);
+        given(tssLibrary.generateTssMessage(any(), any())).willReturn(tssMessage);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         final var inputRoster = Roster.newBuilder()
                 .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3))

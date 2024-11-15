@@ -16,16 +16,15 @@
 
 package com.hedera.node.app.tss.cryptography.altbn128;
 
+import static com.hedera.node.app.tss.cryptography.utils.ValidationUtils.expectOrThrow;
+
 import com.hedera.node.app.tss.cryptography.altbn128.facade.GroupFacade;
 import com.hedera.node.app.tss.cryptography.pairings.api.FieldElement;
 import com.hedera.node.app.tss.cryptography.pairings.api.Group;
 import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Arrays;
 import java.util.Objects;
-
-import static com.hedera.node.app.tss.cryptography.utils.ValidationUtils.expectOrThrow;
 
 /**
  * The implementation of a {@link GroupElement}

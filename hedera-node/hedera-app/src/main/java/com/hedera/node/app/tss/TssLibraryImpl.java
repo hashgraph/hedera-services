@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.tss;
 
+import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
+
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.cryptography.bls.BlsPrivateKey;
@@ -31,16 +33,14 @@ import com.hedera.node.app.tss.cryptography.tss.api.TssShareSignature;
 import com.hedera.node.app.tss.cryptography.tss.impl.Groth21Library;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.function.Supplier;
-
-import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
+import javax.inject.Inject;
 
 public class TssLibraryImpl implements TssLibrary {
-    private static final BlsPrivateKey AGGREGATED_PRIVATE_KEY = BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom());
+    private static final BlsPrivateKey AGGREGATED_PRIVATE_KEY =
+            BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom());
     private byte[] message = new byte[0];
 
     private TssService tssService;
@@ -77,33 +77,43 @@ public class TssLibraryImpl implements TssLibrary {
     public List<TssPrivateShare> decryptPrivateShares(
             @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> validTssMessages) {
         // TODO: How to get the BlsPrivateKey here
-        final var tssPrivateInfo = new TssParticipantPrivateInfo(selfNodeInfo.get().nodeId(), AGGREGATED_PRIVATE_KEY);
-        return tssService.rekeyStage().shareExtractor(participantDirectory, validTssMessages).ownedPrivateShares(tssPrivateInfo);
+        final var tssPrivateInfo =
+                new TssParticipantPrivateInfo(selfNodeInfo.get().nodeId(), AGGREGATED_PRIVATE_KEY);
+        return tssService
+                .rekeyStage()
+                .shareExtractor(participantDirectory, validTssMessages)
+                .ownedPrivateShares(tssPrivateInfo);
     }
 
     @NonNull
     @Override
     public BlsPrivateKey aggregatePrivateShares(@NonNull List<TssPrivateShare> privateShares) {
-        return BlsPrivateKey.aggregate(privateShares.stream().map(TssPrivateShare::privateKey).toList());
+        return BlsPrivateKey.aggregate(
+                privateShares.stream().map(TssPrivateShare::privateKey).toList());
     }
 
     @NonNull
     @Override
     public List<TssPublicShare> computePublicShares(
             @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> validTssMessages) {
-        return tssService.rekeyStage().shareExtractor(participantDirectory, validTssMessages).allPublicShares();
+        return tssService
+                .rekeyStage()
+                .shareExtractor(participantDirectory, validTssMessages)
+                .allPublicShares();
     }
 
     @NonNull
     @Override
     public BlsPublicKey aggregatePublicShares(@NonNull List<TssPublicShare> publicShares) {
-       return BlsPublicKey.aggregate(publicShares.stream().map(TssPublicShare::publicKey).toList());
+        return BlsPublicKey.aggregate(
+                publicShares.stream().map(TssPublicShare::publicKey).toList());
     }
 
     @NonNull
     @Override
     public BlsSignature aggregateSignatures(@NonNull List<TssShareSignature> partialSignatures) {
-        return BlsSignature.aggregate(partialSignatures.stream().map(TssShareSignature::signature).toList());
+        return BlsSignature.aggregate(
+                partialSignatures.stream().map(TssShareSignature::signature).toList());
     }
 
     @NonNull

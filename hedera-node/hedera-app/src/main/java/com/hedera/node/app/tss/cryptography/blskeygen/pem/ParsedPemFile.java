@@ -17,7 +17,6 @@
 package com.hedera.node.app.tss.cryptography.blskeygen.pem;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 
 /**

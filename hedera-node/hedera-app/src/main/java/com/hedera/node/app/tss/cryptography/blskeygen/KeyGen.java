@@ -23,7 +23,6 @@ import com.hedera.node.app.tss.cryptography.bls.GroupAssignment;
 import com.hedera.node.app.tss.cryptography.bls.SignatureSchema;
 import com.hedera.node.app.tss.cryptography.pairings.api.Curve;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.file.Files;
 
 /**

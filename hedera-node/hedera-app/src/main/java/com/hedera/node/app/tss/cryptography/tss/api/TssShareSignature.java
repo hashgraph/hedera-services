@@ -16,19 +16,18 @@
 
 package com.hedera.node.app.tss.cryptography.tss.api;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.tss.cryptography.bls.BlsSignature;
 import com.hedera.node.app.tss.cryptography.bls.SignatureSchema;
 import com.hedera.node.app.tss.cryptography.pairings.api.FieldElement;
 import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
 import com.hedera.node.app.tss.cryptography.tss.extensions.Lagrange;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Represents a partial signature created from share of a secret key.

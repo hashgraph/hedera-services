@@ -76,9 +76,7 @@ public class TssCryptographyManager {
      * A signed vote containing the ledger id with a bit set denoting the threshold TSS messages used to compute it.
      */
     public record Vote(
-            @NonNull BlsPublicKey ledgerPublicKey,
-            @NonNull Signature signature,
-            @NonNull BitSet thresholdMessages) {
+            @NonNull BlsPublicKey ledgerPublicKey, @NonNull Signature signature, @NonNull BitSet thresholdMessages) {
         public @NonNull Bytes ledgerId() {
             return Bytes.wrap(ledgerPublicKey.toBytes());
         }

@@ -22,7 +22,6 @@ import com.hedera.node.app.tss.cryptography.pairings.api.PairingFriendlyCurve;
 import com.hedera.node.app.tss.cryptography.pairings.api.PairingFriendlyCurves;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Objects;
 
 /**

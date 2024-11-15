@@ -84,8 +84,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
         final var tssSignaturesMap = signatures.computeIfAbsent(messageHash, k -> new ConcurrentHashMap<>());
         final Set<TssShareSignature> tssShareSignatures =
                 tssSignaturesMap.computeIfAbsent(rosterHash, k -> ConcurrentHashMap.newKeySet());
-        final var isPresent =
-                tssShareSignatures.stream().anyMatch(sig -> sig.shareId() == shareIndex);
+        final var isPresent = tssShareSignatures.stream().anyMatch(sig -> sig.shareId() == shareIndex);
         if (!isPresent) {
             // For each signature not already present for this message hash, verify with
             // tssLibrary and accumulate in map
@@ -95,8 +94,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
             if (isThresholdMet(messageHash, rosterHash)) {
                 final var ledgerSignature = tssLibrary.aggregateSignatures(
                         tssShareSignatures.stream().toList());
-                tssBaseService.notifySignature(
-                        messageHash.toByteArray(), ledgerSignature.toBytes());
+                tssBaseService.notifySignature(messageHash.toByteArray(), ledgerSignature.toBytes());
             }
         }
         // Purge any expired signature requests, at most once per second
@@ -113,7 +111,8 @@ public class TssShareSignatureHandler implements TransactionHandler {
             final Bytes messageHash,
             final long shareIndex,
             final Set<TssShareSignature> tssShareSignatures) {
-        final var tssShareSignature = new TssShareSignature((int) shareIndex,
+        final var tssShareSignature = new TssShareSignature(
+                (int) shareIndex,
                 new BlsSignature(
                         new FakeGroupElement(BigInteger.valueOf(shareIndex)),
                         SignatureSchema.create(shareSignature.toByteArray())));

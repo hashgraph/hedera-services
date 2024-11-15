@@ -23,7 +23,6 @@ import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
 import com.hedera.node.app.tss.cryptography.pairings.extensions.EcPolynomial;
 import com.hedera.node.app.tss.cryptography.pairings.extensions.FiniteFieldPolynomial;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

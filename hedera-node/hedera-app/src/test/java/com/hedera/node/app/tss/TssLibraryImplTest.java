@@ -22,12 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.api.FakeFieldElement;
 import com.hedera.node.app.tss.api.FakeGroupElement;
@@ -38,6 +32,10 @@ import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.cryptography.tss.api.TssPrivateShare;
 import com.hedera.node.app.tss.cryptography.tss.api.TssPublicShare;
 import com.hedera.node.app.tss.cryptography.tss.api.TssShareSignature;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -68,8 +66,7 @@ class TssLibraryImplTest {
         final var privateShares = new ArrayList<TssPrivateShare>();
         final var privateKeyShares = new long[] {1, 2, 3};
         for (int i = 0; i < privateKeyShares.length; i++) {
-            privateShares.add(
-                    new TssPrivateShare(i, BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom())));
+            privateShares.add(new TssPrivateShare(i, BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom())));
         }
 
         final var aggregatedPrivateKey = fakeTssLibrary.aggregatePrivateShares(privateShares);
@@ -84,8 +81,7 @@ class TssLibraryImplTest {
         final var privateShares = new ArrayList<TssPrivateShare>();
         final var privateKeyShares = new long[] {1, 2};
         for (int i = 0; i < privateKeyShares.length; i++) {
-            privateShares.add(
-                    new TssPrivateShare(i, BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom())));
+            privateShares.add(new TssPrivateShare(i, BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom())));
         }
 
         assertTrue(assertThrows(IllegalStateException.class, () -> fakeTssLibrary.aggregatePrivateShares(privateShares))
@@ -99,8 +95,9 @@ class TssLibraryImplTest {
         final var publicShares = new ArrayList<TssPublicShare>();
         final var publicKeyShares = new long[] {1, 2, 3};
         for (int i = 0; i < publicKeyShares.length; i++) {
-            publicShares.add(
-                    new TssPublicShare(i, BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom()).createPublicKey()));
+            publicShares.add(new TssPublicShare(
+                    i,
+                    BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom()).createPublicKey()));
         }
 
         final var aggregatedPublicKey = fakeTssLibrary.aggregatePublicShares(publicShares);
@@ -116,8 +113,7 @@ class TssLibraryImplTest {
         final var signatureShares = new long[] {1, 2, 3};
         for (int i = 0; i < signatureShares.length; i++) {
             final var signatureElement = new FakeGroupElement(BigInteger.valueOf(signatureShares[i]));
-            partialSignatures.add(
-                    new TssShareSignature(i, new BlsSignature(signatureElement, SIGNATURE_SCHEMA)));
+            partialSignatures.add(new TssShareSignature(i, new BlsSignature(signatureElement, SIGNATURE_SCHEMA)));
         }
 
         final var aggregatedSignature = fakeTssLibrary.aggregateSignatures(partialSignatures);
@@ -125,9 +121,7 @@ class TssLibraryImplTest {
         assertNotNull(aggregatedSignature);
         final var expectedSignature =
                 "8725231785142640510958974801449281668044511174527971820957835005137448197712608590715499503138764434364488379578757";
-        assertEquals(
-                expectedSignature,
-                new BigInteger(1, aggregatedSignature.toBytes()).toString());
+        assertEquals(expectedSignature, new BigInteger(1, aggregatedSignature.toBytes()).toString());
     }
 
     @Test
@@ -137,8 +131,7 @@ class TssLibraryImplTest {
         final var pairingPublicKey = pairingPrivateKey.createPublicKey();
         final var p0PrivateShare = new TssPrivateShare(0, pairingPrivateKey);
 
-        final var tssDirectoryBuilder = TssParticipantDirectory.createBuilder()
-                .withParticipant(0, 1, pairingPublicKey);
+        final var tssDirectoryBuilder = TssParticipantDirectory.createBuilder().withParticipant(0, 1, pairingPublicKey);
 
         final var publicShares = new ArrayList<TssPublicShare>();
         publicShares.add(new TssPublicShare(0, pairingPublicKey));
@@ -172,13 +165,12 @@ class TssLibraryImplTest {
         }
 
         // After signing, it will collect all other participant signatures
-        final List<TssShareSignature> p1Signatures = List.of(new TssShareSignature(
-                1, signatures.getFirst().signature())); // pretend we get another valid signature
+        final List<TssShareSignature> p1Signatures = List.of(
+                new TssShareSignature(1, signatures.getFirst().signature())); // pretend we get another valid signature
         final byte[] invalidSignature = new byte[20];
         random.nextBytes(invalidSignature);
         final List<TssShareSignature> p2Signatures = List.of(new TssShareSignature(
-                2,
-                new BlsSignature(new FakeGroupElement(new BigInteger(1, invalidSignature)), SIGNATURE_SCHEMA)));
+                2, new BlsSignature(new FakeGroupElement(new BigInteger(1, invalidSignature)), SIGNATURE_SCHEMA)));
 
         final List<TssShareSignature> collectedSignatures = new ArrayList<>();
         collectedSignatures.addAll(signatures);

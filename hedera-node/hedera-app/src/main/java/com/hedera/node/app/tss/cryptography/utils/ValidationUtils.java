@@ -18,7 +18,6 @@ package com.hedera.node.app.tss.cryptography.utils;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Objects;
 
 /**

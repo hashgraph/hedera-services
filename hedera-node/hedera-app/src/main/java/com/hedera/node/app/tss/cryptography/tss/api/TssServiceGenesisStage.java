@@ -18,7 +18,6 @@ package com.hedera.node.app.tss.cryptography.tss.api;
 
 import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 
 /**

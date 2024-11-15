@@ -16,16 +16,15 @@
 
 package com.hedera.node.app.tss.cryptography.altbn128.facade;
 
+import static com.hedera.node.app.tss.cryptography.utils.ValidationUtils.validateSize;
+
 import com.hedera.node.app.tss.cryptography.altbn128.AltBN128CurveGroup;
 import com.hedera.node.app.tss.cryptography.altbn128.AltBn128Exception;
 import com.hedera.node.app.tss.cryptography.altbn128.adapter.GroupElementsLibraryAdapter;
 import com.hedera.node.app.tss.cryptography.altbn128.adapter.PairingsLibraryAdapter;
 import com.hedera.node.app.tss.cryptography.altbn128.adapter.jni.ArkBn254Adapter;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
-
-import static com.hedera.node.app.tss.cryptography.utils.ValidationUtils.validateSize;
 
 /**
  * This class acts as a facade that simplifies the interaction for operating specifically with the Pairings operation for alt-bn-128

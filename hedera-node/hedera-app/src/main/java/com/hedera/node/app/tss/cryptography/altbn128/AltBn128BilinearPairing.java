@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.tss.cryptography.altbn128;
 
+import static com.hedera.node.app.tss.cryptography.utils.ValidationUtils.expectOrThrow;
+
 import com.hedera.node.app.tss.cryptography.altbn128.adapter.jni.ArkBn254Adapter;
 import com.hedera.node.app.tss.cryptography.altbn128.facade.PairingFacade;
 import com.hedera.node.app.tss.cryptography.pairings.api.BilinearPairing;
 import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import static com.hedera.node.app.tss.cryptography.utils.ValidationUtils.expectOrThrow;
 
 /**
  * Represents a bilinear pairing operation for Alt-bn-128 curve.

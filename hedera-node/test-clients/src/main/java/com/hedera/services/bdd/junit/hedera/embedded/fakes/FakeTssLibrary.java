@@ -19,7 +19,6 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
-
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.cryptography.bls.BlsPrivateKey;
 import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
@@ -162,10 +161,7 @@ public class FakeTssLibrary implements TssLibrary {
     public TssShareSignature sign(@NonNull final TssPrivateShare privateShare, @NonNull final byte[] message) {
         return new TssShareSignature(
                 privateShare.shareId(),
-                new BlsSignature(
-                        new FakeGroupElement(
-                                BigInteger.valueOf(privateShare.shareId())),
-                        SIGNATURE_SCHEMA));
+                new BlsSignature(new FakeGroupElement(BigInteger.valueOf(privateShare.shareId())), SIGNATURE_SCHEMA));
     }
 
     @Override

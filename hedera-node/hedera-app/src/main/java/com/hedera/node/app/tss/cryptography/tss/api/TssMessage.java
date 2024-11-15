@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.tss.cryptography.tss.api;
 
-
 import com.hedera.node.app.tss.cryptography.bls.SignatureSchema;
 import com.hedera.node.app.tss.cryptography.pairings.api.FieldElement;
 import com.hedera.node.app.tss.cryptography.pairings.api.GroupElement;

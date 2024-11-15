@@ -19,7 +19,6 @@ package com.hedera.node.app.tss.api;
 import com.hedera.node.app.tss.cryptography.pairings.api.Field;
 import com.hedera.node.app.tss.cryptography.pairings.api.FieldElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.math.BigInteger;
 
 public class FakeFieldElement implements FieldElement {

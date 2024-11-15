@@ -18,7 +18,6 @@ package com.hedera.node.app.tss.cryptography.pairings.spi;
 
 import com.hedera.node.app.tss.cryptography.pairings.api.Curve;
 import com.hedera.node.app.tss.cryptography.pairings.api.PairingFriendlyCurve;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**

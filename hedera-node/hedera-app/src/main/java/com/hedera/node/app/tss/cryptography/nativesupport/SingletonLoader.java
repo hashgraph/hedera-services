@@ -17,7 +17,6 @@
 package com.hedera.node.app.tss.cryptography.nativesupport;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 

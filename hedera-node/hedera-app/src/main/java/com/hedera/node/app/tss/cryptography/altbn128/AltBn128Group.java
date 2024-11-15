@@ -25,13 +25,12 @@ import com.hedera.node.app.tss.cryptography.pairings.api.PairingFriendlyCurve;
 import com.hedera.node.app.tss.cryptography.utils.HashUtils;
 import com.hedera.node.app.tss.cryptography.utils.HashUtils.HashCalculator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
 import java.security.Security;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
  * The implementation of the two {@link Group} of {@link com.hedera.node.app.tss.cryptography.pairings.api.curves.KnownCurves#ALT_BN128}
