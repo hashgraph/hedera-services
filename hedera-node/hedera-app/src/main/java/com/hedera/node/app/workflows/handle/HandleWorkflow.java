@@ -329,14 +329,6 @@ public class HandleWorkflow {
                 case POST_UPGRADE_WORK -> POST_UPGRADE_TRANSACTION;
                 default -> ORDINARY_TRANSACTION;};
         }
-        // Process time-based events that have become due since the last recorded processing time
-        if (streamMode == RECORDS) {
-            processInterval(state, blockRecordManager.consTimeOfLastHandledTxn(), consensusNow);
-        } else {
-            if (processInterval(state, blockStreamManager.lastIntervalProcessTime(), consensusNow)) {
-                blockStreamManager.setLastIntervalProcessTime(consensusNow);
-            }
-        }
 
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
         final var handleOutput = execute(userTxn);
@@ -348,6 +340,15 @@ public class HandleWorkflow {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+
+        // Process time-based events that have become due since the last recorded processing time
+        if (streamMode == RECORDS) {
+            processInterval(state, blockRecordManager.consTimeOfLastHandledTxn(), consensusNow);
+        } else {
+            if (processInterval(state, blockStreamManager.lastIntervalProcessTime(), consensusNow)) {
+                blockStreamManager.setLastIntervalProcessTime(consensusNow);
+            }
+        }
     }
 
     /**
