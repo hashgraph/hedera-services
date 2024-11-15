@@ -17,7 +17,6 @@
 package com.swirlds.demo.consistency;
 
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.platform.system.Round;
 import edu.umd.cs.findbugs.annotations.NonNull;

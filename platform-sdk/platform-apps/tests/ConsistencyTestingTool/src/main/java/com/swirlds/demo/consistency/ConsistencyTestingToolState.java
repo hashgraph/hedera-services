@@ -162,10 +162,13 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
         final Path logFilePath = logFileDirectory.resolve("ConsistencyTestLog.csv");
 
         this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
-        this.roundsHandled = Long.getLong(((StringLeaf)getChild(ROUND_HANDLED_INDEX)).getLabel());
-        this.stateLong = Long.getLong(((StringLeaf)getChild(STATE_LONG_INDEX)).getLabel());
-        logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled and state long {}.",
-                roundsHandled, stateLong);
+        this.roundsHandled = Long.getLong(((StringLeaf) getChild(ROUND_HANDLED_INDEX)).getLabel());
+        this.stateLong = Long.getLong(((StringLeaf) getChild(STATE_LONG_INDEX)).getLabel());
+        logger.info(
+                STARTUP.getMarker(),
+                "State initialized with {} rounds handled and state long {}.",
+                roundsHandled,
+                stateLong);
 
         transactionHandlingHistory.init(logFilePath);
         NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
