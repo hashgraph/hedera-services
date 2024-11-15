@@ -35,20 +35,23 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
+/**
+ * System contract for the Hedera Schedule Service (HSS) system contract.
+ */
 @Singleton
-public class HasSystemContract extends AbstractNativeSystemContract implements HederaSystemContract {
-    public static final String HAS_SYSTEM_CONTRACT_NAME = "HAS";
-    public static final String HAS_EVM_ADDRESS = "0x16a";
-    public static final ContractID HAS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HAS_EVM_ADDRESS));
+public class HssSystemContract extends AbstractNativeSystemContract implements HederaSystemContract {
+    public static final String HSS_SYSTEM_CONTRACT_NAME = "HSS";
+    public static final String HSS_EVM_ADDRESS = "0x16b";
+    public static final ContractID HSS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HSS_EVM_ADDRESS));
 
     @Inject
-    public HasSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final HasCallFactory callFactory) {
-        super(HAS_SYSTEM_CONTRACT_NAME, callFactory, HAS_CONTRACT_ID, gasCalculator);
+    public HssSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final HasCallFactory callFactory) {
+        super(HSS_SYSTEM_CONTRACT_NAME, callFactory, HSS_CONTRACT_ID, gasCalculator);
     }
 
     @Override
     protected FrameUtils.CallType callTypeOf(@NonNull MessageFrame frame) {
-        return FrameUtils.callTypeOf(frame, EntityType.REGULAR_ACCOUNT);
+        return FrameUtils.callTypeOf(frame, EntityType.SCHEDULE_TXN);
     }
 
     @Override
@@ -56,8 +59,8 @@ public class HasSystemContract extends AbstractNativeSystemContract implements H
         requireNonNull(input);
         requireNonNull(frame);
 
-        // Check if calls to hedera account service is enabled
-        if (!contractsConfigOf(frame).systemContractAccountServiceEnabled()) {
+        // Check if calls to hedera schedule service is enabled
+        if (!contractsConfigOf(frame).systemContractScheduleServiceEnabled()) {
             return haltResult(NOT_SUPPORTED, frame.getRemainingGas());
         }
 
