@@ -340,16 +340,21 @@ public class HandleWorkflow {
         final var lastRecordProcessTime = blockRecordManager.consTimeOfLastHandledTxn();
         final var lastStreamProcessTime = blockStreamManager.lastIntervalProcessTime();
 
-        final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
+        // process interval
+        if (streamMode != BLOCKS) {
+            // This updates consTimeOfLastHandledTxn as a side-effect
+            blockRecordManager.advanceConsensusClock(consensusNow, state);
+        }
 
         if (streamMode == RECORDS) {
             processInterval(state, event, creator, lastRecordProcessTime, consensusNow);
         } else {
             if (processInterval(state, event, creator, lastStreamProcessTime, consensusNow)) {
-                blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
+                blockStreamManager.setLastIntervalProcessTime(consensusNow);
             }
         }
 
+        final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
         final var handleOutput = execute(userTxn);
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
@@ -379,10 +384,6 @@ public class HandleWorkflow {
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
-                if (streamMode != BLOCKS) {
-                    // This updates consTimeOfLastHandledTxn as a side-effect
-                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-                }
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
@@ -450,11 +451,6 @@ public class HandleWorkflow {
                         userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
                 final var dispatch = userTxnFactory.createDispatch(userTxn, baseBuilder);
                 updateNodeStakes(userTxn, dispatch);
-
-                if (streamMode != BLOCKS) {
-                    // This updates consTimeOfLastHandledTxn as a side-effect
-                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-                }
 
                 logPreDispatch(userTxn);
                 if (userTxn.type() != ORDINARY_TRANSACTION) {
@@ -680,6 +676,15 @@ public class HandleWorkflow {
                         scheduleUserTnx.txnInfo().transactionID(),
                         DueDiligenceFailure.NO,
                         handleOutput.preferringBlockRecordSource());
+
+                if (streamMode != BLOCKS) {
+                    final var records =
+                            ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
+                    blockRecordManager.endUserTransaction(records.stream(), state);
+                }
+                if (streamMode != RECORDS) {
+                    handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
+                }
 
                 scheduleIterator.remove();
                 consensusNanosOffset++;
