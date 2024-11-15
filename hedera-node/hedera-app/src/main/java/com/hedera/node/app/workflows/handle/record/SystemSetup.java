@@ -162,14 +162,6 @@ public class SystemSetup {
         final var systemContext = systemContextFor(dispatch);
         final var config = dispatch.config();
 
-        // We update the node details file from the address book that resulted from all pre-upgrade HAPI node changes
-        final var nodesConfig = config.getConfigData(NodesConfig.class);
-        if (nodesConfig.enableDAB()) {
-            final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
-            fileService.updateAddressBookAndNodeDetailsAfterFreeze(systemContext, nodeStore);
-            dispatch.stack().commitFullStack();
-        }
-
         // And then we update the system files for fees schedules, throttles, override properties, and override
         // permissions from any upgrade files that are present in the configured directory
         final var filesConfig = config.getConfigData(FilesConfig.class);
@@ -201,7 +193,7 @@ public class SystemSetup {
             }
         });
         // Update the node metadata from pre-DAB state before applying any node admin key updates
-        if (config.getConfigData(NetworkAdminConfig.class).updateNodeMetadata()) {
+        if (config.getConfigData(NetworkAdminConfig.class).updateNodeMetadata() && config.getConfigData(HederaConfig.class).configVersion()==0) {
             nodeMetadataHelper.updateMetadata(
                     networkInfo,
                     dispatch.config(),
@@ -214,6 +206,15 @@ public class SystemSetup {
                             storeMetricsService));
             dispatch.stack().commitSystemStateChanges();
         }
+
+        // We update the node details file from the address book that resulted from all pre-upgrade HAPI node changes
+        final var nodesConfig = config.getConfigData(NodesConfig.class);
+        if (nodesConfig.enableDAB()) {
+            final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
+            fileService.updateAddressBookAndNodeDetailsAfterFreeze(systemContext, nodeStore);
+            dispatch.stack().commitFullStack();
+        }
+
         final var autoNodeAdminKeyUpdates = new AutoEntityUpdate<Map<Long, Key>>(
                 (ctx, nodeAdminKeys) -> nodeAdminKeys.forEach(
                         (nodeId, key) -> ctx.dispatchAdmin(b -> b.nodeUpdate(NodeUpdateTransactionBody.newBuilder()
