@@ -255,7 +255,7 @@ public class UserTxnFactory {
      *
      * @param userTxn user transaction
      * @param baseBuilder the base record builder
-     * @param keyVerificationAssistant key verifier callback
+     * @param callback key verifier callback
      * @param category transaction category
      * @return the new dispatch instance
      */
