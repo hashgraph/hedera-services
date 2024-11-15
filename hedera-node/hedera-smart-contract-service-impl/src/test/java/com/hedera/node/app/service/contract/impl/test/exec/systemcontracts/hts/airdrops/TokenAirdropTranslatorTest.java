@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -37,6 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops.TokenAirdropDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops.TokenAirdropTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.config.data.ContractsConfig;
@@ -119,6 +121,24 @@ class TokenAirdropTranslatorTest extends CallTestBase {
     }
 
     @Test
+    void matchesFailsForRandomSelector() {
+        when(configuration.getConfigData(ContractsConfig.class)).thenReturn(contractsConfig);
+        when(contractsConfig.systemContractAirdropTokensEnabled()).thenReturn(true);
+        attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
+                MintTranslator.MINT,
+                translator,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                configuration);
+
+        boolean result = translator.matches(attempt);
+
+        assertFalse(result);
+    }
+
+    @Test
     void gasRequirementCalculatesCorrectly() {
         long expectedGas = 1000L;
         when(gasCalculator.gasRequirement(transactionBody, DispatchType.TOKEN_AIRDROP, payerId))
@@ -139,6 +159,7 @@ class TokenAirdropTranslatorTest extends CallTestBase {
 
         final var call = translator.callFrom(attempt);
         assertEquals(DispatchForResponseCodeHtsCall.class, call.getClass());
+        verify(decoder).decodeAirdrop(attempt);
     }
 
     @NonNull
