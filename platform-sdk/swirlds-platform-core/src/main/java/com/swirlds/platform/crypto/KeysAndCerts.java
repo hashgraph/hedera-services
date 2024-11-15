@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.crypto;
 
+import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.Key;
@@ -59,7 +61,9 @@ public record KeysAndCerts(
         KeyPair agrKeyPair,
         X509Certificate sigCert,
         X509Certificate agrCert,
-        PublicStores publicStores) {
+        PublicStores publicStores,
+        BlsPrivateKey privateTssEncryptionKey,
+        BlsPublicKey publicTssEncryptionKey) {
     private static final int SIG_SEED = 2;
     private static final int AGR_SEED = 0;
 
@@ -111,7 +115,7 @@ public record KeysAndCerts(
             publicStores.setCertificate(KeyCertPurpose.AGREEMENT, agreementCert, dnA);
         }
 
-        return new KeysAndCerts(signingKeyPair, agreementKeyPair, signingCert, agreementCert, publicStores);
+        return new KeysAndCerts(signingKeyPair, agreementKeyPair, signingCert, agreementCert, publicStores, null, null);
     }
 
     private static KeyPair getKeyPair(final KeyStore privateKeyStore, final char[] password, final String storeName)
@@ -188,7 +192,7 @@ public record KeysAndCerts(
         publicStores.setCertificate(KeyCertPurpose.SIGNING, sigCert, name);
         publicStores.setCertificate(KeyCertPurpose.AGREEMENT, agrCert, name);
 
-        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores);
+        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores, null, null);
     }
 
     /**
