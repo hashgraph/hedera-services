@@ -1,5 +1,7 @@
 import com.hedera.node.app.config.ServicesConfigExtension;
 import com.swirlds.config.api.ConfigurationExtension;
+import com.hedera.node.app.tss.cryptography.pairings.spi.PairingFriendlyCurveProvider;
+import com.hedera.node.app.tss.cryptography.altbn128.spi.AltBn128Provider;
 
 module com.hedera.node.app {
     uses com.hedera.node.app.tss.cryptography.pairings.spi.PairingFriendlyCurveProvider;
@@ -139,4 +141,5 @@ module com.hedera.node.app {
 
     provides ConfigurationExtension with
             ServicesConfigExtension;
+    provides PairingFriendlyCurveProvider with AltBn128Provider;
 }
