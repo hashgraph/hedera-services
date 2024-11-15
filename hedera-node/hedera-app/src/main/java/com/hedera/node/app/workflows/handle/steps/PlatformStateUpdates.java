@@ -25,9 +25,16 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.roster.RosterService;
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.config.data.TssConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
@@ -59,27 +66,43 @@ public class PlatformStateUpdates {
      *
      * @param state the current state
      * @param txBody the transaction body
+     * @param config the configuration
      */
-    public void handleTxBody(@NonNull final State state, @NonNull final TransactionBody txBody) {
+    public void handleTxBody(
+            @NonNull final State state, @NonNull final TransactionBody txBody, @NonNull final Configuration config) {
         requireNonNull(state, "state must not be null");
         requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(config, "config must not be null");
 
         if (txBody.hasFreeze()) {
             final FreezeType freezeType = txBody.freezeOrThrow().freezeType();
-            final var writableStore =
+            final var platformStateStore =
                     new WritablePlatformStateStore(state.getWritableStates(PlatformStateService.NAME));
             if (freezeType == FREEZE_UPGRADE || freezeType == FREEZE_ONLY) {
                 logger.info("Transaction freeze of type {} detected", freezeType);
+                if (freezeType == FREEZE_UPGRADE) {
+                    final var keyCandidateRoster =
+                            config.getConfigData(TssConfig.class).keyCandidateRoster();
+                    final var useRosterLifecycle =
+                            config.getConfigData(AddressBookConfig.class).useRosterLifecycle();
+                    if (!keyCandidateRoster && useRosterLifecycle) {
+                        final var nodeStore =
+                                new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
+                        final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
+                        final var candidateRoster = nodeStore.snapshotOfFutureRoster();
+                        rosterStore.putCandidateRoster(candidateRoster);
+                    }
+                }
                 // copy freeze state to platform state
                 final ReadableStates states = state.getReadableStates(FreezeService.NAME);
                 final ReadableSingletonState<Timestamp> freezeTimeState = states.getSingleton(FREEZE_TIME_KEY);
                 final var freezeTime = requireNonNull(freezeTimeState.get());
                 final Instant freezeTimeInstant = Instant.ofEpochSecond(freezeTime.seconds(), freezeTime.nanos());
                 logger.info("Freeze time will be {}", freezeTimeInstant);
-                writableStore.setFreezeTime(freezeTimeInstant);
+                platformStateStore.setFreezeTime(freezeTimeInstant);
             } else if (freezeType == FREEZE_ABORT) {
                 logger.info("Aborting freeze");
-                writableStore.setFreezeTime(null);
+                platformStateStore.setFreezeTime(null);
             }
         }
     }

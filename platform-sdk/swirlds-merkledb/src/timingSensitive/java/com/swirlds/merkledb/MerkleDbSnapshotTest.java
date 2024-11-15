@@ -87,6 +87,8 @@ class MerkleDbSnapshotTest {
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.merkledb");
         registry.registerConstructables("com.swirlds.virtualmap");
+        registry.registerConstructable(new ClassConstructorPair(
+                MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
         registry.registerConstructable(new ClassConstructorPair(
                 VirtualNodeCache.class,

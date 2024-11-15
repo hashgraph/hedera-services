@@ -137,11 +137,11 @@ public class HandleWorkflow {
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
     private final AddressBookHelper addressBookHelper;
+    private final TssBaseService tssBaseService;
+    private final ConfigProvider configProvider;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
-    private TssBaseService tssBaseService;
-    private final ConfigProvider configProvider;
 
     @Inject
     public HandleWorkflow(
@@ -165,7 +165,7 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
-            final AddressBookHelper addressBookHelper,
+            @NonNull final AddressBookHelper addressBookHelper,
             @NonNull final TssBaseService tssBaseService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);

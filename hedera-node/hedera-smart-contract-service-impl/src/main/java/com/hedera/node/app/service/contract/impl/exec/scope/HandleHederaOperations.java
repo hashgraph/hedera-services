@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.FEE_SCHEDULE_UNITS_PER_TINYCENT;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.selfManagedCustomizedCreation;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
@@ -299,7 +300,9 @@ public class HandleHederaOperations implements HederaOperations {
                 number,
                 synthAccountCreationFromHapi(
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, body),
-                functionality == HederaFunctionality.ETHEREUM_TRANSACTION ? body : null,
+                functionality == HederaFunctionality.ETHEREUM_TRANSACTION
+                        ? selfManagedCustomizedCreation(body, number)
+                        : null,
                 body.autoRenewAccountId(),
                 evmAddress,
                 body.hasInitcode() ? ExternalizeInitcodeOnSuccess.NO : ExternalizeInitcodeOnSuccess.YES);
