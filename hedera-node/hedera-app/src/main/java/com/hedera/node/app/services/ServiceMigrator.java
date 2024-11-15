@@ -18,6 +18,7 @@ package com.hedera.node.app.services;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.info.StartupNetworks;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -36,7 +37,7 @@ public interface ServiceMigrator {
     /**
      * Perform the migrations on the given state.
      *
-     * @param state            The state to migrate
+     * @param state The state to migrate
      * @param servicesRegistry The services registry to use for the migrations
      * @param previousVersion The previous version of the state
      * @param currentVersion The current version of the state
@@ -44,6 +45,7 @@ public interface ServiceMigrator {
      * @param platformConfiguration The platform configuration to use for subsequent object initializations
      * @param genesisNetworkInfo The network information to use for the migrations
      * @param metrics The metrics to use for the migrations
+     * @param startupNetworks The startup networks to use for the migrations
      * @return The list of builders for state changes that occurred during the migrations
      */
     List<StateChanges.Builder> doMigrations(
@@ -54,7 +56,8 @@ public interface ServiceMigrator {
             @NonNull Configuration nodeConfiguration,
             @NonNull Configuration platformConfiguration,
             @Nullable NetworkInfo genesisNetworkInfo,
-            @NonNull Metrics metrics);
+            @NonNull Metrics metrics,
+            @NonNull StartupNetworks startupNetworks);
 
     /**
      * Given a {@link State}, returns the creation version of the state if it was deserialized, or null otherwise.

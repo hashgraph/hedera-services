@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.info.StartupNetworks;
 import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
@@ -93,6 +94,9 @@ class SerializationTest extends MerkleTestBase {
 
     @Mock
     private MigrationStateChanges migrationStateChanges;
+
+    @Mock
+    private StartupNetworks startupNetworks;
 
     @TempDir
     Path tempDir;
@@ -314,7 +318,8 @@ class SerializationTest extends MerkleTestBase {
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
                 new HashMap<>(),
-                migrationStateChanges);
+                migrationStateChanges,
+                startupNetworks);
         loadedTree.migrate(MerkleStateRoot.CURRENT_VERSION);
     }
 
@@ -336,7 +341,8 @@ class SerializationTest extends MerkleTestBase {
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
                 new HashMap<>(),
-                migrationStateChanges);
+                migrationStateChanges,
+                startupNetworks);
         return originalTree;
     }
 

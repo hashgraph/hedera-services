@@ -34,6 +34,7 @@ option java_multiple_files = true;
 
 import "auxiliary/tss/tss_message.proto";
 import "state/addressbook/node.proto";
+import "state/roster/roster.proto";
 import "basic_types.proto";
 
 /**
@@ -68,12 +69,18 @@ message Network {
  */
 message NodeMetadata {
   /**
-   * The metadata of the node.
+   * The node's entry in the current roster at the time of the network snapshot;
+   * required to validate the network's ledger id if set.
    */
-  com.hedera.hapi.node.state.addressbook.Node node = 1;
+  com.hedera.hapi.node.state.roster.RosterEntry roster_entry = 1;
+
+  /**
+   * The latest metadata of the node in the full address book.
+   */
+  com.hedera.hapi.node.state.addressbook.Node node = 2;
 
   /**
    * If set, the public part of a prescribed TSS encryption key for the node.
    */
-  bytes tss_encryption_key = 2;
+  bytes tss_encryption_key = 3;
 }

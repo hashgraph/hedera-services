@@ -24,6 +24,7 @@ import com.hedera.hapi.node.state.NodeMetadata;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
@@ -37,7 +38,6 @@ import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
@@ -158,7 +158,7 @@ public class DiskStartupNetworks implements StartupNetworks {
         writeNetworkInfo(
                 new ReadableTssStoreImpl(state.getReadableStates(TssBaseService.NAME)),
                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME)),
-                new ReadableRosterStoreImpl(state.getReadableStates(RosterStateId.NAME)),
+                new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME)),
                 path);
     }
 
@@ -180,7 +180,7 @@ public class DiskStartupNetworks implements StartupNetworks {
             final List<NodeMetadata> nodeMetadata = new ArrayList<>();
             rosterStore.getActiveRoster().rosterEntries().forEach(entry -> {
                 final var node = requireNonNull(nodeStore.get(entry.nodeId()));
-                nodeMetadata.add(new NodeMetadata(node, Bytes.EMPTY));
+                nodeMetadata.add(new NodeMetadata(entry, node, Bytes.EMPTY));
             });
             network.nodeMetadata(nodeMetadata);
             final var sourceRosterHash =

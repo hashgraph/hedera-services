@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.app.info.StartupNetworks;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -51,14 +52,15 @@ public class FakeServiceMigrator implements ServiceMigrator {
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration nodeConfiguration,
             @NonNull final Configuration platformConfiguration,
-            @NonNull final NetworkInfo networkInfo,
-            @NonNull final Metrics metrics) {
+            @Nullable final NetworkInfo genesisNetworkInfo,
+            @NonNull final Metrics metrics,
+            @NonNull final StartupNetworks startupNetworks) {
         requireNonNull(state);
         requireNonNull(servicesRegistry);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);
         requireNonNull(platformConfiguration);
-        requireNonNull(networkInfo);
+        requireNonNull(genesisNetworkInfo);
         requireNonNull(metrics);
 
         if (!(state instanceof FakeState fakeState)) {
@@ -86,7 +88,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
                 NAME_OF_ENTITY_ID_SERVICE,
                 fakeState,
                 deserializedPbjVersion,
-                networkInfo,
+                genesisNetworkInfo,
                 nodeConfiguration,
                 sharedValues,
                 prevEntityNum);
@@ -100,7 +102,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
                             registration.serviceName(),
                             fakeState,
                             deserializedPbjVersion,
-                            networkInfo,
+                            genesisNetworkInfo,
                             nodeConfiguration,
                             sharedValues,
                             prevEntityNum);

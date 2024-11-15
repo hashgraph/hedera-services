@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.addressbook.impl.test.schemas;
 
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.FILES_KEY;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.endpointFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;

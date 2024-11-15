@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.info.StartupNetworks;
 import com.hedera.node.app.services.MigrationContextImpl;
 import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
@@ -175,7 +176,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * to perform any necessary logic on restart. Most services have nothing to do, but some may need
      * to read files from disk, and could potentially change their state as a result.
      *
-     * @param state     the state for this registry to use.
+     * @param state the state for this registry to use.
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion The current version. Never null. Must be newer than {@code
      * previousVersion}.
@@ -184,8 +185,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param genesisNetworkInfo The network information to use at the time of migration
      * @param sharedValues A map of shared values for cross-service migration patterns
      * @param migrationStateChanges Tracker for state changes during migration
+     * @param startupNetworks The startup networks to use for the migrations
      * @throws IllegalArgumentException if the {@code currentVersion} is not at least the
-     *                                  {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
+     * {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
      */
     // too many parameters, commented out code
     @SuppressWarnings({"java:S107", "java:S125"})
@@ -199,7 +201,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore,
             @NonNull final Map<String, Object> sharedValues,
-            @NonNull final MigrationStateChanges migrationStateChanges) {
+            @NonNull final MigrationStateChanges migrationStateChanges,
+            @NonNull final StartupNetworks startupNetworks) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);

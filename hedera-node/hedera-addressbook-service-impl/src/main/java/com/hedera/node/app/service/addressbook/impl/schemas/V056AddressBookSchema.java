@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.swirlds.platform.roster.RosterUtils.formatNodeName;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;

@@ -23,7 +23,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
@@ -55,8 +55,8 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
      */
     public ReadableRosterStoreImpl(@NonNull final ReadableStates readableStates) {
         requireNonNull(readableStates);
-        this.rosterState = readableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
-        this.rosterMap = readableStates.get(RosterStateId.ROSTER_KEY);
+        this.rosterState = readableStates.getSingleton(V0540RosterSchema.ROSTER_STATES_KEY);
+        this.rosterMap = readableStates.get(V0540RosterSchema.ROSTER_KEY);
     }
 
     /**

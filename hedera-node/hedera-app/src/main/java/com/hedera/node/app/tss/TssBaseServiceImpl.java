@@ -31,6 +31,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -46,12 +47,12 @@ import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -288,7 +289,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                 final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStore.class);
                 if (hasEnoughWeight(activeRoster, candidateRosterHash, tssStore)) {
                     final ReadableKVState<ProtoBytes, Roster> rosters = requireNonNull(
-                            state.getReadableStates(RosterStateId.NAME).get(RosterStateId.ROSTER_KEY));
+                            state.getReadableStates(RosterService.NAME).get(V0540RosterSchema.ROSTER_KEY));
                     // It should be impossible to set a candidate roster hash that doesn't exist
                     return requireNonNull(rosters.get(new ProtoBytes(candidateRosterHash)));
                 }

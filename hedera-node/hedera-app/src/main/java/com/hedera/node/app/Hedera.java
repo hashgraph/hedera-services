@@ -118,7 +118,6 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -537,16 +536,17 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 deserializedVersion == null ? "<NONE>" : deserializedVersion);
 
         logger.info("Initializing Hedera platform state");
+        migrationStateChanges = new ArrayList<>();
         final var platformStateMigrations = serviceMigrator.doMigrations(
                 state,
-                servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME, RosterStateId.NAME),
+                servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME, RosterService.NAME),
                 deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
                 version,
                 bootstrapConfigProvider.getConfiguration(),
                 platformConfiguration,
                 UNAVAILABLE_NETWORK_INFO,
-                UNAVAILABLE_METRICS);
-        migrationStateChanges = new ArrayList<>();
+                UNAVAILABLE_METRICS,
+                startupNetworks);
         migrationStateChanges.addAll(platformStateMigrations);
 
         final var readableStore = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
@@ -612,7 +612,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param state                 current state
      * @param deserializedVersion   version deserialized
      * @param trigger               trigger that is calling migration
-     * @param genesisAddressBook
+     * @param genesisAddressBook    the genesis address book, if applicable
      * @param platformConfiguration platform configuration
      * @return the state changes caused by the migration
      */
@@ -623,6 +623,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final Metrics metrics,
             @Nullable final AddressBook genesisAddressBook,
             @NonNull final Configuration platformConfiguration) {
+        requireNonNull(startupNetworks);
         requireNonNull(platformConfiguration);
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getPbjSemanticVersion();
         final var isUpgrade = version.compareTo(deserializedVersion) > 0;
@@ -657,7 +658,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 configProvider.getConfiguration(),
                 platformConfiguration,
                 genesisNetworkInfo,
-                metrics);
+                metrics,
+                startupNetworks);
         migrationStateChanges.addAll(migrationChanges);
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();

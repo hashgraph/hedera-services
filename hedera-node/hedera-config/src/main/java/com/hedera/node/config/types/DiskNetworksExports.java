@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.common;
+package com.hedera.node.config.types;
 
 /**
- * A class with constants identifying Roster entities in state.
+ * When to write network data to disk.
  */
-public final class RosterStateId {
-    private RosterStateId() {}
-
-    /** The name of a service that owns Roster entities in state. */
-    public static final String NAME = "RosterService";
-    /** The name of the RosterMap. */
-    public static final String ROSTER_KEY = "ROSTERS";
-    /** The name of the RosterState. */
-    public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
+public enum DiskNetworksExports {
+    /**
+     * Never write network data to disk.
+     */
+    NEVER,
+    /**
+     * Write network data to disk every time a state is saved.
+     */
+    EVERY_SAVED_STATE,
+    /**
+     * Write network data to disk only from the freeze state.
+     */
+    ONLY_FREEZE_STATE,
 }

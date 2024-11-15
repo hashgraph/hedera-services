@@ -25,9 +25,9 @@ import com.hedera.hapi.node.state.roster.RosterState.Builder;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.roster.RosterValidator;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -64,8 +64,8 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
     public WritableRosterStore(@NonNull final WritableStates writableStates) {
         super(writableStates);
         requireNonNull(writableStates);
-        this.rosterState = writableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
-        this.rosterMap = writableStates.get(RosterStateId.ROSTER_KEY);
+        this.rosterState = writableStates.getSingleton(V0540RosterSchema.ROSTER_STATES_KEY);
+        this.rosterMap = writableStates.get(V0540RosterSchema.ROSTER_KEY);
     }
 
     /**

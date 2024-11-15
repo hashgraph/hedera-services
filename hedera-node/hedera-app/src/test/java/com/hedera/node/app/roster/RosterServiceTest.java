@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -66,6 +65,6 @@ class RosterServiceTest {
 
     @Test
     void testServiceNameReturnsCorrectName() {
-        assertThat(rosterService.getServiceName()).isEqualTo(RosterStateId.NAME);
+        assertThat(rosterService.getServiceName()).isEqualTo(RosterService.NAME);
     }
 }

@@ -18,7 +18,6 @@ package com.hedera.node.app.roster;
 
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
@@ -31,10 +30,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class RosterService implements Service {
 
+    /** The name of a service that owns Roster entities in state. */
+    public static final String NAME = "RosterService";
+
     @NonNull
     @Override
     public String getServiceName() {
-        return RosterStateId.NAME;
+        return NAME;
     }
 
     @Override

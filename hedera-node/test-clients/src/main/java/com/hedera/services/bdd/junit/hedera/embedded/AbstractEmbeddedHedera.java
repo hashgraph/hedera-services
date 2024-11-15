@@ -37,6 +37,7 @@ import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -49,7 +50,6 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -160,7 +160,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .addressBook(toPbjAddressBook(addressBook))
                 .build());
         ((CommittableWritableStates) writableStates).commit();
-        final var writableRosterStates = state.getWritableStates(RosterStateId.NAME);
+        final var writableRosterStates = state.getWritableStates(RosterService.NAME);
         final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
         writableRosterStore.putActiveRoster(createRoster(addressBook), 0);
         ((CommittableWritableStates) writableRosterStates).commit();
