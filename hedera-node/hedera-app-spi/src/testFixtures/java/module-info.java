@@ -1,6 +1,5 @@
 module com.hedera.node.app.spi.test.fixtures {
     exports com.hedera.node.app.spi.fixtures;
-    exports com.hedera.node.app.spi.fixtures.state;
     exports com.hedera.node.app.spi.fixtures.workflows;
     exports com.hedera.node.app.spi.fixtures.util;
     exports com.hedera.node.app.spi.fixtures.info;
