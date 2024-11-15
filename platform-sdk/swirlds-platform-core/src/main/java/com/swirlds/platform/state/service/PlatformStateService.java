@@ -20,6 +20,7 @@ import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchem
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
@@ -28,6 +29,7 @@ import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 
@@ -59,16 +61,31 @@ public enum PlatformStateService implements Service {
      * @param root the root to extract the creation version from
      * @return the creation version of the platform state, or null if the state is a genesis state
      */
-    @SuppressWarnings("unchecked")
     public SemanticVersion creationVersionOf(@NonNull final MerkleStateRoot root) {
         requireNonNull(root);
-        if (root.getNumberOfChildren() == 0) {
-            return null;
-        }
+        final var state = platformStateOf(root);
+        return state == null ? null : state.creationSoftwareVersionOrThrow();
+    }
+
+    /**
+     * Given a {@link MerkleStateRoot}, returns the round number of the platform state if it exists.
+     * @param root the root to extract the round number from
+     * @return the round number of the platform state, or zero if the state is a genesis state
+     */
+    public long roundOf(@NonNull final MerkleStateRoot root) {
+        requireNonNull(root);
+        final var state = platformStateOf(root);
+        return state == null
+                ? 0L
+                : state.consensusSnapshotOrElse(ConsensusSnapshot.DEFAULT).round();
+    }
+
+    @SuppressWarnings("unchecked")
+    private @Nullable PlatformState platformStateOf(@NonNull final MerkleStateRoot root) {
         final var index = root.findNodeIndex(NAME, PLATFORM_STATE_KEY);
         if (index == -1) {
-            throw new IllegalStateException("Platform state not found in root");
+            return null;
         }
-        return ((SingletonNode<PlatformState>) root.getChild(index)).getValue().creationSoftwareVersionOrThrow();
+        return ((SingletonNode<PlatformState>) root.getChild(index)).getValue();
     }
 }

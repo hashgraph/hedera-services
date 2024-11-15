@@ -64,6 +64,7 @@ import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import dagger.BindsInstance;
@@ -202,6 +203,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder networkInfo(NetworkInfo networkInfo);
+
+        @BindsInstance
+        Builder startupNetworks(StartupNetworks startupNetworks);
 
         HederaInjectionComponent build();
     }

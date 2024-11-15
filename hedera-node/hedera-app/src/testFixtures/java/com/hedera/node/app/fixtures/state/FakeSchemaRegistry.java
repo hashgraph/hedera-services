@@ -33,6 +33,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -171,6 +172,12 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             @Override
             public void copyAndReleaseOnDiskState(String stateKey) {
                 // No-op
+            }
+
+            @NonNull
+            @Override
+            public StartupNetworks startupNetworks() {
+                return new FakeStartupNetworks();
             }
 
             @Override

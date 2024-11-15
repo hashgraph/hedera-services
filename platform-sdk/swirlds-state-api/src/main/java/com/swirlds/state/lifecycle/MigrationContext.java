@@ -30,6 +30,11 @@ import java.util.Map;
  */
 public interface MigrationContext {
     /**
+     * The key used to store the round number in the shared values map if not genesis.
+     */
+    String ROUND_NUMBER_KEY = "ROUND_NUMBER";
+
+    /**
      * Provides a reference to the previous {@link ReadableStates}. For example, if the previous state was version
      * 1.2.3, then this method will return a {@link ReadableStates} that can be used to read the state of version 1.2.3.
      * This state is strictly read-only. This is useful as it allows the migration code to refer to the previous state.

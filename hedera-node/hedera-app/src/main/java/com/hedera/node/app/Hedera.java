@@ -639,7 +639,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
 
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
-        final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
         // (FUTURE) In principle, the FileService could actually change the active configuration during a
         // migration, which implies we should be passing the config provider and not a static configuration
         // here; but this is a currently unneeded affordance
@@ -654,7 +653,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 genesisNetworkInfo,
                 metrics,
                 startupNetworks);
-        migrationStateChanges.addAll(migrationChanges);
+        final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();
         // If still using BlockRecordManager state, then for specifically a non-genesis upgrade,
@@ -1022,6 +1021,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .migrationStateChanges(migrationStateChanges != null ? migrationStateChanges : new ArrayList<>())
                 .initialStateHash(initialStateHash)
                 .networkInfo(networkInfo)
+                .startupNetworks(startupNetworks)
                 .build();
         // Initialize infrastructure for fees, exchange rates, and throttles from the working state
         daggerApp.initializer().accept(state);

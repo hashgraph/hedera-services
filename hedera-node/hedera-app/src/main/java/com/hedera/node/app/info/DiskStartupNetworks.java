@@ -75,6 +75,8 @@ public class DiskStartupNetworks implements StartupNetworks {
     private final ConfigProvider configProvider;
     private final TssBaseService tssBaseService;
 
+    private boolean isArchived = false;
+
     public DiskStartupNetworks(
             final long selfNodeId,
             @NonNull final ConfigProvider configProvider,
@@ -118,7 +120,12 @@ public class DiskStartupNetworks implements StartupNetworks {
     }
 
     @Override
-    public void archiveJsonFiles() {
+    public void archiveStartupNetworks() {
+        if (isArchived) {
+            return;
+        }
+        // We only try to archive once, as it is unlikely any error here would be recoverable
+        isArchived = true;
         final var config = configProvider.getConfiguration();
         try {
             ensureArchiveDir(config);

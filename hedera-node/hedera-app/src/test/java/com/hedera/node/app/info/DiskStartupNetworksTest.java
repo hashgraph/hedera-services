@@ -31,6 +31,7 @@ import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTE
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -60,7 +61,6 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -99,7 +99,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DiskStartupNetworksTest {
     private static final int FAKE_NETWORK_SIZE = 4;
-    private static final long NODE_ID = 123L;
+    private static final long NODE_ID = 0L;
     private static final long ROUND_NO = 666L;
     private static final Bytes EXPECTED_LEDGER_ID = Bytes.fromBase64("Lw==");
     private static final Comparator<TssMessageTransactionBody> TSS_MESSAGE_COMPARATOR =
@@ -128,9 +128,6 @@ class DiskStartupNetworksTest {
 
     @Mock
     private ConfigProvider configProvider;
-
-    @Mock
-    private TssParticipantDirectory directory;
 
     @Mock
     private TssBaseService tssBaseService;
@@ -191,7 +188,8 @@ class DiskStartupNetworksTest {
 
         assertThat(Files.exists(genesisJson)).isTrue();
 
-        subject.archiveJsonFiles();
+        subject.archiveStartupNetworks();
+        assertThatNoException().isThrownBy(() -> subject.archiveStartupNetworks());
 
         assertThat(Files.exists(genesisJson)).isFalse();
         final var archivedGenesisJson = tempDir.resolve(ARCHIVE + File.separator + GENESIS_NETWORK_JSON);
@@ -206,7 +204,7 @@ class DiskStartupNetworksTest {
 
         assertThat(Files.exists(overrideJson)).isTrue();
 
-        subject.archiveJsonFiles();
+        subject.archiveStartupNetworks();
 
         assertThat(Files.exists(overrideJson)).isFalse();
         final var archivedGenesisJson = tempDir.resolve(ARCHIVE + File.separator + OVERRIDE_NETWORK_JSON);
@@ -222,7 +220,7 @@ class DiskStartupNetworksTest {
 
         assertThat(Files.exists(overrideJson)).isTrue();
 
-        subject.archiveJsonFiles();
+        subject.archiveStartupNetworks();
 
         assertThat(Files.exists(overrideJson)).isFalse();
         final var archivedGenesisJson =

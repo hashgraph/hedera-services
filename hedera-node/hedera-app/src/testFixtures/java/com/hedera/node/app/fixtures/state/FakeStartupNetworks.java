@@ -14,37 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera.embedded.fakes;
-
-import static java.util.Objects.requireNonNull;
+package com.hedera.node.app.fixtures.state;
 
 import com.hedera.hapi.node.state.Network;
-import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.config.ConfigProvider;
 import com.swirlds.state.lifecycle.StartupNetworks;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
-/**
- * A fake implementation of {@link StartupNetworks}.
- */
 public class FakeStartupNetworks implements StartupNetworks {
-    public FakeStartupNetworks(
-            final long selfNodeId,
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final TssBaseService tssBaseService) {
-        requireNonNull(configProvider);
-        requireNonNull(tssBaseService);
-    }
-
     @Override
     public Network genesisNetworkOrThrow() {
-        // FUTURE - base this network on a fake roster
         return Network.DEFAULT;
     }
 
     @Override
-    public Optional<Network> overrideNetworkFor(final long roundNumber) {
+    public Optional<Network> overrideNetworkFor(long roundNumber) {
         return Optional.empty();
     }
 

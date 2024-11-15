@@ -50,7 +50,7 @@ public interface StartupNetworks {
     /**
      * Archives any assets used in constructing this instance. Maybe a no-op.
      */
-    void archiveJsonFiles();
+    void archiveStartupNetworks();
 
     /**
      * Called by a node at an upgrade boundary that finds itself with an empty Roster service state, and is
