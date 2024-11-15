@@ -73,13 +73,14 @@ val maven =
             url = "https://www.hashgraph.com/"
             inceptionYear = "2016"
 
+            // this field must be present. Default to empty string.
             description =
                 providers
                     .fileContents(layout.projectDirectory.file("../description.txt"))
                     .asText
-                    .orElse(provider { project.description })
+                    .orElse(provider(project::getDescription))
                     .map { it.replace("\n", " ").trim() }
-                    .orNull
+                    .orElse("")
 
             organization {
                 name = "Hedera Hashgraph, LLC"
