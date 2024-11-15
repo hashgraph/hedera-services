@@ -48,57 +48,45 @@ import "timestamp.proto";
  * historical and current data; eliminating the need to search two sources for
  * block and block chain data.<br/>
  * Any block containing this item requires special handling.
- * - The block SHALL NOT have a `BlockHeader`.
+ * - The block SHALL have a `BlockHeader`.
+ *    - Some fields in the `BlockHeader` may be interpreted differently, and
+ *      may depend on when the original record file was created.
  * - The block SHALL NOT have a `BlockProof`.
+ * - The block SHALL end with an `AddressBookProof`, which is only used for
+ *   `RecordFileItem` blocks.
  * - The block SHALL contain _exactly one_ `RecordFileItem`.
- * - The block SHALL NOT contain any item other than a `RecordFileItem`.
+ * - The block SHALL NOT contain any content item other than a `RecordFileItem`.
  * - The content of the `RecordFileItem` MUST be validated using the
  *   signature data and content provided herein according to the
  *   process used for Record Files prior to the creation of Block Stream.
  *    - This block item only replaces the requirement to read several
  *      individual files from cloud storage services.
+ * - The address book relevant to a particular record file SHALL be available
+ *   separately as an `AddressBookProof` item.
  */
 message RecordFileItem {
-    /**
-     * The block number of this block.
-     * <p>
-     * This value MUST be exactly `1` more than the previous block.<br/>
-     * Client systems SHOULD optimistically reject any block with a gap or
-     * reverse in `number` sequence, and MAY assume the block stream has
-     * encountered data loss, data corruption, or unauthorized modification.
-     */
-    uint64 number = 1;
-
     /**
      * The consensus time the record file was produced for.<br/>
      * This comes from the record file name.
      */
-    proto.Timestamp creation_time = 2;
+    proto.Timestamp creation_time = 1;
 
     /**
      * The contents of a record file.<br/>
      * The first 4 bytes are a 32bit int little endian version number.
      * The versions that existed are 2,3,5 and 6.
      */
-    bytes record_file_contents = 3;
+    bytes record_file_contents = 2;
 
     /**
      * The contents of sidecar files for this block.<br/>
      * Each block can have zero or more sidecar files.
      */
-    repeated bytes sidecar_file_contents = 4;
-
-    /**
-     * A hash algorithm.<br/>
-     * This is the algorithm used to hash the block.
-     * <p>
-     * This SHOULD always be `SHA2_384`.
-     */
-    proto.BlockHashAlgorithm hash_algorithm = 5;
+    repeated bytes sidecar_file_contents = 3;
 
     /**
      * A collection of RSA signatures from consensus nodes.<br/>
      * These signatures validate the hash of the record_file_contents field.
      */
-    repeated bytes record_file_hash_signatures = 6;
+    repeated bytes record_file_hash_signatures = 4;
 }
