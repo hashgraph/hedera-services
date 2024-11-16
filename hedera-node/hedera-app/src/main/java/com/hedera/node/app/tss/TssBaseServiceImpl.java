@@ -240,12 +240,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                     .shareIndex(privateShare.shareId().idElement())
                     .rosterHash(activeRoster)
                     .build();
-            try {
-//                tssSubmissions.submitTssShareSignature(
-//                        tssShareSignatureBody, lastUsedConsensusTime.plusNanos(nanosOffset++));
-            } catch (Exception e) {
-                log.error("Error submitting TSS share signature", e);
-            }
+                tssSubmissions.submitTssShareSignature(
+                        tssShareSignatureBody, lastUsedConsensusTime.plusNanos(nanosOffset++));
         }
     }
 

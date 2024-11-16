@@ -124,12 +124,11 @@ public class TssSubmissions {
     public CompletableFuture<Void> submitTssShareSignature(
             @NonNull final TssShareSignatureTransactionBody body, final Instant lastUsedConsensusTime) {
         requireNonNull(body);
-        return CompletableFuture.completedFuture(null);
-//        return submit(
-//                b -> b.tssShareSignature(body),
-//                appContext.configSupplier().get(),
-//                appContext.selfNodeInfoSupplier().get().accountId(),
-//                lastUsedConsensusTime);
+        return submit(
+                b -> b.tssShareSignature(body),
+                appContext.configSupplier().get(),
+                appContext.selfNodeInfoSupplier().get().accountId(),
+                lastUsedConsensusTime);
     }
 
     private CompletableFuture<Void> submit(
@@ -142,46 +141,45 @@ public class TssSubmissions {
         final var validDuration = new Duration(hederaConfig.transactionMaxValidDuration());
         final var validStartTime = new AtomicReference<>(consensusNow);
         final var attemptsLeft = new AtomicInteger(tssConfig.timesToTrySubmission());
-        return CompletableFuture.completedFuture(null);
-//        return CompletableFuture.runAsync(
-//                () -> {
-//                    var fatalFailure = false;
-//                    var failureReason = "<N/A>";
-//                    TransactionBody body;
-//                    do {
-//                        int txnIdsLeft = tssConfig.distinctTxnIdsToTry();
-//                        do {
-//                            final var builder = builderWith(validStartTime.get(), selfId, validDuration);
-//                            spec.accept(builder);
-//                            body = builder.build();
-//                            try {
-//                                appContext.gossip().submit(body);
-//                                return;
-//                            } catch (IllegalArgumentException iae) {
-//                                failureReason = iae.getMessage();
-//                                if (DUPLICATE_TRANSACTION_REASON.equals(failureReason)) {
-//                                    validStartTime.set(validStartTime.get().plusNanos(NANOS_TO_SKIP_ON_DUPLICATE));
-//                                } else {
-//                                    fatalFailure = true;
-//                                    break;
-//                                }
-//                            } catch (IllegalStateException ise) {
-//                                failureReason = ise.getMessage();
-//                                // There is no point to retry immediately except on a duplicate id
-//                                break;
-//                            }
-//                        } while (txnIdsLeft-- > 1);
-//                        log.warn("Failed to submit {} ({})", body, failureReason);
-//                        try {
-//                            MILLISECONDS.sleep(tssConfig.retryDelay().toMillis());
-//                        } catch (InterruptedException e) {
-//                            Thread.currentThread().interrupt();
-//                            throw new IllegalStateException("Interrupted while waiting to retry " + body, e);
-//                        }
-//                    } while (!fatalFailure && attemptsLeft.decrementAndGet() > 0);
-//                    throw new IllegalStateException(failureReason);
-//                },
-//                submissionExecutor);
+        return CompletableFuture.runAsync(
+                () -> {
+                    var fatalFailure = false;
+                    var failureReason = "<N/A>";
+                    TransactionBody body;
+                    do {
+                        int txnIdsLeft = tssConfig.distinctTxnIdsToTry();
+                        do {
+                            final var builder = builderWith(validStartTime.get(), selfId, validDuration);
+                            spec.accept(builder);
+                            body = builder.build();
+                            try {
+                                appContext.gossip().submit(body);
+                                return;
+                            } catch (IllegalArgumentException iae) {
+                                failureReason = iae.getMessage();
+                                if (DUPLICATE_TRANSACTION_REASON.equals(failureReason)) {
+                                    validStartTime.set(validStartTime.get().plusNanos(NANOS_TO_SKIP_ON_DUPLICATE));
+                                } else {
+                                    fatalFailure = true;
+                                    break;
+                                }
+                            } catch (IllegalStateException ise) {
+                                failureReason = ise.getMessage();
+                                // There is no point to retry immediately except on a duplicate id
+                                break;
+                            }
+                        } while (txnIdsLeft-- > 1);
+                        log.warn("Failed to submit {} ({})", body, failureReason);
+                        try {
+                            MILLISECONDS.sleep(tssConfig.retryDelay().toMillis());
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new IllegalStateException("Interrupted while waiting to retry " + body, e);
+                        }
+                    } while (!fatalFailure && attemptsLeft.decrementAndGet() > 0);
+                    throw new IllegalStateException(failureReason);
+                },
+                submissionExecutor);
     }
 
     private Instant nextValidStartFor(@NonNull final HandleContext context) {

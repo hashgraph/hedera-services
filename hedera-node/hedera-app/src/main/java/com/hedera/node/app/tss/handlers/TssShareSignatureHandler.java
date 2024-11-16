@@ -59,6 +59,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
     private final Map<Bytes, Map<Bytes, Set<TssShareSignature>>> signatures = new ConcurrentHashMap<>();
     private Instant lastPurgeTime = Instant.EPOCH;
     private TssBaseServiceImpl tssBaseService;
+    private static int counter = 0;
 
     @Inject
     public TssShareSignatureHandler(
@@ -74,6 +75,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        System.out.println("Num times called: " + counter++);
         requireNonNull(context);
         final var body = context.body().tssShareSignatureOrThrow();
         final var shareSignature = body.shareSignature();

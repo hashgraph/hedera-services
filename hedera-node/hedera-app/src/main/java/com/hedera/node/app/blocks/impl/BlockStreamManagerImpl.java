@@ -391,8 +391,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             }
             impliesIndirectProof = true;
         }
-        System.out.println("blockNumber: " + blockNumber);
-        Thread.dumpStack();
         if (blockNumber == Long.MIN_VALUE) {
             log.info("Ignoring signature on already proven block hash '{}'", blockHash);
             return;
