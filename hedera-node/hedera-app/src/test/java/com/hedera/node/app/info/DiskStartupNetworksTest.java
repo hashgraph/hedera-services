@@ -293,17 +293,14 @@ class DiskStartupNetworksTest {
         final var servicesRegistry = new FakeServicesRegistry();
         given(appContext.gossip()).willReturn(UNAVAILABLE_GOSSIP);
         given(appContext.instantSource()).willReturn(InstantSource.system());
-        Set.of(
-                        new EntityIdService(),
-                        new TssBaseServiceImpl(
-                                appContext,
-                                ForkJoinPool.commonPool(),
-                                ForkJoinPool.commonPool(),
-                                tssLibrary,
-                                ForkJoinPool.commonPool(),
-                                NO_OP_METRICS),
-                        new RosterService(),
-                        new AddressBookServiceImpl())
+        final var tssBaseService = new TssBaseServiceImpl(
+                appContext,
+                ForkJoinPool.commonPool(),
+                ForkJoinPool.commonPool(),
+                tssLibrary,
+                ForkJoinPool.commonPool(),
+                NO_OP_METRICS);
+        Set.of(tssBaseService, new EntityIdService(), new RosterService(roster -> true), new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();

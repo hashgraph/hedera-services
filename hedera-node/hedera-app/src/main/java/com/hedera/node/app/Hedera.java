@@ -438,7 +438,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        new RosterService(),
+                        // FUTURE: a lambda that tests if a ReadableTssStore
+                        // constructed from the migration state returns a
+                        // RosterKeys with the ledger id for the given roster
+                        new RosterService(roster -> true),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {

@@ -21,29 +21,30 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.roster.schemas.V057RosterSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
+import java.util.function.Predicate;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * Unit tests for {@link RosterService}.
- */
+@ExtendWith(MockitoExtension.class)
 class RosterServiceTest {
+    @Mock
+    private Predicate<Roster> canAdopt;
+
     private RosterService rosterService;
 
     @BeforeEach
     void setUp() {
-        rosterService = new RosterService();
-    }
-
-    @Test
-    void defaultConstructor() {
-        assertThat(new RosterService()).isNotNull();
+        rosterService = new RosterService(canAdopt);
     }
 
     @Test

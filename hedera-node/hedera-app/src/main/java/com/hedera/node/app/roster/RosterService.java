@@ -18,11 +18,15 @@ package com.hedera.node.app.roster;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.roster.schemas.V057RosterSchema;
+import com.hedera.node.app.tss.TssBaseService;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Predicate;
 
 /**
  * A {@link com.hedera.hapi.node.state.roster.Roster} implementation of the {@link Service} interface.
@@ -30,9 +34,24 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Not exposed outside `hedera-app`.
  */
 public class RosterService implements Service {
+    /**
+     * Since with full TSS adoption, the roster service decides whether to
+     * adopt a candidate roster based on the presence of key material, we
+     * need to ensure the TSS service is migrated first.
+     */
+    public static final int MIGRATION_ORDER = TssBaseService.MIGRATION_ORDER + 1;
 
-    /** The name of a service that owns Roster entities in state. */
     public static final String NAME = "RosterService";
+
+    /**
+     * The test to use to determine if a candidate roster may be
+     * adopted at an upgrade boundary.
+     */
+    private final Predicate<Roster> canAdopt;
+
+    public RosterService(@NonNull final Predicate<Roster> canAdopt) {
+        this.canAdopt = requireNonNull(canAdopt);
+    }
 
     @NonNull
     @Override
@@ -41,9 +60,14 @@ public class RosterService implements Service {
     }
 
     @Override
+    public int migrationOrder() {
+        return MIGRATION_ORDER;
+    }
+
+    @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0540RosterSchema());
-        registry.register(new V057RosterSchema());
+        registry.register(new V057RosterSchema(canAdopt, WritableRosterStore::new));
     }
 }

@@ -36,12 +36,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * Provides the network's threshold signature scheme (TSS) capability and, as a side effect, the ledger id, as this
- * is the exactly the same as the TSS public key.
- * <p>
- * The
+ * Provides the network's threshold signature scheme (TSS) capability and,
+ * as a side effect, the ledger id; as this is exactly the same as the TSS
+ * public key.
  */
 public interface TssBaseService extends Service {
+    int MIGRATION_ORDER = 0;
     String NAME = "TssBaseService";
 
     /**

@@ -27,7 +27,10 @@ import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,33 +45,68 @@ import org.apache.logging.log4j.Logger;
 public class V057RosterSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V057RosterSchema.class);
 
-    private static final Long ZERO_ROUND = 0L;
-
+    private static final long GENESIS_ROUND_NO = 0L;
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(57).build();
 
-    public V057RosterSchema() {
+    /**
+     * The test to use to determine if a candidate roster may be
+     * adopted at an upgrade boundary.
+     */
+    private final Predicate<Roster> canAdopt;
+    /**
+     * The factory to use to create the writable roster store.
+     */
+    private final Function<WritableStates, WritableRosterStore> rosterStoreFactory;
+
+    public V057RosterSchema(
+            @NonNull final Predicate<Roster> canAdopt,
+            @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory) {
         super(VERSION);
+        this.canAdopt = requireNonNull(canAdopt);
+        this.rosterStoreFactory = requireNonNull(rosterStoreFactory);
     }
 
     @Override
     public void restart(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
-        if (ctx.configuration().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
-            System.out.println("HERE");
-            if (ctx.isGenesis() || isUpgrade(ctx)) {
-                final var rosterStore = new WritableRosterStore(ctx.newStates());
-                if (ctx.isGenesis()) {
-                    final var network = ctx.startupNetworks().genesisNetworkOrThrow();
-                    final var roster = new Roster(network.nodeMetadata().stream()
-                            .map(NodeMetadata::rosterEntryOrThrow)
-                            .toList());
-                    rosterStore.putActiveRoster(requireNonNull(roster), 0L);
+        if (!ctx.configuration().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+            return;
+        }
+        final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
+        final var startupNetworks = ctx.startupNetworks();
+        if (ctx.isGenesis()) {
+            setActiveRoster(GENESIS_ROUND_NO, rosterStore, startupNetworks.genesisNetworkOrThrow());
+        } else {
+            final long roundNumber = ctx.roundNumber();
+            final var overrideNetwork = startupNetworks.overrideNetworkFor(roundNumber);
+            if (overrideNetwork.isPresent()) {
+                setActiveRoster(roundNumber, rosterStore, overrideNetwork.get());
+            } else if (isUpgrade(ctx)) {
+                if (rosterStore.getActiveRoster() == null) {
+                    // If there is no active roster at a migration boundary, we
+                    // must have a migration network in the startup assets
+                    final var network = startupNetworks.migrationNetworkOrThrow();
+                    rosterStore.putActiveRoster(rosterFrom(network), roundNumber);
                 } else {
-                    rosterStore.adoptCandidateRoster(ctx.roundNumber());
+                    final var candidateRoster = rosterStore.getCandidateRoster();
+                    if (canAdopt.test(candidateRoster)) {
+                        rosterStore.adoptCandidateRoster(roundNumber);
+                    }
                 }
             }
         }
+    }
+
+    private void setActiveRoster(
+            final long roundNumber, @NonNull final WritableRosterStore rosterStore, @NonNull final Network network) {
+        rosterStore.putActiveRoster(rosterFrom(network), roundNumber);
+    }
+
+    private Roster rosterFrom(@NonNull final Network network) {
+        return new Roster(network.nodeMetadata().stream()
+                .map(NodeMetadata::rosterEntryOrThrow)
+                .toList());
     }
 
     private boolean isUpgrade(@NonNull final MigrationContext ctx) {
