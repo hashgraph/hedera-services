@@ -22,6 +22,7 @@ import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFIN
 import static com.hedera.node.app.state.merkle.VersionUtils.alreadyIncludesStateDefs;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -216,6 +217,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         if (!(state instanceof MerkleStateRoot stateRoot)) {
             throw new IllegalArgumentException("The state must be an instance of " + MerkleStateRoot.class.getName());
         }
+        final long roundNumber = PLATFORM_STATE_SERVICE.roundOf(stateRoot);
         if (schemas.isEmpty()) {
             logger.info("Service {} does not use state", serviceName);
             return;
@@ -270,6 +272,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     genesisNetworkInfo,
                     entityIdStore,
                     previousVersion,
+                    roundNumber,
                     sharedValues,
                     startupNetworks);
             if (applications.contains(MIGRATION)) {

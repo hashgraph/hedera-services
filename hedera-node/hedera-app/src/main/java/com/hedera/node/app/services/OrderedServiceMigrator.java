@@ -17,7 +17,6 @@
 package com.hedera.node.app.services;
 
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
-import static com.swirlds.state.lifecycle.MigrationContext.ROUND_NUMBER_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
@@ -91,9 +90,6 @@ public class OrderedServiceMigrator implements ServiceMigrator {
         requireNonNull(metrics);
 
         final Map<String, Object> sharedValues = new HashMap<>();
-        if (previousVersion != null) {
-            sharedValues.put(ROUND_NUMBER_KEY, PLATFORM_STATE_SERVICE.roundOf((MerkleStateRoot) state));
-        }
         final var migrationStateChanges = new MigrationStateChanges(state, nodeConfiguration);
         logger.info("Migrating Entity ID Service as pre-requisite for other services");
         final var entityIdRegistration = servicesRegistry.registrations().stream()

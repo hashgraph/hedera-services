@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.roster.schemas;
 
-import static com.swirlds.state.lifecycle.MigrationContext.ROUND_NUMBER_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -66,8 +65,7 @@ public class V057RosterSchema extends Schema {
                             .toList());
                     rosterStore.putActiveRoster(requireNonNull(roster), 0L);
                 } else {
-                    rosterStore.adoptCandidateRoster(
-                            (Long) ctx.sharedValues().getOrDefault(ROUND_NUMBER_KEY, ZERO_ROUND));
+                    rosterStore.adoptCandidateRoster(ctx.roundNumber());
                 }
             }
         }

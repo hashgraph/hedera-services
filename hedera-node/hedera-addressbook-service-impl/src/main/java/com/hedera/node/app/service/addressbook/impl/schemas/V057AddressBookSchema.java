@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
-import static com.swirlds.state.lifecycle.MigrationContext.ROUND_NUMBER_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -64,9 +63,7 @@ public class V057AddressBookSchema extends Schema {
                 return;
             }
         } else {
-            ctx.startupNetworks()
-                    .overrideNetworkFor((Long) ctx.sharedValues().getOrDefault(ROUND_NUMBER_KEY, ZERO_ROUND))
-                    .ifPresent(network::set);
+            ctx.startupNetworks().overrideNetworkFor(ctx.roundNumber()).ifPresent(network::set);
         }
         if (network.get() != null) {
             setNodeMetadata(network.get(), ctx.newStates());

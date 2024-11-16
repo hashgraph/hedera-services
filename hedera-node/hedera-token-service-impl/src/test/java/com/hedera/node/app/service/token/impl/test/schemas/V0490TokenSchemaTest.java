@@ -60,7 +60,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 final class V0490TokenSchemaTest {
-
+    private static final long NON_GENESIS_ROUND = 123L;
     private static final long BEGINNING_ENTITY_ID = 1000;
 
     private static final AccountID[] ACCT_IDS = new AccountID[1001];
@@ -121,6 +121,7 @@ final class V0490TokenSchemaTest {
                 networkInfo,
                 entityIdStore,
                 CURRENT_VERSION,
+                NON_GENESIS_ROUND,
                 new HashMap<>(),
                 startupNetworks);
 
@@ -144,6 +145,7 @@ final class V0490TokenSchemaTest {
                 networkInfo,
                 entityIdStore,
                 null,
+                0L,
                 new HashMap<>(),
                 startupNetworks);
 
@@ -165,6 +167,7 @@ final class V0490TokenSchemaTest {
                 networkInfo,
                 entityIdStore,
                 null,
+                0L,
                 new HashMap<>(),
                 startupNetworks);
 
@@ -239,6 +242,7 @@ final class V0490TokenSchemaTest {
                 networkInfo,
                 entityIdStore,
                 CURRENT_VERSION,
+                NON_GENESIS_ROUND,
                 new HashMap<>(),
                 startupNetworks);
 
@@ -265,6 +269,7 @@ final class V0490TokenSchemaTest {
                 networkInfo,
                 entityIdStore,
                 null,
+                0L,
                 new HashMap<>(),
                 startupNetworks));
 

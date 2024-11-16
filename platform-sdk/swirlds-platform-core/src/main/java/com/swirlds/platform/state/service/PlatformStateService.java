@@ -74,10 +74,12 @@ public enum PlatformStateService implements Service {
      */
     public long roundOf(@NonNull final MerkleStateRoot root) {
         requireNonNull(root);
-        final var state = platformStateOf(root);
-        return state == null
+        final var platformState = platformStateOf(root);
+        return platformState == null
                 ? 0L
-                : state.consensusSnapshotOrElse(ConsensusSnapshot.DEFAULT).round();
+                : platformState
+                        .consensusSnapshotOrElse(ConsensusSnapshot.DEFAULT)
+                        .round();
     }
 
     @SuppressWarnings("unchecked")

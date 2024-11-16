@@ -194,6 +194,11 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 // No-op
             }
 
+            @Override
+            public long roundNumber() {
+                return 0;
+            }
+
             @NonNull
             @Override
             public StartupNetworks startupNetworks() {
