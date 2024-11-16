@@ -384,7 +384,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 this,
-                bootstrapConfigProvider::getConfiguration,
+                () -> configProvider.getConfiguration(),
                 () -> daggerApp.networkInfo().selfNodeInfo());
         tssBaseService = tssBaseServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);

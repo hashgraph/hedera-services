@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
@@ -64,6 +65,7 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -79,6 +81,7 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -101,7 +104,8 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
     private static final int NA = -1;
     private static final byte[] GOSSIP_CERTIFICATE;
 
-    private record NonEmbeddedTssMessage(long nodeId, @NonNull TssMessage tssMessage) {}
+    private record NonEmbeddedTssMessage(long nodeId, @NonNull TssMessage tssMessage) {
+    }
 
     /**
      * The number of shares each node holds in the active TSS directory.
@@ -159,7 +163,7 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
     /**
      * A record that encapsulates the DAB edits to be performed before the staking period change.
      *
-     * @param nodesToDelete the set of node IDs to delete
+     * @param nodesToDelete    the set of node IDs to delete
      * @param numNodesToCreate the number of nodes to create
      */
     public record DabEdits(@NonNull Set<Long> nodesToDelete, int numNodesToCreate) {
@@ -176,6 +180,10 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
     public static final LongUnaryOperator UNEQUAL_NODE_STAKES =
             nodeId -> (nodeId + 1) * 1_000_000_000L * TINYBARS_PER_HBAR;
 
+    public static final LongUnaryOperator NODE_ZERO_DOMINANT_STAKES =
+            nodeId -> (nodeId == 0) ? 10_000_000_000L * TINYBARS_PER_HBAR :
+                    1_000_000_000L * TINYBARS_PER_HBAR;
+
     /**
      * Factory for TSS message simulations that returns the given behaviors for each non-embedded node.
      */
@@ -185,22 +193,26 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
     private final DabEdits dabEdits;
     private final LongUnaryOperator nodeStakes;
     private final LongFunction<TssMessageSim> tssMessageSims;
+    private final BlockSigningType blockSigningType;
 
     /**
      * Constructs a {@link RekeyScenarioOp} with the given stake distribution, DAB edits, and TSS message submission
      * behaviors.
      *
-     * @param dabEdits the DAB edits
-     * @param nodeStakes the stake distribution
-     * @param tssMessageSims the TSS message submission behaviors
+     * @param dabEdits         the DAB edits
+     * @param nodeStakes       the stake distribution
+     * @param tssMessageSims   the TSS message submission behaviors
+     * @param blockSigningType the block signing type
      */
     public RekeyScenarioOp(
             @NonNull final DabEdits dabEdits,
             @NonNull final LongUnaryOperator nodeStakes,
-            @NonNull final LongFunction<TssMessageSim> tssMessageSims) {
+            @NonNull final LongFunction<TssMessageSim> tssMessageSims,
+            @NonNull final BlockSigningType blockSigningType) {
         this.dabEdits = requireNonNull(dabEdits);
         this.nodeStakes = requireNonNull(nodeStakes);
         this.tssMessageSims = requireNonNull(tssMessageSims);
+        this.blockSigningType = requireNonNull(blockSigningType);
     }
 
     @Override
@@ -251,6 +263,10 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
     }
 
     private void observeInteractionsIn(@NonNull final Block block) {
+        System.out.println(" Last Block Item Type " + block.items().getLast().item().kind());
+        final var lastItem = block.items().getLast().blockProofOrThrow();
+        System.out.println(" Block No" + block.items().getFirst().blockHeader().number() + "Length " + lastItem.siblingHashes().size());
+
         for (final var item : block.items()) {
             if (item.hasEventTransaction()) {
                 try {
@@ -277,7 +293,12 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
      * Returns a stream of operations that enable TSS feature flags.
      */
     private Stream<SpecOperation> enableTss() {
-        return Stream.of(overriding("tss.keyCandidateRoster", "true"));
+        if (blockSigningType == BlockSigningType.SIGN_WITH_LEDGER_ID) {
+            return Stream.of(overriding("tss.keyCandidateRoster", "true"),
+                    overriding("tss.signWithLedgerId", "true"));
+        } else {
+            return Stream.of(overriding("tss.keyCandidateRoster", "true"));
+        }
     }
 
     /**
@@ -381,15 +402,16 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             activeRoster = requireNonNull(retrieveActive(state, roundNo));
             sourceRosterHash = getActiveRosterHash(state, roundNo);
             computeNodeShares(
-                            activeRoster.rosterEntries(),
-                            spec.startupProperties().getInteger("tss.maxSharesPerNode"))
+                    activeRoster.rosterEntries(),
+                    spec.startupProperties().getInteger("tss.maxSharesPerNode"))
                     .forEach((nodeId, numShares) -> activeShares.put(nodeId, numShares.intValue()));
             expectedMessages = activeShares.get(0L);
             // Prepare the FakeTssLibrary to decrypt the private shares of the embedded node
             hedera.tssBaseService()
                     .fakeTssLibrary()
                     .setupDecryption(
-                            directory -> {},
+                            directory -> {
+                            },
                             IntStream.range(0, activeShares.get(0L)).boxed().toList());
         });
     }
@@ -453,5 +475,10 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
                 }
             });
         });
+    }
+
+    public enum BlockSigningType {
+        SIGN_WITH_LEDGER_ID,
+        SIGN_WITH_FAKE
     }
 }

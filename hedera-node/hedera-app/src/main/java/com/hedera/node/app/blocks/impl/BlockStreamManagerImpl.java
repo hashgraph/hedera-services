@@ -374,6 +374,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     public synchronized void accept(@NonNull final byte[] message, @NonNull final byte[] signature) {
         // Find the block whose hash as the signed message, tracking any sibling hashes
         // needed for indirect proofs of earlier blocks along the way
+        System.out.println("BlockStreamManagerImpl.accept received message: " +
+                com.swirlds.common.utility.CommonUtils.hex(message) + ", signature: " +
+                com.swirlds.common.utility.CommonUtils.hex(signature));
         long blockNumber = Long.MIN_VALUE;
         boolean impliesIndirectProof = false;
         final List<List<MerkleSiblingHash>> siblingHashes = new ArrayList<>();
@@ -388,6 +391,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             }
             impliesIndirectProof = true;
         }
+        System.out.println("blockNumber: " + blockNumber);
+        Thread.dumpStack();
         if (blockNumber == Long.MIN_VALUE) {
             log.info("Ignoring signature on already proven block hash '{}'", blockHash);
             return;
