@@ -81,7 +81,7 @@ public enum PlatformStateService implements Service {
     }
 
     @SuppressWarnings("unchecked")
-    private @Nullable PlatformState platformStateOf(@NonNull final MerkleStateRoot root) {
+    public @Nullable PlatformState platformStateOf(@NonNull final MerkleStateRoot root) {
         final var index = root.findNodeIndex(NAME, PLATFORM_STATE_KEY);
         if (index == -1) {
             return null;

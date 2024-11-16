@@ -91,7 +91,8 @@ public class FakeServiceMigrator implements ServiceMigrator {
                 genesisNetworkInfo,
                 nodeConfiguration,
                 sharedValues,
-                prevEntityNum);
+                prevEntityNum,
+                startupNetworks);
         registry.registrations().stream()
                 .filter(r -> !Objects.equals(entityIdRegistration, r))
                 .forEach(registration -> {
@@ -105,7 +106,8 @@ public class FakeServiceMigrator implements ServiceMigrator {
                             genesisNetworkInfo,
                             nodeConfiguration,
                             sharedValues,
-                            prevEntityNum);
+                            prevEntityNum,
+                            startupNetworks);
                 });
         final var entityIdWritableStates = fakeState.getWritableStates(NAME_OF_ENTITY_ID_SERVICE);
         if (!(entityIdWritableStates instanceof MapWritableStates mapWritableStates)) {

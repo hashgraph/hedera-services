@@ -18,7 +18,8 @@ package com.hedera.node.app.roster;
 
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
+import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.hedera.node.app.roster.schemas.V057RosterSchema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,5 +44,6 @@ public class RosterService implements Service {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0540RosterSchema());
+        registry.register(new V057RosterSchema());
     }
 }

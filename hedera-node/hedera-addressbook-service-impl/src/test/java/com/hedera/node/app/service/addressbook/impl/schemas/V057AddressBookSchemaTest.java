@@ -21,7 +21,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.Network;
 import com.hedera.hapi.node.state.NodeMetadata;
 import com.hedera.hapi.node.state.addressbook.Node;
@@ -65,6 +64,7 @@ class V057AddressBookSchemaTest {
 
     @Test
     void returnsIfGenesisNodeMetadataUnavailable() {
+        given(ctx.isGenesis()).willReturn(true);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.genesisNetworkOrThrow()).willThrow(IllegalStateException.class);
 
@@ -78,6 +78,7 @@ class V057AddressBookSchemaTest {
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.genesisNetworkOrThrow()).willReturn(NETWORK);
         given(ctx.newStates()).willReturn(writableStates);
+        given(ctx.isGenesis()).willReturn(true);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodes);
 
         subject.restart(ctx);
@@ -89,7 +90,6 @@ class V057AddressBookSchemaTest {
 
     @Test
     void usesOverrideMetadataIfPresent() {
-        given(ctx.previousVersion()).willReturn(SemanticVersion.DEFAULT);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.overrideNetworkFor(0L)).willReturn(Optional.of(NETWORK));
         given(ctx.newStates()).willReturn(writableStates);

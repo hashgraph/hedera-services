@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.service.schemas;
+package com.hedera.node.app.roster.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -32,13 +32,13 @@ import org.apache.logging.log4j.Logger;
  * Roster Schema
  */
 public class V0540RosterSchema extends Schema {
-    /** The name of the RosterMap. */
     public static final String ROSTER_KEY = "ROSTERS";
-    /** The name of the RosterState. */
     public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
 
     private static final Logger log = LogManager.getLogger(V0540RosterSchema.class);
-    /** this can't be increased later so we pick some number large enough, 2^16. */
+    /**
+     * this can't be increased later so we pick some number large enough, 2^16.
+     */
     private static final long MAX_ROSTERS = 65_536L;
 
     /**

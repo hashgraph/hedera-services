@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.roster;
 
-import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_KEY;
-import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
+import static com.swirlds.platform.state.service.WritableRosterStore.ROSTER_KEY;
+import static com.swirlds.platform.state.service.WritableRosterStore.ROSTER_STATES_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;

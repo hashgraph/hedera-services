@@ -33,6 +33,10 @@ public interface MigrationContext {
      * The key used to store the round number in the shared values map if not genesis.
      */
     String ROUND_NUMBER_KEY = "ROUND_NUMBER";
+    /**
+     * The key used to store the round number in the shared values map if not genesis.
+     */
+    String PLATFORM_STATE_KEY = "PLATFORM_STATE";
 
     /**
      * Provides a reference to the previous {@link ReadableStates}. For example, if the previous state was version
@@ -100,6 +104,13 @@ public interface MigrationContext {
      */
     @Nullable
     SemanticVersion previousVersion();
+
+    /**
+     * Returns whether this is a genesis migration.
+     */
+    default boolean isGenesis() {
+        return previousVersion() == null;
+    }
 
     /**
      * Returns a mutable "scratchpad" that can be used to share values between different services

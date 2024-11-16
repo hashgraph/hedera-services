@@ -23,10 +23,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.Network;
+import com.hedera.hapi.node.state.NodeMetadata;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fixtures.state.FakePlatform;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
+import com.hedera.node.app.fixtures.state.FakeStartupNetworks;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.info.NodeInfoImpl;
@@ -337,11 +340,18 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var addressBook = new AddressBook(addresses);
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), addressBook);
             final var initialState = new FakeState();
-            final var networkInfo = new GenesisNetworkInfo(buildRoster(addressBook), Bytes.fromHex("03"));
+            final var genesisRoster = buildRoster(addressBook);
+            final var networkInfo = new GenesisNetworkInfo(genesisRoster, Bytes.fromHex("03"));
+            final var startupNetworks = new FakeStartupNetworks(Network.newBuilder()
+                    .nodeMetadata(genesisRoster.rosterEntries().stream()
+                            .map(entry ->
+                                    NodeMetadata.newBuilder().rosterEntry(entry).build())
+                            .toList())
+                    .build());
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
                 svc.registerSchemas(reg);
-                reg.migrate(svc.getServiceName(), initialState, networkInfo);
+                reg.migrate(svc.getServiceName(), initialState, networkInfo, startupNetworks);
             });
             workingStateAccessor.setState(initialState);
 

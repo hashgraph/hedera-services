@@ -17,11 +17,14 @@
 package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.updateBootstrapProperties;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
@@ -41,6 +44,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.Map;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -95,8 +99,17 @@ public class EmbeddedNetwork extends AbstractNetwork {
 
     @Override
     public void start() {
+        startWithOverrides(emptyMap());
+    }
+
+    @Override
+    public void startWithOverrides(@NonNull final Map<String, String> bootstrapOverrides) {
+        requireNonNull(bootstrapOverrides);
         // Initialize the working directory
         embeddedNode.initWorkingDir(configTxt);
+        if (!bootstrapOverrides.isEmpty()) {
+            updateBootstrapProperties(embeddedNode.getExternalPath(APPLICATION_PROPERTIES), bootstrapOverrides);
+        }
         embeddedNode.start();
         // Start the embedded Hedera "network"
         embeddedHedera = switch (mode) {

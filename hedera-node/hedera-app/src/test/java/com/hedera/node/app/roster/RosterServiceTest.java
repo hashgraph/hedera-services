@@ -21,7 +21,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
+import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.hedera.node.app.roster.schemas.V057RosterSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import org.assertj.core.api.Assertions;
@@ -52,15 +53,16 @@ class RosterServiceTest {
     }
 
     @Test
-    void registerSchemasRegistersTokenSchema() {
+    void registerExpectedSchemas() {
         final var schemaRegistry = mock(SchemaRegistry.class);
 
         rosterService.registerSchemas(schemaRegistry);
         final var captor = ArgumentCaptor.forClass(Schema.class);
-        verify(schemaRegistry, times(1)).register(captor.capture());
+        verify(schemaRegistry, times(2)).register(captor.capture());
         final var schemas = captor.getAllValues();
-        assertThat(schemas).hasSize(1);
+        assertThat(schemas).hasSize(2);
         assertThat(schemas.getFirst()).isInstanceOf(V0540RosterSchema.class);
+        assertThat(schemas.getLast()).isInstanceOf(V057RosterSchema.class);
     }
 
     @Test

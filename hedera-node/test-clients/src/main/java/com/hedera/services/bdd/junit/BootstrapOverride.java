@@ -14,21 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera;
+package com.hedera.services.bdd.junit;
 
 /**
- * Enumerates files and directories created and used by a Hedera node.
+ * An override for a bootstrap property.
  */
-public enum ExternalPath {
-    APPLICATION_LOG,
-    SWIRLDS_LOG,
-    ADDRESS_BOOK,
-    GENESIS_PROPERTIES,
-    APPLICATION_PROPERTIES,
-    LOG4J2_XML,
-    RECORD_STREAMS_DIR,
-    BLOCK_STREAMS_DIR,
-    DATA_CONFIG_DIR,
-    UPGRADE_ARTIFACTS_DIR,
-    SAVED_STATES_DIR,
+public @interface BootstrapOverride {
+    String key();
+
+    String value();
 }

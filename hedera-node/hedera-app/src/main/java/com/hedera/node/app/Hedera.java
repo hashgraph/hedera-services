@@ -26,7 +26,6 @@ import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.nodeTransactionWith;
@@ -35,7 +34,6 @@ import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STR
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
-import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
@@ -126,6 +124,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -400,7 +399,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         bootstrapConfigProvider = new BootstrapConfigProviderImpl();
         final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
         hapiVersion = bootstrapConfig.getConfigData(VersionConfig.class).hapiVersion();
-        version = getNodeStartupVersion(bootstrapConfig);
+        version = ServicesSoftwareVersion.from(bootstrapConfig);
         streamMode = bootstrapConfig.getConfigData(BlockStreamConfig.class).streamMode();
         servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
         logger.info(
@@ -524,8 +523,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         requireNonNull(platformConfiguration);
         this.metrics = requireNonNull(metrics);
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
-        // FUTURE - make this available to the platform state and roster schemas for migration
-        startupNetworks = startupNetworksFactory.apply(selfNodeId.id(), configProvider, tssBaseService);
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
@@ -536,28 +533,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         .activeProfile(),
                 trigger,
                 deserializedVersion == null ? "<NONE>" : deserializedVersion);
-
-        logger.info("Initializing Hedera platform state");
-        migrationStateChanges = new ArrayList<>();
-        final var platformStateMigrations = serviceMigrator.doMigrations(
-                state,
-                servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME, RosterService.NAME),
-                deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
-                version,
-                bootstrapConfigProvider.getConfiguration(),
-                platformConfiguration,
-                UNAVAILABLE_NETWORK_INFO,
-                UNAVAILABLE_METRICS,
-                startupNetworks);
-        migrationStateChanges.addAll(platformStateMigrations);
-
-        final var readableStore = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-        logger.info(
-                "Platform state includes freeze time={} and last frozen={}",
-                readableStore.getFreezeTime(),
-                readableStore.getLastFrozenTime());
-
-        ServicesSoftwareVersion savedStateVersion =
+        if (trigger != GENESIS) {
+            requireNonNull(deserializedVersion, "Deserialized version cannot be null for trigger " + trigger);
+        }
+        final var savedStateVersion =
                 deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion);
         if (version.compareTo(savedStateVersion) < 0) {
             logger.fatal(
@@ -566,13 +545,18 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                     version);
             throw new IllegalStateException("Cannot downgrade from " + savedStateVersion + " to " + version);
         }
-
         try {
-            migrateAndInitialize(state, savedStateVersion, trigger, metrics, genesisAddressBook, platformConfiguration);
+            migrateSchemas(state, savedStateVersion, trigger, metrics, genesisAddressBook, platformConfiguration);
+            logConfiguration();
         } catch (final Throwable t) {
-            logger.fatal("Critical failure during initialization", t);
-            throw new IllegalStateException("Critical failure during initialization", t);
+            logger.fatal("Critical failure during schema migration", t);
+            throw new IllegalStateException("Critical failure during migration", t);
         }
+        final var readableStore = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+        logger.info(
+                "Platform state includes freeze time={} and last frozen={}",
+                readableStore.getFreezeTime(),
+                readableStore.getLastFrozenTime());
     }
 
     /**
@@ -616,17 +600,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param trigger               trigger that is calling migration
      * @param genesisAddressBook    the genesis address book, if applicable
      * @param platformConfiguration platform configuration
-     * @return the state changes caused by the migration
      */
-    private List<StateChanges.Builder> onMigrate(
+    private void migrateSchemas(
             @NonNull final State state,
             @Nullable final ServicesSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
             @NonNull final Metrics metrics,
             @Nullable final AddressBook genesisAddressBook,
             @NonNull final Configuration platformConfiguration) {
-        requireNonNull(startupNetworks);
-        requireNonNull(platformConfiguration);
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getPbjSemanticVersion();
         final var isUpgrade = version.compareTo(deserializedVersion) > 0;
         logger.info(
@@ -644,13 +625,13 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             final var config = configProvider.getConfiguration();
             final var ledgerConfig = config.getConfigData(LedgerConfig.class);
             final var genesisRoster = buildRoster(requireNonNull(genesisAddressBook));
-
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
+        blockStreamService.resetMigratedLastBlockHash();
+        startupNetworks = startupNetworksFactory.apply(selfNodeId.id(), configProvider, tssBaseService);
         // (FUTURE) In principle, the FileService could actually change the active configuration during a
         // migration, which implies we should be passing the config provider and not a static configuration
         // here; but this is a currently unneeded affordance
-        blockStreamService.resetMigratedLastBlockHash();
         final var migrationChanges = serviceMigrator.doMigrations(
                 state,
                 servicesRegistry,
@@ -661,7 +642,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 genesisNetworkInfo,
                 metrics,
                 startupNetworks);
-        final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>(migrationChanges);
+        migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();
         // If still using BlockRecordManager state, then for specifically a non-genesis upgrade,
@@ -673,7 +654,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             boundaryStateChangeListener.reset();
         }
         logger.info("Migration complete");
-        return migrationStateChanges;
     }
 
     /*==================================================================================================================
@@ -932,32 +912,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         return streamMode != RECORDS;
     }
 
-    /*==================================================================================================================
-    *
-    * Genesis Initialization
-    *
-    =================================================================================================================*/
-
-    private void migrateAndInitialize(
-            @NonNull final State state,
-            @Nullable final ServicesSoftwareVersion deserializedVersion,
-            @NonNull final InitTrigger trigger,
-            @NonNull final Metrics metrics,
-            @Nullable final AddressBook genesisAddressBook,
-            @NonNull final Configuration platformConfiguration) {
-        requireNonNull(platformConfiguration);
-        if (trigger != GENESIS) {
-            requireNonNull(deserializedVersion, "Deserialized version cannot be null for trigger " + trigger);
-        }
-        // Until all service schemas are migrated, MerkleStateRoot will not be able to implement
-        // the States API, even if it already has all its children in the Merkle tree, as it will lack
-        // state definitions for those children. (And note services may even require migrations for
-        // those children to be usable with the current version of the software.)
-        final var changes =
-                onMigrate(state, deserializedVersion, trigger, metrics, genesisAddressBook, platformConfiguration);
-        requireNonNull(migrationStateChanges).addAll(changes);
-        // Log the active configuration
-        logConfiguration();
+    public boolean isRosterLifecycleEnabled() {
+        return configProvider
+                .getConfiguration()
+                .getConfigData(AddressBookConfig.class)
+                .useRosterLifecycle();
     }
 
     /*==================================================================================================================
@@ -1106,13 +1065,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 blockStreamInfo.numPrecedingOutputItems(), blockStreamInfo.rightmostPrecedingOutputTreeHashes());
         final var lastLeafHash = noThrowSha384HashOf(BlockItem.PROTOBUF.toBytes(lastStateChanges));
         return rootHashFrom(penultimateOutputTreeStatus, lastLeafHash);
-    }
-
-    private static ServicesSoftwareVersion getNodeStartupVersion(@NonNull final Configuration config) {
-        final var versionConfig = config.getConfigData(VersionConfig.class);
-        return new ServicesSoftwareVersion(
-                versionConfig.servicesVersion(),
-                config.getConfigData(HederaConfig.class).configVersion());
     }
 
     private void logConfiguration() {

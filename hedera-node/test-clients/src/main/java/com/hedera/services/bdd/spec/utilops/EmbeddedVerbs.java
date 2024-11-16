@@ -44,6 +44,7 @@ import com.hedera.services.bdd.spec.utilops.embedded.MutateTokenOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTssMessagesOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTssVotesOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
+import com.hedera.services.bdd.spec.utilops.embedded.ViewMappingValueOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewPendingAirdropOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewSingletonOp;
@@ -153,6 +154,28 @@ public final class EmbeddedVerbs {
         requireNonNull(stateKey);
         requireNonNull(observer);
         return new ViewSingletonOp<T>(serviceName, stateKey, observer);
+    }
+
+    /**
+     * Returns an operation that allows the test author to view a key's mapped value in an embedded state.
+     * @param serviceName the name of the service that manages the mapping
+     * @param stateKey the mapping state key
+     *
+     * @param observer the observer that will receive the value
+     * @return the operation that will expose the mapped value to the observer
+     * @param <K> the type of the key
+     * @param <V> the type of the value
+     */
+    public static <K extends Record, V extends Record> ViewMappingValueOp<K, V> viewMappedValue(
+            @NonNull final String serviceName,
+            @NonNull final String stateKey,
+            @NonNull final K key,
+            @NonNull final Consumer<V> observer) {
+        requireNonNull(serviceName);
+        requireNonNull(stateKey);
+        requireNonNull(key);
+        requireNonNull(observer);
+        return new ViewMappingValueOp<>(serviceName, stateKey, key, observer);
     }
 
     /**

@@ -35,8 +35,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A restart-only schema that ensures address book state reflects any overrides in
- * {@link com.hedera.hapi.node.state.Network} files on disk at startup.
+ * A restart-only schema that ensures address book state reflects any overrides in {@link Network}s returned from
+ * {@link MigrationContext#startupNetworks()} on disk at startup. (Note that once the network has written at least
+ * one state to disk after restart, all such override {@link Network}s will be archived, and hence are applied to
+ * at most one state after restart.)
  */
 public class V057AddressBookSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V057AddressBookSchema.class);
@@ -44,7 +46,7 @@ public class V057AddressBookSchema extends Schema {
     private static final Long ZERO_ROUND = 0L;
 
     private static final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(57).patch(0).build();
+            SemanticVersion.newBuilder().major(0).minor(57).build();
 
     public V057AddressBookSchema() {
         super(VERSION);
@@ -54,13 +56,11 @@ public class V057AddressBookSchema extends Schema {
     public void restart(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
         final AtomicReference<Network> network = new AtomicReference<>();
-        final var isGenesis = ctx.previousVersion() == null;
-        if (isGenesis) {
+        if (ctx.isGenesis()) {
             try {
                 network.set(ctx.startupNetworks().genesisNetworkOrThrow());
-            } catch (Exception e) {
-                // Until the roster proposal is fully adopted, we don't fail hard here
-                log.error("Unable to load genesis network metadata", e);
+            } catch (Exception ignore) {
+                // FUTURE - fail hard here once the roster lifecycle is always enabled
                 return;
             }
         } else {

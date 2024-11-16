@@ -37,12 +37,12 @@ import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeStartupNetworks;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
@@ -135,7 +135,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                     this.tssBaseService = new FakeTssBaseService(appContext);
                     return tssBaseService;
                 },
-                FakeStartupNetworks::new,
+                DiskStartupNetworks::new,
                 NodeId.of(0L));
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
@@ -150,8 +150,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         hedera.initializeStatesApi(
                 state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
 
-        // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done,
-        // so that platform and roster states are ready by the time the State API is initialized
+        // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done
+        // and we are running all CI tests with the Roster lifecycle enabled
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
         final WritableSingletonState<PlatformState> platformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
         final var currentState = requireNonNull(platformState.get());
@@ -160,10 +160,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .addressBook(toPbjAddressBook(addressBook))
                 .build());
         ((CommittableWritableStates) writableStates).commit();
-        final var writableRosterStates = state.getWritableStates(RosterService.NAME);
-        final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
-        writableRosterStore.putActiveRoster(buildRoster(addressBook), 0);
-        ((CommittableWritableStates) writableRosterStates).commit();
+        if (!hedera.isRosterLifecycleEnabled()) {
+            final var writableRosterStates = state.getWritableStates(RosterService.NAME);
+            final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
+            writableRosterStore.putActiveRoster(buildRoster(addressBook), 0);
+            ((CommittableWritableStates) writableRosterStates).commit();
+        }
         // --- end of temporary code block ---
 
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
