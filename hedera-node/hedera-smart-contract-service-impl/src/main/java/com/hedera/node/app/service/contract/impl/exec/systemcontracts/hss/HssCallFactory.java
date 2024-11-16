@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
@@ -37,32 +37,30 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
- * Factory to create a new {@link HasCallAttempt} for a given input and message frame.
+ * Factory to create a new {@link HssCallAttempt} for a given input and message frame.
  */
 @Singleton
-public class HasCallFactory implements CallFactory<HasCallAttempt> {
+public class HssCallFactory implements CallFactory<HssCallAttempt> {
     private final SyntheticIds syntheticIds;
     private final CallAddressChecks addressChecks;
     private final VerificationStrategies verificationStrategies;
-    private final SignatureVerifier signatureVerifier;
-    private final List<CallTranslator<HasCallAttempt>> callTranslators;
+    private final List<CallTranslator<HssCallAttempt>> callTranslators;
 
     @Inject
-    public HasCallFactory(
+    public HssCallFactory(
             @NonNull final SyntheticIds syntheticIds,
             @NonNull final CallAddressChecks addressChecks,
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull @Named("HasTranslators") final List<CallTranslator<HasCallAttempt>> callTranslators) {
+            @NonNull @Named("HasTranslators") final List<CallTranslator<HssCallAttempt>> callTranslators) {
         this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
         this.verificationStrategies = requireNonNull(verificationStrategies);
-        this.signatureVerifier = requireNonNull(signatureVerifier);
         this.callTranslators = requireNonNull(callTranslators);
     }
 
     /**
-     * Creates a new {@link HasCallAttempt} for the given input and message frame.
+     * Creates a new {@link HssCallAttempt} for the given input and message frame.
      *
      * @param input the input
      * @param frame the message frame
@@ -70,14 +68,14 @@ public class HasCallFactory implements CallFactory<HasCallAttempt> {
      * @throws RuntimeException if the call cannot be created
      */
     @Override
-    public @NonNull HasCallAttempt createCallAttemptFrom(
+    public @NonNull HssCallAttempt createCallAttemptFrom(
             @NonNull final Bytes input,
             @NonNull final FrameUtils.CallType callType,
             @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
         final var enhancement = proxyUpdaterFor(frame).enhancement();
-        return new HasCallAttempt(
+        return new HssCallAttempt(
                 input,
                 frame.getSenderAddress(),
                 addressChecks.hasParentDelegateCall(frame),
@@ -85,7 +83,6 @@ public class HasCallFactory implements CallFactory<HasCallAttempt> {
                 configOf(frame),
                 syntheticIds.converterFor(enhancement.nativeOperations()),
                 verificationStrategies,
-                signatureVerifier,
                 systemContractGasCalculatorOf(frame),
                 callTranslators,
                 frame.isStatic());

@@ -19,10 +19,10 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static java.util.Objects.requireNonNull;
@@ -57,6 +57,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -119,7 +120,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
         addressBook = loadAddressBook(node.getExternalPath(ADDRESS_BOOK));
-        roster = buildRoster(addressBook);
+        roster = RosterRetriever.buildRoster(addressBook);
         nodeIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .collect(toMap(AbstractEmbeddedHedera::accountIdOf, Address::getNodeId));
         accountIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
@@ -163,7 +164,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         if (!hedera.isRosterLifecycleEnabled()) {
             final var writableRosterStates = state.getWritableStates(RosterService.NAME);
             final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
-            writableRosterStore.putActiveRoster(buildRoster(addressBook), 0);
+            writableRosterStore.putActiveRoster(createRoster(addressBook), 0);
             ((CommittableWritableStates) writableRosterStates).commit();
         }
         // --- end of temporary code block ---
