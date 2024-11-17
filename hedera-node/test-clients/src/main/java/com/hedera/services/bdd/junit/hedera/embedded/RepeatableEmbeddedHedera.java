@@ -123,7 +123,7 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
 
     private void handleNextRound(boolean skipsSignatureTxn) {
         hedera.onPreHandle(platform.lastCreatedEvent, state);
-        if(skipsSignatureTxn && platform.lastCreatedEvent.function() == HederaFunctionality.TSS_SHARE_SIGNATURE) {
+        if (skipsSignatureTxn && platform.lastCreatedEvent.function() == HederaFunctionality.TSS_SHARE_SIGNATURE) {
             return;
         }
         final var round = platform.nextConsensusRound();

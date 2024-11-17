@@ -100,7 +100,7 @@ public class FakeEvent implements Event {
     }
 
     @NonNull
-    public HederaFunctionality function(){
+    public HederaFunctionality function() {
         return TransactionParts.from(transaction.getApplicationTransaction()).function();
     }
 }

@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.BlockSigningType.SIGN_WITH_FAKE;
@@ -71,7 +70,6 @@ import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -87,7 +85,6 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -110,8 +107,7 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
     private static final int NA = -1;
     private static final byte[] GOSSIP_CERTIFICATE;
 
-    private record NonEmbeddedTssMessage(long nodeId, @NonNull TssMessage tssMessage) {
-    }
+    private record NonEmbeddedTssMessage(long nodeId, @NonNull TssMessage tssMessage) {}
 
     /**
      * The number of shares each node holds in the active TSS directory.
@@ -187,12 +183,11 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
     public static final LongUnaryOperator UNEQUAL_NODE_STAKES =
             nodeId -> (nodeId + 1) * 1_000_000_000L * TINYBARS_PER_HBAR;
 
-    public static final LongUnaryOperator NODE_ZERO_DOMINANT_STAKES =
-            nodeId -> switch ((int) nodeId) {
-                case 0 -> 10_000_000_000L * TINYBARS_PER_HBAR;
-                case 1, 2 -> 1_000_000_000L * TINYBARS_PER_HBAR;
-                default -> 0;
-            };
+    public static final LongUnaryOperator NODE_ZERO_DOMINANT_STAKES = nodeId -> switch ((int) nodeId) {
+        case 0 -> 10_000_000_000L * TINYBARS_PER_HBAR;
+        case 1, 2 -> 1_000_000_000L * TINYBARS_PER_HBAR;
+        default -> 0;
+    };
 
     /**
      * Factory for TSS message simulations that returns the given behaviors for each non-embedded node.
@@ -271,10 +266,11 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             }
             votesAndMessagesMatch = (actualMessages == expectedMessages) && (actualVotes == expectedVotes);
         }
-        boolean signaturesMatch = switch (blockSigningType) {
-            case SIGN_WITH_FAKE -> actualTssSignatures == 0;
-            case SIGN_WITH_LEDGER_ID -> actualTssSignatures > 0;
-        };
+        boolean signaturesMatch =
+                switch (blockSigningType) {
+                    case SIGN_WITH_FAKE -> actualTssSignatures == 0;
+                    case SIGN_WITH_LEDGER_ID -> actualTssSignatures > 0;
+                };
         return votesAndMessagesMatch && signaturesMatch;
     }
 
@@ -300,7 +296,9 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             }
         }
         final var blockProof = block.items().getLast().blockProofOrThrow();
-        if (blockProof.blockSignature().equals(Bytes.wrap(FAKE_SIGNATURE.signature().toBytes()))) {
+        if (blockProof
+                .blockSignature()
+                .equals(Bytes.wrap(FAKE_SIGNATURE.signature().toBytes()))) {
             actualTssSignatures++;
         }
     }
@@ -310,11 +308,11 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
      */
     private Stream<SpecOperation> enableTss() {
         if (blockSigningType == BlockSigningType.SIGN_WITH_LEDGER_ID) {
-            return Stream.of(overriding("tss.keyCandidateRoster", "true"),
-                    overriding("tss.signWithLedgerId", "true")
-//                    overridingTwo("tss.signWithLedgerId", "true",
-//                            "tss.maxSharesPerNode", "4")
-            );
+            return Stream.of(
+                    overriding("tss.keyCandidateRoster", "true"), overriding("tss.signWithLedgerId", "true")
+                    //                    overridingTwo("tss.signWithLedgerId", "true",
+                    //                            "tss.maxSharesPerNode", "4")
+                    );
         } else {
             return Stream.of(overriding("tss.keyCandidateRoster", "true"));
         }
@@ -420,9 +418,13 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
 
             final var writableStates = state.getWritableStates(RosterStateId.NAME);
             final var rosterStore = new WritableRosterStore(writableStates);
-            final var activeEntries = new ArrayList<>(rosterStore.getActiveRoster().rosterEntries());
-            activeEntries.set(activeEntries.size() - 1, activeEntries.getLast().copyBuilder().weight(0).build());
-            activeEntries.set(0, activeEntries.getFirst().copyBuilder().weight(10).build());
+            final var activeEntries =
+                    new ArrayList<>(rosterStore.getActiveRoster().rosterEntries());
+            activeEntries.set(
+                    activeEntries.size() - 1,
+                    activeEntries.getLast().copyBuilder().weight(0).build());
+            activeEntries.set(
+                    0, activeEntries.getFirst().copyBuilder().weight(10).build());
             rosterStore.putActiveRoster(new Roster(activeEntries), roundNo + 1);
             ((CommittableWritableStates) writableStates).commit();
 
@@ -430,16 +432,15 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             activeRoster = requireNonNull(retrieveActive(state, roundNo));
             sourceRosterHash = getActiveRosterHash(state, roundNo);
             computeNodeShares(
-                    activeRoster.rosterEntries(),
-                    spec.startupProperties().getInteger("tss.maxSharesPerNode"))
+                            activeRoster.rosterEntries(),
+                            spec.startupProperties().getInteger("tss.maxSharesPerNode"))
                     .forEach((nodeId, numShares) -> activeShares.put(nodeId, numShares.intValue()));
             expectedMessages = activeShares.get(0L);
             // Prepare the FakeTssLibrary to decrypt the private shares of the embedded node
             hedera.tssBaseService()
                     .fakeTssLibrary()
                     .setupDecryption(
-                            directory -> {
-                            },
+                            directory -> {},
                             IntStream.range(0, activeShares.get(0L)).boxed().toList());
         });
     }

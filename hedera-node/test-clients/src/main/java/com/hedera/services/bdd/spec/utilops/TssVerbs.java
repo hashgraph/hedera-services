@@ -83,7 +83,8 @@ public class TssVerbs {
             @NonNull final RekeyScenarioOp.DabEdits dabEdits,
             @NonNull final LongUnaryOperator nodeStakes,
             @NonNull final LongFunction<RekeyScenarioOp.TssMessageSim> tssMessageSims) {
-        return new RekeyScenarioOp(dabEdits, nodeStakes, tssMessageSims, RekeyScenarioOp.BlockSigningType.SIGN_WITH_FAKE);
+        return new RekeyScenarioOp(
+                dabEdits, nodeStakes, tssMessageSims, RekeyScenarioOp.BlockSigningType.SIGN_WITH_FAKE);
     }
 
     /**

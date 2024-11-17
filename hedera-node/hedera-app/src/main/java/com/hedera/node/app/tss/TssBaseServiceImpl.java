@@ -55,7 +55,6 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -63,11 +62,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -240,8 +237,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                     .shareIndex(privateShare.shareId().idElement())
                     .rosterHash(activeRoster)
                     .build();
-                tssSubmissions.submitTssShareSignature(
-                        tssShareSignatureBody, lastUsedConsensusTime.plusNanos(nanosOffset++));
+            tssSubmissions.submitTssShareSignature(
+                    tssShareSignatureBody, lastUsedConsensusTime.plusNanos(nanosOffset++));
         }
     }
 

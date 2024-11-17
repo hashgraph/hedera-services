@@ -63,6 +63,13 @@ public class TssMetrics {
     private static final LongGauge.Config TSS_ROSTER_LIFECYCLE_CONFIG = new LongGauge.Config(
                     "app", TSS_CANDIDATE_ROSTER_LIFECYCLE)
             .withDescription(TSS_CANDIDATE_ROSTER_LIFECYCLE_DESC);
+
+    private static final String TSS_LEDGER_SIGNATURE_TIME = "tss_ledger_signature_time";
+    private static final String TSS_LEDGER_SIGNATURE_TIME_DESC =
+            "the time it takes to to get ledger signature from the time it is requested";
+    private static final LongGauge.Config TSS_LEDGER_SIGNATURE_TIME_CONFIG =
+            new LongGauge.Config("app", TSS_LEDGER_SIGNATURE_TIME).withDescription(TSS_LEDGER_SIGNATURE_TIME_DESC);
+    private final LongGauge tssLedgerSignatureTime;
     private final LongGauge tssCandidateRosterLifecycle;
 
     // local variable to track the start of candidate roster's lifecycle
@@ -78,6 +85,7 @@ public class TssMetrics {
         this.metrics = requireNonNull(metrics, "metrics must not be null");
         tssCandidateRosterLifecycle = metrics.getOrCreate(TSS_ROSTER_LIFECYCLE_CONFIG);
         tssSharesAggregationTime = metrics.getOrCreate(TSS_SHARES_AGGREGATION_CONFIG);
+        tssLedgerSignatureTime = metrics.getOrCreate(TSS_LEDGER_SIGNATURE_TIME_CONFIG);
     }
 
     /**
@@ -176,6 +184,19 @@ public class TssMetrics {
     }
 
     /**
+     * The time it takes to get ledger signature from the time it is requested.
+     *
+     * @param time the time it takes to get ledger signature from the time it is requested
+     */
+    public void updateLedgerSignatureTime(final long time) {
+        if (time < 0) {
+            log.warn("Received negative signature time: {}", time);
+        } else {
+            tssLedgerSignatureTime.set(time);
+        }
+    }
+
+    /**
      * @return the aggregation time from the metric
      */
     @VisibleForTesting
@@ -189,5 +210,13 @@ public class TssMetrics {
     @VisibleForTesting
     public long getCandidateRosterLifecycle() {
         return tssCandidateRosterLifecycle.get();
+    }
+
+    /**
+     * @return the ledger signature time from the metric
+     */
+    @VisibleForTesting
+    public long getTssLedgerSignatureTime() {
+        return tssLedgerSignatureTime.get();
     }
 }
