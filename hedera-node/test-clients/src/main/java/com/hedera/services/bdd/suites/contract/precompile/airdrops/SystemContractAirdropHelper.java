@@ -32,6 +32,7 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecToken;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -71,15 +72,9 @@ public final class SystemContractAirdropHelper {
                 .toArray(Address[]::new);
     }
 
-    public static Address[] prepareTokenAddresses(@NonNull HapiSpec spec, @NonNull SpecFungibleToken... tokens) {
+    public static Address[] prepareTokenAddresses(@NonNull HapiSpec spec, @NonNull SpecToken... tokens) {
         return Arrays.stream(tokens)
                 .map(token -> token.addressOn(spec.targetNetworkOrThrow()))
-                .toArray(Address[]::new);
-    }
-
-    public static Address[] prepareNftAddresses(@NonNull HapiSpec spec, @NonNull SpecNonFungibleToken... nfts) {
-        return Arrays.stream(nfts)
-                .map(nft -> nft.addressOn(spec.targetNetworkOrThrow()))
                 .toArray(Address[]::new);
     }
 
