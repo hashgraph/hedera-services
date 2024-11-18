@@ -44,6 +44,7 @@ import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -95,6 +96,7 @@ public class StartupStateUtilsTests {
     @AfterEach
     void afterEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
     }
 
     @BeforeAll
@@ -133,6 +135,7 @@ public class StartupStateUtilsTests {
             @Nullable final Hash epoch,
             final boolean corrupted)
             throws IOException {
+        MerkleDb.resetDefaultInstancePath();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
                 .setRound(round)

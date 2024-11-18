@@ -34,7 +34,10 @@ import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.SwirldState;
@@ -258,7 +261,8 @@ public class SignedState implements SignedStateInfo {
     @Override
     public @NonNull AddressBook getAddressBook() {
         return Objects.requireNonNull(
-                getState().getReadablePlatformState().getAddressBook(),
+                RosterUtils.buildAddressBook(RosterRetriever.retrieveActiveOrGenesisRoster(
+                        (MerkleStateRoot) getState().getSwirldState())),
                 "address book stored in this signed state is null, this should never happen");
     }
 
