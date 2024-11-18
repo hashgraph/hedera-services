@@ -38,4 +38,7 @@ dependencies {
     implementation("org.gradlex:extra-java-module-info:1.9")
     implementation("org.gradlex:jvm-dependency-conflict-resolution:2.1.2")
     implementation("org.gradlex:java-module-dependencies:1.7.1")
+    implementation(
+        "io.freefair.maven-central.validate-poms:io.freefair.maven-central.validate-poms.gradle.plugin:8.6"
+    )
 }
