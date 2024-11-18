@@ -26,21 +26,26 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
-import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.subDispatch;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ContractID.ContractOneOfType;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
@@ -55,13 +60,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.Predicate;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
-    private static final Comparator<Key> KEY_COMPARATOR = new KeyComparator();
+    static final Comparator<Key> KEY_COMPARATOR = new KeyComparator();
 
     @FunctionalInterface
     protected interface TransactionKeysFn {
@@ -70,6 +76,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Gets the {@link TransactionKeys} summarizing a schedule's signing requirements.
+     *
      * @param schedule the schedule
      * @param fn the function to get required keys by category
      * @return the schedule's signing requirements
@@ -88,6 +95,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Gets the {@link TransactionKeys} summarizing a schedule's signing requirements.
+     *
      * @param schedule the schedule
      * @param fn the function to get required keys by category
      * @return the schedule's signing requirements
@@ -113,6 +121,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Gets all required keys for a transaction, including the payer key and all non-payer keys.
+     *
      * @param keys the transaction keys
      * @return the required keys
      */
@@ -124,24 +133,33 @@ abstract class AbstractScheduleHandler {
     }
 
     /**
-     * Given a set of signing crypto keys, a list of signatories, and a list of required keys, returns a new list of
-     * signatories that includes all the original signatories and any crypto keys that are both constituents of the
-     * required keys and in the signing crypto keys set.
-     * @param signingCryptoKeys the signing crypto keys
+     * Given a set of signing simple keys, a list of signatories, and a list of required keys (possibly complex),
+     * returns a new list of signatories that includes all the original signatories as well as,
+     * <ol>
+     *     <li>Any crypto keys that are both constituents of the required keys and in the authorizing keys set.</li>
+     *     <li>Any keys of type {@link KeyOneOfType#CONTRACT_ID} using {@link ContractOneOfType#CONTRACT_NUM}.</li>
+     * </ol>
+     *
+     * @param authorizingKeys the authorizing simple keys
      * @param signatories the original signatories
      * @param requiredKeys the required keys
      * @return the new signatories
      */
-    protected @NonNull List<Key> newSignatories(
-            @NonNull final SortedSet<Key> signingCryptoKeys,
+    protected static @NonNull List<Key> newSignatories(
+            @NonNull final SortedSet<Key> authorizingKeys,
             @NonNull final List<Key> signatories,
             @NonNull final List<Key> requiredKeys) {
-        requireNonNull(signingCryptoKeys);
+        requireNonNull(authorizingKeys);
         requireNonNull(signatories);
         requireNonNull(requiredKeys);
         final var newSignatories = new ConcurrentSkipListSet<>(KEY_COMPARATOR);
         newSignatories.addAll(signatories);
-        requiredKeys.forEach(k -> accumulateNewSignatories(newSignatories, signingCryptoKeys, k));
+        requiredKeys.forEach(k -> accumulateNewSignatories(newSignatories, authorizingKeys, k));
+        authorizingKeys.forEach(key -> {
+            if (isNumericContractIdKey(key)) {
+                newSignatories.add(key);
+            }
+        });
         return new ArrayList<>(newSignatories);
     }
 
@@ -182,6 +200,7 @@ abstract class AbstractScheduleHandler {
      *     <li>Is not deleted.</li>
      *     <li>Has not expired.</li>
      * </ul>
+     *
      * @param schedule the schedule to validate
      * @param consensusNow the current consensus time
      * @param isLongTermEnabled whether long term scheduling is enabled
@@ -216,6 +235,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Indicates if the given validation result is one that may allow a validated schedule to be executed.
+     *
      * @param validationResult the validation result
      * @return if the schedule might be executable
      */
@@ -225,6 +245,7 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Tries to execute a schedule, if all conditions are met. Returns true if the schedule was executed.
+     *
      * @param context the context
      * @param schedule the schedule to execute
      * @param validationResult the validation result
@@ -242,21 +263,22 @@ abstract class AbstractScheduleHandler {
         requireNonNull(requiredKeys);
         requireNonNull(validationResult);
 
-        final var signatories = new HashSet<>(schedule.signatories());
-        final VerificationAssistant callback = (k, ignore) -> signatories.contains(k);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
+        final var simpleKeyVerifier = simpleKeyVerifierFrom(accountStore, schedule.signatories());
+        final VerificationAssistant callback = (k, ignore) -> simpleKeyVerifier.test(k);
         final var remainingKeys = new HashSet<>(requiredKeys);
         remainingKeys.removeIf(
                 k -> context.keyVerifier().verificationFor(k, callback).passed());
         final boolean isExpired = validationResult == SCHEDULE_PENDING_EXPIRATION;
         if (canExecute(schedule, remainingKeys, isExpired, isLongTermEnabled)) {
             final var body = childAsOrdinary(schedule);
-            context.dispatchChildTransaction(
-                            body,
-                            ScheduleStreamBuilder.class,
-                            signatories::contains,
+            context.dispatch(subDispatch(
                             schedule.payerAccountIdOrThrow(),
-                            TransactionCategory.SCHEDULED,
-                            ON)
+                            body,
+                            simpleKeyVerifier,
+                            emptySet(),
+                            ScheduleStreamBuilder.class,
+                            StakingRewards.ON))
                     .scheduleRef(schedule.scheduleId());
             context.savepointStack()
                     .getBaseBuilder(ScheduleStreamBuilder.class)
@@ -268,7 +290,40 @@ abstract class AbstractScheduleHandler {
     }
 
     /**
+     * Returns a predicate that verifies a key against a given account store and list of signatories.
+     * @param accountStore the account store to use to resolve aliased contract id keys
+     * @param signatories the approving signatories
+     * @return the key verifier
+     */
+    static Predicate<Key> simpleKeyVerifierFrom(
+            @NonNull final ReadableAccountStore accountStore, @NonNull final List<Key> signatories) {
+        final Set<Key> cryptoSigs = new HashSet<>();
+        final Set<ContractID> contractIdSigs = new HashSet<>();
+        final Set<ContractID> delegatableContractIdSigs = new HashSet<>();
+        signatories.forEach(k -> {
+            switch (k.key().kind()) {
+                case ED25519, ECDSA_SECP256K1 -> cryptoSigs.add(k);
+                case CONTRACT_ID -> contractIdSigs.add(k.contractIDOrThrow());
+                case DELEGATABLE_CONTRACT_ID -> delegatableContractIdSigs.add(k.delegatableContractIdOrThrow());
+                default -> {
+                    // No other key type can be a signatory
+                }
+            }
+        });
+        return key -> switch (key.key().kind()) {
+            case ED25519, ECDSA_SECP256K1 -> cryptoSigs.contains(key);
+                // A contract id key is only activated by direct authorization
+            case CONTRACT_ID -> isAuthorized(key.contractIDOrThrow(), accountStore, contractIdSigs, emptySet());
+                // The more permissive "delegatable" key is activated by either type of authorization
+            case DELEGATABLE_CONTRACT_ID -> isAuthorized(
+                    key.delegatableContractIdOrThrow(), accountStore, delegatableContractIdSigs, contractIdSigs);
+            default -> false;
+        };
+    }
+
+    /**
      * Returns a version of the given schedule marked as executed at the given time.
+     *
      * @param schedule the schedule to mark as executed
      * @param consensusNow the time to mark the schedule as executed
      * @return the marked schedule
@@ -312,11 +367,12 @@ abstract class AbstractScheduleHandler {
 
     /**
      * Accumulates the valid signatories from a key structure into a set of signatories.
+     *
      * @param signatories the set of signatories to accumulate into
      * @param signingCryptoKeys the signing crypto keys
      * @param key the key structure to accumulate signatories from
      */
-    private void accumulateNewSignatories(
+    private static void accumulateNewSignatories(
             @NonNull final Set<Key> signatories, @NonNull final Set<Key> signingCryptoKeys, @NonNull final Key key) {
         switch (key.key().kind()) {
             case ED25519, ECDSA_SECP256K1 -> {
@@ -332,5 +388,46 @@ abstract class AbstractScheduleHandler {
                     .keys()
                     .forEach(k -> accumulateNewSignatories(signatories, signingCryptoKeys, k));
         }
+    }
+
+    /**
+     * Returns true if the given key is a contract id key with a contract number. This includes keys that provide both
+     * direct authorization and the weaker "delegatable" authorization.
+     * @param key the authorizing key to test
+     * @return true if the key is a contract id key with a contract number
+     */
+    private static boolean isNumericContractIdKey(@NonNull final Key key) {
+        return (key.hasContractID() && key.contractIDOrThrow().hasContractNum())
+                || (key.hasDelegatableContractId()
+                        && key.delegatableContractIdOrThrow().hasContractNum());
+    }
+
+    /**
+     * Returns true if the given contract id is authorized by either of the given sets of authorized contract ids.
+     * If the contract has {@link ContractOneOfType#EVM_ADDRESS}, uses the given account store to attempt to resolve
+     * the alias and test the implied contract id.
+     * @param contractId the contract id to test
+     * @param accountStore the account store to use to resolve aliases
+     * @param firstAuthorized the first set of authorized contract ids
+     * @param secondAuthorized the second set of authorized contract ids
+     * @return true if the contract id is authorized
+     */
+    private static boolean isAuthorized(
+            @NonNull final ContractID contractId,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final Set<ContractID> firstAuthorized,
+            @NonNull final Set<ContractID> secondAuthorized) {
+        var effectiveId = ContractID.DEFAULT;
+        if (contractId.hasContractNum()) {
+            effectiveId = contractId;
+        } else if (contractId.hasEvmAddress()) {
+            final var accountId = accountStore.getAccountIDByAlias(contractId.evmAddressOrThrow());
+            if (accountId != null) {
+                effectiveId = ContractID.newBuilder()
+                        .contractNum(accountId.accountNumOrThrow())
+                        .build();
+            }
+        }
+        return firstAuthorized.contains(effectiveId) || secondAuthorized.contains(effectiveId);
     }
 }
