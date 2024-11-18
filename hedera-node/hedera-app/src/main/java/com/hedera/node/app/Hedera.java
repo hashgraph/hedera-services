@@ -16,6 +16,38 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
+import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
+import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.nodeTransactionWith;
+import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
+import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
+import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
+import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
+import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
+import static com.hedera.node.config.types.StreamMode.BLOCKS;
+import static com.hedera.node.config.types.StreamMode.RECORDS;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
+import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static com.swirlds.platform.system.InitTrigger.GENESIS;
+import static com.swirlds.platform.system.InitTrigger.RECONNECT;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
@@ -120,9 +152,6 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -135,38 +164,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-
-import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
-import static com.hedera.hapi.util.HapiUtils.functionOf;
-import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
-import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
-import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
-import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
-import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.nodeTransactionWith;
-import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
-import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
-import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
-import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
-import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
-import static com.hedera.node.config.types.StreamMode.BLOCKS;
-import static com.hedera.node.config.types.StreamMode.RECORDS;
-import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
-import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
-import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
-import static com.swirlds.platform.system.InitTrigger.GENESIS;
-import static com.swirlds.platform.system.InitTrigger.RECONNECT;
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
-import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.completedFuture;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /*
  ****************        ****************************************************************************************
