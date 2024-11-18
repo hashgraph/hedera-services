@@ -109,7 +109,6 @@ import com.hedera.node.app.service.token.records.TokenUpdateStreamBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
 import com.hedera.node.app.spi.records.RecordSource;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -391,7 +390,7 @@ public class BlockStreamBuilder
     /**
      * How the transaction should be customized before externalization to the stream.
      */
-    private final ExternalizedRecordCustomizer customizer;
+    private final TransactionCustomizer customizer;
 
     /**
      * Constructs a builder for a user transaction with the given characteristics.
@@ -401,7 +400,7 @@ public class BlockStreamBuilder
      */
     public BlockStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
-            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final TransactionCustomizer customizer,
             @NonNull final HandleContext.TransactionCategory category) {
         this.reversingBehavior = requireNonNull(reversingBehavior);
         this.customizer = requireNonNull(customizer);

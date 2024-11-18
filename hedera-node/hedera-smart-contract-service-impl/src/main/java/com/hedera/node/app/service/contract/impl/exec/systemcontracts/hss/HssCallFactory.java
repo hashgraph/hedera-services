@@ -52,7 +52,7 @@ public class HssCallFactory implements CallFactory<HssCallAttempt> {
             @NonNull final CallAddressChecks addressChecks,
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull @Named("HasTranslators") final List<CallTranslator<HssCallAttempt>> callTranslators) {
+            @NonNull @Named("HssTranslators") final List<CallTranslator<HssCallAttempt>> callTranslators) {
         this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
         this.verificationStrategies = requireNonNull(verificationStrategies);
