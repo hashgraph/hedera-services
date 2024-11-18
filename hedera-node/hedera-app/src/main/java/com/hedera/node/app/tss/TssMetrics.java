@@ -73,8 +73,11 @@ public class TssMetrics {
 
     private static final String TSS_LEDGER_SIGNATURE_FAILURES_COUNTER = "tss_ledger_signature_failures_counter";
     private static final String TSS_LEDGER_SIGNATURE_FAILURES_COUNTER_DESC =
-            " The number of consecutive failures to generate a ledger signature for a block hash";
-    private final Map<Bytes, Counter> ledgerSignatureFailuresCounter = new HashMap<>();
+            "The number of failures to generate a ledger signature";
+    final Counter.Config TSS_LEDGER_SIGN_FAILURE_COUNTER = new Counter.Config(
+                    "app", TSS_LEDGER_SIGNATURE_FAILURES_COUNTER)
+            .withDescription(TSS_LEDGER_SIGNATURE_FAILURES_COUNTER_DESC);
+    final Counter ledgerSignatureFailuresCounter;
 
     private final LongGauge tssCandidateRosterLifecycle;
 
@@ -92,6 +95,7 @@ public class TssMetrics {
         tssCandidateRosterLifecycle = metrics.getOrCreate(TSS_ROSTER_LIFECYCLE_CONFIG);
         tssSharesAggregationTime = metrics.getOrCreate(TSS_SHARES_AGGREGATION_CONFIG);
         tssLedgerSignatureTime = metrics.getOrCreate(TSS_LEDGER_SIGNATURE_TIME_CONFIG);
+        ledgerSignatureFailuresCounter = metrics.getOrCreate(TSS_LEDGER_SIGN_FAILURE_COUNTER);
     }
 
     /**
@@ -170,26 +174,11 @@ public class TssMetrics {
             tssSharesAggregationTime.set(aggregationTime);
         }
     }
-
     /**
-     * Track the number of consecutive failures to generate a ledger signature for a block hash.
-     * @param blockHash the hash of the block for which the ledger signature generation failed
+     * Track the number of consecutive failures to generate a ledger signatures.
      */
-    public void updateLedgerSignatureFailures(final Bytes blockHash) {
-        requireNonNull(blockHash, "blockHash must not be null");
-
-        // if this is the first message for this candidate roster, initialize new metric to track occurrences
-        if (!ledgerSignatureFailuresCounter.containsKey(blockHash)) {
-            final Counter.Config TSS_LEDGER_SIGN_FAILURE_COUNTER = new Counter.Config(
-                            "app", TSS_LEDGER_SIGNATURE_FAILURES_COUNTER)
-                    .withDescription(TSS_LEDGER_SIGNATURE_FAILURES_COUNTER_DESC + blockHash);
-            final Counter tssLedgerSignatureTxCounter = metrics.getOrCreate(TSS_LEDGER_SIGN_FAILURE_COUNTER);
-            tssLedgerSignatureTxCounter.increment();
-            ledgerSignatureFailuresCounter.put(blockHash, tssLedgerSignatureTxCounter);
-        } else {
-            // if the metric is already present, just increment
-            getFailuresForLedgerSignature(blockHash).increment();
-        }
+    public void updateLedgerSignatureFailures() {
+        ledgerSignatureFailuresCounter.increment();
     }
 
     /**
@@ -199,16 +188,6 @@ public class TssMetrics {
     public @NonNull Counter getMessagesPerCandidateRoster(@NonNull final Bytes targetRosterHash) {
         requireNonNull(targetRosterHash);
         return messagesPerCandidateRoster.get(targetRosterHash);
-    }
-
-    /**
-     * Get the number of consecutive failures to generate a ledger signature for a block hash.
-     * @param blockHash the hash of the block for which the ledger signature generation failed
-     * @return the number of consecutive failures to generate a ledger signature for a block hash
-     */
-    public @NonNull Counter getFailuresForLedgerSignature(@NonNull final Bytes blockHash) {
-        requireNonNull(blockHash);
-        return ledgerSignatureFailuresCounter.get(blockHash);
     }
 
     /**
@@ -255,5 +234,10 @@ public class TssMetrics {
     @VisibleForTesting
     public long getTssLedgerSignatureTime() {
         return tssLedgerSignatureTime.get();
+    }
+
+    @VisibleForTesting
+    public Counter getLedgerSignatureFailuresCounter() {
+        return ledgerSignatureFailuresCounter;
     }
 }
