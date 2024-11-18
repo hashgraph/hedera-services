@@ -31,7 +31,7 @@ or in the case of view functions will look up the information needed from the ap
 ### Proxy Contract
 
 The Schedule Service System Contract will have an associated proxy contract as some of the functions will be callable
-directly from an EOA.  A new descendant of the `HederaEvmAccount` called `ScheduleServiceEntity` will be created to supply
+directly from an EOA.  A new descendant of the `HederaEvmAccount` called `ScheduleEvmAccount` will be created to supply
 contract byte code for the proxy contract if the target of the top level call is a schedule transaction id and if the function selector
 matches a supported function.
 
