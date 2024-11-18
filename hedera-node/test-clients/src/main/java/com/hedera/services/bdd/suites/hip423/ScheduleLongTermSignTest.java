@@ -149,6 +149,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(TimeUnit.SECONDS.toMillis(6)),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
@@ -197,6 +198,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(TimeUnit.SECONDS.toMillis(6)),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         scheduleSign(schedule)
                                 .alsoSigningWith(NEW_SENDER_KEY)
                                 .sigControl(forKey(NEW_SENDER_KEY, sigTwo))
@@ -292,6 +294,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(TimeUnit.SECONDS.toMillis(6)),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
@@ -331,6 +334,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(TimeUnit.SECONDS.toMillis(6)),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
@@ -426,6 +430,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(11000),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
@@ -469,6 +474,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(TimeUnit.SECONDS.toMillis(6)),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
@@ -513,6 +519,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(TimeUnit.SECONDS.toMillis(6)),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         getAccountBalance(receiver).hasTinyBars(1),
                         scheduleSign(schedule)
                                 .alsoSigningWith(senderKey)
@@ -613,6 +620,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(TimeUnit.SECONDS.toMillis(6)),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         getScheduleInfo(THREE_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
@@ -646,6 +654,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(TimeUnit.SECONDS.toMillis(6)),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
@@ -681,6 +690,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(TimeUnit.SECONDS.toMillis(6)),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         getScheduleInfo(DEFERRED_CREATION).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getTxnRecord(CREATION).scheduled());
     }
@@ -734,6 +744,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(TimeUnit.SECONDS.toMillis(6)),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         getScheduleInfo(DEFERRED_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(ADDRESS_BOOK_CONTROL).hasTinyBars(changeFromSnapshot(BEFORE, +2)));
     }
@@ -767,6 +778,7 @@ public class ScheduleLongTermSignTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(TimeUnit.SECONDS.toMillis(6)),
                         cryptoCreate("foo"),
+                        sleepFor(1000),
                         getScheduleInfo(DEFERRED_FALL).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(666L));
     }

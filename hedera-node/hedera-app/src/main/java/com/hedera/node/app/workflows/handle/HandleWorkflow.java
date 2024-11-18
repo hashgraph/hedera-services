@@ -343,32 +343,8 @@ public class HandleWorkflow {
         final var lastRecordProcessTime = blockRecordManager.consTimeOfLastHandledTxn();
         final var lastStreamProcessTime = blockStreamManager.lastIntervalProcessTime();
 
-        // process interval
-        if (streamMode != BLOCKS) {
-            // This updates consTimeOfLastHandledTxn as a side-effect
-            blockRecordManager.advanceConsensusClock(consensusNow, state);
-        }
-
-        HandleOutput handleOutput = null;
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
-
-        // try to execute time based events
-        try {
-            if (streamMode == RECORDS) {
-                processInterval(state, event, creator, lastRecordProcessTime, consensusNow);
-            } else {
-                if (processInterval(state, event, creator, lastStreamProcessTime, consensusNow)) {
-                    blockStreamManager.setLastIntervalProcessTime(consensusNow);
-                }
-            }
-        } catch (final Exception e) {
-            logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
-            handleOutput = failInvalidStreamItems(userTxn);
-        }
-
-        if (handleOutput == null) {
-            handleOutput = execute(userTxn);
-        }
+        final var handleOutput = execute(userTxn);
 
         // write records
         if (streamMode != BLOCKS) {
@@ -379,6 +355,15 @@ public class HandleWorkflow {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+
+        // try to execute time based events
+        if (streamMode == RECORDS) {
+            processInterval(state, event, creator, lastRecordProcessTime, consensusNow);
+        } else {
+            if (processInterval(state, event, creator, lastStreamProcessTime, consensusNow)) {
+                blockStreamManager.setLastIntervalProcessTime(consensusNow);
+            }
+        }
     }
 
     /**
@@ -399,6 +384,10 @@ public class HandleWorkflow {
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
+                if (streamMode != BLOCKS) {
+                    // This updates consTimeOfLastHandledTxn as a side-effect
+                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                }
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
@@ -466,7 +455,10 @@ public class HandleWorkflow {
                         userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
                 final var dispatch = userTxnFactory.createDispatch(userTxn, baseBuilder);
                 updateNodeStakes(userTxn, dispatch);
-
+                if (streamMode != BLOCKS) {
+                    // This updates consTimeOfLastHandledTxn as a side-effect
+                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                }
                 logPreDispatch(userTxn);
                 if (userTxn.type() != ORDINARY_TRANSACTION) {
                     if (userTxn.type() == GENESIS_TRANSACTION) {
