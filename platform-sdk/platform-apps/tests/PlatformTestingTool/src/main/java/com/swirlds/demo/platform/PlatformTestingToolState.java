@@ -34,7 +34,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.constructable.*;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
