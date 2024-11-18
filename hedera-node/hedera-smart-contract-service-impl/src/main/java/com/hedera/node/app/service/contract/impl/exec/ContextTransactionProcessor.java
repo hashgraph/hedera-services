@@ -147,7 +147,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                 result = result.withSignerNonce(sender.getNonce());
             }
 
-            if (!result.isSuccess() && hevmTransaction.isEthereumTransaction()) {
+            if (!result.isSuccess()) {
                 chargeOnFailedEthTxn(hevmTransaction);
             }
 
@@ -210,8 +210,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
     }
 
     private void chargeOnFailedEthTxn(@NonNull final HederaEvmTransaction hevmTransaction) {
-        final var zeroHapiFeesEnabled =
-                context.configuration().getConfigData(ContractsConfig.class).ethTransactionZeroHapiFeesEnabled();
+        final var zeroHapiFeesEnabled = contractsConfig.evmEthTransactionZeroHapiFeesEnabled();
         if (hevmTransaction.isEthereumTransaction() && zeroHapiFeesEnabled) {
             final var relayerId = hevmTransaction.relayerId();
 

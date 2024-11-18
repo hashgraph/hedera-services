@@ -181,7 +181,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var zeroHapiFeeEnabled =
-                feeContext.configuration().getConfigData(ContractsConfig.class).ethTransactionZeroHapiFeesEnabled();
+                feeContext.configuration().getConfigData(ContractsConfig.class).evmEthTransactionZeroHapiFeesEnabled();
         return zeroHapiFeeEnabled ? Fees.FREE : getLegacyCalculateFees(feeContext);
     }
 
