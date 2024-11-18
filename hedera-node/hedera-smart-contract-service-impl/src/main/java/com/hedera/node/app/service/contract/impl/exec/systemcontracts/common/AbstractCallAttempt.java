@@ -279,15 +279,10 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
 
     /**
      * Returns whether this call attempt is a selector for any of the given functions.
-     * @param function selectors to match against
      * @param configEnabled whether the config is enabled
+     * @param functions selectors to match against
      * @return boolean result
      */
-    @Deprecated
-    public boolean isSelectorIfConfigEnabled(@NonNull final Function function, final boolean configEnabled) {
-        return configEnabled && isSelector(function);
-    }
-
     public boolean isSelectorIfConfigEnabled(final boolean configEnabled, @NonNull final Function... functions) {
         return configEnabled && isSelector(functions);
     }

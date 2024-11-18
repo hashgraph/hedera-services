@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.contract.precompile;
+package com.hedera.services.bdd.suites.contract.precompile.airdrops;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareAccountAddresses;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareNftAddresses;
+import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareTokenAddresses;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -27,12 +30,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
@@ -42,7 +43,6 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -124,8 +124,8 @@ public class AirdropSystemContractTest {
                             .call(
                                     "tokenNAmountAirdrops",
                                     prepareTokenAddresses(spec, token1, token2, token3),
-                                    prepareSenderAddresses(spec, sender, sender, sender),
-                                    prepareReceiverAddresses(spec, receiver1, receiver2, receiver3),
+                                    prepareAccountAddresses(spec, sender, sender, sender),
+                                    prepareAccountAddresses(spec, receiver1, receiver2, receiver3),
                                     10L)
                             .gas(1500000));
             allRunFor(
@@ -165,8 +165,8 @@ public class AirdropSystemContractTest {
                             .call(
                                     "nftNAmountAirdrops",
                                     prepareNftAddresses(spec, nft1, nft2, nft3),
-                                    prepareSenderAddresses(spec, sender, sender, sender),
-                                    prepareReceiverAddresses(spec, receiver1, receiver2, receiver3),
+                                    prepareAccountAddresses(spec, sender, sender, sender),
+                                    prepareAccountAddresses(spec, receiver1, receiver2, receiver3),
                                     serials)
                             .gas(1500000));
             allRunFor(
@@ -227,10 +227,10 @@ public class AirdropSystemContractTest {
                                     "mixedAirdrop",
                                     prepareTokenAddresses(spec, token1, token2, token3),
                                     prepareNftAddresses(spec, nft1, nft2, nft3),
-                                    prepareSenderAddresses(spec, sender, sender, sender),
-                                    prepareReceiverAddresses(spec, receiver1, receiver2, receiver3),
-                                    prepareSenderAddresses(spec, sender, sender, sender),
-                                    prepareReceiverAddresses(spec, receiver4, receiver5, receiver6),
+                                    prepareAccountAddresses(spec, sender, sender, sender),
+                                    prepareAccountAddresses(spec, receiver1, receiver2, receiver3),
+                                    prepareAccountAddresses(spec, sender, sender, sender),
+                                    prepareAccountAddresses(spec, receiver4, receiver5, receiver6),
                                     10L,
                                     serials)
                             .gas(1750000));
@@ -309,11 +309,11 @@ public class AirdropSystemContractTest {
                                     "mixedAirdrop",
                                     prepareTokenAddresses(spec, token1, token2, token3, token4, token5),
                                     prepareNftAddresses(spec, nft1, nft2, nft3, nft4, nft5),
-                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender),
-                                    prepareReceiverAddresses(
+                                    prepareAccountAddresses(spec, sender, sender, sender, sender, sender),
+                                    prepareAccountAddresses(
                                             spec, receiver1, receiver2, receiver3, receiver4, receiver5),
-                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender),
-                                    prepareReceiverAddresses(
+                                    prepareAccountAddresses(spec, sender, sender, sender, sender, sender),
+                                    prepareAccountAddresses(
                                             spec, receiver6, receiver7, receiver8, receiver9, receiver10),
                                     10L,
                                     serials)
@@ -403,11 +403,11 @@ public class AirdropSystemContractTest {
                                     "mixedAirdrop",
                                     prepareTokenAddresses(spec, token1, token2, token3, token4, token5),
                                     prepareNftAddresses(spec, nft1, nft2, nft3, nft4, nft5),
-                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender),
-                                    prepareReceiverAddresses(
+                                    prepareAccountAddresses(spec, sender, sender, sender, sender, sender),
+                                    prepareAccountAddresses(
                                             spec, receiver1, receiver2, receiver3, receiver4, receiver5),
-                                    prepareSenderAddresses(spec, sender, sender, sender, sender, sender, sender),
-                                    prepareReceiverAddresses(
+                                    prepareAccountAddresses(spec, sender, sender, sender, sender, sender, sender),
+                                    prepareAccountAddresses(
                                             spec, receiver6, receiver7, receiver8, receiver9, receiver10, receiver11),
                                     10L,
                                     serials)
@@ -492,29 +492,5 @@ public class AirdropSystemContractTest {
                         .gas(1500000)
                         .andAssert(txn ->
                                 txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_TOKEN_NFT_SERIAL_NUMBER)));
-    }
-
-    private Address[] prepareReceiverAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... receivers) {
-        return Arrays.stream(receivers)
-                .map(receiver -> receiver.addressOn(spec.targetNetworkOrThrow()))
-                .toArray(Address[]::new);
-    }
-
-    private Address[] prepareTokenAddresses(@NonNull HapiSpec spec, @NonNull SpecFungibleToken... tokens) {
-        return Arrays.stream(tokens)
-                .map(token -> token.addressOn(spec.targetNetworkOrThrow()))
-                .toArray(Address[]::new);
-    }
-
-    private Address[] prepareNftAddresses(@NonNull HapiSpec spec, @NonNull SpecNonFungibleToken... nfts) {
-        return Arrays.stream(nfts)
-                .map(nft -> nft.addressOn(spec.targetNetworkOrThrow()))
-                .toArray(Address[]::new);
-    }
-
-    private Address[] prepareSenderAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... senders) {
-        return Arrays.stream(senders)
-                .map(sender -> sender.addressOn(spec.targetNetworkOrThrow()))
-                .toArray(Address[]::new);
     }
 }
