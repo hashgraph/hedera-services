@@ -128,27 +128,16 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.config.internal;
     exports com.swirlds.platform.roster;
 
-    requires transitive com.hedera.node.hapi;
-    requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
-    requires transitive com.swirlds.common;
-    requires transitive com.swirlds.config.api;
-    requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.state.impl;
-    requires transitive com.fasterxml.jackson.annotation;
-    requires transitive com.fasterxml.jackson.databind;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive info.picocli;
-    requires transitive org.apache.logging.log4j;
     requires transitive org.hiero.consensus.gossip;
     requires transitive org.hiero.event.creator;
-    requires com.swirlds.config.extensions;
-    requires com.swirlds.logging;
+    requires com.hedera.node.config;
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
-    requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
     requires java.desktop;
     requires java.management;
@@ -158,8 +147,6 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
     requires org.hiero.event.creator.impl;
-    requires static transitive com.github.spotbugs.annotations;
-    requires static transitive com.google.auto.service;
 
     provides ConfigurationExtension with
             PlatformConfigurationExtension;

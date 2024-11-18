@@ -16,15 +16,18 @@
 
 package com.swirlds.platform.state.service.schemas;
 
+import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.NodeMetadata;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,9 +47,13 @@ public class V057PlatformStateSchema extends Schema {
      */
     private final Supplier<Roster> activeRoster;
 
-    public V057PlatformStateSchema(@NonNull final Supplier<Roster> activeRoster) {
+    private final Supplier<SoftwareVersion> appVersion;
+
+    public V057PlatformStateSchema(
+            @NonNull final Supplier<Roster> activeRoster, @NonNull final Supplier<SoftwareVersion> appVersion) {
         super(VERSION);
         this.activeRoster = requireNonNull(activeRoster);
+        this.appVersion = requireNonNull(appVersion);
     }
 
     @Override
@@ -66,7 +73,8 @@ public class V057PlatformStateSchema extends Schema {
             final var addressBook = RosterUtils.buildAddressBook(roster);
             platformStateStore.bulkUpdate(v -> {
                 v.setAddressBook(addressBook);
-                // v.setCreationSoftwareVersion(appVersion); // TODO: pass app version
+                v.setPreviousAddressBook(null);
+                v.setCreationSoftwareVersion(appVersion.get());
                 v.setRound(0);
                 v.setLegacyRunningEventHash(null);
                 v.setConsensusTimestamp(Instant.ofEpochSecond(0L));
@@ -78,20 +86,20 @@ public class V057PlatformStateSchema extends Schema {
                     v.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
                 }
             });
-        } else {
-            if (isUpgrade(ctx)) {
-                final var candidateAddressBook = RosterUtils.buildAddressBook(activeRoster.get());
-                final var previousAddressBook = platformStateStore.getAddressBook();
-                platformStateStore.bulkUpdate(v -> {
-                    v.setAddressBook(candidateAddressBook.copy());
-                    v.setPreviousAddressBook(previousAddressBook == null ? null : previousAddressBook.copy());
-                });
-            }
+        } else if (isUpgrade(ctx)) {
+            final var candidateAddressBook = RosterUtils.buildAddressBook(activeRoster.get());
+            final var previousAddressBook = platformStateStore.getAddressBook();
+            platformStateStore.bulkUpdate(v -> {
+                v.setAddressBook(candidateAddressBook.copy());
+                v.setPreviousAddressBook(previousAddressBook == null ? null : previousAddressBook.copy());
+            });
         }
     }
 
-    // TODO: Implement
     private boolean isUpgrade(@NonNull final MigrationContext ctx) {
-        return false;
+        final var currentVersion =
+                ctx.configuration().getConfigData(VersionConfig.class).servicesVersion();
+        final var previousVersion = ctx.previousVersion();
+        return SEMANTIC_VERSION_COMPARATOR.compare(currentVersion, (requireNonNull(previousVersion))) > 0;
     }
 }

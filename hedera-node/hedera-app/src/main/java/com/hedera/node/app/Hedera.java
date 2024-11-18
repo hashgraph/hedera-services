@@ -633,6 +633,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         }
         blockStreamService.resetMigratedLastBlockHash();
         startupNetworks = startupNetworksFactory.apply(selfNodeId.id(), configProvider, tssBaseService);
+        PLATFORM_STATE_SERVICE.setAppVersionFn(() -> version);
         PLATFORM_STATE_SERVICE.setActiveRosterFn(
                 () -> new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME)).getActiveRoster());
         final var migrationChanges = serviceMigrator.doMigrations(
