@@ -70,6 +70,12 @@ public class TssMetrics {
     private static final LongGauge.Config TSS_LEDGER_SIGNATURE_TIME_CONFIG =
             new LongGauge.Config("app", TSS_LEDGER_SIGNATURE_TIME).withDescription(TSS_LEDGER_SIGNATURE_TIME_DESC);
     private final LongGauge tssLedgerSignatureTime;
+
+    private static final String TSS_LEDGER_SIGNATURE_FAILURES_COUNTER = "tss_ledger_signature_failures_counter";
+    private static final String TSS_LEDGER_SIGNATURE_FAILURES_COUNTER_DESC =
+            " The number of consecutive failures to generate a ledger signature for a block hash";
+    private final Map<Bytes, Counter> ledgerSignatureFailuresCounter = new HashMap<>();
+
     private final LongGauge tssCandidateRosterLifecycle;
 
     // local variable to track the start of candidate roster's lifecycle
@@ -166,12 +172,44 @@ public class TssMetrics {
     }
 
     /**
+     * Track the number of consecutive failures to generate a ledger signature for a block hash.
+     * @param blockHash the hash of the block for which the ledger signature generation failed
+     */
+    public void updateLedgerSignatureFailures(final Bytes blockHash) {
+        requireNonNull(blockHash, "blockHash must not be null");
+
+        // if this is the first message for this candidate roster, initialize new metric to track occurrences
+        if (!ledgerSignatureFailuresCounter.containsKey(blockHash)) {
+            final Counter.Config TSS_LEDGER_SIGN_FAILURE_COUNTER = new Counter.Config("app",
+                    TSS_LEDGER_SIGNATURE_FAILURES_COUNTER)
+                    .withDescription(TSS_LEDGER_SIGNATURE_FAILURES_COUNTER_DESC + blockHash);
+            final Counter tssLedgerSignatureTxCounter = metrics.getOrCreate(TSS_LEDGER_SIGN_FAILURE_COUNTER);
+            tssLedgerSignatureTxCounter.increment();
+            ledgerSignatureFailuresCounter.put(blockHash, tssLedgerSignatureTxCounter);
+        } else {
+            // if the metric is already present, just increment
+            getFailuresForLedgerSignature(blockHash).increment();
+        }
+    }
+
+
+    /**
      * @param targetRosterHash the {@link Bytes} of the candidate roster
      * @return the metric which contains how many votes are registered for candidate roster
      */
     public @NonNull Counter getMessagesPerCandidateRoster(@NonNull final Bytes targetRosterHash) {
         requireNonNull(targetRosterHash);
         return messagesPerCandidateRoster.get(targetRosterHash);
+    }
+
+    /**
+     * Get the number of consecutive failures to generate a ledger signature for a block hash.
+     * @param blockHash the hash of the block for which the ledger signature generation failed
+     * @return the number of consecutive failures to generate a ledger signature for a block hash
+     */
+    public @NonNull Counter getFailuresForLedgerSignature(@NonNull final Bytes blockHash) {
+        requireNonNull(blockHash);
+        return ledgerSignatureFailuresCounter.get(blockHash);
     }
 
     /**

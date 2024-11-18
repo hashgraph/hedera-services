@@ -100,8 +100,13 @@ public class TssShareSignatureHandler implements TransactionHandler {
             // tssBaseService of sign the message hash with ledger signature
             if (isThresholdMet(messageHash, rosterHash)) {
                 final var aggregationStart = instantSource.instant();
-                final var ledgerSignature = tssLibrary.aggregateSignatures(
-                        tssShareSignatures.stream().toList());
+                final PairingSignature ledgerSignature;
+                try {
+                    ledgerSignature = tssLibrary.aggregateSignatures(tssShareSignatures.stream().toList());
+                } catch (Exception e) {
+                    tssMetrics.updateLedgerSignatureFailures(messageHash);
+                    return;
+                }
                 final var aggregationEnd = instantSource.instant();
                 // Update the time it took to aggregate the signatures and generate ledger signature
                 tssMetrics.updateLedgerSignatureTime(
