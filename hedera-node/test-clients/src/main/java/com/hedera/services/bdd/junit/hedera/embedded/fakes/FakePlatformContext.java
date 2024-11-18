@@ -114,6 +114,7 @@ public class FakePlatformContext implements PlatformContext {
         throw new UnsupportedOperationException("Not used by Hedera");
     }
 
+    @NonNull
     @Override
     public MerkleCryptography getMerkleCryptography() {
         return MerkleCryptographyFactory.create(platformConfig, getCryptography());
