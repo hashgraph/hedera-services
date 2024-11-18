@@ -100,7 +100,6 @@ class EventSignatureValidatorTests {
                     Bytes.wrap(PreGeneratedX509Certs.getSigCert(nodeId)
                             .getCertificate()
                             .getEncoded()),
-                    Bytes.EMPTY,
                     List.of());
         } catch (CertificateEncodingException e) {
             throw new RuntimeException(e);

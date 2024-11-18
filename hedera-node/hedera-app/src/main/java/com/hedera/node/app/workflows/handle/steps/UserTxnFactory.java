@@ -26,6 +26,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.standalone.impl.StandaloneDispatchFactory.getTxnCategory;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -83,7 +84,6 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -264,7 +264,7 @@ public class UserTxnFactory {
             @NonNull final Predicate<Key> keyVerifierCallback,
             @NonNull final HandleContext.TransactionCategory category) {
         final var config = userTxn.config();
-        final var keyVerifier = getKeyVerifier(keyVerifierCallback, config);
+        final var keyVerifier = getKeyVerifier(keyVerifierCallback, config, emptySet());
         return createDispatch(userTxn, baseBuilder, keyVerifier, category);
     }
 
@@ -393,9 +393,9 @@ public class UserTxnFactory {
                     PRE_HANDLE_FAILURE,
                     e.responseCode(),
                     null,
-                    Collections.emptySet(),
+                    emptySet(),
                     null,
-                    Collections.emptySet(),
+                    emptySet(),
                     null,
                     null,
                     0);
