@@ -158,6 +158,7 @@ public class MerkleDataOutputStream extends SerializableDataOutputStream {
         if (root == null) {
             return;
         }
+
         root.treeIterator()
                 .setOrder(BREADTH_FIRST)
                 .setDescendantFilter(DESCENDANT_FILTER)

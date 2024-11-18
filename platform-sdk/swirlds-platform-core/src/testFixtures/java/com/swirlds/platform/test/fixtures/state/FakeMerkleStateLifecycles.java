@@ -21,13 +21,19 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.io.config.FileSystemManagerConfig;
+import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -56,6 +62,8 @@ import com.swirlds.state.merkle.singleton.StringLeaf;
 import com.swirlds.state.merkle.singleton.ValueLeaf;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -64,6 +72,15 @@ import java.util.List;
 
 public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
     FAKE_MERKLE_STATE_LIFECYCLES;
+
+    public static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(MerkleDbConfig.class)
+            .withConfigDataType(VirtualMapConfig.class)
+            .withConfigDataType(TemporaryFileConfig.class)
+            .withConfigDataType(StateCommonConfig.class)
+            .withConfigDataType(FileSystemManagerConfig.class)
+            .build();
+
     /**
      * Register the class IDs for the {@link MerkleStateRoot} and its required children, specifically those
      * used by the {@link PlatformStateService} and {@code RosterService}.
@@ -80,6 +97,16 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
                     .registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(
+                            VirtualMap.class, () -> new VirtualMap(FakeMerkleStateLifecycles.CONFIGURATION)));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(
+                            MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(
+                            VirtualNodeCache.class,
+                            () -> new VirtualNodeCache(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
             registerConstructablesForSchema(new V0540PlatformStateSchema(), PlatformStateService.NAME);
             registerConstructablesForSchema(new V0540RosterSchema(), RosterStateId.NAME);
         } catch (ConstructableRegistryException e) {
@@ -196,11 +223,12 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
                                     md.onDiskValueSerializerClassId(),
                                     md.onDiskValueClassId(),
                                     md.stateDefinition().valueCodec());
-                            final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
-                                    .maxNumberOfKeys(def.maxKeysHint());
+                            final var tableConfig =
+                                    new MerkleDbTableConfig((short) 1, DigestType.SHA_384, def.maxKeysHint(), 16);
                             final var label = StateUtils.computeLabel(RosterStateId.NAME, def.stateKey());
-                            final var dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
-                            final var virtualMap = new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder);
+                            final var dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
+                            final var virtualMap =
+                                    new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder, CONFIGURATION);
                             return virtualMap;
                         });
                     } else {
