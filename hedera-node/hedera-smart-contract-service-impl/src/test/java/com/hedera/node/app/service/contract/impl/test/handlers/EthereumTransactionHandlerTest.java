@@ -67,6 +67,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import java.util.List;
 import java.util.function.Supplier;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -144,6 +145,12 @@ class EthereumTransactionHandlerTest {
 
     @Mock
     private EthTxData ethTxDataReturned;
+
+    @Mock
+    private Configuration configuration;
+
+    @Mock
+    private ContractsConfig contractsConfig;
 
     @BeforeEach
     void setUp() {
@@ -306,6 +313,9 @@ class EthereumTransactionHandlerTest {
         final var feeCalc = mock(FeeCalculator.class);
         given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
         given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
+
+        given(feeCtx.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
 
         assertDoesNotThrow(() -> subject.calculateFees(feeCtx));
     }
