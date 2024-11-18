@@ -366,7 +366,7 @@ public class HandleWorkflow {
             handleOutput = failInvalidStreamItems(userTxn);
         }
 
-        if(handleOutput == null) {
+        if (handleOutput == null) {
             handleOutput = execute(userTxn);
         }
 
@@ -691,7 +691,6 @@ public class HandleWorkflow {
                             lastProcessTime.getEpochSecond(), consensusNow.getEpochSecond());
                     scheduleUserTnx.stack().commitSystemStateChanges();
                 }
-
 
                 // build the output and save the record/stream
                 final var handleOutput = scheduleUserTnx
