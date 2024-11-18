@@ -10,5 +10,6 @@ module com.hedera.node.app.service.addressbook {
     requires com.swirlds.config.api;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
+    requires org.checkerframework.checker.qual;
     requires static com.github.spotbugs.annotations;
 }

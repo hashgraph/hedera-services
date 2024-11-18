@@ -81,9 +81,35 @@ class CertificatePemTest {
     void invalidBytesInPemCannotRead() throws IOException {
         final var genPemPath = Path.of(tmpDir.getPath() + "/generated.pem");
         writeCertificatePemFile(genPemPath, Bytes.wrap("anyString").toByteArray());
-        final var exception = assertThrows(IOException.class, () -> readCertificatePemFile(genPemPath));
-        assertThat(exception.getMessage()).contains("problem parsing cert: java.io.EOFException:");
+        final var exception = assertThrows(CertificateException.class, () -> readCertificatePemFile(genPemPath));
+        assertThat(exception.getMessage()).contains("Can not read the certificate from the file ");
         final var msg = assertThrows(PreCheckException.class, () -> validateX509Certificate(Bytes.wrap("anyString")));
         assertEquals(ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE, msg.responseCode());
+    }
+
+    @Test
+    void badX509CertificateFailedOnReadAndValidation() throws IOException {
+        final var pemFileName = "badX509certificate.pem";
+        final var pemFilePath = loadResourceFile(pemFileName);
+        final var exception = assertThrows(CertificateException.class, () -> readCertificatePemFile(pemFilePath));
+        assertEquals("Can not read the certificate from the file badX509certificate.pem", exception.getMessage());
+
+        final byte[] certBytes = Files.readAllBytes(pemFilePath);
+        final var msg = assertThrows(PreCheckException.class, () -> validateX509Certificate(Bytes.wrap(certBytes)));
+        assertEquals(ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE, msg.responseCode());
+    }
+
+    @Test
+    void goodX509CertificateFailedOnReadAndValidation() throws IOException, CertificateException {
+        final var pemFileName = "goodX509certificate.pem";
+        final var pemFilePath = loadResourceFile(pemFileName);
+        final var cert = readCertificatePemFile(pemFilePath);
+
+        assertEquals("SHA384withRSA", cert.getSigAlgName());
+        assertEquals("X.509", cert.getType());
+        assertDoesNotThrow(() -> validateX509Certificate(Bytes.wrap(cert.getEncoded())));
+
+        final byte[] certBytes = Files.readAllBytes(pemFilePath);
+        assertDoesNotThrow(() -> validateX509Certificate(Bytes.wrap(certBytes)));
     }
 }

@@ -25,6 +25,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.config.data.NodesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -39,6 +40,7 @@ import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.openssl.PEMException;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
@@ -94,22 +96,28 @@ public class AddressBookHelper {
      * @throws IOException if an I/O error occurs while reading the file
      * @throws CertificateException if the file does not contain a valid X509Certificate
      */
+    @Nullable
     public static X509Certificate readCertificatePemFile(@NonNull final Path pemFile)
             throws IOException, CertificateException {
         Objects.requireNonNull(pemFile, "pemFile must not be null");
         X509Certificate cert = null;
         Object entry;
-        try (final PEMParser parser =
-                new PEMParser(new InputStreamReader(Files.newInputStream(pemFile), StandardCharsets.UTF_8))) {
-            while ((entry = parser.readObject()) != null) {
+        PEMParser parser = null;
+        try {
+            final var in = new InputStreamReader(Files.newInputStream(pemFile), StandardCharsets.UTF_8);
+            parser = new PEMParser(in);
+            if ((entry = parser.readObject()) != null) {
                 if (entry instanceof X509CertificateHolder ch) {
                     cert = new JcaX509CertificateConverter().getCertificate(ch);
-                    break;
                 } else {
                     throw new CertificateException(
                             "Not X509 Certificate, it is " + entry.getClass().getSimpleName());
                 }
             }
+        } catch (PEMException e) {
+            throw new CertificateException("Can not read the certificate from the file " + pemFile.getFileName(), e);
+        } finally {
+            if (parser != null) parser.close();
         }
         return cert;
     }
