@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -78,6 +79,14 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     @Override
     public @NonNull ReadableAccountStore readableAccountStore() {
         return context.createStore(ReadableAccountStore.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NonNull ReadableScheduleStore readableScheduleStore() {
+        return context.createStore(ReadableScheduleStore.class);
     }
 
     /**
