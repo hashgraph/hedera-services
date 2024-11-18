@@ -96,7 +96,7 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
             final var nodeEndpoints = node.gossipEndpoint();
             // we want to swap the internal and external node endpoints
             // so that the external one is at index 0
-            if (nodeEndpoints.size() == 2) {
+            if (nodeEndpoints.size() > 1) {
                 Collections.swap(nodeEndpoints, 0, 1);
             }
             if (!node.deleted()) {
@@ -105,8 +105,6 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
                         .weight(node.weight())
                         .gossipCaCertificate(node.gossipCaCertificate())
                         .gossipEndpoint(nodeEndpoints)
-                        // (TSS-FUTURE) Enable node's TSS encryption key
-                        // .tssEncryptionKey(node.tssEncryptionKey())
                         .build();
                 rosterEntries.add(entry);
             }
