@@ -209,6 +209,11 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                 result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
     }
 
+    /**
+     * Charges hapi fees to the relayer if an Ethereum transaction failed.
+     * The charge is the canonical price of an Ethereum transaction in tinybars.
+     * @param hevmTransaction the Hedera EVM transaction
+     */
     private void chargeOnFailedEthTxn(@NonNull final HederaEvmTransaction hevmTransaction) {
         final var zeroHapiFeesEnabled = contractsConfig.evmEthTransactionZeroHapiFeesEnabled();
         if (hevmTransaction.isEthereumTransaction() && zeroHapiFeesEnabled) {
