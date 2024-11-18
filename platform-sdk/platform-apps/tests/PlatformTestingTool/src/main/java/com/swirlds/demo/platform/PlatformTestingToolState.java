@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.constructable.*;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -1369,6 +1370,16 @@ public class PlatformTestingToolState extends MerkleStateRoot {
         }
         this.invalidateHash();
         NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
+
+        // compute hash
+        try {
+            platform.getContext().getMerkleCryptography().digestTreeAsync(this).get();
+        } catch (final ExecutionException e) {
+            logger.error(EXCEPTION.getMarker(), "Exception occurred during hashing", e);
+        } catch (final InterruptedException e) {
+            logger.error(EXCEPTION.getMarker(), "Interrupted while hashing state. Expect buggy behavior.");
+            Thread.currentThread().interrupt();
+        }
     }
 
     private MessageDigest createKeccakDigest() {
