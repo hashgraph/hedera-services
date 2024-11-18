@@ -102,7 +102,8 @@ public class TssShareSignatureHandler implements TransactionHandler {
                 final var aggregationStart = instantSource.instant();
                 final PairingSignature ledgerSignature;
                 try {
-                    ledgerSignature = tssLibrary.aggregateSignatures(tssShareSignatures.stream().toList());
+                    ledgerSignature = tssLibrary.aggregateSignatures(
+                            tssShareSignatures.stream().toList());
                 } catch (Exception e) {
                     tssMetrics.updateLedgerSignatureFailures(messageHash);
                     return;

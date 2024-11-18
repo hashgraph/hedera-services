@@ -180,8 +180,8 @@ public class TssMetrics {
 
         // if this is the first message for this candidate roster, initialize new metric to track occurrences
         if (!ledgerSignatureFailuresCounter.containsKey(blockHash)) {
-            final Counter.Config TSS_LEDGER_SIGN_FAILURE_COUNTER = new Counter.Config("app",
-                    TSS_LEDGER_SIGNATURE_FAILURES_COUNTER)
+            final Counter.Config TSS_LEDGER_SIGN_FAILURE_COUNTER = new Counter.Config(
+                            "app", TSS_LEDGER_SIGNATURE_FAILURES_COUNTER)
                     .withDescription(TSS_LEDGER_SIGNATURE_FAILURES_COUNTER_DESC + blockHash);
             final Counter tssLedgerSignatureTxCounter = metrics.getOrCreate(TSS_LEDGER_SIGN_FAILURE_COUNTER);
             tssLedgerSignatureTxCounter.increment();
@@ -191,7 +191,6 @@ public class TssMetrics {
             getFailuresForLedgerSignature(blockHash).increment();
         }
     }
-
 
     /**
      * @param targetRosterHash the {@link Bytes} of the candidate roster
