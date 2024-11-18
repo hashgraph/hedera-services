@@ -137,6 +137,7 @@ public class StakePeriodChanges {
                 stack.rollbackFullStack();
             }
             if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
+                tssBaseService.regenerateKeyMaterial(stack);
                 startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
             }
         }

@@ -126,6 +126,8 @@ class BlockImplUtilsTest {
             case STATE_ID_NETWORK_REWARDS -> "TokenService.STAKING_NETWORK_REWARDS";
             case STATE_ID_TOKEN_RELATIONS -> "TokenService.TOKEN_RELS";
             case STATE_ID_TOKENS -> "TokenService.TOKENS";
+            case STATE_ID_TSS_MESSAGES -> "TssBaseService.TSS_MESSAGES";
+            case STATE_ID_TSS_VOTES -> "TssBaseService.TSS_VOTES";
         };
     }
 }

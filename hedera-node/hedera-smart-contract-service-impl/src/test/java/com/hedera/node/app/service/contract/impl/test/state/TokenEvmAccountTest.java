@@ -61,6 +61,16 @@ class TokenEvmAccountTest {
     }
 
     @Test
+    void notScheduleTxnFacade() {
+        assertFalse(subject.isScheduleTxnFacade());
+    }
+
+    @Test
+    void notRegularAccountFacade() {
+        assertFalse(subject.isRegularAccount());
+    }
+
+    @Test
     void doesntSupportGettingId() {
         assertThrows(IllegalStateException.class, subject::hederaId);
     }

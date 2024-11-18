@@ -78,6 +78,8 @@ public record ContractsConfig(
                 boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractAccountServiceEnabled,
+        @ConfigProperty(value = "systemContract.scheduleService.enabled", defaultValue = "false") @NetworkProperty
+                boolean systemContractScheduleServiceEnabled,
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractAccountServiceIsAuthorizedRawEnabled,
@@ -97,15 +99,16 @@ public record ContractsConfig(
                 boolean isCanonicalViewGasEnabled,
         @ConfigProperty(value = "systemContract.updateNFTsMetadata.enabled", defaultValue = "false") @NetworkProperty
                 boolean systemContractUpdateNFTsMetadataEnabled,
-        @ConfigProperty(value = "systemContract.airdropTokens.enabled", defaultValue = "false")
+        @ConfigProperty(value = "systemContract.airdropTokens.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractAirdropTokensEnabled,
-        @ConfigProperty(value = "systemContract.cancelAirdrops.enabled", defaultValue = "false")
+        @ConfigProperty(value = "systemContract.cancelAirdrops.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractCancelAirdropsEnabled,
-        @ConfigProperty(value = "systemContract.claimAirdrops.enabled", defaultValue = "false")
+        @ConfigProperty(value = "systemContract.claimAirdrops.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractClaimAirdropsEnabled,
-        @ConfigProperty(value = "systemContract.rejectTokens.enabled", defaultValue = "false")
+        @ConfigProperty(value = "systemContract.rejectTokens.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractRejectTokensEnabled,
-        @ConfigProperty(value = "systemContract.setUnlimitedAutoAssociations.enabled", defaultValue = "false")
+        @ConfigProperty(value = "systemContract.setUnlimitedAutoAssociations.enabled", defaultValue = "true")
+                @NetworkProperty
                 boolean systemContractSetUnlimitedAutoAssociationsEnabled,
         @ConfigProperty(value = "evm.ethTransaction.zeroHapiFees.enabled", defaultValue = "false") @NetworkProperty
                 boolean evmEthTransactionZeroHapiFeesEnabled,

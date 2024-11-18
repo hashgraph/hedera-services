@@ -152,14 +152,4 @@ message BlockHeader {
      * This SHOULD always be `SHA2_384`, currently.
      */
     proto.BlockHashAlgorithm hash_algorithm = 6;
-
-    /**
-     * A version for the network address book.<br/>
-     * The address book version is needed to determine the correct public
-     * key(s) to use to validate block signatures and state proofs.
-     * <p>
-     * This MUST be the version of the address book that signed this
-     * block.
-     */
-    proto.SemanticVersion address_book_version = 7;
 }
