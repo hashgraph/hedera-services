@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.roster;
 
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.roster.schemas.V057RosterSchema;
-import com.hedera.node.app.tss.TssBaseService;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
@@ -35,11 +35,11 @@ import java.util.function.Predicate;
  */
 public class RosterService implements Service {
     /**
-     * Since with full TSS adoption, the roster service decides whether to
-     * adopt a candidate roster based on the presence of key material, we
-     * need to ensure the TSS service is migrated first.
+     * During migration to the roster lifecycle, the platform state service may need
+     * to set its legacy address books based on the current roster. To do this, we
+     * need to ensure the roster service is migrated before the platform state service.
      */
-    public static final int MIGRATION_ORDER = TssBaseService.MIGRATION_ORDER + 1;
+    public static final int MIGRATION_ORDER = PLATFORM_STATE_SERVICE.migrationOrder() - 1;
 
     public static final String NAME = "RosterService";
 

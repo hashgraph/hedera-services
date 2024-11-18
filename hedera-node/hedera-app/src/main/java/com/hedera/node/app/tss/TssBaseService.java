@@ -17,6 +17,7 @@
 package com.hedera.node.app.tss;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssMessage;
@@ -41,7 +42,13 @@ import java.util.function.Consumer;
  * public key.
  */
 public interface TssBaseService extends Service {
-    int MIGRATION_ORDER = 0;
+    /**
+     * Since the roster service has to decide to adopt the candidate roster
+     * based on the available key material, the TSS service must be migrated
+     * before the roster service.
+     */
+    int MIGRATION_ORDER = RosterService.MIGRATION_ORDER - 1;
+
     String NAME = "TssBaseService";
 
     /**

@@ -81,9 +81,11 @@ public class V057RosterSchema extends Schema {
             final long roundNumber = ctx.roundNumber();
             final var overrideNetwork = startupNetworks.overrideNetworkFor(roundNumber);
             if (overrideNetwork.isPresent()) {
+                log.info("Found override network for round {}", roundNumber);
                 setActiveRoster(roundNumber, rosterStore, overrideNetwork.get());
             } else if (isUpgrade(ctx)) {
                 if (rosterStore.getActiveRoster() == null) {
+                    log.info("Migrating active roster at round {}", roundNumber);
                     // If there is no active roster at a migration boundary, we
                     // must have a migration network in the startup assets
                     final var network = startupNetworks.migrationNetworkOrThrow();
@@ -91,6 +93,7 @@ public class V057RosterSchema extends Schema {
                 } else {
                     final var candidateRoster = rosterStore.getCandidateRoster();
                     if (canAdopt.test(candidateRoster)) {
+                        log.info("Adopting candidate roster at round {}", roundNumber);
                         rosterStore.adoptCandidateRoster(roundNumber);
                     }
                 }

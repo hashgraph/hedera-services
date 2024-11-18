@@ -30,20 +30,15 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
- * A restart-only schema that ensures address book state reflects any overrides in {@link Network}s returned from
- * {@link MigrationContext#startupNetworks()} on disk at startup. (Note that once the network has written at least
- * one state to disk after restart, all such override {@link Network}s will be archived, and hence are applied to
- * at most one state after restart.)
+ * A restart-only schema that ensures address book state reflects any overrides in
+ * {@link Network}s returned from {@link MigrationContext#startupNetworks()} on
+ * disk at startup. (Note that once the network has written at least one state to
+ * disk after restart, all such override {@link Network}s will be archived, and
+ * hence are applied to at most one state after restart.)
  */
 public class V057AddressBookSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(V057AddressBookSchema.class);
-
-    private static final Long ZERO_ROUND = 0L;
-
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(57).build();
 

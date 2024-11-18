@@ -20,10 +20,12 @@ import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchem
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V057PlatformStateSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
@@ -32,6 +34,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 /**
  * A service that provides the schema for the platform state, used by {@link MerkleStateRoot}
@@ -40,7 +44,10 @@ import java.util.List;
 public enum PlatformStateService implements Service {
     PLATFORM_STATE_SERVICE;
 
-    private static final Collection<Schema> SCHEMAS = List.of(new V0540PlatformStateSchema());
+    private static final AtomicReference<Supplier<Roster>> ACTIVE_ROSTER = new AtomicReference<>();
+    private static final Collection<Schema> SCHEMAS = List.of(
+            new V0540PlatformStateSchema(), new V057PlatformStateSchema(() -> requireNonNull(ACTIVE_ROSTER.get())
+                    .get()));
 
     public static final String NAME = "PlatformStateService";
 
@@ -54,6 +61,21 @@ public enum PlatformStateService implements Service {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         SCHEMAS.forEach(registry::register);
+    }
+
+    /**
+     * Sets the active roster to the given roster.
+     * @param roster the roster to set as active
+     */
+    public void setActiveRosterFn(@NonNull final Supplier<Roster> roster) {
+        ACTIVE_ROSTER.set(requireNonNull(roster));
+    }
+
+    /**
+     * Clears the active roster.
+     */
+    public void clearActiveRosterFn() {
+        ACTIVE_ROSTER.set(null);
     }
 
     /**
