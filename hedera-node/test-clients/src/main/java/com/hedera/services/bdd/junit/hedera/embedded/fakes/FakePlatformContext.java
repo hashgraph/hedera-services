@@ -44,7 +44,6 @@ import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ScheduledExecutorService;
-import org.jetbrains.annotations.NotNull;
 
 public class FakePlatformContext implements PlatformContext {
     private final Configuration platformConfig = ConfigurationBuilder.create()
@@ -115,7 +114,6 @@ public class FakePlatformContext implements PlatformContext {
         throw new UnsupportedOperationException("Not used by Hedera");
     }
 
-    @NotNull
     @Override
     public MerkleCryptography getMerkleCryptography() {
         return MerkleCryptographyFactory.create(platformConfig, getCryptography());
