@@ -131,7 +131,7 @@ jobs:
           echo "build-tag=${BUILD_TAG}" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Increment Build Promotion Index
-        uses: action-pack/increment@14c9f7fbbf560e7518ccaeab781aeca7bff15069 # v2.12
+        uses: step-security/increment@f806ba7e868d0298aa216a18049c42690f0e4736 # v2.0.0
         id: increment
         with:
           name: 'XTS_BUILD_PROMOTION_INDEX'
