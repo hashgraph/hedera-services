@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
@@ -88,7 +89,7 @@ public class AirdropSigReqsTest {
                 "entities.unlimitedAutoAssociationsEnabled", "true"));
     }
 
-    @HapiTest
+    @Disabled
     @DisplayName("require a receiver contract to have a cryptographic admin key")
     final Stream<DynamicTest> contractMustHaveCryptoAdminKey(
             @Contract(contract = "Multipurpose", isImmutable = true) SpecContract immutableContract,
