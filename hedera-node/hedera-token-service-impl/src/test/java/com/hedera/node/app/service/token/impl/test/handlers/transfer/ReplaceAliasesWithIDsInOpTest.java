@@ -25,8 +25,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -66,8 +65,8 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
     @Test
     void autoCreatesAccounts() {
         replaceAliasesInternalSetup(false);
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(argThat(options -> payerId.equals(options.payerId())
+                        && CryptoCreateStreamBuilder.class.equals(options.streamBuilderType()))))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -138,8 +137,8 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
                 .build();
         givenTxn(body, payerId);
 
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(argThat(options -> payerId.equals(options.payerId())
+                        && CryptoCreateStreamBuilder.class.equals(options.streamBuilderType()))))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .accountId(hbarReceiverId)
@@ -246,8 +245,8 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         ensureAliasesStep = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(argThat(options -> payerId.equals(options.payerId())
+                        && CryptoCreateStreamBuilder.class.equals(options.streamBuilderType()))))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -288,8 +287,8 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         ensureAliasesStep = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(argThat(options -> payerId.equals(options.payerId())
+                        && CryptoCreateStreamBuilder.class.equals(options.streamBuilderType()))))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
