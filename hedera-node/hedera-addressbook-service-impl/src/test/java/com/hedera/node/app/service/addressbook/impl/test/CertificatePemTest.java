@@ -100,7 +100,7 @@ class CertificatePemTest {
     }
 
     @Test
-    void goodX509CertificateFailedOnReadAndValidation() throws IOException, CertificateException {
+    void goodX509CertificateSuccessOnReadAndValidation() throws IOException, CertificateException {
         final var pemFileName = "goodX509certificate.pem";
         final var pemFilePath = loadResourceFile(pemFileName);
         final var cert = readCertificatePemFile(pemFilePath);
