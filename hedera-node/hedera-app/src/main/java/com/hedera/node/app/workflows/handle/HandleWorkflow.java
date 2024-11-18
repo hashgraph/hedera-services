@@ -348,8 +348,10 @@ public class HandleWorkflow {
             // This updates consTimeOfLastHandledTxn as a side-effect
             blockRecordManager.advanceConsensusClock(consensusNow, state);
         }
+
         HandleOutput handleOutput = null;
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
+
         // try to execute time based events
         try {
             if (streamMode == RECORDS) {
@@ -364,10 +366,11 @@ public class HandleWorkflow {
             handleOutput = failInvalidStreamItems(userTxn);
         }
 
-        if (handleOutput == null) {
+        if(handleOutput == null) {
             handleOutput = execute(userTxn);
         }
 
+        // write records
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
             blockRecordManager.endUserTransaction(records.stream(), state);
@@ -643,14 +646,13 @@ public class HandleWorkflow {
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
         } else if (lastProcessTime.getEpochSecond() < consensusNow.getEpochSecond()) {
-            // There is at least one unprocessed second since the last processing time
 
             final var readableStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
             final var schedulesToExecute = readableStore.getByExpirationBetween(
                     lastProcessTime.getEpochSecond(), consensusNow.getEpochSecond());
+
             // todo: consensus nanos offset will be calculated more precisely in following PR,
             //  for now just add 1 nano on each iteration.
-
             var consensusNanosOffset = 1;
             // try to execute schedules
             for (var i = 0; i < schedulesToExecute.size(); i++) {
@@ -678,26 +680,30 @@ public class HandleWorkflow {
                 // mark as deleted
                 final var scheduleStore = getStoreFactory(scheduleUserTnx).writableStore(WritableScheduleStore.class);
                 scheduleStore.delete(schedule.scheduleId(), consensusNow);
+                scheduleUserTnx.stack().commitSystemStateChanges();
 
+                // execute the schedule
                 dispatchProcessor.processDispatch(scheduleDispatch);
 
                 // purge all schedules
                 if (i == schedulesToExecute.size() - 1) {
                     scheduleStore.purgeExpiredSchedulesBetween(
                             lastProcessTime.getEpochSecond(), consensusNow.getEpochSecond());
+                    scheduleUserTnx.stack().commitSystemStateChanges();
                 }
-                scheduleUserTnx.stack().commitSystemStateChanges();
 
+
+                // build the output and save the record/stream
                 final var handleOutput = scheduleUserTnx
                         .stack()
                         .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
-                // add record to the record cache
                 recordCache.addRecordSource(
                         scheduleUserTnx.creatorInfo().nodeId(),
                         scheduleUserTnx.txnInfo().transactionID(),
                         DueDiligenceFailure.NO,
                         handleOutput.preferringBlockRecordSource());
 
+                // write records + state changes
                 if (streamMode != BLOCKS) {
                     final var records =
                             ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
