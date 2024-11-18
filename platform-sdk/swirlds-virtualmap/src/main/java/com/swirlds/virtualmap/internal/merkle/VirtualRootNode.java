@@ -1467,7 +1467,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // record state.
         final VirtualDataSource dataSourceCopy = dataSourceBuilder.copy(dataSource, false, true);
         try {
-            flush(cache, state, dataSourceCopy);
+            flush(cache.snapshot(), state, dataSourceCopy);
             dataSourceBuilder.snapshot(destination, dataSourceCopy);
         } finally {
             dataSourceCopy.close();

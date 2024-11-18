@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -49,6 +50,8 @@ import com.swirlds.virtualmap.test.fixtures.TestKeySerializer;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
 import com.swirlds.virtualmap.test.fixtures.TestValueSerializer;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -358,6 +361,54 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
             original.release();
             copy.release();
+        }
+    }
+
+    @Test
+    @DisplayName("Snapshot and restore")
+    void snapshotAndRestore() throws IOException {
+        final VirtualDataSourceBuilder dsBuilder = new InMemoryBuilder();
+        final List<VirtualMap<TestKey, TestValue>> copies = new LinkedList<>();
+        final VirtualMap<TestKey, TestValue> copy0 =
+                new VirtualMap<>("test", new TestKeySerializer(), new TestValueSerializer(), dsBuilder, CONFIGURATION);
+        copies.add(copy0);
+        for (int i = 1; i <= 10; i++) {
+            final VirtualMap<TestKey, TestValue> prevCopy = copies.get(i - 1);
+            final VirtualMap<TestKey, TestValue> copy = prevCopy.copy();
+            // i-th copy contains TestKey(i)
+            copy.put(new TestKey(i), new TestValue(i + 100));
+            copies.add(copy);
+        }
+        for (VirtualMap<TestKey, TestValue> copy : copies) {
+            // Force virtual map / root node hashing
+            copy.getRight().getHash();
+        }
+        // Take a snapshot of copy 5
+        final VirtualMap<TestKey, TestValue> copy5 = copies.get(5);
+        final Path snapshotPath =
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshotAndRestore", CONFIGURATION);
+        try (final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                final SerializableDataOutputStream out = new SerializableDataOutputStream(bout)) {
+            copy5.serialize(out, snapshotPath);
+            try (final ByteArrayInputStream bin = new ByteArrayInputStream(bout.toByteArray());
+                    final SerializableDataInputStream in = new SerializableDataInputStream(bin)) {
+                final VirtualMap<TestKey, TestValue> restored = new VirtualMap<>(CONFIGURATION);
+                restored.deserialize(in, snapshotPath, copy0.getVersion());
+                // All keys 1 to 5 should be in the snapshot
+                for (int i = 1; i < 6; i++) {
+                    final TestKey key = new TestKey(i);
+                    assertTrue(restored.containsKey(key), "Key " + i + " not found");
+                    assertEquals(new TestValue(i + 100), restored.get(key));
+                }
+                // All keys 6 to 10 should not be there
+                for (int i = 6; i < 10; i++) {
+                    final TestKey key = new TestKey(i);
+                    assertFalse(restored.containsKey(key), "Key " + i + " found");
+                    assertNull(restored.get(key));
+                }
+            }
+        } finally {
+            copies.forEach(VirtualMap::release);
         }
     }
 
