@@ -20,8 +20,8 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -174,7 +174,7 @@ public class BlockStreamBuilderTest {
     private BlockStreamBuilder createBaseBuilder() {
         final List<TokenTransferList> tokenTransferLists = List.of(tokenTransfer);
         final List<AccountAmount> paidStakingRewards = List.of(accountAmount);
-        return new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER)
+        return new BlockStreamBuilder(REVERSIBLE, NOOP_TRANSACTION_CUSTOMIZER, USER)
                 .status(status)
                 .consensusTimestamp(CONSENSUS_TIME)
                 .parentConsensus(PARENT_CONSENSUS_TIME)
