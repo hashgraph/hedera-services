@@ -61,7 +61,7 @@ class ProcessorModuleTest {
                 hssSystemContract);
         assertThat(hederaSystemContracts)
                 .isNotNull()
-                .hasSize(4)
+                .hasSize(5)
                 .containsKey(Address.fromHexString(HTS_EVM_ADDRESS))
                 .containsKey(Address.fromHexString(ExchangeRateSystemContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS))
                 .containsKey(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS))
