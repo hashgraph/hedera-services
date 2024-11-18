@@ -54,3 +54,4 @@ public class Log4JProvider extends AbstractLogProvider {
         BaseLoggerContext.initBaseLogging(logEventFactory, logEventConsumer);
     }
 }
+
