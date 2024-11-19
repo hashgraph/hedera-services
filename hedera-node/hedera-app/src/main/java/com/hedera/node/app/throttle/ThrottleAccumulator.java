@@ -462,7 +462,9 @@ public class ThrottleAccumulator {
             }
             return !manager.allReqsMetAt(now);
         } else {
-            log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet implemented.");
+            // TODO : throttles will be implemented in following PRs
+            // log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet
+            // implemented.");
             if (!manager.allReqsMetAt(now)) {
                 return true;
             }
