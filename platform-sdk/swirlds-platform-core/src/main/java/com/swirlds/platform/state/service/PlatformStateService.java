@@ -50,7 +50,8 @@ public enum PlatformStateService implements Service {
     private static final Collection<Schema> SCHEMAS = List.of(
             new V0540PlatformStateSchema(),
             new V057PlatformStateSchema(
-                    () -> requireNonNull(ACTIVE_ROSTER.get()).get(), APP_VERSION.get()));
+                    () -> requireNonNull(ACTIVE_ROSTER.get()).get(),
+                    () -> requireNonNull(APP_VERSION.get()).get()));
 
     public static final String NAME = "PlatformStateService";
 
