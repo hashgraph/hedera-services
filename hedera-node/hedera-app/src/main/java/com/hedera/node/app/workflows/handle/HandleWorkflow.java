@@ -148,7 +148,6 @@ public class HandleWorkflow {
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
     private final ConfigProvider configProvider;
-    private final ScheduleService scheduleService;
     private final AddressBookHelper addressBookHelper;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
@@ -178,8 +177,7 @@ public class HandleWorkflow {
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
             @NonNull final AddressBookHelper addressBookHelper,
-            @NonNull final TssBaseService tssBaseService,
-            @NonNull final ScheduleService scheduleService) {
+            @NonNull final TssBaseService tssBaseService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -205,7 +203,6 @@ public class HandleWorkflow {
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
         this.addressBookHelper = requireNonNull(addressBookHelper);
-        this.scheduleService = requireNonNull(scheduleService);
         this.tssBaseService = requireNonNull(tssBaseService);
     }
 
@@ -670,7 +667,8 @@ public class HandleWorkflow {
                         SCHEDULED);
 
                 // mark as deleted
-                final var scheduleStore = getStoreFactory(scheduleUserTnx).writableStore(WritableScheduleStore.class);
+                final var scheduleStore =
+                        getScheduleServiceStoreFactory(scheduleUserTnx).writableStore(WritableScheduleStore.class);
                 scheduleStore.delete(schedule.scheduleId(), consensusNow);
                 scheduleUserTnx.stack().commitSystemStateChanges();
 
@@ -711,14 +709,11 @@ public class HandleWorkflow {
         return false;
     }
 
-    private StoreFactoryImpl getStoreFactory(UserTxn userTxn) {
+    private StoreFactoryImpl getScheduleServiceStoreFactory(UserTxn userTxn) {
         // Build store factory for the schedule service iterator
         final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
         final var writableStoreFactory = new WritableStoreFactory(
-                userTxn.stack(),
-                scheduleService.getServiceName(),
-                configProvider.getConfiguration(),
-                storeMetricsService);
+                userTxn.stack(), ScheduleService.NAME, configProvider.getConfiguration(), storeMetricsService);
         final var serviceApiFactory =
                 new ServiceApiFactory(userTxn.stack(), configProvider.getConfiguration(), storeMetricsService);
         return new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
