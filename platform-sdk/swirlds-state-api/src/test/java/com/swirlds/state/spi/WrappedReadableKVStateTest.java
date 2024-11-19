@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state;
+package com.swirlds.state.spi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
-import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.test.fixtures.StateTestBase;
 import java.util.Iterator;
 import org.junit.jupiter.api.BeforeEach;

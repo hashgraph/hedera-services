@@ -18,10 +18,12 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -95,5 +97,10 @@ public class FakeEvent implements Event {
     @Override
     public Bytes getSignature() {
         return FAKE_SHA_384_SIGNATURE;
+    }
+
+    @NonNull
+    public HederaFunctionality function() {
+        return TransactionParts.from(transaction.getApplicationTransaction()).function();
     }
 }

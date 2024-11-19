@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state;
+package com.swirlds.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.*;
 
