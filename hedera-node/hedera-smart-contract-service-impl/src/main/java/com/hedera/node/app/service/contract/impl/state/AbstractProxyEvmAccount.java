@@ -112,6 +112,14 @@ public abstract class AbstractProxyEvmAccount extends AbstractMutableEvmAccount 
         return !isContract();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isScheduleTxnFacade() {
+        return false;
+    }
+
     @Override
     public @NonNull AccountID hederaId() {
         return accountID;
