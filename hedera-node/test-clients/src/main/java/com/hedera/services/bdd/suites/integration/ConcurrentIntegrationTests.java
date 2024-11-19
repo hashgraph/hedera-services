@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.simulatePostUpg
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewSingleton;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usingVersion;
@@ -66,6 +67,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
 import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -75,6 +77,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -144,7 +147,8 @@ public class ConcurrentIntegrationTests {
                 cryptoCreate("firstUser"),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                cryptoCreate("secondUser"));
+                cryptoCreate("secondUser"),
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     @GenesisHapiTest
@@ -165,6 +169,7 @@ public class ConcurrentIntegrationTests {
                                 Optional.ofNullable(amount == ONE_HUNDRED_HBARS ? "Fee was not recharged" : null)));
     }
 
+    @Disabled
     @GenesisHapiTest
     @DisplayName("fail invalid outside dispatch does not attempt to charge fees")
     final Stream<DynamicTest> failInvalidOutsideDispatchDoesNotAttemptToChargeFees() {

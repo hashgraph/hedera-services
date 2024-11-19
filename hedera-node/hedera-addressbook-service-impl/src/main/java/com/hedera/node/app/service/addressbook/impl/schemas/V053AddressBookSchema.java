@@ -108,9 +108,9 @@ public class V053AddressBookSchema extends Schema {
             if (nodeDetailMap != null) {
                 nodeDetail = nodeDetailMap.get(nodeInfo.nodeId());
                 if (nodeDetail != null) {
-                    nodeBuilder
-                            .serviceEndpoint(nodeDetail.serviceEndpoint())
-                            .grpcCertificateHash(nodeDetail.nodeCertHash());
+                    final Bytes hashBytes =
+                            Bytes.fromHex(nodeDetail.nodeCertHash().asUtf8String());
+                    nodeBuilder.serviceEndpoint(nodeDetail.serviceEndpoint()).grpcCertificateHash(hashBytes);
                 }
             }
             writableNodes.put(

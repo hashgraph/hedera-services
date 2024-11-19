@@ -52,4 +52,12 @@ public interface AddressBookService extends RpcService {
     static AddressBookService getInstance() {
         return RpcServiceFactory.loadService(AddressBookService.class, ServiceLoader.load(AddressBookService.class));
     }
+
+    /**
+     * A sort value for the service, make sure this service migrate is after TokenService and FileService migrate.
+     */
+    @Override
+    default int migrationOrder() {
+        return 1;
+    }
 }

@@ -180,11 +180,20 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
     }
 
     @Override
-    public void dumpThreads() {
+    public boolean dumpThreads() {
+        requireNonNull(processHandle);
         try {
             triggerThreadDump();
+            return true;
         } catch (Exception e) {
-            log.warn("Unable to dump threads for node{}", metadata.nodeId(), e);
+            log.warn(
+                    "Unable to dump threads for node{} with PID '{}' (Alive? {}), assuming it was stopped",
+                    metadata.nodeId(),
+                    processHandle.pid(),
+                    processHandle.isAlive() ? "Yes" : "No",
+                    e);
+            processHandle = null;
+            return false;
         }
     }
 

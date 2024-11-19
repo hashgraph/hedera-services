@@ -30,9 +30,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -306,12 +304,12 @@ class ScheduleServiceImplTest {
         readableStore = mock(ReadableScheduleStoreImpl.class);
         cleanupStoreFactory = () -> storeFactory;
         scheduleService = new ScheduleServiceImpl();
-        when(storeFactory.readableStore(ReadableScheduleStore.class)).thenReturn(readableStore);
+        when(storeFactory.readableStore(ReadableScheduleStoreImpl.class)).thenReturn(readableStore);
     }
 
     private void setUpMocks() {
         setUpReadableStore();
         writableStore = mock(WritableScheduleStoreImpl.class);
-        when(storeFactory.writableStore(WritableScheduleStore.class)).thenReturn(writableStore);
+        when(storeFactory.writableStore(WritableScheduleStoreImpl.class)).thenReturn(writableStore);
     }
 }
