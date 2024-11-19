@@ -36,6 +36,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -122,7 +123,7 @@ public class NodeMetadataHelper {
                     .weight(stakingInfo.weight())
                     .adminKey(addressBookAdminKey)
                     .serviceEndpoint(details.serviceEndpoint())
-                    .grpcCertificateHash(details.nodeCertHash());
+                    .grpcCertificateHash(Bytes.fromHex(details.nodeCertHash().asUtf8String()));
             nodeStore.put(builder.build());
         });
     }
