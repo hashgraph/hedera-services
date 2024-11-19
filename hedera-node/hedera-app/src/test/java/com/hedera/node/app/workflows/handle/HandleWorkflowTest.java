@@ -34,7 +34,6 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
-import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -133,9 +132,6 @@ class HandleWorkflowTest {
 
     @Mock
     private UserTxnFactory userTxnFactory;
-
-    @Mock
-    private ScheduleService scheduleService;
 
     @Mock
     private TssBaseService tssBaseService;
