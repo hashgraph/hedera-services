@@ -255,14 +255,14 @@ public class UserTxnFactory {
      *
      * @param userTxn user transaction
      * @param baseBuilder the base record builder
-     * @param callback key verifier callback
+     * @param keyVerifierCallback key verifier callback
      * @param category transaction category
      * @return the new dispatch instance
      */
     public Dispatch createDispatch(
             @NonNull final UserTxn userTxn,
             @NonNull final StreamBuilder baseBuilder,
-            @NonNull final Predicate<Key> callback,
+            @NonNull final Predicate<Key> keyVerifierCallback,
             @NonNull final HandleContext.TransactionCategory category) {
         final var config = userTxn.config();
         final var keyVerifier = getKeyVerifier(keyVerifierCallback, config, emptySet());
