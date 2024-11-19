@@ -36,6 +36,6 @@ public class CongestionThrottleService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490CongestionThrottleSchema());
-         registry.register(new V0570CongestionThrottleSchema());
+        registry.register(new V0570CongestionThrottleSchema());
     }
 }

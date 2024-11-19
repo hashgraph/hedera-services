@@ -35,7 +35,6 @@ import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.CongestionThrottleService;
@@ -84,15 +83,18 @@ public class DispatchUsageManager {
         if (dispatch.throttleStrategy() == ON) {
             var isThrottled = false;
             final var readableStates = dispatch.stack().getReadableStates(CongestionThrottleService.NAME);
-            if(dispatch.txnInfo().functionality().equals(SCHEDULE_CREATE)) {
-                final var expiration = dispatch.txnInfo().txBody().scheduleCreate().expirationTime();
+            if (dispatch.txnInfo().functionality().equals(SCHEDULE_CREATE)) {
+                final var expiration =
+                        dispatch.txnInfo().txBody().scheduleCreate().expirationTime();
                 throttleServiceManager.populateSchedulesUsedCapacityForGivenSecond(readableStates, expiration);
-                networkUtilizationManager.trackScheduledTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
+                networkUtilizationManager.trackScheduledTxn(
+                        dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
             } else {
                 // reset throttles for every dispatch before we track the usage. This is to ensure that
                 // when the user transaction fails, we release the capacity taken at consensus by child transactions.
                 throttleServiceManager.resetThrottlesUnconditionally(readableStates);
-                isThrottled = networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
+                isThrottled = networkUtilizationManager.trackTxn(
+                        dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
             }
             if (networkUtilizationManager.wasLastTxnGasThrottled()) {
                 throw ThrottleException.newGasThrottleException();
@@ -122,7 +124,7 @@ public class DispatchUsageManager {
         }
 
         // save schedule snapshots by seconds
-        if(dispatch.txnInfo().functionality().equals(SCHEDULE_CREATE)) {
+        if (dispatch.txnInfo().functionality().equals(SCHEDULE_CREATE)) {
             final var txnBody = dispatch.txnInfo().txBody();
             final var scheduleCreate = txnBody.scheduleCreateOrThrow();
             final var expiration = scheduleCreate.expirationTime();
@@ -130,7 +132,6 @@ public class DispatchUsageManager {
         } else {
             throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(dispatch.stack());
         }
-
     }
 
     /**

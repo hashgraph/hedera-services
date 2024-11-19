@@ -464,7 +464,7 @@ public class ThrottleAccumulator {
             }
             return !manager.allReqsMetAt(now);
         } else {
-            if(throttleType == BACKEND_THROTTLE) {
+            if (throttleType == BACKEND_THROTTLE) {
                 if (!manager.allReqsMetAt(now)) {
                     return true;
                 }
@@ -484,7 +484,8 @@ public class ThrottleAccumulator {
                         Bytes.EMPTY,
                         scheduledFunction,
                         null);
-                return shouldThrottleTxn(true,
+                return shouldThrottleTxn(
+                        true,
                         innerTxnInfo,
                         Instant.ofEpochSecond(scheduleCreate.expirationTime().seconds()),
                         state);
@@ -597,7 +598,7 @@ public class ThrottleAccumulator {
         final boolean shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
 
-        if(throttleType.equals(SCHEDULING_THROTTLE)) {
+        if (throttleType.equals(SCHEDULING_THROTTLE)) {
             return shouldThrottleByGas
                     && isGasThrottled(txnInfo.functionality())
                     && !gasThrottle.allowSchedule(getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality()));

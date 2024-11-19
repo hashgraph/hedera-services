@@ -66,11 +66,12 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     }
 
     public boolean trackScheduledTxn(
-            @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state) throws ThrottleException {
+            @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state)
+            throws ThrottleException {
         var shouldThrottle = backendThrottle.checkAndEnforceThrottle(txnInfo, consensusTime, state);
 
         // If schedule create is not throttled now, check the inner transaction for future throttling.
-        if(!shouldThrottle) {
+        if (!shouldThrottle) {
             shouldThrottle = scheduleThrottle.checkAndEnforceThrottle(txnInfo, consensusTime, state);
             if (scheduleThrottle.wasLastTxnGasThrottled()) {
                 throw ThrottleException.newScheduleGasThrottleException();

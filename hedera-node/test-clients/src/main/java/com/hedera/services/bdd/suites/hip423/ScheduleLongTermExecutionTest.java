@@ -76,7 +76,6 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transf
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -87,7 +86,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLED_AT_CONSENSUS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -1113,7 +1111,7 @@ public class ScheduleLongTermExecutionTest {
                         // for freeze
                         // and the custom payer is not exempt from throttles like and admin
                         // user would be
-//                         .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
+                        //                         .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
                         );
     }
 
@@ -1260,18 +1258,17 @@ public class ScheduleLongTermExecutionTest {
                         cryptoCreate(PAYING_ACCOUNT_2),
                         fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE))
                 .when()
-                .then(
-                        scheduleCreate(VALID_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
-                                .withEntityMemo(randomUppercase(100))
-                                .designatingPayer(PAYING_ACCOUNT_2)
-                                .payingWith(PAYING_ACCOUNT)
-                                .waitForExpiry()
-                                .withRelativeExpiry(PAYER_TXN, 4)
-                                // future throttles will be exceeded because there is no throttle
-                                // for system delete
-                                // and the custom payer is not exempt from throttles like and admin
-                                // user would be
-                                .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED));
+                .then(scheduleCreate(VALID_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
+                        .withEntityMemo(randomUppercase(100))
+                        .designatingPayer(PAYING_ACCOUNT_2)
+                        .payingWith(PAYING_ACCOUNT)
+                        .waitForExpiry()
+                        .withRelativeExpiry(PAYER_TXN, 4)
+                        // future throttles will be exceeded because there is no throttle
+                        // for system delete
+                        // and the custom payer is not exempt from throttles like and admin
+                        // user would be
+                        .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED));
     }
 
     @HapiTest
@@ -1316,7 +1313,7 @@ public class ScheduleLongTermExecutionTest {
                 uploadInitCode(contract),
                 contractCreate(contract).via("contractCreate"),
                 // schedule at another second, should not affect the throttle
-                scheduleCreate("1",testContractCall(1, gasToOffer))
+                scheduleCreate("1", testContractCall(1, gasToOffer))
                         .withRelativeExpiry("contractCreate", 100)
                         .payingWith(PAYING_ACCOUNT),
                 scheduleCreate("2", testContractCall(2, gasToOffer))
@@ -1328,17 +1325,12 @@ public class ScheduleLongTermExecutionTest {
                 scheduleCreate("4", testContractCall(4, gasToOffer))
                         .withRelativeExpiry("contractCreate", 10)
                         .payingWith(PAYING_ACCOUNT)
-                        .hasKnownStatus(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED)
-        );
+                        .hasKnownStatus(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED));
     }
 
     private HapiContractCall testContractCall(long sending, long gas) {
         final var contract = "HollowAccountCreator";
-        return contractCall(
-                contract,
-                "testCallFoo",
-                randomHeadlongAddress(),
-                BigInteger.valueOf(500_000L))
+        return contractCall(contract, "testCallFoo", randomHeadlongAddress(), BigInteger.valueOf(500_000L))
                 .sending(sending)
                 .gas(gas);
     }

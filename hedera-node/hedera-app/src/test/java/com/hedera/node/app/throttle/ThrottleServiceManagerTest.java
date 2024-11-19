@@ -75,6 +75,9 @@ class ThrottleServiceManagerTest {
     private ThrottleAccumulator backendThrottle;
 
     @Mock
+    private ThrottleAccumulator scheduleThrottle;
+
+    @Mock
     private CongestionMultipliers congestionMultipliers;
 
     @Mock
@@ -114,7 +117,8 @@ class ThrottleServiceManagerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ThrottleServiceManager(throttleParser, ingestThrottle, backendThrottle, congestionMultipliers);
+        subject = new ThrottleServiceManager(
+                throttleParser, ingestThrottle, backendThrottle, scheduleThrottle, congestionMultipliers);
     }
 
     @Test

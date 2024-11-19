@@ -64,6 +64,9 @@ class NetworkUtilizationManagerImplTest {
     private ThrottleAccumulator throttleAccumulator;
 
     @Mock
+    private ThrottleAccumulator scheduledThrottleAccumulator;
+
+    @Mock
     private CongestionMultipliers congestionMultipliers;
 
     @Mock
@@ -92,7 +95,8 @@ class NetworkUtilizationManagerImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new NetworkUtilizationManagerImpl(throttleAccumulator, congestionMultipliers);
+        subject = new NetworkUtilizationManagerImpl(
+                throttleAccumulator, scheduledThrottleAccumulator, congestionMultipliers);
     }
 
     @Test

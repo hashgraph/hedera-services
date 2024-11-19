@@ -16,9 +16,7 @@
 
 package com.hedera.node.app.throttle;
 
-import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
-import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
 import static com.hedera.node.app.throttle.schemas.V0570CongestionThrottleSchema.SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY;
@@ -27,26 +25,19 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.app.throttle.annotations.ScheduleThrottle;
-import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
@@ -61,8 +52,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -267,7 +256,8 @@ public class ThrottleServiceManager {
         }
     }
 
-    public void populateSchedulesUsedCapacityForGivenSecond(@NonNull final ReadableStates serviceStates, @NonNull final Timestamp expirationTime) {
+    public void populateSchedulesUsedCapacityForGivenSecond(
+            @NonNull final ReadableStates serviceStates, @NonNull final Timestamp expirationTime) {
         final ReadableKVState<ProtoLong, ThrottleUsageSnapshots> usageSnapshotsState =
                 serviceStates.get(SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY);
         final var usageSnapshots = usageSnapshotsState.get(new ProtoLong(expirationTime.seconds()));

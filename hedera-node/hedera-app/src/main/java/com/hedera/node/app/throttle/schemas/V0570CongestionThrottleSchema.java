@@ -49,11 +49,10 @@ public class V0570CongestionThrottleSchema extends Schema {
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(
-                 StateDefinition.onDisk(
-                         SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY,
-                         ProtoLong.PROTOBUF,
-                         ThrottleUsageSnapshots.PROTOBUF,
+        return Set.of(StateDefinition.onDisk(
+                SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY,
+                ProtoLong.PROTOBUF,
+                ThrottleUsageSnapshots.PROTOBUF,
                 MAX_SCHEDULE_IDS_BY_EXPIRY_SEC_KEY));
     }
 
@@ -64,8 +63,7 @@ public class V0570CongestionThrottleSchema extends Schema {
             log.info("Creating genesis throttle snapshots and congestion level starts for schedules");
             // At genesis we put empty throttle usage snapshots into their singleton
             // state just to ensure they exist
-            final var scheduleThrottleSnapshot =
-                    ctx.newStates().get(SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY);
+            final var scheduleThrottleSnapshot = ctx.newStates().get(SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY);
             scheduleThrottleSnapshot.put(ProtoLong.DEFAULT, ThrottleUsageSnapshots.DEFAULT);
         }
     }

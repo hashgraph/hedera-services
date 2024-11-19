@@ -49,7 +49,8 @@ public interface NetworkUtilizationManager {
      * @return
      */
     boolean trackScheduledTxn(
-            @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state) throws ThrottleException;
+            @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state)
+            throws ThrottleException;
 
     /**
      * Updates the throttle usage and congestion pricing for cases where the transaction is not valid, but we want to track the fee payments related to it.
