@@ -65,7 +65,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -89,14 +88,14 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssHandlers tssHandlers;
     private final TssSubmissions tssSubmissions;
     private final Executor tssLibraryExecutor;
-    private final ExecutorService signingExecutor;
+    private final Executor signingExecutor;
     private final TssKeysAccessor tssKeysAccessor;
     private final TssDirectoryAccessor tssDirectoryAccessor;
     private final AppContext appContext;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
-            @NonNull final ExecutorService signingExecutor,
+            @NonNull final Executor signingExecutor,
             @NonNull final Executor submissionExecutor,
             @NonNull final TssLibrary tssLibrary,
             @NonNull final Executor tssLibraryExecutor,
@@ -202,7 +201,6 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final byte[] messageHash, @NonNull final Instant lastUsedConsensusTime) {
         requireNonNull(messageHash);
         requireNonNull(lastUsedConsensusTime);
-        // (TSS-FUTURE) Initiate an asynchronous process of creating a ledger signature
         final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
                 () -> {

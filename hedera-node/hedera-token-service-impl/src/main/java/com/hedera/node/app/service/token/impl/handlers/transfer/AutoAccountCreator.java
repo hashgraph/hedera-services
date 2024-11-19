@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -88,15 +90,10 @@ public class AutoAccountCreator {
 
         // Dispatch the auto-creation record as a preceding record; note we pass null for the
         // "verification assistant" since we have no non-payer signatures to verify here
-        final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
-                syntheticCreation.build(),
-                CryptoCreateStreamBuilder.class,
-                null,
-                handleContext.payer(),
-                HandleContext.ConsensusThrottling.ON);
-
+        final var streamBuilder = handleContext.dispatch(
+                setupDispatch(handleContext.payer(), syntheticCreation.build(), CryptoCreateStreamBuilder.class));
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.
-        validateTrue(childRecord.status() == ResponseCodeEnum.SUCCESS, childRecord.status());
+        validateTrue(streamBuilder.status() == SUCCESS, streamBuilder.status());
 
         // Since we succeeded, we can now look up the account ID of the created account. This really should always
         // work, since the child transaction succeeded. If it did not work for some reason, we have a bug in our
