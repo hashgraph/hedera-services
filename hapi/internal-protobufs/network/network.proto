@@ -3,6 +3,9 @@
  * A representation that includes all “biographical information” on each
  * node that is needed by a network with TSS fully operational.
  * Required in order to replace the address book with Rosters.
+ * This is a format for data that exists on disk, not in state or block
+ * streams, but can be regenerated during state freeze operations for network
+ * resets.
  *
  * ### Keywords
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -14,7 +17,7 @@
 
 syntax = "proto3";
 
-package com.hedera.hapi.node.state.network;
+package com.hedera.node.internal.network;
 
 /*
  * Copyright (C) 2024 Hedera Hashgraph, LLC
@@ -35,8 +38,8 @@ package com.hedera.hapi.node.state.network;
 import "auxiliary/tss/tss_message.proto";
 import "state/addressbook/node.proto";
 
-option java_package = "com.hederahashgraph.api.proto.java";
-// <<<pbj.java_package = "com.hedera.hapi.node.state.network">>> This comment is special code for setting PBJ Compiler java package
+option java_package = "com.hedera.node.internal.network.legacy";
+// <<<pbj.java_package = "com.hedera.node.internal.network">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
 
