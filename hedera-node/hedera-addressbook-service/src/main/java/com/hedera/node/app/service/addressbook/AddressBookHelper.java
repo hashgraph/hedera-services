@@ -119,13 +119,18 @@ public class AddressBookHelper {
     public static X509Certificate readCertificatePemFile(@NonNull final InputStream in)
             throws IOException, CertificateException {
         requireNonNull(in);
+        Object entry;
         try (final var parser = new PEMParser(new InputStreamReader(in))) {
-            final var entry = parser.readObject();
-            if (!(entry instanceof X509CertificateHolder holder)) {
-                throw new CertificateException();
+            while ((entry = parser.readObject()) != null) {
+                if (entry instanceof X509CertificateHolder ch) {
+                    return new JcaX509CertificateConverter().getCertificate(ch);
+                } else {
+                    throw new CertificateException(
+                            "Not X509 Certificate, it is " + entry.getClass().getSimpleName());
+                }
             }
-            return new JcaX509CertificateConverter().getCertificate(holder);
         }
+        throw new CertificateException("No X509 Certificate found in the PEM file");
     }
 
     /**
