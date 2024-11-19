@@ -147,12 +147,12 @@ public class HandleWorkflow {
     private final StakePeriodManager stakePeriodManager;
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
-    private final ConfigProvider configProvider;
     private final AddressBookHelper addressBookHelper;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
     private final TssBaseService tssBaseService;
+    private final ConfigProvider configProvider;
 
     @Inject
     public HandleWorkflow(
@@ -176,7 +176,7 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
-            @NonNull final AddressBookHelper addressBookHelper,
+            final AddressBookHelper addressBookHelper,
             @NonNull final TssBaseService tssBaseService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
@@ -342,8 +342,6 @@ public class HandleWorkflow {
 
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
         final var handleOutput = execute(userTxn);
-
-        // write records
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
             blockRecordManager.endUserTransaction(records.stream(), state);
@@ -353,7 +351,7 @@ public class HandleWorkflow {
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
 
-        // try to execute time based events
+        // process time based events
         if (streamMode == RECORDS) {
             processInterval(state, event, creator, lastRecordProcessTime, consensusNow);
         } else {
@@ -640,7 +638,7 @@ public class HandleWorkflow {
             final var schedulesToExecute = readableStore.getByExpirationBetween(
                     lastProcessTime.getEpochSecond(), consensusNow.getEpochSecond());
 
-            // todo: consensus nanos offset will be calculated more precisely in following PR,
+            // future: consensus nanos offset will be calculated more precisely in following PR,
             //  for now just add 1 nano on each iteration.
             var consensusNanosOffset = 1;
             // try to execute schedules

@@ -344,12 +344,13 @@ public class UserTxnFactory {
                 transactionCategory,
                 tokenContextImpl,
                 preHandleResult,
+                // scheduled txn will be throttled only at creation (SCHEDULE_CREATE)
                 SCHEDULED.equals(transactionCategory)
                         ? HandleContext.ConsensusThrottling.OFF
                         : HandleContext.ConsensusThrottling.ON);
     }
 
-    public SavepointStackImpl createRootSavepointStack(
+    private SavepointStackImpl createRootSavepointStack(
             @NonNull final State state, @NonNull final TransactionType txnType) {
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);

@@ -840,9 +840,11 @@ public class ScheduleLongTermExecutionTest {
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(transferAmount),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance),
+                        // future: a check if account was deleted will be added in DispatchValidator
                         getTxnRecord(CREATE_TX)
                                 .scheduled()
-                                .hasPriority(recordWith().statusFrom(PAYER_ACCOUNT_DELETED)));
+                                .hasPriority(
+                                        recordWith().statusFrom(PAYER_ACCOUNT_DELETED, INSUFFICIENT_PAYER_BALANCE)));
     }
 
     @HapiTest
@@ -885,10 +887,11 @@ public class ScheduleLongTermExecutionTest {
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(transferAmount),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance),
+                        // future: a check if account was deleted will be added in DispatchValidator
                         getTxnRecord(CREATE_TX)
                                 .scheduled()
                                 .hasPriority(
-                                        recordWith().statusFrom(INSUFFICIENT_ACCOUNT_BALANCE, PAYER_ACCOUNT_DELETED)));
+                                        recordWith().statusFrom(INSUFFICIENT_PAYER_BALANCE, PAYER_ACCOUNT_DELETED)));
     }
 
     @HapiTest
