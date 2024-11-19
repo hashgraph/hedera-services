@@ -422,7 +422,7 @@ public class ScheduleLongTermSignTest {
                                 .isNotDeleted()
                                 .hasRelativeExpiry(SENDER_TXN, 10)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(11000),
+                        sleepFor(TimeUnit.SECONDS.toMillis(11)),
                         cryptoCreate("foo"),
                         sleepFor(1000),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),

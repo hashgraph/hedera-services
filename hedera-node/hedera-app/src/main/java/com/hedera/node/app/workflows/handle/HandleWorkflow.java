@@ -94,6 +94,7 @@ import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -353,9 +354,9 @@ public class HandleWorkflow {
 
         // process time based events
         if (streamMode == RECORDS) {
-            processInterval(state, event, creator, lastRecordProcessTime, consensusNow);
+            processInterval(state, event, creator, lastRecordProcessTime, consensusNow, userTxn);
         } else {
-            if (processInterval(state, event, creator, lastStreamProcessTime, consensusNow)) {
+            if (processInterval(state, event, creator, lastStreamProcessTime, consensusNow, userTxn)) {
                 blockStreamManager.setLastIntervalProcessTime(consensusNow);
             }
         }
@@ -619,8 +620,12 @@ public class HandleWorkflow {
     /**
      * Process all time-based events that are due since the last processing time.
      *
+     * @param state the state to process the interval used if longTermEnabled is true
+     * @param event the consensus event
+     * @param creator the creator of the event
      * @param lastProcessTime an upper bound on the last time that time-based events were processed
      * @param consensusNow the current consensus time
+     * @param userTxn the user transaction, used only if longTermEnabled is false
      * @return true if the interval was processed
      */
     private boolean processInterval(
@@ -628,12 +633,24 @@ public class HandleWorkflow {
             final ConsensusEvent event,
             final NodeInfo creator,
             final Instant lastProcessTime,
-            final Instant consensusNow) {
+            final Instant consensusNow,
+            final UserTxn userTxn) {
         // If we have never processed an interval, treat this time as the last processed time
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
         } else if (lastProcessTime.getEpochSecond() < consensusNow.getEpochSecond()) {
-
+            // There is at least one unprocessed second since the last processing time
+            final var schedulingConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
+            if (!schedulingConfig.longTermEnabled()) {
+                final var startSecond = lastProcessTime.getEpochSecond();
+                final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
+                final var scheduleStore = new WritableStoreFactory(
+                                userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
+                        .getStore(WritableScheduleStore.class);
+                scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+                userTxn.stack().commitSystemStateChanges();
+                return true;
+            }
             final var readableStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
             final var schedulesToExecute = readableStore.getByExpirationBetween(
                     lastProcessTime.getEpochSecond(), consensusNow.getEpochSecond());
@@ -686,7 +703,7 @@ public class HandleWorkflow {
                         .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
                 recordCache.addRecordSource(
                         scheduleUserTnx.creatorInfo().nodeId(),
-                        scheduleUserTnx.txnInfo().transactionID(),
+                        requireNonNull(scheduleUserTnx.txnInfo().transactionID()),
                         DueDiligenceFailure.NO,
                         handleOutput.preferringBlockRecordSource());
 
@@ -701,13 +718,12 @@ public class HandleWorkflow {
                 }
                 consensusNanosOffset++;
             }
-
             return true;
         }
         return false;
     }
 
-    private StoreFactoryImpl getScheduleServiceStoreFactory(UserTxn userTxn) {
+    private StoreFactoryImpl getScheduleServiceStoreFactory(final UserTxn userTxn) {
         // Build store factory for the schedule service iterator
         final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
         final var writableStoreFactory = new WritableStoreFactory(
