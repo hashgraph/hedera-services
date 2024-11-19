@@ -126,9 +126,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     /**
      * A future that completes after all items not in the pendingItems list have been serialized
      * to bytes, with their hashes scheduled for incorporation in the input/output trees and running
-     * hashes if applicable; <b>and</b> written to the block item writer.
+     * hashes if applicable
      */
-    private CompletableFuture<Void> writeFuture = completedFuture(null);
+    private CompletableFuture<Void> hashFuture = completedFuture(null);
 
     /**
      * Represents a block pending completion by the block hash signature needed for its block proof.
@@ -266,8 +266,24 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (shouldCloseBlock(roundNum, roundsPerBlock)) {
             // Flush all boundary state changes besides the BlockStreamInfo
             pendingItems.add(boundaryStateChangeListener.flushChanges());
-            schedulePendingWork();
-            writeFuture.join();
+
+            // Combine the output of all remaining pending work (except the final block hash, which
+            // depends on the completion of this pending work)
+            final var scheduledWork = new ScheduledWork(pendingItems);
+            final var pendingOutput = CompletableFuture.supplyAsync(scheduledWork::computeOutput, executor);
+            hashFuture = hashFuture
+                    .thenCombine(pendingOutput, (fromHash, fromPending) -> {
+                        // Include remaining input/output hashes into the corresponding trees and running hash
+                        this.combineOutput(null, fromPending);
+
+                        // Write the output items to the stream
+                        executor.submit(() -> writer.writeItems(fromPending.data()));
+                        return null;
+                    });
+            pendingItems = new ArrayList<>();
+            // We can't go any further in our computations of the final hash until all pending work is completed
+            hashFuture.join();
+
             final var inputHash = inputTreeHasher.rootHash().join();
             // This block's starting state hash is the end state hash of the last non-empty round
             final var blockStartStateHash = requireNonNull(endRoundStateHashes.get(lastNonEmptyRoundNumber))
@@ -300,7 +316,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             final var finalWork = new ScheduledWork(List.of(boundaryStateChangeListener.flushChanges()));
             final var finalOutput = finalWork.computeOutput();
             // Ensure we only write and incorporate the final hash after all preceding work is done
-            writeFuture.join();
+            hashFuture.join();
             combineOutput(null, finalOutput);
             final var outputHash = outputTreeHasher.rootHash().join();
             final var leftParent = combine(lastBlockHash, inputHash);
@@ -337,7 +353,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         // Incorporate all pending results before returning the seed to guarantee
         // no two consecutive transactions ever get the same seed
         schedulePendingWork();
-        writeFuture.join();
+        hashFuture.join();
         final var seed = runningHashManager.nMinus3Hash;
         return seed == null ? null : Bytes.wrap(runningHashManager.nMinus3Hash);
     }
@@ -432,7 +448,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private void schedulePendingWork() {
         final var scheduledWork = new ScheduledWork(pendingItems);
         final var pendingOutput = CompletableFuture.supplyAsync(scheduledWork::computeOutput, executor);
-        writeFuture = writeFuture.thenCombine(pendingOutput, this::combineOutput);
+        hashFuture = hashFuture.thenCombine(pendingOutput, this::combineOutput);
         pendingItems = new ArrayList<>();
     }
 
@@ -557,15 +573,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     /**
-     * Given the output of a {@link ScheduledWork} instance, writes the output's serialized items and
-     * incorporates its input/output hashes into the corresponding trees and running hash.
+     * Given the output of a {@link ScheduledWork} instance, incorporates its input/output hashes into
+     * the corresponding trees and running hash.
      *
      * @param ignore ignored, needed for type compatibility with {@link CompletableFuture#thenCombine}
      * @param output the output to be combined
      * @return {@code null}
      */
-    private Void combineOutput(@Nullable Void ignore, @NonNull final ScheduledWork.Output output) {
-        writer.writeItems(output.data());
+    private Void combineOutput(@Nullable final Void ignore, @NonNull final ScheduledWork.Output output) {
         while (output.inputHashes().hasRemaining()) {
             inputTreeHasher.addLeaf(output.inputHashes());
         }
