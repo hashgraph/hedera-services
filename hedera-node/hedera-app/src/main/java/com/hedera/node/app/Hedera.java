@@ -253,12 +253,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      */
     private final FileServiceImpl fileServiceImpl;
 
-    /*
-     * The schedule service singleton, kept as a field here to avoid constructing twice
-     * (once in constructor to register schemas, again inside Dagger component).
-     */
-    private final ScheduleServiceImpl scheduleServiceImpl;
-
     /**
      * The block stream service singleton, kept as a field here to reuse information learned
      * during the state migration phase in the later initialization phase.
@@ -395,7 +389,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         tssBaseService = tssBaseServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
         blockStreamService = new BlockStreamService();
-        scheduleServiceImpl = new ScheduleServiceImpl();
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
@@ -404,7 +397,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         fileServiceImpl,
                         tssBaseService,
                         new FreezeServiceImpl(),
-                        scheduleServiceImpl,
+                        new ScheduleServiceImpl(),
                         new TokenServiceImpl(),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
@@ -1000,7 +993,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .migrationStateChanges(migrationStateChanges != null ? migrationStateChanges : new ArrayList<>())
                 .initialStateHash(initialStateHash)
                 .networkInfo(networkInfo)
-                .scheduleService(scheduleServiceImpl)
                 .build();
         // Initialize infrastructure for fees, exchange rates, and throttles from the working state
         daggerApp.initializer().accept(state);

@@ -19,9 +19,7 @@ package com.hedera.node.app.service.schedule.impl;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.RpcService;
@@ -48,7 +46,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
     @Override
     public Iterator<ExecutableTxn> iterTxnsForInterval(
             final Instant start, final Instant end, final Supplier<StoreFactory> cleanupStoreFactory) {
-        final var store = cleanupStoreFactory.get().readableStore(ReadableScheduleStore.class);
+        final var store = cleanupStoreFactory.get().readableStore(ReadableScheduleStoreImpl.class);
 
         // Get transactions from state that are not executed/deleted
         final var executableTxns = store.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()).stream()
@@ -94,7 +92,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
                 }
 
                 // Use the StoreFactory to mark a schedule as deleted
-                final var iteratorStore = cleanupStoreFactory.get().writableStore(WritableScheduleStore.class);
+                final var iteratorStore = cleanupStoreFactory.get().writableStore(WritableScheduleStoreImpl.class);
                 final var scheduleId = transactions.get(currentIndex).scheduleId();
                 iteratorStore.delete(scheduleId, Instant.now());
             }
@@ -102,7 +100,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
             private void cleanUpExpiredSchedules() {
                 if (shouldCleanUp) {
                     // After we finish iterating, clean up the expired schedules
-                    final var cleanUpStore = cleanupStoreFactory.get().writableStore(WritableScheduleStore.class);
+                    var cleanUpStore = cleanupStoreFactory.get().writableStore(WritableScheduleStoreImpl.class);
                     cleanUpStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
                     shouldCleanUp = false;
                 }
@@ -115,7 +113,6 @@ public final class ScheduleServiceImpl implements ScheduleService {
                         childAsOrdinary(schedule),
                         callback,
                         schedule.payerAccountId(),
-                        schedule.scheduleId(),
                         Instant.ofEpochSecond(schedule.calculatedExpirationSecond()));
             }
         };
