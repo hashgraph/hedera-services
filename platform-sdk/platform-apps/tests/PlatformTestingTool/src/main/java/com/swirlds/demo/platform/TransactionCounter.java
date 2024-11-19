@@ -104,12 +104,6 @@ public class TransactionCounter implements Cloneable, FastCopyable, SelfSerializ
     public TransactionCounter() {}
 
     private TransactionCounter(final TransactionCounter sourceTransactionCounter) {
-        //        logger.info(
-        //                LOGM_DEMO_INFO,
-        //                "TransactionCounter.<init>(COPY), immutable: {}, StackTrace: {}",
-        //                isImmutable(),
-        //                StackTrace.getStackTrace());
-
         this.fcmCreateAmount = sourceTransactionCounter.fcmCreateAmount;
         this.fcmUpdateAmount = sourceTransactionCounter.fcmUpdateAmount;
         this.fcmDeleteAmount = sourceTransactionCounter.fcmDeleteAmount;
@@ -137,12 +131,6 @@ public class TransactionCounter implements Cloneable, FastCopyable, SelfSerializ
 
     @Override
     public TransactionCounter copy() {
-        //        logger.info(
-        //                LOGM_DEMO_INFO,
-        //                "TransactionCounter.copy(), immutable: {}, StackTrace: {}",
-        //                isImmutable(),
-        //                StackTrace.getStackTrace());
-        //        throwIfImmutable();
         return new TransactionCounter(this);
     }
 
