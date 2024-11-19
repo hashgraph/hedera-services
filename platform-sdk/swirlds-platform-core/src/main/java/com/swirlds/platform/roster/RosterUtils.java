@@ -231,17 +231,12 @@ public final class RosterUtils {
     }
 
     /**
-     * Determining the Roster History.
-     * There are three non-genesis modes that a node can start in:
-     * <ul>
-     *   <li> Genesis Network - The node is started with a genesis roster and no pre-existing state on disk. </li>
-     *   <li> Network Transplant - The node is started with a state on disk and an overriding roster for a different network. </li>
-     *   <li> Software Upgrade - The node is restarted with the same state on disk and a software upgrade is happening. </li>
-     *   <li> Normal Restart - The node is restarted with the same state on disk and no software upgrade is happening. </li>
-     * </ul>
+     * Creates the Roster History to be used by Platform.
      *
-     * @return the roster history if able to determine it, otherwise IllegalStateException is thrown
+     * @param rosterStore the roster store containing the active rosters.
+     * @return the roster history if roster store contains active rosters, otherwise IllegalStateException is thrown.
      */
+    @NonNull
     public static RosterHistory createRosterHistory(@NonNull final ReadableRosterStore rosterStore) {
         final var roundRosterPairs = rosterStore.getRosterHistory();
         // If there exists active rosters in the roster state.
