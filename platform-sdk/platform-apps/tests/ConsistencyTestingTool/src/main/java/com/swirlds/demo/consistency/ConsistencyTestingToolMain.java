@@ -52,10 +52,13 @@ public class ConsistencyTestingToolMain implements SwirldMain {
         try {
             logger.info(STARTUP.getMarker(), "Registering ConsistencyTestingToolState with ConstructableRegistry");
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    ConsistencyTestingToolState.class,
-                    () -> new ConsistencyTestingToolState(
-                            NO_OP_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(ConsistencyTestingToolState.class, () -> {
+                        ConsistencyTestingToolState consistencyTestingToolState = new ConsistencyTestingToolState(
+                                NO_OP_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                        NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(consistencyTestingToolState);
+                        return consistencyTestingToolState;
+                    }));
             logger.info(STARTUP.getMarker(), "ConsistencyTestingToolState is registered with ConstructableRegistry");
         } catch (ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register ConsistencyTestingToolState", e);

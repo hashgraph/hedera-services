@@ -168,20 +168,11 @@ public class PayloadCfgSimple extends PartialMerkleLeaf implements MerkleLeaf {
     private float ratioOfFCMTransaction;
 
     public PayloadCfgSimple() {
-        //        logger.info(
-        //                LOGM_DEMO_INFO,
-        //                "PayloadCfgSimple.<init>, immutable: {}, StackTrace: {}",
-        //                isImmutable(),
-        //                StackTrace.getStackTrace());
+        // empty
     }
 
     private PayloadCfgSimple(final PayloadCfgSimple sourcePayload) {
         super(sourcePayload);
-        //        logger.info(
-        //                LOGM_DEMO_INFO,
-        //                "PayloadCfgSimple.<init>(COPY), immutable: {}, StackTrace: {}",
-        //                isImmutable(),
-        //                StackTrace.getStackTrace());
         setAppendSig(sourcePayload.appendSig);
         setInvalidSigRatio(sourcePayload.invalidSigRatio);
         setInsertSeq(sourcePayload.insertSeq);

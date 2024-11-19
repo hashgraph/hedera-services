@@ -248,13 +248,6 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             @NonNull final MerkleStateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
-
-        //        logger.info(
-        //                LOGM_DEMO_INFO,
-        //                "PlatformTestingToolState.<init>, immutable: {}, StackTrace: {}",
-        //                isImmutable(),
-        //                StackTrace.getStackTrace());
-
         expectedFCMFamily = new ExpectedFCMFamilyImpl();
 
         referenceNftLedger = new ReferenceNftLedger(NFT_TRACKING_FRACTION);
@@ -262,45 +255,8 @@ public class PlatformTestingToolState extends MerkleStateRoot {
 
     protected PlatformTestingToolState(final PlatformTestingToolState sourceState) {
         super(sourceState);
-
-        //        logger.info(
-        //                LOGM_DEMO_INFO,
-        //                "PlatformTestingToolState.<init>(COPY), immutable: {}, StackTrace: {}",
-        //                isImmutable(),
-        //                StackTrace.getStackTrace());
-
         this.initialized.set(sourceState.initialized.get());
         this.platform = sourceState.platform;
-
-        // commented because copying happens in super
-        //        if (sourceState.getConfig() != null) {
-        //            setConfig(sourceState.getConfig().copy());
-        //        }
-        //
-        //        if (sourceState.getNextSeqCons() != null) {
-        //            setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
-        //        }
-        //
-        //        if (sourceState.getFcmFamily() != null) {
-        //            setFcmFamily(sourceState.getFcmFamily().copy());
-        //        } else {
-        //            setFcmFamily(new FCMFamily(true));
-        //        }
-        //
-        //        if (sourceState.getVirtualMap() != null) {
-        //            setVirtualMap(sourceState.getVirtualMap().copy());
-        //        }
-        //
-        //        if (sourceState.getVirtualMapForSmartContracts() != null) {
-        //            setVirtualMapForSmartContracts(
-        //                    sourceState.getVirtualMapForSmartContracts().copy());
-        //        }
-        //
-        //        if (sourceState.getVirtualMapForSmartContractsByteCode() != null) {
-        //            setVirtualMapForSmartContractsByteCode(
-        //                    sourceState.getVirtualMapForSmartContractsByteCode().copy());
-        //        }
-
         this.lastFileTranFinishTimeStamp = sourceState.lastFileTranFinishTimeStamp;
         this.lastTranTimeStamp = sourceState.lastTranTimeStamp;
 
@@ -330,23 +286,6 @@ public class PlatformTestingToolState extends MerkleStateRoot {
                                 sourceState.getTransactionCounter().get(index).copy());
             }
         }
-
-        //        if (sourceState.getIssLeaf() != null) {
-        //            setIssLeaf(sourceState.getIssLeaf().copy());
-        //        }
-
-        //        if (sourceState.getNftLedger() != null) {
-        //            setNftLedger(sourceState.getNftLedger().copy());
-        //        }
-
-        // set the current value of QuorumResult from source state
-        //        if (sourceState.getQuorumResult() != null) {
-        //            setQuorumResult(sourceState.getQuorumResult().copy());
-        //        }
-        //        if (controlQuorum != null) {
-        //            controlQuorum.setQuorumResult(getQuorumResult().copy());
-        //        }
-
         setImmutable(false);
         sourceState.setImmutable(true);
     }
@@ -446,13 +385,6 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      */
     @Override
     public boolean childHasExpectedType(final int index, final long childClassId) {
-        //        logger.info(
-        //                DEMO_INFO.getMarker(),
-        //                "Checking if childHasExpectedType for index: {}, childClassId: {}, StackTrace: {}",
-        //                index,
-        //                childClassId,
-        //                StackTrace.getStackTrace());
-
         switch (index) {
             case ChildIndices.UNUSED:
                 // We used to use this for an address book, but now we don't use this index.
