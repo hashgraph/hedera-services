@@ -65,6 +65,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static com.swirlds.common.utility.CommonUtils.unhex;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,6 +93,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.text.Normalizer;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -447,7 +450,7 @@ public class SystemFileExportsTest {
 
                     final var actualCertHash = address.nodeCertHash().toByteArray();
                     assertArrayEquals(
-                            grpcCertHashes[(int) address.nodeId()],
+                            getHexStringBytesFromBytes(grpcCertHashes[(int) address.nodeId()]),
                             actualCertHash,
                             "node" + address.nodeId() + " has wrong cert hash");
 
@@ -461,6 +464,11 @@ public class SystemFileExportsTest {
                 Assertions.fail("Update contents was not protobuf " + e.getMessage());
             }
         };
+    }
+
+    private static byte[] getHexStringBytesFromBytes(final byte[] rawBytes) {
+        final String hexString = HexFormat.of().formatHex(rawBytes);
+        return Normalizer.normalize(hexString, Normalizer.Form.NFD).getBytes(UTF_8);
     }
 
     private static VisibleItemsValidator addressBookExportValidator(
@@ -487,7 +495,7 @@ public class SystemFileExportsTest {
                 for (final var address : updatedAddressBook.nodeAddress()) {
                     final var actualCertHash = address.nodeCertHash().toByteArray();
                     assertArrayEquals(
-                            grpcCertHashes[(int) address.nodeId()],
+                            getHexStringBytesFromBytes(grpcCertHashes[(int) address.nodeId()]),
                             actualCertHash,
                             "node" + address.nodeId() + " has wrong cert hash");
 

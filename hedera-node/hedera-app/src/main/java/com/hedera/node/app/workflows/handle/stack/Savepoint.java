@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.handle.stack;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior;
 import com.hedera.node.config.types.StreamMode;
@@ -69,7 +68,7 @@ public interface Savepoint extends BuilderSink {
     StreamBuilder createBuilder(
             @NonNull ReversingBehavior reversingBehavior,
             @NonNull HandleContext.TransactionCategory txnCategory,
-            @NonNull ExternalizedRecordCustomizer customizer,
+            @NonNull StreamBuilder.TransactionCustomizer customizer,
             @NonNull StreamMode streamMode,
             boolean isBaseBuilder);
 }

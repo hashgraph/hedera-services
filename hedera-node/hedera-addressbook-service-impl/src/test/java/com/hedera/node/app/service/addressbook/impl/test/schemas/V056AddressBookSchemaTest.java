@@ -159,7 +159,7 @@ class V056AddressBookSchemaTest extends AddressBookTestBase {
                         .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
                         .weight(1)
                         .adminKey(anotherKey)
-                        .grpcCertificateHash(Bytes.wrap("grpcCertificateHash1"))
+                        .grpcCertificateHash(Bytes.fromHex("ebdaba19283dadbabedab1"))
                         .serviceEndpoint(List.of(endpointFor("127.1.0.1", 1234), endpointFor("127.1.0.2", 1234)))
                         .build(),
                 writableNodes.get(EntityNumber.newBuilder().number(2).build()));
@@ -172,7 +172,7 @@ class V056AddressBookSchemaTest extends AddressBookTestBase {
                         .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
                         .weight(10)
                         .adminKey(anotherKey)
-                        .grpcCertificateHash(Bytes.wrap("grpcCertificateHash2"))
+                        .grpcCertificateHash(Bytes.fromHex("ebdaba19283dadbabedab2"))
                         .serviceEndpoint(
                                 List.of(endpointFor("domain.test1.com", 1234), endpointFor("domain.test2.com", 5678)))
                         .build(),
@@ -262,12 +262,12 @@ class V056AddressBookSchemaTest extends AddressBookTestBase {
         nodeDetails.addAll(List.of(
                 NodeAddress.newBuilder()
                         .nodeId(2)
-                        .nodeCertHash(Bytes.wrap("grpcCertificateHash1"))
+                        .nodeCertHash(Bytes.wrap("ebdaba19283dadbabedab1"))
                         .serviceEndpoint(List.of(endpointFor("127.1.0.1", 1234), endpointFor("127.1.0.2", 1234)))
                         .build(),
                 NodeAddress.newBuilder()
                         .nodeId(3)
-                        .nodeCertHash(Bytes.wrap("grpcCertificateHash2"))
+                        .nodeCertHash(Bytes.wrap("ebdaba19283dadbabedab2"))
                         .serviceEndpoint(
                                 List.of(endpointFor("domain.test1.com", 1234), endpointFor("domain.test2.com", 5678)))
                         .build()));
