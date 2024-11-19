@@ -22,8 +22,6 @@ plugins {
     id("com.hedera.gradle.feature.test-timing-sensitive")
 }
 
-dependencies { implementation(project(":config")) }
-
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
 // and then fix the reported issues.
 tasks.withType<JavaCompile>().configureEach {

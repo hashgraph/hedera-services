@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.NodeMetadata;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.roster.RosterUtils;
@@ -97,8 +96,7 @@ public class V057PlatformStateSchema extends Schema {
     }
 
     private boolean isUpgrade(@NonNull final MigrationContext ctx) {
-        final var currentVersion =
-                ctx.configuration().getConfigData(VersionConfig.class).servicesVersion();
+        final var currentVersion = appVersion.get().getPbjSemanticVersion();
         final var previousVersion = ctx.previousVersion();
         return SEMANTIC_VERSION_COMPARATOR.compare(currentVersion, (requireNonNull(previousVersion))) > 0;
     }
