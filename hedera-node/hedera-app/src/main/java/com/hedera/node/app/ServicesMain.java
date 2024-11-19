@@ -26,11 +26,11 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
@@ -38,6 +38,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.swirlds.base.time.Time;
@@ -61,12 +62,16 @@ import com.swirlds.platform.Browser;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -286,8 +291,21 @@ public class ServicesMain implements SwirldMain {
         // Initialize the address book and set on platform builder
         final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
 
+        final RosterHistory rosterHistory;
+        final boolean shouldUseRosterLifecycle =
+                configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle();
+        if (shouldUseRosterLifecycle) {
+            final SignedState loadedSignedState = initialState.get();
+            final var state = ((MerkleStateRoot) loadedSignedState.getState());
+            final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
+            rosterHistory = RosterUtils.createRosterHistory(rosterStore);
+        } else {
+            rosterHistory =
+                    RosterUtils.buildRosterHistory(initialState.get().getState().getReadablePlatformState());
+        }
+
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
-        final var roster = buildRoster(addressBook);
+        final var roster = createRoster(addressBook);
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME,
                         Hedera.SWIRLD_NAME,
@@ -301,8 +319,7 @@ public class ServicesMain implements SwirldMain {
                         //  - At restart, the active roster in the saved state
                         //  - At upgrade boundary, the candidate roster in the saved state IF
                         //    that state satisfies conditions (e.g. the roster has been keyed)
-                        RosterUtils.buildRosterHistory(
-                                initialState.get().getState().getReadablePlatformState()))
+                        rosterHistory)
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration)
                 .withKeysAndCerts(keysAndCerts);

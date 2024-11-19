@@ -79,8 +79,10 @@ import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -287,7 +289,7 @@ public class V0490FileSchema extends Schema {
                 .forEach(node -> nodeDetails.add(NodeAddress.newBuilder()
                         .nodeId(node.nodeId())
                         .nodeAccountId(node.accountId())
-                        .nodeCertHash(node.grpcCertificateHash())
+                        .nodeCertHash(getHexStringBytesFromBytes(node.grpcCertificateHash()))
                         .description(node.description())
                         .stake(node.weight())
                         .rsaPubKey(readableKey(getPublicKeyFromCertBytes(
@@ -298,6 +300,11 @@ public class V0490FileSchema extends Schema {
                 NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
     }
 
+    private Bytes getHexStringBytesFromBytes(final Bytes rawBytes) {
+        final String hexString = HexFormat.of().formatHex(rawBytes.toByteArray());
+        return Bytes.wrap(Normalizer.normalize(hexString, Normalizer.Form.NFD).getBytes(UTF_8));
+    }
+
     private Bytes nodeStoreAddressBook(@NonNull final ReadableNodeStore nodeStore) {
         final var nodeAddresses = new ArrayList<NodeAddress>();
         StreamSupport.stream(Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
@@ -306,7 +313,7 @@ public class V0490FileSchema extends Schema {
                 .filter(node -> node != null && !node.deleted())
                 .forEach(node -> nodeAddresses.add(NodeAddress.newBuilder()
                         .nodeId(node.nodeId())
-                        .nodeCertHash(node.grpcCertificateHash())
+                        .nodeCertHash(getHexStringBytesFromBytes(node.grpcCertificateHash()))
                         .nodeAccountId(node.accountId())
                         .serviceEndpoint(node.serviceEndpoint())
                         .build()));

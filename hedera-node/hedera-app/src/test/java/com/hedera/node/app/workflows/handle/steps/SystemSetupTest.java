@@ -69,7 +69,6 @@ import java.time.Instant;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -163,8 +162,7 @@ class SystemSetupTest {
         given(dispatch.config()).willReturn(config);
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.handleContext()).willReturn(handleContext);
-        given(handleContext.dispatchPrecedingTransaction(any(), any(), any(), any()))
-                .willReturn(streamBuilder);
+        given(handleContext.dispatch(any())).willReturn(streamBuilder);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
 
@@ -321,16 +319,11 @@ class SystemSetupTest {
 
     @SuppressWarnings("unchecked")
     private void verifyUpdateDispatch(final long fileNum, final Bytes contents) {
-        verify(handleContext)
-                .dispatchPrecedingTransaction(
-                        argThat(body -> {
-                            final var fileUpdate = body.fileUpdateOrThrow();
-                            return fileUpdate.fileIDOrThrow().fileNum() == fileNum
-                                    && fileUpdate.contents().equals(contents);
-                        }),
-                        eq(StreamBuilder.class),
-                        any(Predicate.class),
-                        eq(SYS_ADMIN_ID));
+        verify(handleContext).dispatch(argThat(options -> {
+            final var fileUpdate = options.body().fileUpdateOrThrow();
+            return fileUpdate.fileIDOrThrow().fileNum() == fileNum
+                    && fileUpdate.contents().equals(contents);
+        }));
     }
 
     private String validPropertyOverrides() {

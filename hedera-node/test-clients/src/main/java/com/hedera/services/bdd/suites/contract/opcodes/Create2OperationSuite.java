@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.explicitBytesOf;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -784,62 +783,58 @@ public class Create2OperationSuite {
         final var salt = unhex(SALT);
         final var otherSalt = unhex("aabbccddee330011aabbccddee330011aabbccddee330011aabbccddee330011");
 
-        return defaultHapiSpec("CanDeleteViaAlias")
-                .given(
-                        newKeyNamed(adminKey),
-                        uploadInitCode(contract),
-                        contractCreate(contract).adminKey(adminKey).payingWith(GENESIS),
-                        contractCall(contract, "buildCreator", salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .via(creation2),
-                        captureOneChildCreate2MetaFor(
-                                "Salting creator", creation2, saltingCreatorMirrorAddr, saltingCreatorAliasAddr),
-                        withOpContext((spec, opLog) -> saltingCreatorLiteralId.set(
-                                asContractString(contractIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get())))),
-                        // https://github.com/hashgraph/hedera-services/issues/2867 (can't
-                        // re-create2 after selfdestruct)
-                        sourcing(() -> contractCallWithFunctionAbi(
-                                        saltingCreatorAliasAddr.get(),
-                                        getABIFor(FUNCTION, "createAndRecreateTest", saltingCreator),
-                                        otherSalt)
-                                .payingWith(GENESIS)
-                                .gas(2_000_000L)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
-                .when(
-                        sourcing(() -> contractUpdate(saltingCreatorAliasAddr.get())
-                                .signedBy(DEFAULT_PAYER, adminKey)
-                                .memo("That's why you always leave a note")),
-                        sourcing(() -> contractCallLocalWithFunctionAbi(
-                                        saltingCreatorAliasAddr.get(),
-                                        getABIFor(FUNCTION, "whatTheFoo", saltingCreator))
-                                .has(resultWith()
-                                        .resultThruAbi(
-                                                getABIFor(FUNCTION, "whatTheFoo", saltingCreator),
-                                                isLiteralResult(new Object[] {BigInteger.valueOf(42)})))),
-                        sourcing(() -> contractDelete(saltingCreatorAliasAddr.get())
-                                .signedBy(DEFAULT_PAYER, adminKey)
-                                .transferContract(saltingCreatorMirrorAddr.get())
-                                .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)),
-                        sourcing(() -> contractDelete(saltingCreatorMirrorAddr.get())
-                                .signedBy(DEFAULT_PAYER, adminKey)
-                                .transferContract(saltingCreatorAliasAddr.get())
-                                .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)))
-                .then(
-                        sourcing(() -> getContractInfo(saltingCreatorMirrorAddr.get())
-                                .has(contractWith().addressOrAlias(saltingCreatorAliasAddr.get()))),
-                        sourcing(() -> contractDelete(saltingCreatorAliasAddr.get())
-                                .signedBy(DEFAULT_PAYER, adminKey)
-                                .transferAccount(FUNDING)
-                                .via(deletion)),
-                        sourcing(() -> getTxnRecord(deletion)
-                                .hasPriority(recordWith().targetedContractId(saltingCreatorLiteralId.get()))),
-                        sourcing(() -> contractDelete(saltingCreatorMirrorAddr.get())
-                                .signedBy(DEFAULT_PAYER, adminKey)
-                                .transferAccount(FUNDING)
-                                .hasPrecheck(CONTRACT_DELETED)),
-                        sourcing(() -> getContractInfo(saltingCreatorMirrorAddr.get())
-                                .has(contractWith().addressOrAlias(saltingCreatorMirrorAddr.get()))));
+        return hapiTest(
+                newKeyNamed(adminKey),
+                uploadInitCode(contract),
+                contractCreate(contract).adminKey(adminKey).payingWith(GENESIS),
+                contractCall(contract, "buildCreator", salt)
+                        .payingWith(GENESIS)
+                        .gas(4_000_000L)
+                        .via(creation2),
+                captureOneChildCreate2MetaFor(
+                        "Salting creator", creation2, saltingCreatorMirrorAddr, saltingCreatorAliasAddr),
+                withOpContext((spec, opLog) -> saltingCreatorLiteralId.set(
+                        asContractString(contractIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get())))),
+                // https://github.com/hashgraph/hedera-services/issues/2867 (can't
+                // re-create2 after selfdestruct)
+                sourcing(() -> contractCallWithFunctionAbi(
+                                saltingCreatorAliasAddr.get(),
+                                getABIFor(FUNCTION, "createAndRecreateTest", saltingCreator),
+                                otherSalt)
+                        .payingWith(GENESIS)
+                        .gas(2_000_000L)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                sourcing(() -> contractUpdate(saltingCreatorAliasAddr.get())
+                        .signedBy(DEFAULT_PAYER, adminKey)
+                        .memo("That's why you always leave a note")),
+                sourcing(() -> contractCallLocalWithFunctionAbi(
+                                saltingCreatorAliasAddr.get(), getABIFor(FUNCTION, "whatTheFoo", saltingCreator))
+                        .has(resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, "whatTheFoo", saltingCreator),
+                                        isLiteralResult(new Object[] {BigInteger.valueOf(42)})))),
+                sourcing(() -> contractDelete(saltingCreatorAliasAddr.get())
+                        .signedBy(DEFAULT_PAYER, adminKey)
+                        .transferContract(saltingCreatorMirrorAddr.get())
+                        .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)),
+                sourcing(() -> contractDelete(saltingCreatorMirrorAddr.get())
+                        .signedBy(DEFAULT_PAYER, adminKey)
+                        .transferContract(saltingCreatorAliasAddr.get())
+                        .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)),
+                sourcing(() -> getContractInfo(saltingCreatorMirrorAddr.get())
+                        .has(contractWith().addressOrAlias(saltingCreatorAliasAddr.get()))),
+                sourcing(() -> contractDelete(saltingCreatorAliasAddr.get())
+                        .signedBy(DEFAULT_PAYER, adminKey)
+                        .transferAccount(FUNDING)
+                        .via(deletion)),
+                sourcing(() -> getTxnRecord(deletion)
+                        .hasPriority(recordWith().targetedContractId(saltingCreatorLiteralId.get()))),
+                sourcing(() -> contractDelete(saltingCreatorMirrorAddr.get())
+                        .signedBy(DEFAULT_PAYER, adminKey)
+                        .transferAccount(FUNDING)
+                        .hasPrecheck(CONTRACT_DELETED)),
+                sourcing(() -> getContractInfo(saltingCreatorMirrorAddr.get())
+                        .has(contractWith().addressOrAlias(saltingCreatorMirrorAddr.get()))));
     }
 
     @SuppressWarnings("java:S5669")
@@ -919,47 +914,42 @@ public class Create2OperationSuite {
 
         final var salt = unhex(SALT);
 
-        return defaultHapiSpec("PriorityAddressIsCreate2ForStaticHapiCalls")
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract).payingWith(GENESIS),
-                        contractCall(contract, "createReturner", salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .via(CREATE_2_TXN),
-                        captureOneChildCreate2MetaFor(RETURNER, CREATE_2_TXN, mirrorAddr, aliasAddr))
-                .when(
-                        sourcing(() -> contractCallLocalWithFunctionAbi(
-                                        mirrorAddr.get(), getABIFor(FUNCTION, "returnThis", RETURNER))
-                                .payingWith(GENESIS)
-                                .exposingTypedResultsTo(results -> {
-                                    LOG.info(RETURNER_REPORTED_LOG_MESSAGE, results);
-                                    staticCallMirrorAns.set((BigInteger) results[0]);
-                                })),
-                        sourcing(() -> contractCallLocalWithFunctionAbi(
-                                        aliasAddr.get(), getABIFor(FUNCTION, "returnThis", RETURNER))
-                                .payingWith(GENESIS)
-                                .exposingTypedResultsTo(results -> {
-                                    LOG.info("Returner reported {} when" + " called with alias" + " address", results);
-                                    staticCallAliasAns.set((BigInteger) results[0]);
-                                })))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            assertEquals(
-                                    staticCallAliasAns.get(),
-                                    staticCallMirrorAns.get(),
-                                    "Static call with mirror address should be same as call" + " with alias");
-                            assertTrue(
-                                    aliasAddr
-                                            .get()
-                                            .endsWith(staticCallAliasAns.get().toString(16)),
-                                    "Alias should get priority over mirror address");
-                        }),
-                        sourcing(() -> contractCallWithFunctionAbi(
-                                        aliasAddr.get(), getABIFor(FUNCTION, "createPlaceholder", RETURNER))
-                                .gas(4_000_000L)
-                                .payingWith(GENESIS)
-                                .via(CREATION)));
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract).payingWith(GENESIS),
+                contractCall(contract, "createReturner", salt)
+                        .payingWith(GENESIS)
+                        .gas(4_000_000L)
+                        .via(CREATE_2_TXN),
+                captureOneChildCreate2MetaFor(RETURNER, CREATE_2_TXN, mirrorAddr, aliasAddr),
+                sourcing(() -> contractCallLocalWithFunctionAbi(
+                                mirrorAddr.get(), getABIFor(FUNCTION, "returnThis", RETURNER))
+                        .payingWith(GENESIS)
+                        .exposingTypedResultsTo(results -> {
+                            LOG.info(RETURNER_REPORTED_LOG_MESSAGE, results);
+                            staticCallMirrorAns.set((BigInteger) results[0]);
+                        })),
+                sourcing(() -> contractCallLocalWithFunctionAbi(
+                                aliasAddr.get(), getABIFor(FUNCTION, "returnThis", RETURNER))
+                        .payingWith(GENESIS)
+                        .exposingTypedResultsTo(results -> {
+                            LOG.info("Returner reported {} when" + " called with alias" + " address", results);
+                            staticCallAliasAns.set((BigInteger) results[0]);
+                        })),
+                withOpContext((spec, opLog) -> {
+                    assertEquals(
+                            staticCallAliasAns.get(),
+                            staticCallMirrorAns.get(),
+                            "Static call with mirror address should be same as call" + " with alias");
+                    assertTrue(
+                            aliasAddr.get().endsWith(staticCallAliasAns.get().toString(16)),
+                            "Alias should get priority over mirror address");
+                }),
+                sourcing(() -> contractCallWithFunctionAbi(
+                                aliasAddr.get(), getABIFor(FUNCTION, "createPlaceholder", RETURNER))
+                        .gas(4_000_000L)
+                        .payingWith(GENESIS)
+                        .via(CREATION)));
     }
 
     @HapiTest

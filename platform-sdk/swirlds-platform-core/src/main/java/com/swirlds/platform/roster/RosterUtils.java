@@ -25,6 +25,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.PbjRecordHasher;
@@ -227,6 +228,29 @@ public final class RosterUtils {
         }
 
         return new RosterHistory(roundRosterPairList, rosterMap);
+    }
+
+    /**
+     * Creates the Roster History to be used by Platform.
+     *
+     * @param rosterStore the roster store containing the active rosters.
+     * @return the roster history if roster store contains active rosters, otherwise IllegalStateException is thrown.
+     */
+    @NonNull
+    public static RosterHistory createRosterHistory(@NonNull final ReadableRosterStore rosterStore) {
+        final var roundRosterPairs = rosterStore.getRosterHistory();
+        // If there exists active rosters in the roster state.
+        if (roundRosterPairs != null) {
+            final var rosterMap = roundRosterPairs.stream()
+                    .collect(Collectors.toMap(
+                            RoundRosterPair::activeRosterHash, pair -> rosterStore.get(pair.activeRosterHash())));
+
+            return new RosterHistory(roundRosterPairs, rosterMap);
+        } else {
+            // If there is no roster state content, this is a fatal error: The migration did not happen on software
+            // upgrade.
+            throw new IllegalStateException("No active rosters found in the roster state");
+        }
     }
 
     /**
