@@ -381,14 +381,15 @@ public class HandleWorkflow {
      * @return the stream of records
      */
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
-        var schedulingConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
+        final var schedulingConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 if (streamMode != BLOCKS) {
                     final var lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
-                    // This updates consTimeOfLastHandledTxn as a side-effect
+                    // This updates consTimeOfLastHandledTxn as a side effect
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                     if (streamMode == RECORDS && !schedulingConfig.longTermEnabled()) {
+                        // If relying on last-handled time to trigger interval processing, do so now
                         processInterval(userTxn, lastRecordManagerTime);
                     }
                 }
@@ -462,7 +463,7 @@ public class HandleWorkflow {
                 var lastRecordManagerTime = Instant.EPOCH;
                 if (streamMode != BLOCKS) {
                     lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
-                    // This updates consTimeOfLastHandledTxn as a side-effect
+                    // This updates consTimeOfLastHandledTxn as a side effect
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
                 if (!schedulingConfig.longTermEnabled()) {
@@ -742,7 +743,7 @@ public class HandleWorkflow {
                 if (streamMode != BLOCKS) {
                     final var records =
                             ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
-                    blockRecordManager.endUserTransaction(records.stream(), state);
+                    blockRecordManager.endUserTransaction(records.stream(), scheduleUserTnx.state());
                 }
                 if (streamMode != RECORDS) {
                     handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
