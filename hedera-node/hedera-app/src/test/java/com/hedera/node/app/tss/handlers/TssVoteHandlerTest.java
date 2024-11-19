@@ -38,7 +38,7 @@ import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,9 +127,9 @@ class TssVoteHandlerTest {
     @Test
     void hasReachedThresholdReturnsFalseWhenThresholdIsNotMet() {
         // Setup in-memory data
-        final RosterEntry rosterEntry1 = new RosterEntry(1L, 1L, null, null, List.of());
-        final RosterEntry rosterEntry2 = new RosterEntry(2L, 4L, null, null, List.of());
-        final RosterEntry rosterEntry3 = new RosterEntry(3L, 2L, null, null, List.of());
+        final RosterEntry rosterEntry1 = new RosterEntry(1L, 1L, null, List.of());
+        final RosterEntry rosterEntry2 = new RosterEntry(2L, 4L, null, List.of());
+        final RosterEntry rosterEntry3 = new RosterEntry(3L, 2L, null, List.of());
         final Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2, rosterEntry3));
         final TssVoteTransactionBody voteTransactionBody =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);
@@ -162,9 +162,9 @@ class TssVoteHandlerTest {
     @Test
     void hasReachedThresholdReturnsTrueWhenThresholdIsMet() {
         // Setup in-memory data
-        final RosterEntry rosterEntry1 = new RosterEntry(1L, 1L, null, null, List.of());
-        final RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, null, List.of());
-        final RosterEntry rosterEntry3 = new RosterEntry(3L, 3L, null, null, List.of());
+        final RosterEntry rosterEntry1 = new RosterEntry(1L, 1L, null, List.of());
+        final RosterEntry rosterEntry2 = new RosterEntry(2L, 2L, null, List.of());
+        final RosterEntry rosterEntry3 = new RosterEntry(3L, 3L, null, List.of());
         final Roster roster = new Roster(List.of(rosterEntry1, rosterEntry2, rosterEntry3));
         final TssVoteTransactionBody voteTransactionBody =
                 new TssVoteTransactionBody(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);

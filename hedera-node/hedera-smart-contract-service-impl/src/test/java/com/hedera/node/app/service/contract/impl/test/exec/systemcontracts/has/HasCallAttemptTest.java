@@ -72,7 +72,6 @@ class HasCallAttemptTest extends CallTestBase {
         final var subject = new HasCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
-                EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
                 DEFAULT_CONFIG,
@@ -90,7 +89,6 @@ class HasCallAttemptTest extends CallTestBase {
         final var input = TestHelpers.bytesForRedirectAccount(new byte[4], NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HasCallAttempt(
                 input,
-                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
@@ -115,7 +113,6 @@ class HasCallAttemptTest extends CallTestBase {
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HasCallAttempt(
                 input,
-                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
@@ -143,7 +140,6 @@ class HasCallAttemptTest extends CallTestBase {
         final var subject = new HasCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
-                EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
                 DEFAULT_CONFIG,
@@ -169,7 +165,6 @@ class HasCallAttemptTest extends CallTestBase {
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HasCallAttempt(
                 input,
-                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
@@ -197,7 +192,6 @@ class HasCallAttemptTest extends CallTestBase {
                 .array());
         final var subject = new HasCallAttempt(
                 input,
-                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),

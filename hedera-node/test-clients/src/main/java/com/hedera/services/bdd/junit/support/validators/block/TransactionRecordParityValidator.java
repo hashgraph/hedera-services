@@ -55,22 +55,26 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
     private static final Logger logger = LogManager.getLogger(TransactionRecordParityValidator.class);
 
     private final BlockUnitSplit blockUnitSplit = new BlockUnitSplit();
-    private final BlockTransactionalUnitTranslator translator = new BlockTransactionalUnitTranslator();
+    private final BlockTransactionalUnitTranslator translator;
 
     public static final Factory FACTORY = new Factory() {
-        @NonNull
-        @Override
-        public TransactionRecordParityValidator create(@NonNull final HapiSpec spec) {
-            return new TransactionRecordParityValidator();
-        }
-
         @Override
         public boolean appliesTo(@NonNull final HapiSpec spec) {
             requireNonNull(spec);
             // Embedded networks don't have saved states or a Merkle tree to validate hashes against
             return spec.targetNetworkOrThrow().type() == SUBPROCESS_NETWORK;
         }
+
+        @Override
+        public @NonNull TransactionRecordParityValidator create(@NonNull final HapiSpec spec) {
+            return new TransactionRecordParityValidator(
+                    spec.targetNetworkOrThrow().nodes().size());
+        }
     };
+
+    public TransactionRecordParityValidator(final int networkSize) {
+        translator = new BlockTransactionalUnitTranslator(networkSize);
+    }
 
     /**
      * A main method to run a standalone validation of the block stream against the record stream in this project.
@@ -89,7 +93,7 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
                 node0Data.resolve("recordStreams/record0.0.3").toAbsolutePath().normalize();
         final var records = StreamFileAccess.STREAM_FILE_ACCESS.readStreamDataFrom(recordsLoc.toString(), "sidecar");
 
-        final var validator = new TransactionRecordParityValidator();
+        final var validator = new TransactionRecordParityValidator(4);
         validator.validateBlockVsRecords(blocks, records);
     }
 

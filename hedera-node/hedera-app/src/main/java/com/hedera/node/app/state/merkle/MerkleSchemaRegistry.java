@@ -39,9 +39,16 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.disk.OnDiskKey;
@@ -54,13 +61,7 @@ import com.swirlds.state.merkle.queue.QueueNode;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import com.swirlds.state.merkle.singleton.ValueLeaf;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -81,7 +82,7 @@ import org.apache.logging.log4j.Logger;
  * then registers each and every {@link Schema} that it has. Each {@link Schema} is associated with
  * a {@link SemanticVersion}.
  *
- * <p>The Hedera application then calls {@code com.hedera.node.app.Hedera#onMigrate(MerkleStateRoot, HederaSoftwareVersion, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * <p>The Hedera application then calls {@code com.hedera.node.app.Hedera#onMigrate(MerkleStateRoot, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleStateRoot}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.
@@ -178,7 +179,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion The current version. Never null. Must be newer than {@code
      * previousVersion}.
-     * @param config The system configuration to use at the time of migration
+     * @param nodeConfiguration The system configuration to use at the time of migration
+     * @param platformConfiguration The platform configuration to use for subsequent object initializations
      * @param genesisNetworkInfo The network information to use at the time of migration
      * @param sharedValues A map of shared values for cross-service migration patterns
      * @param migrationStateChanges Tracker for state changes during migration
@@ -191,7 +193,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final State state,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final SemanticVersion currentVersion,
-            @NonNull final Configuration config,
+            @NonNull final Configuration nodeConfiguration,
+            @NonNull final Configuration platformConfiguration,
             @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore,
@@ -199,7 +202,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final MigrationStateChanges migrationStateChanges) {
         requireNonNull(state);
         requireNonNull(currentVersion);
-        requireNonNull(config);
+        requireNonNull(nodeConfiguration);
+        requireNonNull(platformConfiguration);
         requireNonNull(metrics);
         requireNonNull(sharedValues);
         requireNonNull(migrationStateChanges);
@@ -224,7 +228,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 () -> HapiUtils.toString(latestVersion));
         for (final var schema : schemas) {
             final var applications =
-                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, config);
+                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, nodeConfiguration);
             logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), applications);
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
@@ -248,8 +252,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                 && previousVersion != null
                                 && alreadyIncludesStateDefs(previousVersion, s.getVersion()))
                         .toList();
-                final var redefinedWritableStates =
-                        applyStateDefinitions(schema, schemasAlreadyInState, config, metrics, stateRoot);
+                final var redefinedWritableStates = applyStateDefinitions(
+                        schema, schemasAlreadyInState, nodeConfiguration, platformConfiguration, metrics, stateRoot);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
@@ -259,7 +263,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final var migrationContext = new MigrationContextImpl(
                     previousStates,
                     newStates,
-                    config,
+                    nodeConfiguration,
                     genesisNetworkInfo,
                     entityIdStore,
                     previousVersion,
@@ -283,12 +287,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     private RedefinedWritableStates applyStateDefinitions(
             @NonNull final Schema schema,
             @NonNull final List<Schema> schemasAlreadyInState,
-            @NonNull final Configuration configuration,
+            @NonNull final Configuration nodeConfiguration,
+            @NonNull final Configuration platformConfiguration,
             @NonNull final Metrics metrics,
             @NonNull final MerkleStateRoot stateRoot) {
         // Create the new states (based on the schema) which, thanks to the above, does not
         // expand the set of states that the migration code will see
-        schema.statesToCreate(configuration).stream()
+        schema.statesToCreate(nodeConfiguration).stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
                     final var stateKey = def.stateKey();
@@ -339,12 +344,18 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                             md.stateDefinition().valueCodec());
                                     // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                                     // PREFER_DISK_BASED_INDICES = false
-                                    final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
-                                            .maxNumberOfKeys(def.maxKeysHint());
+                                    final MerkleDbConfig merkleDbConfig =
+                                            platformConfiguration.getConfigData(MerkleDbConfig.class);
+                                    final var tableConfig = new MerkleDbTableConfig(
+                                            (short) 1,
+                                            DigestType.SHA_384,
+                                            def.maxKeysHint(),
+                                            merkleDbConfig.hashesRamToDiskThreshold());
                                     final var label = StateUtils.computeLabel(serviceName, stateKey);
-                                    final var dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
-                                    final var virtualMap =
-                                            new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder);
+                                    final var dsBuilder =
+                                            new MerkleDbDataSourceBuilder(tableConfig, platformConfiguration);
+                                    final var virtualMap = new VirtualMap<>(
+                                            label, keySerializer, valueSerializer, dsBuilder, platformConfiguration);
                                     return virtualMap;
                                 },
                                 // Register the metrics for the virtual map if they are available.

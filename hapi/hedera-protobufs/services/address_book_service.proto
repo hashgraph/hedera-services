@@ -33,7 +33,7 @@ import "transaction.proto";
  * but each node operator may update their own operational attributes without
  * additional approval, reducing overhead for routine operations.
  *
- * All operations are `privileged operations` and require governing council
+ * Most operations are `privileged operations` and require governing council
  * approval.
  *
  * ### For a node creation transaction.
@@ -83,29 +83,19 @@ import "transaction.proto";
  *      be active in the network following this upgrade.
  *
  * ### For a node update transaction.
- * - The node operator or Hedera council representative SHALL create an
- *   `updateNode` transaction.
- *    - If the node operator creates the transaction
- *       - The node operator MUST sign this transaction with the active `key`
- *         for the account assigned as the current "node account".
- *       - If the transaction changes the value of the "node account" the
- *         node operator MUST _also_ sign this transaction with the active `key`
- *         for the account to be assigned as the new "node account".
- *       - The node operator MUST deliver the signed transaction to the Hedera
- *         council representative.
- *    - The Hedera council representative SHALL arrange for council members to
- *      review and sign the transaction.
- *    - Once sufficient council members have signed the transaction, the
- *      Hedera council representative SHALL submit the transaction to the
- *      network.
+ * - The node operator SHALL create an `updateNode` transaction.
+ *    - The node operator MUST sign this transaction with the active `key`
+ *      assigned as the `admin_key`.
+ *    - The node operator SHALL submit the transaction to the
+ *      network.  Hedera council approval SHALL NOT be sought for this
+ *      transaction
  * - Upon receipt of a valid and signed node update transaction the network
  *   software SHALL
- *    - Validate the threshold signature for the Hedera governing council
- *    - Validate the signature of the active `key` for the account to be
- *      assigned as the "node account".
  *    - If the transaction modifies the value of the "node account",
- *       - Validate the signature of the _new_ `key` for the account to be
- *         assigned as the new "node account".
+ *       - Validate the signature of the active `key` for the account
+ *         assigned as the _current_ "node account".
+ *       - Validate the signature of the active `key` for the account to be
+ *         assigned as the _new_ "node account".
  *    - Modify the node information held in network state with the changes
  *      requested in the update transaction. The node changes SHALL NOT be
  *      applied to network configuration, and SHALL NOT affect network
@@ -147,7 +137,7 @@ service AddressBookService {
      * This transaction, once complete, SHALL modify the identified consensus
      * node state as requested.
      * <p>
-     * Hedera governing council authorization is REQUIRED for this transaction.
+     * This transaction is authorized by the node operator
      */
     rpc updateNode (proto.Transaction) returns (proto.TransactionResponse);
 }

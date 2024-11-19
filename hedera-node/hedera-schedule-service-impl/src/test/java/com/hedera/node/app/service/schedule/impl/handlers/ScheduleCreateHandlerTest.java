@@ -151,7 +151,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     void handleRejectsNonWhitelist() throws HandleException, PreCheckException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
-        given(keyVerifier.signingCryptoKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
+        given(keyVerifier.authorizingSimpleKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
         for (final Schedule next : listOfScheduledOptions) {
             final TransactionBody createTransaction = next.originalCreateTransaction();
             final TransactionID createId = createTransaction.transactionID();
@@ -213,7 +213,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             // all keys are "valid" with this mock setup
             given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                     .willReturn(new SignatureVerificationImpl(nullKey, null, true));
-            given(keyVerifier.signingCryptoKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
+            given(keyVerifier.authorizingSimpleKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
             final int startCount = scheduleMapById.size();
             if (configuredWhitelist.contains(functionType)) {
                 subject.handle(mockContext);
@@ -256,7 +256,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         given(mockContext.entityNumGenerator()).willReturn(entityNumGenerator);
         given(entityNumGenerator.newEntityNum()).willReturn(nextEntityId);
         given(mockContext.allKeysForTransaction(Mockito.any(), Mockito.any())).willReturn(testChildKeys);
-        // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
+        // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(testChildKeys));
     }

@@ -36,13 +36,13 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
@@ -94,6 +94,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             new ServicesSoftwareVersion(CURRENT_VERSION),
                             VERSIONED_CONFIG,
+                            VERSIONED_CONFIG,
                             networkInfo,
                             mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
@@ -108,19 +109,21 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             null,
                             VERSIONED_CONFIG,
+                            VERSIONED_CONFIG,
                             networkInfo,
                             mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
-        void versionedConfigRequired() {
+        void configRequired2() {
             final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
                             merkleTree,
                             servicesRegistry,
                             null,
                             new ServicesSoftwareVersion(CURRENT_VERSION),
+                            null,
                             null,
                             networkInfo,
                             mock(Metrics.class)))
@@ -135,6 +138,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             servicesRegistry,
                             null,
                             new ServicesSoftwareVersion(CURRENT_VERSION),
+                            VERSIONED_CONFIG,
                             VERSIONED_CONFIG,
                             networkInfo,
                             null))
@@ -175,6 +179,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                 null,
                 new ServicesSoftwareVersion(
                         SemanticVersion.newBuilder().major(2).build()),
+                VERSIONED_CONFIG,
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));
@@ -281,6 +286,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                 null,
                 new ServicesSoftwareVersion(
                         SemanticVersion.newBuilder().major(1).build()),
+                VERSIONED_CONFIG,
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));

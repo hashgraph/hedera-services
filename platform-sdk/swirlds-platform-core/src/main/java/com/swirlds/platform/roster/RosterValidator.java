@@ -74,13 +74,6 @@ public final class RosterValidator {
                 throw new InvalidRosterException("gossipCaCertificate is empty for NodeId " + re.nodeId());
             }
 
-            if (re.tssEncryptionKey().length() == 0) {
-                // This is a valid case for an un-keyed roster.
-            } else {
-                // May want to also check if the bytes represent a valid key.
-                // For now, assume that a non-zero length is valid.
-            }
-
             if (re.gossipEndpoint().isEmpty()) {
                 throw new InvalidRosterException("gossipEndpoint is empty for NodeId " + re.nodeId());
             }

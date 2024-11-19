@@ -209,9 +209,9 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
         allRunFor(
                 spec,
                 Stream.of(
+                                setupScenarioMocks(),
                                 enableTss(),
                                 submitDabOps(),
-                                setupScenarioMocks(),
                                 crossStakePeriodBoundary(),
                                 simulateOtherNodeTssMessages())
                         .flatMap(Function.identity())

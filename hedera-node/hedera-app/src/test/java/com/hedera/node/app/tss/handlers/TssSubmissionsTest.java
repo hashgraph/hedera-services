@@ -38,8 +38,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -80,11 +80,15 @@ class TssSubmissionsTest {
     @Mock
     private AppContext.Gossip gossip;
 
+    @Mock
+    private AppContext appContext;
+
     private TssSubmissions subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TssSubmissions(gossip, ForkJoinPool.commonPool());
+        given(appContext.gossip()).willReturn(gossip);
+        subject = new TssSubmissions(appContext, ForkJoinPool.commonPool());
         given(context.consensusNow()).willReturn(CONSENSUS_NOW);
         given(context.networkInfo()).willReturn(networkInfo);
         given(networkInfo.selfNodeInfo()).willReturn(nodeInfo);

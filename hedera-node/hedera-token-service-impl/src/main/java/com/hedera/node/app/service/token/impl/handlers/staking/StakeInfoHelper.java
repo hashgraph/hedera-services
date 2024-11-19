@@ -40,8 +40,8 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -190,10 +190,10 @@ public class StakeInfoHelper {
      * Also clears any pending rewards from the {@link NetworkStakingRewards} singleton for nodes that are no
      * longer in the address book.
      *
-     * @param context the token context
-     * @param networkInfo the list of node infos from the address book
-     * @param config the configuration for the node
-     * @param infoStore the writable store for the staking info
+     * @param context      the token context
+     * @param networkInfo  the list of node infos from the address book
+     * @param config       the configuration for the node
+     * @param infoStore    the writable store for the staking info
      * @param rewardsStore the store for the staking rewards
      */
     public StreamBuilder adjustPostUpgradeStakes(

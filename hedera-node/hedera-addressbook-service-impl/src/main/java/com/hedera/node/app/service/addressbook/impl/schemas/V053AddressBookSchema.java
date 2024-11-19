@@ -36,10 +36,10 @@ import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
@@ -108,9 +108,9 @@ public class V053AddressBookSchema extends Schema {
             if (nodeDetailMap != null) {
                 nodeDetail = nodeDetailMap.get(nodeInfo.nodeId());
                 if (nodeDetail != null) {
-                    nodeBuilder
-                            .serviceEndpoint(nodeDetail.serviceEndpoint())
-                            .grpcCertificateHash(nodeDetail.nodeCertHash());
+                    final Bytes hashBytes =
+                            Bytes.fromHex(nodeDetail.nodeCertHash().asUtf8String());
+                    nodeBuilder.serviceEndpoint(nodeDetail.serviceEndpoint()).grpcCertificateHash(hashBytes);
                 }
             }
             writableNodes.put(
