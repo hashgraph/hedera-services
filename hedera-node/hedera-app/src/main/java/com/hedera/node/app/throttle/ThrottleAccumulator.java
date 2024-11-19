@@ -509,7 +509,9 @@ public class ThrottleAccumulator {
         if (!areLongTermSchedulesEnabled) {
             return false;
         } else {
-            log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet implemented.");
+            // TODO : throttles will be implemented in following PRs
+            // log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet
+            // implemented.");
             // deeply check throttle only in the frontend throttle
             if (throttleType != FRONTEND_THROTTLE) {
                 return false;
