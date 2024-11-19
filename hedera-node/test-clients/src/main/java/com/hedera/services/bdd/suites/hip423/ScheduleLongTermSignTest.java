@@ -206,56 +206,50 @@ public class ScheduleLongTermSignTest {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    // todo check if this behaviour is still desired
-    //    @HapiTest
-    //    @Order(3)
-    //    final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
-    //        var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
-    //        var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
-    //        var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
-    //        var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF,
-    // OFF)));
-    //        String sender = "X";
-    //        String receiver = "Y";
-    //        String schedule = "Z";
-    //        String senderKey = "sKey";
-    //
-    //        return defaultHapiSpec("ReductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry")
-    //                .given(
-    //                        newKeyNamed(senderKey).shape(senderShape),
-    //                        keyFromMutation(NEW_SENDER_KEY,
-    // senderKey).changing(this::lowerThirdNestedThresholdSigningReq),
-    //                        cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
-    //                        cryptoCreate(receiver).balance(0L),
-    //                        scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-    //                                .payingWith(DEFAULT_PAYER)
-    //                                .withRelativeExpiry(SENDER_TXN, 8)
-    //                                .recordingScheduledTxn()
-    //                                .alsoSigningWith(sender)
-    //                                .sigControl(ControlForKey.forKey(senderKey, sigOne)),
-    //                        getAccountBalance(receiver).hasTinyBars(0L))
-    //                .when(
-    //                        scheduleSign(schedule)
-    //                                .alsoSigningWith(NEW_SENDER_KEY)
-    //                                .sigControl(forKey(NEW_SENDER_KEY, firstSigThree)),
-    //                        getAccountBalance(receiver).hasTinyBars(0L),
-    //                        cryptoUpdate(sender).key(NEW_SENDER_KEY),
-    //                        getAccountBalance(receiver).hasTinyBars(0L))
-    //                .then(
-    //                        getScheduleInfo(schedule)
-    //                                .hasScheduleId(schedule)
-    //                                .hasWaitForExpiry(false)
-    //                                .isNotExecuted()
-    //                                .isNotDeleted()
-    //                                .hasRelativeExpiry(SENDER_TXN, 8)
-    //                                .hasRecordedScheduledTxn(),
-    //                        sleepFor(TimeUnit.SECONDS.toMillis(6)),
-    //                        cryptoCreate("foo"),
-    //                        scheduleSign(schedule)
-    //                                .alsoSigningWith(NEW_SENDER_KEY)
-    //                                .sigControl(forKey(NEW_SENDER_KEY, sigTwo)),
-    //                        getAccountBalance(receiver).hasTinyBars(1L));
-    //    }
+    @HapiTest
+    @Order(3)
+    final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
+        var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
+        var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
+        var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String senderKey = "sKey";
+
+        return defaultHapiSpec("ReductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry")
+                .given(
+                        newKeyNamed(senderKey).shape(senderShape),
+                        keyFromMutation(NEW_SENDER_KEY, senderKey).changing(this::lowerThirdNestedThresholdSigningReq),
+                        cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
+                        cryptoCreate(receiver).balance(0L),
+                        scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
+                                .payingWith(DEFAULT_PAYER)
+                                .withRelativeExpiry(SENDER_TXN, 5)
+                                .recordingScheduledTxn()
+                                .alsoSigningWith(sender)
+                                .sigControl(ControlForKey.forKey(senderKey, sigOne)),
+                        getAccountBalance(receiver).hasTinyBars(0L))
+                .when(
+                        scheduleSign(schedule)
+                                .alsoSigningWith(NEW_SENDER_KEY)
+                                .sigControl(forKey(NEW_SENDER_KEY, firstSigThree)),
+                        getAccountBalance(receiver).hasTinyBars(0L),
+                        cryptoUpdate(sender).key(NEW_SENDER_KEY),
+                        getAccountBalance(receiver).hasTinyBars(0L))
+                .then(
+                        getScheduleInfo(schedule)
+                                .hasScheduleId(schedule)
+                                .hasWaitForExpiry(false)
+                                .isNotExecuted()
+                                .isNotDeleted()
+                                .hasRelativeExpiry(SENDER_TXN, 5)
+                                .hasRecordedScheduledTxn(),
+                        sleepFor(TimeUnit.SECONDS.toMillis(6)),
+                        cryptoCreate("foo"),
+                        sleepFor(500),
+                        getAccountBalance(receiver).hasTinyBars(1L));
+    }
 
     @HapiTest
     @Order(4)
