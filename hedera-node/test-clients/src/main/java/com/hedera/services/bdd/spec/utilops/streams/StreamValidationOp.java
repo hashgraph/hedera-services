@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForFrozenNetwork;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
@@ -46,6 +47,7 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -114,8 +116,9 @@ public class StreamValidationOp extends UtilOp {
         allRunFor(
                 spec,
                 freezeOnly().payingWith(GENESIS).startingIn(2).seconds(),
+                waitForFrozenNetwork(Duration.ofSeconds(30)),
                 // Wait for the final stream files to be created
-                sleepFor(10 * BUFFER_MS));
+                sleepFor(4 * BUFFER_MS));
         readMaybeBlockStreamsFor(spec)
                 .ifPresentOrElse(
                         blocks -> {
