@@ -48,6 +48,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
@@ -67,14 +68,18 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordSource;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.handlers.TssSubmissions;
+import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -90,6 +95,7 @@ import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
@@ -99,6 +105,8 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -139,11 +147,13 @@ public class HandleWorkflow {
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
     private final AddressBookHelper addressBookHelper;
+    private TssSubmissions tssSubmissions;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
     private TssBaseService tssBaseService;
     private final ConfigProvider configProvider;
+    private KeysAndCerts keysAndCerts;
 
     @Inject
     public HandleWorkflow(
@@ -168,7 +178,8 @@ public class HandleWorkflow {
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
             final AddressBookHelper addressBookHelper,
-            @NonNull final TssBaseService tssBaseService) {
+            @NonNull final TssBaseService tssBaseService,
+            @NonNull final TssSubmissions tssSubmissions) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -195,6 +206,7 @@ public class HandleWorkflow {
                 .streamMode();
         this.addressBookHelper = requireNonNull(addressBookHelper);
         this.tssBaseService = requireNonNull(tssBaseService);
+        this.tssSubmissions = requireNonNull(tssSubmissions);
     }
 
     /**
@@ -363,7 +375,7 @@ public class HandleWorkflow {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                     if (streamMode == RECORDS) {
                         // If relying on last-handled time to trigger interval processing, do so now
-                        processInterval(userTxn, lastRecordManagerTime);
+                        processInterval(userTxn, lastRecordManagerTime, null);
                     }
                 }
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
@@ -424,9 +436,10 @@ public class HandleWorkflow {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
                 if (streamMode == RECORDS) {
-                    processInterval(userTxn, lastRecordManagerTime);
+                    processInterval(userTxn, lastRecordManagerTime, dispatch.handleContext());
                 } else {
-                    if (processInterval(userTxn, blockStreamManager.lastIntervalProcessTime())) {
+                    if (processInterval(
+                            userTxn, blockStreamManager.lastIntervalProcessTime(), dispatch.handleContext())) {
                         blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
                     }
                 }
@@ -599,7 +612,8 @@ public class HandleWorkflow {
      * @param lastProcessTime an upper bound on the last time that time-based events were processed
      * @return true if the interval was processed
      */
-    private boolean processInterval(@NonNull final UserTxn userTxn, final Instant lastProcessTime) {
+    private boolean processInterval(
+            @NonNull final UserTxn userTxn, final Instant lastProcessTime, @Nullable HandleContext handleContext) {
         // If we have never processed an interval, treat this time as the last processed time
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
@@ -611,10 +625,46 @@ public class HandleWorkflow {
                             userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+            if (handleContext != null) {
+                processTssEncryptionKeyChecks(userTxn, handleContext);
+            }
             userTxn.stack().commitSystemStateChanges();
             return true;
         }
         return false;
+    }
+
+    private void processTssEncryptionKeyChecks(
+            @NonNull final UserTxn userTxn, @NonNull final HandleContext handleContext) {
+        final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
+        final var tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
+        final var tssEncryptionKeyTransactionBody =
+                tssStore.getTssEncryptionKey(networkInfo.selfNodeInfo().nodeId());
+        Duration timeSinceLastSubmission =
+                Duration.between(tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission(), userTxn.consensusNow());
+        final var tssEncryptionKeyRetryDelay =
+                handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeyRetryDelay();
+        final var tssEncryptionKeySubmissionRetries =
+                handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeySubmissionRetries();
+        if ((tssEncryptionKeyTransactionBody == null
+                        || keysAndCerts.publicTssEncryptionKey().toBytes()
+                                != tssEncryptionKeyTransactionBody
+                                        .publicTssEncryptionKey()
+                                        .toByteArray())
+                && (timeSinceLastSubmission == null
+                        || timeSinceLastSubmission.compareTo(tssEncryptionKeyRetryDelay) > 0)) {
+            if (tssSubmissions.getTssEncryptionKeySubmissionAttempts() >= tssEncryptionKeySubmissionRetries) {
+                logger.error("Failed to submit TSS Encryption public key after " + tssEncryptionKeySubmissionRetries
+                        + " attempts");
+                throw new IllegalStateException("Failed to submit TSS Encryption public key after "
+                        + tssEncryptionKeySubmissionRetries + " attempts");
+            }
+            TssEncryptionKeyTransactionBody tssEncryptionKey = TssEncryptionKeyTransactionBody.newBuilder()
+                    .publicTssEncryptionKey(
+                            Bytes.wrap(keysAndCerts.publicTssEncryptionKey().toBytes()))
+                    .build();
+            tssSubmissions.submitTssEncryptionKey(tssEncryptionKey, handleContext);
+        }
     }
 
     /**
@@ -633,5 +683,13 @@ public class HandleWorkflow {
                 .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
                 .get();
         return !requireNonNull(blockInfo).migrationRecordsStreamed() ? POST_UPGRADE_TRANSACTION : ORDINARY_TRANSACTION;
+    }
+
+    /**
+     * Sets the keys and certificates for the handle workflow.
+     * @param keysAndCerts the keys and certificates
+     */
+    public void setKeysAndCerts(KeysAndCerts keysAndCerts) {
+        this.keysAndCerts = keysAndCerts;
     }
 }

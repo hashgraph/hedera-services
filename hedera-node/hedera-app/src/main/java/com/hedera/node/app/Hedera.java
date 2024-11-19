@@ -126,6 +126,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -350,7 +351,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
-            @NonNull final Function<AppContext, TssBaseService> tssBaseServiceFactory) {
+            @NonNull final Function<AppContext, TssBaseService> tssBaseServiceFactory,
+            @Nullable final KeysAndCerts keysAndCerts) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         this.serviceMigrator = requireNonNull(migrator);
@@ -423,6 +425,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             logger.error("Failed to register " + MerkleStateRoot.class + " factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
         }
+        this.handleWorkflow().setKeysAndCerts(keysAndCerts);
     }
 
     /**

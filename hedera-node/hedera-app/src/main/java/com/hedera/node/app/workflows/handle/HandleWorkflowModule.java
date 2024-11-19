@@ -26,9 +26,11 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkAdminHandle
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.handlers.TssHandlers;
+import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.CacheConfig;
@@ -55,6 +57,12 @@ public interface HandleWorkflowModule {
     @Singleton
     static Supplier<TssHandlers> provideTssHandlers(@NonNull final TssBaseService tssBaseService) {
         return tssBaseService::tssHandlers;
+    }
+
+    @Provides
+    @Singleton
+    static TssSubmissions provideTssSubmissions(AppContext appContext, Executor submissionExecutor) {
+        return new TssSubmissions(appContext, submissionExecutor);
     }
 
     @Provides

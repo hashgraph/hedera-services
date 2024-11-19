@@ -63,6 +63,9 @@ public class TssSubmissions {
      */
     private final AtomicInteger nextOffset = new AtomicInteger(0);
 
+    private Instant lastSuccessfulTssEncryptionKeySubmission;
+    private int tssEncryptionKeySubmissionAttempts = 0;
+
     private final AppContext appContext;
 
     /**
@@ -166,6 +169,10 @@ public class TssSubmissions {
                             body = builder.build();
                             try {
                                 appContext.gossip().submit(body);
+                                if (body.hasTssEncryptionKey()) {
+                                    lastSuccessfulTssEncryptionKeySubmission = validStartTime.get();
+                                    tssEncryptionKeySubmissionAttempts++;
+                                }
                                 return;
                             } catch (IllegalArgumentException iae) {
                                 failureReason = iae.getMessage();
@@ -212,5 +219,17 @@ public class TssSubmissions {
                 .nodeAccountID(selfAccountId)
                 .transactionValidDuration(validDuration)
                 .transactionID(new TransactionID(asTimestamp(validStartTime), selfAccountId, false, 0));
+    }
+
+    /**
+     * Returns the last successful TSS encryption key submission time.
+     * @return the last successful TSS encryption key submission time
+     */
+    public Instant getLastSuccessfulTssEncryptionKeySubmission() {
+        return lastSuccessfulTssEncryptionKeySubmission;
+    }
+
+    public int getTssEncryptionKeySubmissionAttempts() {
+        return tssEncryptionKeySubmissionAttempts;
     }
 }

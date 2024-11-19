@@ -64,6 +64,7 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -118,7 +119,8 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
-                        new NoOpMetrics()));
+                        new NoOpMetrics()),
+                null);
     }
 
     /**
@@ -222,7 +224,7 @@ public class ServicesMain implements SwirldMain {
         setupGlobalMetrics(configuration);
         metrics = getMetricsProvider().createPlatformMetrics(selfId);
 
-        final Hedera hedera = newHedera();
+        final Hedera hedera = newHedera(keysAndCerts);
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
@@ -415,7 +417,7 @@ public class ServicesMain implements SwirldMain {
         }
     }
 
-    private static Hedera newHedera() {
+    private static Hedera newHedera(@NonNull final KeysAndCerts keysAndCerts) {
         return new Hedera(
                 ConstructableRegistry.getInstance(),
                 ServicesRegistryImpl::new,
@@ -427,6 +429,7 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
-                        metrics));
+                        metrics),
+                keysAndCerts);
     }
 }
