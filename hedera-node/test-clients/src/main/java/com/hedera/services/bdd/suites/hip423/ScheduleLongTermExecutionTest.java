@@ -57,7 +57,6 @@ import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateF
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.ORIG_FILE;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.PAYING_ACCOUNT_2;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED;
-import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SCHEDULED_TRANSACTION_MUST_SUCCEED;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SCHEDULE_CREATE_FEE;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_1;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_2;
@@ -74,8 +73,10 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_TRANSFER_LIST;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.scheduleFakeUpgrade;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
+import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -83,12 +84,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLED_AT_CONSENSUS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -645,11 +649,6 @@ public class ScheduleLongTermExecutionTest {
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                        // todo check white list here?
-                        //                        overriding(
-                        //                                SCHEDULING_WHITELIST,
-                        //
-                        // HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)),
                         getAccountBalance(PAYING_ACCOUNT)
                                 .hasTinyBars(spec ->
                                         bal -> bal < 1000000000000L ? Optional.empty() : Optional.of("didnt change")),
@@ -1114,8 +1113,7 @@ public class ScheduleLongTermExecutionTest {
                         // for freeze
                         // and the custom payer is not exempt from throttles like and admin
                         // user would be
-                        // todo future throttle is not implemented yet
-                        // .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
+//                         .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
                         );
     }
 
@@ -1269,179 +1267,79 @@ public class ScheduleLongTermExecutionTest {
                                 .payingWith(PAYING_ACCOUNT)
                                 .waitForExpiry()
                                 .withRelativeExpiry(PAYER_TXN, 4)
-                        // future throttles will be exceeded because there is no throttle
-                        // for system delete
-                        // and the custom payer is not exempt from throttles like and admin
-                        // user would be
-                        // todo future throttle is not implemented yet
-                        //                                .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
-                        );
+                                // future throttles will be exceeded because there is no throttle
+                                // for system delete
+                                // and the custom payer is not exempt from throttles like and admin
+                                // user would be
+                                .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED));
     }
-
-    // todo throttles are not implemented yet!
-    //    @HapiTest
-    //    final Stream<DynamicTest> futureThrottlesAreRespected() {
-    //        var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-schedule.json");
-    //        var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
-    //
-    //        return defaultHapiSpec("FutureThrottlesAreRespected")
-    //                .given(
-    //                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).via(SENDER_TXN),
-    //                        cryptoCreate(RECEIVER),
-    //                        overriding(SCHEDULING_MAX_TXN_PER_SECOND, "100"),
-    //                        fileUpdate(THROTTLE_DEFS)
-    //                                .payingWith(EXCHANGE_RATE_CONTROL)
-    //                                .contents(artificialLimits.toByteArray()),
-    //                        sleepFor(500))
-    //                .when(
-    //                        blockingOrder(IntStream.range(0, 17)
-    //                                .mapToObj(i -> new HapiSpecOperation[] {
-    //                                        scheduleCreate(
-    //                                                "twoSigXfer" + i,
-    //                                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-    //                                                        .fee(ONE_HBAR))
-    //                                                .withEntityMemo(randomUppercase(100))
-    //                                                .payingWith(SENDER)
-    //                                                .waitForExpiry()
-    //                                                .withRelativeExpiry(SENDER_TXN, 120),
-    //                                })
-    //                                .flatMap(Arrays::stream)
-    //                                .toArray(HapiSpecOperation[]::new)),
-    //                        scheduleCreate(
-    //                                "twoSigXfer",
-    //                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-    //                                        .fee(ONE_HBAR))
-    //                                .withEntityMemo(randomUppercase(100))
-    //                                .payingWith(SENDER)
-    //                                .waitForExpiry()
-    //                                .withRelativeExpiry(SENDER_TXN, 120)
-    //                                .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED))
-    //                .then(
-    //                        overriding(
-    //                                SCHEDULING_MAX_TXN_PER_SECOND,
-    //                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_MAX_TXN_PER_SECOND)),
-    //                        fileUpdate(THROTTLE_DEFS)
-    //                                .fee(ONE_HUNDRED_HBARS)
-    //                                .payingWith(EXCHANGE_RATE_CONTROL)
-    //                                .contents(defaultThrottles.toByteArray()),
-    //                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
-    //                                .payingWith(GENESIS));
-    //    }
 
     @HapiTest
     @Order(22)
     final Stream<DynamicTest> throttleWorksAsExpected() {
-        final var firstSchedule = "first";
-        final var secondSchedule = "second";
-        final var thirdSchedule = "third";
         return hapiTest(
                 cryptoCreate(PAYING_ACCOUNT),
                 cryptoCreate(RECEIVER),
                 cryptoCreate(SENDER).via(SENDER_TXN),
                 overridingThrottles("testSystemFiles/artificial-limits-schedule.json"),
-                scheduleCreate(firstSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                scheduleCreate("firstSchedule", cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
                         .designatingPayer(PAYING_ACCOUNT)
                         .waitForExpiry()
                         .withRelativeExpiry(SENDER_TXN, 4)
                         .recordingScheduledTxn()
                         .alsoSigningWith(PAYING_ACCOUNT, SENDER)
-                        .via(firstSchedule),
-                scheduleCreate(secondSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 2)))
+                        .payingWith(PAYING_ACCOUNT),
+                scheduleCreate("secondSchedule", cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 2)))
                         .designatingPayer(PAYING_ACCOUNT)
                         .waitForExpiry()
                         .withRelativeExpiry(SENDER_TXN, 4)
                         .recordingScheduledTxn()
                         .alsoSigningWith(PAYING_ACCOUNT, SENDER)
-                        .via(secondSchedule),
-                scheduleCreate(thirdSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 3)))
+                        .payingWith(PAYING_ACCOUNT),
+                scheduleCreate("thirdSchedule", cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 3)))
                         .designatingPayer(PAYING_ACCOUNT)
                         .waitForExpiry()
                         .withRelativeExpiry(SENDER_TXN, 4)
                         .recordingScheduledTxn()
                         .alsoSigningWith(PAYING_ACCOUNT, SENDER)
-                        .via(thirdSchedule),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                withOpContext((spec, opLog) -> {
-                    var firstScheduleRecord = getTxnRecord(firstSchedule).scheduled();
-                    var secondScheduleRecord = getTxnRecord(secondSchedule).scheduled();
-                    var thirdScheduleRecord = getTxnRecord(thirdSchedule).scheduled();
-                    allRunFor(spec, firstScheduleRecord, secondScheduleRecord, thirdScheduleRecord);
-
-                    Assertions.assertEquals(
-                            SUCCESS,
-                            firstScheduleRecord.getResponseRecord().getReceipt().getStatus(),
-                            SCHEDULED_TRANSACTION_MUST_SUCCEED);
-                    Assertions.assertEquals(
-                            SUCCESS,
-                            secondScheduleRecord
-                                    .getResponseRecord()
-                                    .getReceipt()
-                                    .getStatus(),
-                            SCHEDULED_TRANSACTION_MUST_SUCCEED);
-                    Assertions.assertEquals(
-                            THROTTLED_AT_CONSENSUS,
-                            thirdScheduleRecord.getResponseRecord().getReceipt().getStatus(),
-                            SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                }));
+                        .payingWith(PAYING_ACCOUNT)
+                        .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED));
     }
 
     @HapiTest
-    @Order(22)
+    @Order(23)
     final Stream<DynamicTest> gasThrottleWorksAsExpected() {
-        final var firstSchedule = "first";
-        final var secondSchedule = "second";
-        final var thirdSchedule = "third";
+        final var contract = "HollowAccountCreator";
+        final var gasToOffer = 2_000_000L;
         return hapiTest(
                 cryptoCreate(PAYING_ACCOUNT),
-                cryptoCreate(RECEIVER),
-                cryptoCreate(SENDER).via(SENDER_TXN),
-                overridingThrottles("testSystemFiles/artificial-limits-schedule.json"),
-                scheduleCreate(firstSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
-                        .designatingPayer(PAYING_ACCOUNT)
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .recordingScheduledTxn()
-                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
-                        .via(firstSchedule),
-                scheduleCreate(secondSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 2)))
-                        .designatingPayer(PAYING_ACCOUNT)
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .recordingScheduledTxn()
-                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
-                        .via(secondSchedule),
-                scheduleCreate(thirdSchedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 3)))
-                        .designatingPayer(PAYING_ACCOUNT)
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .recordingScheduledTxn()
-                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
-                        .via(thirdSchedule),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                withOpContext((spec, opLog) -> {
-                    final var firstScheduleRecord = getTxnRecord(firstSchedule).scheduled();
-                    final var secondScheduleRecord =
-                            getTxnRecord(secondSchedule).scheduled();
-                    final var thirdScheduleRecord = getTxnRecord(thirdSchedule).scheduled();
-                    allRunFor(spec, firstScheduleRecord, secondScheduleRecord, thirdScheduleRecord);
+                uploadInitCode(contract),
+                contractCreate(contract).via("contractCreate"),
+                // schedule at another second, should not affect the throttle
+                scheduleCreate("1",testContractCall(1, gasToOffer))
+                        .withRelativeExpiry("contractCreate", 100)
+                        .payingWith(PAYING_ACCOUNT),
+                scheduleCreate("2", testContractCall(2, gasToOffer))
+                        .withRelativeExpiry("contractCreate", 10)
+                        .payingWith(PAYING_ACCOUNT),
+                scheduleCreate("3", testContractCall(3, gasToOffer))
+                        .withRelativeExpiry("contractCreate", 10)
+                        .payingWith(PAYING_ACCOUNT),
+                scheduleCreate("4", testContractCall(4, gasToOffer))
+                        .withRelativeExpiry("contractCreate", 10)
+                        .payingWith(PAYING_ACCOUNT)
+                        .hasKnownStatus(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED)
+        );
+    }
 
-                    Assertions.assertEquals(
-                            SUCCESS,
-                            firstScheduleRecord.getResponseRecord().getReceipt().getStatus(),
-                            SCHEDULED_TRANSACTION_MUST_SUCCEED);
-                    Assertions.assertEquals(
-                            SUCCESS,
-                            secondScheduleRecord
-                                    .getResponseRecord()
-                                    .getReceipt()
-                                    .getStatus(),
-                            SCHEDULED_TRANSACTION_MUST_SUCCEED);
-                    Assertions.assertEquals(
-                            THROTTLED_AT_CONSENSUS,
-                            thirdScheduleRecord.getResponseRecord().getReceipt().getStatus(),
-                            SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                }));
+    private HapiContractCall testContractCall(long sending, long gas) {
+        final var contract = "HollowAccountCreator";
+        return contractCall(
+                contract,
+                "testCallFoo",
+                randomHeadlongAddress(),
+                BigInteger.valueOf(500_000L))
+                .sending(sending)
+                .gas(gas);
     }
 }

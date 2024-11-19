@@ -19,12 +19,12 @@ package com.hedera.node.app.workflows.handle.throttle;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoAssociate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
@@ -35,6 +35,7 @@ import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.CongestionThrottleService;
@@ -81,14 +82,18 @@ public class DispatchUsageManager {
      */
     public void screenForCapacity(@NonNull final Dispatch dispatch) throws ThrottleException {
         if (dispatch.throttleStrategy() == ON) {
+            var isThrottled = false;
             final var readableStates = dispatch.stack().getReadableStates(CongestionThrottleService.NAME);
-            // reset throttles for every dispatch before we track the usage. This is to ensure that
-            // when the user transaction fails, we release the capacity taken at consensus by child transactions.
-            throttleServiceManager.resetThrottlesUnconditionally(readableStates);
-            final var isThrottled = dispatch.txnCategory().equals(SCHEDULED)
-                    ? networkUtilizationManager.trackScheduledTxn(
-                            dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack())
-                    : networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
+            if(dispatch.txnInfo().functionality().equals(SCHEDULE_CREATE)) {
+                final var expiration = dispatch.txnInfo().txBody().scheduleCreate().expirationTime();
+                throttleServiceManager.populateSchedulesUsedCapacityForGivenSecond(readableStates, expiration);
+                networkUtilizationManager.trackScheduledTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
+            } else {
+                // reset throttles for every dispatch before we track the usage. This is to ensure that
+                // when the user transaction fails, we release the capacity taken at consensus by child transactions.
+                throttleServiceManager.resetThrottlesUnconditionally(readableStates);
+                isThrottled = networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
+            }
             if (networkUtilizationManager.wasLastTxnGasThrottled()) {
                 throw ThrottleException.newGasThrottleException();
             } else if (isThrottled) {
@@ -115,7 +120,17 @@ public class DispatchUsageManager {
                 reclaimFailedTokenAssociate(dispatch);
             }
         }
-        throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(dispatch.stack());
+
+        // save schedule snapshots by seconds
+        if(dispatch.txnInfo().functionality().equals(SCHEDULE_CREATE)) {
+            final var txnBody = dispatch.txnInfo().txBody();
+            final var scheduleCreate = txnBody.scheduleCreateOrThrow();
+            final var expiration = scheduleCreate.expirationTime();
+            throttleServiceManager.saveScheduleThrottleSnapshotsTo(dispatch.stack(), expiration.seconds());
+        } else {
+            throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(dispatch.stack());
+        }
+
     }
 
     /**

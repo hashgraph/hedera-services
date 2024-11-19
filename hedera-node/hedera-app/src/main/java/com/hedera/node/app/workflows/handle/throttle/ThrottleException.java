@@ -17,6 +17,8 @@
 package com.hedera.node.app.workflows.handle.throttle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.THROTTLED_AT_CONSENSUS;
 import static java.util.Objects.requireNonNull;
 
@@ -43,6 +45,22 @@ public class ThrottleException extends Exception {
      */
     public static ThrottleException newNativeThrottleException() {
         return new ThrottleException(THROTTLED_AT_CONSENSUS);
+    }
+
+    /**
+     * Creates a new ThrottleException with status SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED.
+     * @return the new ThrottleException
+     */
+    public static ThrottleException newScheduleGasThrottleException() {
+        return new ThrottleException(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED);
+    }
+
+    /**
+     * Creates a new ThrottleException with the status SCHEDULE_FUTURE_THROTTLE_EXCEEDED.
+     * @return the new ThrottleException
+     */
+    public static ThrottleException newScheduleFutureThrottleException() {
+        return new ThrottleException(SCHEDULE_FUTURE_THROTTLE_EXCEEDED);
     }
 
     private ThrottleException(@NonNull final ResponseCodeEnum status) {

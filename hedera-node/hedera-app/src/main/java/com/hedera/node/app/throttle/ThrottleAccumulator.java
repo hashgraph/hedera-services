@@ -32,6 +32,7 @@ import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isEntityNumAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.SCHEDULING_THROTTLE;
 import static java.util.Collections.emptyList;
@@ -159,8 +160,7 @@ public class ThrottleAccumulator {
             @NonNull final TransactionInfo txnInfo, @NonNull final Instant now, @NonNull final State state) {
         resetLastAllowedUse();
         lastTxnWasGasThrottled = false;
-        final var isSchedule = throttleType.equals(SCHEDULING_THROTTLE);
-        if (shouldThrottleTxn(isSchedule, txnInfo, now, state)) {
+        if (shouldThrottleTxn(false, txnInfo, now, state)) {
             reclaimLastAllowedUse();
             return true;
         }
@@ -464,13 +464,13 @@ public class ThrottleAccumulator {
             }
             return !manager.allReqsMetAt(now);
         } else {
-            log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet implemented.");
-            if (!manager.allReqsMetAt(now)) {
-                return true;
+            if(throttleType == BACKEND_THROTTLE) {
+                if (!manager.allReqsMetAt(now)) {
+                    return true;
+                }
             }
 
-            // only check deeply if the schedule could immediately execute
-            if ((!scheduleCreate.waitForExpiry()) && (throttleType == FRONTEND_THROTTLE)) {
+            if (throttleType == SCHEDULING_THROTTLE) {
                 var effectivePayer = scheduleCreate.hasPayerAccountID()
                         ? scheduleCreate.payerAccountID()
                         : txnBody.transactionID().accountID();
@@ -484,8 +484,10 @@ public class ThrottleAccumulator {
                         Bytes.EMPTY,
                         scheduledFunction,
                         null);
-
-                return shouldThrottleTxn(true, innerTxnInfo, now, state);
+                return shouldThrottleTxn(true,
+                        innerTxnInfo,
+                        Instant.ofEpochSecond(scheduleCreate.expirationTime().seconds()),
+                        state);
             }
 
             return false;
@@ -594,6 +596,13 @@ public class ThrottleAccumulator {
             @NonNull final Configuration configuration) {
         final boolean shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
+
+        if(throttleType.equals(SCHEDULING_THROTTLE)) {
+            return shouldThrottleByGas
+                    && isGasThrottled(txnInfo.functionality())
+                    && !gasThrottle.allowSchedule(getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality()));
+        }
+
         return shouldThrottleByGas
                 && isGasThrottled(txnInfo.functionality())
                 && !gasThrottle.allow(now, getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality()));

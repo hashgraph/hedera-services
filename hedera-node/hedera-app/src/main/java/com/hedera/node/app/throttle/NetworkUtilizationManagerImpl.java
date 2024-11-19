@@ -29,6 +29,7 @@ import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.ScheduleThrottle;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.handle.throttle.ThrottleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,10 +66,18 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     }
 
     public boolean trackScheduledTxn(
-            @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state) {
-        final var shouldThrottle = scheduleThrottle.checkAndEnforceThrottle(txnInfo, consensusTime, state);
-        // todo do we need to update the multiplier?
-        // congestionMultipliers.updateMultiplier(consensusTime);
+            @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state) throws ThrottleException {
+        var shouldThrottle = backendThrottle.checkAndEnforceThrottle(txnInfo, consensusTime, state);
+
+        // If schedule create is not throttled now, check the inner transaction for future throttling.
+        if(!shouldThrottle) {
+            shouldThrottle = scheduleThrottle.checkAndEnforceThrottle(txnInfo, consensusTime, state);
+            if (scheduleThrottle.wasLastTxnGasThrottled()) {
+                throw ThrottleException.newScheduleGasThrottleException();
+            } else if (shouldThrottle) {
+                throw ThrottleException.newScheduleFutureThrottleException();
+            }
+        }
         return shouldThrottle;
     }
 

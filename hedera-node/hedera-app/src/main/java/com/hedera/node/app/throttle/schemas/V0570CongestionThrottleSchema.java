@@ -17,6 +17,7 @@
 package com.hedera.node.app.throttle.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
@@ -30,7 +31,9 @@ public class V0570CongestionThrottleSchema extends Schema {
 
     private static final Logger log = LogManager.getLogger(V0490CongestionThrottleSchema.class);
 
-    public static final String SCHEDULE_THROTTLE_USAGE_SNAPSHOTS_STATE_KEY = "SCHEDULE_THROTTLE_USAGE_SNAPSHOTS";
+    // todo check this value
+    private static final long MAX_SCHEDULE_IDS_BY_EXPIRY_SEC_KEY = 50_000_000L;
+    public static final String SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY = "SCHEDULE_THROTTLE_USAGE_PER_SECOND";
 
     /**
      * The version of the schema.
@@ -46,8 +49,12 @@ public class V0570CongestionThrottleSchema extends Schema {
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(StateDefinition.singleton(
-                SCHEDULE_THROTTLE_USAGE_SNAPSHOTS_STATE_KEY, ThrottleUsageSnapshots.PROTOBUF));
+        return Set.of(
+                 StateDefinition.onDisk(
+                         SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY,
+                         ProtoLong.PROTOBUF,
+                         ThrottleUsageSnapshots.PROTOBUF,
+                MAX_SCHEDULE_IDS_BY_EXPIRY_SEC_KEY));
     }
 
     /** {@inheritDoc} */
@@ -55,14 +62,11 @@ public class V0570CongestionThrottleSchema extends Schema {
     public void migrate(@NonNull final MigrationContext ctx) {
         if (ctx.previousVersion() == null) {
             log.info("Creating genesis throttle snapshots and congestion level starts for schedules");
-            // At genesis we put empty throttle usage snapshots and
-            // congestion level starts into their respective singleton
-            // states just to ensure they exist
+            // At genesis we put empty throttle usage snapshots into their singleton
+            // state just to ensure they exist
             final var scheduleThrottleSnapshot =
-                    ctx.newStates().getSingleton(SCHEDULE_THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
-            scheduleThrottleSnapshot.put(ThrottleUsageSnapshots.DEFAULT);
-
-            // todo check if we need to calculate separate congestion multiplier for schedules
+                    ctx.newStates().get(SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY);
+            scheduleThrottleSnapshot.put(ProtoLong.DEFAULT, ThrottleUsageSnapshots.DEFAULT);
         }
     }
 }

@@ -65,6 +65,11 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
         return delegate.allow(txGasLimit, elapsedNanos);
     }
 
+    // todo add doc
+    public boolean allowSchedule(final long txGasLimit) {
+        return delegate.allow(txGasLimit, 0);
+    }
+
     /**
      * Returns the free-to-used ratio in the bucket at its last decision time.
      *

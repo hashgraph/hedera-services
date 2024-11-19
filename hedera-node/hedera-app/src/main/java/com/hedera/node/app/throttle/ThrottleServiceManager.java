@@ -16,31 +16,43 @@
 
 package com.hedera.node.app.throttle;
 
+import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
-import static com.hedera.node.app.throttle.schemas.V0570CongestionThrottleSchema.SCHEDULE_THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
+import static com.hedera.node.app.throttle.schemas.V0570CongestionThrottleSchema.SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.app.throttle.annotations.ScheduleThrottle;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,6 +61,8 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -114,6 +128,28 @@ public class ThrottleServiceManager {
         saveCongestionLevelStartsTo(serviceStates);
     }
 
+    public void saveScheduleThrottleSnapshotsTo(@NonNull final State state, long second) {
+        requireNonNull(state);
+        final var serviceStates = state.getWritableStates(CongestionThrottleService.NAME);
+        final var scheduleThrottles = scheduleThrottle.allActiveThrottles();
+        final List<ThrottleUsageSnapshot> scheduleHapiThrottleSnapshots;
+        if (scheduleThrottles.isEmpty()) {
+            scheduleHapiThrottleSnapshots = emptyList();
+        } else {
+            scheduleHapiThrottleSnapshots = new ArrayList<>();
+            for (final var schedule : scheduleThrottles) {
+                scheduleHapiThrottleSnapshots.add(schedule.usageSnapshot());
+            }
+        }
+        final var gasScheduleThrottle = scheduleThrottle.gasLimitThrottle();
+        final var gasScheduleThrottleSnapshot = gasScheduleThrottle.usageSnapshot();
+        final WritableKVState<ProtoLong, ThrottleUsageSnapshots> scheduleThrottleSnapshots =
+                serviceStates.get(SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY);
+        scheduleThrottleSnapshots.put(
+                new ProtoLong(second),
+                new ThrottleUsageSnapshots(scheduleHapiThrottleSnapshots, gasScheduleThrottleSnapshot));
+    }
+
     /**
      * Refreshes the parts of the throttle service that depend on the
      * current network configuration.
@@ -154,10 +190,8 @@ public class ThrottleServiceManager {
     }
 
     private void saveThrottleSnapshotsTo(@NonNull final WritableStates serviceStates) {
-        final var scheduleThrottles = scheduleThrottle.allActiveThrottles();
         final var hapiThrottles = backendThrottle.allActiveThrottles();
         final List<ThrottleUsageSnapshot> hapiThrottleSnapshots;
-        final List<ThrottleUsageSnapshot> scheduleHapiThrottleSnapshots;
         if (hapiThrottles.isEmpty()) {
             hapiThrottleSnapshots = emptyList();
         } else {
@@ -167,29 +201,12 @@ public class ThrottleServiceManager {
             }
         }
 
-        if (scheduleThrottles.isEmpty()) {
-            scheduleHapiThrottleSnapshots = emptyList();
-        } else {
-            scheduleHapiThrottleSnapshots = new ArrayList<>();
-            for (final var schedule : scheduleThrottles) {
-                scheduleHapiThrottleSnapshots.add(schedule.usageSnapshot());
-            }
-        }
-
         final var gasThrottle = backendThrottle.gasLimitThrottle();
         final var gasThrottleSnapshot = gasThrottle.usageSnapshot();
-
-        final var gasScheduleThrottle = scheduleThrottle.gasLimitThrottle();
-        final var gasScheduleThrottleSnapshot = gasScheduleThrottle.usageSnapshot();
 
         final WritableSingletonState<ThrottleUsageSnapshots> throttleSnapshots =
                 serviceStates.getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
         throttleSnapshots.put(new ThrottleUsageSnapshots(hapiThrottleSnapshots, gasThrottleSnapshot));
-
-        final WritableSingletonState<ThrottleUsageSnapshots> scheduleThrottleSnapshots =
-                serviceStates.getSingleton(SCHEDULE_THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
-        scheduleThrottleSnapshots.put(
-                new ThrottleUsageSnapshots(scheduleHapiThrottleSnapshots, gasScheduleThrottleSnapshot));
     }
 
     private void saveCongestionLevelStartsTo(@NonNull final WritableStates serviceStates) {
@@ -242,17 +259,26 @@ public class ThrottleServiceManager {
     public void resetThrottlesUnconditionally(@NonNull final ReadableStates serviceStates) {
         final ReadableSingletonState<ThrottleUsageSnapshots> usageSnapshotsState =
                 serviceStates.getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
-        final ReadableSingletonState<ThrottleUsageSnapshots> scheduleUsageSnapshotsState =
-                serviceStates.getSingleton(SCHEDULE_THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
-
         final var usageSnapshots = requireNonNull(usageSnapshotsState.get());
-        final var scheduleUsageSnapshots = requireNonNull(scheduleUsageSnapshotsState.get());
 
         resetUnconditionally(backendThrottle.allActiveThrottles(), usageSnapshots.tpsThrottles());
-        resetUnconditionally(scheduleThrottle.allActiveThrottles(), scheduleUsageSnapshots.tpsThrottles());
-
         if (usageSnapshots.hasGasThrottle()) {
             backendThrottle.gasLimitThrottle().resetUsageTo(usageSnapshots.gasThrottleOrThrow());
+        }
+    }
+
+    public void populateSchedulesUsedCapacityForGivenSecond(@NonNull final ReadableStates serviceStates, @NonNull final Timestamp expirationTime) {
+        final ReadableKVState<ProtoLong, ThrottleUsageSnapshots> usageSnapshotsState =
+                serviceStates.get(SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY);
+        final var usageSnapshots = usageSnapshotsState.get(new ProtoLong(expirationTime.seconds()));
+        if (usageSnapshots == null) {
+            scheduleThrottle.resetUsage();
+        }
+        if (usageSnapshots != null) {
+            resetUnconditionally(scheduleThrottle.allActiveThrottles(), usageSnapshots.tpsThrottles());
+            if (usageSnapshots.hasGasThrottle()) {
+                scheduleThrottle.gasLimitThrottle().resetUsageTo(usageSnapshots.gasThrottleOrThrow());
+            }
         }
     }
 
