@@ -666,14 +666,8 @@ public class PlatformTestingToolState extends MerkleStateRoot {
      */
     @Override
     public synchronized PlatformTestingToolState copy() {
-        //        logger.info(
-        //                LOGM_DEMO_INFO,
-        //                "PlatformTestingToolState.copy() immutable: {}, StackTrace: {}",
-        //                isImmutable(),
-        //                StackTrace.getStackTrace());
-
         throwIfImmutable();
-        //        setImmutable(true);
+        setImmutable(true);
         roundCounter++;
 
         if (transactionsIgnoredByExpectedMap > 0) {
@@ -1328,8 +1322,6 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
-        //        super.init(platform, trigger, previousSoftwareVersion);
-
         if (trigger == InitTrigger.RESTART) {
             rebuildExpectedMapFromState(Instant.EPOCH, true);
             rebuildExpirationQueue();

@@ -399,11 +399,6 @@ public class PayloadCfgSimple extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public PayloadCfgSimple copy() {
-        //        logger.info(
-        //                LOGM_DEMO_INFO,
-        //                "PayloadCfgSimple.copy(), immutable: {}, StackTrace: {}",
-        //                isImmutable(),
-        //                StackTrace.getStackTrace());
         throwIfImmutable();
         return new PayloadCfgSimple(this);
     }

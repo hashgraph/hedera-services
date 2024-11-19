@@ -18,21 +18,16 @@ package com.swirlds.demo.consistency;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.util.NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.state.merkle.StateUtils.registerWithSystem;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.state.lifecycle.StateDefinition;
-import com.swirlds.state.merkle.StateMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SecureRandom;
@@ -62,20 +57,10 @@ public class ConsistencyTestingToolMain implements SwirldMain {
                     () -> new ConsistencyTestingToolState(
                             NO_OP_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
             logger.info(STARTUP.getMarker(), "ConsistencyTestingToolState is registered with ConstructableRegistry");
-            registerPlatformClasses(constructableRegistry);
-
         } catch (ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register ConsistencyTestingToolState", e);
             throw new RuntimeException(e);
         }
-    }
-
-    private static void registerPlatformClasses(ConstructableRegistry constructableRegistry) {
-        logger.info(STARTUP.getMarker(), "Registering PlatformState classes with ConstructableRegistry");
-        final var schema = new V0540PlatformStateSchema();
-        final StateDefinition def = schema.statesToCreate().iterator().next();
-        final var md = new StateMetadata<>(PlatformStateService.NAME, schema, def);
-        registerWithSystem(md, constructableRegistry);
     }
 
     /**
@@ -125,7 +110,6 @@ public class ConsistencyTestingToolMain implements SwirldMain {
         final MerkleStateRoot state = new ConsistencyTestingToolState(
                 NO_OP_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
         NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
-        registerPlatformClasses(ConstructableRegistry.INSTANCE);
 
         return state;
     }

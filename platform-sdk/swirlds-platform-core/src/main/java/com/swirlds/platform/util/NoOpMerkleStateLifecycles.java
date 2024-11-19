@@ -16,8 +16,11 @@
 
 package com.swirlds.platform.util;
 
+import static com.swirlds.state.merkle.StateUtils.registerWithSystem;
+
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.MerkleStateLifecycles;
@@ -72,6 +75,7 @@ public enum NoOpMerkleStateLifecycles implements MerkleStateLifecycles {
                     } else {
                         throw new IllegalStateException("PlatformStateService only expected to use singleton states");
                     }
+                    registerWithSystem(md, ConstructableRegistry.INSTANCE);
                 });
 
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
