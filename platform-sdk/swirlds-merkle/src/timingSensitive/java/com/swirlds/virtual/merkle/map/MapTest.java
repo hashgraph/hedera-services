@@ -42,10 +42,11 @@ import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Tags;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
 final class MapTest {
 
@@ -176,6 +177,63 @@ final class MapTest {
         // path the virtual tree doesn't match the path in the data source
         assertFalse(map.containsKey(new TestObjectKey(0)));
         assertNull(map.get(new TestObjectKey(0)));
+
+        map.release();
+    }
+
+    private static final Random RANDOM = new Random();
+
+    @RepeatedTest(1000)
+    void testVirtualMapOperations() throws InterruptedException {
+        VirtualMap<TestObjectKey, TestValue> map = createObjectMap("LSEnodeIssue" +  + System.nanoTime());
+
+        int addCount = RANDOM.nextInt(4);
+        for (int i = 0; i < addCount; i++) {
+            map.put(new TestObjectKey(i), new TestValue(i));
+        }
+
+        VirtualRootNode<TestObjectKey, TestValue> rootNode = map.getRight();
+        rootNode.enableFlush();
+
+        VirtualMap<TestObjectKey, TestValue> copy = map.copy();
+        map.release();
+        map = copy;
+        rootNode.waitUntilFlushed();
+
+        System.out.printf("Before: First Leaf Path = %d, Last Leaf Path = %d%n",
+                map.getDataSource().getFirstLeafPath(), map.getDataSource().getLastLeafPath());
+
+        Set<TestObjectKey> deletedKeys = new HashSet<>();
+        int removeCount = RANDOM.nextInt(addCount + 1);
+        for (int i = 0; i < removeCount; i++) {
+            int keyToRemove = RANDOM.nextInt(addCount);
+            TestObjectKey key = new TestObjectKey(keyToRemove);
+            deletedKeys.add(key);
+            map.remove(key);
+        }
+
+        rootNode = map.getRight();
+        rootNode.enableFlush();
+
+        copy = map.copy();
+        map.release();
+        map = copy;
+        rootNode.waitUntilFlushed();
+
+        System.out.println("Deleted entries: " + deletedKeys.size());
+        System.out.printf("After: First Leaf Path = %d, Last Leaf Path = %d%n",
+                map.getDataSource().getFirstLeafPath(), map.getDataSource().getLastLeafPath());
+        System.out.println("----");
+
+        for (int i = 0; i < addCount; i++) {
+            TestObjectKey key = new TestObjectKey(i);
+            if (deletedKeys.contains(key)) {
+                assertFalse(map.containsKey(key), "Deleted key " + i + " should not exist");
+            } else {
+                assertTrue(map.containsKey(key), "Existing key " + i + " should still exist");
+                assertNotNull(map.get(key), "Entry for key " + i + " should exist");
+            }
+        }
 
         map.release();
     }

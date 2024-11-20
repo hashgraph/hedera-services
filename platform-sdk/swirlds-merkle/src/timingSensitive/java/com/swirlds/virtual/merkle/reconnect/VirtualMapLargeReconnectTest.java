@@ -24,16 +24,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Tags;
-import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("Virtual Map MerkleDB Large Reconnect Test")
 class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
+
+    private static final Random RANDOM = new Random();
+
+    @RepeatedTest(1000)
+    void lseNodeIssue() {
+        final int teacherValue = RANDOM.nextInt(10);
+        teacherMap.put(new TestKey(teacherValue), new TestValue(teacherValue));
+
+        for (int i = 0; i < 4; i++) {
+            learnerMap.put(new TestKey(i), new TestValue(i));
+        }
+
+        assertDoesNotThrow(this::reconnect, "Should not throw a Exception");
+    }
 
     @ParameterizedTest
     @MethodSource("provideLargeTreePermutations")

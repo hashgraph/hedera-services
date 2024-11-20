@@ -33,18 +33,12 @@ import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.Random;
+
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Tags;
-import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -589,6 +583,58 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
             VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);
 
             assertNoKeys(afterMap, E_KEY, F_KEY, G_KEY);
+
+            afterSyncLearnerTree.release();
+            copy.release();
+            teacherTree.release();
+            learnerTree.release();
+        }
+
+        private static final Random RANDOM = new Random();
+
+        @RepeatedTest(1000)
+        void lseNodeFailure() throws Exception {
+            final Random rand = new Random(8);
+            final int max = rand.nextInt(6);
+            final int batches = rand.nextInt(3);
+
+            // add only one entry for the teacher
+            final int teacherValue = RANDOM.nextInt(10);
+            teacherMap.put(new TestKey(teacherValue), new TestValue(teacherValue));
+
+            // keys that should be removed after the sync
+            Set<TestKey> deletedKeys = new HashSet<>();
+
+            // add random amount of entries to learner
+            // should be small amount
+            for (int i = 0; i < max; i++) {
+                if (i > 0 && i % batches == 0) {
+                    final var oldMap = learnerMap;
+                    learnerMap = learnerMap.copy();
+                    oldMap.release();
+                }
+                learnerMap.put(new TestKey(i), new TestValue(i));
+                deletedKeys.add(new TestKey(i));
+            }
+
+            // remove teacher entry not to validate it afterwards
+            deletedKeys.remove(new TestKey(teacherValue));
+
+            final MerkleInternal teacherTree = createTreeForMap(teacherMap);
+            final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
+            final MerkleInternal learnerTree = createTreeForMap(learnerMap);
+
+            DummyMerkleInternal afterSyncLearnerTree =
+                    MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
+
+            DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
+            VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);
+
+            // check that all entries were removed after sync
+            for (final TestKey key : deletedKeys) {
+                assertNull(afterMap.get(key), "Key " + key + " must not be in the map after reconnect");
+                assertFalse(afterMap.containsKey(key), "Key " + key + " must not be in the map after reconnect");
+            }
 
             afterSyncLearnerTree.release();
             copy.release();
