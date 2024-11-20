@@ -28,9 +28,9 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import java.security.cert.CertificateEncodingException;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

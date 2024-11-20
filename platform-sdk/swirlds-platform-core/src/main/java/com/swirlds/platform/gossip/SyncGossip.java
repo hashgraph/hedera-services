@@ -38,6 +38,7 @@ import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.permits.SyncPermitProvider;
@@ -85,6 +86,7 @@ import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -181,7 +183,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final RosterEntry selfEntry = RosterUtils.getRosterEntry(roster, selfId.id());
         final List<PeerInfo> peers;
-        if (RosterUtils.fetchGossipCaCertificate(selfEntry) == null) {
+        final X509Certificate selfCert = RosterUtils.fetchGossipCaCertificate(selfEntry);
+        if (!CryptoStatic.checkCertificate(selfCert)) {
             // Do not make peer connections if the self node does not have a valid signing certificate in the roster.
             // https://github.com/hashgraph/hedera-services/issues/16648
             logger.error(

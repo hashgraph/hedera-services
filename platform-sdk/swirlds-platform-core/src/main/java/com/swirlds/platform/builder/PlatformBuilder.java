@@ -288,6 +288,7 @@ public final class PlatformBuilder {
      *
      * @param keysAndCerts the cryptographic keys to use
      * @return this
+     * @throws IllegalStateException if the signing certificate is not valid or does not match the signing private key.
      */
     @NonNull
     public PlatformBuilder withKeysAndCerts(@NonNull final KeysAndCerts keysAndCerts) {
