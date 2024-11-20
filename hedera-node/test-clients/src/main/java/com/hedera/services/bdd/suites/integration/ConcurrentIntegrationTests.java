@@ -77,16 +77,16 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Tag(INTEGRATION)
 @TargetEmbeddedMode(CONCURRENT)
 public class ConcurrentIntegrationTests {
-    private static final Logger log = LoggerFactory.getLogger(ConcurrentIntegrationTests.class);
+    private static final Logger log = LogManager.getLogger(ConcurrentIntegrationTests.class);
 
     @HapiTest
     @DisplayName("hollow account completion happens even with unsuccessful txn")
