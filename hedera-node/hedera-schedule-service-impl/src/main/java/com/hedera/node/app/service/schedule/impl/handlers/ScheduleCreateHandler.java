@@ -221,7 +221,6 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                         .hasContractCall()
                 ? SCHEDULE_CREATE_CONTRACT_CALL
                 : DEFAULT;
-
         return feeContext
                 .feeCalculatorFactory()
                 .feeCalculator(subType)
