@@ -80,10 +80,14 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Tag(INTEGRATION)
 @TargetEmbeddedMode(CONCURRENT)
 public class ConcurrentIntegrationTests {
+    private static final Logger log = LoggerFactory.getLogger(ConcurrentIntegrationTests.class);
+
     @HapiTest
     @DisplayName("hollow account completion happens even with unsuccessful txn")
     final Stream<DynamicTest> hollowAccountCompletionHappensEvenWithUnsuccessfulTxn() {
@@ -133,15 +137,25 @@ public class ConcurrentIntegrationTests {
         final var expectedNodeStakeUpdates = 2;
         final var actualNodeStakeUpdates = new AtomicInteger(0);
         return hapiTest(
-                blockStreamMustIncludePassFrom(
-                        spec -> block -> actualNodeStakeUpdates.addAndGet((int) block.items().stream()
-                                        .filter(BlockItem::hasEventTransaction)
-                                        .map(item -> TransactionParts.from(item.eventTransactionOrThrow()
-                                                        .applicationTransactionOrThrow())
-                                                .function())
-                                        .filter(NODE_STAKE_UPDATE::equals)
-                                        .count())
-                                == expectedNodeStakeUpdates),
+                blockStreamMustIncludePassFrom(spec -> block -> {
+                    final var blockNo =
+                            block.items().getFirst().blockHeaderOrThrow().number();
+                    final var blockNodeStakeUpdates = (int) block.items().stream()
+                            .filter(BlockItem::hasEventTransaction)
+                            .map(item -> TransactionParts.from(
+                                            item.eventTransactionOrThrow().applicationTransactionOrThrow())
+                                    .function())
+                            .filter(NODE_STAKE_UPDATE::equals)
+                            .count();
+                    final var totalNodeStakeUpdates = actualNodeStakeUpdates.addAndGet(blockNodeStakeUpdates);
+                    log.info(
+                            "Block#{} had {} node stake updates, now {}/{} observed",
+                            blockNo,
+                            blockNodeStakeUpdates,
+                            totalNodeStakeUpdates,
+                            expectedNodeStakeUpdates);
+                    return totalNodeStakeUpdates == expectedNodeStakeUpdates;
+                }),
                 // This is the genesis transaction
                 cryptoCreate("firstUser"),
                 // And now simulate an upgrade boundary
