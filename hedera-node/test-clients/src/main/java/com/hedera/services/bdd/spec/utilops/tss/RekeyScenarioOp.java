@@ -38,8 +38,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.BlockSigningType.SIGN_WITH_FAKE;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.BlockSigningType.SIGN_WITH_LEDGER_ID;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.TINYBARS_PER_HBAR;
 import static com.swirlds.platform.roster.RosterRetriever.getActiveRosterHash;
@@ -60,6 +58,7 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -69,7 +68,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -423,7 +421,7 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             final var hedera = spec.repeatableEmbeddedHederaOrThrow();
             final var roundNo = hedera.lastRoundNo();
 
-            final var writableStates = state.getWritableStates(RosterStateId.NAME);
+            final var writableStates = state.getWritableStates(RosterService.NAME);
             final var rosterStore = new WritableRosterStore(writableStates);
             final var activeEntries =
                     new ArrayList<>(rosterStore.getActiveRoster().rosterEntries());

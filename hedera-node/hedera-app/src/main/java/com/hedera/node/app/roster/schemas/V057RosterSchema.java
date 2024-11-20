@@ -83,6 +83,7 @@ public class V057RosterSchema extends Schema {
             if (overrideNetwork.isPresent()) {
                 log.info("Found override network for round {}", roundNumber);
                 setActiveRoster(roundNumber + 1, rosterStore, overrideNetwork.get());
+                startupNetworks.setOverrideRound(roundNumber);
             } else if (isUpgrade(ctx)) {
                 if (rosterStore.getActiveRoster() == null) {
                     log.info("Migrating active roster at round {}", roundNumber);

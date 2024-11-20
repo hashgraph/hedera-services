@@ -157,6 +157,7 @@ class V057RosterSchemaTest {
         subject.restart(context);
 
         verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO + 1);
+        verify(startupNetworks).setOverrideRound(ROUND_NO);
     }
 
     private enum CurrentVersion {
