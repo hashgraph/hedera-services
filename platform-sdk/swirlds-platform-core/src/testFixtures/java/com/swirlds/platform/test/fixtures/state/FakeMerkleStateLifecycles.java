@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.state;
 
+import static com.swirlds.state.merkle.StateUtils.registerWithSystem;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -57,32 +58,18 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
      */
     public static void registerMerkleStateRootClassIds() {
         try {
-            ConstructableRegistry.getInstance()
+            ConstructableRegistry registry = ConstructableRegistry.getInstance();
+            registry
                     .registerConstructable(new ClassConstructorPair(
                             MerkleStateRoot.class,
                             () -> new MerkleStateRoot(
                                     FAKE_MERKLE_STATE_LIFECYCLES,
                                     version -> new BasicSoftwareVersion(version.major()))));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             final var schema = new V0540PlatformStateSchema();
             schema.statesToCreate().stream()
                     .sorted(Comparator.comparing(StateDefinition::stateKey))
-                    .forEach(def -> {
-                        final var md = new StateMetadata<>(PlatformStateService.NAME, schema, def);
-                        try {
-                            ConstructableRegistry.getInstance()
-                                    .registerConstructable(new ClassConstructorPair(
-                                            ValueLeaf.class,
-                                            () -> new ValueLeaf<>(
-                                                    md.singletonClassId(),
-                                                    md.stateDefinition().valueCodec())));
-                        } catch (ConstructableRegistryException e) {
-                            throw new IllegalStateException(e);
-                        }
-                    });
+                    .forEach(def ->
+                            registerWithSystem(new StateMetadata<>(PlatformStateService.NAME, schema, def), registry));
         } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }

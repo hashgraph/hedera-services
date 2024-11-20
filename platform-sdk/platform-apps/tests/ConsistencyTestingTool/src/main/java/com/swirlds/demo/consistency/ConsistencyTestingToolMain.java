@@ -17,7 +17,8 @@
 package com.swirlds.demo.consistency;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.util.NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -55,10 +56,11 @@ public class ConsistencyTestingToolMain implements SwirldMain {
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(ConsistencyTestingToolState.class, () -> {
                         ConsistencyTestingToolState consistencyTestingToolState = new ConsistencyTestingToolState(
-                                NO_OP_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(consistencyTestingToolState);
+                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(consistencyTestingToolState);
                         return consistencyTestingToolState;
                     }));
+            registerMerkleStateRootClassIds();
             logger.info(STARTUP.getMarker(), "ConsistencyTestingToolState is registered with ConstructableRegistry");
         } catch (ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register ConsistencyTestingToolState", e);
@@ -111,8 +113,8 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     @NonNull
     public MerkleStateRoot newMerkleStateRoot() {
         final MerkleStateRoot state = new ConsistencyTestingToolState(
-                NO_OP_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
-        NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
 
         return state;
     }

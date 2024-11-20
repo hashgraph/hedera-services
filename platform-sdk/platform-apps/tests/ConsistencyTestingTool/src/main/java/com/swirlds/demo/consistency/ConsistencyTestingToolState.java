@@ -19,7 +19,7 @@ package com.swirlds.demo.consistency;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.util.NoOpMerkleStateLifecycles.NO_OP_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.config.StateCommonConfig;
@@ -175,7 +175,7 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
         }
 
         transactionHandlingHistory.init(logFilePath);
-        NO_OP_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
     }
 
     /**

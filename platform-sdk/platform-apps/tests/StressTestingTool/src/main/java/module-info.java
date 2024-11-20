@@ -10,4 +10,5 @@ module com.swirlds.demo.stress {
     requires com.hedera.pbj.runtime;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires com.swirlds.platform.core.test.fixtures;
 }
