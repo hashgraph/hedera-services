@@ -29,7 +29,5 @@ testModuleInfo {
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
-    runtimeOnly("org.mockito")
-    runtimeOnly("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
 }
