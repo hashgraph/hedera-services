@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,6 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
-    id("com.hedera.gradle.feature.test-fixtures")
-}
+import static org.junit.jupiter.api.Assertions.*;
 
-description = "Hedera Application - SPI"
-
-testModuleInfo {
-    requires("com.hedera.node.app.spi")
-    requires("com.swirlds.state.api.test.fixtures")
-    requires("org.apache.commons.lang3")
-    requires("org.assertj.core")
-    requires("org.junit.jupiter.api")
-    requires("org.junit.jupiter.params")
-    requiresStatic("com.github.spotbugs.annotations")
-}
+class AddressBookValidatorTest {}

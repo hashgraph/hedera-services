@@ -131,7 +131,7 @@ class V057RosterSchemaTest {
 
         subject.restart(context);
 
-        verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO);
+        verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO + 1);
     }
 
     @Test
@@ -146,6 +146,18 @@ class V057RosterSchemaTest {
         subject.restart(context);
 
         verify(rosterStore).adoptCandidateRoster(ROUND_NO);
+    }
+
+    @Test
+    void usesOverrideNetworkIfPresent() {
+        given(context.roundNumber()).willReturn(ROUND_NO);
+        givenContextWith(CurrentVersion.OLD, RosterLifecycle.ON, AvailableNetwork.OVERRIDE);
+        given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));
+
+        subject.restart(context);
+
+        verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO + 1);
+        verify(startupNetworks).setOverrideRound(ROUND_NO);
     }
 
     private enum CurrentVersion {
@@ -191,9 +203,7 @@ class V057RosterSchemaTest {
             given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
         }
         switch (availableNetwork) {
-            case GENESIS -> {
-                given(startupNetworks.genesisNetworkOrThrow()).willReturn(NETWORK);
-            }
+            case GENESIS -> given(startupNetworks.genesisNetworkOrThrow()).willReturn(NETWORK);
             case OVERRIDE -> {
                 given(context.roundNumber()).willReturn(ROUND_NO);
                 given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));

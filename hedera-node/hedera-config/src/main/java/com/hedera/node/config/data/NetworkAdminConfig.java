@@ -44,7 +44,7 @@ public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "throttles.json") String upgradeThrottlesFile,
         @ConfigProperty(defaultValue = "application-override.properties") String upgradePropertyOverridesFile,
         @ConfigProperty(defaultValue = "api-permission-override.properties") String upgradePermissionOverridesFile,
-        @ConfigProperty(defaultValue = "TssMessage,TssVote") @NetworkProperty
+        @ConfigProperty(defaultValue = "TssMessage,TssVote,TssShareSignature") @NetworkProperty
                 HederaFunctionalitySet nodeTransactionsAllowList,
         @ConfigProperty(defaultValue = "network.json") @NodeProperty String diskNetworkExportFile,
         @ConfigProperty(defaultValue = "NEVER") DiskNetworkExport diskNetworkExport) {}

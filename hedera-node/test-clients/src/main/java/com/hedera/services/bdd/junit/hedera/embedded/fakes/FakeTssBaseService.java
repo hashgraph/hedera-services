@@ -88,7 +88,7 @@ public class FakeTssBaseService implements TssBaseService {
         DELEGATE
     }
 
-    private Signing signing = Signing.FAKE;
+    private Signing signing = Signing.DELEGATE;
     private boolean ignoreRequests = false;
 
     public FakeTssBaseService(@NonNull final AppContext appContext) {
