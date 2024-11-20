@@ -41,8 +41,6 @@ import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.singleton.SingletonNode;
-import com.swirlds.state.merkle.singleton.StringLeaf;
-import com.swirlds.state.merkle.singleton.ValueLeaf;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -59,12 +57,10 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
     public static void registerMerkleStateRootClassIds() {
         try {
             ConstructableRegistry registry = ConstructableRegistry.getInstance();
-            registry
-                    .registerConstructable(new ClassConstructorPair(
-                            MerkleStateRoot.class,
-                            () -> new MerkleStateRoot(
-                                    FAKE_MERKLE_STATE_LIFECYCLES,
-                                    version -> new BasicSoftwareVersion(version.major()))));
+            registry.registerConstructable(new ClassConstructorPair(
+                    MerkleStateRoot.class,
+                    () -> new MerkleStateRoot(
+                            FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
             final var schema = new V0540PlatformStateSchema();
             schema.statesToCreate().stream()
                     .sorted(Comparator.comparing(StateDefinition::stateKey))

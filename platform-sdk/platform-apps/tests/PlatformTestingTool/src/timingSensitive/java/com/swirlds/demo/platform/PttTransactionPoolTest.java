@@ -182,8 +182,8 @@ public class PttTransactionPoolTest {
                 .setOriginNode(otherID)
                 .build();
         try {
-            final PlatformTestingToolState state = new PlatformTestingToolState(
-                    FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(1));
+            final PlatformTestingToolState state =
+                    new PlatformTestingToolState(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(1));
             state.setFcmFamily(fCMFamily);
             handler.performOperation(
                     trans,
@@ -240,8 +240,8 @@ public class PttTransactionPoolTest {
                 .setOriginNode(otherID)
                 .build();
         try {
-            final PlatformTestingToolState state = new PlatformTestingToolState(
-                    FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(1));
+            final PlatformTestingToolState state =
+                    new PlatformTestingToolState(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(1));
             state.setFcmFamily(fCMFamily);
             handler.performOperation(
                     trans,
