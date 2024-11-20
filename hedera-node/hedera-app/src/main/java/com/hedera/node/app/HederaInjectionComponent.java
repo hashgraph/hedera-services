@@ -57,6 +57,7 @@ import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.node.app.workflows.query.annotations.OperatorQueries;
 import com.hedera.node.app.workflows.query.annotations.UserQueries;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.metrics.api.Metrics;
@@ -123,6 +124,9 @@ public interface HederaInjectionComponent {
 
     @UserQueries
     QueryWorkflow queryWorkflow();
+
+    @OperatorQueries
+    QueryWorkflow operatorQueryWorkflow();
 
     BlockRecordManager blockRecordManager();
 

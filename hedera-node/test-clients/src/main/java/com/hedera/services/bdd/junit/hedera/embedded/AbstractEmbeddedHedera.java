@@ -212,7 +212,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     @Override
-    public Response send(@NonNull final Query query, @NonNull final AccountID nodeAccountId) {
+    public Response send(
+            @NonNull final Query query, @NonNull final AccountID nodeAccountId, final boolean asNodeOperator) {
         requireNonNull(query);
         requireNonNull(nodeAccountId);
         if (!defaultNodeAccountId.equals(nodeAccountId) && !isFree(query)) {
@@ -220,7 +221,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             log.warn("All paid queries get INVALID_NODE_ACCOUNT for non-default nodes in embedded mode");
         }
         final var responseBuffer = BufferedData.allocate(MAX_QUERY_RESPONSE_SIZE);
-        hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
+        if (asNodeOperator) {
+            hedera.operatorQueryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
+        } else {
+            hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
+        }
         return parseQueryResponse(responseBuffer);
     }
 

@@ -111,5 +111,5 @@ public interface EmbeddedHedera {
      * @param nodeAccountId the account ID of the node to send the query to
      * @return the response to the query
      */
-    Response send(@NonNull Query query, @NonNull AccountID nodeAccountId);
+    Response send(@NonNull Query query, @NonNull AccountID nodeAccountId, final boolean asNodeOperator);
 }
