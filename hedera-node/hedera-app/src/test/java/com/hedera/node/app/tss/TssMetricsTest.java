@@ -59,6 +59,21 @@ public class TssMetricsTest {
     }
 
     @Test
+    public void ledgerSignatureTimeGetsUpdated() {
+        final long aggregationTime = InstantSource.system().instant().getEpochSecond();
+        tssMetrics.updateLedgerSignatureTime(aggregationTime);
+        assertThat(tssMetrics.getTssLedgerSignatureTime()).isEqualTo(aggregationTime);
+    }
+
+    @Test
+    public void ledgerSignatureFailureGetsUpdated() {
+        tssMetrics.updateLedgerSignatureFailures();
+        assertThat(tssMetrics.getLedgerSignatureFailuresCounter().get()).isEqualTo(1L);
+        tssMetrics.updateLedgerSignatureFailures();
+        assertThat(tssMetrics.getLedgerSignatureFailuresCounter().get()).isEqualTo(2L);
+    }
+
+    @Test
     public void candidateRosterLifecycleGetUpdated() {
         final Instant candidateRosterLifecycleStart = InstantSource.system().instant();
         tssMetrics.trackCandidateRosterLifecycleStart(candidateRosterLifecycleStart);
