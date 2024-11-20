@@ -48,11 +48,13 @@ public final class Utilities {
 
     /**
      * Convert a string to a boolean.
-     * <p>
-     * A false is defined to be any string that, after trimming leading/trailing whitespace and conversion to lowercase,
-     * is equal to null, or the empty string, or "off" or "0", or starts with "f" or "n". All other strings are true.
      *
-     * @param par the string to convert (or null)
+     * A false is defined to be any string that, after trimming leading/trailing whitespace and conversion
+     * to lowercase, is equal to null, or the empty string, or "off" or "0", or starts with "f" or "n". All
+     * other strings are true.
+     *
+     * @param par
+     * 		the string to convert (or null)
      * @return the boolean value
      */
     public static boolean parseBoolean(String par) {
@@ -68,10 +70,11 @@ public final class Utilities {
     }
 
     /**
-     * Do a deep clone of a 2D array. Here, "deep" means that after doing x=deepClone(y), x won't be affected by changes
-     * to any part of y, such as assigning to y or to y[0] or to y[0][0].
+     * Do a deep clone of a 2D array. Here, "deep" means that after doing x=deepClone(y), x won't be
+     * affected by changes to any part of y, such as assigning to y or to y[0] or to y[0][0].
      *
-     * @param original the original array
+     * @param original
+     * 		the original array
      * @return the deep clone
      */
     public static long[][] deepClone(long[][] original) {
@@ -88,11 +91,14 @@ public final class Utilities {
     }
 
     /**
-     * Compare arrays lexicographically, with element 0 having the most influence. A null array is considered less than
-     * a non-null array. This is the same as Java.Util.Arrays#compar
+     * Compare arrays lexicographically, with element 0 having the most influence.
+     * A null array is considered less than a non-null array.
+     * This is the same as Java.Util.Arrays#compar
      *
-     * @param b1 first array
-     * @param b2 second array
+     * @param b1
+     * 		first array
+     * @param b2
+     * 		second array
      * @return 1 if first is bigger, -1 if second, 0 otherwise
      */
     public static int arrayCompare(@Nullable final Bytes b1, @Nullable final Bytes b2) {
@@ -123,12 +129,16 @@ public final class Utilities {
     }
 
     /**
-     * Compare arrays lexicographically, with element 0 having the most influence, as if each array was XORed with
-     * whitening before the comparison. The XOR doesn't actually happen, and the arrays are left unchanged.
+     * Compare arrays lexicographically, with element 0 having the most influence, as if each array was
+     * XORed with whitening before the comparison. The XOR doesn't actually happen, and the arrays are left
+     * unchanged.
      *
-     * @param a1        first array
-     * @param a2        second array
-     * @param whitening the array virtually XORed with the other two
+     * @param a1
+     * 		first array
+     * @param a2
+     * 		second array
+     * @param whitening
+     * 		the array virtually XORed with the other two
      * @return 1 if first is bigger, -1 if second, 0 otherwise
      */
     public static int arrayCompare(@Nullable final Bytes a1, @Nullable final Bytes a2, byte[] whitening) {
@@ -172,11 +182,16 @@ public final class Utilities {
     /**
      * Writes a list to the stream serializing the objects with the supplied method
      *
-     * @param list       the list to be serialized
-     * @param stream     the stream to write to
-     * @param serializer the method used to write the object
-     * @param <T>        the type of object being written
-     * @throws IOException thrown if there are any problems during the operation
+     * @param list
+     * 		the list to be serialized
+     * @param stream
+     * 		the stream to write to
+     * @param serializer
+     * 		the method used to write the object
+     * @param <T>
+     * 		the type of object being written
+     * @throws IOException
+     * 		thrown if there are any problems during the operation
      */
     @Deprecated
     public static <T> void writeList(List<T> list, SerializableDataOutputStream stream, Serializer<T> serializer)
@@ -194,12 +209,17 @@ public final class Utilities {
     /**
      * Reads a list from the stream deserializing the objects with the supplied method
      *
-     * @param stream       the stream to read from
-     * @param listSupplier a method that supplies the list to add to
-     * @param deserializer a method used to deserialize the objects
-     * @param <T>          the type of object contained in the list
+     * @param stream
+     * 		the stream to read from
+     * @param listSupplier
+     * 		a method that supplies the list to add to
+     * @param deserializer
+     * 		a method used to deserialize the objects
+     * @param <T>
+     * 		the type of object contained in the list
      * @return a list that was read from the stream, can be null if that was written
-     * @throws IOException thrown if there are any problems during the operation
+     * @throws IOException
+     * 		thrown if there are any problems during the operation
      */
     @Deprecated
     public static <T> List<T> readList(
@@ -219,7 +239,8 @@ public final class Utilities {
     /**
      * Convert the given long to bytes, big endian.
      *
-     * @param n the long to convert
+     * @param n
+     * 		the long to convert
      * @return a big-endian representation of n as an array of Long.BYTES bytes
      */
     public static byte[] toBytes(long n) {
@@ -231,9 +252,12 @@ public final class Utilities {
     /**
      * Convert the given long to bytes, big endian, and put them into the array, starting at index start
      *
-     * @param bytes the array to hold the Long.BYTES bytes of result
-     * @param n     the long to convert to bytes
-     * @param start the bytes are written to Long.BYTES elements of the array, starting with this index
+     * @param bytes
+     * 		the array to hold the Long.BYTES bytes of result
+     * @param n
+     * 		the long to convert to bytes
+     * @param start
+     * 		the bytes are written to Long.BYTES elements of the array, starting with this index
      */
     public static void toBytes(long n, byte[] bytes, int start) {
         for (int i = start + Long.BYTES - 1; i >= start; i--) {
@@ -245,7 +269,8 @@ public final class Utilities {
     /**
      * convert the given byte array to a long
      *
-     * @param b the byte array to convert (at least 8 bytes)
+     * @param b
+     * 		the byte array to convert (at least 8 bytes)
      * @return the long that was represented by the array
      */
     public static long toLong(byte[] b) {
@@ -255,8 +280,10 @@ public final class Utilities {
     /**
      * convert part of the given byte array to a long, starting with index start
      *
-     * @param b     the byte array to convert
-     * @param start the index of the first byte (most significant byte) of the 8 bytes to convert
+     * @param b
+     * 		the byte array to convert
+     * @param start
+     * 		the index of the first byte (most significant byte) of the 8 bytes to convert
      * @return the long
      */
     public static long toLong(byte[] b, int start) {
@@ -269,17 +296,20 @@ public final class Utilities {
     }
 
     /**
-     * if it is or caused by SocketException, we should log it with SOCKET_EXCEPTIONS marker
+     * if it is or caused by SocketException,
+     * we should log it with SOCKET_EXCEPTIONS marker
      *
      * @param ex
-     * @return return true if it is a SocketException or is caused by SocketException; return false otherwise
+     * @return return true if it is a SocketException or is caused by SocketException;
+     * 		return false otherwise
      */
     public static boolean isOrCausedBySocketException(final Throwable ex) {
         return isRootCauseSuppliedType(ex, SocketException.class);
     }
 
     /**
-     * @param e the exception to check
+     * @param e
+     * 		the exception to check
      * @return true if the cause is an IOException
      */
     public static boolean isCausedByIOException(final Exception e) {
@@ -289,8 +319,10 @@ public final class Utilities {
     /**
      * Unwraps a Throwable and checks the root cause
      *
-     * @param t    the throwable to unwrap
-     * @param type the type to check against
+     * @param t
+     * 		the throwable to unwrap
+     * @param type
+     * 		the type to check against
      * @return true if the root cause matches the supplied type
      */
     public static boolean isRootCauseSuppliedType(final Throwable t, final Class<? extends Throwable> type) {
@@ -308,8 +340,10 @@ public final class Utilities {
     /**
      * Checks all nesting of causes for any instance of the supplied type.
      *
-     * @param throwable the throwable to unwrap
-     * @param type      the type to check against
+     * @param throwable
+     * 		the throwable to unwrap
+     * @param type
+     * 		the type to check against
      * @return true if any of the causes matches the supplied type, false otherwise.
      */
     public static boolean hasAnyCauseSuppliedType(
@@ -326,11 +360,13 @@ public final class Utilities {
     }
 
     /**
-     * Create a list of PeerInfos from the roster book. The list will contain information about all peers but not us.
+     * Create a list of PeerInfos from the roster. The list will contain information about all peers but not us.
      * Peers without valid gossip certificates are not included.
      *
-     * @param roster the roster to create the list from
-     * @param selfId our ID
+     * @param roster
+     * 		the roster to create the list from
+     * @param selfId
+     * 		our ID
      * @return a list of PeerInfo
      */
     public static @NonNull List<PeerInfo> createPeerInfoList(

@@ -96,13 +96,14 @@ public final class PlatformBuilder {
             (t, e) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception on thread {}: {}", t, e);
 
     /**
-     * A RosterHistory that allows one to lookup a roster for a given round, or get the active/previous roster.
+     * A RosterHistory that allows one to lookup a roster for a given round,
+     * or get the active/previous roster.
      */
     private RosterHistory rosterHistory;
 
     /**
-     * A consensusEventStreamName for DefaultConsensusEventStream. See javadoc and comments in
-     * AddressBookUtils.formatConsensusEventStreamName() for more details.
+     * A consensusEventStreamName for DefaultConsensusEventStream.
+     * See javadoc and comments in AddressBookUtils.formatConsensusEventStreamName() for more details.
      */
     private final String consensusEventStreamName;
 
@@ -146,15 +147,14 @@ public final class PlatformBuilder {
      * the app will pass the loaded state via the initialState argument to this method. If the snapshot doesn't exist,
      * then the app will create a new genesis state and pass it via the same initialState argument.
      *
-     * @param appName                  the name of the application, currently used for deciding where to store states on
-     *                                 disk
-     * @param swirldName               the name of the swirld, currently used for deciding where to store states on
-     *                                 disk
-     * @param selfId                   the ID of this node
-     * @param softwareVersion          the software version of the application
-     * @param initialState             the initial state supplied by the application
+     * @param appName             the name of the application, currently used for deciding where to store states on
+     *                            disk
+     * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
+     * @param selfId              the ID of this node
+     * @param softwareVersion     the software version of the application
+     * @param initialState        the initial state supplied by the application
      * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
-     * @param rosterHistory            the roster history provided by the application to use at startup
+     * @param rosterHistory       the roster history provided by the application to use at startup
      */
     @NonNull
     public static PlatformBuilder create(
@@ -172,15 +172,14 @@ public final class PlatformBuilder {
     /**
      * Constructor.
      *
-     * @param appName                  the name of the application, currently used for deciding where to store states on
-     *                                 disk
-     * @param swirldName               the name of the swirld, currently used for deciding where to store states on
-     *                                 disk
-     * @param softwareVersion          the software version of the application
-     * @param initialState             the genesis state supplied by application
-     * @param selfId                   the ID of this node
+     * @param appName               the name of the application, currently used for deciding where to store states on
+     *                              disk
+     * @param swirldName            the name of the swirld, currently used for deciding where to store states on disk
+     * @param softwareVersion       the software version of the application
+     * @param initialState          the genesis state supplied by application
+     * @param selfId                the ID of this node
      * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
-     * @param rosterHistory            the roster history provided by the application to use at startup
+     * @param rosterHistory         the roster history provided by the application to use at startup
      */
     private PlatformBuilder(
             @NonNull final String appName,

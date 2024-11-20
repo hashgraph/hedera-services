@@ -101,8 +101,8 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
      * @param platformContext        the platform context
      * @param signatureVerifier      a verifier for checking event signatures
      * @param currentSoftwareVersion the current software version
-     * @param previousRoster         the previous address book
-     * @param currentRoster          the current address book
+     * @param previousRoster    the previous address book
+     * @param currentRoster     the current address book
      * @param intakeEventCounter     keeps track of the number of events in the intake pipeline from each peer
      */
     public DefaultEventSignatureValidator(
@@ -130,7 +130,8 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
     }
 
     /**
-     * Determine whether the previous roster or the current roster should be used to verify an event's signature.
+     * Determine whether the previous roster or the current roster should be used to verify an event's
+     * signature.
      * <p>
      * Logs an error and returns null if an applicable roster cannot be selected
      *
