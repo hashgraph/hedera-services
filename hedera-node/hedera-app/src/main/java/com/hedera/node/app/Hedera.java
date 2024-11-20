@@ -384,7 +384,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 this,
-                bootstrapConfigProvider::getConfiguration,
+                () -> configProvider.getConfiguration(),
                 () -> daggerApp.networkInfo().selfNodeInfo());
         tssBaseService = tssBaseServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
@@ -882,6 +882,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
 
     public QueryWorkflow queryWorkflow() {
         return daggerApp.queryWorkflow();
+    }
+
+    public QueryWorkflow operatorQueryWorkflow() {
+        return daggerApp.operatorQueryWorkflow();
     }
 
     public HandleWorkflow handleWorkflow() {

@@ -20,6 +20,7 @@ plugins {
     id("java")
     id("maven-publish")
     id("signing")
+    id("io.freefair.maven-central.validate-poms")
 }
 
 tasks.withType<PublishToMavenRepository>().configureEach {
@@ -110,6 +111,7 @@ val maven =
             developers {
                 devGroups.forEach { mail, team ->
                     developer {
+                        id = team as String
                         name = team as String
                         email = mail as String
                         organization = "Hedera Hashgraph"
@@ -129,3 +131,5 @@ if (publishSigningEnabled) {
         useGpgCmd()
     }
 }
+
+tasks.named("qualityGate") { dependsOn(tasks.validatePomFiles) }

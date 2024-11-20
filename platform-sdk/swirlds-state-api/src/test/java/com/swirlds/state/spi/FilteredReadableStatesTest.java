@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state;
+package com.swirlds.state.spi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.MapReadableStates;
 import com.swirlds.state.test.fixtures.StateTestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -31,16 +30,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class FilteredWritableStatesTest {
+class FilteredReadableStatesTest {
     @Nested
-    @DisplayName("FilteredWritableStates over an empty delegate WritableStates")
+    @DisplayName("FilteredReadableStates over an empty delegate ReadableStates")
     class EmptyDelegate extends StateTestBase {
-        private FilteredWritableStates states;
+        private FilteredReadableStates states;
 
         @BeforeEach
         void setUp() {
-            final var delegate = MapWritableStates.builder().build();
-            states = new FilteredWritableStates(delegate, Collections.emptySet());
+            final var delegate = MapReadableStates.builder().build();
+            states = new FilteredReadableStates(delegate, Collections.emptySet());
         }
 
         @Test
@@ -78,17 +77,23 @@ class FilteredWritableStatesTest {
         @DisplayName("Throws IAE for any non-null Singleton key")
         void nonNullSingletonKey() {
             assertThatThrownBy(() -> states.getSingleton(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("Throws IAE for any non-null Queue key")
+        void nonNullQueueKey() {
+            assertThatThrownBy(() -> states.getQueue(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
         }
     }
 
     @Nested
-    @DisplayName("FilteredWritableStates with no state keys specified")
+    @DisplayName("FilteredReadableStates with no state keys specified")
     class NoStateKeys extends StateTestBase {
-        private FilteredWritableStates states;
+        private FilteredReadableStates states;
 
         @BeforeEach
         void setUp() {
-            states = new FilteredWritableStates(allWritableStates(), Collections.emptySet());
+            states = new FilteredReadableStates(allReadableStates(), Collections.emptySet());
         }
 
         @Test
@@ -126,35 +131,41 @@ class FilteredWritableStatesTest {
         @DisplayName("Throws IAE for any non-null Singleton key")
         void nonNullSingletonKey() {
             assertThatThrownBy(() -> states.getSingleton(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("Throws IAE for any non-null Queue key")
+        void nonNullQueueKey() {
+            assertThatThrownBy(() -> states.getQueue(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
         }
 
         @NonNull
-        protected MapWritableStates allWritableStates() {
-            return MapWritableStates.builder()
-                    .state(writableAnimalState())
-                    .state(writableCountryState())
-                    .state(writableAnimalState())
-                    .state(writableSTEAMState())
-                    .state(writableSpaceState())
+        protected MapReadableStates allReadableStates() {
+            return MapReadableStates.builder()
+                    .state(readableFruitState())
+                    .state(readableCountryState())
+                    .state(readableAnimalState())
+                    .state(readableSTEAMState())
+                    .state(readableSpaceState())
                     .build();
         }
     }
 
     @Nested
-    @DisplayName("FilteredWritableStates with a subset of state keys available in the delegate")
+    @DisplayName("FilteredReadableStates with a subset of state keys available in the delegate")
     class Subset extends StateTestBase {
-        private FilteredWritableStates states;
+        private FilteredReadableStates states;
 
         @BeforeEach
         void setUp() {
-            final var delegate = MapWritableStates.builder()
-                    .state(writableFruitState())
-                    .state(writableCountryState()) // <-- singleton state
-                    .state(writableAnimalState())
-                    .state(writableSpaceState()) // <-- singleton state
-                    .state(writableSTEAMState()) // <-- queue state
+            final var delegate = MapReadableStates.builder()
+                    .state(readableFruitState())
+                    .state(readableCountryState()) // <-- singleton state
+                    .state(readableAnimalState())
+                    .state(readableSpaceState()) // <-- singleton state
+                    .state(readableSTEAMState()) // <-- queue state
                     .build();
-            states = new FilteredWritableStates(delegate, Set.of(ANIMAL_STATE_KEY, COUNTRY_STATE_KEY));
+            states = new FilteredReadableStates(delegate, Set.of(ANIMAL_STATE_KEY, COUNTRY_STATE_KEY));
         }
 
         @Test
@@ -196,17 +207,17 @@ class FilteredWritableStatesTest {
     }
 
     @Nested
-    @DisplayName("FilteredWritableStates allows more state keys than are in the delegate")
+    @DisplayName("FilteredReadableStates allows more state keys than are in the delegate")
     class Superset extends StateTestBase {
-        private FilteredWritableStates states;
+        private FilteredReadableStates states;
 
         @BeforeEach
         void setUp() {
-            final var delegate = MapWritableStates.builder()
-                    .state(writableFruitState())
-                    .state(writableCountryState())
+            final var delegate = MapReadableStates.builder()
+                    .state(readableFruitState())
+                    .state(readableCountryState())
                     .build();
-            states = new FilteredWritableStates(
+            states = new FilteredReadableStates(
                     delegate, Set.of(FRUIT_STATE_KEY, ANIMAL_STATE_KEY, COUNTRY_STATE_KEY, SPACE_STATE_KEY));
         }
 
@@ -250,14 +261,14 @@ class FilteredWritableStatesTest {
     @Nested
     @DisplayName("StateKeys Tests")
     class StateKeysTest extends StateTestBase {
-        private WritableStates delegate;
+        private ReadableStates delegate;
 
         @BeforeEach
         void setUp() {
-            delegate = MapWritableStates.builder()
-                    .state(writableFruitState())
-                    .state(writableAnimalState())
-                    .state(writableSpaceState())
+            delegate = MapReadableStates.builder()
+                    .state(readableFruitState())
+                    .state(readableAnimalState())
+                    .state(readableSpaceState())
                     .build();
         }
 
@@ -267,27 +278,27 @@ class FilteredWritableStatesTest {
             // Given a delegate with multiple k/v states and a set of state keys that are
             // a subset of keys in the delegate AND contain some keys not in the delegate
             final var stateKeys = Set.of(SPACE_STATE_KEY, STEAM_STATE_KEY);
-            final var filtered = new FilteredWritableStates(delegate, stateKeys);
+            final var filtered = new FilteredReadableStates(delegate, stateKeys);
 
             // When we look at the contents of the filtered `stateKeys`
             final var filteredStateKeys = filtered.stateKeys();
 
             // Then we find only those states that are both in the state keys passed to
-            // the FilteredWritableStates, and in the delegate.
+            // the FilteredReadableStates, and in the delegate.
             assertThat(filteredStateKeys).containsExactlyInAnyOrder(SPACE_STATE_KEY);
         }
 
         @Test
         @DisplayName("A modifiable `stateKeys` set provided to a constructor can be changed without"
-                + " impacting the FilteredWritableStates")
+                + " impacting the FilteredReadableStates")
         void modifiableStateKeys() {
             // Given a delegate with multiple k/v states and a modifiable set of state keys,
             final var modifiableStateKeys = new HashSet<String>();
             modifiableStateKeys.add(SPACE_STATE_KEY);
 
-            // When a FilteredWritableStates is created, and the Set of all state keys for
+            // When a FilteredReadableStates is created, and the Set of all state keys for
             // the filtered set is read and the modifiable state keys map is modified
-            final var filtered = new FilteredWritableStates(delegate, modifiableStateKeys);
+            final var filtered = new FilteredReadableStates(delegate, modifiableStateKeys);
             final var filteredStateKeys = filtered.stateKeys();
             modifiableStateKeys.add(ANIMAL_STATE_KEY);
             modifiableStateKeys.remove(SPACE_STATE_KEY);
@@ -299,9 +310,9 @@ class FilteredWritableStatesTest {
         @Test
         @DisplayName("The set of filtered state keys is unmodifiable")
         void filteredStateKeysAreUnmodifiable() {
-            // Given a FilteredWritableStates
+            // Given a FilteredReadableStates
             final var stateKeys = Set.of(SPACE_STATE_KEY, ANIMAL_STATE_KEY);
-            final var filtered = new FilteredWritableStates(delegate, stateKeys);
+            final var filtered = new FilteredReadableStates(delegate, stateKeys);
 
             // When the filtered state keys is read and a modification attempted,
             // then an exception is thrown
