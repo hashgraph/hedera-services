@@ -149,11 +149,15 @@ public class V056AddressBookSchema extends Schema {
                     .weight(nodeInfo.stake())
                     .adminKey(adminKey)
                     .serviceEndpoint(nodeDetail != null ? nodeDetail.serviceEndpoint() : emptyList())
-                    .grpcCertificateHash(nodeDetail != null ? nodeDetail.nodeCertHash() : Bytes.EMPTY);
+                    .grpcCertificateHash(getHashFromNodeDetail(nodeDetail));
 
             writableNodes.put(
                     EntityNumber.newBuilder().number(nodeInfo.nodeId()).build(), nodeBuilder.build());
         }
         log.info("Migrated {} nodes from address book", addressBook.size());
+    }
+
+    private Bytes getHashFromNodeDetail(@Nullable final NodeAddress nodeDetail) {
+        return nodeDetail != null ? Bytes.fromHex(nodeDetail.nodeCertHash().asUtf8String()) : Bytes.EMPTY;
     }
 }

@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state;
+package com.swirlds.state.spi;
 
-import com.swirlds.state.spi.WritableQueueState;
-import com.swirlds.state.spi.WritableQueueStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 

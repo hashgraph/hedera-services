@@ -36,8 +36,8 @@ import org.junit.jupiter.api.Test;
 public class TssUtilsTest {
     @Test
     public void testComputeParticipantDirectory() {
-        RosterEntry rosterEntry1 = new RosterEntry(1L, 100L, null, null, null);
-        RosterEntry rosterEntry2 = new RosterEntry(2L, 50L, null, null, null);
+        RosterEntry rosterEntry1 = new RosterEntry(1L, 100L, null, null);
+        RosterEntry rosterEntry2 = new RosterEntry(2L, 50L, null, null);
         long maxSharesPerNode = 10L;
         int selfNodeId = 1;
 
@@ -78,8 +78,8 @@ public class TssUtilsTest {
 
     @Test
     public void testGetTssMessages() {
-        RosterEntry rosterEntry1 = new RosterEntry(1L, 100L, null, null, null);
-        RosterEntry rosterEntry2 = new RosterEntry(2L, 50L, null, null, null);
+        RosterEntry rosterEntry1 = new RosterEntry(1L, 100L, null, null);
+        RosterEntry rosterEntry2 = new RosterEntry(2L, 50L, null, null);
         long maxSharesPerNode = 10L;
         int selfNodeId = 1;
 
@@ -97,8 +97,8 @@ public class TssUtilsTest {
 
     @Test
     public void testComputeNodeShares() {
-        RosterEntry entry1 = new RosterEntry(1L, 100L, null, null, null);
-        RosterEntry entry2 = new RosterEntry(2L, 50L, null, null, null);
+        RosterEntry entry1 = new RosterEntry(1L, 100L, null, null);
+        RosterEntry entry2 = new RosterEntry(2L, 50L, null, null);
 
         List<RosterEntry> entries = List.of(entry1, entry2);
         long maxTssMessagesPerNode = 10L;

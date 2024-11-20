@@ -42,6 +42,8 @@ public class FakeTssLibrary implements TssLibrary {
     private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
     private static final BlsPrivateKey PRIVATE_KEY =
             new BlsPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    public static final BlsSignature FAKE_SIGNATURE =
+            new BlsSignature(new FakeGroupElement(BigInteger.valueOf(1L)), SIGNATURE_SCHEMA);
 
     public interface DirectoryAssertion {
         void assertExpected(@NonNull TssParticipantDirectory directory) throws AssertionError;
@@ -113,7 +115,7 @@ public class FakeTssLibrary implements TssLibrary {
     @Override
     public boolean verifyTssMessage(
             @NonNull final TssParticipantDirectory participantDirectory, @NonNull final Bytes tssMessage) {
-        return new String(tssMessage.toBytes()).startsWith(VALID_MESSAGE_PREFIX);
+        return tssMessage.toString().startsWith(VALID_MESSAGE_PREFIX);
     }
 
     /**
@@ -176,7 +178,7 @@ public class FakeTssLibrary implements TssLibrary {
     @NonNull
     @Override
     public BlsSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures) {
-        return new BlsSignature(new FakeGroupElement(BigInteger.valueOf(0L)), SIGNATURE_SCHEMA);
+        return FAKE_SIGNATURE;
     }
 
     @NonNull

@@ -161,8 +161,8 @@ public class TssCryptographyManagerTest {
 
     @Test
     void testComputeNodeShares() {
-        RosterEntry entry1 = new RosterEntry(1L, 100L, null, null, null);
-        RosterEntry entry2 = new RosterEntry(2L, 50L, null, null, null);
+        RosterEntry entry1 = new RosterEntry(1L, 100L, null, null);
+        RosterEntry entry2 = new RosterEntry(2L, 50L, null, null);
 
         Map<Long, Long> result = computeNodeShares(List.of(entry1, entry2), 10L);
 

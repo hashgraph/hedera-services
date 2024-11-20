@@ -1,5 +1,3 @@
-import com.hedera.cryptography.pairings.spi.PairingFriendlyCurveProvider;
-// import com.hedera.cryptography.altbn128.spi.AltBn128Provider;
 import com.hedera.node.app.config.ServicesConfigExtension;
 import com.swirlds.config.api.ConfigurationExtension;
 
@@ -25,6 +23,9 @@ module com.hedera.node.app {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
+    requires transitive com.hedera.cryptography.bls;
+    requires transitive com.hedera.cryptography.pairings.api;
+    requires transitive com.hedera.cryptography.tss;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive io.grpc.stub;
@@ -48,9 +49,6 @@ module com.hedera.node.app {
     requires com.swirlds.virtualmap;
     requires com.google.common;
     requires com.google.protobuf;
-    requires com.hedera.cryptography.bls;
-    requires com.hedera.cryptography.pairings.api;
-    requires com.hedera.cryptography.tss;
     requires io.grpc.netty;
     requires io.grpc;
     requires io.helidon.common.tls;
@@ -126,6 +124,4 @@ module com.hedera.node.app {
 
     provides ConfigurationExtension with
             ServicesConfigExtension;
-    provides PairingFriendlyCurveProvider with
-            AltBn128Provider;
 }

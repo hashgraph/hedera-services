@@ -27,8 +27,10 @@ import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -57,9 +59,8 @@ public class TssUtils {
             final int numSharesPerThisNode =
                     computedShares.get(rosterEntry.nodeId()).intValue();
             // FUTURE: Use the actual public key from the node
-            final var pairingPublicKey = new BlsPublicKey(
-                    new AltBn128GroupElement(new AltBn128Group(AltBN128CurveGroup.GROUP1), new byte[] {1}) {},
-                    SIGNATURE_SCHEMA);
+            final var pairingPublicKey =
+                    new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(1L)), SIGNATURE_SCHEMA);
             builder.withParticipant((int) rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
         }
         // FUTURE: Use the actual signature schema

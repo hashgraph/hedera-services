@@ -219,7 +219,7 @@ class DefaultKeyVerifierTest {
                     .filter(Entry::getValue)
                     .map(Entry::getKey)
                     .collect(Collectors.toCollection(() -> new TreeSet<>(KEY_COMPARATOR)));
-            final var actualKeys = subject.signingCryptoKeys();
+            final var actualKeys = subject.authorizingSimpleKeys();
             assertThat(actualKeys).isEqualTo(expectedKeys);
         }
 
