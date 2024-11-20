@@ -359,16 +359,16 @@ public class MerkleDbTest {
         Assertions.assertThrows(IllegalStateException.class, () -> instance.snapshot(snapshotDir2, activeCopy2));
 
         final MerkleDb snapshotInstance = MerkleDb.getInstance(snapshotDir, CONFIGURATION);
-        Assertions.assertTrue(Files.exists(snapshotInstance.getTableDir(tableName1, dataSource1.getTableId())));
-        Assertions.assertTrue(Files.exists(snapshotInstance.getTableDir(tableName2, activeCopy2.getTableId())));
-        Assertions.assertFalse(Files.exists(snapshotInstance.getTableDir(tableName1, inactiveCopy1.getTableId())));
-        Assertions.assertFalse(Files.exists(snapshotInstance.getTableDir(tableName2, dataSource2.getTableId())));
+        Assertions.assertTrue(Files.exists(snapshotInstance.getTableDir(tableName1, 0)));
+        Assertions.assertTrue(Files.exists(snapshotInstance.getTableDir(tableName2, 1)));
+        Assertions.assertFalse(Files.exists(snapshotInstance.getTableDir(tableName1, 2)));
+        Assertions.assertFalse(Files.exists(snapshotInstance.getTableDir(tableName2, 3)));
 
         final MerkleDb snapshotInstance2 = MerkleDb.getInstance(snapshotDir2, CONFIGURATION);
-        Assertions.assertTrue(Files.exists(snapshotInstance2.getTableDir(tableName1, inactiveCopy1.getTableId())));
-        Assertions.assertTrue(Files.exists(snapshotInstance2.getTableDir(tableName2, dataSource2.getTableId())));
-        Assertions.assertFalse(Files.exists(snapshotInstance2.getTableDir(tableName1, dataSource1.getTableId())));
-        Assertions.assertFalse(Files.exists(snapshotInstance2.getTableDir(tableName2, activeCopy2.getTableId())));
+        Assertions.assertTrue(Files.exists(snapshotInstance2.getTableDir(tableName1, 0)));
+        Assertions.assertTrue(Files.exists(snapshotInstance2.getTableDir(tableName2, 1)));
+        Assertions.assertFalse(Files.exists(snapshotInstance2.getTableDir(tableName1, 2)));
+        Assertions.assertFalse(Files.exists(snapshotInstance2.getTableDir(tableName2, 3)));
 
         dataSource1.close();
         dataSource2.close();

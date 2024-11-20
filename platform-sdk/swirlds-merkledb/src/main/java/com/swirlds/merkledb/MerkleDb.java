@@ -550,7 +550,7 @@ public final class MerkleDb {
         if (targetDb.tableExists(tableName)) {
             throw new IllegalStateException("Table already exists in the target database, " + tableName);
         }
-        targetDb.importDataSource(dataSource, dataSource.getTableId(), true, true);
+        targetDb.importDataSource(dataSource, targetDb.getNextTableId(), true, true);
         targetDb.storeMetadata();
     }
 
