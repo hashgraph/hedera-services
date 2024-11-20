@@ -418,7 +418,7 @@ public class ScheduleLongTermSignTest {
                                 .isNotDeleted()
                                 .hasRelativeExpiry(SENDER_TXN, 10)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(11000),
+                        sleepFor(TimeUnit.SECONDS.toMillis(11)),
                         cryptoCreate("foo"),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(receiver).hasTinyBars(1L));

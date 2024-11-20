@@ -186,7 +186,7 @@ public class DisabledLongTermExecutionScheduleTest {
     }
 
     @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
-    final Stream<DynamicTest> scheduledTestGetsDeletedIfNotExecuted() {
+    public Stream<DynamicTest> scheduledTestGetsDeletedIfNotExecuted() {
         return hapiTest(
                 overriding("scheduling.longTermEnabled", "false"),
                 cryptoCreate(PAYER),
