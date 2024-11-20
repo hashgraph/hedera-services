@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -216,40 +215,37 @@ public class ApproveAllowanceSuite {
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(
-                        newKeyNamed("supplyKey"),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(OWNER).maxAutomaticTokenAssociations(2),
-                        cryptoCreate("delegatingOwner").maxAutomaticTokenAssociations(1),
-                        cryptoCreate(SPENDER))
-                .when(
-                        tokenCreate("fungibleToken").initialSupply(123).treasury(TOKEN_TREASURY),
-                        tokenCreate("nonFungibleToken")
-                                .treasury(TOKEN_TREASURY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .supplyKey("supplyKey"),
-                        mintToken(
-                                "nonFungibleToken",
-                                List.of(
-                                        ByteString.copyFromUtf8("A"),
-                                        ByteString.copyFromUtf8("B"),
-                                        ByteString.copyFromUtf8("C"))),
-                        cryptoTransfer(
-                                movingUnique("nonFungibleToken", 1L, 2L).between(TOKEN_TREASURY, OWNER),
-                                moving(10, "fungibleToken").between(TOKEN_TREASURY, OWNER)),
-                        cryptoTransfer(movingUnique("nonFungibleToken", 3L).between(TOKEN_TREASURY, "delegatingOwner")))
-                .then(
-                        submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoApproveAllowance()
-                                .addNftAllowance("delegatingOwner", "nonFungibleToken", OWNER, true, List.of())
-                                .signedBy(DEFAULT_PAYER, "delegatingOwner")),
-                        submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoApproveAllowance()
-                                .addNftAllowance(OWNER, "nonFungibleToken", SPENDER, false, List.of(1L))
-                                .addTokenAllowance(OWNER, "fungibleToken", SPENDER, 1L)
-                                .addDelegatedNftAllowance(
-                                        "delegatingOwner", "nonFungibleToken", SPENDER, OWNER, false, List.of(3L))
-                                .signedBy(DEFAULT_PAYER, OWNER)));
+        return hapiTest(
+                newKeyNamed("supplyKey"),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(OWNER).maxAutomaticTokenAssociations(2),
+                cryptoCreate("delegatingOwner").maxAutomaticTokenAssociations(1),
+                cryptoCreate(SPENDER),
+                tokenCreate("fungibleToken").initialSupply(123).treasury(TOKEN_TREASURY),
+                tokenCreate("nonFungibleToken")
+                        .treasury(TOKEN_TREASURY)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .supplyKey("supplyKey"),
+                mintToken(
+                        "nonFungibleToken",
+                        List.of(
+                                ByteString.copyFromUtf8("A"),
+                                ByteString.copyFromUtf8("B"),
+                                ByteString.copyFromUtf8("C"))),
+                cryptoTransfer(
+                        movingUnique("nonFungibleToken", 1L, 2L).between(TOKEN_TREASURY, OWNER),
+                        moving(10, "fungibleToken").between(TOKEN_TREASURY, OWNER)),
+                cryptoTransfer(movingUnique("nonFungibleToken", 3L).between(TOKEN_TREASURY, "delegatingOwner")),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoApproveAllowance()
+                        .addNftAllowance("delegatingOwner", "nonFungibleToken", OWNER, true, List.of())
+                        .signedBy(DEFAULT_PAYER, "delegatingOwner")),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoApproveAllowance()
+                        .addNftAllowance(OWNER, "nonFungibleToken", SPENDER, false, List.of(1L))
+                        .addTokenAllowance(OWNER, "fungibleToken", SPENDER, 1L)
+                        .addDelegatedNftAllowance(
+                                "delegatingOwner", "nonFungibleToken", SPENDER, OWNER, false, List.of(3L))
+                        .signedBy(DEFAULT_PAYER, OWNER)));
     }
 
     @HapiTest

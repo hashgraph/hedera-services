@@ -154,10 +154,16 @@ public final class RosterRetriever {
     @NonNull
     public static RosterEntry buildRosterEntry(@NonNull final Address address) {
         try {
+            // There's code, especially in tests, that creates AddressBooks w/o any certificates/keys
+            // (because it would be time-consuming, and these tests don't use the keys anyway.)
+            // So we need to be able to handle this situation here:
+            final Bytes cert = address.getSigCert() == null
+                    ? Bytes.EMPTY
+                    : Bytes.wrap(address.getSigCert().getEncoded());
             return RosterEntry.newBuilder()
                     .nodeId(address.getNodeId().id())
                     .weight(address.getWeight())
-                    .gossipCaCertificate(Bytes.wrap(address.getSigCert().getEncoded()))
+                    .gossipCaCertificate(cert)
                     .gossipEndpoint(List.of(
                                     Pair.of(address.getHostnameExternal(), address.getPortExternal()),
                                     Pair.of(address.getHostnameInternal(), address.getPortInternal()))

@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -539,21 +538,20 @@ public class CryptoTransferHTSSuite {
         final var TXN_FROM_NON_EXISTING_ADDRESS = "TXN_FROM_NON_EXISTING_ADDRESS";
         final var TXN_WITH_NON_EXISTING_TOKEN = "TXN_WITH_NON_EXISTING_TOKEN";
 
-        return defaultHapiSpec("hapiTransferFromForFungibleTokenWithInvalidAddressesFails")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .initialSupply(10L)
-                                .maxSupply(1000L)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(OWNER),
-                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
-                        contractCreate(HTS_TRANSFER_FROM_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .initialSupply(10L)
+                        .maxSupply(1000L)
+                        .supplyKey(MULTI_KEY)
+                        .treasury(OWNER),
+                uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         // transfer TO address that does not exist
                         contractCall(
@@ -596,20 +594,19 @@ public class CryptoTransferHTSSuite {
                                 .gas(100_000_00L)
                                 .via(TXN_WITH_NON_EXISTING_TOKEN)
                                 .payingWith(GENESIS)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(
-                        childRecordsCheck(
-                                TXN_TO_NON_EXISTING_ADDRESS,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_ALIAS_KEY)),
-                        childRecordsCheck(
-                                TXN_FROM_NON_EXISTING_ADDRESS,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_ACCOUNT_ID)),
-                        childRecordsCheck(
-                                TXN_WITH_NON_EXISTING_TOKEN,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_ID)));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))),
+                childRecordsCheck(
+                        TXN_TO_NON_EXISTING_ADDRESS,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(INVALID_ALIAS_KEY)),
+                childRecordsCheck(
+                        TXN_FROM_NON_EXISTING_ADDRESS,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(INVALID_ACCOUNT_ID)),
+                childRecordsCheck(
+                        TXN_WITH_NON_EXISTING_TOKEN,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(INVALID_TOKEN_ID)));
     }
 
     @HapiTest
@@ -620,34 +617,32 @@ public class CryptoTransferHTSSuite {
         final var TXN_WITH_AMOUNT_OVERFLOW_UINT = "TXN_WITH_AMOUNT_OVERFLOW_UINT";
 
         final var allowance = 10L;
-        return defaultHapiSpec("hapiTransferFromForFungibleTokenWithInvalidAmountsFails")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
-                        cryptoCreate(SPENDER).maxAutomaticTokenAssociations(5),
-                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .initialSupply(15L)
-                                .maxSupply(1000L)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(OWNER),
-                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
-                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
-                        uploadInitCode(NEGATIVE_HTS_TRANSFER_FROM_CONTRACT),
-                        contractCreate(NEGATIVE_HTS_TRANSFER_FROM_CONTRACT),
-                        cryptoApproveAllowance()
-                                .payingWith(DEFAULT_PAYER)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, HTS_TRANSFER_FROM_CONTRACT, allowance)
-                                .signedBy(DEFAULT_PAYER, OWNER)
-                                .fee(ONE_HBAR),
-                        getAccountDetails(OWNER)
-                                .payingWith(GENESIS)
-                                .has(accountDetailsWith()
-                                        .tokenAllowancesContaining(
-                                                FUNGIBLE_TOKEN, HTS_TRANSFER_FROM_CONTRACT, allowance)))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
+                cryptoCreate(SPENDER).maxAutomaticTokenAssociations(5),
+                cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .initialSupply(15L)
+                        .maxSupply(1000L)
+                        .supplyKey(MULTI_KEY)
+                        .treasury(OWNER),
+                uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                uploadInitCode(NEGATIVE_HTS_TRANSFER_FROM_CONTRACT),
+                contractCreate(NEGATIVE_HTS_TRANSFER_FROM_CONTRACT),
+                cryptoApproveAllowance()
+                        .payingWith(DEFAULT_PAYER)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, HTS_TRANSFER_FROM_CONTRACT, allowance)
+                        .signedBy(DEFAULT_PAYER, OWNER)
+                        .fee(ONE_HBAR),
+                getAccountDetails(OWNER)
+                        .payingWith(GENESIS)
+                        .has(accountDetailsWith()
+                                .tokenAllowancesContaining(FUNGIBLE_TOKEN, HTS_TRANSFER_FROM_CONTRACT, allowance)),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         // transfer with amount > allowance for the caller
                         contractCall(
@@ -710,16 +705,15 @@ public class CryptoTransferHTSSuite {
                                 .via(TXN_WITH_AMOUNT_OVERFLOW_UINT)
                                 .payingWith(GENESIS)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                        emptyChildRecordsCheck(TXN_WITH_AMOUNT_OVERFLOW_UINT, CONTRACT_REVERT_EXECUTED))))
-                .then(
-                        childRecordsCheck(
-                                TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(AMOUNT_EXCEEDS_ALLOWANCE)),
-                        childRecordsCheck(
-                                TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INSUFFICIENT_TOKEN_BALANCE)));
+                        emptyChildRecordsCheck(TXN_WITH_AMOUNT_OVERFLOW_UINT, CONTRACT_REVERT_EXECUTED))),
+                childRecordsCheck(
+                        TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(AMOUNT_EXCEEDS_ALLOWANCE)),
+                childRecordsCheck(
+                        TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(INSUFFICIENT_TOKEN_BALANCE)));
     }
 
     @HapiTest

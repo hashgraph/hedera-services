@@ -44,6 +44,8 @@ timingSensitiveModuleInfo {
     requires("com.swirlds.merkle")
     requires("com.swirlds.merkle.test.fixtures")
     requires("com.swirlds.platform.core")
+    requires("com.swirlds.platform.core.test.fixtures")
+    requires("com.hedera.node.hapi")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
@@ -53,6 +55,8 @@ protobuf { protoc { artifact = "com.google.protobuf:protoc" } }
 
 configurations.configureEach {
     if (name.startsWith("protobufToolsLocator") || name.endsWith("ProtoPath")) {
+        @Suppress("UnstableApiUsage")
+        shouldResolveConsistentlyWith(configurations.getByName("mainRuntimeClasspath"))
         attributes { attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API)) }
         exclude(group = project.group.toString(), module = project.name)
         withDependencies {

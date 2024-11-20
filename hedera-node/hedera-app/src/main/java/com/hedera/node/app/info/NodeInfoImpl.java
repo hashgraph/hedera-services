@@ -42,4 +42,15 @@ public record NodeInfoImpl(
                 rosterEntry.gossipEndpoint(),
                 rosterEntry.gossipCaCertificate());
     }
+
+    @NonNull
+    public static NodeInfo fromRosterEntry(
+            @NonNull final RosterEntry rosterEntry, @NonNull final AccountID nodeAccountID) {
+        return new NodeInfoImpl(
+                rosterEntry.nodeId(),
+                nodeAccountID,
+                rosterEntry.weight(),
+                rosterEntry.gossipEndpoint(),
+                rosterEntry.gossipCaCertificate());
+    }
 }

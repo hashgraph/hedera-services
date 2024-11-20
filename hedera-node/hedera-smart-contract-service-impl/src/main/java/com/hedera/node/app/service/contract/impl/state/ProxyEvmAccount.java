@@ -39,7 +39,7 @@ import org.hyperledger.besu.evm.code.CodeFactory;
 public class ProxyEvmAccount extends AbstractProxyEvmAccount {
 
     /*
-     * Four byte function selectors for the two functions that are eligible for proxy redirection
+     * Four byte function selectors for the functions that are eligible for proxy redirection
      * in the Hedera Account Service system contract
      */
     private static final Set<Integer> ACCOUNT_PROXY_FUNCTION_SELECTOR = Set.of(

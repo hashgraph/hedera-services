@@ -233,7 +233,6 @@ public final class CallAttemptHelpers {
         return new HasCallAttempt(
                 input,
                 OWNER_BESU_ADDRESS,
-                OWNER_BESU_ADDRESS,
                 false,
                 enhancement,
                 config,

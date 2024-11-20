@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static java.util.Objects.requireNonNull;
@@ -47,6 +48,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -56,6 +58,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -145,13 +148,17 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         hedera.initializeStatesApi(
                 state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
+        final var writableRosterStates = state.getWritableStates(RosterStateId.NAME);
         final WritableSingletonState<PlatformState> platformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
+        final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
         final var currentState = requireNonNull(platformState.get());
         platformState.put(currentState
                 .copyBuilder()
                 .addressBook(toPbjAddressBook(addressBook))
                 .build());
+        writableRosterStore.putActiveRoster(createRoster(addressBook), 0);
         ((CommittableWritableStates) writableStates).commit();
+        ((CommittableWritableStates) writableRosterStates).commit();
 
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
         hedera.onStateInitialized(state, fakePlatform(), GENESIS);
@@ -195,7 +202,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     @Override
-    public Response send(@NonNull final Query query, @NonNull final AccountID nodeAccountId) {
+    public Response send(
+            @NonNull final Query query, @NonNull final AccountID nodeAccountId, final boolean asNodeOperator) {
         requireNonNull(query);
         requireNonNull(nodeAccountId);
         if (!defaultNodeAccountId.equals(nodeAccountId) && !isFree(query)) {
@@ -203,7 +211,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             log.warn("All paid queries get INVALID_NODE_ACCOUNT for non-default nodes in embedded mode");
         }
         final var responseBuffer = BufferedData.allocate(MAX_QUERY_RESPONSE_SIZE);
-        hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
+        if (asNodeOperator) {
+            hedera.operatorQueryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
+        } else {
+            hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
+        }
         return parseQueryResponse(responseBuffer);
     }
 

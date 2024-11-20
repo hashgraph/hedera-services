@@ -32,27 +32,25 @@ import static com.swirlds.common.utility.NonCryptographicHashing.hash64;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.platform.scratchpad.Scratchpad;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -62,13 +60,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * State for the ISSTestingTool.
  */
-public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+@ConstructableIgnored
+public class ISSTestingToolState extends MerkleStateRoot {
 
     private static final Logger logger = LogManager.getLogger(ISSTestingToolState.class);
 
@@ -110,7 +110,11 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
 
     private Scratchpad<IssTestingToolScratchpad> scratchPad;
 
-    public ISSTestingToolState() {}
+    public ISSTestingToolState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(lifecycles, versionFactory);
+    }
 
     /**
      * Copy constructor.
@@ -140,6 +144,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     @Override
     public synchronized ISSTestingToolState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new ISSTestingToolState(this);
     }
 
@@ -151,6 +156,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
+        super.init(platform, trigger, previousSoftwareVersion);
 
         throwIfImmutable();
 
@@ -389,28 +395,6 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
                         + "at time after genesis {}.",
                 plannedLogError.getTimeAfterGenesis(),
                 elapsedSinceGenesis);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeLong(runningSum);
-        out.writeInstant(genesisTimestamp);
-        out.writeSerializableList(plannedIssList, false, true);
-        out.writeSerializableList(plannedLogErrorList, false, true);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        runningSum = in.readLong();
-        genesisTimestamp = in.readInstant();
-        plannedIssList = in.readSerializableList(1024, false, PlannedIss::new);
-        plannedLogErrorList = in.readSerializableList(1024, false, PlannedLogError::new);
     }
 
     /**
