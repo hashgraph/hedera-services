@@ -44,6 +44,8 @@ public class FakeTssLibrary implements TssLibrary {
     private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
     private static final PairingPrivateKey PRIVATE_KEY =
             new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    public static final PairingSignature FAKE_SIGNATURE =
+            new PairingSignature(new FakeGroupElement(BigInteger.valueOf(1L)), SIGNATURE_SCHEMA);
 
     public interface DirectoryAssertion {
         void assertExpected(@NonNull TssParticipantDirectory directory) throws AssertionError;
@@ -181,7 +183,7 @@ public class FakeTssLibrary implements TssLibrary {
     @NonNull
     @Override
     public PairingSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures) {
-        return new PairingSignature(new FakeGroupElement(BigInteger.valueOf(0L)), SIGNATURE_SCHEMA);
+        return FAKE_SIGNATURE;
     }
 
     @NonNull
