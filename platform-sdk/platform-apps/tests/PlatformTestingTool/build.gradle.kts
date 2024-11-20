@@ -55,6 +55,8 @@ protobuf { protoc { artifact = "com.google.protobuf:protoc" } }
 
 configurations.configureEach {
     if (name.startsWith("protobufToolsLocator") || name.endsWith("ProtoPath")) {
+        @Suppress("UnstableApiUsage")
+        shouldResolveConsistentlyWith(configurations.getByName("mainRuntimeClasspath"))
         attributes { attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API)) }
         exclude(group = project.group.toString(), module = project.name)
         withDependencies {

@@ -29,6 +29,7 @@ package com.swirlds.demo.stats;
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.swirlds.common.Console;
 import com.swirlds.common.platform.NodeId;
@@ -39,8 +40,7 @@ import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -297,9 +297,11 @@ public class StatsDemoMain implements SwirldMain {
 
     @NonNull
     @Override
-    public MerkleRoot newMerkleStateRoot() {
-        final State state = new State();
-        state.setSwirldState(new StatsDemoState());
+    public MerkleStateRoot newMerkleStateRoot() {
+        final MerkleStateRoot state = new StatsDemoState(
+                FAKE_MERKLE_STATE_LIFECYCLES,
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         return state;
     }
 

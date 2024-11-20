@@ -27,6 +27,7 @@ package com.swirlds.demo.hello;
  */
 
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.swirlds.common.Console;
 import com.swirlds.common.platform.NodeId;
@@ -35,9 +36,8 @@ import com.swirlds.platform.Browser;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -110,9 +110,11 @@ public class HelloSwirldDemoMain implements SwirldMain {
 
     @NonNull
     @Override
-    public MerkleRoot newMerkleStateRoot() {
-        final State state = new State();
-        state.setSwirldState(new HelloSwirldDemoState());
+    public MerkleStateRoot newMerkleStateRoot() {
+        final MerkleStateRoot state = new HelloSwirldDemoState(
+                FAKE_MERKLE_STATE_LIFECYCLES,
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         return state;
     }
 
