@@ -220,6 +220,13 @@ public class GenericConstructorRegistry<T> implements ConstructorRegistry<T> {
                 .map(MethodWrapper::method)
                 .toArray(Method[]::new);
 
+        // filter only RuntimeConstructable
+        if (methods.length > 1) {
+            methods = Arrays.stream(methods)
+                    .filter(m -> m.getReturnType().equals(RuntimeConstructable.class))
+                    .toArray(Method[]::new);
+        }
+
         if (methods.length != 1) {
             throw new IllegalArgumentException(String.format(
                     "The constructor type '%s' must have exactly 1 method,"

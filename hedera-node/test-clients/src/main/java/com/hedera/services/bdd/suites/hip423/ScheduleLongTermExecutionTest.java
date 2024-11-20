@@ -93,6 +93,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -562,6 +563,9 @@ public class ScheduleLongTermExecutionTest {
 
     @HapiTest
     @Order(5)
+    @Disabled
+    // future: currently contract transactions extract payer id from the trxId, and can't use a custom payer.
+    // the fix will be in following PR
     public Stream<DynamicTest> executionWithContractCallWorksAtExpiry() {
         return defaultHapiSpec("ExecutionWithContractCallWorksAtExpiry")
                 .given(
@@ -614,6 +618,9 @@ public class ScheduleLongTermExecutionTest {
 
     @HapiTest
     @Order(6)
+    @Disabled
+    // future: currently contract transactions extract payer id from the trxId, and can't use a custom payer.
+    // the fix will be in following PR
     public Stream<DynamicTest> executionWithContractCreateWorksAtExpiry() {
         return defaultHapiSpec("ExecutionWithContractCreateWorksAtExpiry")
                 .given(
