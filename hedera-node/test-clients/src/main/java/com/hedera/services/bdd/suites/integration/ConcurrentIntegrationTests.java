@@ -77,7 +77,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -169,7 +168,6 @@ public class ConcurrentIntegrationTests {
                                 Optional.ofNullable(amount == ONE_HUNDRED_HBARS ? "Fee was not recharged" : null)));
     }
 
-    @Disabled
     @GenesisHapiTest
     @DisplayName("fail invalid outside dispatch does not attempt to charge fees")
     final Stream<DynamicTest> failInvalidOutsideDispatchDoesNotAttemptToChargeFees() {

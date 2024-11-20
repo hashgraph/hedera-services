@@ -18,10 +18,10 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.state.WrappedWritableKVState;
-import com.hedera.node.app.spi.state.WrappedWritableQueueState;
-import com.hedera.node.app.spi.state.WrappedWritableSingletonState;
 import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.WrappedWritableKVState;
+import com.swirlds.state.spi.WrappedWritableQueueState;
+import com.swirlds.state.spi.WrappedWritableSingletonState;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;

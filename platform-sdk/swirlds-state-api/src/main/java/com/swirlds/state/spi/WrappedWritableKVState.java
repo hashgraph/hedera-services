@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state;
+package com.swirlds.state.spi;
 
-import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;

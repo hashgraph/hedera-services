@@ -16,7 +16,9 @@
 
 package com.hedera.services.bdd.suites.hip423;
 
+import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -25,10 +27,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
@@ -49,6 +54,7 @@ public class DisabledLongTermExecutionScheduleTest {
     private static final String SENDER_TXN = "senderTxn";
     private static final String CREATE_TXN = "createTxn";
     private static final String PAYER = "payer";
+    private static final String BASIC_XFER = "basicXfer";
     private static final String THREE_SIG_XFER = "threeSigXfer";
     private static final String SCHEDULING_LONG_TERM_ENABLED = "scheduling.longTermEnabled";
 
@@ -177,5 +183,23 @@ public class DisabledLongTermExecutionScheduleTest {
                                 .isExecuted()
                                 .isNotDeleted(),
                         getAccountBalance(RECEIVER).hasTinyBars(1L));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduledTestGetsDeletedIfNotExecuted() {
+        return hapiTest(
+                overriding("scheduling.longTermEnabled", "false"),
+                cryptoCreate(PAYER),
+                cryptoCreate(SENDER),
+                cryptoCreate(RECEIVER),
+                scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                        .payingWith(PAYER)
+                        .designatingPayer(PAYER)
+                        .via(CREATE_TXN),
+                getScheduleInfo(BASIC_XFER),
+                // Wait for the schedule to expire
+                sleepFor(TimeUnit.MINUTES.toMillis(31)),
+                cryptoCreate("foo").via("triggerCleanUpTxn"),
+                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 }
