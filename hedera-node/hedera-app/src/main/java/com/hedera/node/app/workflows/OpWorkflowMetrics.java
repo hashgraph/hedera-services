@@ -46,6 +46,8 @@ public class OpWorkflowMetrics {
             .withDescription("average EVM gas used per second of consensus time")
             .withFormat("%,13.6f");
 
+    private static final int MAX_PROTO_NAME_LENGTH = 255;
+
     private final Map<HederaFunctionality, TransactionMetric> transactionDurationMetrics =
             new EnumMap<>(HederaFunctionality.class);
 
@@ -70,8 +72,13 @@ public class OpWorkflowMetrics {
             if (functionality == HederaFunctionality.NONE) {
                 continue;
             }
+
+            // determine the name of the functionality
             final var protoName = functionality.protoName();
-            final var name = protoName.substring(0, 1).toLowerCase() + protoName.substring(1);
+            String name = protoName.substring(0, 1).toLowerCase() + protoName.substring(1);
+            if (name.length() > MAX_PROTO_NAME_LENGTH) {
+                name = name.substring(0, MAX_PROTO_NAME_LENGTH);
+            }
 
             // initialize the transaction duration metrics
             final var maxConfig = new IntegerAccumulator.Config("app", name + "DurationMax")
