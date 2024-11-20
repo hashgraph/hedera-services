@@ -16,7 +16,7 @@
 
 package com.hedera.node.app;
 
-import com.hedera.hapi.node.state.network.Network;
+import com.hedera.node.internal.network.Network;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.Optional;
