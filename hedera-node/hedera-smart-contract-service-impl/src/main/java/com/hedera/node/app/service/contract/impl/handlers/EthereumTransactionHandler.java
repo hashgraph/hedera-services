@@ -36,6 +36,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
@@ -176,6 +177,14 @@ public class EthereumTransactionHandler implements TransactionHandler {
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
     }
 
+    /**
+     * Calculates the fees for the given {@link FeeContext}.
+     * Even though the actual fees are not charged if the evmEthTransactionZeroHapiFeesEnabled feature flag is enabled
+     * if the transaction fails, there is a fee charged to the relayer account
+     * (see {@link com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor#chargeOnFailedEthTxn(HederaEvmTransaction) chargeOnFailedEthTxn})
+     * @param feeContext the {@link FeeContext} with all information needed for the calculation
+     * @return
+     */
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {

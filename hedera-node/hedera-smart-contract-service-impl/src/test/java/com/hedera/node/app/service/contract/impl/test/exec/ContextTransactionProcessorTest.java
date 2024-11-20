@@ -375,12 +375,14 @@ class ContextTransactionProcessorTest {
         final var outcome = subject.call();
 
         verify(customGasCharging).chargeGasForAbortedTransaction(any(), any(), any(), any());
+        // Verify that disabled zeroHapi fees flag won't charge on error
+        verify(rootProxyWorldUpdater, never()).collectFee(any(), anyLong());
         verify(rootProxyWorldUpdater).commit();
         assertEquals(INVALID_CONTRACT_ID, outcome.status());
     }
 
     @Test
-    void doesNotChargeGasFeesOnExceptionThrownIfSoConfigured() {
+    void doesNotChargeGasAndHapiFeesOnExceptionThrownIfSoConfigured() {
         final var contractsConfig = CONFIG_NO_CHARGE_ON_EXCEPTION.getConfigData(ContractsConfig.class);
         final var subject = new ContextTransactionProcessor(
                 null,
@@ -406,6 +408,8 @@ class ContextTransactionProcessorTest {
         final var outcome = subject.call();
 
         verify(customGasCharging, never()).chargeGasForAbortedTransaction(any(), any(), any(), any());
+        // Verify that disabled zeroHapi fees flag won't charge on error
+        verify(rootProxyWorldUpdater, never()).collectFee(any(), anyLong());
         verify(rootProxyWorldUpdater).commit();
         assertEquals(INVALID_CONTRACT_ID, outcome.status());
     }
