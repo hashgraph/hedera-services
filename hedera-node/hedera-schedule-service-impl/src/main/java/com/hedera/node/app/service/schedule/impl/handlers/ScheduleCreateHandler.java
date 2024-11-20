@@ -36,6 +36,7 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalseP
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
@@ -58,7 +59,6 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
@@ -68,7 +68,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#ScheduleCreate}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_CREATE}.
  */
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
@@ -216,9 +216,11 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var config = feeContext.configuration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var schedulingConfig = config.getConfigData(SchedulingConfig.class);
-        final var transactionBody = body.scheduleCreateOrElse(ScheduleCreateTransactionBody.DEFAULT)
-                .scheduledTransactionBodyOrElse(SchedulableTransactionBody.DEFAULT);
-        final var subType = transactionBody.hasContractCall() ? SCHEDULE_CREATE_CONTRACT_CALL : DEFAULT;
+        final var subType = body.scheduleCreateOrElse(ScheduleCreateTransactionBody.DEFAULT)
+                        .scheduledTransactionBodyOrElse(SchedulableTransactionBody.DEFAULT)
+                        .hasContractCall()
+                ? SCHEDULE_CREATE_CONTRACT_CALL
+                : DEFAULT;
 
         return feeContext
                 .feeCalculatorFactory()
