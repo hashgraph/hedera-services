@@ -636,9 +636,18 @@ public class HandleWorkflow {
 
     /**
      * Process all time-based events that are due since the last processing time.
+     * <p>
+     * Note: While long-term schedule transactions (and any future time-based events) will work directly on the state,
+     * we still want to pass the userTxn here and use its stack to commit the state purge. Especially when the feature
+     * flag is false.
      *
+     * @param state           the writable {@link State} that transactions will work on
+     * @param event           the {@link ConsensusEvent} that current user transaction belongs to
+     * @param creator         the {@link NodeInfo} of the creator of the user transaction
      * @param lastProcessTime an upper bound on the last time that time-based events were processed
-     * @param consensusNow the current consensus time
+     * @param consensusNow    the current consensus time
+     * @param userTxn         the user transaction
+     *
      * @return true if the interval was processed
      */
     private boolean processInterval(
