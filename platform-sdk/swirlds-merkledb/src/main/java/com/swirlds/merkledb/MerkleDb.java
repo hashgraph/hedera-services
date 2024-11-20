@@ -32,7 +32,6 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -408,10 +407,11 @@ public final class MerkleDb {
             final boolean makeCopyPrimary)
             throws IOException {
         final String label = dataSource.getTableName();
-        final MerkleDbConfig merkleDbConfig = getConfiguration().getConfigData(MerkleDbConfig.class);
         final MerkleDbTableConfig tableConfig = dataSource
                 .getTableConfig()
-                .copy(merkleDbConfig.maxNumOfKeys(), merkleDbConfig.hashesRamToDiskThreshold());
+                .copy(
+                        dataSource.getTableConfig().getMaxNumberOfKeys(),
+                        dataSource.getTableConfig().getHashesRamToDiskThreshold());
         if (tableConfigs.get(tableId) != null) {
             throw new IllegalStateException("Table with ID " + tableId + " already exists");
         }

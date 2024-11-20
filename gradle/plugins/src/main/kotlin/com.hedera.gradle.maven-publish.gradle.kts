@@ -20,6 +20,7 @@ plugins {
     id("java")
     id("maven-publish")
     id("signing")
+    id("io.freefair.maven-central.validate-poms")
 }
 
 tasks.withType<PublishToMavenRepository>().configureEach {
@@ -69,16 +70,18 @@ val maven =
                     .reader()
             )
 
+            name.set(project.name)
             url = "https://www.hashgraph.com/"
             inceptionYear = "2016"
 
+            // this field must be present. Default to empty string.
             description =
                 providers
                     .fileContents(layout.projectDirectory.file("../description.txt"))
                     .asText
-                    .orElse(provider { project.description })
+                    .orElse(provider(project::getDescription))
                     .map { it.replace("\n", " ").trim() }
-                    .orNull
+                    .orElse("")
 
             organization {
                 name = "Hedera Hashgraph, LLC"
@@ -108,6 +111,7 @@ val maven =
             developers {
                 devGroups.forEach { mail, team ->
                     developer {
+                        id = team as String
                         name = team as String
                         email = mail as String
                         organization = "Hedera Hashgraph"
