@@ -137,7 +137,9 @@ public class GenesisNetworkInfo implements NetworkInfo {
         // The NodeInfo needs to have internal ip address at index 0.
         // swap the internal and external endpoints when converting to NodeInfo.
         final var gossipEndpointsCopy = new ArrayList<>(entry.gossipEndpoint());
-        Collections.swap(gossipEndpointsCopy, 0, 1);
+        if (gossipEndpointsCopy.size() > 1) {
+            Collections.swap(gossipEndpointsCopy, 0, 1);
+        }
 
         return new NodeInfoImpl(
                 entry.nodeId(),
