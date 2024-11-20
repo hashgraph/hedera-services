@@ -152,6 +152,9 @@ public class TssCryptographyManager {
      * @return the TSS vote bit set
      */
     private BitSet asBitSet(@NonNull final List<TssMessageTransactionBody> thresholdMessages) {
+        // TODO - fix this, nodes vote for TSS messages based on their position
+        //  in consensus order of messages received for a roster hash, NOT by
+        //  the message's share index
         final var tssVoteBitSet = new BitSet();
         for (TssMessageTransactionBody op : thresholdMessages) {
             tssVoteBitSet.set((int) op.shareIndex());

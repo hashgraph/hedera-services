@@ -31,11 +31,15 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
+import com.hedera.node.app.roster.RosterService;
+import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.api.TssMessage;
+import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
@@ -45,7 +49,6 @@ import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -63,7 +66,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -87,14 +89,14 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssHandlers tssHandlers;
     private final TssSubmissions tssSubmissions;
     private final Executor tssLibraryExecutor;
-    private final ExecutorService signingExecutor;
+    private final Executor signingExecutor;
     private final TssKeysAccessor tssKeysAccessor;
     private final TssDirectoryAccessor tssDirectoryAccessor;
     private final AppContext appContext;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
-            @NonNull final ExecutorService signingExecutor,
+            @NonNull final Executor signingExecutor,
             @NonNull final Executor submissionExecutor,
             @NonNull final TssLibrary tssLibrary,
             @NonNull final Executor tssLibraryExecutor,
@@ -200,9 +202,10 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void requestLedgerSignature(final byte[] messageHash, final Instant lastUsedConsensusTime) {
+    public void requestLedgerSignature(
+            @NonNull final byte[] messageHash, @NonNull final Instant lastUsedConsensusTime) {
         requireNonNull(messageHash);
-        // (TSS-FUTURE) Initiate an asynchronous process of creating a ledger signature
+        requireNonNull(lastUsedConsensusTime);
         final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
                 () -> {
@@ -289,7 +292,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                 final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStore.class);
                 if (hasEnoughWeight(activeRoster, candidateRosterHash, tssStore)) {
                     final ReadableKVState<ProtoBytes, Roster> rosters = requireNonNull(
-                            state.getReadableStates(RosterStateId.NAME).get(RosterStateId.ROSTER_KEY));
+                            state.getReadableStates(RosterService.NAME).get(V0540RosterSchema.ROSTER_KEY));
                     // It should be impossible to set a candidate roster hash that doesn't exist
                     return requireNonNull(rosters.get(new ProtoBytes(candidateRosterHash)));
                 }
@@ -306,6 +309,16 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public void generateParticipantDirectory(@NonNull final State state) {
         tssDirectoryAccessor.generateTssParticipantDirectory(state);
+    }
+
+    @Override
+    public Bytes ledgerIdFrom(
+            @NonNull final TssParticipantDirectory directory, @NonNull final List<TssMessage> tssMessages) {
+        requireNonNull(directory);
+        requireNonNull(tssMessages);
+        final var publicShares = tssLibrary.computePublicShares(directory, tssMessages);
+        final var publicKey = tssLibrary.aggregatePublicShares(publicShares);
+        return Bytes.wrap(publicKey.publicKey().toBytes());
     }
 
     /**

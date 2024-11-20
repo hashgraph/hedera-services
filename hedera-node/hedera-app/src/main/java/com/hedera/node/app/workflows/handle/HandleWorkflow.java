@@ -21,8 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
@@ -94,9 +94,7 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -148,12 +146,12 @@ public class HandleWorkflow {
     private final UserTxnFactory userTxnFactory;
     private final AddressBookHelper addressBookHelper;
     private TssSubmissions tssSubmissions;
+    private final TssBaseService tssBaseService;
+    private final ConfigProvider configProvider;
+    private KeysAndCerts keysAndCerts;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
-    private TssBaseService tssBaseService;
-    private final ConfigProvider configProvider;
-    private KeysAndCerts keysAndCerts;
 
     @Inject
     public HandleWorkflow(
@@ -177,7 +175,7 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
-            final AddressBookHelper addressBookHelper,
+            @NonNull final AddressBookHelper addressBookHelper,
             @NonNull final TssBaseService tssBaseService,
             @NonNull final TssSubmissions tssSubmissions) {
         this.networkInfo = requireNonNull(networkInfo);
@@ -383,18 +381,10 @@ public class HandleWorkflow {
                 // Flushes the BUSY builder to the stream, no other side effects
                 userTxn.stack().commitTransaction(userTxn.baseBuilder());
             } else {
-                final var keyCandidateRoster =
-                        userTxn.config().getConfigData(TssConfig.class).keyCandidateRoster();
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     systemSetup.externalizeInitSideEffects(
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
-                    // Set the genesis roster in state
-                    final var writableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
-                    final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
-
-                    rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     final var writableStoreFactory = new WritableStoreFactory(
                             userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
@@ -490,7 +480,7 @@ public class HandleWorkflow {
         RecordSource cacheableRecordSource = null;
         final RecordSource recordSource;
         if (streamMode != BLOCKS) {
-            final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_TRANSACTION_CUSTOMIZER, USER);
             initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                     .status(FAIL_INVALID)
                     .consensusTimestamp(userTxn.consensusNow());
@@ -506,7 +496,7 @@ public class HandleWorkflow {
         final BlockRecordSource blockRecordSource;
         if (streamMode != RECORDS) {
             final List<BlockStreamBuilder.Output> outputs = new LinkedList<>();
-            final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_TRANSACTION_CUSTOMIZER, USER);
             initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                     .status(FAIL_INVALID)
                     .consensusTimestamp(userTxn.consensusNow());

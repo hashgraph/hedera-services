@@ -23,13 +23,16 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -78,6 +81,14 @@ public interface HederaNativeOperations {
      */
     @NonNull
     ReadableAccountStore readableAccountStore();
+
+    /**
+     * Returns the {@link ReadableScheduleStore} for this {@link HederaNativeOperations}.
+     *
+     * @return the {@link ReadableScheduleStore}
+     */
+    @NonNull
+    ReadableScheduleStore readableScheduleStore();
 
     /**
      * Returns the {@link Account} with the given number.
@@ -164,6 +175,18 @@ public interface HederaNativeOperations {
                         .tokenId(TokenID.newBuilder().tokenNum(tokenNumber))
                         .serialNumber(serialNo)
                         .build());
+    }
+
+    /**
+     * Returns the {@link Schedule} with the given number.
+     *
+     * @param number the schedule number
+     * @return the schedule transaction, or {@code null} if no such schedule transactionexists
+     */
+    @Nullable
+    default Schedule getSchedule(final long number) {
+        return readableScheduleStore()
+                .get(ScheduleID.newBuilder().scheduleNum(number).build());
     }
 
     /**

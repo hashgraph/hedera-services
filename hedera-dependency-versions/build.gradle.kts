@@ -169,7 +169,7 @@ dependencies.constraints {
     api("org.assertj:assertj-core:3.23.1") {
         because("org.assertj.core")
     }
-    api("org.bouncycastle:bcpkix-jdk18on:1.78") {
+    api("org.bouncycastle:bcpkix-jdk18on:1.79") {
         because("org.bouncycastle.pkix")
     }
     api("org.bouncycastle:bcprov-jdk18on:1.78") {

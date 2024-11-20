@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssMetrics;
+import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -92,7 +93,6 @@ public class TssVoteHandler implements TransactionHandler {
     public static boolean hasReachedThreshold(
             @NonNull final TssVoteTransactionBody tssVoteTransaction, @NonNull final HandleContext context) {
         final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
-
         final var activeRoster = rosterStore.getActiveRoster();
         if (activeRoster == null) {
             throw new IllegalArgumentException("No active roster found");
@@ -103,7 +103,7 @@ public class TssVoteHandler implements TransactionHandler {
         long activeRosterTotalWeight = 0;
         // Initialize a counter for the total weight of votes with the same vote byte array
         long voteWeight = 0L;
-        final var tssBaseStore = context.storeFactory().writableStore(WritableTssStore.class);
+        final var tssBaseStore = context.storeFactory().readableStore(ReadableTssStore.class);
         // For every node in the active roster, check if there is a vote for the target roster hash
         for (final var rosterEntry : activeRoster.rosterEntries()) {
             activeRosterTotalWeight += rosterEntry.weight();

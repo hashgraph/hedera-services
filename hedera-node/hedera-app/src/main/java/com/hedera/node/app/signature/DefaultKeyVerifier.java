@@ -145,7 +145,7 @@ public class DefaultKeyVerifier implements AppKeyVerifier {
     }
 
     @Override
-    public SortedSet<Key> signingCryptoKeys() {
+    public SortedSet<Key> authorizingSimpleKeys() {
         return keyVerifications.entrySet().stream()
                 .map(entry -> new AbstractMap.SimpleImmutableEntry<>(
                         entry.getKey(), resolveFuture(entry.getValue(), () -> failedVerification(entry.getKey()))))
