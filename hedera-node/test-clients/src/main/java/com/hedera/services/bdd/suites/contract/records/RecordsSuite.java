@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.contract.records;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -86,16 +85,15 @@ public class RecordsSuite {
         final var txName = "BigCall";
         final long byteArraySize = (long) (87.5 * 1_024);
 
-        return defaultHapiSpec("bigCall")
-                .given(
-                        cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(contractCall(contract, "pick", byteArraySize)
+        return hapiTest(
+                cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                contractCall(contract, "pick", byteArraySize)
                         .payingWith("payer")
                         .gas(400_000L)
-                        .via(txName))
-                .then(getTxnRecord(txName));
+                        .via(txName),
+                getTxnRecord(txName));
     }
 
     @HapiTest

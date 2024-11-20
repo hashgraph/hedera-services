@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -146,10 +145,9 @@ public class CryptoUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(cryptoCreate("user").stakedAccountId("0.0.20").declinedReward(true))
-                .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoUpdate("user")
+        return hapiTest(
+                cryptoCreate("user").stakedAccountId("0.0.20").declinedReward(true),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoUpdate("user")
                         .newStakedAccountId("0.0.21")));
     }
 
@@ -215,43 +213,41 @@ public class CryptoUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateForMaxAutoAssociationsForAccountsWorks() {
-        return defaultHapiSpec("updateForMaxAutoAssociationsForAccountsWorks")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT_ALICE).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
-                        cryptoCreate(ACCOUNT_PETER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
-                        cryptoCreate(ACCOUNT_TONY).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(ACCOUNT_STARK).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
-                        cryptoCreate(ACCOUNT_PARKER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
-                        tokenCreate(TOKEN_FUNGIBLE)
-                                .initialSupply(1000L)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(ACCOUNT_ALICE)
-                                .via("tokenCreate"),
-                        tokenAssociate(ACCOUNT_PETER, TOKEN_FUNGIBLE),
-                        tokenAssociate(ACCOUNT_TONY, TOKEN_FUNGIBLE))
-                .when(
-                        // Update Alice
-                        cryptoUpdate(ACCOUNT_ALICE).maxAutomaticAssociations(0),
-                        getAccountInfo(ACCOUNT_ALICE).hasMaxAutomaticAssociations(0),
-                        cryptoUpdate(ACCOUNT_ALICE).maxAutomaticAssociations(-1),
-                        getAccountInfo(ACCOUNT_ALICE).hasMaxAutomaticAssociations(-1),
-                        // Update Tony
-                        cryptoUpdate(ACCOUNT_TONY).maxAutomaticAssociations(1),
-                        getAccountInfo(ACCOUNT_TONY).hasMaxAutomaticAssociations(1),
-                        // Update Stark
-                        cryptoUpdate(ACCOUNT_STARK).maxAutomaticAssociations(-1),
-                        getAccountInfo(ACCOUNT_STARK).hasMaxAutomaticAssociations(-1),
-                        // Update Peter
-                        cryptoUpdate(ACCOUNT_PETER).maxAutomaticAssociations(-1),
-                        getAccountInfo(ACCOUNT_PETER).hasMaxAutomaticAssociations(-1),
-                        cryptoUpdate(ACCOUNT_PETER).maxAutomaticAssociations(0),
-                        getAccountInfo(ACCOUNT_PETER).hasMaxAutomaticAssociations(0),
-                        // Update Parker
-                        cryptoUpdate(ACCOUNT_PARKER).maxAutomaticAssociations(1),
-                        getAccountInfo(ACCOUNT_PARKER).hasMaxAutomaticAssociations(1))
-                .then(getTxnRecord("tokenCreate").hasNewTokenAssociation(TOKEN_FUNGIBLE, ACCOUNT_ALICE));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(ACCOUNT_ALICE).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                cryptoCreate(ACCOUNT_PETER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
+                cryptoCreate(ACCOUNT_TONY).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(ACCOUNT_STARK).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
+                cryptoCreate(ACCOUNT_PARKER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
+                tokenCreate(TOKEN_FUNGIBLE)
+                        .initialSupply(1000L)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .treasury(ACCOUNT_ALICE)
+                        .via("tokenCreate"),
+                tokenAssociate(ACCOUNT_PETER, TOKEN_FUNGIBLE),
+                tokenAssociate(ACCOUNT_TONY, TOKEN_FUNGIBLE),
+                // Update Alice
+                cryptoUpdate(ACCOUNT_ALICE).maxAutomaticAssociations(0),
+                getAccountInfo(ACCOUNT_ALICE).hasMaxAutomaticAssociations(0),
+                cryptoUpdate(ACCOUNT_ALICE).maxAutomaticAssociations(-1),
+                getAccountInfo(ACCOUNT_ALICE).hasMaxAutomaticAssociations(-1),
+                // Update Tony
+                cryptoUpdate(ACCOUNT_TONY).maxAutomaticAssociations(1),
+                getAccountInfo(ACCOUNT_TONY).hasMaxAutomaticAssociations(1),
+                // Update Stark
+                cryptoUpdate(ACCOUNT_STARK).maxAutomaticAssociations(-1),
+                getAccountInfo(ACCOUNT_STARK).hasMaxAutomaticAssociations(-1),
+                // Update Peter
+                cryptoUpdate(ACCOUNT_PETER).maxAutomaticAssociations(-1),
+                getAccountInfo(ACCOUNT_PETER).hasMaxAutomaticAssociations(-1),
+                cryptoUpdate(ACCOUNT_PETER).maxAutomaticAssociations(0),
+                getAccountInfo(ACCOUNT_PETER).hasMaxAutomaticAssociations(0),
+                // Update Parker
+                cryptoUpdate(ACCOUNT_PARKER).maxAutomaticAssociations(1),
+                getAccountInfo(ACCOUNT_PARKER).hasMaxAutomaticAssociations(1),
+                getTxnRecord("tokenCreate").hasNewTokenAssociation(TOKEN_FUNGIBLE, ACCOUNT_ALICE));
     }
 
     @HapiTest
@@ -385,10 +381,9 @@ public class CryptoUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateFailsWithOverlyLongLifetime() {
-        return defaultHapiSpec("UpdateFailsWithOverlyLongLifetime")
-                .given(cryptoCreate(TARGET_ACCOUNT))
-                .when()
-                .then(doWithStartupConfigNow("entities.maxLifetime", (value, now) -> cryptoUpdate(TARGET_ACCOUNT)
+        return hapiTest(
+                cryptoCreate(TARGET_ACCOUNT),
+                doWithStartupConfigNow("entities.maxLifetime", (value, now) -> cryptoUpdate(TARGET_ACCOUNT)
                         .expiring(now.getEpochSecond() + Long.parseLong(value) + 12345L)
                         .hasKnownStatus(INVALID_EXPIRATION_TIME)));
     }
@@ -400,37 +395,32 @@ public class CryptoUpdateSuite {
         String firstKey = "firstKey";
         String secondKey = "secondKey";
 
-        return defaultHapiSpec("sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign")
-                .given(
-                        newKeyNamed(firstKey).shape(SIMPLE),
-                        newKeyNamed(secondKey).shape(SIMPLE))
-                .when(cryptoCreate(randomAccount).key(firstKey))
-                .then(
-                        cryptoUpdate(sysAccount)
-                                .key(secondKey)
-                                .signedBy(GENESIS)
-                                .payingWith(GENESIS)
-                                .hasKnownStatus(SUCCESS)
-                                .logged(),
-                        cryptoUpdate(randomAccount)
-                                .key(secondKey)
-                                .signedBy(firstKey)
-                                .payingWith(GENESIS)
-                                .hasPrecheck(INVALID_SIGNATURE));
+        return hapiTest(
+                newKeyNamed(firstKey).shape(SIMPLE),
+                newKeyNamed(secondKey).shape(SIMPLE),
+                cryptoCreate(randomAccount).key(firstKey),
+                cryptoUpdate(sysAccount)
+                        .key(secondKey)
+                        .signedBy(GENESIS)
+                        .payingWith(GENESIS)
+                        .hasKnownStatus(SUCCESS)
+                        .logged(),
+                cryptoUpdate(randomAccount)
+                        .key(secondKey)
+                        .signedBy(firstKey)
+                        .payingWith(GENESIS)
+                        .hasPrecheck(INVALID_SIGNATURE));
     }
 
     @HapiTest
     final Stream<DynamicTest> canUpdateMemo() {
         String firstMemo = "First";
         String secondMemo = "Second";
-        return defaultHapiSpec("CanUpdateMemo")
-                .given(cryptoCreate(TARGET_ACCOUNT).balance(0L).entityMemo(firstMemo))
-                .when(
-                        cryptoUpdate(TARGET_ACCOUNT)
-                                .entityMemo(ZERO_BYTE_MEMO)
-                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        cryptoUpdate(TARGET_ACCOUNT).entityMemo(secondMemo))
-                .then(getAccountDetails(TARGET_ACCOUNT)
+        return hapiTest(
+                cryptoCreate(TARGET_ACCOUNT).balance(0L).entityMemo(firstMemo),
+                cryptoUpdate(TARGET_ACCOUNT).entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                cryptoUpdate(TARGET_ACCOUNT).entityMemo(secondMemo),
+                getAccountDetails(TARGET_ACCOUNT)
                         .payingWith(GENESIS)
                         .has(accountDetailsWith().memo(secondMemo)));
     }
