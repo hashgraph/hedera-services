@@ -26,6 +26,7 @@ import com.hedera.hapi.node.state.Network;
 import com.hedera.hapi.node.state.NodeMetadata;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.lifecycle.MigrationContext;
@@ -73,11 +74,14 @@ class V057RosterSchemaTest {
     @Mock
     private Function<WritableStates, WritableRosterStore> rosterStoreFactory;
 
+    @Mock
+    private Function<WritableStates, WritableTssStore> tssStoreFactory;
+
     private V057RosterSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new V057RosterSchema(canAdopt, rosterStoreFactory);
+        subject = new V057RosterSchema(canAdopt, rosterStoreFactory, tssStoreFactory);
     }
 
     @Test

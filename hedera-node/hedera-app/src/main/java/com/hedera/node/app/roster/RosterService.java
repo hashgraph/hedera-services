@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.roster.schemas.V057RosterSchema;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
@@ -68,6 +69,6 @@ public class RosterService implements Service {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0540RosterSchema());
-        registry.register(new V057RosterSchema(canAdopt, WritableRosterStore::new));
+        registry.register(new V057RosterSchema(canAdopt, WritableRosterStore::new, WritableTssStore::new));
     }
 }

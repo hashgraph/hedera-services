@@ -60,7 +60,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
     /**
      * Constructs a new {@link WritableRosterStore} instance.
      *
-     * @param writableStates the readable states
+     * @param writableStates the writable states
      */
     public WritableRosterStore(@NonNull final WritableStates writableStates) {
         super(writableStates);

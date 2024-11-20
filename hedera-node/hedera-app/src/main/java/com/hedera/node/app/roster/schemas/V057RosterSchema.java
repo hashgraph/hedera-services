@@ -21,7 +21,10 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.Network;
 import com.hedera.hapi.node.state.NodeMetadata;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.WritableRosterStore;
@@ -29,8 +32,10 @@ import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,12 +64,16 @@ public class V057RosterSchema extends Schema {
      */
     private final Function<WritableStates, WritableRosterStore> rosterStoreFactory;
 
+    private final Function<WritableStates, WritableTssStore> tssStoreFactory;
+
     public V057RosterSchema(
             @NonNull final Predicate<Roster> canAdopt,
-            @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory) {
+            @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory,
+            @NonNull final Function<WritableStates, WritableTssStore> tssStoreFactory) {
         super(VERSION);
         this.canAdopt = requireNonNull(canAdopt);
         this.rosterStoreFactory = requireNonNull(rosterStoreFactory);
+        this.tssStoreFactory = requireNonNull(tssStoreFactory);
     }
 
     @Override
@@ -73,16 +82,20 @@ public class V057RosterSchema extends Schema {
         if (!ctx.configuration().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             return;
         }
-        final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
+        final var states = ctx.newStates();
+        final var rosterStore = rosterStoreFactory.apply(states);
+        final var rostersEntriesNodeIds = combinedEntriesNodeIds(rosterStore);
         final var startupNetworks = ctx.startupNetworks();
         if (ctx.isGenesis()) {
             setActiveRoster(GENESIS_ROUND_NO, rosterStore, startupNetworks.genesisNetworkOrThrow());
+            cleanUpTssEncryptionKeysFromState(states, rostersEntriesNodeIds);
         } else {
             final long roundNumber = ctx.roundNumber();
             final var overrideNetwork = startupNetworks.overrideNetworkFor(roundNumber);
             if (overrideNetwork.isPresent()) {
                 log.info("Found override network for round {}", roundNumber);
                 setActiveRoster(roundNumber + 1, rosterStore, overrideNetwork.get());
+                cleanUpTssEncryptionKeysFromState(states, rostersEntriesNodeIds);
                 startupNetworks.setOverrideRound(roundNumber);
             } else if (isUpgrade(ctx)) {
                 if (rosterStore.getActiveRoster() == null) {
@@ -91,11 +104,13 @@ public class V057RosterSchema extends Schema {
                     // must have a migration network in the startup assets
                     final var network = startupNetworks.migrationNetworkOrThrow();
                     rosterStore.putActiveRoster(rosterFrom(network), roundNumber + 1);
+                    cleanUpTssEncryptionKeysFromState(states, rostersEntriesNodeIds);
                 } else {
                     final var candidateRoster = rosterStore.getCandidateRoster();
                     if (canAdopt.test(candidateRoster)) {
                         log.info("Adopting candidate roster at round {}", roundNumber);
                         rosterStore.adoptCandidateRoster(roundNumber);
+                        cleanUpTssEncryptionKeysFromState(states, rostersEntriesNodeIds);
                     }
                 }
             }
@@ -105,6 +120,27 @@ public class V057RosterSchema extends Schema {
     private void setActiveRoster(
             final long roundNumber, @NonNull final WritableRosterStore rosterStore, @NonNull final Network network) {
         rosterStore.putActiveRoster(rosterFrom(network), roundNumber);
+    }
+
+    private List<EntityNumber> combinedEntriesNodeIds(@NonNull final WritableRosterStore rosterStore) {
+        requireNonNull(rosterStore);
+        final var activeRoster = rosterStore.getActiveRoster();
+
+        var activeRosterEntries =
+                rosterStore.getActiveRoster().rosterEntries().stream().map(RosterEntry::nodeId);
+        var candidateRosterEntries = requireNonNull(rosterStore.getCandidateRoster()).rosterEntries().stream()
+                .map(RosterEntry::nodeId);
+        return Stream.concat(activeRosterEntries, candidateRosterEntries)
+                .distinct()
+                .map(EntityNumber::new)
+                .toList();
+    }
+
+    private void cleanUpTssEncryptionKeysFromState(
+            @NonNull final WritableStates states, @NonNull final List<EntityNumber> rostersEntriesNodeIds) {
+        requireNonNull(states);
+        requireNonNull(rostersEntriesNodeIds);
+        tssStoreFactory.apply(states).removeIfNotPresent(rostersEntriesNodeIds);
     }
 
     private Roster rosterFrom(@NonNull final Network network) {
