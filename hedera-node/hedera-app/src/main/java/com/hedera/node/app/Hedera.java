@@ -884,6 +884,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         return daggerApp.queryWorkflow();
     }
 
+    public QueryWorkflow operatorQueryWorkflow() {
+        return daggerApp.operatorQueryWorkflow();
+    }
+
     public HandleWorkflow handleWorkflow() {
         return daggerApp.handleWorkflow();
     }
