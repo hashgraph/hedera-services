@@ -18,7 +18,7 @@ package com.hedera.node.app.fixtures.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.Network;
+import com.hedera.node.internal.network.Network;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;

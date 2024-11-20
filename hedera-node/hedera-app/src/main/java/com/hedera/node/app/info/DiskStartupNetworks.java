@@ -16,11 +16,6 @@
 
 package com.hedera.node.app.info;
 
-import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toMap;
-
-import com.hedera.hapi.node.state.Network;
-import com.hedera.hapi.node.state.NodeMetadata;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
@@ -36,6 +31,8 @@ import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.TssConfig;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
@@ -45,6 +42,9 @@ import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,8 +55,9 @@ import java.util.Optional;
 import java.util.function.LongUnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * A {@link StartupNetworks} implementation that loads {@link Network} information from a
