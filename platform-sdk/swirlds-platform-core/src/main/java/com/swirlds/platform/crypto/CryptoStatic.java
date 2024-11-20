@@ -421,14 +421,12 @@ public final class CryptoStatic {
 
         final int n = addressBook.getSize();
         final Map<NodeId, Future<KeysAndCerts>> futures = HashMap.newHashMap(n);
-        //final ExecutorService threadPool =
-        //                Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
-        //                        .setComponent("browser")
-        //                        .setThreadName("crypto-generate")
-        //                        .setDaemon(false)
-        //                        .buildFactory())
-        final Map<NodeId, KeysAndCerts> keysAndCerts = new HashMap<>();
-        try {
+        try (final ExecutorService threadPool =
+                Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
+                        .setComponent("browser")
+                        .setThreadName("crypto-generate")
+                        .setDaemon(false)
+                        .buildFactory())) {
             for (int i = 0; i < n; i++) {
                 final NodeId nodeId = addressBook.getNodeId(i);
                 final Address address = addressBook.getAddress(nodeId);
@@ -448,13 +446,13 @@ public final class CryptoStatic {
                 byte[] masterKeyClone = masterKey.clone();
                 byte[] swirldIdClone = swirldId.clone();
                 final int memId = i;
-                keysAndCerts.put(
+                futures.put(
                         nodeId,
-                        KeysAndCerts.generate(
-                                name, masterKeyClone, swirldIdClone, CommonUtils.intToBytes(memId), publicStores));
+                        threadPool.submit(() -> KeysAndCerts.generate(
+                                name, masterKeyClone, swirldIdClone, CommonUtils.intToBytes(memId), publicStores)));
             }
-
-            //threadPool.shutdown();
+            final Map<NodeId, KeysAndCerts> keysAndCerts = futuresToMap(futures);
+            threadPool.shutdown();
             // After the keys have been generated or loaded, they are then copied to the address book
             try {
                 copyPublicKeys(publicStores, addressBook);
@@ -463,12 +461,6 @@ public final class CryptoStatic {
                 throw new CryptographyException(e);
             }
             return keysAndCerts;
-        } catch (KeyGeneratingException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchProviderException e) {
-            throw new RuntimeException(e);
         }
     }
 

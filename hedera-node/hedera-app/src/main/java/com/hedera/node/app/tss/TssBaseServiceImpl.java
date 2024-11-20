@@ -29,6 +29,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.node.app.services.ServiceMigrator;
@@ -43,12 +44,14 @@ import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
@@ -56,6 +59,7 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -367,5 +371,40 @@ public class TssBaseServiceImpl implements TssBaseService {
     @VisibleForTesting
     public TssKeysAccessor getTssKeysAccessor() {
         return tssKeysAccessor;
+    }
+
+    public void processTssEncryptionKeyChecks(@NonNull final UserTxn userTxn, @NonNull final HandleContext handleContext, @NonNull final
+            KeysAndCerts keysAndCerts) {
+        final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
+        final var tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
+        final var tssEncryptionKeyTransactionBody = tssStore.getTssEncryptionKey(handleContext.networkInfo().selfNodeInfo().nodeId());
+        Duration timeSinceLastSubmission = tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission() == null ? null :
+                Duration.between(tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission(), userTxn.consensusNow());
+        final var tssEncryptionKeyRetryDelay =
+                handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeyRetryDelay();
+        final var tssEncryptionKeySubmissionRetries =
+                handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeySubmissionRetries();
+        System.out.println("Checking submission checks for TSS Encryption Key");
+        System.out.println("tssEncryptionKeyTransactionBody: " + tssEncryptionKeyTransactionBody);
+        System.out.println("timeSinceLastSubmission: " + timeSinceLastSubmission);
+        if ((tssEncryptionKeyTransactionBody == null
+                        || keysAndCerts.publicTssEncryptionKey().toBytes()
+                                != tssEncryptionKeyTransactionBody
+                                        .publicTssEncryptionKey()
+                                        .toByteArray())
+                && (timeSinceLastSubmission == null
+                        || timeSinceLastSubmission.compareTo(tssEncryptionKeyRetryDelay) > 0)) {
+            if (tssSubmissions.getTssEncryptionKeySubmissionAttempts() >= tssEncryptionKeySubmissionRetries) {
+                log.error("Failed to submit TSS Encryption public key after " + tssEncryptionKeySubmissionRetries
+                        + " attempts");
+                throw new IllegalStateException("Failed to submit TSS Encryption public key after "
+                        + tssEncryptionKeySubmissionRetries + " attempts");
+            }
+            TssEncryptionKeyTransactionBody tssEncryptionKey = TssEncryptionKeyTransactionBody.newBuilder()
+                    .publicTssEncryptionKey(
+                            Bytes.wrap(keysAndCerts.publicTssEncryptionKey().toBytes()))
+                    .build();
+            tssSubmissions.submitTssEncryptionKey(tssEncryptionKey, handleContext);
+        }
     }
 }

@@ -22,8 +22,10 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Service;
@@ -152,4 +154,14 @@ public interface TssBaseService extends Service {
      * @param state the network state
      */
     void generateParticipantDirectory(@NonNull State state);
+
+    /**
+     * Processes the TSS encryption key checks for the given state and consensus time from the user transaction.
+     *
+     * @param userTxn       the user transaction
+     * @param handleContext the handle context
+     * @param keysAndCerts  the keys and certificates
+     */
+    void processTssEncryptionKeyChecks(@NonNull final UserTxn userTxn, @NonNull final HandleContext handleContext, @NonNull final
+    KeysAndCerts keysAndCerts);
 }

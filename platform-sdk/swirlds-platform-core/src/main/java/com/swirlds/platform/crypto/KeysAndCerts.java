@@ -204,7 +204,7 @@ public record KeysAndCerts(
         BlsKeyPair blsKeyPair = CryptoStatic.generateBlsKeyPair();
         CommonUtils.tellUserConsole("KeysAndCerts KeyPair: " + blsKeyPair);
 
-        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores, null, null);
+        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores, blsKeyPair.privateKey(), blsKeyPair.publicKey());
     }
 
     /**

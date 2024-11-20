@@ -147,7 +147,7 @@ public class HandleWorkflow {
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
     private final AddressBookHelper addressBookHelper;
-    private TssSubmissions tssSubmissions;
+    //private TssSubmissions tssSubmissions;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -178,8 +178,7 @@ public class HandleWorkflow {
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
             final AddressBookHelper addressBookHelper,
-            @NonNull final TssBaseService tssBaseService,
-            @NonNull final TssSubmissions tssSubmissions) {
+            @NonNull final TssBaseService tssBaseService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -206,7 +205,6 @@ public class HandleWorkflow {
                 .streamMode();
         this.addressBookHelper = requireNonNull(addressBookHelper);
         this.tssBaseService = requireNonNull(tssBaseService);
-        this.tssSubmissions = requireNonNull(tssSubmissions);
     }
 
     /**
@@ -624,42 +622,13 @@ public class HandleWorkflow {
                     .getStore(WritableScheduleStore.class);
             scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
             if (handleContext != null) {
-                processTssEncryptionKeyChecks(userTxn, handleContext);
+                System.out.println("Processing interval processTssEncryptionKeyChecks");
+                tssBaseService.processTssEncryptionKeyChecks(userTxn, handleContext, keysAndCerts);
             }
             userTxn.stack().commitSystemStateChanges();
             return true;
         }
         return false;
-    }
-
-    private void processTssEncryptionKeyChecks(@NonNull final UserTxn userTxn, @NonNull final HandleContext handleContext) {
-        final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
-        final var tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
-        final var tssEncryptionKeyTransactionBody = tssStore.getTssEncryptionKey(networkInfo.selfNodeInfo().nodeId());
-        Duration timeSinceLastSubmission = Duration.between(tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission(), userTxn.consensusNow());
-        final var tssEncryptionKeyRetryDelay =
-                handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeyRetryDelay();
-        final var tssEncryptionKeySubmissionRetries =
-                handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeySubmissionRetries();
-        if ((tssEncryptionKeyTransactionBody == null
-                        || keysAndCerts.publicTssEncryptionKey().toBytes()
-                                != tssEncryptionKeyTransactionBody
-                                        .publicTssEncryptionKey()
-                                        .toByteArray())
-                && (timeSinceLastSubmission == null
-                        || timeSinceLastSubmission.compareTo(tssEncryptionKeyRetryDelay) > 0)) {
-            if (tssSubmissions.getTssEncryptionKeySubmissionAttempts() >= tssEncryptionKeySubmissionRetries) {
-                logger.error("Failed to submit TSS Encryption public key after " + tssEncryptionKeySubmissionRetries
-                        + " attempts");
-                throw new IllegalStateException("Failed to submit TSS Encryption public key after "
-                        + tssEncryptionKeySubmissionRetries + " attempts");
-            }
-            TssEncryptionKeyTransactionBody tssEncryptionKey = TssEncryptionKeyTransactionBody.newBuilder()
-                    .publicTssEncryptionKey(
-                            Bytes.wrap(keysAndCerts.publicTssEncryptionKey().toBytes()))
-                    .build();
-            tssSubmissions.submitTssEncryptionKey(tssEncryptionKey, handleContext);
-        }
     }
 
     /**

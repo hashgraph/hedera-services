@@ -205,11 +205,11 @@ public interface HederaInjectionComponent {
         @BindsInstance
         Builder networkInfo(NetworkInfo networkInfo);
 
-        @BindsInstance
-        Builder appContext(AppContext appContext);
-
-        @BindsInstance
-        Builder executor(Executor executor);
+//        @BindsInstance
+//        Builder appContext(AppContext appContext);
+//
+//        @BindsInstance
+//        Builder executor(Executor executor);
 
         HederaInjectionComponent build();
     }

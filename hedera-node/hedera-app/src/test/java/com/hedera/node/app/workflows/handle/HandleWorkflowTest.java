@@ -216,7 +216,6 @@ class HandleWorkflowTest {
                 migrationStateChanges,
                 userTxnFactory,
                 new AddressBookHelper(),
-                tssBaseService,
-                tssSubmissions);
+                tssBaseService);
     }
 }
