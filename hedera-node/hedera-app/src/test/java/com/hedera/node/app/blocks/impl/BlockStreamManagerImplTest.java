@@ -291,7 +291,7 @@ class BlockStreamManagerImplTest {
                 CONSENSUS_THEN);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
-        verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());
+        verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture(), any());
 
         // Provide the ledger signature to the subject
         subject.accept(blockHashCaptor.getValue(), FIRST_FAKE_SIGNATURE.toByteArray());
@@ -332,7 +332,7 @@ class BlockStreamManagerImplTest {
         subject.endRound(state, ROUND_NO);
 
         // Assert the internal state of the subject has changed as expected and the writer has been closed
-        verify(tssBaseService, never()).requestLedgerSignature(any());
+        verify(tssBaseService, never()).requestLedgerSignature(any(), any());
     }
 
     @Test
@@ -395,7 +395,7 @@ class BlockStreamManagerImplTest {
                 CONSENSUS_THEN);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
-        verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());
+        verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture(), any());
 
         // Provide the ledger signature to the subject
         subject.accept(blockHashCaptor.getValue(), FIRST_FAKE_SIGNATURE.toByteArray());
@@ -423,6 +423,7 @@ class BlockStreamManagerImplTest {
                 .writePbjItem(any());
         final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
         given(round.getRoundNum()).willReturn(ROUND_NO);
+        given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
 
         // Initialize the last (N-1) block hash
         subject.initLastBlockHash(FAKE_RESTART_BLOCK_HASH);
@@ -452,7 +453,7 @@ class BlockStreamManagerImplTest {
         // End the round in block N+1
         subject.endRound(state, ROUND_NO + 1);
 
-        verify(tssBaseService, times(2)).requestLedgerSignature(blockHashCaptor.capture());
+        verify(tssBaseService, times(2)).requestLedgerSignature(blockHashCaptor.capture(), any());
         final var allBlockHashes = blockHashCaptor.getAllValues();
         assertEquals(2, allBlockHashes.size());
 

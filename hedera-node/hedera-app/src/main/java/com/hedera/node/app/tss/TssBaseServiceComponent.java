@@ -37,10 +37,11 @@ public interface TssBaseServiceComponent {
         TssBaseServiceComponent create(
                 @BindsInstance TssLibrary tssLibrary,
                 @BindsInstance InstantSource instantSource,
-                @BindsInstance AppContext.Gossip gossip,
+                @BindsInstance AppContext appContext,
                 @BindsInstance Executor submissionExecutor,
                 @BindsInstance @TssLibraryExecutor Executor libraryExecutor,
-                @BindsInstance Metrics metrics);
+                @BindsInstance Metrics metrics,
+                @BindsInstance TssBaseService tssBaseService);
     }
 
     TssMetrics tssMetrics();
@@ -52,4 +53,8 @@ public interface TssBaseServiceComponent {
     TssShareSignatureHandler tssShareSignatureHandler();
 
     TssSubmissions tssSubmissions();
+
+    TssKeysAccessor tssKeysAccessor();
+
+    TssDirectoryAccessor tssDirectoryAccessor();
 }

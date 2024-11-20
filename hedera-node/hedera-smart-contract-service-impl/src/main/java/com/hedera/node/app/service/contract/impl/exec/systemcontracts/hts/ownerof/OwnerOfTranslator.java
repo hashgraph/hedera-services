@@ -31,8 +31,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class OwnerOfTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for ownerOf(uint256) method. */
     public static final Function OWNER_OF = new Function("ownerOf(uint256)", ReturnTypes.ADDRESS);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public OwnerOfTranslator() {
         // Dagger2

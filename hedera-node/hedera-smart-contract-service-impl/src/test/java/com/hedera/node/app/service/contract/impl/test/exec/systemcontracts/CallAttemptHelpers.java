@@ -34,8 +34,20 @@ import com.swirlds.config.api.Configuration;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 
+/**
+ * Helper utility class to generate {@link HtsCallAttempt} object in different scenarios
+ */
 public final class CallAttemptHelpers {
 
+    /**
+     * @param function the selector to match against
+     * @param translator the translator for this specific call attempt
+     * @param enhancement the enhancement that is used
+     * @param addressIdConverter the address ID converter for this call
+     * @param verificationStrategies the verification strategy currently used
+     * @param gasCalculator the gas calculator used for the system contract
+     * @return the call attempt
+     */
     public static HtsCallAttempt prepareHtsAttemptWithSelector(
             final Function function,
             final CallTranslator<HtsCallAttempt> translator,
@@ -59,6 +71,15 @@ public final class CallAttemptHelpers {
                 false);
     }
 
+    /**
+     * @param function the selector to match against
+     * @param translator the translator for this specific call attempt
+     * @param enhancement the enhancement that is used
+     * @param addressIdConverter the address ID converter for this call
+     * @param verificationStrategies the verification strategy currently used
+     * @param gasCalculator the gas calculator used for the system contract
+     * @return the call attempt
+     */
     public static HtsCallAttempt prepareHtsAttemptWithSelectorForRedirect(
             final Function function,
             final CallTranslator<HtsCallAttempt> translator,
@@ -82,6 +103,16 @@ public final class CallAttemptHelpers {
                 false);
     }
 
+    /**
+     * @param function the selector to match against
+     * @param translator the translator for this specific call attempt
+     * @param enhancement the enhancement that is used
+     * @param addressIdConverter the address ID converter for this call
+     * @param verificationStrategies the verification strategy currently used
+     * @param gasCalculator the gas calculator used for the system contract
+     * @param config the current configuration that is used
+     * @return the call attempt
+     */
     public static HtsCallAttempt prepareHtsAttemptWithSelectorForRedirectWithConfig(
             final Function function,
             final CallTranslator<HtsCallAttempt> translator,
@@ -106,6 +137,16 @@ public final class CallAttemptHelpers {
                 false);
     }
 
+    /**
+     * @param function the selector to match against
+     * @param translator the translator for this specific call attempt
+     * @param enhancement the enhancement that is used
+     * @param addressIdConverter the address ID converter for this call
+     * @param verificationStrategies the verification strategy currently used
+     * @param gasCalculator the gas calculator used for the system contract
+     * @param config the current configuration that is used
+     * @return the call attempt
+     */
     public static HtsCallAttempt prepareHtsAttemptWithSelectorAndCustomConfig(
             final Function function,
             final CallTranslator<HtsCallAttempt> translator,
@@ -130,6 +171,15 @@ public final class CallAttemptHelpers {
                 false);
     }
 
+    /**
+     * @param function the selector to match against
+     * @param translator the translator for this specific call attempt
+     * @param enhancement the enhancement that is used
+     * @param addressIdConverter the address ID converter for this call
+     * @param verificationStrategies the verification strategy currently used
+     * @param gasCalculator the gas calculator used for the system contract
+     * @return the call attempt
+     */
     public static HasCallAttempt prepareHasAttemptWithSelector(
             final Function function,
             final CallTranslator<HasCallAttempt> translator,
@@ -182,7 +232,6 @@ public final class CallAttemptHelpers {
             final Configuration config) {
         return new HasCallAttempt(
                 input,
-                OWNER_BESU_ADDRESS,
                 OWNER_BESU_ADDRESS,
                 false,
                 enhancement,

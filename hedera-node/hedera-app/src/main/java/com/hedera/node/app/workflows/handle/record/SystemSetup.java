@@ -25,6 +25,7 @@ import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STAT
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.dispatchSynthFileUpdate;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.parseConfigList;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static java.util.Objects.requireNonNull;
@@ -235,8 +236,8 @@ public class SystemSetup {
                 .build();
         return new SystemContext() {
             @Override
-            public void dispatchCreation(@NonNull final TransactionBody txBody, final long entityNum) {
-                requireNonNull(txBody);
+            public void dispatchCreation(@NonNull final TransactionBody body, final long entityNum) {
+                requireNonNull(body);
                 if (entityNum >= firstUserNum) {
                     throw new IllegalArgumentException("Cannot create user entity in a system context");
                 }
@@ -245,11 +246,11 @@ public class SystemSetup {
                         .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
                 controlledNum.put(new EntityNumber(entityNum - 1));
                 final var recordBuilder = dispatch.handleContext()
-                        .dispatchPrecedingTransaction(txBody, StreamBuilder.class, key -> true, systemAdminId);
+                        .dispatch(independentDispatch(systemAdminId, body, StreamBuilder.class));
                 if (!SUCCESSES.contains(recordBuilder.status())) {
                     log.error(
                             "Failed to dispatch system create transaction {} for entity {} - {}",
-                            txBody,
+                            body,
                             entityNum,
                             recordBuilder.status());
                 }
@@ -258,12 +259,12 @@ public class SystemSetup {
             }
 
             @Override
-            public void dispatchUpdate(@NonNull final TransactionBody txBody) {
-                requireNonNull(txBody);
+            public void dispatchUpdate(@NonNull final TransactionBody body) {
+                requireNonNull(body);
                 final var recordBuilder = dispatch.handleContext()
-                        .dispatchPrecedingTransaction(txBody, StreamBuilder.class, key -> true, systemAdminId);
+                        .dispatch(independentDispatch(systemAdminId, body, StreamBuilder.class));
                 if (!SUCCESSES.contains(recordBuilder.status())) {
-                    log.error("Failed to dispatch update transaction {} for - {}", txBody, recordBuilder.status());
+                    log.error("Failed to dispatch update transaction {} for - {}", body, recordBuilder.status());
                 }
             }
 
