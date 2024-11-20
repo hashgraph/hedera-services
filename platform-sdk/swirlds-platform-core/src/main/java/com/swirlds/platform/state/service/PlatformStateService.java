@@ -51,7 +51,8 @@ public enum PlatformStateService implements Service {
             new V0540PlatformStateSchema(),
             new V057PlatformStateSchema(
                     () -> requireNonNull(ACTIVE_ROSTER.get()).get(),
-                    () -> requireNonNull(APP_VERSION.get()).get()));
+                    () -> requireNonNull(APP_VERSION.get()).get(),
+                    WritablePlatformStateStore::new));
 
     public static final String NAME = "PlatformStateService";
 

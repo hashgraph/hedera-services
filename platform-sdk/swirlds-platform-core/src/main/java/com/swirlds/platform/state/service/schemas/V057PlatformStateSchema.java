@@ -29,8 +29,10 @@ import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -47,12 +49,16 @@ public class V057PlatformStateSchema extends Schema {
     private final Supplier<Roster> activeRoster;
 
     private final Supplier<SoftwareVersion> appVersion;
+    private Function<WritableStates, WritablePlatformStateStore> platformStateStoreFactory;
 
     public V057PlatformStateSchema(
-            @NonNull final Supplier<Roster> activeRoster, @NonNull final Supplier<SoftwareVersion> appVersion) {
+            @NonNull final Supplier<Roster> activeRoster,
+            @NonNull final Supplier<SoftwareVersion> appVersion,
+            @NonNull final Function<WritableStates, WritablePlatformStateStore> platformStateStoreFactory) {
         super(VERSION);
         this.activeRoster = requireNonNull(activeRoster);
         this.appVersion = requireNonNull(appVersion);
+        this.platformStateStoreFactory = requireNonNull(platformStateStoreFactory);
     }
 
     @Override
@@ -62,7 +68,7 @@ public class V057PlatformStateSchema extends Schema {
             return;
         }
 
-        final var platformStateStore = new WritablePlatformStateStore(ctx.newStates());
+        final var platformStateStore = platformStateStoreFactory.apply(ctx.newStates());
         final var startupNetworks = ctx.startupNetworks();
         if (ctx.isGenesis()) {
             final var genesisNetwork = startupNetworks.genesisNetworkOrThrow();
