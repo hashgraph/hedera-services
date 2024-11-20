@@ -37,7 +37,7 @@ import org.apache.logging.log4j.Logger;
 public class StreamFileAlterationListener extends FileAlterationListenerAdaptor {
     private static final Logger log = LogManager.getLogger(StreamFileAlterationListener.class);
 
-    private static final int NUM_RETRIES = 32;
+    private static final int NUM_RETRIES = 64;
     private static final long RETRY_BACKOFF_MS = 500L;
 
     private final List<StreamDataListener> listeners = new CopyOnWriteArrayList<>();
