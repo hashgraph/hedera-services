@@ -30,7 +30,9 @@ mainModuleInfo {
     runtimeOnly("org.hiero.event.creator.impl")
 }
 
-testModuleInfo { runtimeOnly("org.junit.jupiter.api") }
+testModuleInfo {
+    runtimeOnly("org.junit.jupiter.api")
+}
 
 sourceSets {
     create("rcdiff")

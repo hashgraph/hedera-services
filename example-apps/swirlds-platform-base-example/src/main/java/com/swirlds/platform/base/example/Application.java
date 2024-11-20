@@ -16,6 +16,10 @@
 
 package com.swirlds.platform.base.example;
 
+import com.hedera.cryptography.bls.BlsKeyPair;
+import com.hedera.cryptography.bls.GroupAssignment;
+import com.hedera.cryptography.bls.SignatureSchema;
+import com.hedera.cryptography.pairings.api.Curve;
 import com.swirlds.platform.base.example.executorsample.BaseExecutorHandlerFactory;
 import com.swirlds.platform.base.example.ext.BaseContext;
 import com.swirlds.platform.base.example.ext.BaseContextFactory;
@@ -24,13 +28,21 @@ import com.swirlds.platform.base.example.metricsample.MetricsSampleHandlerRegist
 import com.swirlds.platform.base.example.server.Server;
 import com.swirlds.platform.base.example.store.StoreExampleHandlerRegistry;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 /**
  * This application serves as a testing environment for platform-base module frameworks.
  */
 public class Application {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
+        final SignatureSchema SIGNATURE_SCHEMA =
+                SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
+        final SecureRandom secureRandom = SecureRandom.getInstanceStrong();
+        final var keyPair = BlsKeyPair.generate(SIGNATURE_SCHEMA, secureRandom);
+        System.out.println("Public Key: " + keyPair.privateKey());
+
         final BaseContext baseContext = BaseContextFactory.create();
         // Add JDK metrics to track memory, cpu, etc
         JVMInternalMetrics.registerMetrics(baseContext.metrics());

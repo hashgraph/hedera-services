@@ -438,8 +438,7 @@ public class HandleWorkflow {
                 if (streamMode == RECORDS) {
                     processInterval(userTxn, lastRecordManagerTime, dispatch.handleContext());
                 } else {
-                    if (processInterval(
-                            userTxn, blockStreamManager.lastIntervalProcessTime(), dispatch.handleContext())) {
+                    if (processInterval(userTxn, blockStreamManager.lastIntervalProcessTime(), dispatch.handleContext())) {
                         blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
                     }
                 }
@@ -612,8 +611,7 @@ public class HandleWorkflow {
      * @param lastProcessTime an upper bound on the last time that time-based events were processed
      * @return true if the interval was processed
      */
-    private boolean processInterval(
-            @NonNull final UserTxn userTxn, final Instant lastProcessTime, @Nullable HandleContext handleContext) {
+    private boolean processInterval(@NonNull final UserTxn userTxn, final Instant lastProcessTime, @Nullable HandleContext handleContext) {
         // If we have never processed an interval, treat this time as the last processed time
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
@@ -634,14 +632,11 @@ public class HandleWorkflow {
         return false;
     }
 
-    private void processTssEncryptionKeyChecks(
-            @NonNull final UserTxn userTxn, @NonNull final HandleContext handleContext) {
+    private void processTssEncryptionKeyChecks(@NonNull final UserTxn userTxn, @NonNull final HandleContext handleContext) {
         final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
         final var tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
-        final var tssEncryptionKeyTransactionBody =
-                tssStore.getTssEncryptionKey(networkInfo.selfNodeInfo().nodeId());
-        Duration timeSinceLastSubmission =
-                Duration.between(tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission(), userTxn.consensusNow());
+        final var tssEncryptionKeyTransactionBody = tssStore.getTssEncryptionKey(networkInfo.selfNodeInfo().nodeId());
+        Duration timeSinceLastSubmission = Duration.between(tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission(), userTxn.consensusNow());
         final var tssEncryptionKeyRetryDelay =
                 handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeyRetryDelay();
         final var tssEncryptionKeySubmissionRetries =

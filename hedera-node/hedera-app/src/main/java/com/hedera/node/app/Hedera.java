@@ -351,8 +351,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
-            @NonNull final Function<AppContext, TssBaseService> tssBaseServiceFactory,
-            @Nullable final KeysAndCerts keysAndCerts) {
+            @NonNull final Function<AppContext, TssBaseService> tssBaseServiceFactory) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         this.serviceMigrator = requireNonNull(migrator);
@@ -425,7 +424,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             logger.error("Failed to register " + MerkleStateRoot.class + " factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
         }
-        this.handleWorkflow().setKeysAndCerts(keysAndCerts);
     }
 
     /**
@@ -669,6 +667,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
         Locale.setDefault(Locale.US);
         logger.info("Locale to set to US en");
+        handleWorkflow().setKeysAndCerts(platform.getKeysAndCerts());
     }
 
     @Override

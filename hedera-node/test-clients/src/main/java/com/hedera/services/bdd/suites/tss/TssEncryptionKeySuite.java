@@ -19,12 +19,14 @@ package com.hedera.services.bdd.suites.tss;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.TssEncryptionKeyAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,7 +43,12 @@ public class TssEncryptionKeySuite {
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {}
 
     @HapiTest
-    final Stream<DynamicTest> genesisTssEncryptionKeySubmitted() {
-        return hapiTest(cryptoCreate("userAcct").balance(ONE_HUNDRED_HBARS), sleepFor(3000L));
+    final Stream<DynamicTest> tssEncryptionKeySubmittedHappyPath() {
+        return hapiTest(
+                cryptoCreate("userAcct").balance(ONE_HUNDRED_HBARS),
+                sleepFor(3000L),
+                // Verify the TSS Encryption Key transaction is submitted
+                blockStreamMustIncludePassFrom(TssEncryptionKeyAssertion::new)
+        );
     }
 }

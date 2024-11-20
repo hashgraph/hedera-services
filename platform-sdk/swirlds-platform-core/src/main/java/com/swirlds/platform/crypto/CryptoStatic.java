@@ -421,12 +421,14 @@ public final class CryptoStatic {
 
         final int n = addressBook.getSize();
         final Map<NodeId, Future<KeysAndCerts>> futures = HashMap.newHashMap(n);
-        try (final ExecutorService threadPool =
-                Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
-                        .setComponent("browser")
-                        .setThreadName("crypto-generate")
-                        .setDaemon(false)
-                        .buildFactory())) {
+        //final ExecutorService threadPool =
+        //                Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
+        //                        .setComponent("browser")
+        //                        .setThreadName("crypto-generate")
+        //                        .setDaemon(false)
+        //                        .buildFactory())
+        final Map<NodeId, KeysAndCerts> keysAndCerts = new HashMap<>();
+        try {
             for (int i = 0; i < n; i++) {
                 final NodeId nodeId = addressBook.getNodeId(i);
                 final Address address = addressBook.getAddress(nodeId);
@@ -446,13 +448,13 @@ public final class CryptoStatic {
                 byte[] masterKeyClone = masterKey.clone();
                 byte[] swirldIdClone = swirldId.clone();
                 final int memId = i;
-                futures.put(
+                keysAndCerts.put(
                         nodeId,
-                        threadPool.submit(() -> KeysAndCerts.generate(
-                                name, masterKeyClone, swirldIdClone, CommonUtils.intToBytes(memId), publicStores)));
+                        KeysAndCerts.generate(
+                                name, masterKeyClone, swirldIdClone, CommonUtils.intToBytes(memId), publicStores));
             }
-            final Map<NodeId, KeysAndCerts> keysAndCerts = futuresToMap(futures);
-            threadPool.shutdown();
+
+            //threadPool.shutdown();
             // After the keys have been generated or loaded, they are then copied to the address book
             try {
                 copyPublicKeys(publicStores, addressBook);
@@ -461,6 +463,12 @@ public final class CryptoStatic {
                 throw new CryptographyException(e);
             }
             return keysAndCerts;
+        } catch (KeyGeneratingException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchProviderException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -591,6 +599,7 @@ public final class CryptoStatic {
                         "ERROR",
                         "ERROR: This Java installation does not have the needed cryptography " + "providers installed");
             }
+            CommonUtils.tellUserConsole(e.getMessage() + ": " + e.getCause().getMessage());
             SystemExitUtils.exitSystem(SystemExitCode.KEY_LOADING_FAILED);
             throw new CryptographyException(e); // will never reach this line due to exit above
         }

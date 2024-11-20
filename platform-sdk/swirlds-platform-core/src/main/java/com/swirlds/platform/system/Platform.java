@@ -21,6 +21,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -114,4 +115,11 @@ public interface Platform {
      * Start this platform.
      */
     void start();
+
+    /**
+     * Get the keys and certificates used by this node.
+     *
+     * @return the keys and certificates
+     */
+    KeysAndCerts getKeysAndCerts();
 }

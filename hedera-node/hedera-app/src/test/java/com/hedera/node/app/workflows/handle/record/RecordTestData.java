@@ -93,8 +93,10 @@ public class RecordTestData {
     static {
         try {
             // generate node keys and signer
+            System.out.println("RecordTestData: Generating keys and certs");
             final var keysAndCerts =
                     KeysAndCerts.generate("a-name", EMPTY_ARRAY, EMPTY_ARRAY, EMPTY_ARRAY, new PublicStores());
+
             // get public key that was generated for the user
             USER_PUBLIC_KEY = keysAndCerts.sigKeyPair().getPublic();
             // create signer

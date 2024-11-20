@@ -24,6 +24,7 @@ plugins {
 
 dependencies {
     implementation("com.hedera.cryptography:hedera-cryptography-bls:0.1.0-SNAPSHOT")
+    implementation("com.hedera.cryptography:hedera-cryptography-altbn128:0.1.0-SNAPSHOT")
     // Add other dependencies if needed
 }
 

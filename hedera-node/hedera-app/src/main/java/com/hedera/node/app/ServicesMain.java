@@ -64,6 +64,7 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
@@ -119,8 +120,7 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
-                        new NoOpMetrics()),
-                null);
+                        new NoOpMetrics()));
     }
 
     /**
@@ -218,13 +218,16 @@ public class ServicesMain implements SwirldMain {
         // Register with the ConstructableRegistry classes which need configuration.
         BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
 
+//        final var keys = CryptoStatic.generateBlsKeyPair();
+//        System.out.println("Keys ------------------: " +keys);
+
         final var keysAndCerts =
                 initNodeSecurity(diskAddressBook, configuration).get(selfId);
 
         setupGlobalMetrics(configuration);
         metrics = getMetricsProvider().createPlatformMetrics(selfId);
 
-        final Hedera hedera = newHedera(keysAndCerts);
+        final Hedera hedera = newHedera();
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
@@ -417,7 +420,7 @@ public class ServicesMain implements SwirldMain {
         }
     }
 
-    private static Hedera newHedera(@NonNull final KeysAndCerts keysAndCerts) {
+    private static Hedera newHedera() {
         return new Hedera(
                 ConstructableRegistry.getInstance(),
                 ServicesRegistryImpl::new,
@@ -429,7 +432,6 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
-                        metrics),
-                keysAndCerts);
+                        metrics));
     }
 }
