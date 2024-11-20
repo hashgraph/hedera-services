@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.hip423;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
@@ -43,6 +44,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateStreams;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
@@ -84,6 +86,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -158,7 +161,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
                             var createTx = getTxnRecord(CREATE_TX);
@@ -268,7 +270,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
                             var createTx = getTxnRecord(CREATE_TX);
@@ -276,7 +277,6 @@ public class ScheduleLongTermExecutionTest {
                             var triggeringTx = getTxnRecord(TRIGGERING_TXN);
                             var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
                             allRunFor(spec, createTx, signTx, triggeredTx, triggeringTx);
-
                             Assertions.assertEquals(
                                     SUCCESS,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
@@ -377,7 +377,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
                             var createTx = getTxnRecord(CREATE_TX);
@@ -482,7 +481,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
                             var createTx = getTxnRecord(CREATE_TX);
@@ -594,7 +592,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(PAYING_ACCOUNT)
                                 .hasTinyBars(spec ->
@@ -646,7 +643,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         // todo check white list here?
                         //                        overriding(
@@ -713,7 +709,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(transferAmount),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance),
@@ -758,7 +753,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getTxnRecord(CREATE_TX)
                                 .scheduled()
@@ -795,7 +789,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
@@ -843,7 +836,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(transferAmount),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance),
@@ -890,7 +882,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(transferAmount),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance),
@@ -958,7 +949,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(FAILED_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(senderBalance),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance),
@@ -1009,7 +999,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(FAILED_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance),
                         withOpContext((spec, opLog) -> {
@@ -1058,7 +1047,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER_1).hasTinyBars(0L),
                         getAccountBalance(SENDER_2).hasTinyBars(0L),
@@ -1091,7 +1079,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         freezeAbort().payingWith(GENESIS),
                         withOpContext((spec, opLog) -> {
@@ -1111,15 +1098,20 @@ public class ScheduleLongTermExecutionTest {
         return defaultHapiSpec("ScheduledFreezeWithUnauthorizedPayerFailsAtExpiry")
                 .given(cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN), cryptoCreate(PAYING_ACCOUNT_2))
                 .when()
-                .then(
-                        scheduleFakeUpgrade(PAYING_ACCOUNT, PAYER_TXN, 4, "test")
+                .then(flattened(
+                        scheduleFakeUpgrade(PAYING_ACCOUNT, PAYER_TXN, 4, "test"),
                         // future throttles will be exceeded because there is no throttle
                         // for freeze
                         // and the custom payer is not exempt from throttles like and admin
                         // user would be
                         // todo future throttle is not implemented yet
                         // .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
-                        );
+
+                        // note: the sleepFor and cryptoCreate operations are added only to clear the schedule before
+                        // the next state. This was needed because an edge case in the BaseTranslator occur.
+                        // When scheduleCreate trigger the schedules execution scheduleRef field is not the correct one.
+                        sleepFor(6000),
+                        cryptoCreate("foo")));
     }
 
     @HapiTest
@@ -1153,7 +1145,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
@@ -1198,7 +1189,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
@@ -1241,7 +1231,6 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
                         getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getFileInfo("misc").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
                         withOpContext((spec, opLog) -> {
@@ -1330,4 +1319,10 @@ public class ScheduleLongTermExecutionTest {
     //                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
     //                                .payingWith(GENESIS));
     //    }
+
+    @Order(30)
+    @LeakyHapiTest
+    final Stream<DynamicTest> streamsAreValid() {
+        return hapiTest(validateStreams());
+    }
 }

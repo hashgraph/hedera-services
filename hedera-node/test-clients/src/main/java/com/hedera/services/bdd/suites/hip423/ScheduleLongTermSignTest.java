@@ -571,16 +571,23 @@ public class ScheduleLongTermSignTest {
                                 .waitForExpiry()
                                 .withRelativeExpiry(CREATE_TXN, 5))
                 .when(tokenUpdate(TOKEN_A).supplyKey("newMint"))
-                .then(scheduleSign("tokenMintScheduled")
-                        .alsoSigningWith("mint")
-                        /* In the rare, but possible, case that the the mint and newMint keys overlap
-                         * in their first byte (and that byte is not shared by the DEFAULT_PAYER),
-                         * we will get SOME_SIGNATURES_WERE_INVALID instead of NO_NEW_VALID_SIGNATURES.
-                         *
-                         * So we need this to stabilize CI. But if just testing locally, you may
-                         * only use .hasKnownStatus(NO_NEW_VALID_SIGNATURES) and it will pass
-                         * >99.99% of the time. */
-                        .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID));
+                .then(
+                        scheduleSign("tokenMintScheduled")
+                                .alsoSigningWith("mint")
+                                /* In the rare, but possible, case that the the mint and newMint keys overlap
+                                 * in their first byte (and that byte is not shared by the DEFAULT_PAYER),
+                                 * we will get SOME_SIGNATURES_WERE_INVALID instead of NO_NEW_VALID_SIGNATURES.
+                                 *
+                                 * So we need this to stabilize CI. But if just testing locally, you may
+                                 * only use .hasKnownStatus(NO_NEW_VALID_SIGNATURES) and it will pass
+                                 * >99.99% of the time. */
+                                .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID),
+
+                        // note: the sleepFor and cryptoCreate operations are added only to clear the schedule before
+                        // the next state. This was needed because an edge case in the BaseTranslator occur.
+                        // When scheduleCreate trigger the schedules execution scheduleRef field is not the correct one.
+                        sleepFor(6000),
+                        cryptoCreate("foo"));
     }
 
     @HapiTest
