@@ -36,6 +36,7 @@ import com.swirlds.state.lifecycle.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -100,8 +101,8 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
      * @param platformContext        the platform context
      * @param signatureVerifier      a verifier for checking event signatures
      * @param currentSoftwareVersion the current software version
-     * @param previousRoster    the previous address book
-     * @param currentRoster     the current address book
+     * @param previousRoster         the previous address book
+     * @param currentRoster          the current address book
      * @param intakeEventCounter     keeps track of the number of events in the intake pipeline from each peer
      */
     public DefaultEventSignatureValidator(
@@ -129,8 +130,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
     }
 
     /**
-     * Determine whether the previous roster or the current roster should be used to verify an event's
-     * signature.
+     * Determine whether the previous roster or the current roster should be used to verify an event's signature.
      * <p>
      * Logs an error and returns null if an applicable roster cannot be selected
      *
@@ -192,8 +192,8 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
             return false;
         }
 
-        final PublicKey publicKey = RosterUtils.fetchGossipCaCertificate(applicableRosterMap.get(eventCreatorId.id()))
-                .getPublicKey();
+        final X509Certificate cert = RosterUtils.fetchGossipCaCertificate(applicableRosterMap.get(eventCreatorId.id()));
+        final PublicKey publicKey = cert == null ? null : cert.getPublicKey();
         if (publicKey == null) {
             rateLimitedLogger.error(
                     EXCEPTION.getMarker(), "Cannot find publicKey for creator with ID: {}", eventCreatorId);

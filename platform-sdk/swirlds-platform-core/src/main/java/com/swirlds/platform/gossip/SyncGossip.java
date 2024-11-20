@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
 import com.hedera.hapi.node.state.roster.Roster;
@@ -86,6 +87,7 @@ import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -93,12 +95,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Boilerplate code for gossip.
  */
 public class SyncGossip implements ConnectionTracker, Gossip {
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
+    private static final Logger logger = LogManager.getLogger(SyncGossip.class);
 
     private boolean started = false;
 
@@ -174,7 +179,20 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        final List<PeerInfo> peers = Utilities.createPeerInfoList(roster, selfId);
+        final RosterEntry selfEntry = RosterUtils.getRosterEntry(roster, selfId.id());
+        final List<PeerInfo> peers;
+        if (RosterUtils.fetchGossipCaCertificate(selfEntry) == null) {
+            // Do not make peer connections if the self node does not have a valid signing certificate in the roster.
+            // https://github.com/hashgraph/hedera-services/issues/16648
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The gossip certificate for node {} is missing or invalid. "
+                            + "This node will not connect to any peers.",
+                    selfId);
+            peers = Collections.emptyList();
+        } else {
+            peers = Utilities.createPeerInfoList(roster, selfId);
+        }
 
         topology = new StaticTopology(peers, selfId);
         final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);

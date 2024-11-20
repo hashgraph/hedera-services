@@ -17,6 +17,9 @@
 package com.swirlds.platform.network;
 
 import static com.swirlds.platform.crypto.CryptoStatic.loadKeys;
+import static com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs.createBadCertificate;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -99,8 +102,7 @@ class NetworkPeerIdentifierTest {
 
     /**
      * Tests that given a list of valid Swirlds production certificates (like the type used in mainnet),
-     * {@link NetworkPeerIdentifier#identifyTlsPeer(Certificate[])} is able to successfully identify a matching
-     * peer.
+     * {@link NetworkPeerIdentifier#identifyTlsPeer(Certificate[])} is able to successfully identify a matching peer.
      */
     @Test
     void testExtractPeerInfoWorksForMainnet() throws KeyStoreException, InvalidAlgorithmParameterException {
@@ -118,7 +120,7 @@ class NetworkPeerIdentifierTest {
             matches.add(matchedPeer);
         }
         // ensure we matched exactly the set of nodes in the original peer list
-        Assertions.assertEquals(matches, new HashSet<>(peerInfoList));
+        assertEquals(matches, new HashSet<>(peerInfoList));
     }
 
     /**
@@ -135,7 +137,7 @@ class NetworkPeerIdentifierTest {
 
         Assertions.assertNotNull(matchedPeer);
         // assert the peer we got back is node20
-        Assertions.assertEquals("node20", matchedPeer.nodeName());
+        assertEquals("node20", matchedPeer.nodeName());
     }
 
     /**
@@ -158,6 +160,40 @@ class NetworkPeerIdentifierTest {
 
         final PeerInfo matchedPeer =
                 new NetworkPeerIdentifier(platformContext, peerInfoList).identifyTlsPeer(certificates);
-        Assertions.assertNull(matchedPeer);
+        assertNull(matchedPeer);
+    }
+
+    /**
+     * Validate that PeerInfoIdentifier drops peers with malformed or missing certificates
+     */
+    @Test
+    void testMalformedAndMissingCertificatesAreDropped() {
+        final List<PeerInfo> modifiedList = peerInfoList.stream()
+                .map(peerInfo -> new PeerInfo(
+                        peerInfo.nodeId(),
+                        peerInfo.hostname(),
+                        peerInfo.nodeId().id() % 3 == 0
+                                ? null
+                                : (peerInfo.nodeId().id() % 2 == 0
+                                        ? createBadCertificate()
+                                        : peerInfo.signingCertificate())))
+                .toList();
+
+        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, modifiedList);
+
+        // cover all cases.
+        assert (modifiedList.size() > 6);
+
+        peerInfoList.forEach(peer -> {
+            final Certificate[] cert = new Certificate[1];
+            cert[0] = peer.signingCertificate();
+            if (peer.nodeId().id() % 3 == 0) {
+                assertNull(peerIdentifier.identifyTlsPeer(cert));
+            } else if (peer.nodeId().id() % 2 == 0) {
+                assertNull(peerIdentifier.identifyTlsPeer(cert));
+            } else {
+                assertEquals(peer, peerIdentifier.identifyTlsPeer(cert));
+            }
+        });
     }
 }

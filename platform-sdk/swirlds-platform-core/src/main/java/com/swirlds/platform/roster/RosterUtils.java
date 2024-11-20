@@ -21,6 +21,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.CryptoStatic;
@@ -48,9 +49,8 @@ public final class RosterUtils {
     private RosterUtils() {}
 
     /**
-     * Formats a "node name" for a given node id, e.g. "node1" for nodeId == 0.
-     * This name can be used for logging purposes, or to support code that
-     * uses strings to identify nodes.
+     * Formats a "node name" for a given node id, e.g. "node1" for nodeId == 0. This name can be used for logging
+     * purposes, or to support code that uses strings to identify nodes.
      *
      * @param nodeId a node id
      * @return a "node name"
@@ -61,18 +61,22 @@ public final class RosterUtils {
     }
 
     /**
-     * Fetch the gossip certificate from a given RosterEntry.
+     * Fetch the gossip certificate from a given RosterEntry.  If it cannot be parsed successfully, return null.
      *
      * @param entry a RosterEntry
      * @return a gossip certificate
      */
     public static X509Certificate fetchGossipCaCertificate(@NonNull final RosterEntry entry) {
-        return CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray());
+        try {
+            return CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray());
+        } catch (final CryptographyException e) {
+            return null;
+        }
     }
 
     /**
-     * Fetch a hostname (or a string with an IPv4 address) of a ServiceEndpoint
-     * at a given index in a given RosterEntry.
+     * Fetch a hostname (or a string with an IPv4 address) of a ServiceEndpoint at a given index in a given
+     * RosterEntry.
      *
      * @param entry a RosterEntry
      * @param index an index of the ServiceEndpoint
@@ -100,8 +104,7 @@ public final class RosterUtils {
     }
 
     /**
-     * Fetch a port number of a ServiceEndpoint
-     * at a given index in a given RosterEntry.
+     * Fetch a port number of a ServiceEndpoint at a given index in a given RosterEntry.
      *
      * @param entry a RosterEntry
      * @param index an index of the ServiceEndpoint
@@ -111,6 +114,7 @@ public final class RosterUtils {
         final ServiceEndpoint serviceEndpoint = entry.gossipEndpoint().get(index);
         return serviceEndpoint.port();
     }
+
     /**
      * Create a Hash object for a given Roster instance.
      *
@@ -137,8 +141,8 @@ public final class RosterUtils {
     }
 
     /**
-     * Build a map from a long nodeId to an index of the node in the roster entries list.
-     * If code needs to perform this lookup only once, then use the getIndex() instead.
+     * Build a map from a long nodeId to an index of the node in the roster entries list. If code needs to perform this
+     * lookup only once, then use the getIndex() instead.
      *
      * @param roster a roster
      * @return {@code Map<Long, Integer>}
@@ -150,8 +154,8 @@ public final class RosterUtils {
     }
 
     /**
-     * Return an index of a RosterEntry with a given node id.
-     * If code needs to perform this operation often, then use the toIndicesMap() instead.
+     * Return an index of a RosterEntry with a given node id. If code needs to perform this operation often, then use
+     * the toIndicesMap() instead.
      *
      * @param roster a Roster
      * @param nodeId a node id
@@ -177,12 +181,10 @@ public final class RosterUtils {
     }
 
     /**
-     * Returns a RosterEntry with a given nodeId by simply iterating all entries,
-     * w/o building a temporary map.
-     *
-     * Useful for one-off look-ups. If code needs to look up multiple entries by NodeId,
-     * then the code should use the RosterUtils.toMap() method and keep the map instance
-     * for the look-ups.
+     * Returns a RosterEntry with a given nodeId by simply iterating all entries, w/o building a temporary map.
+     * <p>
+     * Useful for one-off look-ups. If code needs to look up multiple entries by NodeId, then the code should use the
+     * RosterUtils.toMap() method and keep the map instance for the look-ups.
      *
      * @param roster a roster
      * @param nodeId a node id
@@ -200,9 +202,10 @@ public final class RosterUtils {
 
     /**
      * Build an instance of RosterHistory from the current/previous AddressBook found in the PlatformState.
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
+     *
      * @param readablePlatformState
      * @return a RosterHistory
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
     @NonNull
@@ -231,9 +234,10 @@ public final class RosterUtils {
 
     /**
      * Build an Address object out of a given RosterEntry object.
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
+     *
      * @param entry a RosterEntry
      * @return an Address
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
     @NonNull
@@ -242,8 +246,16 @@ public final class RosterUtils {
 
         address = address.copySetNodeId(NodeId.of(entry.nodeId()));
         address = address.copySetWeight(entry.weight());
-        address = address.copySetSigCert(
-                CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray()));
+
+        X509Certificate sigCert;
+        try {
+            sigCert = CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray());
+        } catch (final CryptographyException e) {
+            // Malformed or missing gossip certificates are nullified.
+            // https://github.com/hashgraph/hedera-services/issues/16648
+            sigCert = null;
+        }
+        address = address.copySetSigCert(sigCert);
 
         if (entry.gossipEndpoint().size() > 0) {
             address = address.copySetHostnameExternal(RosterUtils.fetchHostname(entry, 0));
@@ -273,9 +285,10 @@ public final class RosterUtils {
 
     /**
      * Build an AddressBook object out of a given Roster object.
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
+     *
      * @param roster a Roster
      * @return an AddressBook
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
     @NonNull
