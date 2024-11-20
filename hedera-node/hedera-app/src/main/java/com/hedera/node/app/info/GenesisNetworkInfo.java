@@ -27,6 +27,8 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,11 +133,17 @@ public class GenesisNetworkInfo implements NetworkInfo {
      * @return The node info
      */
     private NodeInfo fromRosterEntry(@NonNull final RosterEntry entry) {
+        // The RosterEntry has external ip address at index 0.
+        // The NodeInfo needs to have internal ip address at index 0.
+        // swap the internal and external endpoints when converting to NodeInfo.
+        final var gossipEndpointsCopy = new ArrayList<>(entry.gossipEndpoint());
+        Collections.swap(gossipEndpointsCopy, 0, 1);
+
         return new NodeInfoImpl(
                 entry.nodeId(),
                 asAccount(entry.nodeId() + 3),
                 entry.weight(),
-                entry.gossipEndpoint(),
+                gossipEndpointsCopy,
                 entry.gossipCaCertificate());
     }
 }
