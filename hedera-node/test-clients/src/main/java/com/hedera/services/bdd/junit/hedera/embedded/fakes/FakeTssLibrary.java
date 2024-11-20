@@ -19,16 +19,17 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.bls.BlsSignature;
+import com.hedera.cryptography.bls.SignatureSchema;
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.cryptography.tss.api.TssPrivateShare;
+import com.hedera.cryptography.tss.api.TssPublicShare;
+import com.hedera.cryptography.tss.api.TssShareSignature;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.cryptography.bls.BlsPrivateKey;
-import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
-import com.hedera.node.app.tss.cryptography.bls.BlsSignature;
-import com.hedera.node.app.tss.cryptography.bls.SignatureSchema;
-import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
-import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.cryptography.tss.api.TssPrivateShare;
-import com.hedera.node.app.tss.cryptography.tss.api.TssPublicShare;
-import com.hedera.node.app.tss.cryptography.tss.api.TssShareSignature;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -111,7 +112,7 @@ public class FakeTssLibrary implements TssLibrary {
 
     @Override
     public boolean verifyTssMessage(
-            @NonNull final TssParticipantDirectory participantDirectory, @NonNull final TssMessage tssMessage) {
+            @NonNull final TssParticipantDirectory participantDirectory, @NonNull final Bytes tssMessage) {
         return new String(tssMessage.toBytes()).startsWith(VALID_MESSAGE_PREFIX);
     }
 
@@ -182,5 +183,11 @@ public class FakeTssLibrary implements TssLibrary {
     @Override
     public BlsPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares) {
         return PRIVATE_KEY;
+    }
+
+    @NonNull
+    @Override
+    public TssMessage getTssMessageFromBytes(Bytes tssMessage, TssParticipantDirectory participantDirectory) {
+        return new FakeTssMessage(new byte[0]);
     }
 }

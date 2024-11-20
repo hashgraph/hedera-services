@@ -63,6 +63,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.junit.support.validators.block;
     exports com.hedera.services.bdd.utils;
 
+    //    requires com.hedera.cryptography.altbn128;
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.spi;
@@ -102,6 +103,9 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.dockerjava.api;
+    requires com.hedera.cryptography.bls;
+    requires com.hedera.cryptography.pairings.api;
+    requires com.hedera.cryptography.tss;
     requires com.sun.jna;
     requires io.grpc.netty;
     requires io.grpc.stub;

@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
-import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssMessage;
 
 public record FakeTssMessage(byte[] bytes) implements TssMessage {
 

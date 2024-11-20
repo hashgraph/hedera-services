@@ -26,6 +26,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
@@ -38,8 +40,6 @@ import com.hedera.node.app.tss.TssDirectoryAccessor;
 import com.hedera.node.app.tss.TssKeysAccessor;
 import com.hedera.node.app.tss.TssMetrics;
 import com.hedera.node.app.tss.api.FakeGroupElement;
-import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
-import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;

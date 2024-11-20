@@ -85,7 +85,7 @@ public class TssBaseServiceTest {
     private NetworkInfo networkInfo;
 
     @Mock
-    private com.hedera.node.app.tss.cryptography.tss.api.TssMessage tssMessage;
+    private com.hedera.cryptography.tss.api.TssMessage tssMessage;
 
     @Mock
     private Executor executor;

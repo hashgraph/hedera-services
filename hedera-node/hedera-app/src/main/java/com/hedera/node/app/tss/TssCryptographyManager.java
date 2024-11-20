@@ -21,15 +21,15 @@ import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
-import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
-import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
@@ -131,7 +131,7 @@ public class TssCryptographyManager {
                         return null;
                     }
                     final var aggregationStart = instantSource.instant();
-                    final var validTssMessages = getTssMessages(tssMessages, tssParticipantDirectory);
+                    final var validTssMessages = getTssMessages(tssMessages, tssParticipantDirectory, tssLibrary);
                     final var publicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
                     final var ledgerId = tssLibrary.aggregatePublicShares(publicShares);
                     final var signature = gossip.sign(ledgerId.toBytes());

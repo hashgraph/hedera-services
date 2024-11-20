@@ -1,1 +1,1 @@
-com.hedera.node.app.tss.cryptography.altbn128.spi.AltBn128Provider
+com.hedera.cryptography.altbn128.spi.AltBn128Provider

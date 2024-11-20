@@ -44,6 +44,7 @@ import static java.lang.Long.parseLong;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Transaction;
@@ -53,7 +54,6 @@ import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.HederaNode;

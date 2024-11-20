@@ -16,14 +16,15 @@
 
 package com.hedera.node.app.tss.api;
 
-import com.hedera.node.app.tss.cryptography.bls.BlsPrivateKey;
-import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
-import com.hedera.node.app.tss.cryptography.bls.BlsSignature;
-import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
-import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.cryptography.tss.api.TssPrivateShare;
-import com.hedera.node.app.tss.cryptography.tss.api.TssPublicShare;
-import com.hedera.node.app.tss.cryptography.tss.api.TssShareSignature;
+import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.bls.BlsSignature;
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.cryptography.tss.api.TssPrivateShare;
+import com.hedera.cryptography.tss.api.TssPublicShare;
+import com.hedera.cryptography.tss.api.TssShareSignature;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -74,7 +75,7 @@ public interface TssLibrary {
      * @param tssMessage the {@link TssMessage} to validate
      * @return true if the message is valid, false otherwise
      */
-    boolean verifyTssMessage(@NonNull TssParticipantDirectory participantDirectory, @NonNull TssMessage tssMessage);
+    boolean verifyTssMessage(@NonNull TssParticipantDirectory participantDirectory, @NonNull Bytes tssMessage);
 
     /**
      * Compute all private shares that belongs to this participant from a threshold minimum number of {@link
@@ -164,4 +165,6 @@ public interface TssLibrary {
      */
     @NonNull
     BlsSignature aggregateSignatures(@NonNull List<TssShareSignature> partialSignatures);
+
+    TssMessage getTssMessageFromBytes(Bytes tssMessage, TssParticipantDirectory participantDirectory);
 }

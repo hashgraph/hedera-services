@@ -19,9 +19,9 @@ package com.hedera.node.app.tss;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.node.config.data.TssConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadableRosterStore;

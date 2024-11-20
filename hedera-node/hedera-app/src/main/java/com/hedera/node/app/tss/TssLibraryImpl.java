@@ -18,19 +18,20 @@ package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
 
+import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.bls.BlsSignature;
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.cryptography.tss.api.TssParticipantPrivateInfo;
+import com.hedera.cryptography.tss.api.TssPrivateShare;
+import com.hedera.cryptography.tss.api.TssPublicShare;
+import com.hedera.cryptography.tss.api.TssService;
+import com.hedera.cryptography.tss.api.TssShareSignature;
+import com.hedera.cryptography.tss.impl.Groth21Service;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.cryptography.bls.BlsPrivateKey;
-import com.hedera.node.app.tss.cryptography.bls.BlsPublicKey;
-import com.hedera.node.app.tss.cryptography.bls.BlsSignature;
-import com.hedera.node.app.tss.cryptography.tss.api.TssMessage;
-import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantPrivateInfo;
-import com.hedera.node.app.tss.cryptography.tss.api.TssPrivateShare;
-import com.hedera.node.app.tss.cryptography.tss.api.TssPublicShare;
-import com.hedera.node.app.tss.cryptography.tss.api.TssService;
-import com.hedera.node.app.tss.cryptography.tss.api.TssShareSignature;
-import com.hedera.node.app.tss.cryptography.tss.impl.Groth21Library;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.SecureRandom;
@@ -49,7 +50,7 @@ public class TssLibraryImpl implements TssLibrary {
 
     @Inject
     public TssLibraryImpl(AppContext appContext) {
-        this.tssService = new Groth21Library(SIGNATURE_SCHEMA, random);
+        this.tssService = new Groth21Service(SIGNATURE_SCHEMA, random);
         this.selfNodeInfo = appContext.selfNodeInfoSupplier();
     }
 
@@ -68,8 +69,13 @@ public class TssLibraryImpl implements TssLibrary {
 
     @Override
     public boolean verifyTssMessage(
-            @NonNull TssParticipantDirectory participantDirectory, @NonNull TssMessage tssMessage) {
-        return tssService.rekeyStage().verifyTssMessage(participantDirectory, null, tssMessage);
+            @NonNull TssParticipantDirectory participantDirectory, @NonNull Bytes tssMessageBytes) {
+        try {
+            final var tssMessage = tssService.messageFromBytes(participantDirectory, tssMessageBytes.toByteArray());
+            return tssService.rekeyStage().verifyTssMessage(participantDirectory, null, tssMessage);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @NonNull
@@ -128,6 +134,15 @@ public class TssLibraryImpl implements TssLibrary {
             @NonNull final List<TssPublicShare> publicShares,
             @NonNull final TssShareSignature signature) {
         return signature.verify(publicShares.get(signature.shareId()), message);
+    }
+
+    @Override
+    public TssMessage getTssMessageFromBytes(Bytes tssMessage, TssParticipantDirectory participantDirectory) {
+        try {
+            return tssService.messageFromBytes(participantDirectory, tssMessage.toByteArray());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     // This method is not part of the TssLibrary interface, used for testing purposes

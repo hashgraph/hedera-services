@@ -26,10 +26,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.cryptography.tss.api.TssParticipantDirectory;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -88,7 +88,7 @@ public class TssUtilsTest {
 
         final var body = getTssBody();
         final var validTssOps = List.of(body.tssMessageOrThrow());
-        final var tssMessages = TssUtils.getTssMessages(validTssOps, directory);
+        final var tssMessages = TssUtils.getTssMessages(validTssOps, directory, mock(TssLibrary.class));
 
         assertEquals(1, tssMessages.size());
         assertThat(body.tssMessageOrThrow().tssMessage().toByteArray())
