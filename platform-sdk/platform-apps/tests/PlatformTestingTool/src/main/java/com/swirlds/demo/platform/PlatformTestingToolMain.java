@@ -85,8 +85,8 @@ import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -756,11 +756,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         final SuperConfig clientConfig = objectMapper.readValue(new File(jsonFileName), SuperConfig.class);
         final String selfName = RosterUtils.formatNodeName(selfId.id());
         for (int k = 0; k < CLIENT_AMOUNT; k++) {
-            appClient[k] = new AppClient(
-                    this.platform,
-                    this.selfId,
-                    clientConfig,
-                    selfName);
+            appClient[k] = new AppClient(this.platform, this.selfId, clientConfig, selfName);
             appClient[k].start();
         }
     }
