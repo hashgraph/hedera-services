@@ -19,7 +19,9 @@ package com.hedera.node.app.workflows.dispatcher;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -28,7 +30,10 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.WarmupContext;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -124,10 +129,45 @@ public class TransactionDispatcher {
 
         try {
             final var handler = getHandler(feeContext.body());
-            return handler.calculateFees(feeContext);
+            var fee = handler.calculateFees(feeContext);
+            return scale(feeContext.body(), fee);
         } catch (UnsupportedOperationException ex) {
             throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
+    }
+
+    // Scaling the fees if certain conditions are met.
+    // E.g. when we do a ScheduleCreate we want to scale the fees based on what transaction type is scheduled
+    private static Fees scale(TransactionBody transactionBody, Fees fees) {
+        double multiplier = 1; // by default, we are not scaling
+
+        final var functionality = transactionBody.data().kind();
+        // We are only scaling the ScheduleCreate. In the future we can add more functionalities.
+        switch (functionality) {
+            case SCHEDULE_CREATE -> multiplier = getScheduleMultiplier(transactionBody);
+        }
+
+        return fees.multiplyBy(multiplier);
+    }
+
+    // Getting the scheduled multiplier based on what transaction type is scheduled
+    private static double getScheduleMultiplier(TransactionBody transactionBody) {
+        try {
+            HederaFunctionality functionality = getScheduledHederaFunctionality(transactionBody);
+            return new AssetsLoader().loadScheduledTransactionMultipliers().get(functionality);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    // Getting the inner scheduled transaction functionality
+    private static HederaFunctionality getScheduledHederaFunctionality(TransactionBody transactionBody) {
+        SchedulableTransactionBody body = transactionBody.scheduleCreate().scheduledTransactionBodyOrThrow();
+
+        final var name = body.data().kind().protoName();
+        String nameFirstLetterUppercase = name.substring(0, 1).toUpperCase() + name.substring(1);
+
+        return HederaFunctionality.valueOf(nameFirstLetterUppercase);
     }
 
     /**

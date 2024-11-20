@@ -27,20 +27,14 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorage
 import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
-import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
 import com.hedera.node.app.hapi.fees.usage.QueryUsage;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
-import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -94,10 +88,6 @@ public class ScheduleOpsUsage {
             creationCtx.setNoAdminKey();
         }
 
-        // TODO: what usages should be multiplied. All?
-        HederaFunctionality functionality = getHederaFunctionality(scheduleCreate);
-        final var multiplier = getScheduleMultiplier(functionality);
-
         var estimate = txnEstimateFactory.get(sigUsage, scheduleCreate, ESTIMATOR_UTILS);
         estimate.addBpt(msgBytesUsed);
         estimate.addRbs(creationCtx.build().nonBaseRb() * lifetimeSecs);
@@ -112,24 +102,6 @@ public class ScheduleOpsUsage {
         }
 
         return estimate.get();
-    }
-
-    private static HederaFunctionality getHederaFunctionality(TransactionBody scheduleCreate) {
-        var pbj = CommonPbjConverters.toPbj(scheduleCreate);
-        SchedulableTransactionBody body = pbj.scheduleCreate().scheduledTransactionBody();
-
-        final var name = body.data().kind().protoName();
-        String nameFirstLetterUppercase = name.substring(0, 1).toUpperCase() + name.substring(1);
-
-        return HederaFunctionality.valueOf(nameFirstLetterUppercase);
-    }
-
-    private static double getScheduleMultiplier(HederaFunctionality functionality) {
-        try {
-            return new AssetsLoader().loadScheduledTransactionMultipliers().get(functionality);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     public FeeData scheduleSignUsage(TransactionBody scheduleSign, SigUsage sigUsage, long scheduleExpiry) {
