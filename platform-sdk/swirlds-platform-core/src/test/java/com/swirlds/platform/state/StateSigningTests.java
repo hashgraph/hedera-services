@@ -41,9 +41,9 @@ import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -445,11 +445,10 @@ class StateSigningTests {
 
         final AddressBook newAddressBook = addressBook.copy();
         for (final Address address : newAddressBook) {
-            final PublicKey publicKey = mock(PublicKey.class);
-            when(publicKey.getAlgorithm()).thenReturn("RSA");
-            when(publicKey.getEncoded()).thenReturn(new byte[] {1, 2, 3});
-            final X509Certificate certificate = mock(X509Certificate.class);
-            when(certificate.getPublicKey()).thenReturn(publicKey);
+            // need to get signatures that are outside the current address book range from PreGeneratedX509Certs
+            final X509Certificate certificate = PreGeneratedX509Certs.getSigCert(
+                            50 + address.getNodeId().id())
+                    .getCertificate();
             final Address newAddress = address.copySetSigCert(certificate);
             // This replaces the old address
             newAddressBook.add(newAddress);
