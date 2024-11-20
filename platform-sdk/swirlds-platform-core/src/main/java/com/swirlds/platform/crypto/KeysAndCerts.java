@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.crypto;
 
+import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPrivateKey;
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.swirlds.common.crypto.internal.CryptoUtils;
@@ -192,7 +193,9 @@ public record KeysAndCerts(
         publicStores.setCertificate(KeyCertPurpose.SIGNING, sigCert, name);
         publicStores.setCertificate(KeyCertPurpose.AGREEMENT, agrCert, name);
 
-        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores, null, null);
+        BlsKeyPair blsKeyPair = CryptoStatic.generateBlsKeyPair();
+
+        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores, blsKeyPair.privateKey(), blsKeyPair.publicKey());
     }
 
     /**
