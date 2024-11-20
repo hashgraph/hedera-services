@@ -99,7 +99,7 @@ public class AirdropToContractSystemContractTest {
                 @Contract(contract = "AssociateContract", isImmutable = true) SpecContract receiverContract,
                 @FungibleToken(initialSupply = 1000L) SpecFungibleToken token) {
             return hapiTest(
-                    receiverContract.call("associateToken", token).gas(1_000_000L),
+                    receiverContract.call("associateTokenToThisContract", token).gas(1_000_000L),
                     sender.associateTokens(token),
                     token.treasury().transferUnitsTo(sender, 1000L, token),
                     airdropContract
@@ -110,7 +110,7 @@ public class AirdropToContractSystemContractTest {
 
         @Order(1)
         @HapiTest
-        @DisplayName("Can airdorp multiple tokens to contract that is already associated with them")
+        @DisplayName("Can airdrop multiple tokens to contract that is already associated with them")
         public Stream<DynamicTest> airdropTokensToContract(
                 @Contract(contract = "AssociateContract", isImmutable = true) SpecContract receiverContract,
                 @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token1,
@@ -132,7 +132,7 @@ public class AirdropToContractSystemContractTest {
                         nft2.treasury().transferNFTsTo(sender, nft2, 1L),
                         nft3.treasury().transferNFTsTo(sender, nft3, 1L),
                         receiverContract
-                                .call("associateTokens", (Object)
+                                .call("associateTokensToThisContract", (Object)
                                         prepareTokenAddresses(spec, token1, token2, token3, nft1, nft2, nft3))
                                 .gas(5_000_000L));
                 allRunFor(
@@ -181,7 +181,8 @@ public class AirdropToContractSystemContractTest {
                         nft1.treasury().transferNFTsTo(sender, nft1, 1L),
                         nft2.treasury().transferNFTsTo(sender, nft2, 1L),
                         receiverContract
-                                .call("associateTokens", (Object) prepareTokenAddresses(spec, token1, nft1))
+                                .call("associateTokensToThisContract", (Object)
+                                        prepareTokenAddresses(spec, token1, nft1))
                                 .gas(1_500_000L));
                 allRunFor(spec, checkForEmptyBalance(receiverContract, List.of(token1, token2), List.of(nft1, nft2)));
                 final var serials = new long[] {1L, 1L};
@@ -219,7 +220,11 @@ public class AirdropToContractSystemContractTest {
                         sender.associateTokens(token1, token2),
                         token1.treasury().transferUnitsTo(sender, 1_000L, token1),
                         token2.treasury().transferUnitsTo(sender, 1_000L, token2));
-                allRunFor(spec, receiverContract.call("associateToken", token1).gas(1_000_000L));
+                allRunFor(
+                        spec,
+                        receiverContract
+                                .call("associateTokenToThisContract", token1)
+                                .gas(1_000_000L));
                 checkForEmptyBalance(receiverContract, List.of(token1, token2), List.of());
                 allRunFor(
                         spec,
@@ -248,7 +253,7 @@ public class AirdropToContractSystemContractTest {
         @Order(4)
         @HapiTest
         @DisplayName(
-                "Airdropped token with custom fees to be paid by the contract receiver should be payed by the sender")
+                "Airdropped token with custom fees to be paid by the contract receiver should be paid by the sender")
         public Stream<DynamicTest> airdropWithCustomFees(
                 @Contract(contract = "AssociateContract", isImmutable = true) SpecContract receiverContract,
                 @NonNull
@@ -261,7 +266,9 @@ public class AirdropToContractSystemContractTest {
                         spec,
                         sender.associateTokens(token),
                         airdropContract.associateTokens(token),
-                        receiverContract.call("associateToken", token).gas(1_000_000L),
+                        receiverContract
+                                .call("associateTokenToThisContract", token)
+                                .gas(1_000_000L),
                         // Initial check for receiver balance
                         receiverContract.getBalance().andAssert(balance -> balance.hasTinyBars(0L)),
                         token.treasury().transferUnitsTo(sender, 1_000L, token),
@@ -272,7 +279,8 @@ public class AirdropToContractSystemContractTest {
                         airdropContract
                                 .call("tokenAirdrop", token, sender, receiverContract, 10L)
                                 .gas(1_500_000L),
-                        // Fractional fee is paid by the transferred value
+                        // Fractional fee is paid by the transferred value, so 10 tokens should be transferred
+                        sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 990L)),
                         receiverContract.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 9)),
                         airdropContract.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 1L)));
             }));
@@ -281,7 +289,7 @@ public class AirdropToContractSystemContractTest {
         @Order(5)
         @HapiTest
         @DisplayName(
-                "Airdropped token with custom fees (net of transfers = true) to be paid by the contract receiver should be payed by the sender")
+                "Airdropped token with custom fees (net of transfers = true) to be paid by the contract receiver should be paid by the sender")
         public Stream<DynamicTest> airdropWithCustomFeesNetOfTransfersTrue(
                 @Contract(contract = "AssociateContract", isImmutable = true) SpecContract receiverContract,
                 @NonNull
@@ -294,7 +302,9 @@ public class AirdropToContractSystemContractTest {
                         spec,
                         sender.associateTokens(token),
                         airdropContract.associateTokens(token),
-                        receiverContract.call("associateToken", token).gas(1_000_000L),
+                        receiverContract
+                                .call("associateTokenToThisContract", token)
+                                .gas(1_000_000L),
                         // Initial check for receiver balance
                         receiverContract.getBalance().andAssert(balance -> balance.hasTinyBars(0L)),
                         token.treasury().transferUnitsTo(sender, 1_000L, token),
@@ -306,6 +316,9 @@ public class AirdropToContractSystemContractTest {
                         airdropContract
                                 .call("tokenAirdrop", token, sender, receiverContract, 10L)
                                 .gas(1_500_000L),
+                        // Fractional fee with net of transfers is paid by the sender, so 11 tokens should be
+                        // transferred
+                        sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 989L)),
                         receiverContract.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 10)),
                         airdropContract.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 1L)));
             }));
@@ -327,7 +340,9 @@ public class AirdropToContractSystemContractTest {
                         spec,
                         sender.associateTokens(token),
                         airdropContract.associateTokens(token),
-                        receiverContract.call("associateToken", token).gas(1_000_000L),
+                        receiverContract
+                                .call("associateTokenToThisContract", token)
+                                .gas(1_000_000L),
                         // Initial check for receiver balance
                         receiverContract.getBalance().andAssert(balance -> balance.hasTinyBars(0L)),
                         token.treasury().transferUnitsTo(sender, 1_000L, token),
@@ -340,6 +355,8 @@ public class AirdropToContractSystemContractTest {
                         airdropContract
                                 .call("tokenAirdrop", token, sender, receiverContract, 10L)
                                 .gas(1_500_000L),
+                        // The custom fee is not paid as the receiver is also the collector of another fee
+                        // and the allCollectorsExempt option is enabled for the Fractional fee
                         receiverContract.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 10)),
                         airdropContract.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 0L)));
             }));
@@ -389,7 +406,8 @@ public class AirdropToContractSystemContractTest {
                                 .gas(1_500_000L),
                         // New balance should be:
                         // 1_000_000(initial balance) - 1_000(transfer to sender) + 10 (airdropped amount) = 999_010
-                        // with no fees paid.
+                        // with no fees paid as the receiver is also the treasury of the token
+                        // and token treasuries are exempt of custom fees.
                         getAccountBalance(receiverContract).hasTokenBalance(token, 999_010L));
             }));
         }

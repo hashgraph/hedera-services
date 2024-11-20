@@ -134,7 +134,6 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
@@ -2133,19 +2132,6 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .payingWith(ALICE)
                             .signedByPayerAnd(ALICE)
                             .hasKnownStatus(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH));
-        }
-
-        @Disabled
-        @DisplayName("airdrop to contract without admin key")
-        final Stream<DynamicTest> airdropToContractWithoutAdminKey() {
-            final var testContract = "ToyMaker";
-            return hapiTest(
-                    uploadInitCode(testContract),
-                    contractCreate(testContract).omitAdminKey(),
-                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, testContract))
-                            .signedBy(OWNER)
-                            .payingWith(OWNER)
-                            .hasKnownStatus(NOT_SUPPORTED));
         }
 
         @HapiTest

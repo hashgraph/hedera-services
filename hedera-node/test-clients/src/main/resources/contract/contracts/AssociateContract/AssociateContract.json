@@ -26,7 +26,7 @@
         "type": "address"
       }
     ],
-    "name": "associateToken",
+    "name": "associateTokenToThisContract",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -39,7 +39,7 @@
         "type": "address[]"
       }
     ],
-    "name": "associateTokens",
+    "name": "associateTokensToThisContract",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
