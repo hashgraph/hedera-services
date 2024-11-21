@@ -679,9 +679,7 @@ public class HandleWorkflow {
             final var readableStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
             final var schedulesToExecute = readableStore.getByExpirationBetween(startSecond, endSecond);
             // reserve first timestamp slots for userTxn child transactions
-            final var maxPrecedingTransactions = consensusConfig.handleMaxPrecedingRecords();
-            final var maxChildTransactions = consensusConfig.handleMaxFollowingRecords();
-            var lastAssignedConsensusTime = consensusNow.plusNanos(maxPrecedingTransactions + maxChildTransactions);
+            var lastAssignedConsensusTime = consensusNow.plusNanos(consensusConfig.handleMaxFollowingRecords());
             // try to execute schedules
             for (var i = 0; i < schedulesToExecute.size(); i++) {
                 // create the scheduled UserTxn

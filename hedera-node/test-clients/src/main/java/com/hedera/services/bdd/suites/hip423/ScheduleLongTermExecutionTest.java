@@ -1209,7 +1209,9 @@ public class ScheduleLongTermExecutionTest {
                                 .designatingPayer(PAYING_ACCOUNT_2)
                                 .payingWith(PAYING_ACCOUNT)
                                 .waitForExpiry()
-                                .withRelativeExpiry(PAYER_TXN, 4)
+                                .withRelativeExpiry(PAYER_TXN, 4),
+                        sleepFor(5000),
+                        cryptoCreate("foo").via(TRIGGERING_TXN)
                         // future throttles will be exceeded because there is no throttle
                         // for system delete
                         // and the custom payer is not exempt from throttles like and admin
@@ -1287,7 +1289,6 @@ public class ScheduleLongTermExecutionTest {
                 scheduleCreate(
                                 VALID_SCHEDULE,
                                 cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver1, ONE_HBAR, false)))
-                        .withEntityMemo(randomUppercase(100))
                         .payingWith(PAYING_ACCOUNT)
                         .waitForExpiry()
                         .withRelativeExpiry("createPayerTxn", 4)
@@ -1304,9 +1305,7 @@ public class ScheduleLongTermExecutionTest {
                                                 BigInteger.valueOf(500_000L))
                                         .sending(ONE_HBAR)
                                         .gas(2_000_000L)
-                                        .via("callTransaction")
                                         .hasKnownStatusFrom(SUCCESS, INVALID_SOLIDITY_ADDRESS))
-                        .withEntityMemo(randomUppercase(100))
                         .payingWith(DEFAULT_PAYER)
                         .waitForExpiry()
                         .withRelativeExpiry("createPayerTxn", 4)
@@ -1317,7 +1316,6 @@ public class ScheduleLongTermExecutionTest {
                                 cryptoTransfer(
                                         tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver2, ONE_HBAR, false),
                                         tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver4, ONE_HBAR, false)))
-                        .withEntityMemo(randomUppercase(100))
                         .payingWith(PAYING_ACCOUNT)
                         .waitForExpiry()
                         .withRelativeExpiry("createPayerTxn", 4)
@@ -1325,10 +1323,10 @@ public class ScheduleLongTermExecutionTest {
                         .via("thirdSchedule"),
                 sleepFor(5000),
                 cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT_2, receiver3, ONE_HBAR, false))
-                        .via("trigger"),
+                        .via(TRIGGERING_TXN),
                 withOpContext((spec, opLog) -> {
                     // get all records
-                    final var trigger = getTxnRecord("trigger").andAllChildRecords();
+                    final var trigger = getTxnRecord(TRIGGERING_TXN).andAllChildRecords();
                     final var firstSchedule =
                             getTxnRecord("firstSchedule").scheduled().andAllChildRecords();
                     final var secondSchedule =
@@ -1342,20 +1340,20 @@ public class ScheduleLongTermExecutionTest {
                     final var firstScheduleSeconds = getRecordSeconds(firstSchedule);
                     final var secondScheduleSeconds = getRecordSeconds(secondSchedule);
                     final var thirdScheduleSeconds = getRecordSeconds(thirdSchedule);
-
+                    // trigger nanos
                     final var triggerChildNanos = getChildNanos(trigger, 0);
                     final var triggerNanos = getRecordNanos(trigger);
-
+                    // first schedule nanos
                     final var firstScheduleChildNanos = getChildNanos(firstSchedule, 0);
                     final var firstScheduleNanos = getRecordNanos(firstSchedule);
-
+                    // second schedule nanos
                     final var secondScheduleNanos = getRecordNanos(secondSchedule);
                     final var secondScheduleChildNanos = getChildNanos(secondSchedule, 0);
-
+                    // third schedule nanos
                     final var thirdScheduleFirstChildNanos = getChildNanos(thirdSchedule, 0);
                     final var thirdScheduleSecondChildNanos = getChildNanos(thirdSchedule, 1);
                     final var thirdScheduleNanos = getRecordNanos(thirdSchedule);
-
+                    // assert correct timestamps order
                     assertThat(triggerSeconds)
                             .as(WRONG_CONSENSUS_TIMESTAMP)
                             .isEqualTo(firstScheduleSeconds)
