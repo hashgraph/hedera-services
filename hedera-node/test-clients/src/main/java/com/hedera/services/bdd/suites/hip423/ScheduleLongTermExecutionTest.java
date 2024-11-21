@@ -1279,11 +1279,11 @@ public class ScheduleLongTermExecutionTest {
         final var contract = "HollowAccountCreator";
         return hapiTest(
                 cryptoCreate(PAYING_ACCOUNT).via("createPayerTxn"),
+                cryptoCreate(PAYING_ACCOUNT_2),
                 newKeyNamed(receiver1),
                 newKeyNamed(receiver2),
                 newKeyNamed(receiver3),
                 newKeyNamed(receiver4),
-                newKeyNamed(ADMIN_KEY),
                 scheduleCreate(
                                 VALID_SCHEDULE,
                                 cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver1, ONE_HBAR, false)))
@@ -1324,7 +1324,7 @@ public class ScheduleLongTermExecutionTest {
                         .recordingScheduledTxn()
                         .via("thirdSchedule"),
                 sleepFor(5000),
-                cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver3, ONE_HBAR, false))
+                cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT_2, receiver3, ONE_HBAR, false))
                         .via("trigger"),
                 withOpContext((spec, opLog) -> {
                     // get all records

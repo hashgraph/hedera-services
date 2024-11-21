@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.spi.records.RecordSource;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -33,6 +34,8 @@ class HandleOutputTest {
     @Mock
     private RecordSource recordSource;
 
+    private final Instant lastAssignedConsensusTime = Instant.now();
+
     @Test
     void throwsIfMissingRecordSourceWhenRequired() {
         final var subject = new HandleOutput(blockRecordSource, null, null);
@@ -43,6 +46,12 @@ class HandleOutputTest {
     void throwsIfMissingBlockRecordSourceWhenRequired() {
         final var subject = new HandleOutput(null, recordSource, null);
         assertThrows(NullPointerException.class, subject::blockRecordSourceOrThrow);
+    }
+
+    @Test
+    void throwsIfMissingLastAssignedConsensusTimeWhenRequired() {
+        final var subject = new HandleOutput(null, recordSource, null);
+        assertThrows(NullPointerException.class, subject::lastAssignedConsensusTime);
     }
 
     @Test
@@ -64,5 +73,11 @@ class HandleOutputTest {
 
         final var withoutBlockSource = new HandleOutput(null, recordSource, null);
         assertEquals(recordSource, withoutBlockSource.preferringBlockRecordSource());
+    }
+
+    @Test
+    void returnsLastAssignedConsensusTimeWhenPresent() {
+        final var subject = new HandleOutput(null, recordSource, lastAssignedConsensusTime);
+        assertEquals(lastAssignedConsensusTime, subject.lastAssignedConsensusTime());
     }
 }
