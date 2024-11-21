@@ -89,6 +89,6 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
         if (fileHash == null) {
             return null;
         }
-        return fileHash.value() == Bytes.EMPTY ? null : fileHash.value();
+        return Bytes.EMPTY.equals(fileHash.value()) ? null : fileHash.value();
     }
 }
