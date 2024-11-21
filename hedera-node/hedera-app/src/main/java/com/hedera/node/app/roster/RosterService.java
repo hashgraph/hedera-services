@@ -20,7 +20,7 @@ import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_S
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.hedera.node.app.roster.schemas.V057RosterSchema;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;

@@ -44,7 +44,7 @@ import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
-import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;

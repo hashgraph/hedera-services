@@ -32,7 +32,7 @@ import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.node.app.roster.RosterService;
-import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
