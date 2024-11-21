@@ -49,7 +49,7 @@ public class V057PlatformStateSchema extends Schema {
     private final Supplier<Roster> activeRoster;
 
     private final Supplier<SoftwareVersion> appVersion;
-    private Function<WritableStates, WritablePlatformStateStore> platformStateStoreFactory;
+    private final Function<WritableStates, WritablePlatformStateStore> platformStateStoreFactory;
 
     public V057PlatformStateSchema(
             @NonNull final Supplier<Roster> activeRoster,
