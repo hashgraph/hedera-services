@@ -16,11 +16,15 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -30,7 +34,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.WarmupContext;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -154,20 +157,29 @@ public class TransactionDispatcher {
     private static double getScheduleMultiplier(TransactionBody transactionBody) {
         try {
             HederaFunctionality functionality = getScheduledHederaFunctionality(transactionBody);
-            return new AssetsLoader().loadScheduledTransactionMultipliers().get(functionality);
+            var multiplier =
+                    new AssetsLoader().loadScheduledTransactionMultipliers().get(functionality);
+            return multiplier != null ? multiplier : 1;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     // Getting the inner scheduled transaction functionality
-    private static HederaFunctionality getScheduledHederaFunctionality(TransactionBody transactionBody) {
-        SchedulableTransactionBody body = transactionBody.scheduleCreate().scheduledTransactionBodyOrThrow();
+    private static HederaFunctionality getScheduledHederaFunctionality(TransactionBody txnBody) {
+        final var scheduleCreate = txnBody.scheduleCreateOrThrow();
+        final var scheduled = scheduleCreate.scheduledTransactionBodyOrThrow();
+        final var schedule = Schedule.newBuilder()
+                .originalCreateTransaction(txnBody)
+                .scheduledTransaction(scheduled)
+                .build();
 
-        final var name = body.data().kind().protoName();
-        String nameFirstLetterUppercase = name.substring(0, 1).toUpperCase() + name.substring(1);
-
-        return HederaFunctionality.valueOf(nameFirstLetterUppercase);
+        try {
+            TransactionBody innerTxn = childAsOrdinary(schedule);
+            return functionOf(innerTxn);
+        } catch (HandleException | UnknownHederaFunctionality ex) {
+            return HederaFunctionality.NONE;
+        }
     }
 
     /**
