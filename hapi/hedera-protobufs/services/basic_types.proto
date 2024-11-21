@@ -1268,7 +1268,7 @@ enum HederaFunctionality {
     /**
      * Submit an signature of a state snapshot gossiped to other nodes
      */
-    StateSignatureTransaction = 100;
+    StateSignatureTransaction = 99;
 }
 
 /**
