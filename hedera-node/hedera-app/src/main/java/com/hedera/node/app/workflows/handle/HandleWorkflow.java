@@ -20,10 +20,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
@@ -44,6 +45,7 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.input.EventHeader;
 import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
@@ -59,8 +61,10 @@ import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -78,6 +82,7 @@ import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -89,10 +94,13 @@ import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.config.data.SchedulingConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
@@ -143,10 +151,13 @@ public class HandleWorkflow {
     private final UserTxnFactory userTxnFactory;
     private final ConfigProvider configProvider;
     private final ScheduleService scheduleService;
+    private final TssBaseService tssBaseService;
     private final AddressBookHelper addressBookHelper;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
+    private final TssBaseService tssBaseService;
+    private final ConfigProvider configProvider;
 
     @Inject
     public HandleWorkflow(
@@ -170,8 +181,8 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
-            @NonNull final AddressBookHelper addressBookHelper,
-            @NonNull final ScheduleService scheduleService) {
+            final AddressBookHelper addressBookHelper,
+            @NonNull final TssBaseService tssBaseService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -197,7 +208,7 @@ public class HandleWorkflow {
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
         this.addressBookHelper = requireNonNull(addressBookHelper);
-        this.scheduleService = requireNonNull(scheduleService);
+        this.tssBaseService = requireNonNull(tssBaseService);
     }
 
     /**
@@ -209,6 +220,9 @@ public class HandleWorkflow {
     public void handleRound(@NonNull final State state, @NonNull final Round round) {
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        if (configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
+            tssBaseService.generateParticipantDirectory(state);
+        }
         if (streamMode != RECORDS) {
             blockStreamManager.startRound(round, state);
             blockStreamManager.writeItem(BlockItem.newBuilder()
@@ -299,10 +313,10 @@ public class HandleWorkflow {
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
      * {@link BlockRecordManager} to be externalized.
      *
-     * @param state the writable {@link State} that this transaction will work on
-     * @param event the {@link ConsensusEvent} that this transaction belongs to
+     * @param state   the writable {@link State} that this transaction will work on
+     * @param event   the {@link ConsensusEvent} that this transaction belongs to
      * @param creator the {@link NodeInfo} of the creator of the transaction
-     * @param txn the {@link ConsensusTransaction} to be handled
+     * @param txn     the {@link ConsensusTransaction} to be handled
      */
     private void handlePlatformTransaction(
             @NonNull final State state,
@@ -328,7 +342,7 @@ public class HandleWorkflow {
                 default -> ORDINARY_TRANSACTION;};
         }
         final var userTxn = userTxnFactory.createUserTxn(state, event, creator, txn, consensusNow, type);
-        final var handleOutput = execute(userTxn);
+        final var handleOutput = execute(state, userTxn);
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
             blockRecordManager.endUserTransaction(records.stream(), state);
@@ -354,7 +368,7 @@ public class HandleWorkflow {
      *
      * @return the stream of records
      */
-    private HandleOutput execute(@NonNull final UserTxn userTxn) {
+    private HandleOutput execute(@NonNull final State state, @NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 if (streamMode != BLOCKS) {
@@ -363,7 +377,13 @@ public class HandleWorkflow {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                     if (streamMode == RECORDS) {
                         // If relying on last-handled time to trigger interval processing, do so now
-                        processInterval(userTxn, lastRecordManagerTime);
+                        processInterval(
+                                state,
+                                userTxn.event(),
+                                userTxn.creatorInfo(),
+                                lastRecordManagerTime,
+                                userTxn.consensusNow(),
+                                userTxn);
                     }
                 }
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
@@ -371,19 +391,16 @@ public class HandleWorkflow {
                 // Flushes the BUSY builder to the stream, no other side effects
                 userTxn.stack().commitTransaction(userTxn.baseBuilder());
             } else {
+                final var writableRosterStoreFactory = new WritableStoreFactory(
+                        userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
+                final var writableStoreFactory = new WritableStoreFactory(
+                        userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
+                final var nodeStore = writableStoreFactory.getStore(WritableNodeStore.class);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     systemSetup.externalizeInitSideEffects(
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
-                    // Set the genesis roster in state
-                    final var writableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), RosterStateId.NAME, userTxn.config(), storeMetricsService);
-                    final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
-                    rosterStore.putActiveRoster(networkInfo.roster(), 1L);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
-                    final var writableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
-                    final var nodeStore = writableStoreFactory.getStore(WritableNodeStore.class);
                     final var writableStakingInfoStore =
                             new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME));
                     final var writableNetworkStakingRewardsStore = new WritableNetworkStakingRewardsStore(
@@ -408,6 +425,25 @@ public class HandleWorkflow {
                     // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
+                    // Generate key material for the active roster once it is switched
+                }
+
+                final var keyCandidateRoster = configProvider
+                        .getConfiguration()
+                        .getConfigData(TssConfig.class)
+                        .keyCandidateRoster();
+                final var useRosterLifecycle = configProvider
+                        .getConfiguration()
+                        .getConfigData(AddressBookConfig.class)
+                        .useRosterLifecycle();
+
+                if (!keyCandidateRoster
+                        && useRosterLifecycle
+                        && userTxn.functionality() == HederaFunctionality.FREEZE) {
+                    // Set the candidate roster in state on network upgrade only if the tss is disabled
+                    final var candidateRoster = nodeStore.snapshotOfFutureRoster();
+                    final var rosterStore = writableRosterStoreFactory.getStore(WritableRosterStore.class);
+                    rosterStore.putCandidateRoster(candidateRoster);
                 }
 
                 final var baseBuilder = initializeBuilderInfo(
@@ -421,9 +457,21 @@ public class HandleWorkflow {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
                 if (streamMode == RECORDS) {
-                    processInterval(userTxn, lastRecordManagerTime);
+                    processInterval(
+                            state,
+                            userTxn.event(),
+                            userTxn.creatorInfo(),
+                            lastRecordManagerTime,
+                            userTxn.consensusNow(),
+                            userTxn);
                 } else {
-                    if (processInterval(userTxn, blockStreamManager.lastIntervalProcessTime())) {
+                    if (processInterval(
+                            state,
+                            userTxn.event(),
+                            userTxn.creatorInfo(),
+                            blockStreamManager.lastIntervalProcessTime(),
+                            userTxn.consensusNow(),
+                            userTxn)) {
                         blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
                     }
                 }
@@ -474,7 +522,7 @@ public class HandleWorkflow {
         RecordSource cacheableRecordSource = null;
         final RecordSource recordSource;
         if (streamMode != BLOCKS) {
-            final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_TRANSACTION_CUSTOMIZER, USER);
             initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                     .status(FAIL_INVALID)
                     .consensusTimestamp(userTxn.consensusNow());
@@ -490,7 +538,7 @@ public class HandleWorkflow {
         final BlockRecordSource blockRecordSource;
         if (streamMode != RECORDS) {
             final List<BlockStreamBuilder.Output> outputs = new LinkedList<>();
-            final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_TRANSACTION_CUSTOMIZER, USER);
             initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                     .status(FAIL_INVALID)
                     .consensusTimestamp(userTxn.consensusNow());
@@ -533,8 +581,8 @@ public class HandleWorkflow {
      * information. The record builder is initialized with the transaction, transaction bytes, transaction ID,
      * exchange rate, and memo.
      *
-     * @param builder the base builder
-     * @param txnInfo the transaction information
+     * @param builder         the base builder
+     * @param txnInfo         the transaction information
      * @param exchangeRateSet the active exchange rate set
      * @return the initialized base builder
      */
@@ -591,42 +639,64 @@ public class HandleWorkflow {
 
     /**
      * Process all time-based events that are due since the last processing time.
+     * <p>
+     * Note: While long-term schedule transactions (and any future time-based events) will work directly on the state,
+     * we still want to pass the userTxn here and use its stack to commit the state purge. Especially when the feature
+     * flag is false.
      *
-     * @param userTxn the user transaction
+     * @param state           the writable {@link State} that transactions will work on
+     * @param event           the {@link ConsensusEvent} that current user transaction belongs to
+     * @param creator         the {@link NodeInfo} of the creator of the user transaction
      * @param lastProcessTime an upper bound on the last time that time-based events were processed
+     * @param consensusNow    the current consensus time
+     * @param userTxn         the user transaction
+     *
      * @return true if the interval was processed
      */
-    private boolean processInterval(@NonNull final UserTxn userTxn, final Instant lastProcessTime) {
+    private boolean processInterval(
+            final State state,
+            final ConsensusEvent event,
+            final NodeInfo creator,
+            final Instant lastProcessTime,
+            final Instant consensusNow,
+            final UserTxn userTxn) {
         // If we have never processed an interval, treat this time as the last processed time
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
-        }
+        } else if (lastProcessTime.getEpochSecond() < consensusNow.getEpochSecond()) {
+            // There is at least one unprocessed second since the last processing time
+            final var scheduleConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
+            final var startSecond = lastProcessTime.getEpochSecond();
+            final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
+            // if long term schedules are disabled, the schedule purge needs to be commited with the userTxn stack
+            if (!scheduleConfig.longTermEnabled()) {
+                final var scheduleStore = new WritableStoreFactory(
+                                userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
+                        .getStore(WritableScheduleStore.class);
+                scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+                userTxn.stack().commitSystemStateChanges();
+                return true;
+            }
 
-        // Check if there are unprocessed intervals since the last processing time
-        if (lastProcessTime.getEpochSecond() < userTxn.consensusNow().getEpochSecond()) {
-            final var storeFactory = getStoreFactory(userTxn);
-            final var scheduleIterator =
-                    scheduleService.iterTxnsForInterval(lastProcessTime, userTxn.consensusNow(), () -> storeFactory);
+            final var readableStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
+            final var schedulesToExecute = readableStore.getByExpirationBetween(startSecond, endSecond);
 
-            final var consensusConfig = configProvider.getConfiguration().getConfigData(ConsensusConfig.class);
-            final var maxChildTransactions = consensusConfig.handleMaxFollowingRecords();
-
-            // reserve first timestamp slots for userTxn child transactions
-            var lastAssignedConsensusTime = userTxn.consensusNow().plusNanos(maxChildTransactions);
-
-            while (scheduleIterator.hasNext()) {
-                // Get the next schedule
-                final var schedule = scheduleIterator.next();
-                final var txnBody = schedule.body();
-
-                // Create new user transaction for the schedule
+            // future: consensus nanos offset will be calculated more precisely in following PR,
+            //  for now just add 1 nano on each iteration.
+            var consensusNanosOffset = 1;
+            // try to execute schedules
+            for (var i = 0; i < schedulesToExecute.size(); i++) {
+                // update schedule consensus timestamp
+                final var schedule = schedulesToExecute.get(i);
+                final var scheduleConsensus = Instant.from(consensusNow.plusNanos(consensusNanosOffset));
+                final var txnBody = childAsOrdinary(schedule);
                 final var scheduleUserTnx = userTxnFactory.createUserTxn(
-                        userTxn.state(),
-                        userTxn.event(),
-                        userTxn.creatorInfo(),
-                        lastAssignedConsensusTime,
-                        userTxn.type(),
-                        schedule.payerId(),
+                        state,
+                        event,
+                        creator,
+                        scheduleConsensus,
+                        ORDINARY_TRANSACTION,
+                        schedule.payerAccountIdOrThrow(),
                         txnBody);
 
                 // Initialize builder for scheduled transaction
@@ -636,8 +706,25 @@ public class HandleWorkflow {
 
                 // Dispatch the scheduled transaction
                 final var scheduleDispatch = userTxnFactory.createDispatch(
-                        scheduleUserTnx, baseBuilder, schedule.verificationAssistant(), SCHEDULED);
+                        scheduleUserTnx,
+                        baseBuilder,
+                        k -> schedule.signatories().contains(k),
+                        SCHEDULED);
+
+                // mark as deleted
+                final var scheduleStore =
+                        getScheduleServiceStoreFactory(scheduleUserTnx).writableStore(WritableScheduleStore.class);
+                scheduleStore.delete(schedule.scheduleId(), consensusNow);
+                scheduleUserTnx.stack().commitSystemStateChanges();
+
+                // execute the schedule
                 dispatchProcessor.processDispatch(scheduleDispatch);
+
+                // purge all schedules
+                if (i == schedulesToExecute.size() - 1) {
+                    scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+                    scheduleUserTnx.stack().commitSystemStateChanges();
+                }
 
                 // Calculate the new consensus time offset based on preceding transactions
                 final var numberOfPrecedingTransactions =
@@ -651,31 +738,42 @@ public class HandleWorkflow {
                                 scheduleUserTnx.consensusNow().plusNanos(consensusNanosOffset),
                                 exchangeRateManager.exchangeRates());
 
-                // Update the last assigned consensus time
-                lastAssignedConsensusTime = handleOutput.lastAssignedConsensusTime();
-
-                // Add the record source to the record cache
-                recordCache.addRecordSource(
-                        scheduleUserTnx.creatorInfo().nodeId(),
-                        requireNonNull(scheduleUserTnx.txnInfo().transactionID()),
-                        DueDiligenceFailure.NO,
-                        handleOutput.preferringBlockRecordSource());
-
-                // Mark the schedule as deleted
-                scheduleIterator.remove();
+                // build the output and save the record/stream
+                generateStreams(state, scheduleUserTnx);
+                consensusNanosOffset++;
             }
-            // this will commit the purge of the schedules
-            userTxn.stack().commitSystemStateChanges();
             return true;
         }
         return false;
     }
 
-    private StoreFactoryImpl getStoreFactory(@NonNull UserTxn userTxn) {
-        final var readableStoreFactory = new ReadableStoreFactory(userTxn.stack());
+    private void generateStreams(final State state, final UserTxn scheduleUserTnx) {
+        final var handleOutput = scheduleUserTnx
+                .stack()
+                .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
+        recordCache.addRecordSource(
+                scheduleUserTnx.creatorInfo().nodeId(),
+                requireNonNull(scheduleUserTnx.txnInfo().transactionID()),
+                DueDiligenceFailure.NO,
+                handleOutput.preferringBlockRecordSource());
+
+        // write records + state changes
+        if (streamMode != BLOCKS) {
+            final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
+            blockRecordManager.endUserTransaction(records.stream(), state);
+        }
+        if (streamMode != RECORDS) {
+            handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
+        }
+    }
+
+    private StoreFactoryImpl getScheduleServiceStoreFactory(final UserTxn userTxn) {
+        // Build store factory for the schedule service iterator
+        final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
         final var writableStoreFactory = new WritableStoreFactory(
-                userTxn.stack(), scheduleService.getServiceName(), userTxn.config(), storeMetricsService);
-        final var serviceApiFactory = new ServiceApiFactory(userTxn.stack(), userTxn.config(), storeMetricsService);
+                userTxn.stack(), ScheduleService.NAME, configProvider.getConfiguration(), storeMetricsService);
+        final var serviceApiFactory =
+                new ServiceApiFactory(userTxn.stack(), configProvider.getConfiguration(), storeMetricsService);
         return new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
     }
 

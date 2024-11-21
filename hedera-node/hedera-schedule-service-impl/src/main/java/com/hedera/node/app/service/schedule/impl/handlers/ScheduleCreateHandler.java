@@ -185,7 +185,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var transactionKeys = getTransactionKeysOrThrow(provisionalSchedule, context::allKeysForTransaction);
         final var requiredKeys = allRequiredKeys(transactionKeys);
         final var signatories =
-                newSignatories(context.keyVerifier().signingCryptoKeys(), Collections.emptyList(), requiredKeys);
+                newSignatories(context.keyVerifier().authorizingSimpleKeys(), Collections.emptyList(), requiredKeys);
         final var schedulingTxnId =
                 provisionalSchedule.originalCreateTransactionOrThrow().transactionIDOrThrow();
         final var schedulerId = schedulingTxnId.accountIDOrThrow();

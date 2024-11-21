@@ -34,6 +34,11 @@ public class NodeOperatorQueriesBase {
     protected static final String NODE_OPERATOR = "operator";
     protected static final String NODE_OPERATOR_KEY = "NODE_OPERATOR_KEY";
     protected static final String FUNGIBLE_QUERY_TOKEN = "fungibleQueryToken";
+    protected static final String ANOTHER_FUNGIBLE_QUERY_TOKEN = "anotherFungibleQueryToken";
+    protected static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
+    protected static final String TREASURY = "treasury";
+    protected static final String WIPE_KEY = "wipeKey";
+    protected static final String SUPPLY_KEY = "supplyKey";
     protected static final String OWNER = "owner";
     protected static final String PAYER = "payer";
     protected static final String FILE = "file";

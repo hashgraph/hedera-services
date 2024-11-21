@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -335,8 +335,9 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
         givenAirdropTxn();
 
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(TokenAirdropStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(
+                        argThat(options -> TokenAirdropStreamBuilder.class.equals(options.streamBuilderType())
+                                && payerId.equals(options.payerId()))))
                 .will((invocation) -> {
                     var pendingAirdropId = PendingAirdropId.newBuilder().build();
                     var pendingAirdropValue = PendingAirdropValue.newBuilder().build();

@@ -462,7 +462,7 @@ public class ThrottleAccumulator {
             }
             return !manager.allReqsMetAt(now);
         } else {
-            // todo : throttles will be implemented in following PRs
+            // TODO : throttles will be implemented in following PRs
             // log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet
             // implemented.");
             if (!manager.allReqsMetAt(now)) {
@@ -506,7 +506,7 @@ public class ThrottleAccumulator {
         if (!areLongTermSchedulesEnabled) {
             return false;
         } else {
-            // todo : throttles will be implemented in following PRs
+            // TODO : throttles will be implemented in following PRs
             // log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet
             // implemented.");
             // deeply check throttle only in the frontend throttle

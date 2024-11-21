@@ -32,6 +32,7 @@ dependencies {
     implementation(
         "gradle.plugin.com.google.cloud.artifactregistry:artifactregistry-gradle-plugin:2.2.2"
     )
+    implementation("io.freefair.gradle:maven-plugin:8.11") // for POM validation
     implementation("io.github.gradle-nexus:publish-plugin:1.3.0")
     implementation("me.champeau.jmh:jmh-gradle-plugin:0.7.2")
     implementation("net.swiftzer.semver:semver:1.3.0")
