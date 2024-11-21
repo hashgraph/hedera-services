@@ -63,6 +63,22 @@ public class TssMetrics {
     private static final LongGauge.Config TSS_ROSTER_LIFECYCLE_CONFIG = new LongGauge.Config(
                     "app", TSS_CANDIDATE_ROSTER_LIFECYCLE)
             .withDescription(TSS_CANDIDATE_ROSTER_LIFECYCLE_DESC);
+
+    private static final String TSS_LEDGER_SIGNATURE_TIME = "tss_ledger_signature_time";
+    private static final String TSS_LEDGER_SIGNATURE_TIME_DESC =
+            "the time it takes to to get ledger signature from the time it is requested";
+    private static final LongGauge.Config TSS_LEDGER_SIGNATURE_TIME_CONFIG =
+            new LongGauge.Config("app", TSS_LEDGER_SIGNATURE_TIME).withDescription(TSS_LEDGER_SIGNATURE_TIME_DESC);
+    private final LongGauge tssLedgerSignatureTime;
+
+    private static final String TSS_LEDGER_SIGNATURE_FAILURES_COUNTER = "tss_ledger_signature_failures_counter";
+    private static final String TSS_LEDGER_SIGNATURE_FAILURES_COUNTER_DESC =
+            "The number of failures to generate a ledger signature";
+    final Counter.Config TSS_LEDGER_SIGN_FAILURE_COUNTER = new Counter.Config(
+                    "app", TSS_LEDGER_SIGNATURE_FAILURES_COUNTER)
+            .withDescription(TSS_LEDGER_SIGNATURE_FAILURES_COUNTER_DESC);
+    final Counter ledgerSignatureFailuresCounter;
+
     private final LongGauge tssCandidateRosterLifecycle;
 
     // local variable to track the start of candidate roster's lifecycle
@@ -78,6 +94,8 @@ public class TssMetrics {
         this.metrics = requireNonNull(metrics, "metrics must not be null");
         tssCandidateRosterLifecycle = metrics.getOrCreate(TSS_ROSTER_LIFECYCLE_CONFIG);
         tssSharesAggregationTime = metrics.getOrCreate(TSS_SHARES_AGGREGATION_CONFIG);
+        tssLedgerSignatureTime = metrics.getOrCreate(TSS_LEDGER_SIGNATURE_TIME_CONFIG);
+        ledgerSignatureFailuresCounter = metrics.getOrCreate(TSS_LEDGER_SIGN_FAILURE_COUNTER);
     }
 
     /**
@@ -156,6 +174,12 @@ public class TssMetrics {
             tssSharesAggregationTime.set(aggregationTime);
         }
     }
+    /**
+     * Track the number of consecutive failures to generate a ledger signatures.
+     */
+    public void updateLedgerSignatureFailures() {
+        ledgerSignatureFailuresCounter.increment();
+    }
 
     /**
      * @param targetRosterHash the {@link Bytes} of the candidate roster
@@ -176,6 +200,19 @@ public class TssMetrics {
     }
 
     /**
+     * The time it takes to get ledger signature from the time it is requested.
+     *
+     * @param time the time it takes to get ledger signature from the time it is requested
+     */
+    public void updateLedgerSignatureTime(final long time) {
+        if (time < 0) {
+            log.warn("Received negative signature time: {}", time);
+        } else {
+            tssLedgerSignatureTime.set(time);
+        }
+    }
+
+    /**
      * @return the aggregation time from the metric
      */
     @VisibleForTesting
@@ -189,5 +226,18 @@ public class TssMetrics {
     @VisibleForTesting
     public long getCandidateRosterLifecycle() {
         return tssCandidateRosterLifecycle.get();
+    }
+
+    /**
+     * @return the ledger signature time from the metric
+     */
+    @VisibleForTesting
+    public long getTssLedgerSignatureTime() {
+        return tssLedgerSignatureTime.get();
+    }
+
+    @VisibleForTesting
+    public Counter getLedgerSignatureFailuresCounter() {
+        return ledgerSignatureFailuresCounter;
     }
 }

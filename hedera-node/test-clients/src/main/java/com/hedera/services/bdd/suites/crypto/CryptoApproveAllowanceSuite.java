@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.ADHOC;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -290,31 +289,27 @@ public class CryptoApproveAllowanceSuite {
 
     @HapiTest
     final Stream<DynamicTest> transferringMissingNftViaApprovalFailsWithInvalidNftId() {
-        return defaultHapiSpec("TransferringMissingNftViaApprovalFailsWithInvalidNftId")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"),
-                                        ByteString.copyFromUtf8("c"))))
-                .when()
-                .then(cryptoTransfer((spec, builder) -> builder.addTokenTransfers(TokenTransferList.newBuilder()
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .maxSupply(10L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                mintToken(
+                        NON_FUNGIBLE_TOKEN,
+                        List.of(
+                                ByteString.copyFromUtf8("a"),
+                                ByteString.copyFromUtf8("b"),
+                                ByteString.copyFromUtf8("c"))),
+                cryptoTransfer((spec, builder) -> builder.addTokenTransfers(TokenTransferList.newBuilder()
                                 .setToken(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
                                 .addNftTransfers(NftTransfer.newBuilder()
                                         // Doesn't exist
@@ -684,59 +679,53 @@ public class CryptoApproveAllowanceSuite {
 
     @HapiTest
     final Stream<DynamicTest> invalidSpenderFails() {
-        return defaultHapiSpec("invalidSpenderFails")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey(SUPPLY_KEY)
-                                .maxSupply(1000L)
-                                .initialSupply(10L)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        mintToken(
-                                        NON_FUNGIBLE_TOKEN,
-                                        List.of(
-                                                ByteString.copyFromUtf8("a"),
-                                                ByteString.copyFromUtf8("b"),
-                                                ByteString.copyFromUtf8("c")))
-                                .via(NFT_TOKEN_MINT_TXN),
-                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                        cryptoTransfer(
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        cryptoDelete(SPENDER),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addCryptoAllowance(OWNER, SPENDER, 100L)
-                                .blankMemo()
-                                .hasKnownStatus(INVALID_ALLOWANCE_SPENDER_ID),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
-                                .blankMemo()
-                                .hasKnownStatus(INVALID_ALLOWANCE_SPENDER_ID),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
-                                .via(BASE_APPROVE_TXN)
-                                .blankMemo()
-                                .hasKnownStatus(INVALID_ALLOWANCE_SPENDER_ID))
-                .then();
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .supplyKey(SUPPLY_KEY)
+                        .maxSupply(1000L)
+                        .initialSupply(10L)
+                        .treasury(TOKEN_TREASURY),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .maxSupply(10L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
+                        .via(NFT_TOKEN_MINT_TXN),
+                mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
+                cryptoDelete(SPENDER),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addCryptoAllowance(OWNER, SPENDER, 100L)
+                        .blankMemo()
+                        .hasKnownStatus(INVALID_ALLOWANCE_SPENDER_ID),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
+                        .blankMemo()
+                        .hasKnownStatus(INVALID_ALLOWANCE_SPENDER_ID),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
+                        .via(BASE_APPROVE_TXN)
+                        .blankMemo()
+                        .hasKnownStatus(INVALID_ALLOWANCE_SPENDER_ID));
     }
 
     @HapiTest
@@ -1003,43 +992,38 @@ public class CryptoApproveAllowanceSuite {
 
     @HapiTest
     final Stream<DynamicTest> serialsInAscendingOrder() {
-        return defaultHapiSpec("serialsInAscendingOrder")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(ANOTHER_SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        mintToken(
-                                        NON_FUNGIBLE_TOKEN,
-                                        List.of(
-                                                ByteString.copyFromUtf8("a"),
-                                                ByteString.copyFromUtf8("b"),
-                                                ByteString.copyFromUtf8("c"),
-                                                ByteString.copyFromUtf8("d")))
-                                .via(NFT_TOKEN_MINT_TXN),
-                        cryptoTransfer(
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L, 4L).between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of(1L))
-                                .fee(ONE_HBAR),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, ANOTHER_SPENDER, false, List.of(4L, 2L, 3L))
-                                .fee(ONE_HBAR))
-                .then(getAccountDetails(OWNER)
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(ANOTHER_SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .maxSupply(10L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c"),
+                                        ByteString.copyFromUtf8("d")))
+                        .via(NFT_TOKEN_MINT_TXN),
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L, 4L).between(TOKEN_TREASURY, OWNER)),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of(1L))
+                        .fee(ONE_HBAR),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, ANOTHER_SPENDER, false, List.of(4L, 2L, 3L))
+                        .fee(ONE_HBAR),
+                getAccountDetails(OWNER)
                         .payingWith(GENESIS)
                         .logged()
                         .has(accountDetailsWith()
@@ -1157,155 +1141,139 @@ public class CryptoApproveAllowanceSuite {
 
     @HapiTest
     final Stream<DynamicTest> validatesSerialNums() {
-        return defaultHapiSpec("validatesSerialNums")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        mintToken(
-                                        NON_FUNGIBLE_TOKEN,
-                                        List.of(
-                                                ByteString.copyFromUtf8("a"),
-                                                ByteString.copyFromUtf8("b"),
-                                                ByteString.copyFromUtf8("c")))
-                                .via(NFT_TOKEN_MINT_TXN),
-                        cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1000L))
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(-1000L))
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(3L))
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(2L, 2L, 2L))
-                                .fee(ONE_HUNDRED_HBARS))
-                .then();
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .maxSupply(10L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
+                        .via(NFT_TOKEN_MINT_TXN),
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER)),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1000L))
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(-1000L))
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(3L))
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(2L, 2L, 2L))
+                        .fee(ONE_HUNDRED_HBARS));
     }
 
     @HapiTest
     final Stream<DynamicTest> invalidTokenTypeFails() {
-        return defaultHapiSpec("invalidTokenTypeFails")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey(SUPPLY_KEY)
-                                .maxSupply(1000L)
-                                .initialSupply(10L)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        mintToken(
-                                        NON_FUNGIBLE_TOKEN,
-                                        List.of(
-                                                ByteString.copyFromUtf8("a"),
-                                                ByteString.copyFromUtf8("b"),
-                                                ByteString.copyFromUtf8("c")))
-                                .via(NFT_TOKEN_MINT_TXN),
-                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                        cryptoTransfer(
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addTokenAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, 100L)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES))
-                .then();
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .supplyKey(SUPPLY_KEY)
+                        .maxSupply(1000L)
+                        .initialSupply(10L)
+                        .treasury(TOKEN_TREASURY),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .maxSupply(10L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
+                        .via(NFT_TOKEN_MINT_TXN),
+                mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addTokenAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, 100L)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasPrecheck(NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasPrecheck(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES));
     }
 
     @HapiTest
     final Stream<DynamicTest> emptyAllowancesRejected() {
-        return defaultHapiSpec("emptyAllowancesRejected")
-                .given(cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10))
-                .when(cryptoApproveAllowance().hasPrecheck(EMPTY_ALLOWANCES).fee(ONE_HUNDRED_HBARS))
-                .then();
+        return hapiTest(
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoApproveAllowance().hasPrecheck(EMPTY_ALLOWANCES).fee(ONE_HUNDRED_HBARS));
     }
 
     @HapiTest
     final Stream<DynamicTest> tokenNotAssociatedToAccountFails() {
-        return defaultHapiSpec("tokenNotAssociatedToAccountFails")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey(SUPPLY_KEY)
-                                .maxSupply(1000L)
-                                .initialSupply(10L)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        mintToken(
-                                        NON_FUNGIBLE_TOKEN,
-                                        List.of(
-                                                ByteString.copyFromUtf8("a"),
-                                                ByteString.copyFromUtf8("b"),
-                                                ByteString.copyFromUtf8("c")))
-                                .via(NFT_TOKEN_MINT_TXN),
-                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT))
-                .then(getAccountDetails(OWNER)
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .supplyKey(SUPPLY_KEY)
+                        .maxSupply(1000L)
+                        .initialSupply(10L)
+                        .treasury(TOKEN_TREASURY),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .maxSupply(10L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
+                        .via(NFT_TOKEN_MINT_TXN),
+                mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasPrecheck(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasPrecheck(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                getAccountDetails(OWNER)
                         .payingWith(GENESIS)
                         .has(accountDetailsWith()
                                 .cryptoAllowancesCount(0)
@@ -1315,52 +1283,47 @@ public class CryptoApproveAllowanceSuite {
 
     @HapiTest
     final Stream<DynamicTest> negativeAmountFailsForFungible() {
-        return defaultHapiSpec("negativeAmountFailsForFungible")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey(SUPPLY_KEY)
-                                .maxSupply(1000L)
-                                .initialSupply(10L)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        mintToken(
-                                        NON_FUNGIBLE_TOKEN,
-                                        List.of(
-                                                ByteString.copyFromUtf8("a"),
-                                                ByteString.copyFromUtf8("b"),
-                                                ByteString.copyFromUtf8("c")))
-                                .via(NFT_TOKEN_MINT_TXN),
-                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                        cryptoTransfer(
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addCryptoAllowance(OWNER, SPENDER, -100L)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(NEGATIVE_ALLOWANCE_AMOUNT),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, -100L)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(NEGATIVE_ALLOWANCE_AMOUNT))
-                .then(getAccountDetails(OWNER)
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .supplyKey(SUPPLY_KEY)
+                        .maxSupply(1000L)
+                        .initialSupply(10L)
+                        .treasury(TOKEN_TREASURY),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .maxSupply(10L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
+                        .via(NFT_TOKEN_MINT_TXN),
+                mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addCryptoAllowance(OWNER, SPENDER, -100L)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasPrecheck(NEGATIVE_ALLOWANCE_AMOUNT),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, -100L)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasPrecheck(NEGATIVE_ALLOWANCE_AMOUNT),
+                getAccountDetails(OWNER)
                         .payingWith(GENESIS)
                         .has(accountDetailsWith()
                                 .cryptoAllowancesCount(0)
@@ -1693,72 +1656,67 @@ public class CryptoApproveAllowanceSuite {
         final var tryApprovingAboveBalance = "tryApprovingAboveBalance";
         final var tryApprovingNFTToOwner = "tryApprovingNFTToOwner";
         final var tryApprovingNFTWithInvalidSerial = "tryApprovingNFTWithInvalidSerial";
-        return defaultHapiSpec("approveNegativeCases")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(10000)
-                                .initialSupply(5000),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .initialSupply(0L),
-                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                        mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("1"),
-                                        ByteString.copyFromUtf8("2"),
-                                        ByteString.copyFromUtf8("3"))),
-                        tokenAssociate(OWNER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN),
-                        cryptoTransfer(
-                                moving(500L, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER),
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(DEFAULT_PAYER)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, OWNER, 100L)
-                                .signedBy(DEFAULT_PAYER, OWNER)
-                                .hasKnownStatus(SUCCESS)
-                                .via(tryApprovingTheSender),
-                        cryptoApproveAllowance()
-                                .payingWith(DEFAULT_PAYER)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1000L)
-                                .signedBy(DEFAULT_PAYER, OWNER)
-                                .hasKnownStatus(SUCCESS)
-                                .via(tryApprovingAboveBalance),
-                        cryptoApproveAllowance()
-                                .payingWith(DEFAULT_PAYER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, OWNER, false, List.of(1L))
-                                .signedBy(DEFAULT_PAYER, OWNER)
-                                .hasKnownStatus(SPENDER_ACCOUNT_SAME_AS_OWNER)
-                                .via(tryApprovingNFTToOwner),
-                        cryptoApproveAllowance()
-                                .payingWith(DEFAULT_PAYER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 2L, 3L, 4L))
-                                .signedBy(DEFAULT_PAYER, OWNER)
-                                .hasKnownStatus(INVALID_TOKEN_NFT_SERIAL_NUMBER)
-                                .via(tryApprovingNFTWithInvalidSerial))
-                .then(
-                        emptyChildRecordsCheck(tryApprovingTheSender, SUCCESS),
-                        emptyChildRecordsCheck(tryApprovingAboveBalance, SUCCESS),
-                        emptyChildRecordsCheck(tryApprovingNFTToOwner, SPENDER_ACCOUNT_SAME_AS_OWNER),
-                        emptyChildRecordsCheck(tryApprovingNFTWithInvalidSerial, INVALID_TOKEN_NFT_SERIAL_NUMBER),
-                        getAccountBalance(OWNER).hasTokenBalance(FUNGIBLE_TOKEN, 500L),
-                        getAccountBalance(SPENDER).hasTokenBalance(FUNGIBLE_TOKEN, 0L),
-                        getAccountBalance(OWNER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 3L),
-                        getAccountBalance(SPENDER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(10000)
+                        .initialSupply(5000),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(SUPPLY_KEY)
+                        .initialSupply(0L),
+                mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
+                mintToken(
+                        NON_FUNGIBLE_TOKEN,
+                        List.of(
+                                ByteString.copyFromUtf8("1"),
+                                ByteString.copyFromUtf8("2"),
+                                ByteString.copyFromUtf8("3"))),
+                tokenAssociate(OWNER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN),
+                cryptoTransfer(
+                        moving(500L, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER),
+                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
+                cryptoApproveAllowance()
+                        .payingWith(DEFAULT_PAYER)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, OWNER, 100L)
+                        .signedBy(DEFAULT_PAYER, OWNER)
+                        .hasKnownStatus(SUCCESS)
+                        .via(tryApprovingTheSender),
+                cryptoApproveAllowance()
+                        .payingWith(DEFAULT_PAYER)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1000L)
+                        .signedBy(DEFAULT_PAYER, OWNER)
+                        .hasKnownStatus(SUCCESS)
+                        .via(tryApprovingAboveBalance),
+                cryptoApproveAllowance()
+                        .payingWith(DEFAULT_PAYER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, OWNER, false, List.of(1L))
+                        .signedBy(DEFAULT_PAYER, OWNER)
+                        .hasKnownStatus(SPENDER_ACCOUNT_SAME_AS_OWNER)
+                        .via(tryApprovingNFTToOwner),
+                cryptoApproveAllowance()
+                        .payingWith(DEFAULT_PAYER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 2L, 3L, 4L))
+                        .signedBy(DEFAULT_PAYER, OWNER)
+                        .hasKnownStatus(INVALID_TOKEN_NFT_SERIAL_NUMBER)
+                        .via(tryApprovingNFTWithInvalidSerial),
+                emptyChildRecordsCheck(tryApprovingTheSender, SUCCESS),
+                emptyChildRecordsCheck(tryApprovingAboveBalance, SUCCESS),
+                emptyChildRecordsCheck(tryApprovingNFTToOwner, SPENDER_ACCOUNT_SAME_AS_OWNER),
+                emptyChildRecordsCheck(tryApprovingNFTWithInvalidSerial, INVALID_TOKEN_NFT_SERIAL_NUMBER),
+                getAccountBalance(OWNER).hasTokenBalance(FUNGIBLE_TOKEN, 500L),
+                getAccountBalance(SPENDER).hasTokenBalance(FUNGIBLE_TOKEN, 0L),
+                getAccountBalance(OWNER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 3L),
+                getAccountBalance(SPENDER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
     }
 }

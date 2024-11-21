@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state;
+package com.swirlds.state.merkle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.test.fixtures.MapWritableStates;
 import com.swirlds.state.test.fixtures.StateTestBase;
+import com.swirlds.state.test.fixtures.merkle.TestSchema;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.junit.jupiter.api.Disabled;

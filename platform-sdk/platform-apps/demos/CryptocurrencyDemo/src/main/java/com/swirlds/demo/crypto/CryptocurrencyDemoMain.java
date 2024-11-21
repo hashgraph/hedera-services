@@ -28,6 +28,7 @@ package com.swirlds.demo.crypto;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.swirlds.common.Console;
 import com.swirlds.common.platform.NodeId;
@@ -36,8 +37,7 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -182,9 +182,11 @@ public class CryptocurrencyDemoMain implements SwirldMain {
 
     @Override
     @NonNull
-    public MerkleRoot newMerkleStateRoot() {
-        final State state = new State();
-        state.setSwirldState(new CryptocurrencyDemoState());
+    public MerkleStateRoot newMerkleStateRoot() {
+        final MerkleStateRoot state = new CryptocurrencyDemoState(
+                FAKE_MERKLE_STATE_LIFECYCLES,
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         return state;
     }
 

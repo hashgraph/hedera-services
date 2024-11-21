@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.state;
 
+import static com.swirlds.state.merkle.StateUtils.registerWithSystem;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -52,14 +53,10 @@ import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
-import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
-import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.StringLeaf;
-import com.swirlds.state.merkle.singleton.ValueLeaf;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
@@ -87,82 +84,37 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
      */
     public static void registerMerkleStateRootClassIds() {
         try {
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(
-                            MerkleStateRoot.class,
-                            () -> new MerkleStateRoot(
-                                    FAKE_MERKLE_STATE_LIFECYCLES,
-                                    version -> new BasicSoftwareVersion(version.major()))));
-            ConstructableRegistry.getInstance()
+            ConstructableRegistry registry = ConstructableRegistry.getInstance();
+            registry.registerConstructable(new ClassConstructorPair(
+                    MerkleStateRoot.class,
+                    () -> new MerkleStateRoot(
+                            FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
+            registry
                     .registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
-            ConstructableRegistry.getInstance()
+            registry
                     .registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
-            ConstructableRegistry.getInstance()
+            registry
                     .registerConstructable(new ClassConstructorPair(
                             VirtualMap.class, () -> new VirtualMap(FakeMerkleStateLifecycles.CONFIGURATION)));
-            ConstructableRegistry.getInstance()
+            registry
                     .registerConstructable(new ClassConstructorPair(
                             MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
-            ConstructableRegistry.getInstance()
+            registry
                     .registerConstructable(new ClassConstructorPair(
                             VirtualNodeCache.class,
                             () -> new VirtualNodeCache(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
-            registerConstructablesForSchema(new V0540PlatformStateSchema(), PlatformStateService.NAME);
-            registerConstructablesForSchema(new V0540RosterSchema(), RosterStateId.NAME);
+            registerConstructablesForSchema(registry, new V0540PlatformStateSchema(), PlatformStateService.NAME);
+            registerConstructablesForSchema(registry, new V0540RosterSchema(), RosterStateId.NAME);
         } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    private static void registerConstructablesForSchema(@NonNull final Schema schema, @NonNull final String name) {
+    private static void registerConstructablesForSchema(@NonNull final ConstructableRegistry registry, @NonNull final Schema schema, @NonNull final String name) {
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
-                .forEach(def -> {
-                    final var md = new StateMetadata<>(name, schema, def);
-                    try {
-                        ConstructableRegistry.getInstance()
-                                .registerConstructable(new ClassConstructorPair(
-                                        ValueLeaf.class,
-                                        () -> new ValueLeaf<>(
-                                                md.singletonClassId(),
-                                                md.stateDefinition().valueCodec())));
-                        ConstructableRegistry.getInstance()
-                                .registerConstructable(new ClassConstructorPair(
-                                        InMemoryValue.class,
-                                        () -> new InMemoryValue(
-                                                md.inMemoryValueClassId(),
-                                                md.stateDefinition().keyCodec(),
-                                                md.stateDefinition().valueCodec())));
-                        ConstructableRegistry.getInstance()
-                                .registerConstructable(new ClassConstructorPair(
-                                        OnDiskKey.class,
-                                        () -> new OnDiskKey<>(
-                                                md.onDiskKeyClassId(),
-                                                md.stateDefinition().keyCodec())));
-                        ConstructableRegistry.getInstance()
-                                .registerConstructable(new ClassConstructorPair(
-                                        OnDiskKeySerializer.class,
-                                        () -> new OnDiskKeySerializer<>(
-                                                md.onDiskKeySerializerClassId(),
-                                                md.onDiskKeyClassId(),
-                                                md.stateDefinition().keyCodec())));
-                        ConstructableRegistry.getInstance()
-                                .registerConstructable(new ClassConstructorPair(
-                                        OnDiskValue.class,
-                                        () -> new OnDiskValue<>(
-                                                md.onDiskValueClassId(),
-                                                md.stateDefinition().valueCodec())));
-                        ConstructableRegistry.getInstance()
-                                .registerConstructable(new ClassConstructorPair(
-                                        OnDiskValueSerializer.class,
-                                        () -> new OnDiskValueSerializer<>(
-                                                md.onDiskValueSerializerClassId(),
-                                                md.onDiskValueClassId(),
-                                                md.stateDefinition().valueCodec())));
-                    } catch (ConstructableRegistryException e) {
-                        throw new IllegalStateException(e);
-                    }
-                });
+                .forEach(def ->
+                        registerWithSystem(new StateMetadata<>(name, schema, def), registry));
     }
 
     public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {

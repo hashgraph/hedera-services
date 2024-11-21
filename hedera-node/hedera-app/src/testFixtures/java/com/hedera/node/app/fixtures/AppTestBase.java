@@ -18,7 +18,7 @@ package com.hedera.node.app.fixtures;
 
 import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
-import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.swirlds.state.test.fixtures.merkle.TestSchema.CURRENT_VERSION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -33,7 +33,6 @@ import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -60,6 +59,7 @@ import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
+import com.swirlds.state.test.fixtures.MapWritableStates;
 import com.swirlds.state.test.fixtures.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
