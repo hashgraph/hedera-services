@@ -19,7 +19,6 @@ The gRPC package in Hedera App defines `GrpcServerManager` interface with a numb
 one gRPC server on the port specified in the config, and optionally it will also attempt to run a gRPC servers on the
 TLS or node operator ports specified in the same config.
 
-
 ### NettyGrpcServerManager
 
 `NettyGrpcServerManager` is an implementation of `GrpcServerManager` and it uses the Hedera App's services registry in
@@ -31,7 +30,7 @@ server.
 
 As stated above `GrpcServiceBuilder` produces gRPC `ServerServiceDefinition`s, those definitions are wired in with the
 proper Services handlers and gRPC `ServerCall.Listener` methods. During runtime the Netty server will be calling those
-listener methods e.g. `onMessage()` is where we integrate Service logic for handling transactions or queries by using 
+listener methods e.g. `onMessage()` is where we integrate Service logic for handling transactions or queries by using
 the abstract `MethodBase` type.
 
 ### MethodBase
