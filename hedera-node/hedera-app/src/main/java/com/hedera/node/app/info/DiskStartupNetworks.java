@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.info;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
@@ -42,9 +44,6 @@ import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,12 +51,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.LongUnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
-import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A {@link StartupNetworks} implementation that loads {@link Network} information from a
@@ -192,25 +189,8 @@ public class DiskStartupNetworks implements StartupNetworks {
             network.nodeMetadata(nodeMetadata);
             final var sourceRosterHash =
                     Optional.ofNullable(rosterStore.getPreviousRosterHash()).orElse(Bytes.EMPTY);
-            final long sourceRosterWeight;
-            final LongUnaryOperator nodeWeightFn;
-            if (Bytes.EMPTY.equals(sourceRosterHash)) {
-                // For the genesis roster, we give all "source" nodes equal weight of 1
-                sourceRosterWeight = activeRoster.rosterEntries().size();
-                nodeWeightFn = nodeId -> 1;
-            } else {
-                final var entries =
-                        requireNonNull(rosterStore.get(sourceRosterHash)).rosterEntries();
-                sourceRosterWeight =
-                        entries.stream().mapToLong(RosterEntry::weight).sum();
-                final var weights = entries.stream().collect(toMap(RosterEntry::nodeId, RosterEntry::weight));
-                nodeWeightFn = weights::get;
-            }
             tssStore.consensusRosterKeys(
-                            sourceRosterHash,
-                            requireNonNull(rosterStore.getCurrentRosterHash()),
-                            sourceRosterWeight,
-                            nodeWeightFn)
+                            sourceRosterHash, requireNonNull(rosterStore.getCurrentRosterHash()), rosterStore)
                     .ifPresent(rosterKeys ->
                             network.ledgerId(rosterKeys.ledgerId()).tssMessages(rosterKeys.tssMessages()));
             try (final var fout = Files.newOutputStream(path)) {

@@ -102,7 +102,7 @@ public class TssCryptographyManager {
             @NonNull final TssParticipantDirectory directory,
             @NonNull final HandleContext context) {
         final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
-        final var tssMessageBodies = tssStore.getTssMessageBodies(targetRosterHash);
+        final var tssMessageBodies = tssStore.getMessagesForTarget(targetRosterHash);
         final var voteKey = new TssVoteMapKey(
                 targetRosterHash, context.networkInfo().selfNodeInfo().nodeId());
         if (tssStore.getVote(voteKey) == null) {

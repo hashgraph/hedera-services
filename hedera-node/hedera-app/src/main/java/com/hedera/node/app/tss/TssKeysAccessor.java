@@ -70,7 +70,7 @@ public class TssKeysAccessor {
         final var rosterStore = storeFactory.getStore(ReadableRosterStore.class);
         final var activeRosterHash = requireNonNull(rosterStore.getCurrentRosterHash());
         final var activeParticipantDirectory = tssDirectoryAccessor.activeParticipantDirectory();
-        final var tssMessageBodies = tssStore.getTssMessageBodies(activeRosterHash);
+        final var tssMessageBodies = tssStore.getMessagesForTarget(activeRosterHash);
         final var validTssMessages = getTssMessages(tssMessageBodies);
         final var activeRosterShares = getTssPrivateShares(activeParticipantDirectory, tssStore, activeRosterHash);
         final var activeRosterPublicShares =
@@ -92,7 +92,7 @@ public class TssKeysAccessor {
             @NonNull final ReadableTssStore tssStore,
             @NonNull final Bytes activeRosterHash) {
         final var validTssOps = validateTssMessages(
-                tssStore.getTssMessageBodies(activeRosterHash), activeRosterParticipantDirectory, tssLibrary);
+                tssStore.getMessagesForTarget(activeRosterHash), activeRosterParticipantDirectory, tssLibrary);
         final var validTssMessages = getTssMessages(validTssOps);
         return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
     }
