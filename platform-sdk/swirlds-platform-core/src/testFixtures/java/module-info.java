@@ -9,6 +9,7 @@ open module com.swirlds.platform.core.test.fixtures {
     requires transitive com.swirlds.state.impl.test.fixtures;
     requires transitive com.swirlds.state.impl;
     requires transitive com.swirlds.virtualmap;
+    requires com.github.spotbugs.annotations;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.logging;
