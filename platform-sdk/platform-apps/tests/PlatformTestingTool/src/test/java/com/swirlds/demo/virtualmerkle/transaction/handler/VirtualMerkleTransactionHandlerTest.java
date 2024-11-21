@@ -16,44 +16,51 @@
 
 package com.swirlds.demo.virtualmerkle.transaction.handler;
 
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateSmartContract;
 import com.swirlds.demo.platform.fs.stresstest.proto.VirtualMerkleTransaction;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class VirtualMerkleTransactionHandlerTest {
 
+    private static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(MerkleDbConfig.class)
+            .withConfigDataType(VirtualMapConfig.class)
+            .withConfigDataType(TemporaryFileConfig.class)
+            .withConfigDataType(StateCommonConfig.class)
+            .build();
+
     private static VirtualMap smartContract;
     private static VirtualMap smartContractByteCodeVM;
 
     @BeforeAll
     public static void beforeAll() {
-
         // Should storage dir be set to a certain value?
 
         final long maximumNumberOfKeyValuePairsCreation = 28750;
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
-                .maxNumberOfKeys(maximumNumberOfKeyValuePairsCreation)
-                .hashesRamToDiskThreshold(0)
-                .preferDiskIndices(false);
-        final MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        final MerkleDbTableConfig tableConfig =
+                new MerkleDbTableConfig((short) 1, DigestType.SHA_384, maximumNumberOfKeyValuePairsCreation, 0);
+        final MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
 
-        smartContract = new VirtualMap("smartContracts", dataSourceBuilder);
+        smartContract = new VirtualMap("smartContracts", dataSourceBuilder, CONFIGURATION);
 
         final long totalSmartContractCreations = 23;
 
-        final MerkleDbTableConfig tableConfig2 = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
-                .maxNumberOfKeys(totalSmartContractCreations)
-                .hashesRamToDiskThreshold(0)
-                .preferDiskIndices(false);
-        final MerkleDbDataSourceBuilder dataSourceBuilder2 = new MerkleDbDataSourceBuilder(tableConfig2);
-
-        smartContractByteCodeVM = new VirtualMap("smartContractByteCode", dataSourceBuilder2);
+        final MerkleDbTableConfig tableConfig2 =
+                new MerkleDbTableConfig((short) 1, DigestType.SHA_384, totalSmartContractCreations, 0);
+        final MerkleDbDataSourceBuilder dataSourceBuilder2 = new MerkleDbDataSourceBuilder(tableConfig2, CONFIGURATION);
+        smartContractByteCodeVM = new VirtualMap("smartContractByteCode", dataSourceBuilder2, CONFIGURATION);
     }
 
     private VirtualMerkleTransaction buildCreateSmartContractTransaction(

@@ -81,7 +81,10 @@ class StateRegistryTests {
         // Restore the registry to its original condition at boot time
         RuntimeObjectRegistry.reset();
 
-        assertEquals(0, RuntimeObjectRegistry.getActiveObjectsCount(State.class), "no states have been created yet");
+        assertEquals(
+                0,
+                RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                "no states have been created yet");
 
         final List<MerkleRoot> states = new LinkedList<>();
         // Create a bunch of states

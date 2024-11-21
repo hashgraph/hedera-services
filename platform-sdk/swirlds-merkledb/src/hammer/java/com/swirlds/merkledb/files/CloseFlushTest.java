@@ -16,9 +16,12 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
+
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedValue;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKey;
@@ -61,7 +64,7 @@ public class CloseFlushTest {
 
     @BeforeAll
     public static void setup() throws IOException {
-        tmpFileDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        tmpFileDir = LegacyTemporaryFileBuilder.buildTemporaryFile(CONFIGURATION);
         Configurator.setRootLevel(Level.WARN);
     }
 
@@ -81,8 +84,8 @@ public class CloseFlushTest {
                     TestType.long_fixed.dataType().createDataSource(storeDir, "closeFlushTest", count, 0, false, true);
             // Create a custom data source builder, which creates a custom data source to capture
             // all exceptions happened in saveRecords()
-            final VirtualDataSourceBuilder builder = new CustomDataSourceBuilder(dataSource, exception);
-            VirtualMap map = new VirtualMap("closeFlushTest", builder);
+            final VirtualDataSourceBuilder builder = new CustomDataSourceBuilder(dataSource, exception, CONFIGURATION);
+            VirtualMap map = new VirtualMap("closeFlushTest", builder, CONFIGURATION);
             for (int i = 0; i < count; i++) {
                 final Bytes key = ExampleLongKey.longToKey(i);
                 final Bytes value = ExampleFixedValue.intToValue(i);
@@ -126,9 +129,15 @@ public class CloseFlushTest {
         private AtomicReference<Exception> exceptionSink = null;
 
         // Provided for deserialization
-        public CustomDataSourceBuilder() {}
+        public CustomDataSourceBuilder(final @NonNull Configuration configuration) {
+            super(configuration);
+        }
 
-        public CustomDataSourceBuilder(final VirtualDataSource delegate, AtomicReference<Exception> sink) {
+        public CustomDataSourceBuilder(
+                final VirtualDataSource delegate,
+                AtomicReference<Exception> sink,
+                final @NonNull Configuration configuration) {
+            super(configuration);
             this.delegate = delegate;
             this.exceptionSink = sink;
         }

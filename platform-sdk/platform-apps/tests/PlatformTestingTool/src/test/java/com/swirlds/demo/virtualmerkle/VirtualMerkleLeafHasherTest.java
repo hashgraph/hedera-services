@@ -20,8 +20,12 @@ import static com.swirlds.demo.virtualmerkle.VirtualMerkleLeafHasher.hashOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKey;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKeySerializer;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapValue;
@@ -29,7 +33,9 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractB
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -40,6 +46,12 @@ import org.junit.jupiter.api.Test;
 
 class VirtualMerkleLeafHasherTest {
 
+    static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(MerkleDbConfig.class)
+            .withConfigDataType(VirtualMapConfig.class)
+            .withConfigDataType(TemporaryFileConfig.class)
+            .withConfigDataType(StateCommonConfig.class)
+            .build();
     static Path storeDir;
     static SmartContractByteCodeMapKeySerializer keySerializer;
     static SmartContractByteCodeMapValueSerializer valueSerializer;
@@ -56,16 +68,22 @@ class VirtualMerkleLeafHasherTest {
 
         keySerializer = new SmartContractByteCodeMapKeySerializer();
         valueSerializer = new SmartContractByteCodeMapValueSerializer();
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+
+        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                        (short) 1,
+                        DigestType.SHA_384,
+                        merkleDbConfig.maxNumOfKeys(),
+                        merkleDbConfig.hashesRamToDiskThreshold())
                 .maxNumberOfKeys(50_000_000)
                 .hashesRamToDiskThreshold(0)
                 .preferDiskIndices(false);
-        dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
     }
 
     @Test
     void checkSimpleHashing2() throws IOException, InterruptedException {
-        VirtualMap virtualMap = new VirtualMap("test2", dataSourceBuilder);
+        VirtualMap virtualMap = new VirtualMap("test2", dataSourceBuilder, CONFIGURATION);
 
         final VirtualMerkleLeafHasher hasher = new VirtualMerkleLeafHasher(virtualMap);
 
@@ -99,7 +117,7 @@ class VirtualMerkleLeafHasherTest {
 
     @Test
     void checkSimpleHashing3() throws IOException, InterruptedException {
-        VirtualMap virtualMap = new VirtualMap("test3", dataSourceBuilder);
+        VirtualMap virtualMap = new VirtualMap("test3", dataSourceBuilder, CONFIGURATION);
 
         final VirtualMerkleLeafHasher hasher = new VirtualMerkleLeafHasher(virtualMap);
 
@@ -138,7 +156,7 @@ class VirtualMerkleLeafHasherTest {
 
     @Test
     void checkSimpleHashing4() throws IOException, InterruptedException {
-        VirtualMap virtualMap = new VirtualMap("test4", dataSourceBuilder);
+        VirtualMap virtualMap = new VirtualMap("test4", dataSourceBuilder, CONFIGURATION);
 
         final VirtualMerkleLeafHasher hasher = new VirtualMerkleLeafHasher(virtualMap);
 

@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A read-only {@link ContractStateStore}.
  */
+@SuppressWarnings("MissingJavadoc")
 public class ReadableContractStateStore implements ContractStateStore {
     private static final Logger logger = LogManager.getLogger(ReadableContractStateStore.class);
     private final ReadableKVState<SlotKey, SlotValue> storage;

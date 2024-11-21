@@ -493,22 +493,6 @@ public class PreHandleContextImpl implements PreHandleContext {
     }
 
     @Override
-    @NonNull
-    public PreHandleContext createNestedContext(
-            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
-            throws PreCheckException {
-        this.innerContext =
-                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher);
-        return this.innerContext;
-    }
-
-    @Override
-    @Nullable
-    public PreHandleContext innerContext() {
-        return innerContext;
-    }
-
-    @Override
     public String toString() {
         return "PreHandleContextImpl{" + "accountStore="
                 + accountStore + ", txn="

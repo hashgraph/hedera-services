@@ -190,10 +190,10 @@ public class StakeInfoHelper {
      * Also clears any pending rewards from the {@link NetworkStakingRewards} singleton for nodes that are no
      * longer in the address book.
      *
-     * @param context the token context
-     * @param networkInfo the list of node infos from the address book
-     * @param config the configuration for the node
-     * @param infoStore the writable store for the staking info
+     * @param context      the token context
+     * @param networkInfo  the list of node infos from the address book
+     * @param config       the configuration for the node
+     * @param infoStore    the writable store for the staking info
      * @param rewardsStore the store for the staking rewards
      */
     public StreamBuilder adjustPostUpgradeStakes(

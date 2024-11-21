@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.test.fixtures;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
+
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -29,6 +31,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
@@ -131,18 +134,21 @@ public class VirtualTestBase {
         // Ensure VirtualNodeCache.release() returns clean
         System.setProperty("syncCleaningPool", "true");
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(TestInternal.class, TestInternal::new));
-        registry.registerConstructable(new ClassConstructorPair(TestLeaf.class, TestLeaf::new));
+        registry.registerConstructables("com.swirlds.common.crypto");
         registry.registerConstructables("com.swirlds.virtualmap");
         registry.registerConstructables("com.swirlds.virtualmap.test.fixtures");
-        registry.registerConstructables("com.swirlds.common.crypto");
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
+        registry.registerConstructable(new ClassConstructorPair(TestInternal.class, TestInternal::new));
+        registry.registerConstructable(new ClassConstructorPair(TestLeaf.class, TestLeaf::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
+        registry.registerConstructable(new ClassConstructorPair(
+                VirtualNodeCache.class,
+                () -> new VirtualNodeCache(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
     }
 
     @BeforeEach
     public void setup() {
         rounds = new ArrayList<>();
-        cache = new VirtualNodeCache();
+        cache = new VirtualNodeCache(CONFIGURATION.getConfigData(VirtualMapConfig.class));
         rounds.add(cache);
         lastCache = null;
     }

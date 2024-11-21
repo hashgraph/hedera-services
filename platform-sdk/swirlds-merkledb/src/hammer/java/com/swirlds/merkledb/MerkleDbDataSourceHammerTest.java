@@ -16,10 +16,10 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
@@ -42,8 +42,7 @@ public class MerkleDbDataSourceHammerTest {
 
     @BeforeAll
     static void setup() throws Exception {
-        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceHammerTest");
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
+        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceHammerTest", CONFIGURATION);
     }
 
     @ParameterizedTest

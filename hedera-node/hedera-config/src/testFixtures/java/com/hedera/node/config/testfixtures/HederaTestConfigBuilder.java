@@ -91,6 +91,7 @@ import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.StateConfig;
@@ -140,9 +141,9 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(PlatformStatusConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
+                .withConfigDataType(AddressBookConfig.class)
                 /*
                 These data types from the platform were not available on the classpath. Add if needed later.
-                .withConfigDataType(AddressBookConfig.class)
                 .withConfigDataType(ThreadConfig.class)
                 .withConfigDataType(DispatchConfiguration.class)
                 .withConfigDataType(PreconsensusEventStreamConfig.class)

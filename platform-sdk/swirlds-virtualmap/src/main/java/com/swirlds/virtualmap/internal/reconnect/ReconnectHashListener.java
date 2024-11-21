@@ -60,6 +60,8 @@ public class ReconnectHashListener extends AbstractHashListener {
      * 		The last leaf path. Must be a valid path.
      * @param dataSource
      * 		The data source. Cannot be null.
+     * @param reconnectFlushInterval
+     *      The number of nodes to hash before they are flushed to disk.
      * @param statistics
      *      Virtual map stats. Cannot be null.
      */
@@ -67,9 +69,10 @@ public class ReconnectHashListener extends AbstractHashListener {
             final long firstLeafPath,
             final long lastLeafPath,
             @NonNull final VirtualDataSource dataSource,
+            final int reconnectFlushInterval,
             @NonNull final VirtualMapStatistics statistics,
             @NonNull final ReconnectNodeRemover nodeRemover) {
-        super(firstLeafPath, lastLeafPath, dataSource, statistics);
+        super(firstLeafPath, lastLeafPath, dataSource, reconnectFlushInterval, statistics);
         this.nodeRemover = Objects.requireNonNull(nodeRemover);
     }
 

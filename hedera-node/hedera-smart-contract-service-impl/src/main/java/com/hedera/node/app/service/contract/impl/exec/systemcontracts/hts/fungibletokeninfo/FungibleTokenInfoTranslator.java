@@ -30,12 +30,17 @@ import javax.inject.Inject;
 
 public class FungibleTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    /** Selector for getFungibleTokenInfo(address) method. */
     public static final Function FUNGIBLE_TOKEN_INFO =
             new Function("getFungibleTokenInfo(address)", ReturnTypes.RESPONSE_CODE_FUNGIBLE_TOKEN_INFO);
 
+    /** Selector for getFungibleTokenInfoV2(address) method. */
     public static final Function FUNGIBLE_TOKEN_INFO_V2 =
             new Function("getFungibleTokenInfoV2(address)", ReturnTypes.RESPONSE_CODE_FUNGIBLE_TOKEN_INFO_V2);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public FungibleTokenInfoTranslator() {
         // Dagger2
@@ -50,7 +55,7 @@ public class FungibleTokenInfoTranslator extends AbstractCallTranslator<HtsCallA
         final var v2Enabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractTokenInfoV2Enabled();
         return attempt.isSelector(FUNGIBLE_TOKEN_INFO)
-                || attempt.isSelectorIfConfigEnabled(FUNGIBLE_TOKEN_INFO_V2, v2Enabled);
+                || attempt.isSelectorIfConfigEnabled(v2Enabled, FUNGIBLE_TOKEN_INFO_V2);
     }
 
     /**

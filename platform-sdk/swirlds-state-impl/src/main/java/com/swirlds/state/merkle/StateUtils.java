@@ -23,16 +23,32 @@ import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.logging.legacy.LogMarker;
+import com.swirlds.state.merkle.disk.OnDiskKey;
+import com.swirlds.state.merkle.disk.OnDiskValue;
+import com.swirlds.state.merkle.memory.InMemoryValue;
+import com.swirlds.state.merkle.memory.InMemoryWritableKVState;
+import com.swirlds.state.merkle.queue.QueueNode;
+import com.swirlds.state.merkle.singleton.SingletonNode;
+import com.swirlds.state.merkle.singleton.StringLeaf;
+import com.swirlds.state.merkle.singleton.ValueLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Utility class for working with states. */
 public final class StateUtils {
+
+    private static final Logger logger = LogManager.getLogger(StateUtils.class);
 
     /** Prevent instantiation */
     private StateUtils() {}
@@ -176,7 +192,9 @@ public final class StateUtils {
         // Normalize the string so things are deterministic (different JVMs might be using different
         // default internal representation for strings, and we need to normalize that)
         final var data = getNormalisedStringBytes(s);
-        return hashBytes(data);
+        long l = hashBytes(data);
+        logger.info(LogMarker.STARTUP.getMarker(), "Hashed string {} to {}", s, l);
+        return l;
     }
 
     // Will be moved to `NonCryptographicHashing` with
@@ -241,5 +259,71 @@ public final class StateUtils {
      */
     private static boolean isAsciiNumber(char ch) {
         return ch >= '0' && ch <= '9';
+    }
+
+    /**
+     * Registers with the {@link ConstructableRegistry} system a class ID and a class. While this
+     * will only be used for in-memory states, it is safe to register for on-disk ones as well.
+     *
+     * <p>The implementation will take the service name and the state key and compute a hash for it.
+     * It will then convert the hash to a long, and use that as the class ID. It will then register
+     * an {@link InMemoryWritableKVState}'s value merkle type to be deserialized, answering with the
+     * generated class ID.
+     *
+     * @param md The state metadata
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static void registerWithSystem(
+            @NonNull final StateMetadata md, @NonNull ConstructableRegistry constructableRegistry) {
+        // Register with the system the uniqueId as the "classId" of an InMemoryValue. There can be
+        // multiple id's associated with InMemoryValue. The secret is that the supplier captures the
+        // various delegate writers and parsers, and so can parse/write different types of data
+        // based on the id.
+        try {
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    InMemoryValue.class,
+                    () -> new InMemoryValue(
+                            md.inMemoryValueClassId(),
+                            md.stateDefinition().keyCodec(),
+                            md.stateDefinition().valueCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskKey.class,
+                    () -> new OnDiskKey<>(
+                            md.onDiskKeyClassId(), md.stateDefinition().keyCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskValue.class,
+                    () -> new OnDiskValue<>(
+                            md.onDiskValueClassId(), md.stateDefinition().valueCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    SingletonNode.class,
+                    () -> new SingletonNode<>(
+                            md.serviceName(),
+                            md.stateDefinition().stateKey(),
+                            md.singletonClassId(),
+                            md.stateDefinition().valueCodec(),
+                            null)));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    QueueNode.class,
+                    () -> new QueueNode<>(
+                            md.serviceName(),
+                            md.stateDefinition().stateKey(),
+                            md.queueNodeClassId(),
+                            md.singletonClassId(),
+                            md.stateDefinition().valueCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    ValueLeaf.class,
+                    () -> new ValueLeaf<>(
+                            md.singletonClassId(), md.stateDefinition().valueCodec())));
+        } catch (ConstructableRegistryException e) {
+            // This is a fatal error.
+            throw new IllegalStateException(
+                    "Failed to register with the system '"
+                            + md.serviceName()
+                            + ":"
+                            + md.stateDefinition().stateKey()
+                            + "'",
+                    e);
+        }
     }
 }

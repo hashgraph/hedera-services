@@ -16,12 +16,12 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.utility.StopWatch;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -95,7 +95,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
 
         // Collection of database files and index
         LongListOffHeap storeIndex = new LongListOffHeap();
-        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+        final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         final var store = new MemoryIndexDiskKeyValueStore(
                 dbConfig,
                 testDirectory.resolve("megaMergeHammerTest"),

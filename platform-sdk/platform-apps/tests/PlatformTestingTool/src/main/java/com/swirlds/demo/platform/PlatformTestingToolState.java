@@ -28,16 +28,17 @@ import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHand
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.serialize;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_11_0;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.*;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
-import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
@@ -77,12 +78,10 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.*;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
@@ -110,6 +109,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -120,9 +120,10 @@ import org.apache.logging.log4j.MarkerManager;
  * writes them to the screen, and also saves them to disk in a comma separated value (.csv) file. Each transaction
  * consists of an optional sequence number and random bytes.
  */
-public class PlatformTestingToolState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState {
+@ConstructableIgnored
+public class PlatformTestingToolState extends MerkleStateRoot {
 
-    private static final long CLASS_ID = 0xc0900cfa7a24db76L;
+    static final long CLASS_ID = 0xc0900cfa7a24db76L;
     private static final Logger logger = LogManager.getLogger(PlatformTestingToolState.class);
     private static final Marker LOGM_DEMO_INFO = MarkerManager.getMarker("DEMO_INFO");
     private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
@@ -237,9 +238,10 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
     private long transactionsIgnoredByExpectedMap = 0;
 
-    public PlatformTestingToolState() {
-        super(ChildIndices.CHILD_COUNT);
-
+    public PlatformTestingToolState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(lifecycles, versionFactory);
         expectedFCMFamily = new ExpectedFCMFamilyImpl();
 
         referenceNftLedger = new ReferenceNftLedger(NFT_TRACKING_FRACTION);
@@ -247,38 +249,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
     protected PlatformTestingToolState(final PlatformTestingToolState sourceState) {
         super(sourceState);
-
         this.initialized.set(sourceState.initialized.get());
         this.platform = sourceState.platform;
-
-        if (sourceState.getConfig() != null) {
-            setConfig(sourceState.getConfig().copy());
-        }
-
-        if (sourceState.getNextSeqCons() != null) {
-            setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
-        }
-
-        if (sourceState.getFcmFamily() != null) {
-            setFcmFamily(sourceState.getFcmFamily().copy());
-        } else {
-            setFcmFamily(new FCMFamily(true));
-        }
-
-        if (sourceState.getVirtualMap() != null) {
-            setVirtualMap(sourceState.getVirtualMap().copy());
-        }
-
-        if (sourceState.getVirtualMapForSmartContracts() != null) {
-            setVirtualMapForSmartContracts(
-                    sourceState.getVirtualMapForSmartContracts().copy());
-        }
-
-        if (sourceState.getVirtualMapForSmartContractsByteCode() != null) {
-            setVirtualMapForSmartContractsByteCode(
-                    sourceState.getVirtualMapForSmartContractsByteCode().copy());
-        }
-
         this.lastFileTranFinishTimeStamp = sourceState.lastFileTranFinishTimeStamp;
         this.lastTranTimeStamp = sourceState.lastTranTimeStamp;
 
@@ -308,23 +280,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                                 sourceState.getTransactionCounter().get(index).copy());
             }
         }
-
-        if (sourceState.getIssLeaf() != null) {
-            setIssLeaf(sourceState.getIssLeaf().copy());
-        }
-
-        if (sourceState.getNftLedger() != null) {
-            setNftLedger(sourceState.getNftLedger().copy());
-        }
-
-        // set the current value of QuorumResult from source state
-        if (sourceState.getQuorumResult() != null) {
-            setQuorumResult(sourceState.getQuorumResult().copy());
-        }
-        if (controlQuorum != null) {
-            controlQuorum.setQuorumResult(getQuorumResult().copy());
-        }
-
         setImmutable(false);
         sourceState.setImmutable(true);
     }
@@ -407,14 +362,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * {@inheritDoc}
      */
     @Override
-    public int getNumberOfChildren() {
-        return ChildIndices.CHILD_COUNT;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public int getMinimumChildCount() {
         return ChildIndices.SDK_VERSION_21_CHILD_COUNT;
     }
@@ -436,6 +383,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             case ChildIndices.UNUSED:
                 // We used to use this for an address book, but now we don't use this index.
                 // Ignore whatever is found at this index.
+                // platform should be here, so check for singleton if all will be ok
                 return true;
             case ChildIndices.CONFIG:
                 return childClassId == PayloadCfgSimple.CLASS_ID;
@@ -642,6 +590,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     @Override
     public synchronized PlatformTestingToolState copy() {
         throwIfImmutable();
+        setImmutable(true);
         roundCounter++;
 
         if (transactionsIgnoredByExpectedMap > 0) {
@@ -1296,7 +1245,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
-
         if (trigger == InitTrigger.RESTART) {
             rebuildExpectedMapFromState(Instant.EPOCH, true);
             rebuildExpirationQueue();
@@ -1335,6 +1283,17 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             genesisInit();
         }
         this.invalidateHash();
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
+
+        // compute hash
+        try {
+            platform.getContext().getMerkleCryptography().digestTreeAsync(this).get();
+        } catch (final ExecutionException e) {
+            logger.error(EXCEPTION.getMarker(), "Exception occurred during hashing", e);
+        } catch (final InterruptedException e) {
+            logger.error(EXCEPTION.getMarker(), "Interrupted while hashing state. Expect buggy behavior.");
+            Thread.currentThread().interrupt();
+        }
     }
 
     private MessageDigest createKeccakDigest() {
@@ -1637,7 +1596,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     private static class ChildIndices {
-        public static final int UNUSED = 0;
+        public static final int UNUSED = 0; // should be platform and singleton
         public static final int CONFIG = 1;
         /**
          * last sequence by each member for consensus events

@@ -17,6 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,6 +26,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedValue;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKey;
 import com.swirlds.virtualmap.VirtualMap;
@@ -52,7 +54,7 @@ class MigrationTest {
         final int size = 5_000_000;
 
         // Build a virtual map.
-        VirtualMap map = new VirtualMap("extractVirtualMapDataTest", constructBuilder());
+        VirtualMap map = new VirtualMap("extractVirtualMapDataTest", constructBuilder(), CONFIGURATION);
         for (int i = 0; i < size; i++) {
             if (((i + 1) % (size / 100) == 0)) {
                 // Make a copy of the map in order to allow things to be flushed to disk
@@ -117,7 +119,7 @@ class MigrationTest {
         final int size = 5_000_000;
 
         // Build a virtual map.
-        VirtualMap map = new VirtualMap("extractDataConcurrentlyTest", constructBuilder());
+        VirtualMap map = new VirtualMap("extractDataConcurrentlyTest", constructBuilder(), CONFIGURATION);
 
         final Random random = new Random(42);
         final byte[] value = new byte[ExampleFixedValue.RANDOM_BYTES];
@@ -154,12 +156,18 @@ class MigrationTest {
     private static MerkleDbDataSourceBuilder constructBuilder() throws IOException {
         // The tests below create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new database location for every map
-        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source");
+        final Path defaultVirtualMapPath =
+                LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source", CONFIGURATION);
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                        (short) 1,
+                        DigestType.SHA_384,
+                        merkleDbConfig.maxNumOfKeys(),
+                        merkleDbConfig.hashesRamToDiskThreshold())
                 .preferDiskIndices(false)
                 .hashesRamToDiskThreshold(Long.MAX_VALUE)
                 .maxNumberOfKeys(1234);
-        return new MerkleDbDataSourceBuilder(tableConfig);
+        return new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
     }
 }

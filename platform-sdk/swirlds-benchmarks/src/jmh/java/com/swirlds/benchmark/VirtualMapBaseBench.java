@@ -26,6 +26,7 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
@@ -109,10 +110,14 @@ public abstract class VirtualMapBaseBench extends BaseBench {
     }
 
     protected VirtualMap createEmptyMap(String label) {
-        MerkleDbTableConfig tableConfig =
-                new MerkleDbTableConfig((short) 1, DigestType.SHA_384).preferDiskIndices(false);
-        MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig);
-        return new VirtualMap(label, dataSourceBuilder);
+        final MerkleDbConfig merkleDbConfig = getConfig(MerkleDbConfig.class);
+        MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                (short) 1,
+                DigestType.SHA_384,
+                merkleDbConfig.maxNumOfKeys(),
+                merkleDbConfig.hashesRamToDiskThreshold());
+        MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig, configuration);
+        return new VirtualMap(label, dataSourceBuilder, configuration);
     }
 
     protected VirtualMap createMap(final long[] map) {
@@ -171,7 +176,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
                                 virtualMap.serialize(out, savedDir);
                             }
                             virtualMap.release();
-                            if (!getConfig().saveDataDirectory()) {
+                            if (!getBenchmarkConfig().saveDataDirectory()) {
                                 Utils.deleteRecursively(savedDir);
                             }
 
@@ -208,7 +213,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
         }
         logger.info("Flushed map in {} ms", System.currentTimeMillis() - start);
 
-        if (getConfig().saveDataDirectory()) {
+        if (getBenchmarkConfig().saveDataDirectory()) {
             curMap = saveMap(curMap);
         }
 
@@ -334,7 +339,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
         if (savedDir != null) {
             try {
                 logger.info("Restoring map {} from {}", label, savedDir);
-                final VirtualMap virtualMap = new VirtualMap();
+                final VirtualMap virtualMap = new VirtualMap(configuration);
                 try (final SerializableDataInputStream in =
                         new SerializableDataInputStream(Files.newInputStream(savedDir.resolve(label + SERDE_SUFFIX)))) {
                     virtualMap.deserialize(in, savedDir, virtualMap.getVersion());

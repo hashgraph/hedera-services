@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.internal.merkle;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createRoot;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -102,7 +102,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final InMemoryDataSource ds = new InMemoryDataSource("mapWithExistingHashedDataHasNonNullRootHash");
         final VirtualDataSourceBuilder builder = new InMemoryBuilder();
 
-        final VirtualRootNode fcm = new VirtualRootNode(builder);
+        final VirtualRootNode fcm = new VirtualRootNode(builder, CONFIGURATION.getConfigData(VirtualMapConfig.class));
         fcm.postInit(new DummyVirtualStateAccessor());
         fcm.enableFlush();
         fcm.put(A_KEY, APPLE);
@@ -115,7 +115,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         fcm.release();
         fcm.waitUntilFlushed();
 
-        final VirtualRootNode fcm2 = new VirtualRootNode(builder);
+        final VirtualRootNode fcm2 = new VirtualRootNode(builder, CONFIGURATION.getConfigData(VirtualMapConfig.class));
         fcm2.postInit(copy.getState());
         assertNotNull(fcm2.getChild(0), "child should not be null");
         assertEquals(expectedHash, fcm2.getChild(0).getHash(), "hash should match expected");
@@ -318,7 +318,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         paths.add(Path.of("asdf"));
         paths.add(null);
         for (final Path destination : paths) {
-            final VirtualMap original = new VirtualMap("test", new InMemoryBuilder());
+            final VirtualMap original = new VirtualMap("test", new InMemoryBuilder(), CONFIGURATION);
             final VirtualMap copy = original.copy();
 
             final VirtualRootNode root = original.getChild(1);
@@ -386,13 +386,11 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, "0")
                 .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
-        final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
-
-        VirtualRootNode root = createRoot();
+        VirtualRootNode root = createRoot(configuration);
         assertEquals(0, root.getFlushThreshold());
-        final int flushInterval = config.flushInterval();
+        final int flushInterval =
+                configuration.getConfigData(VirtualMapConfig.class).flushInterval();
         for (int i = 0; i < flushInterval; i++) {
             VirtualRootNode copy = root.copy();
             copy.postInit(root.getState());

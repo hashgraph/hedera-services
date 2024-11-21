@@ -23,13 +23,13 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.test.fixtures.MapWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -49,13 +49,15 @@ public class FakeServiceMigrator implements ServiceMigrator {
             @NonNull final ServicesRegistry servicesRegistry,
             @Nullable final SoftwareVersion previousVersion,
             @NonNull final SoftwareVersion currentVersion,
-            @NonNull final Configuration config,
+            @NonNull final Configuration nodeConfiguration,
+            @NonNull final Configuration platformConfiguration,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(servicesRegistry);
         requireNonNull(currentVersion);
-        requireNonNull(config);
+        requireNonNull(nodeConfiguration);
+        requireNonNull(platformConfiguration);
         requireNonNull(networkInfo);
         requireNonNull(metrics);
 
@@ -66,8 +68,8 @@ public class FakeServiceMigrator implements ServiceMigrator {
             throw new IllegalArgumentException("Can only be used with FakeServicesRegistry instances");
         }
 
-        final AtomicLong prevEntityNum =
-                new AtomicLong(config.getConfigData(HederaConfig.class).firstUserEntity() - 1);
+        final AtomicLong prevEntityNum = new AtomicLong(
+                nodeConfiguration.getConfigData(HederaConfig.class).firstUserEntity() - 1);
         final Map<String, Object> sharedValues = new HashMap<>();
         final var entityIdRegistration = registry.registrations().stream()
                 .filter(service ->
@@ -85,7 +87,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
                 fakeState,
                 deserializedPbjVersion,
                 networkInfo,
-                config,
+                nodeConfiguration,
                 sharedValues,
                 prevEntityNum);
         registry.registrations().stream()
@@ -99,7 +101,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
                             fakeState,
                             deserializedPbjVersion,
                             networkInfo,
-                            config,
+                            nodeConfiguration,
                             sharedValues,
                             prevEntityNum);
                 });

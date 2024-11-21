@@ -53,7 +53,7 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
         final long[] map = new long[verify ? maxKey : 0];
         VirtualMap virtualMap = createMap(map);
 
-        if (getConfig().enableSnapshots()) {
+        if (getBenchmarkConfig().enableSnapshots()) {
             enableSnapshots();
         }
 
@@ -156,7 +156,7 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
         record Expirable(long time, long id) {}
         final ArrayDeque<Expirable> expirables = new ArrayDeque<>();
 
-        if (getConfig().enableSnapshots()) {
+        if (getBenchmarkConfig().enableSnapshots()) {
             enableSnapshots();
         }
 

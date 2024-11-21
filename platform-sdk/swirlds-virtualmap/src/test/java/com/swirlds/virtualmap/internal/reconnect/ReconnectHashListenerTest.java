@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.VIRTUAL_MAP_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -26,6 +28,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
@@ -61,7 +64,8 @@ class ReconnectHashListenerTest {
         final ReconnectNodeRemover nodeRemover = mock(ReconnectNodeRemover.class);
         assertThrows(
                 NullPointerException.class,
-                () -> new ReconnectHashListener(1, 1, null, statistics, nodeRemover),
+                () -> new ReconnectHashListener(
+                        1, 1, null, VIRTUAL_MAP_CONFIG.reconnectFlushInterval(), statistics, nodeRemover),
                 "A null data source should produce an NPE");
     }
 
@@ -72,7 +76,8 @@ class ReconnectHashListenerTest {
         final ReconnectNodeRemover nodeRemover = mock(ReconnectNodeRemover.class);
         assertThrows(
                 NullPointerException.class,
-                () -> new ReconnectHashListener(1, 1, ds, null, nodeRemover),
+                () -> new ReconnectHashListener(
+                        1, 1, ds, VIRTUAL_MAP_CONFIG.reconnectFlushInterval(), null, nodeRemover),
                 "A null statistics should produce an NPE");
     }
 
@@ -83,7 +88,8 @@ class ReconnectHashListenerTest {
         final VirtualMapStatistics statistics = mock(VirtualMapStatistics.class);
         assertThrows(
                 NullPointerException.class,
-                () -> new ReconnectHashListener(1, 1, ds, statistics, null),
+                () -> new ReconnectHashListener(
+                        1, 1, ds, VIRTUAL_MAP_CONFIG.reconnectFlushInterval(), statistics, null),
                 "A null node remover should produce an NPE");
     }
 
@@ -105,7 +111,13 @@ class ReconnectHashListenerTest {
         final ReconnectNodeRemover nodeRemover = mock(ReconnectNodeRemover.class);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ReconnectHashListener(firstLeafPath, lastLeafPath, ds, statistics, nodeRemover),
+                () -> new ReconnectHashListener(
+                        firstLeafPath,
+                        lastLeafPath,
+                        ds,
+                        VIRTUAL_MAP_CONFIG.reconnectFlushInterval(),
+                        statistics,
+                        nodeRemover),
                 "Should have thrown IllegalArgumentException");
     }
 
@@ -117,13 +129,18 @@ class ReconnectHashListenerTest {
         final VirtualMapStatistics statistics = mock(VirtualMapStatistics.class);
         final ReconnectNodeRemover nodeRemover = mock(ReconnectNodeRemover.class);
         try {
-            new ReconnectHashListener(firstLeafPath, lastLeafPath, ds, statistics, nodeRemover);
+            new ReconnectHashListener(
+                    firstLeafPath,
+                    lastLeafPath,
+                    ds,
+                    VIRTUAL_MAP_CONFIG.reconnectFlushInterval(),
+                    statistics,
+                    nodeRemover);
         } catch (Exception e) {
             fail("Should have been able to create the instance", e);
         }
     }
 
-    @SuppressWarnings("unchecked")
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 10, 100, 1000, 10_000, 100_000, 1_000_000})
     @DisplayName("Flushed data is always done in the right order")
@@ -135,10 +152,16 @@ class ReconnectHashListenerTest {
 
         // 100 leaves would have firstLeafPath = 99, lastLeafPath = 198
         final long last = size + size;
-        final ReconnectHashListener listener = new ReconnectHashListener(size, last, ds, statistics, nodeRemover);
+        final ReconnectHashListener listener = new ReconnectHashListener(
+                size, last, ds, VIRTUAL_MAP_CONFIG.reconnectFlushInterval(), statistics, nodeRemover);
         final VirtualHasher hasher = new VirtualHasher();
         hasher.hash(
-                this::hash, LongStream.range(size, last).mapToObj(this::leaf).iterator(), size, last, listener);
+                this::hash,
+                LongStream.range(size, last).mapToObj(this::leaf).iterator(),
+                size,
+                last,
+                listener,
+                CONFIGURATION.getConfigData(VirtualMapConfig.class));
 
         // Now validate that everything showed up the data source in ordered chunks
         final TreeSet<VirtualHashRecord> allInternalRecords =

@@ -30,6 +30,7 @@ import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.memory.InMemoryKey;
 import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.test.fixtures.StateTestBase;
+import com.swirlds.state.test.fixtures.merkle.TestSchema;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;

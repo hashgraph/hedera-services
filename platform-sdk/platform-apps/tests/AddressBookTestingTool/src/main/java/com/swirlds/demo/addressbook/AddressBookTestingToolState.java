@@ -35,22 +35,23 @@ import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_AD
 import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
@@ -68,13 +69,15 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * State for the AddressBookTestingTool.
  */
-public class AddressBookTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+@ConstructableIgnored
+public class AddressBookTestingToolState extends MerkleStateRoot {
 
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
@@ -110,8 +113,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     /**
      * The number of rounds handled by this app. Is incremented each time
-     * {@link #handleConsensusRound(Round, PlatformStateAccessor)} is called. Note that this may not actually equal the round
-     * number, since we don't call {@link #handleConsensusRound(Round, PlatformStateAccessor)} for rounds with no events.
+     * {@link #handleConsensusRound(Round, PlatformStateModifier)} is called. Note that this may not actually equal the round
+     * number, since we don't call {@link #handleConsensusRound(Round, PlatformStateModifier)} for rounds with no events.
      *
      * <p>
      * Affects the hash of this node.
@@ -126,7 +129,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     private Duration freezeAfterGenesis = null;
 
-    public AddressBookTestingToolState() {
+    public AddressBookTestingToolState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(lifecycles, versionFactory);
         logger.info(STARTUP.getMarker(), "New State Constructed.");
     }
 
@@ -153,6 +159,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     @Override
     public synchronized AddressBookTestingToolState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new AddressBookTestingToolState(this);
     }
 
@@ -228,26 +235,6 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         runningSum += delta;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        Objects.requireNonNull(out, "the serializable data output stream cannot be null");
-        out.writeLong(runningSum);
-        out.writeLong(roundsHandled);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        Objects.requireNonNull(in, "the serializable data input stream cannot be null");
-        runningSum = in.readLong();
-        roundsHandled = in.readLong();
     }
 
     /**
@@ -376,10 +363,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
-        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
-                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, true)
+        return equalsAsRoster(platformAddressBook, configAddressBook, true)
+                && equalsAsRoster(platformAddressBook, stateAddressBook, false)
+                && equalsAsRoster(platformAddressBook, usedAddressBook, true)
+                && equalsAsRoster(platformAddressBook, updatedAddressBook, true)
                 && removedNodeFromAddressBook(platformAddressBook, stateAddressBook);
     }
 
@@ -395,22 +382,22 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
-        if (stateAddressBook.toConfigText().equals(configAddressBook.toConfigText())) {
+        if (equalsAsRosterWithoutCert(stateAddressBook, configAddressBook)) {
             // This is a new node.
-            return equalsAsConfigText(platformAddressBook, configAddressBook, true)
+            return equalsAsRoster(platformAddressBook, configAddressBook, true)
                     // genesis state uses the config address book.
-                    && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
-                    && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                    && equalsAsConfigText(platformAddressBook, updatedAddressBook, true);
+                    && equalsAsRoster(platformAddressBook, stateAddressBook, true)
+                    && equalsAsRoster(platformAddressBook, usedAddressBook, true)
+                    && equalsAsRoster(platformAddressBook, updatedAddressBook, true);
         } else {
             // This is an existing node.
 
             // The equality to config text is due to a limitation of testing capability.
             // Currently all nodes have to start with the same config.txt file that matches the updated weight.
-            return equalsAsConfigText(platformAddressBook, configAddressBook, true)
-                    && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
-                    && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                    && equalsAsConfigText(platformAddressBook, updatedAddressBook, true)
+            return equalsAsRoster(platformAddressBook, configAddressBook, true)
+                    && equalsAsRoster(platformAddressBook, stateAddressBook, false)
+                    && equalsAsRoster(platformAddressBook, usedAddressBook, true)
+                    && equalsAsRoster(platformAddressBook, updatedAddressBook, true)
                     && addedNodeToAddressBook(platformAddressBook, stateAddressBook);
         }
     }
@@ -427,10 +414,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
-        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
+        return equalsAsRoster(platformAddressBook, configAddressBook, true)
+                && equalsAsRoster(platformAddressBook, stateAddressBook, true)
+                && equalsAsRoster(platformAddressBook, usedAddressBook, true)
+                && equalsAsRoster(platformAddressBook, updatedAddressBook, false)
                 && theConfigurationAddressBookWasUsed();
     }
 
@@ -446,10 +433,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
-        return equalsAsConfigText(platformAddressBook, configAddressBook, false)
-                && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
-                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, true);
+        return equalsAsRoster(platformAddressBook, configAddressBook, false)
+                && equalsAsRoster(platformAddressBook, stateAddressBook, false)
+                && equalsAsRoster(platformAddressBook, usedAddressBook, true)
+                && equalsAsRoster(platformAddressBook, updatedAddressBook, true);
     }
 
     private boolean noSoftwareUpgradeForceUseOfConfigAddressBook(@NonNull final AddressBookTestScenario testScenario)
@@ -464,10 +451,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
-        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
+        return equalsAsRoster(platformAddressBook, configAddressBook, true)
+                && equalsAsRoster(platformAddressBook, stateAddressBook, true)
+                && equalsAsRoster(platformAddressBook, usedAddressBook, true)
+                && equalsAsRoster(platformAddressBook, updatedAddressBook, false)
                 && theConfigurationAddressBookWasUsed();
     }
 
@@ -483,10 +470,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
-        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
+        return equalsAsRoster(platformAddressBook, configAddressBook, true)
+                && equalsAsRoster(platformAddressBook, stateAddressBook, true)
+                && equalsAsRoster(platformAddressBook, usedAddressBook, true)
+                && equalsAsRoster(platformAddressBook, updatedAddressBook, false)
                 && theStateAddressBookWasUsed();
     }
 
@@ -502,10 +489,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
-        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false);
+        return equalsAsRoster(platformAddressBook, configAddressBook, true)
+                && equalsAsRoster(platformAddressBook, usedAddressBook, true)
+                && equalsAsRoster(platformAddressBook, stateAddressBook, true)
+                && equalsAsRoster(platformAddressBook, updatedAddressBook, false);
     }
 
     private boolean genesisForceUseOfConfigAddressBookTrue(@NonNull final AddressBookTestScenario testScenario)
@@ -520,10 +507,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
-        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
+        return equalsAsRoster(platformAddressBook, configAddressBook, true)
+                && equalsAsRoster(platformAddressBook, usedAddressBook, true)
+                && equalsAsRoster(platformAddressBook, stateAddressBook, true)
+                && equalsAsRoster(platformAddressBook, updatedAddressBook, false)
                 && theConfigurationAddressBookWasUsed();
     }
 
@@ -574,33 +561,55 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     }
 
     /**
-     * This test compares the equality of two address books against the expected result.  The equality comparison is
-     * performed by converting the address books to config text and comparing the strings.  The conversion to config
-     * text is to avoid needing to load public keys for the addresses and computing accurate isOwnHost values on the
-     * addresses.
+     * Remove certificates from a roster.
+     * @param roster an input roster
+     * @return the same roster as input but with all gossip certs removed
+     */
+    private Roster removeCerts(@NonNull final Roster roster) {
+        return roster.copyBuilder()
+                .rosterEntries(roster.rosterEntries().stream()
+                        .map(re -> re.copyBuilder()
+                                .gossipCaCertificate(Bytes.EMPTY)
+                                .build())
+                        .toList())
+                .build();
+    }
+
+    /**
+     * Compare two AddressBooks after converting them to Rosters and removing all certificates
+     * to avoid mismatches for fields absent from the Roster.
+     * @param addressBook1 the first address book
+     * @param addressBook2 the second address book
+     * @return true if equals, false otherwise
+     */
+    private boolean equalsAsRosterWithoutCert(
+            @NonNull final AddressBook addressBook1, @NonNull final AddressBook addressBook2) {
+        final Roster roster1 = removeCerts(RosterRetriever.buildRoster(addressBook1));
+        final Roster roster2 = removeCerts(RosterRetriever.buildRoster(addressBook2));
+        return roster1.equals(roster2);
+    }
+
+    /**
+     * This test compares the equality of two address books against the expected result.
      *
      * @param addressBook1 the first address book
      * @param addressBook2 the second address book
      * @return true if the comparison matches the expected result, false otherwise.
      */
-    private boolean equalsAsConfigText(
+    private boolean equalsAsRoster(
             @NonNull final AddressBook addressBook1,
             @NonNull final AddressBook addressBook2,
             final boolean expectedResult) {
-        final String addressBook1ConfigText = AddressBookUtils.addressBookConfigText(addressBook1);
-        final String addressBook2ConfigText = AddressBookUtils.addressBookConfigText(addressBook2);
-        final boolean pass = addressBook1ConfigText.equals(addressBook2ConfigText) == expectedResult;
+        final boolean pass = equalsAsRosterWithoutCert(addressBook1, addressBook2) == expectedResult;
         if (!pass) {
             if (expectedResult) {
                 logger.error(
                         EXCEPTION.getMarker(),
-                        "The address books are not equal as config text. {}",
+                        "The address books are not equal as Roster. {}",
                         StackTrace.getStackTrace());
             } else {
                 logger.error(
-                        EXCEPTION.getMarker(),
-                        "The address books are equal as config text. {}",
-                        StackTrace.getStackTrace());
+                        EXCEPTION.getMarker(), "The address books are equal as Roster. {}", StackTrace.getStackTrace());
             }
         }
         return pass;

@@ -42,6 +42,7 @@ import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.collections.OffHeapUser;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.DataFileReader;
@@ -185,6 +186,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         this.tableName = tableName;
         this.tableId = tableId;
         this.tableConfig = tableConfig;
+        final MerkleDbConfig merkleDbConfig = database.getConfiguration().getConfigData(MerkleDbConfig.class);
 
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
@@ -235,22 +237,25 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         saveMetadata(dbPaths);
 
         // create path to disk location index
-        final boolean forceIndexRebuilding = database.getConfig().indexRebuildingEnforced();
+        final boolean forceIndexRebuilding = merkleDbConfig.indexRebuildingEnforced();
         if (tableConfig.isPreferDiskBasedIndices()) {
-            pathToDiskLocationInternalNodes = new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile);
+            pathToDiskLocationInternalNodes =
+                    new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile, database.getConfiguration());
         } else if (Files.exists(dbPaths.pathToDiskLocationInternalNodesFile) && !forceIndexRebuilding) {
-            pathToDiskLocationInternalNodes = new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile);
+            pathToDiskLocationInternalNodes =
+                    new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile, database.getConfiguration());
         } else {
             pathToDiskLocationInternalNodes = new LongListOffHeap();
         }
         // path to disk location index, leaf nodes
         if (tableConfig.isPreferDiskBasedIndices()) {
-            pathToDiskLocationLeafNodes = new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile);
-        } else if (Files.exists(dbPaths.pathToDiskLocationLeafNodesFile) && !forceIndexRebuilding) {
-            pathToDiskLocationLeafNodes = new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile);
-        } else {
             pathToDiskLocationLeafNodes =
-                    new LongListOffHeap(database.getConfig().reservedBufferLengthForLeafList());
+                    new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile, database.getConfiguration());
+        } else if (Files.exists(dbPaths.pathToDiskLocationLeafNodesFile) && !forceIndexRebuilding) {
+            pathToDiskLocationLeafNodes =
+                    new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile, database.getConfiguration());
+        } else {
+            pathToDiskLocationLeafNodes = new LongListOffHeap(merkleDbConfig.reservedBufferLengthForLeafList());
         }
 
         // internal node hashes store, RAM
@@ -264,7 +269,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             hashStoreRam = null;
         }
 
-        statisticsUpdater = new MerkleDbStatisticsUpdater(database.getConfig(), tableName);
+        statisticsUpdater = new MerkleDbStatisticsUpdater(merkleDbConfig, tableName);
 
         final Runnable updateTotalStatsFunction = () -> {
             statisticsUpdater.updateStoreFileStats(this);
@@ -290,14 +295,14 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             }
             final String storeName = tableName + "_internalhashes";
             hashStoreDisk = new MemoryIndexDiskKeyValueStore(
-                    database.getConfig(),
+                    merkleDbConfig,
                     dbPaths.hashStoreDiskDirectory,
                     storeName,
                     tableName + ":internalHashes",
                     hashRecordLoadedCallback,
                     pathToDiskLocationInternalNodes);
             hashStoreDiskFileCompactor = new DataFileCompactor(
-                    database.getConfig(),
+                    merkleDbConfig,
                     storeName,
                     hashStoreDisk.getFileCollection(),
                     pathToDiskLocationInternalNodes,
@@ -314,14 +319,14 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         // key to path store
         String keyToPathStoreName = tableName + "_objectkeytopath";
         keyToPath = new HalfDiskHashMap(
-                database.getConfig(),
+                database.getConfiguration(),
                 tableConfig.getMaxNumberOfKeys(),
                 dbPaths.keyToPathDirectory,
                 keyToPathStoreName,
                 tableName + ":objectKeyToPath",
                 tableConfig.isPreferDiskBasedIndices());
         keyToPathFileCompactor = new DataFileCompactor(
-                database.getConfig(),
+                merkleDbConfig,
                 keyToPathStoreName,
                 keyToPath.getFileCollection(),
                 keyToPath.getBucketIndexToBucketLocation(),
@@ -348,14 +353,14 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         // Create path to key/value store, this will create new or load if files exist
         final String pathToKeyValueStoreName = tableName + "_pathtohashkeyvalue";
         pathToKeyValue = new MemoryIndexDiskKeyValueStore(
-                database.getConfig(),
+                merkleDbConfig,
                 dbPaths.pathToKeyValueDirectory,
                 pathToKeyValueStoreName,
                 tableName + ":pathToHashKeyValue",
                 leafRecordLoadedCallback,
                 pathToDiskLocationLeafNodes);
         final DataFileCompactor pathToKeyValueFileCompactor = new DataFileCompactor(
-                database.getConfig(),
+                merkleDbConfig,
                 pathToKeyValueStoreName,
                 pathToKeyValue.getFileCollection(),
                 pathToDiskLocationLeafNodes,
@@ -365,7 +370,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                 updateTotalStatsFunction);
 
         // Leaf records cache
-        leafRecordCacheSize = database.getConfig().leafRecordCacheSize();
+        leafRecordCacheSize = merkleDbConfig.leafRecordCacheSize();
         leafRecordCache = (leafRecordCacheSize > 0) ? new VirtualLeafBytes[leafRecordCacheSize] : null;
 
         // Update count of open databases
@@ -380,7 +385,11 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                 tableConfig.getHashesRamToDiskThreshold());
 
         compactionCoordinator = new MerkleDbCompactionCoordinator(
-                tableName, keyToPathFileCompactor, hashStoreDiskFileCompactor, pathToKeyValueFileCompactor);
+                tableName,
+                keyToPathFileCompactor,
+                hashStoreDiskFileCompactor,
+                pathToKeyValueFileCompactor,
+                merkleDbConfig);
 
         if (compactionEnabled) {
             enableBackgroundCompaction();

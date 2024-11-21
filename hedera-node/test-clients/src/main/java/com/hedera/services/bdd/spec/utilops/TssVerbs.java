@@ -83,7 +83,24 @@ public class TssVerbs {
             @NonNull final RekeyScenarioOp.DabEdits dabEdits,
             @NonNull final LongUnaryOperator nodeStakes,
             @NonNull final LongFunction<RekeyScenarioOp.TssMessageSim> tssMessageSims) {
-        return new RekeyScenarioOp(dabEdits, nodeStakes, tssMessageSims);
+        return new RekeyScenarioOp(
+                dabEdits, nodeStakes, tssMessageSims, RekeyScenarioOp.BlockSigningType.SIGN_WITH_FAKE);
+    }
+
+    /**
+     * Returns an operation that simulates a re-keying scenario in the context of a repeatable embedded test.
+     * @param dabEdits the edits to make before creating the candidate roster
+     * @param nodeStakes the node stakes to have in place at the stake period boundary
+     * @param tssMessageSims the TSS message simulations to apply
+     * @param blockSigningType the type of block signing to perform
+     * @return the operation that will simulate the re-keying scenario
+     */
+    public static RekeyScenarioOp rekeyingScenario(
+            @NonNull final RekeyScenarioOp.DabEdits dabEdits,
+            @NonNull final LongUnaryOperator nodeStakes,
+            @NonNull final LongFunction<RekeyScenarioOp.TssMessageSim> tssMessageSims,
+            @NonNull final RekeyScenarioOp.BlockSigningType blockSigningType) {
+        return new RekeyScenarioOp(dabEdits, nodeStakes, tssMessageSims, blockSigningType);
     }
 
     /**

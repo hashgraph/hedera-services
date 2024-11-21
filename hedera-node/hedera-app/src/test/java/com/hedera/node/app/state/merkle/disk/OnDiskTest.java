@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -64,7 +63,7 @@ class OnDiskTest extends MerkleTestBase {
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
-        final Path storageDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        final Path storageDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, AccountID.PROTOBUF, Account.PROTOBUF, 100);
 
@@ -77,15 +76,12 @@ class OnDiskTest extends MerkleTestBase {
             }
         };
 
-        final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
         // Force all hashes to disk, to make sure we're going through all the
         // serialization paths we can
-        tableConfig.hashesRamToDiskThreshold(0);
-        tableConfig.maxNumberOfKeys(100);
-        tableConfig.preferDiskIndices(true);
+        final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, 100, 0);
 
-        final var builder = new MerkleDbDataSourceBuilder(storageDir, tableConfig);
-        virtualMap = new VirtualMap(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
+        final var builder = new MerkleDbDataSourceBuilder(storageDir, tableConfig, CONFIGURATION);
+        virtualMap = new VirtualMap(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder, CONFIGURATION);
 
         Configuration config = mock(Configuration.class);
         final var hederaConfig = mock(HederaConfig.class);
@@ -137,12 +133,12 @@ class OnDiskTest extends MerkleTestBase {
         virtualMap.copy(); // throw away the copy, we won't use it
         CRYPTO.digestTreeSync(virtualMap);
 
-        final var snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot");
+        final var snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot", CONFIGURATION);
         final byte[] serializedBytes = writeTree(virtualMap, snapshotDir);
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
-        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, DEFAULT_CONFIG, new SchemaApplications());
+        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, CONFIGURATION, new SchemaApplications());
         r.register(schema);
 
         // read it back now as our map and validate the data come back fine

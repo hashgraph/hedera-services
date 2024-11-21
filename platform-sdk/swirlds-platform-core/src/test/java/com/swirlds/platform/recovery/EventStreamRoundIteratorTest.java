@@ -22,6 +22,7 @@ import static com.swirlds.platform.recovery.RecoveryTestUtils.getLastEventStream
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getMiddleEventStreamFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.truncateFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -59,7 +60,8 @@ import org.junit.jupiter.api.Test;
 class EventStreamRoundIteratorTest {
 
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll() throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
     }
 
@@ -74,11 +76,9 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Read All Events Test")
-    void readAllEventsTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void readAllEventsTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -116,13 +116,9 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Read All Events Starting From Round Test")
-    void readAllEventsStartingFromRoundTest()
-            throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void readAllEventsStartingFromRoundTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -171,11 +167,9 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Missing Event File Test")
-    void missingEventFileTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void missingEventFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -232,11 +226,9 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Early Rounds Not Present Test")
-    void earlyRoundsNotPresentTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void earlyRoundsNotPresentTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -255,11 +247,9 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Read All Events Truncated File Test")
-    void readAllEventsTruncatedFileTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void readAllEventsTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -312,13 +302,9 @@ class EventStreamRoundIteratorTest {
     @Disabled("This test is disabled because it is flaky. Fails ~1/10 times, but only when run remotely.")
     @Test
     @DisplayName("Read Complete Rounds Truncated File Test")
-    void readCompleteRoundsTruncatedFileTest()
-            throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void readCompleteRoundsTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;

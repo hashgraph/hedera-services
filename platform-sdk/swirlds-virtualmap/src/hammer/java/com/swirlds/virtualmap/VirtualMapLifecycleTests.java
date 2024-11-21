@@ -16,7 +16,6 @@
 
 package com.swirlds.virtualmap;
 
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMap;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -24,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils;
 import java.security.SecureRandom;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
@@ -45,7 +45,7 @@ class VirtualMapLifecycleTests {
 
     private static final Random RANDOM = new SecureRandom();
 
-    private static final VirtualMap TERMINATE_QUERY = new VirtualMap();
+    private static final VirtualMap TERMINATE_QUERY = new VirtualMap(VirtualMapTestUtils.CONFIGURATION);
 
     /**
      * This hammer test will have one thread querying maps while another thread is modifying
@@ -58,7 +58,7 @@ class VirtualMapLifecycleTests {
     @Tags({@Tag("VirtualMerkle"), @Tag("VMAP-016")})
     @DisplayName("Main thread mutates vm while background thread queries immutable vm")
     void queryCopyWhileMutatingOriginal() throws InterruptedException, ExecutionException, TimeoutException {
-        final VirtualMap map = createMap();
+        final VirtualMap map = VirtualMapTestUtils.createMap();
         final AtomicReference<VirtualMap> mutableCopy = new AtomicReference<>(map);
         final BlockingQueue<VirtualMap> immutableCopies = new LinkedBlockingQueue<>();
         final int totalTransactions = 10_000;

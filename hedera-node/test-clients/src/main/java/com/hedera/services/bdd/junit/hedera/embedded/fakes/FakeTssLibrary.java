@@ -27,6 +27,7 @@ import com.hedera.node.app.tss.api.TssPublicShare;
 import com.hedera.node.app.tss.api.TssShareId;
 import com.hedera.node.app.tss.api.TssShareSignature;
 import com.hedera.node.app.tss.pairings.FakeFieldElement;
+import com.hedera.node.app.tss.pairings.FakeGroupElement;
 import com.hedera.node.app.tss.pairings.PairingPrivateKey;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.pairings.PairingSignature;
@@ -43,6 +44,8 @@ public class FakeTssLibrary implements TssLibrary {
     private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
     private static final PairingPrivateKey PRIVATE_KEY =
             new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    public static final PairingSignature FAKE_SIGNATURE =
+            new PairingSignature(new FakeGroupElement(BigInteger.valueOf(1L)), SIGNATURE_SCHEMA);
 
     public interface DirectoryAssertion {
         void assertExpected(@NonNull TssParticipantDirectory directory) throws AssertionError;
@@ -161,7 +164,12 @@ public class FakeTssLibrary implements TssLibrary {
     @NonNull
     @Override
     public TssShareSignature sign(@NonNull final TssPrivateShare privateShare, @NonNull final byte[] message) {
-        return null;
+        return new TssShareSignature(
+                privateShare.shareId(),
+                new PairingSignature(
+                        new FakeGroupElement(
+                                BigInteger.valueOf(privateShare.shareId().idElement())),
+                        SIGNATURE_SCHEMA));
     }
 
     @Override
@@ -169,13 +177,13 @@ public class FakeTssLibrary implements TssLibrary {
             @NonNull final TssParticipantDirectory participantDirectory,
             @NonNull final List<TssPublicShare> publicShares,
             @NonNull final TssShareSignature signature) {
-        return false;
+        return true;
     }
 
     @NonNull
     @Override
     public PairingSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures) {
-        return null;
+        return FAKE_SIGNATURE;
     }
 
     @NonNull
