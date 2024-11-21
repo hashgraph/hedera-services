@@ -237,8 +237,7 @@ public class HapiUtils {
             case TSS_MESSAGE -> HederaFunctionality.TSS_MESSAGE;
             case TSS_VOTE -> HederaFunctionality.TSS_VOTE;
             case TSS_SHARE_SIGNATURE -> HederaFunctionality.TSS_SHARE_SIGNATURE;
-                // TODO: Add support for new format
-            case STATE_SIGNATURE_TRANSACTION -> throw new UnknownHederaFunctionality();
+            case STATE_SIGNATURE_TRANSACTION -> HederaFunctionality.STATE_SIGNATURE_TRANSACTION;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

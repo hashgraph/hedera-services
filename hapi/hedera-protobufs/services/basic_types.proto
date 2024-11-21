@@ -1264,6 +1264,11 @@ enum HederaFunctionality {
      * Submit a node signature as part of the Threshold Signature Scheme (TSS) processing.
      */
     TssShareSignature = 98;
+
+    /**
+     * Submit an signature of a state snapshot gossiped to other nodes
+     */
+    StateSignatureTransaction = 100;
 }
 
 /**
