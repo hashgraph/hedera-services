@@ -79,11 +79,11 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 public class Utils {
-    public static final String RESOURCE_PATH = "src/main/resources/contract/contracts/%1$s/%1$s%2$s";
+    public static final String RESOURCE_PATH = "src/main/solidity/%1$s/%1$s%2$s";
 
-    public static final String UNIQUE_CLASSPATH_RESOURCE_TPL = "contract/contracts/%s/%s";
+    public static final String UNIQUE_CLASSPATH_RESOURCE_TPL = "contract/contracts/%s";
     private static final Logger log = LogManager.getLogger(Utils.class);
-    private static final String JSON_EXTENSION = ".json";
+    private static final String JSON_EXTENSION = ".abi";
 
     public static ByteString eventSignatureOf(String event) {
         return ByteString.copyFrom(Hash.keccak256(Bytes.wrap(event.getBytes())).toArray());
@@ -192,8 +192,7 @@ public class Utils {
 
     public static String getResourceABIFor(
             final FunctionType type, final String functionName, final String contractName) {
-        final var resourcePath =
-                String.format(UNIQUE_CLASSPATH_RESOURCE_TPL, contractName, contractName + JSON_EXTENSION);
+        final var resourcePath = String.format(UNIQUE_CLASSPATH_RESOURCE_TPL, contractName + JSON_EXTENSION);
         try (final var input = Utils.class.getClassLoader().getResourceAsStream(resourcePath)) {
             return getFunctionAbiFrom(input, functionName, type);
         } catch (final IOException e) {

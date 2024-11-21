@@ -618,6 +618,7 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+!hedera-node/test-clients/src/main/solidity/Logs
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

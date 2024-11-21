@@ -15,10 +15,17 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.hedera.gradle.tasks.GitClone
+import org.web3j.solidity.gradle.plugin.EVMVersion
+import org.web3j.solidity.gradle.plugin.OutputComponent
+import org.web3j.solidity.gradle.plugin.SolidityCompile
+import org.web3j.solidity.gradle.plugin.SolidityResolve
+import org.web3j.solidity.gradle.plugin.SoliditySourceSet
 
 plugins {
     id("com.hedera.gradle.services")
     id("com.hedera.gradle.shadow-jar")
+    id("org.web3j.solidity")
 }
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
@@ -31,6 +38,57 @@ mainModuleInfo {
 }
 
 testModuleInfo { runtimeOnly("org.junit.jupiter.api") }
+
+// Clone 'hedera-smart-contracts' to obtain system contracts
+val cloneSmartContracts =
+    tasks.register<GitClone>("cloneSmartContracts") {
+        offline = gradle.startParameter.isOffline
+        url = "https://github.com/hashgraph/hedera-smart-contracts.git"
+        localCloneDirectory = layout.buildDirectory.dir("hedera-smart-contracts")
+        tag = "v0.10.1"
+    }
+
+// General solidity configuration
+solidity {
+    setCombinedOutputComponents()
+    setOutputComponents(OutputComponent.BIN, OutputComponent.ABI)
+    // evmVersion = EVMVersion.CANCUN
+    prettyJson = true
+    optimize = false
+    allowPaths.add(layout.projectDirectory.dir("src/main/solidity").asFile.absolutePath)
+    allowPaths.add(
+        layout.buildDirectory
+            .dir("hedera-smart-contracts/contracts/system-contracts")
+            .get()
+            .asFile
+            .absolutePath
+    )
+}
+
+sourceSets.main {
+    withConvention(SoliditySourceSet::class) {
+        solidity {
+            destinationDirectory = layout.buildDirectory.dir("generated/solidity")
+            // TODO remove this filtering and make all 'sol' files compile
+            include("AddressValueRet/*")
+            include("Returner.abi/*")
+            include("Placeholder/*")
+        }
+    }
+}
+
+tasks.withType<SolidityResolve>().configureEach {
+    inputs.dir(cloneSmartContracts.flatMap { it.localCloneDirectory })
+}
+
+tasks.withType<SolidityCompile>().configureEach {
+    inputs.dir(cloneSmartContracts.flatMap { it.localCloneDirectory })
+}
+
+tasks.processResources { from(tasks.named("compileSolidity")) { into("contract/contracts") } }
+
+// TODO register separate SolidityCompile - complete configuration of task
+tasks.register<SolidityCompile>("compileSolidityParis") { evmVersion = EVMVersion.PARIS }
 
 sourceSets {
     create("rcdiff")
