@@ -63,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
@@ -219,6 +220,7 @@ public class EthereumSuite {
                 cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                 uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                 contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                overriding("contracts.evm.ethTransaction.zeroHapiFees.enabled", "true"),
                 ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -385,6 +387,7 @@ public class EthereumSuite {
                 getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                 uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                 contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                overriding("contracts.evm.ethTransaction.zeroHapiFees.enabled", "true"),
                 withOpContext((spec, ignore) -> {
                     final String senderBalance = "senderBalance";
                     final String payerBalance = "payerBalance";
@@ -510,6 +513,7 @@ public class EthereumSuite {
                 contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
                 balanceSnapshot(relayerSnapshot, RELAYER),
                 balanceSnapshot(senderSnapshot, SECP_256K1_SOURCE_KEY).accountIsAlias(),
+                overriding("contracts.evm.ethTransaction.zeroHapiFees.enabled", "true"),
                 ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", BigInteger.valueOf(DEPOSIT_AMOUNT))
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
