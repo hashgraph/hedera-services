@@ -17,6 +17,7 @@
 package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PRIVATE_KEY;
+import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PUBLIC_KEY;
 import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.TSS_KEYS;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ACTIVE_ROSTER;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.CURRENT_CANDIDATE_ROSTER;
@@ -99,10 +100,10 @@ public class TssBaseServiceTest {
 
     private static final TssKeysAccessor.TssKeys TSS_KEYS = new TssKeysAccessor.TssKeys(
             List.of(new TssPrivateShare(0, PRIVATE_KEY)),
-            List.of(new TssPublicShare(0, PRIVATE_KEY.createPublicKey())),
+            List.of(new TssPublicShare(0, PUBLIC_KEY)),
             Bytes.EMPTY,
             TssParticipantDirectory.createBuilder()
-                    .withParticipant(0, 1, PRIVATE_KEY.createPublicKey())
+                    .withParticipant(0, 1, PUBLIC_KEY)
                     .build(),
             1);
 

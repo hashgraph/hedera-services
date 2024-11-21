@@ -39,13 +39,11 @@ import com.hedera.node.app.tss.TssCryptographyManager.Vote;
 import com.hedera.node.app.tss.TssDirectoryAccessor;
 import com.hedera.node.app.tss.TssKeysAccessor;
 import com.hedera.node.app.tss.TssMetrics;
-import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.BitSet;
 import java.util.List;
@@ -129,7 +127,6 @@ class TssMessageHandlerTest {
         given(nodeInfo.accountId()).willReturn(NODE_ACCOUNT_ID);
         given(nodeInfo.nodeId()).willReturn(1L);
         given(handleContext.body()).willReturn(getTssBody());
-        given(pairingPublicKey.element()).willReturn(new FakeGroupElement(BigInteger.valueOf(10)));
 
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
@@ -141,7 +138,7 @@ class TssMessageHandlerTest {
                 .willReturn(CompletableFuture.completedFuture(vote));
         given(signature.getBytes()).willReturn(Bytes.wrap("test"));
         given(directoryAccessor.activeParticipantDirectory()).willReturn(TSS_KEYS.activeParticipantDirectory());
-
+        given(pairingPublicKey.toBytes()).willReturn("test".getBytes());
         subject.handle(handleContext);
 
         verify(submissionManager).submitTssVote(any(), eq(handleContext));

@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.tss.handlers;
 
+import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
 import static com.hedera.node.app.tss.handlers.TssUtils.getThresholdForTssMessages;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.cryptography.bls.BlsSignature;
-import com.hedera.cryptography.bls.SignatureSchema;
 import com.hedera.cryptography.tss.api.TssShareSignature;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -128,11 +128,10 @@ public class TssShareSignatureHandler implements TransactionHandler {
             final Bytes messageHash,
             final long shareIndex,
             final Set<TssShareSignature> tssShareSignatures) {
+        // Future: Use non-fake signature
         final var tssShareSignature = new TssShareSignature(
                 (int) shareIndex,
-                new BlsSignature(
-                        new FakeGroupElement(BigInteger.valueOf(shareIndex)),
-                        SignatureSchema.create(shareSignature.toByteArray())));
+                new BlsSignature(new FakeGroupElement(BigInteger.valueOf(shareIndex)), SIGNATURE_SCHEMA));
         final var isValid = tssLibrary.verifySignature(
                 rosterKeyMaterialAccessor.accessTssKeys().activeParticipantDirectory(),
                 rosterKeyMaterialAccessor.accessTssKeys().activeRosterPublicShares(),
