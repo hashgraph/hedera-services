@@ -254,6 +254,11 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
         return ClassVersion.ORIGINAL;
     }
 
+    @Override
+    public int getMinimumSupportedVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
     /**
      * {@inheritDoc}
      */
