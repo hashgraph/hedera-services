@@ -19,7 +19,11 @@ package com.swirlds.demo.addressbook;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -56,6 +60,25 @@ public class AddressBookTestingToolMain implements SwirldMain {
 
     /** The logger for this class. */
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolMain.class);
+
+    static {
+        try {
+            logger.info(STARTUP.getMarker(), "Registering AddressBookTestingToolState with ConstructableRegistry");
+            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(AddressBookTestingToolState.class, () -> {
+                        AddressBookTestingToolState addressBookTestingToolState = new AddressBookTestingToolState(
+                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(addressBookTestingToolState);
+                        return addressBookTestingToolState;
+                    }));
+            registerMerkleStateRootClassIds();
+            logger.info(STARTUP.getMarker(), "AddressBookTestingToolState is registered with ConstructableRegistry");
+        } catch (ConstructableRegistryException e) {
+            logger.error(STARTUP.getMarker(), "Failed to register AddressBookTestingToolState", e);
+            throw new RuntimeException(e);
+        }
+    }
 
     /** The software version of this application. */
     private BasicSoftwareVersion softwareVersion;

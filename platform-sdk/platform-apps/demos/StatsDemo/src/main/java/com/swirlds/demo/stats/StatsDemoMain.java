@@ -30,8 +30,12 @@ import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.Console;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
@@ -85,6 +89,21 @@ public class StatsDemoMain implements SwirldMain {
     private Random random = new java.util.Random();
 
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
+
+    static {
+        try {
+            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            constructableRegistry.registerConstructable(new ClassConstructorPair(StatsDemoState.class, () -> {
+                StatsDemoState statsDemoState = new StatsDemoState(
+                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(statsDemoState);
+                return statsDemoState;
+            }));
+            registerMerkleStateRootClassIds();
+        } catch (ConstructableRegistryException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private final StoppableThread transactionGenerator;
 

@@ -28,8 +28,12 @@ package com.swirlds.demo.hello;
 
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.Console;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Browser;
@@ -51,6 +55,22 @@ import java.nio.charset.StandardCharsets;
  * prints it, too.
  */
 public class HelloSwirldDemoMain implements SwirldMain {
+
+    static {
+        try {
+            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            constructableRegistry.registerConstructable(new ClassConstructorPair(HelloSwirldDemoState.class, () -> {
+                HelloSwirldDemoState helloSwirldDemoState = new HelloSwirldDemoState(
+                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(helloSwirldDemoState);
+                return helloSwirldDemoState;
+            }));
+            registerMerkleStateRootClassIds();
+        } catch (ConstructableRegistryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /** the platform running this app */
     public SwirldsPlatform platform;
     /** ID number for this member */
