@@ -45,7 +45,7 @@ val cloneSmartContracts =
         offline = gradle.startParameter.isOffline
         url = "https://github.com/hashgraph/hedera-smart-contracts.git"
         localCloneDirectory = layout.buildDirectory.dir("hedera-smart-contracts")
-        tag = "v0.9.0"
+        tag = "v0.10.1"
     }
 
 // General solidity configuration
