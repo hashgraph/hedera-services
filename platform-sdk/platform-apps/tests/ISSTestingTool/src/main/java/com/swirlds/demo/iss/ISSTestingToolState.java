@@ -49,6 +49,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -74,6 +75,10 @@ public class ISSTestingToolState extends MerkleStateRoot {
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
+    }
+
+    static {
+        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     private static final long CLASS_ID = 0xf059378c7764ef47L;
@@ -410,6 +415,11 @@ public class ISSTestingToolState extends MerkleStateRoot {
      */
     @Override
     public int getVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    @Override
+    public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
     }
 }

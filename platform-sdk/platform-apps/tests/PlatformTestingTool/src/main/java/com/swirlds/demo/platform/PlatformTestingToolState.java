@@ -245,6 +245,10 @@ public class PlatformTestingToolState extends MerkleStateRoot {
 
     private long transactionsIgnoredByExpectedMap = 0;
 
+    public PlatformTestingToolState() {
+        this(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+    }
+
     public PlatformTestingToolState(
             @NonNull final MerkleStateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
