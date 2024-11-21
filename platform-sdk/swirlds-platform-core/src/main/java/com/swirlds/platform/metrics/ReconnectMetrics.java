@@ -146,10 +146,10 @@ public class ReconnectMetrics {
      *
      * @param nodeId the peer being rejected.
      */
-    public void recordReconnectRejection(@NonNull final Long nodeId) {
-        Objects.requireNonNull(nodeId);
-        if (rejectionFrequency.containsKey(nodeId)) {
-            rejectionFrequency.get(nodeId).count();
+    public void recordReconnectRejection(final long nodeId) {
+        final Long id = nodeId;
+        if (rejectionFrequency.containsKey(id)) {
+            rejectionFrequency.get(id).count();
         }
     }
 }

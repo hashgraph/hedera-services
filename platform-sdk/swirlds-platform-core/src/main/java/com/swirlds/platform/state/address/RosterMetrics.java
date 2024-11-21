@@ -25,18 +25,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A utility class to encapsulate the metrics for the address book.
  */
-public final class AddressBookMetrics {
+public final class RosterMetrics {
 
-    private AddressBookMetrics() {}
+    private RosterMetrics() {}
 
     /**
      * Register the metrics for the address book.
      *
      * @param metrics     the metrics engine
-     * @param roster      the roster reflecting the address book to register metrics for
+     * @param roster      the roster to register metrics for
      * @param selfId      the ID of the node
      */
-    public static void registerAddressBookMetrics(
+    public static void registerRosterMetrics(
             @NonNull final Metrics metrics, @NonNull final Roster roster, @NonNull final NodeId selfId) {
 
         metrics.getOrCreate(new FunctionGauge.Config<>(Metrics.INFO_CATEGORY, "memberID", Long.class, selfId::id)
@@ -46,6 +46,6 @@ public final class AddressBookMetrics {
         metrics.getOrCreate(new FunctionGauge.Config<>(
                         Metrics.INFO_CATEGORY, "members", Integer.class, roster.rosterEntries()::size)
                 .withUnit("count")
-                .withDescription("total number of nodes currently in the address book"));
+                .withDescription("total number of nodes currently in the roster"));
     }
 }
