@@ -27,7 +27,6 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
-import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.state.service.schemas.V057PlatformStateSchema;
 import com.swirlds.state.lifecycle.Schema;
