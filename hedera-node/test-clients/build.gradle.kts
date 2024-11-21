@@ -70,13 +70,9 @@ sourceSets.main {
         solidity {
             destinationDirectory = layout.buildDirectory.dir("generated/solidity")
             // TODO remove this filtering and make all 'sol' files compile
-            include("AbandoningParent/*")
             include("AddressValueRet/*")
-            include("AutoCreationModes/*")
-            include("Child/*")
+            include("Returner.abi/*")
             include("Placeholder/*")
-            include("Returner/*")
-            include("AssociateTryCatch/*")
         }
     }
 }

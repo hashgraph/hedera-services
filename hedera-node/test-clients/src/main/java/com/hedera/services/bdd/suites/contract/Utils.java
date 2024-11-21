@@ -207,7 +207,7 @@ public class Utils {
                 .filter(object -> type == CONSTRUCTOR
                         ? object.getString("type").equals(type.toString().toLowerCase())
                         : object.getString("type").equals(type.toString().toLowerCase())
-                        && object.getString("name").equals(functionName))
+                                && object.getString("name").equals(functionName))
                 .map(JSONObject::toString)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No such function found: " + functionName));
