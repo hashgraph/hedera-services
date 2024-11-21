@@ -19,22 +19,22 @@ package com.swirlds.demo.consistency;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.NonCryptographicHashing;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -45,19 +45,24 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * State for the Consistency Testing Tool
  */
-public class ConsistencyTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+@ConstructableIgnored
+public class ConsistencyTestingToolState extends MerkleStateRoot {
     private static final Logger logger = LogManager.getLogger(ConsistencyTestingToolState.class);
     private static final long CLASS_ID = 0xda03bb07eb897d82L;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
     }
+
+    private static final int STATE_LONG_INDEX = 1;
+    private static final int ROUND_HANDLED_INDEX = 2;
 
     /**
      * The history of transactions that have been handled by this app.
@@ -70,14 +75,14 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     /**
      * The true "state" of this app. This long value is updated with every transaction, and with every round.
      * <p>
-     * Effects the hash of this node.
+     * Affects the hash of this node.
      */
     private long stateLong = 0;
 
     /**
      * The number of rounds handled by this app. Is incremented each time
-     * {@link #handleConsensusRound(Round, PlatformStateAccessor)} is called. Note that this may not actually equal the round
-     * number, since we don't call {@link #handleConsensusRound(Round, PlatformStateAccessor)} for rounds with no events.
+     * {@link #handleConsensusRound(Round, PlatformStateModifier)} is called. Note that this may not actually equal the round
+     * number, since we don't call {@link #handleConsensusRound(Round, PlatformStateModifier)} for rounds with no events.
      *
      * <p>
      * Affects the hash of this node.
@@ -104,7 +109,10 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     /**
      * Constructor
      */
-    public ConsistencyTestingToolState() {
+    public ConsistencyTestingToolState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(lifecycles, versionFactory);
         logger.info(STARTUP.getMarker(), "New State Constructed.");
 
         this.transactionHandlingHistory = new TransactionHandlingHistory();
@@ -155,7 +163,19 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
 
         this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
 
+        final StringLeaf stateLongLeaf = getChild(STATE_LONG_INDEX);
+        if (stateLongLeaf != null && stateLongLeaf.getLabel() != null) {
+            this.stateLong = Long.parseLong(stateLongLeaf.getLabel());
+            logger.info(STARTUP.getMarker(), "State initialized with state long {}.", stateLong);
+        }
+        final StringLeaf roundsHandledLeaf = getChild(ROUND_HANDLED_INDEX);
+        if (roundsHandledLeaf != null && roundsHandledLeaf.getLabel() != null) {
+            this.roundsHandled = Long.parseLong(roundsHandledLeaf.getLabel());
+            logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled.", roundsHandled);
+        }
+
         transactionHandlingHistory.init(logFilePath);
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
     }
 
     /**
@@ -170,26 +190,15 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      * {@inheritDoc}
      */
     @Override
-    public void serialize(final @NonNull SerializableDataOutputStream out) throws IOException {
-        Objects.requireNonNull(out);
-        out.writeLong(stateLong);
-        out.writeLong(roundsHandled);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final @NonNull SerializableDataInputStream in, final int version) throws IOException {
-        stateLong = Objects.requireNonNull(in).readLong();
-        roundsHandled = in.readLong();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public int getVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
     }
 
@@ -200,6 +209,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     @NonNull
     public synchronized ConsistencyTestingToolState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new ConsistencyTestingToolState(this);
     }
 
@@ -269,5 +279,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
         stateLong = NonCryptographicHashing.hash64(stateLong, round.getRoundNum());
 
         transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round, stateLong));
+
+        setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
+        setChild(STATE_LONG_INDEX, new StringLeaf(Long.toString(stateLong)));
     }
 }

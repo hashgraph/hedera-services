@@ -118,12 +118,14 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
     @Override
     public Bytes getPreviousRosterHash() {
         final var rosterHistory = getRosterHistory();
-        return rosterHistory.size() > 1 ? rosterHistory.getLast().activeRosterHash() : null;
+        return rosterHistory.size() > 1 ? rosterHistory.get(1).activeRosterHash() : null;
     }
 
     /** {@inheritDoc} */
     @Override
     public @NonNull List<RoundRosterPair> getRosterHistory() {
-        return requireNonNull(rosterState.get()).roundRosterPairs();
+        return requireNonNull(rosterState.get()).roundRosterPairs().stream()
+                .filter(pair -> rosterMap.contains(new ProtoBytes(pair.activeRosterHash())))
+                .toList();
     }
 }
