@@ -157,7 +157,8 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         transPerEventMax = Integer.parseInt(parameters[4].replaceAll("_", ""));
         transPerSecToCreate = Integer.parseInt(parameters[5].replaceAll("_", ""));
 
-        expectedTPS = transPerSecToCreate / (double) platform.getAddressBook().getSize();
+        expectedTPS = transPerSecToCreate
+                / (double) platform.getRoster().rosterEntries().size();
 
         // the higher the expected TPS, the smaller the window
         tps_measure_window_milliseconds = (int) (WINDOW_CALCULATION_CONST / expectedTPS);

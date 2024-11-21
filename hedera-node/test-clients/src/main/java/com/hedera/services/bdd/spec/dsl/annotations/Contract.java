@@ -56,4 +56,10 @@ public @interface Contract {
      * @return {@code true} if the contract is immutable, {@code false} otherwise
      */
     boolean isImmutable() default false;
+
+    /**
+     * If set, the maximum number of auto-associations to allow for the contract.
+     * @return the maximum number of auto-associations
+     */
+    int maxAutoAssociations() default 0;
 }
