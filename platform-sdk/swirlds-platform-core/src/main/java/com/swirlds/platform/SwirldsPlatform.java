@@ -25,6 +25,7 @@ import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateFor
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSavedStateFiles;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -57,7 +58,6 @@ import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -104,6 +104,11 @@ public class SwirldsPlatform implements Platform {
      * The unique ID of this node.
      */
     private final NodeId selfId;
+
+    /**
+     * the current nodes in the network and their information
+     */
+    private final Roster currentRoster;
 
     /**
      * the current nodes in the network and their information
@@ -212,7 +217,8 @@ public class SwirldsPlatform implements Platform {
         initialPcesFiles = blocks.initialPcesFiles();
         notificationEngine = blocks.notificationEngine();
 
-        currentAddressBook = RosterUtils.buildAddressBook(blocks.rosterHistory().getCurrentRoster());
+        currentAddressBook = initialState.getAddressBook();
+        currentRoster = blocks.rosterHistory().getCurrentRoster();
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
 
@@ -495,6 +501,15 @@ public class SwirldsPlatform implements Platform {
     @NonNull
     public Signature sign(@NonNull final byte[] data) {
         return new PlatformSigner(keysAndCerts).sign(data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public Roster getRoster() {
+        return currentRoster;
     }
 
     /**
