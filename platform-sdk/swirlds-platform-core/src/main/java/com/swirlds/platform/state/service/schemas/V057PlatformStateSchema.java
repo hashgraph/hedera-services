@@ -20,8 +20,8 @@ import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.NodeMetadata;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.roster.RosterUtils;

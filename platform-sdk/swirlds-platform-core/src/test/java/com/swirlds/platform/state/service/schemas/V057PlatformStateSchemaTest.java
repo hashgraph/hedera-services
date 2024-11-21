@@ -23,10 +23,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.Network;
-import com.hedera.hapi.node.state.NodeMetadata;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
