@@ -65,4 +65,11 @@ message GossipEvent {
    * This total size of this field MUST NOT exceed `maxTransactionBytesPerEvent`, initially `245760` bytes.
    */
   repeated EventTransaction event_transaction = 3;
+
+  /**
+    * The transaction.
+    * <p>
+    * This field MAY contain zero transactions.<br/>
+   */
+  repeated bytes transaction = 4;
 }
