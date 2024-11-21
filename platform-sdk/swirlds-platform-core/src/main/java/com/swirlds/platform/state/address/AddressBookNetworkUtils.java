@@ -80,7 +80,8 @@ public final class AddressBookNetworkUtils {
     public static boolean isLocal(@NonNull final RosterEntry rosterEntry) {
         Objects.requireNonNull(rosterEntry, "The rosterEntry must not be null.");
         try {
-            final String internalHostname = RosterUtils.fetchHostname(rosterEntry, 1);
+            final int index = rosterEntry.gossipEndpoint().size() > 1 ? 1 : 0;
+            final String internalHostname = RosterUtils.fetchHostname(rosterEntry, index);
             assert internalHostname != null;
             return Network.isOwn(resolveName(internalHostname));
         } catch (final UnknownHostException e) {
