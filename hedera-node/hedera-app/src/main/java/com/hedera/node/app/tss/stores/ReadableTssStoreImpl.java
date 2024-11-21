@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.tss.stores;
 
-import static com.hedera.node.app.tss.handlers.TssVoteHandler.hasMetThreshold;
+import static com.hedera.node.app.tss.handlers.TssUtils.hasMetThreshold;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
 import static java.util.Objects.requireNonNull;
@@ -127,27 +127,12 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
     }
 
     @Override
-    public long messageStateSize() {
-        return readableTssMessageState.size();
-    }
-
-    @Override
-    public List<TssMessageTransactionBody> getTssMessageBodies(final Bytes rosterHash) {
+    public List<TssMessageTransactionBody> getMessagesForTarget(@NonNull final Bytes rosterHash) {
+        requireNonNull(rosterHash);
         final List<TssMessageTransactionBody> tssMessages = new ArrayList<>();
         readableTssMessageState.keys().forEachRemaining(key -> {
             if (key.rosterHash().equals(rosterHash)) {
                 tssMessages.add(readableTssMessageState.get(key));
-            }
-        });
-        return tssMessages;
-    }
-
-    @Override
-    public List<TssVoteTransactionBody> getTssVoteBodies(final Bytes rosterHash) {
-        final List<TssVoteTransactionBody> tssMessages = new ArrayList<>();
-        readableTssVoteState.keys().forEachRemaining(key -> {
-            if (key.rosterHash().equals(rosterHash)) {
-                tssMessages.add(readableTssVoteState.get(key));
             }
         });
         return tssMessages;

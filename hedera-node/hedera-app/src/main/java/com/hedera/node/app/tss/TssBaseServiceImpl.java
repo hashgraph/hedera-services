@@ -19,7 +19,7 @@ package com.hedera.node.app.tss;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
-import static com.hedera.node.app.tss.handlers.TssVoteHandler.hasMetThreshold;
+import static com.hedera.node.app.tss.handlers.TssUtils.hasMetThreshold;
 import static com.swirlds.platform.roster.RosterRetriever.getCandidateRosterHash;
 import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;

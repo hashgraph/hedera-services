@@ -15,6 +15,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.freeze.codec;
     exports com.hedera.hapi.node.freeze.schema;
     exports com.hedera.hapi.node.network;
+    exports com.hedera.node.internal.network;
     exports com.hedera.hapi.node.network.codec;
     exports com.hedera.hapi.node.network.schema;
     exports com.hedera.hapi.node.scheduled;
@@ -40,7 +41,6 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.token;
     exports com.hedera.hapi.node.state.common;
     exports com.hedera.hapi.node.state.contract;
-    exports com.hedera.hapi.node.state;
     exports com.hedera.hapi.node.state.file;
     exports com.hedera.hapi.node.state.recordcache;
     exports com.hedera.hapi.node.state.recordcache.codec;

@@ -16,7 +16,7 @@
 
 package com.swirlds.state.lifecycle;
 
-import com.hedera.hapi.node.state.Network;
+import com.hedera.node.internal.network.Network;
 import java.util.Optional;
 
 /**
