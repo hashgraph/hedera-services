@@ -115,7 +115,7 @@ public class FakeTssLibrary implements TssLibrary {
     @Override
     public boolean verifyTssMessage(
             @NonNull final TssParticipantDirectory participantDirectory, @NonNull final Bytes tssMessage) {
-        return tssMessage.toString().startsWith(VALID_MESSAGE_PREFIX);
+        return new String(tssMessage.toByteArray()).startsWith(VALID_MESSAGE_PREFIX);
     }
 
     /**

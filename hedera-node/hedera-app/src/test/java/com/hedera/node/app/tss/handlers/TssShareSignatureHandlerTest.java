@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss.handlers;
 
+import static java.math.BigInteger.ZERO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.cryptography.bls.SignatureSchema;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
@@ -76,14 +78,15 @@ public class TssShareSignatureHandlerTest {
     private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
     public static final BlsPrivateKey PRIVATE_KEY =
             new BlsPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    public static final BlsPublicKey PUBLIC_KEY = new BlsPublicKey(new FakeGroupElement(ZERO), SIGNATURE_SCHEMA);
     private static final BlsSignature SIGNATURE =
             new BlsSignature(new FakeGroupElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
     public static final TssKeysAccessor.TssKeys TSS_KEYS = new TssKeysAccessor.TssKeys(
             List.of(new TssPrivateShare(0, PRIVATE_KEY)),
-            List.of(new TssPublicShare(0, PRIVATE_KEY.createPublicKey())),
+            List.of(new TssPublicShare(0, PUBLIC_KEY)),
             Bytes.EMPTY,
             TssParticipantDirectory.createBuilder()
-                    .withParticipant(0, 1, PRIVATE_KEY.createPublicKey())
+                    .withParticipant(0, 1, PUBLIC_KEY)
                     .build(),
             1);
 

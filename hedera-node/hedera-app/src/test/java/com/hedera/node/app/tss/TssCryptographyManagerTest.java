@@ -37,13 +37,11 @@ import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
-import java.math.BigInteger;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
@@ -134,7 +132,6 @@ public class TssCryptographyManagerTest {
         when(tssLibrary.computePublicShares(any(), any())).thenReturn(mockPublicShares);
         when(tssLibrary.aggregatePublicShares(any())).thenReturn(ledgerId);
         when(gossip.sign(any())).thenReturn(mockSignature);
-        when(ledgerId.element()).thenReturn(new FakeGroupElement(BigInteger.valueOf(5L)));
 
         final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, handleContext);
 

@@ -17,7 +17,7 @@
 package com.hedera.node.app.tss.handlers;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PRIVATE_KEY;
+import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -101,7 +101,7 @@ class TssMessageHandlerTest {
     private TssMessageHandler subject;
     private Vote vote;
     private TssParticipantDirectory tssParticipantDirectory = TssParticipantDirectory.createBuilder()
-            .withParticipant(0, 1, PRIVATE_KEY.createPublicKey())
+            .withParticipant(0, 1, PUBLIC_KEY)
             .build();
     private final TssKeysAccessor.TssKeys TSS_KEYS =
             new TssKeysAccessor.TssKeys(List.of(), List.of(), Bytes.EMPTY, tssParticipantDirectory, 1);

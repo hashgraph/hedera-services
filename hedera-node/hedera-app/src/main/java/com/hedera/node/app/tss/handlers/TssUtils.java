@@ -60,7 +60,7 @@ public class TssUtils {
                     computedShares.get(rosterEntry.nodeId()).intValue();
             // FUTURE: Use the actual public key from the node
             final var pairingPublicKey =
-                    new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(1L)), SIGNATURE_SCHEMA);
+                    new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(10L)), SIGNATURE_SCHEMA);
             builder.withParticipant((int) rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
         }
         // FUTURE: Use the actual signature schema

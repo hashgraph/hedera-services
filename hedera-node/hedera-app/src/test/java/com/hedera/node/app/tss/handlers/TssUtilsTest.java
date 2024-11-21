@@ -26,10 +26,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +48,7 @@ public class TssUtilsTest {
 
         assertNotNull(directory);
         assertEquals((15 + 2) / 2, directory.getThreshold());
-        assertEquals(10, directory.getTotalShares());
+        assertEquals(15, directory.getTotalShares());
         assertEquals(15, directory.getShareIds().size());
     }
 
@@ -78,17 +80,22 @@ public class TssUtilsTest {
 
     @Test
     public void testGetTssMessages() {
+        final var library = mock(TssLibrary.class);
+        final var tssMessage = mock(TssMessage.class);
         RosterEntry rosterEntry1 = new RosterEntry(1L, 100L, null, null);
         RosterEntry rosterEntry2 = new RosterEntry(2L, 50L, null, null);
         long maxSharesPerNode = 10L;
         int selfNodeId = 1;
 
+        given(library.getTssMessageFromBytes(any(), any())).willReturn(tssMessage);
+        given(tssMessage.toBytes())
+                .willReturn(Bytes.wrap("tssMessage".getBytes()).toByteArray());
         TssParticipantDirectory directory = TssUtils.computeParticipantDirectory(
                 new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode, selfNodeId);
 
         final var body = getTssBody();
         final var validTssOps = List.of(body.tssMessageOrThrow());
-        final var tssMessages = TssUtils.getTssMessages(validTssOps, directory, mock(TssLibrary.class));
+        final var tssMessages = TssUtils.getTssMessages(validTssOps, directory, library);
 
         assertEquals(1, tssMessages.size());
         assertThat(body.tssMessageOrThrow().tssMessage().toByteArray())
