@@ -25,6 +25,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -99,12 +100,7 @@ public class VirtualMapReconnectTestBase {
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
 
-    protected static Configuration CONFIGURATION = new TestConfigBuilder()
-            .withValue(ReconnectConfig_.ACTIVE, "true")
-            // This is lower than the default, helps test that is supposed to fail to finish faster.
-            .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
-            .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
-            .getOrCreateConfig();
+    protected static Configuration CONFIGURATION;
 
     @TempDir
     private static Path tempDirectory;
@@ -153,6 +149,14 @@ public class VirtualMapReconnectTestBase {
 
     @BeforeAll
     public static void startup() throws ConstructableRegistryException, FileNotFoundException {
+        CONFIGURATION = new TestConfigBuilder()
+                .withValue(ReconnectConfig_.ACTIVE, "true")
+                // This is lower than the default, helps test that is supposed to fail to finish faster.
+                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
+                .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
+                .withValue(FileSystemManagerConfig_.TMP_DIR, tempDirectory.toString())
+                .getOrCreateConfig();
+
         loadLog4jContext();
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
 

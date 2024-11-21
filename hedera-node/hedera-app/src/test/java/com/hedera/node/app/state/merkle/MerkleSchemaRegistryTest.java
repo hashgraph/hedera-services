@@ -27,13 +27,10 @@ import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.config.FileSystemManagerConfig;
-import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metrics;
@@ -223,12 +220,6 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-
-            final Configuration configuration = new TestConfigBuilder()
-                    .withValue(FileSystemManagerConfig_.TMP_DIR, tempDir.toString())
-                    .getOrCreateConfig();
-            ConfigurationHolder.getInstance().setConfiguration(configuration);
-
             // Let the first version[0] be null, and all others have a number
             versions = new SemanticVersion[10];
             for (int i = 1; i < versions.length; i++) {
