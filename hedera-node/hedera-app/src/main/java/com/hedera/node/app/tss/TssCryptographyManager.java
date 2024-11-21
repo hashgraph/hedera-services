@@ -101,7 +101,7 @@ public class TssCryptographyManager {
             @NonNull final TssParticipantDirectory directory,
             @NonNull final HandleContext context) {
         final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
-        final var tssMessageBodies = tssStore.getTssMessageBodies(targetRosterHash);
+        final var tssMessageBodies = tssStore.getMessagesForTarget(targetRosterHash);
         final var voteKey = new TssVoteMapKey(
                 targetRosterHash, context.networkInfo().selfNodeInfo().nodeId());
         if (tssStore.getVote(voteKey) == null) {
@@ -151,6 +151,9 @@ public class TssCryptographyManager {
      * @return the TSS vote bit set
      */
     private BitSet asBitSet(@NonNull final List<TssMessageTransactionBody> thresholdMessages) {
+        // TODO - fix this, nodes vote for TSS messages based on their position
+        //  in consensus order of messages received for a roster hash, NOT by
+        //  the message's share index
         final var tssVoteBitSet = new BitSet();
         for (TssMessageTransactionBody op : thresholdMessages) {
             tssVoteBitSet.set((int) op.shareIndex());

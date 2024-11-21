@@ -12,6 +12,7 @@ module com.swirlds.state.impl {
     requires transitive com.swirlds.virtualmap;
     requires transitive com.hedera.pbj.runtime;
     requires com.swirlds.fcqueue;
+    requires com.swirlds.logging;
     requires org.apache.logging.log4j;
     requires static transitive com.github.spotbugs.annotations;
 }

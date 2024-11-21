@@ -40,8 +40,10 @@ public class FakeTssLibrary implements TssLibrary {
     private static final String INVALID_MESSAGE_PREFIX = "INVALID";
 
     private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
-    private static final BlsPrivateKey PRIVATE_KEY =
+    public static final BlsPrivateKey PRIVATE_KEY =
             new BlsPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    public static final BlsPublicKey FAKE_LEDGER_ID =
+            new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
     public static final BlsSignature FAKE_SIGNATURE =
             new BlsSignature(new FakeGroupElement(BigInteger.valueOf(1L)), SIGNATURE_SCHEMA);
 

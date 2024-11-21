@@ -200,6 +200,18 @@ public final class RosterUtils {
     }
 
     /**
+     * Count the number of RosterEntries with non-zero weight.
+     * @param roster a roster
+     * @return the number of RosterEntries with non-zero weight
+     */
+    public static int getNumberWithWeight(@NonNull final Roster roster) {
+        return (int) roster.rosterEntries().stream()
+                .map(RosterEntry::weight)
+                .filter(w -> w != 0)
+                .count();
+    }
+
+    /**
      * Build an instance of RosterHistory from the current/previous AddressBook found in the PlatformState.
      * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param readablePlatformState
