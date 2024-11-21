@@ -71,11 +71,6 @@ public class SwirldStateManager implements FreezePeriodChecker {
     private final SoftwareVersion softwareVersion;
 
     /**
-     * The platform context.
-     */
-    private final PlatformContext platformContext;
-
-    /**
      * Constructor.
      *
      * @param platformContext       the platform context
@@ -96,7 +91,6 @@ public class SwirldStateManager implements FreezePeriodChecker {
         Objects.requireNonNull(selfId);
         this.stats = new SwirldStateMetrics(platformContext.getMetrics());
         Objects.requireNonNull(statusActionSubmitter);
-        this.platformContext = platformContext;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.transactionHandler = new TransactionHandler(selfId, stats);
         this.uptimeTracker = new UptimeTracker(
