@@ -207,7 +207,7 @@ public class RandomSignedStateGenerator {
         });
 
         FAKE_MERKLE_STATE_LIFECYCLES.initRosterState((MerkleStateRoot) stateInstance);
-        // TODO: future work: populate roster history and stop setting AddressBook on platformState above.
+        // Future Work: populate roster history and stop setting AddressBook on platformState above.
 
         if (signatureVerifier == null) {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;

@@ -89,20 +89,15 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
                     MerkleStateRoot.class,
                     () -> new MerkleStateRoot(
                             FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
-            registry
-                    .registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
-            registry
-                    .registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
-            registry
-                    .registerConstructable(new ClassConstructorPair(
-                            VirtualMap.class, () -> new VirtualMap(FakeMerkleStateLifecycles.CONFIGURATION)));
-            registry
-                    .registerConstructable(new ClassConstructorPair(
-                            MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
-            registry
-                    .registerConstructable(new ClassConstructorPair(
-                            VirtualNodeCache.class,
-                            () -> new VirtualNodeCache(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
+            registry.registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
+            registry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
+            registry.registerConstructable(new ClassConstructorPair(
+                    VirtualMap.class, () -> new VirtualMap(FakeMerkleStateLifecycles.CONFIGURATION)));
+            registry.registerConstructable(new ClassConstructorPair(
+                    MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
+            registry.registerConstructable(new ClassConstructorPair(
+                    VirtualNodeCache.class,
+                    () -> new VirtualNodeCache(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
             registerConstructablesForSchema(registry, new V0540PlatformStateSchema(), PlatformStateService.NAME);
             registerConstructablesForSchema(registry, new V0540RosterSchema(), RosterStateId.NAME);
         } catch (ConstructableRegistryException e) {
@@ -110,11 +105,11 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
         }
     }
 
-    private static void registerConstructablesForSchema(@NonNull final ConstructableRegistry registry, @NonNull final Schema schema, @NonNull final String name) {
+    private static void registerConstructablesForSchema(
+            @NonNull final ConstructableRegistry registry, @NonNull final Schema schema, @NonNull final String name) {
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
-                .forEach(def ->
-                        registerWithSystem(new StateMetadata<>(name, schema, def), registry));
+                .forEach(def -> registerWithSystem(new StateMetadata<>(name, schema, def), registry));
     }
 
     public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
