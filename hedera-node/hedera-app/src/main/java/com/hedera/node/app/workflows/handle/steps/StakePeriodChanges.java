@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
@@ -38,7 +39,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -175,14 +175,15 @@ public class StakePeriodChanges {
         if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
             return isLaterUtcDay(currentConsensusTime, previousConsensusTime);
         } else {
-            return getPeriod(currentConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
-                    > getPeriod(previousConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
+            final var periodMs = stakingPeriod * MINUTES_TO_MILLISECONDS;
+            return getPeriod(currentConsensusTime, periodMs) > getPeriod(previousConsensusTime, periodMs);
         }
     }
 
     private void startKeyingCandidateRoster(
             @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
-        final var nodeStore = handleContext.storeFactory().readableStore(ReadableNodeStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
         final var roster = nodeStore.snapshotOfFutureRoster();
         if (!Objects.equals(roster, rosterStore.getCandidateRoster())
                 && !Objects.equals(roster, rosterStore.getActiveRoster())) {
@@ -193,7 +194,7 @@ public class StakePeriodChanges {
 
     private WritableRosterStore newWritableRosterStore(
             @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
-        final var writableFactory = new WritableStoreFactory(stack, RosterStateId.NAME, config, storeMetricsService);
+        final var writableFactory = new WritableStoreFactory(stack, RosterService.NAME, config, storeMetricsService);
         return writableFactory.getStore(WritableRosterStore.class);
     }
 
