@@ -414,11 +414,11 @@ jobs:
         id: gradle-build
         run: |
           pwd
-          ./hedera-services/hedera-services/gradlew assemble :test-clients:shadowJar --scan
+          ../gradlew assemble :test-clients:shadowJar --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
-        run: ./hedera-services/hedera-services/gradlew assemble -p ./hedera-services/hedera-services/platform-sdk/regression --scan
+        run: ../gradlew assemble -p ./regression --scan
 
       - name: Compute Actual Branch Name
         id: branch
