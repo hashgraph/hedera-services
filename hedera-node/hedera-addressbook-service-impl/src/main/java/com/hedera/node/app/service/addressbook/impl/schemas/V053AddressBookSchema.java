@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.swirlds.platform.roster.RosterUtils.formatNodeName;
 import static java.util.Objects.requireNonNull;
 
@@ -64,6 +63,7 @@ public class V053AddressBookSchema extends Schema {
             SemanticVersion.newBuilder().major(0).minor(53).patch(0).build();
     public static final String ACCOUNTS_KEY = "ACCOUNTS";
     public static final String FILES_KEY = "FILES";
+    public static final String NODES_KEY = "NODES";
 
     public V053AddressBookSchema() {
         super(VERSION);
