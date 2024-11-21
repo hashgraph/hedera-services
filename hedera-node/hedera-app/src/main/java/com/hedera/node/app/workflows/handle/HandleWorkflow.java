@@ -496,7 +496,7 @@ public class HandleWorkflow {
                     : DueDiligenceFailure.NO;
             recordCache.addRecordSource(
                     userTxn.creatorInfo().nodeId(),
-                    userTxn.txnInfo().transactionID(),
+                    requireNonNull(userTxn.txnInfo().transactionID()),
                     dueDiligenceFailure,
                     handleOutput.preferringBlockRecordSource());
             return handleOutput;
@@ -547,7 +547,7 @@ public class HandleWorkflow {
 
         recordCache.addRecordSource(
                 userTxn.creatorInfo().nodeId(),
-                userTxn.txnInfo().transactionID(),
+                requireNonNull(userTxn.txnInfo().transactionID()),
                 DueDiligenceFailure.NO,
                 requireNonNull(cacheableRecordSource));
         return new HandleOutput(blockRecordSource, recordSource);
@@ -636,9 +636,18 @@ public class HandleWorkflow {
 
     /**
      * Process all time-based events that are due since the last processing time.
+     * <p>
+     * Note: While long-term schedule transactions (and any future time-based events) will work directly on the state,
+     * we still want to pass the userTxn here and use its stack to commit the state purge. Especially when the feature
+     * flag is false.
      *
+     * @param state           the writable {@link State} that transactions will work on
+     * @param event           the {@link ConsensusEvent} that current user transaction belongs to
+     * @param creator         the {@link NodeInfo} of the creator of the user transaction
      * @param lastProcessTime an upper bound on the last time that time-based events were processed
-     * @param consensusNow the current consensus time
+     * @param consensusNow    the current consensus time
+     * @param userTxn         the user transaction
+     *
      * @return true if the interval was processed
      */
     private boolean processInterval(
@@ -652,12 +661,12 @@ public class HandleWorkflow {
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
         } else if (lastProcessTime.getEpochSecond() < consensusNow.getEpochSecond()) {
+            // There is at least one unprocessed second since the last processing time
             final var scheduleConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
+            final var startSecond = lastProcessTime.getEpochSecond();
+            final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
             // if long term schedules are disabled, the schedule purge needs to be commited with the userTxn stack
             if (!scheduleConfig.longTermEnabled()) {
-                // There is at least one unprocessed second since the last processing time
-                final var startSecond = lastProcessTime.getEpochSecond();
-                final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
                 final var scheduleStore = new WritableStoreFactory(
                                 userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
                         .getStore(WritableScheduleStore.class);
@@ -667,8 +676,7 @@ public class HandleWorkflow {
             }
 
             final var readableStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
-            final var schedulesToExecute = readableStore.getByExpirationBetween(
-                    lastProcessTime.getEpochSecond(), consensusNow.getEpochSecond());
+            final var schedulesToExecute = readableStore.getByExpirationBetween(startSecond, endSecond);
 
             // future: consensus nanos offset will be calculated more precisely in following PR,
             //  for now just add 1 nano on each iteration.
@@ -707,39 +715,40 @@ public class HandleWorkflow {
 
                 // purge all schedules
                 if (i == schedulesToExecute.size() - 1) {
-                    scheduleStore.purgeExpiredSchedulesBetween(
-                            lastProcessTime.getEpochSecond(), consensusNow.getEpochSecond());
+                    scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
                     scheduleUserTnx.stack().commitSystemStateChanges();
                 }
 
                 // build the output and save the record/stream
-                final var handleOutput = scheduleUserTnx
-                        .stack()
-                        .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
-                recordCache.addRecordSource(
-                        scheduleUserTnx.creatorInfo().nodeId(),
-                        scheduleUserTnx.txnInfo().transactionID(),
-                        DueDiligenceFailure.NO,
-                        handleOutput.preferringBlockRecordSource());
-
-                // write records + state changes
-                if (streamMode != BLOCKS) {
-                    final var records =
-                            ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
-                    blockRecordManager.endUserTransaction(records.stream(), state);
-                }
-                if (streamMode != RECORDS) {
-                    handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
-                }
+                generateStreams(state, scheduleUserTnx);
                 consensusNanosOffset++;
             }
-
             return true;
         }
         return false;
     }
 
-    private StoreFactoryImpl getScheduleServiceStoreFactory(UserTxn userTxn) {
+    private void generateStreams(final State state, final UserTxn scheduleUserTnx) {
+        final var handleOutput = scheduleUserTnx
+                .stack()
+                .buildHandleOutput(scheduleUserTnx.consensusNow(), exchangeRateManager.exchangeRates());
+        recordCache.addRecordSource(
+                scheduleUserTnx.creatorInfo().nodeId(),
+                requireNonNull(scheduleUserTnx.txnInfo().transactionID()),
+                DueDiligenceFailure.NO,
+                handleOutput.preferringBlockRecordSource());
+
+        // write records + state changes
+        if (streamMode != BLOCKS) {
+            final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
+            blockRecordManager.endUserTransaction(records.stream(), state);
+        }
+        if (streamMode != RECORDS) {
+            handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
+        }
+    }
+
+    private StoreFactoryImpl getScheduleServiceStoreFactory(final UserTxn userTxn) {
         // Build store factory for the schedule service iterator
         final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
         final var writableStoreFactory = new WritableStoreFactory(

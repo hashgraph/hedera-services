@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -776,27 +775,26 @@ public class TokenInfoHTSSuite {
 
     @HapiTest
     final Stream<DynamicTest> getInfoForTokenByAccountAddressFails() {
-        return defaultHapiSpec("getInfoForTokenByAccountAddressFails")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(SUPPLY_KEY),
-                        uploadInitCode(TOKEN_INFO_CONTRACT),
-                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
-                        tokenCreate(PRIMARY_TOKEN_NAME)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .entityMemo(MEMO)
-                                .name(PRIMARY_TOKEN_NAME)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(1000)
-                                .initialSupply(500)
-                                .adminKey(ADMIN_KEY)
-                                .supplyKey(SUPPLY_KEY)
-                                .via(CREATE_TXN))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(SUPPLY_KEY),
+                uploadInitCode(TOKEN_INFO_CONTRACT),
+                contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                tokenCreate(PRIMARY_TOKEN_NAME)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .entityMemo(MEMO)
+                        .name(PRIMARY_TOKEN_NAME)
+                        .treasury(TOKEN_TREASURY)
+                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .adminKey(ADMIN_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .via(CREATE_TXN),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
@@ -805,38 +803,34 @@ public class TokenInfoHTSSuite {
                                                 asAddress(spec.registry().getAccountID(TOKEN_TREASURY))))
                                 .via(TOKEN_INFO_TXN)
                                 .gas(1_000_000L)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(
-                        getTxnRecord(TOKEN_INFO_TXN).andAllChildRecords().logged(),
-                        childRecordsCheck(
-                                TOKEN_INFO_TXN,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_ID)));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))),
+                getTxnRecord(TOKEN_INFO_TXN).andAllChildRecords().logged(),
+                childRecordsCheck(
+                        TOKEN_INFO_TXN, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_TOKEN_ID)));
     }
 
     @HapiTest
     final Stream<DynamicTest> getInfoForNFTByFungibleTokenAddressFails() {
-        return defaultHapiSpec("getInfoForNFTByFungibleTokenAddressFails")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(SUPPLY_KEY),
-                        uploadInitCode(TOKEN_INFO_CONTRACT),
-                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
-                        tokenCreate(PRIMARY_TOKEN_NAME)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .entityMemo(MEMO)
-                                .name(PRIMARY_TOKEN_NAME)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(1000)
-                                .initialSupply(500)
-                                .adminKey(ADMIN_KEY)
-                                .supplyKey(SUPPLY_KEY)
-                                .via(CREATE_TXN))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(SUPPLY_KEY),
+                uploadInitCode(TOKEN_INFO_CONTRACT),
+                contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                tokenCreate(PRIMARY_TOKEN_NAME)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .entityMemo(MEMO)
+                        .name(PRIMARY_TOKEN_NAME)
+                        .treasury(TOKEN_TREASURY)
+                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .adminKey(ADMIN_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .via(CREATE_TXN),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
@@ -846,15 +840,12 @@ public class TokenInfoHTSSuite {
                                         1L)
                                 .via(NON_FUNGIBLE_TOKEN_INFO_TXN)
                                 .gas(1_000_000L)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(
-                        getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN)
-                                .andAllChildRecords()
-                                .logged(),
-                        childRecordsCheck(
-                                NON_FUNGIBLE_TOKEN_INFO_TXN,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_NFT_SERIAL_NUMBER)));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))),
+                getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN).andAllChildRecords().logged(),
+                childRecordsCheck(
+                        NON_FUNGIBLE_TOKEN_INFO_TXN,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(INVALID_TOKEN_NFT_SERIAL_NUMBER)));
     }
 
     @HapiTest
@@ -862,30 +853,29 @@ public class TokenInfoHTSSuite {
     // NonFungibleToken to be passed to getInfoForFungibleToken and resulting SUCCESS status.
     final Stream<DynamicTest> getInfoForFungibleTokenByNFTTokenAddressWorks() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
-        return defaultHapiSpec("getInfoForFungibleTokenByNFTTokenAddressWorks")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(SUPPLY_KEY),
-                        uploadInitCode(TOKEN_INFO_CONTRACT),
-                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
-                        tokenCreate(NON_FUNGIBLE_TOKEN_NAME)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .entityMemo(MEMO)
-                                .name(NON_FUNGIBLE_TOKEN_NAME)
-                                .symbol(NON_FUNGIBLE_SYMBOL)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(10)
-                                .initialSupply(0)
-                                .adminKey(ADMIN_KEY)
-                                .supplyKey(SUPPLY_KEY)
-                                .via(CREATE_TXN),
-                        mintToken(NON_FUNGIBLE_TOKEN_NAME, List.of(meta)))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(SUPPLY_KEY),
+                uploadInitCode(TOKEN_INFO_CONTRACT),
+                contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                tokenCreate(NON_FUNGIBLE_TOKEN_NAME)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .entityMemo(MEMO)
+                        .name(NON_FUNGIBLE_TOKEN_NAME)
+                        .symbol(NON_FUNGIBLE_SYMBOL)
+                        .treasury(TOKEN_TREASURY)
+                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .maxSupply(10)
+                        .initialSupply(0)
+                        .adminKey(ADMIN_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .via(CREATE_TXN),
+                mintToken(NON_FUNGIBLE_TOKEN_NAME, List.of(meta)),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
@@ -893,13 +883,9 @@ public class TokenInfoHTSSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN_NAME))))
                                 .via(FUNGIBLE_TOKEN_INFO_TXN)
-                                .gas(1_000_000L))))
-                .then(
-                        getTxnRecord(FUNGIBLE_TOKEN_INFO_TXN)
-                                .andAllChildRecords()
-                                .logged(),
-                        childRecordsCheck(
-                                FUNGIBLE_TOKEN_INFO_TXN, SUCCESS, recordWith().status(SUCCESS)));
+                                .gas(1_000_000L))),
+                getTxnRecord(FUNGIBLE_TOKEN_INFO_TXN).andAllChildRecords().logged(),
+                childRecordsCheck(FUNGIBLE_TOKEN_INFO_TXN, SUCCESS, recordWith().status(SUCCESS)));
     }
 
     @HapiTest
@@ -1042,30 +1028,29 @@ public class TokenInfoHTSSuite {
         final int maxSupply = 10;
         final var accountAddressForToken = "accountAddressForToken";
         final var tokenWithNoFees = "tokenWithNoFees";
-        return defaultHapiSpec("negativeGetTokenCustomFeesCases")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(NFT_OWNER),
-                        cryptoCreate(HTS_COLLECTOR),
-                        newKeyNamed(SUPPLY_KEY),
-                        uploadInitCode(TOKEN_INFO_CONTRACT),
-                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
-                        tokenCreate(FEE_DENOM).treasury(HTS_COLLECTOR),
-                        tokenCreate(NON_FUNGIBLE_TOKEN_NAME)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .entityMemo(MEMO)
-                                .name(NON_FUNGIBLE_TOKEN_NAME)
-                                .symbol(NON_FUNGIBLE_SYMBOL)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(maxSupply)
-                                .initialSupply(0)
-                                .supplyKey(SUPPLY_KEY)
-                                .withCustom(royaltyFeeWithFallback(
-                                        1, 2, fixedHtsFeeInheritingRoyaltyCollector(100, FEE_DENOM), HTS_COLLECTOR)),
-                        tokenAssociate(NFT_OWNER, List.of(NON_FUNGIBLE_TOKEN_NAME)),
-                        tokenCreate(TOKEN))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(NFT_OWNER),
+                cryptoCreate(HTS_COLLECTOR),
+                newKeyNamed(SUPPLY_KEY),
+                uploadInitCode(TOKEN_INFO_CONTRACT),
+                contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                tokenCreate(FEE_DENOM).treasury(HTS_COLLECTOR),
+                tokenCreate(NON_FUNGIBLE_TOKEN_NAME)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .entityMemo(MEMO)
+                        .name(NON_FUNGIBLE_TOKEN_NAME)
+                        .symbol(NON_FUNGIBLE_SYMBOL)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(maxSupply)
+                        .initialSupply(0)
+                        .supplyKey(SUPPLY_KEY)
+                        .withCustom(royaltyFeeWithFallback(
+                                1, 2, fixedHtsFeeInheritingRoyaltyCollector(100, FEE_DENOM), HTS_COLLECTOR)),
+                tokenAssociate(NFT_OWNER, List.of(NON_FUNGIBLE_TOKEN_NAME)),
+                tokenCreate(TOKEN),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         TOKEN_INFO_CONTRACT,
@@ -1080,8 +1065,8 @@ public class TokenInfoHTSSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(TOKEN))))
                                 .hasKnownStatus(SUCCESS)
-                                .via(tokenWithNoFees))))
-                .then(withOpContext((spec, opLog) -> allRunFor(
+                                .via(tokenWithNoFees))),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         childRecordsCheck(
                                 accountAddressForToken,
@@ -1095,17 +1080,18 @@ public class TokenInfoHTSSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
-                                                        .withCustomFees(List.of(CustomFee.newBuilder()
-                                                                .setFixedFee(
-                                                                        FixedFee.newBuilder()
-                                                                                .build())
-                                                                .setFractionalFee(
-                                                                        FractionalFee.newBuilder()
-                                                                                .build())
-                                                                .setRoyaltyFee(
-                                                                        RoyaltyFee.newBuilder()
-                                                                                .build())
-                                                                .build()))
+                                                        .withCustomFees(List.of(
+                                                                CustomFee.newBuilder()
+                                                                        .setFixedFee(
+                                                                                FixedFee.newBuilder()
+                                                                                        .build())
+                                                                        .setFractionalFee(
+                                                                                FractionalFee.newBuilder()
+                                                                                        .build())
+                                                                        .setRoyaltyFee(
+                                                                                RoyaltyFee.newBuilder()
+                                                                                        .build())
+                                                                        .build()))
                                                         .withStatus(SUCCESS)))))));
     }
 
@@ -1113,56 +1099,51 @@ public class TokenInfoHTSSuite {
     final Stream<DynamicTest> happyPathUpdateTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
-        return defaultHapiSpec("happyPathUpdateTokenInfoAndGetLatestInfo")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(UPDATED_TREASURY)
-                                .keyShape(ED25519_ON)
-                                .balance(0L)
-                                .maxAutomaticTokenAssociations(3),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                        cryptoCreate(HTS_COLLECTOR),
-                        cryptoCreate(ACCOUNT),
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        newKeyNamed(FEE_SCHEDULE_KEY),
-                        newKeyNamed(PAUSE_KEY),
-                        uploadInitCode(TOKEN_INFO_CONTRACT),
-                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
-                        tokenCreate(FUNGIBLE_TOKEN_NAME)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .entityMemo(MEMO)
-                                .name(FUNGIBLE_TOKEN_NAME)
-                                .symbol(FUNGIBLE_SYMBOL)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(MAX_SUPPLY)
-                                .initialSupply(500)
-                                .decimals(decimals)
-                                .adminKey(ADMIN_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .supplyKey(SUPPLY_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .feeScheduleKey(FEE_SCHEDULE_KEY)
-                                .pauseKey(PAUSE_KEY)
-                                .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
-                                // Include a fractional fee with no minimum to collect
-                                .withCustom(fractionalFee(
-                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
-                                .withCustom(fractionalFee(
-                                        NUMERATOR,
-                                        DENOMINATOR,
-                                        MINIMUM_TO_COLLECT,
-                                        OptionalLong.of(MAXIMUM_TO_COLLECT),
-                                        TOKEN_TREASURY))
-                                .via(CREATE_TXN),
-                        tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(UPDATED_TREASURY).keyShape(ED25519_ON).balance(0L).maxAutomaticTokenAssociations(3),
+                cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                cryptoCreate(HTS_COLLECTOR),
+                cryptoCreate(ACCOUNT),
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(FREEZE_KEY),
+                newKeyNamed(KYC_KEY),
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(WIPE_KEY),
+                newKeyNamed(FEE_SCHEDULE_KEY),
+                newKeyNamed(PAUSE_KEY),
+                uploadInitCode(TOKEN_INFO_CONTRACT),
+                contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                tokenCreate(FUNGIBLE_TOKEN_NAME)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .entityMemo(MEMO)
+                        .name(FUNGIBLE_TOKEN_NAME)
+                        .symbol(FUNGIBLE_SYMBOL)
+                        .treasury(TOKEN_TREASURY)
+                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .maxSupply(MAX_SUPPLY)
+                        .initialSupply(500)
+                        .decimals(decimals)
+                        .adminKey(ADMIN_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .kycKey(KYC_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .wipeKey(WIPE_KEY)
+                        .feeScheduleKey(FEE_SCHEDULE_KEY)
+                        .pauseKey(PAUSE_KEY)
+                        .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
+                        // Include a fractional fee with no minimum to collect
+                        .withCustom(fractionalFee(NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
+                        .withCustom(fractionalFee(
+                                NUMERATOR,
+                                DENOMINATOR,
+                                MINIMUM_TO_COLLECT,
+                                OptionalLong.of(MAXIMUM_TO_COLLECT),
+                                TOKEN_TREASURY))
+                        .via(CREATE_TXN),
+                tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_INFO_CONTRACT))),
                         tokenUpdate(FUNGIBLE_TOKEN_NAME)
@@ -1182,8 +1163,9 @@ public class TokenInfoHTSSuite {
                                 .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_TREASURY)
                                 .payingWith(ACCOUNT)
                                 .via(UPDATE_ANG_GET_TOKEN_INFO_TXN)
-                                .gas(1_000_000L))))
-                .then(exposeTargetLedgerIdTo(targetLedgerId::set), withOpContext((spec, opLog) -> {
+                                .gas(1_000_000L))),
+                exposeTargetLedgerIdTo(targetLedgerId::set),
+                withOpContext((spec, opLog) -> {
                     final var getTokenInfoQuery = getTokenInfo(FUNGIBLE_TOKEN_NAME);
                     allRunFor(spec, getTokenInfoQuery);
                     final var expirySecond = getTokenInfoQuery
@@ -1208,18 +1190,19 @@ public class TokenInfoHTSSuite {
                                                             .forFunction(FunctionType.HAPI_GET_TOKEN_INFO)
                                                             .withStatus(SUCCESS)
                                                             .withDecimals(decimals)
-                                                            .withTokenInfo(getTokenInfoStructForFungibleToken(
-                                                                    spec,
-                                                                    UPDATE_NAME,
-                                                                    UPDATE_SYMBOL,
-                                                                    UPDATE_MEMO,
-                                                                    spec.registry()
-                                                                            .getAccountID(UPDATED_TREASURY),
-                                                                    spec.registry()
-                                                                            .getKey(CONTRACT_KEY),
-                                                                    expirySecond,
-                                                                    targetLedgerId.get(),
-                                                                    TokenKycStatus.Revoked))))));
+                                                            .withTokenInfo(
+                                                                    getTokenInfoStructForFungibleToken(
+                                                                            spec,
+                                                                            UPDATE_NAME,
+                                                                            UPDATE_SYMBOL,
+                                                                            UPDATE_MEMO,
+                                                                            spec.registry()
+                                                                                    .getAccountID(UPDATED_TREASURY),
+                                                                            spec.registry()
+                                                                                    .getKey(CONTRACT_KEY),
+                                                                            expirySecond,
+                                                                            targetLedgerId.get(),
+                                                                            TokenKycStatus.Revoked))))));
                 }));
     }
 
@@ -1227,53 +1210,51 @@ public class TokenInfoHTSSuite {
     final Stream<DynamicTest> happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
-        return defaultHapiSpec("happyPathUpdateFungibleTokenInfoAndGetLatestInfo")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(UPDATED_TREASURY).balance(0L).maxAutomaticTokenAssociations(3),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                        cryptoCreate(HTS_COLLECTOR),
-                        cryptoCreate(ACCOUNT),
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        newKeyNamed(FEE_SCHEDULE_KEY),
-                        newKeyNamed(PAUSE_KEY),
-                        uploadInitCode(TOKEN_INFO_CONTRACT),
-                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
-                        tokenCreate(FUNGIBLE_TOKEN_NAME)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .entityMemo(MEMO)
-                                .name(FUNGIBLE_TOKEN_NAME)
-                                .symbol(FUNGIBLE_SYMBOL)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(MAX_SUPPLY)
-                                .initialSupply(500)
-                                .decimals(decimals)
-                                .adminKey(ADMIN_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .supplyKey(SUPPLY_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .feeScheduleKey(FEE_SCHEDULE_KEY)
-                                .pauseKey(PAUSE_KEY)
-                                .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
-                                // Include a fractional fee with no minimum to collect
-                                .withCustom(fractionalFee(
-                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
-                                .withCustom(fractionalFee(
-                                        NUMERATOR,
-                                        DENOMINATOR,
-                                        MINIMUM_TO_COLLECT,
-                                        OptionalLong.of(MAXIMUM_TO_COLLECT),
-                                        TOKEN_TREASURY))
-                                .via(CREATE_TXN),
-                        tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(UPDATED_TREASURY).balance(0L).maxAutomaticTokenAssociations(3),
+                cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                cryptoCreate(HTS_COLLECTOR),
+                cryptoCreate(ACCOUNT),
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(FREEZE_KEY),
+                newKeyNamed(KYC_KEY),
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(WIPE_KEY),
+                newKeyNamed(FEE_SCHEDULE_KEY),
+                newKeyNamed(PAUSE_KEY),
+                uploadInitCode(TOKEN_INFO_CONTRACT),
+                contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                tokenCreate(FUNGIBLE_TOKEN_NAME)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .entityMemo(MEMO)
+                        .name(FUNGIBLE_TOKEN_NAME)
+                        .symbol(FUNGIBLE_SYMBOL)
+                        .treasury(TOKEN_TREASURY)
+                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .maxSupply(MAX_SUPPLY)
+                        .initialSupply(500)
+                        .decimals(decimals)
+                        .adminKey(ADMIN_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .kycKey(KYC_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .wipeKey(WIPE_KEY)
+                        .feeScheduleKey(FEE_SCHEDULE_KEY)
+                        .pauseKey(PAUSE_KEY)
+                        .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
+                        // Include a fractional fee with no minimum to collect
+                        .withCustom(fractionalFee(NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
+                        .withCustom(fractionalFee(
+                                NUMERATOR,
+                                DENOMINATOR,
+                                MINIMUM_TO_COLLECT,
+                                OptionalLong.of(MAXIMUM_TO_COLLECT),
+                                TOKEN_TREASURY))
+                        .via(CREATE_TXN),
+                tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_INFO_CONTRACT))),
                         tokenUpdate(FUNGIBLE_TOKEN_NAME)
@@ -1293,8 +1274,9 @@ public class TokenInfoHTSSuite {
                                 .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_TREASURY)
                                 .payingWith(ACCOUNT)
                                 .via(UPDATE_ANG_GET_FUNGIBLE_TOKEN_INFO_TXN)
-                                .gas(1_000_000L))))
-                .then(exposeTargetLedgerIdTo(targetLedgerId::set), withOpContext((spec, opLog) -> {
+                                .gas(1_000_000L))),
+                exposeTargetLedgerIdTo(targetLedgerId::set),
+                withOpContext((spec, opLog) -> {
                     final var getTokenInfoQuery = getTokenInfo(FUNGIBLE_TOKEN_NAME);
                     allRunFor(spec, getTokenInfoQuery);
                     final var expirySecond = getTokenInfoQuery
@@ -1319,18 +1301,19 @@ public class TokenInfoHTSSuite {
                                                             .forFunction(FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO)
                                                             .withStatus(SUCCESS)
                                                             .withDecimals(decimals)
-                                                            .withTokenInfo(getTokenInfoStructForFungibleToken(
-                                                                    spec,
-                                                                    UPDATE_NAME,
-                                                                    UPDATE_SYMBOL,
-                                                                    UPDATE_MEMO,
-                                                                    spec.registry()
-                                                                            .getAccountID(UPDATED_TREASURY),
-                                                                    spec.registry()
-                                                                            .getKey(CONTRACT_KEY),
-                                                                    expirySecond,
-                                                                    targetLedgerId.get(),
-                                                                    TokenKycStatus.Revoked))))));
+                                                            .withTokenInfo(
+                                                                    getTokenInfoStructForFungibleToken(
+                                                                            spec,
+                                                                            UPDATE_NAME,
+                                                                            UPDATE_SYMBOL,
+                                                                            UPDATE_MEMO,
+                                                                            spec.registry()
+                                                                                    .getAccountID(UPDATED_TREASURY),
+                                                                            spec.registry()
+                                                                                    .getKey(CONTRACT_KEY),
+                                                                            expirySecond,
+                                                                            targetLedgerId.get(),
+                                                                            TokenKycStatus.Revoked))))));
                 }));
     }
 
@@ -1339,62 +1322,58 @@ public class TokenInfoHTSSuite {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
-        return defaultHapiSpec("happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(UPDATED_TREASURY)
-                                .balance(0L)
-                                .keyShape(ED25519_ON)
-                                .maxAutomaticTokenAssociations(2),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                        cryptoCreate(NFT_OWNER),
-                        cryptoCreate(NFT_SPENDER),
-                        cryptoCreate(HTS_COLLECTOR),
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        newKeyNamed(FEE_SCHEDULE_KEY),
-                        newKeyNamed(PAUSE_KEY),
-                        uploadInitCode(TOKEN_INFO_CONTRACT),
-                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
-                        tokenCreate(FEE_DENOM).treasury(HTS_COLLECTOR),
-                        tokenCreate(NON_FUNGIBLE_TOKEN_NAME)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .entityMemo(MEMO)
-                                .name(NON_FUNGIBLE_TOKEN_NAME)
-                                .symbol(NON_FUNGIBLE_SYMBOL)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(maxSupply)
-                                .initialSupply(0)
-                                .adminKey(ADMIN_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .supplyKey(SUPPLY_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .feeScheduleKey(FEE_SCHEDULE_KEY)
-                                .pauseKey(PAUSE_KEY)
-                                .withCustom(royaltyFeeWithFallback(
-                                        1, 2, fixedHtsFeeInheritingRoyaltyCollector(100, FEE_DENOM), HTS_COLLECTOR))
-                                .via(CREATE_TXN),
-                        mintToken(NON_FUNGIBLE_TOKEN_NAME, List.of(meta)),
-                        tokenAssociate(NFT_OWNER, List.of(NON_FUNGIBLE_TOKEN_NAME)),
-                        tokenAssociate(NFT_SPENDER, List.of(NON_FUNGIBLE_TOKEN_NAME)),
-                        grantTokenKyc(NON_FUNGIBLE_TOKEN_NAME, NFT_OWNER),
-                        cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN_NAME, 1L)
-                                .between(TOKEN_TREASURY, NFT_OWNER)),
-                        cryptoApproveAllowance()
-                                .payingWith(DEFAULT_PAYER)
-                                .addNftAllowance(NFT_OWNER, NON_FUNGIBLE_TOKEN_NAME, NFT_SPENDER, false, List.of(1L))
-                                .via(APPROVE_TXN)
-                                .logged()
-                                .signedBy(DEFAULT_PAYER, NFT_OWNER)
-                                .fee(ONE_HBAR))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(UPDATED_TREASURY).balance(0L).keyShape(ED25519_ON).maxAutomaticTokenAssociations(2),
+                cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                cryptoCreate(NFT_OWNER),
+                cryptoCreate(NFT_SPENDER),
+                cryptoCreate(HTS_COLLECTOR),
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(FREEZE_KEY),
+                newKeyNamed(KYC_KEY),
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(WIPE_KEY),
+                newKeyNamed(FEE_SCHEDULE_KEY),
+                newKeyNamed(PAUSE_KEY),
+                uploadInitCode(TOKEN_INFO_CONTRACT),
+                contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                tokenCreate(FEE_DENOM).treasury(HTS_COLLECTOR),
+                tokenCreate(NON_FUNGIBLE_TOKEN_NAME)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .entityMemo(MEMO)
+                        .name(NON_FUNGIBLE_TOKEN_NAME)
+                        .symbol(NON_FUNGIBLE_SYMBOL)
+                        .treasury(TOKEN_TREASURY)
+                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .maxSupply(maxSupply)
+                        .initialSupply(0)
+                        .adminKey(ADMIN_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .kycKey(KYC_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .wipeKey(WIPE_KEY)
+                        .feeScheduleKey(FEE_SCHEDULE_KEY)
+                        .pauseKey(PAUSE_KEY)
+                        .withCustom(royaltyFeeWithFallback(
+                                1, 2, fixedHtsFeeInheritingRoyaltyCollector(100, FEE_DENOM), HTS_COLLECTOR))
+                        .via(CREATE_TXN),
+                mintToken(NON_FUNGIBLE_TOKEN_NAME, List.of(meta)),
+                tokenAssociate(NFT_OWNER, List.of(NON_FUNGIBLE_TOKEN_NAME)),
+                tokenAssociate(NFT_SPENDER, List.of(NON_FUNGIBLE_TOKEN_NAME)),
+                grantTokenKyc(NON_FUNGIBLE_TOKEN_NAME, NFT_OWNER),
+                cryptoTransfer(
+                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN_NAME, 1L).between(TOKEN_TREASURY, NFT_OWNER)),
+                cryptoApproveAllowance()
+                        .payingWith(DEFAULT_PAYER)
+                        .addNftAllowance(NFT_OWNER, NON_FUNGIBLE_TOKEN_NAME, NFT_SPENDER, false, List.of(1L))
+                        .via(APPROVE_TXN)
+                        .logged()
+                        .signedBy(DEFAULT_PAYER, NFT_OWNER)
+                        .fee(ONE_HBAR),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_INFO_CONTRACT))),
                         tokenUpdate(NON_FUNGIBLE_TOKEN_NAME)
@@ -1414,8 +1393,9 @@ public class TokenInfoHTSSuite {
                                         UPDATE_MEMO)
                                 .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_TREASURY)
                                 .via(UPDATE_ANG_GET_NON_FUNGIBLE_TOKEN_INFO_TXN)
-                                .gas(1_000_000L))))
-                .then(exposeTargetLedgerIdTo(targetLedgerId::set), withOpContext((spec, opLog) -> {
+                                .gas(1_000_000L))),
+                exposeTargetLedgerIdTo(targetLedgerId::set),
+                withOpContext((spec, opLog) -> {
                     final var getTokenInfoQuery = getTokenInfo(NON_FUNGIBLE_TOKEN_NAME);
                     allRunFor(spec, getTokenInfoQuery);
                     final var expirySecond = getTokenInfoQuery
@@ -1442,18 +1422,19 @@ public class TokenInfoHTSSuite {
                                                     .contractCallResult(htsPrecompileResult()
                                                             .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
                                                             .withStatus(SUCCESS)
-                                                            .withTokenInfo(getTokenInfoStructForNonFungibleToken(
-                                                                    spec,
-                                                                    UPDATE_NAME,
-                                                                    UPDATE_SYMBOL,
-                                                                    UPDATE_MEMO,
-                                                                    spec.registry()
-                                                                            .getAccountID(UPDATED_TREASURY),
-                                                                    spec.registry()
-                                                                            .getKey(CONTRACT_KEY),
-                                                                    expirySecond,
-                                                                    targetLedgerId.get(),
-                                                                    TokenKycStatus.Revoked))
+                                                            .withTokenInfo(
+                                                                    getTokenInfoStructForNonFungibleToken(
+                                                                            spec,
+                                                                            UPDATE_NAME,
+                                                                            UPDATE_SYMBOL,
+                                                                            UPDATE_MEMO,
+                                                                            spec.registry()
+                                                                                    .getAccountID(UPDATED_TREASURY),
+                                                                            spec.registry()
+                                                                                    .getKey(CONTRACT_KEY),
+                                                                            expirySecond,
+                                                                            targetLedgerId.get(),
+                                                                            TokenKycStatus.Revoked))
                                                             .withNftTokenInfo(nftTokenInfo)))));
                 }));
     }
@@ -1461,29 +1442,28 @@ public class TokenInfoHTSSuite {
     @HapiTest
     final Stream<DynamicTest> happyPathUpdateTokenKeysAndReadLatestInformation() {
         final String TOKEN_INFO_AS_KEY = "TOKEN_INFO_CONTRACT_KEY";
-        return defaultHapiSpec("happyPathUpdateTokenKeysAndReadLatestInformation")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                        cryptoCreate(HTS_COLLECTOR),
-                        cryptoCreate(ACCOUNT),
-                        uploadInitCode(TOKEN_INFO_CONTRACT),
-                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
-                        newKeyNamed(MULTI_KEY),
-                        newKeyNamed(TOKEN_INFO_AS_KEY).shape(CONTRACT.signedWith(TOKEN_INFO_CONTRACT)),
-                        tokenCreate(FUNGIBLE_TOKEN_NAME)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .feeScheduleKey(MULTI_KEY)
-                                .pauseKey(MULTI_KEY)
-                                .wipeKey(MULTI_KEY)
-                                .freezeKey(MULTI_KEY)
-                                .kycKey(MULTI_KEY)
-                                .initialSupply(1_000),
-                        tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                cryptoCreate(HTS_COLLECTOR),
+                cryptoCreate(ACCOUNT),
+                uploadInitCode(TOKEN_INFO_CONTRACT),
+                contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                newKeyNamed(MULTI_KEY),
+                newKeyNamed(TOKEN_INFO_AS_KEY).shape(CONTRACT.signedWith(TOKEN_INFO_CONTRACT)),
+                tokenCreate(FUNGIBLE_TOKEN_NAME)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .feeScheduleKey(MULTI_KEY)
+                        .pauseKey(MULTI_KEY)
+                        .wipeKey(MULTI_KEY)
+                        .freezeKey(MULTI_KEY)
+                        .kycKey(MULTI_KEY)
+                        .initialSupply(1_000),
+                tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_NAME),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_INFO_CONTRACT))),
                         tokenUpdate(FUNGIBLE_TOKEN_NAME)
@@ -1498,8 +1478,8 @@ public class TokenInfoHTSSuite {
                                                 asAddress(spec.registry().getContractId(TOKEN_INFO_CONTRACT))))
                                 .via(UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN)
                                 .gas(117000L)
-                                .alsoSigningWithFullPrefix(MULTI_KEY))))
-                .then(withOpContext((spec, opLog) -> allRunFor(
+                                .alsoSigningWithFullPrefix(MULTI_KEY))),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         getTxnRecord(UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN)
                                 .andAllChildRecords()
@@ -1530,8 +1510,9 @@ public class TokenInfoHTSSuite {
                                                         .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
                                                         .withStatus(SUCCESS)
                                                         .withTokenKeyValue(Key.newBuilder()
-                                                                .setContractID(spec.registry()
-                                                                        .getContractId(TOKEN_INFO_CONTRACT))
+                                                                .setContractID(
+                                                                        spec.registry()
+                                                                                .getContractId(TOKEN_INFO_CONTRACT))
                                                                 .build()))),
                                 recordWith()
                                         .status(SUCCESS)
