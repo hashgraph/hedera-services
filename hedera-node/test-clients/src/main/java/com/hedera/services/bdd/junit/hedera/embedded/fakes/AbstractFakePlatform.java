@@ -100,12 +100,6 @@ public abstract class AbstractFakePlatform implements Platform {
 
     @NonNull
     @Override
-    public AddressBook getAddressBook() {
-        return addressBook;
-    }
-
-    @NonNull
-    @Override
     public Roster getRoster() {
         return roster;
     }

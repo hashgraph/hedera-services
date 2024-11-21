@@ -515,15 +515,6 @@ public class SwirldsPlatform implements Platform {
     /**
      * {@inheritDoc}
      */
-    @Override
-    @NonNull
-    public AddressBook getAddressBook() {
-        return currentAddressBook;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @SuppressWarnings("unchecked")
     @Override
     @NonNull
