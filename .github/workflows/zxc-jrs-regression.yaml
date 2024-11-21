@@ -418,7 +418,7 @@ jobs:
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
-        run: ../gradlew assemble -p ./regression --scan
+        run: ../gradlew assemble -p regression --scan
 
       - name: Compute Actual Branch Name
         id: branch
