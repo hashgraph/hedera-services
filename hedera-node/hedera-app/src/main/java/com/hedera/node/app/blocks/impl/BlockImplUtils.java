@@ -40,6 +40,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHED
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_ID;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULE_IDS_BY_EXPIRY;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULE_ID_BY_EQUALITY;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULE_THROTTLE_USAGE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_STAKING_INFO;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_THROTTLE_USAGE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKENS;
@@ -107,6 +108,7 @@ public class BlockImplUtils {
                     case "CongestionThrottleService" -> switch (stateKey) {
                         case "CONGESTION_LEVEL_STARTS" -> STATE_ID_CONGESTION_STARTS.protoOrdinal();
                         case "THROTTLE_USAGE_SNAPSHOTS" -> STATE_ID_THROTTLE_USAGE.protoOrdinal();
+                        case "SCHEDULE_THROTTLE_USAGE_PER_SECOND" -> STATE_ID_SCHEDULE_THROTTLE_USAGE.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
                     case "ConsensusService" -> switch (stateKey) {

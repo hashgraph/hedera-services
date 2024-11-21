@@ -427,6 +427,11 @@ enum StateIdentifier {
      * A state for the `159` upgrade file data
      */
     STATE_ID_UPGRADE_DATA_159 = 10010;
+
+    /**
+     * A state identifier for long term schedule throttle usage.
+     */
+    STATE_ID_SCHEDULE_THROTTLE_USAGE = 10011;
 }
 
 /**
@@ -825,6 +830,11 @@ message MapChangeValue {
          * A scheduled id value.
          */
         proto.ScheduleID schedule_id_value = 18;
+
+        /**
+         * A list of throttle usage snapshots.
+         */
+        proto.ThrottleUsageSnapshots schedule_throttle_usage_snapshots = 19;
     }
 }
 

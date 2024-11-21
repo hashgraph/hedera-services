@@ -47,6 +47,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
@@ -211,6 +212,9 @@ public class KVStateChangeListener implements StateChangeListener {
             case Topic topic -> MapChangeValue.newBuilder().topicValue(topic).build();
             case AccountPendingAirdrop accountPendingAirdrop -> MapChangeValue.newBuilder()
                     .accountPendingAirdropValue(accountPendingAirdrop)
+                    .build();
+            case ThrottleUsageSnapshots scheduleSnapshots -> MapChangeValue.newBuilder()
+                    .scheduleThrottleUsageSnapshots(scheduleSnapshots)
                     .build();
             default -> throw new IllegalStateException(
                     "Unexpected value: " + value.getClass().getSimpleName());
