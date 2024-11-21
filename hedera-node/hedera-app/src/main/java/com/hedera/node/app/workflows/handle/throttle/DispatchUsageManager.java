@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.calculateExpiration;
 import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
@@ -43,6 +44,8 @@ import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.SchedulingConfig;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
@@ -124,11 +127,9 @@ public class DispatchUsageManager {
         }
 
         // save schedule snapshots by seconds
-        if (dispatch.txnInfo().functionality().equals(SCHEDULE_CREATE)) {
-            final var txnBody = dispatch.txnInfo().txBody();
-            final var scheduleCreate = txnBody.scheduleCreateOrThrow();
-            final var expiration = scheduleCreate.expirationTime();
-            throttleServiceManager.saveScheduleThrottleSnapshotsTo(dispatch.stack(), expiration.seconds());
+        if (shouldSaveScheduleUsage(dispatch)) {
+            final var expirationSeconds = scheduleExpirationSecond(dispatch);
+            throttleServiceManager.saveScheduleThrottleSnapshotsTo(dispatch.stack(), expirationSeconds);
         } else {
             throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(dispatch.stack());
         }
@@ -180,6 +181,28 @@ public class DispatchUsageManager {
                 numImplicitCreations, dispatch.txnInfo().txBody())) {
             throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations, CRYPTO_CREATE);
         }
+    }
+
+    private boolean shouldSaveScheduleUsage(Dispatch dispatch) {
+        final var schedulingConfig = dispatch.config().getConfigData(SchedulingConfig.class);
+        final var isLongTermScheduleEnabled = schedulingConfig.longTermEnabled();
+        return isLongTermScheduleEnabled && dispatch.txnInfo().functionality().equals(SCHEDULE_CREATE);
+    }
+
+    private long scheduleExpirationSecond(@NonNull final Dispatch dispatch) {
+        final var schedulingConfig = dispatch.config().getConfigData(SchedulingConfig.class);
+        final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
+        final var ledgerConfig = dispatch.config().getConfigData(LedgerConfig.class);
+
+        final var txnBody = dispatch.txnInfo().txBody();
+        final var scheduleCreate = txnBody.scheduleCreateOrThrow();
+        final var givenExpiration = scheduleCreate.expirationTime();
+
+        final var maxLifetime = isLongTermEnabled
+                ? schedulingConfig.maxExpirationFutureSeconds()
+                : ledgerConfig.scheduleTxExpiryTimeSecs();
+
+        return calculateExpiration(givenExpiration, dispatch.consensusNow(), maxLifetime, isLongTermEnabled);
     }
 
     /**

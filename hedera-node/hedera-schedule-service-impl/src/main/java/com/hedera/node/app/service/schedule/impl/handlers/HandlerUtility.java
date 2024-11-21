@@ -227,7 +227,7 @@ public final class HandlerUtility {
         return parentTxnId.copyBuilder().scheduled(true).build();
     }
 
-    private static long calculateExpiration(
+    public static long calculateExpiration(
             @Nullable final Timestamp givenExpiration,
             @NonNull final Instant consensusNow,
             final long maxLifetime,
