@@ -30,6 +30,8 @@ import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.throttle.AppThrottleFactory;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.config.data.HederaConfig;
@@ -75,7 +77,7 @@ public enum TransactionExecutors {
             @Nullable final TracerBinding customTracerBinding) {
         final var tracerBinding =
                 customTracerBinding != null ? customTracerBinding : DefaultTracerBinding.DEFAULT_TRACER_BINDING;
-        final var executor = newExecutorComponent(properties, tracerBinding);
+        final var executor = newExecutorComponent(state, properties, tracerBinding);
         executor.initializer().accept(state);
         executor.stateNetworkInfo().initFrom(state);
         final var exchangeRateManager = executor.exchangeRateManager();
@@ -91,8 +93,11 @@ public enum TransactionExecutors {
     }
 
     private ExecutorComponent newExecutorComponent(
-            @NonNull final Map<String, String> properties, @NonNull final TracerBinding tracerBinding) {
+            @NonNull final State state,
+            @NonNull final Map<String, String> properties,
+            @NonNull final TracerBinding tracerBinding) {
         final var bootstrapConfigProvider = new BootstrapConfigProviderImpl();
+        final var configProvider = new ConfigProviderImpl(false, null, properties);
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
                 new AppSignatureVerifier(
@@ -101,7 +106,8 @@ public enum TransactionExecutors {
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP,
                 bootstrapConfigProvider::getConfiguration,
-                () -> DEFAULT_NODE_INFO);
+                () -> DEFAULT_NODE_INFO,
+                new AppThrottleFactory(configProvider::getConfiguration, () -> state, ThrottleAccumulator::new));
         final var tssBaseService = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),
@@ -111,7 +117,6 @@ public enum TransactionExecutors {
                 new NoOpMetrics());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
-        final var configProvider = new ConfigProviderImpl(false, null, properties);
         return DaggerExecutorComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)

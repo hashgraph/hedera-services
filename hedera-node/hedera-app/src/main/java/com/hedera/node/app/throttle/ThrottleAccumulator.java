@@ -36,6 +36,7 @@ import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRON
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -64,7 +65,6 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.ContractsConfig;
@@ -88,6 +88,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -110,39 +111,61 @@ public class ThrottleAccumulator {
     private boolean lastTxnWasGasThrottled;
     private GasLimitDeterministicThrottle gasThrottle;
     private List<DeterministicThrottle> activeThrottles = emptyList();
+
+    @Nullable
     private final ThrottleMetrics throttleMetrics;
 
-    private final ConfigProvider configProvider;
+    private final Supplier<Configuration> configSupplier;
     private final IntSupplier capacitySplitSource;
     private final ThrottleType throttleType;
+    private final Verbose verbose;
+
+    /**
+     * Whether the accumulator should log verbose definitions.
+     */
+    public enum Verbose {
+        YES,
+        NO
+    }
+
+    public ThrottleAccumulator(
+            @NonNull final Supplier<Configuration> configSupplier,
+            @NonNull final IntSupplier capacitySplitSource,
+            @NonNull final ThrottleType throttleType) {
+        this(capacitySplitSource, configSupplier, throttleType, null, Verbose.NO);
+    }
 
     public ThrottleAccumulator(
             @NonNull final IntSupplier capacitySplitSource,
-            @NonNull final ConfigProvider configProvider,
+            @NonNull final Supplier<Configuration> configSupplier,
             @NonNull final ThrottleType throttleType,
-            @NonNull final ThrottleMetrics throttleMetrics) {
-        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+            @Nullable final ThrottleMetrics throttleMetrics,
+            @NonNull final Verbose verbose) {
+        this.configSupplier = requireNonNull(configSupplier, "configProvider must not be null");
         this.capacitySplitSource = requireNonNull(capacitySplitSource, "capacitySplitSource must not be null");
         this.throttleType = requireNonNull(throttleType, "throttleType must not be null");
-        this.throttleMetrics = requireNonNull(throttleMetrics, "throttleMetrics must not be null");
+        this.verbose = requireNonNull(verbose);
+        this.throttleMetrics = throttleMetrics;
     }
 
     // For testing purposes, in practice the gas throttle is
     // lazy-initialized based on the configuration before handling
     // any transactions
+    @VisibleForTesting
     public ThrottleAccumulator(
             @NonNull final IntSupplier capacitySplitSource,
-            @NonNull final ConfigProvider configProvider,
+            @NonNull final Supplier<Configuration> configSupplier,
             @NonNull final ThrottleType throttleType,
             @NonNull final ThrottleMetrics throttleMetrics,
             @NonNull final GasLimitDeterministicThrottle gasThrottle) {
-        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+        this.configSupplier = requireNonNull(configSupplier, "configProvider must not be null");
         this.capacitySplitSource = requireNonNull(capacitySplitSource, "capacitySplitSource must not be null");
         this.throttleType = requireNonNull(throttleType, "throttleType must not be null");
         this.gasThrottle = requireNonNull(gasThrottle, "gasThrottle must not be null");
 
         this.throttleMetrics = throttleMetrics;
-        this.throttleMetrics.setupGasThrottleMetric(gasThrottle, configProvider.getConfiguration());
+        this.throttleMetrics.setupGasThrottleMetric(gasThrottle, configSupplier.get());
+        this.verbose = Verbose.YES;
     }
 
     /**
@@ -182,7 +205,7 @@ public class ThrottleAccumulator {
             @NonNull final Query query,
             @NonNull final State state,
             @Nullable final AccountID queryPayerId) {
-        final var configuration = configProvider.getConfiguration();
+        final var configuration = configSupplier.get();
         if (throttleExempt(queryPayerId, configuration)) {
             return false;
         }
@@ -272,7 +295,7 @@ public class ThrottleAccumulator {
      * @param value the amount of gas to leak
      */
     public void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, final long value) {
-        final var configuration = configProvider.getConfiguration();
+        final var configuration = configSupplier.get();
         if (throttleExempt(txnInfo.payerID(), configuration)) {
             return;
         }
@@ -346,7 +369,9 @@ public class ThrottleAccumulator {
      * Updates all metrics for the active throttles and the gas throttle
      */
     public void updateAllMetrics() {
-        throttleMetrics.updateAllMetrics();
+        if (throttleMetrics != null) {
+            throttleMetrics.updateAllMetrics();
+        }
     }
 
     private boolean shouldThrottleTxn(
@@ -355,7 +380,7 @@ public class ThrottleAccumulator {
             @NonNull final Instant now,
             @NonNull final State state) {
         final var function = txnInfo.functionality();
-        final var configuration = configProvider.getConfiguration();
+        final var configuration = configSupplier.get();
 
         // Note that by payer exempt from throttling we mean just that those transactions will not be throttled,
         // such payer accounts neither impact the throttles nor are they impacted by them
@@ -436,7 +461,7 @@ public class ThrottleAccumulator {
         }
 
         // maintain legacy behaviour
-        final var configuration = configProvider.getConfiguration();
+        final var configuration = configSupplier.get();
         final boolean areLongTermSchedulesEnabled =
                 configuration.getConfigData(SchedulingConfig.class).longTermEnabled();
         if (!areLongTermSchedulesEnabled) {
@@ -500,7 +525,7 @@ public class ThrottleAccumulator {
         }
 
         // maintain legacy behaviour
-        final var configuration = configProvider.getConfiguration();
+        final var configuration = configSupplier.get();
         final boolean areLongTermSchedulesEnabled =
                 configuration.getConfigData(SchedulingConfig.class).longTermEnabled();
         if (!areLongTermSchedulesEnabled) {
@@ -871,8 +896,10 @@ public class ThrottleAccumulator {
         functionReqs = newFunctionReqs;
         activeThrottles = newActiveThrottles;
 
-        final var configuration = configProvider.getConfiguration();
-        throttleMetrics.setupThrottleMetrics(activeThrottles, configuration);
+        if (throttleMetrics != null) {
+            final var configuration = configSupplier.get();
+            throttleMetrics.setupThrottleMetrics(activeThrottles, configuration);
+        }
 
         logResolvedDefinitions(capacitySplitSource.getAsInt());
     }
@@ -881,7 +908,7 @@ public class ThrottleAccumulator {
      * Rebuilds the gas throttle based on the current configuration.
      */
     public void applyGasConfig() {
-        final var configuration = configProvider.getConfiguration();
+        final var configuration = configSupplier.get();
         final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
         if (contractsConfig.throttleThrottleByGas() && contractsConfig.maxGasPerSec() == 0) {
             log.warn("{} gas throttling enabled, but limited to 0 gas/sec", throttleType.name());
@@ -902,6 +929,9 @@ public class ThrottleAccumulator {
     }
 
     private void logResolvedDefinitions(final int capacitySplit) {
+        if (verbose != Verbose.YES) {
+            return;
+        }
         var sb = new StringBuilder("Resolved ")
                 .append(throttleType.name())
                 .append(" ")

@@ -98,7 +98,9 @@ import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.throttle.AppThrottleFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -409,6 +411,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 () -> HapiUtils.toString(hapiVersion));
         fileServiceImpl = new FileServiceImpl();
 
+        final Supplier<Configuration> configSupplier = () -> configProvider.getConfiguration();
         final var appContext = new AppContextImpl(
                 instantSource,
                 new AppSignatureVerifier(
@@ -416,8 +419,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 this,
-                () -> configProvider.getConfiguration(),
-                () -> daggerApp.networkInfo().selfNodeInfo());
+                configSupplier,
+                () -> daggerApp.networkInfo().selfNodeInfo(),
+                new AppThrottleFactory(
+                        configSupplier, () -> daggerApp.workingStateAccessor().getState(), ThrottleAccumulator::new));
         tssBaseService = tssBaseServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
         blockStreamService = new BlockStreamService();

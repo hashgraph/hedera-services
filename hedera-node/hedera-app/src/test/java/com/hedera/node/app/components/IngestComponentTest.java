@@ -44,6 +44,7 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.handlers.TssHandlers;
@@ -92,6 +93,9 @@ class IngestComponentTest {
     private TssShareSignatureHandler tssShareSignatureHandler;
 
     @Mock
+    private Throttle.Factory throttleFactory;
+
+    @Mock
     private StartupNetworks startupNetworks;
 
     private HederaInjectionComponent app;
@@ -119,7 +123,8 @@ class IngestComponentTest {
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP,
                 () -> configuration,
-                () -> DEFAULT_NODE_INFO);
+                () -> DEFAULT_NODE_INFO,
+                throttleFactory);
         given(tssBaseService.tssHandlers())
                 .willReturn(new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler));
         app = DaggerHederaInjectionComponent.builder()
