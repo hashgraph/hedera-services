@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.crypto.CryptoStatic;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.Certificate;
@@ -61,11 +60,6 @@ public class NetworkPeerIdentifier {
         noPeerFoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(5));
         this.x501PrincipalsAndPeers = HashMap.newHashMap(peers.size());
         for (final PeerInfo peerInfo : peers) {
-            if (!CryptoStatic.checkCertificate(peerInfo.signingCertificate())) {
-                // skip peers without a valid signing certificate
-                // https://github.com/hashgraph/hedera-services/issues/16648
-                continue;
-            }
             x501PrincipalsAndPeers.put(
                     ((X509Certificate) peerInfo.signingCertificate()).getSubjectX500Principal(), peerInfo);
         }

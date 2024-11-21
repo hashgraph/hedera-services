@@ -21,6 +21,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.Deserializer;
 import com.swirlds.platform.internal.Serializer;
 import com.swirlds.platform.network.PeerInfo;
@@ -377,13 +378,13 @@ public final class Utilities {
                 .filter(entry -> entry.nodeId() != selfId.id())
                 // Only include peers with valid gossip certificates
                 // https://github.com/hashgraph/hedera-services/issues/16648
-                .filter(entry -> RosterUtils.fetchGossipCaCertificate(entry) != null)
+                .filter(entry -> CryptoStatic.checkCertificate((RosterUtils.fetchGossipCaCertificate(entry))))
                 .map(entry -> new PeerInfo(
                         NodeId.of(entry.nodeId()),
                         // Assume that the first ServiceEndpoint describes the external hostname,
                         // which is the same order in which RosterRetriever.buildRoster(AddressBook) lists them.
                         Objects.requireNonNull(RosterUtils.fetchHostname(entry, 0)),
-                        RosterUtils.fetchGossipCaCertificate(entry)))
+                        Objects.requireNonNull(RosterUtils.fetchGossipCaCertificate(entry))))
                 .toList();
     }
 }
