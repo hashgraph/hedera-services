@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.roster.schemas;
 
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -91,7 +91,7 @@ public class V057RosterSchema extends Schema {
                     //   Read the current AddressBooks from the platform state.
                     //   previousRoster := translateToRoster(currentAddressBook)
                     final var platformState = platformStateStoreFactory.apply(ctx.newStates());
-                    final var previousRoster = createRoster(platformState.getAddressBook());
+                    final var previousRoster = buildRoster(platformState.getAddressBook());
                     //   (previousRoster, previousRound) := (previousRoster, 0)
                     //   set (previousRoster, 0) as the active roster in the roster state.
                     rosterStore.putActiveRoster(previousRoster, 0L);
@@ -110,7 +110,7 @@ public class V057RosterSchema extends Schema {
                     // previousRoster := translateToRoster(currentAddressBook)
                     // set (previousRoster, 0) as the active roster in the roster state.
                     final var platformState = platformStateStoreFactory.apply(ctx.newStates());
-                    final var previousRoster = createRoster(platformState.getAddressBook());
+                    final var previousRoster = buildRoster(platformState.getAddressBook());
                     rosterStore.putActiveRoster(previousRoster, 0L);
 
                     // If there is no active roster at a migration boundary, we
