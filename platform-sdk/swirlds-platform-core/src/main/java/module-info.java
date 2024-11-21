@@ -149,6 +149,7 @@ module com.swirlds.platform.core {
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
+    requires com.github.spotbugs.annotations;
     requires java.desktop;
     requires java.management;
     requires java.scripting;
@@ -157,8 +158,6 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
     requires org.hiero.event.creator.impl;
-    requires static transitive com.github.spotbugs.annotations;
-    requires static transitive com.google.auto.service;
 
     provides ConfigurationExtension with
             PlatformConfigurationExtension;

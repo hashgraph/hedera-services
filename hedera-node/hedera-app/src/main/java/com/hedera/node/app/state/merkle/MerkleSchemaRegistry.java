@@ -22,6 +22,7 @@ import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFIN
 import static com.hedera.node.app.state.merkle.VersionUtils.alreadyIncludesStateDefs;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static com.swirlds.state.merkle.StateUtils.registerWithSystem;
 import static java.util.Objects.requireNonNull;
 
@@ -43,6 +44,7 @@ import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.MerkleStateRoot;
@@ -168,7 +170,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * to perform any necessary logic on restart. Most services have nothing to do, but some may need
      * to read files from disk, and could potentially change their state as a result.
      *
-     * @param state     the state for this registry to use.
+     * @param state the state for this registry to use.
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion The current version. Never null. Must be newer than {@code
      * previousVersion}.
@@ -177,8 +179,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param genesisNetworkInfo The network information to use at the time of migration
      * @param sharedValues A map of shared values for cross-service migration patterns
      * @param migrationStateChanges Tracker for state changes during migration
+     * @param startupNetworks The startup networks to use for the migrations
      * @throws IllegalArgumentException if the {@code currentVersion} is not at least the
-     *                                  {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
+     * {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
      */
     // too many parameters, commented out code
     @SuppressWarnings({"java:S107", "java:S125"})
@@ -192,7 +195,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore,
             @NonNull final Map<String, Object> sharedValues,
-            @NonNull final MigrationStateChanges migrationStateChanges) {
+            @NonNull final MigrationStateChanges migrationStateChanges,
+            @NonNull final StartupNetworks startupNetworks) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);
@@ -206,6 +210,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         if (!(state instanceof MerkleStateRoot stateRoot)) {
             throw new IllegalArgumentException("The state must be an instance of " + MerkleStateRoot.class.getName());
         }
+        final long roundNumber = PLATFORM_STATE_SERVICE.roundOf(stateRoot);
         if (schemas.isEmpty()) {
             logger.info("Service {} does not use state", serviceName);
             return;
@@ -260,7 +265,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     genesisNetworkInfo,
                     entityIdStore,
                     previousVersion,
-                    sharedValues);
+                    roundNumber,
+                    sharedValues,
+                    startupNetworks);
             if (applications.contains(MIGRATION)) {
                 schema.migrate(migrationContext);
             }

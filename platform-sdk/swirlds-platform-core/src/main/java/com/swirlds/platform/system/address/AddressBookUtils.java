@@ -25,6 +25,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
@@ -350,7 +351,11 @@ public class AddressBookUtils {
         final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
                 selfId, version, softwareUpgrade, initialState.get(), bootstrapAddressBook.copy(), platformContext);
 
-        if (addressBookInitializer.hasAddressBookChanged()) {
+        final boolean useRosterLifecycle = platformContext
+                .getConfiguration()
+                .getConfigData(AddressBookConfig.class)
+                .useRosterLifecycle();
+        if (!useRosterLifecycle && addressBookInitializer.hasAddressBookChanged()) {
             final MerkleRoot state = initialState.get().getState();
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of

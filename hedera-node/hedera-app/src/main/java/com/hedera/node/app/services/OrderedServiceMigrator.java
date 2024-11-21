@@ -30,6 +30,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,15 +59,17 @@ public class OrderedServiceMigrator implements ServiceMigrator {
 
     /**
      * Migrates the services registered with the {@link ServicesRegistry}
-     * @param state            The state to migrate
+     *
+     * @param state The state to migrate
      * @param servicesRegistry The services registry to use for the migrations
      * @param previousVersion The previous version of the state
      * @param currentVersion The current version of the state
      * @param nodeConfiguration The system configuration to use at the time of migration
      * @param platformConfiguration The platform configuration to use for subsequent object initializations
      * @param genesisNetworkInfo The network information to use for the migrations.
-     *                           This is only used in genesis case
+     * This is only used in genesis case
      * @param metrics The metrics to use for the migrations
+     * @param startupNetworks The startup networks to use for the migrations
      * @return The list of state changes that occurred during the migrations
      */
     @Override
@@ -78,7 +81,8 @@ public class OrderedServiceMigrator implements ServiceMigrator {
             @NonNull final Configuration nodeConfiguration,
             @NonNull final Configuration platformConfiguration,
             @Nullable final NetworkInfo genesisNetworkInfo,
-            @NonNull final Metrics metrics) {
+            @NonNull final Metrics metrics,
+            @NonNull final StartupNetworks startupNetworks) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);
@@ -107,7 +111,8 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                 // We call with null here because we're migrating the entity ID service itself
                 null,
                 sharedValues,
-                migrationStateChanges);
+                migrationStateChanges,
+                startupNetworks);
 
         // The token service has a dependency on the entity ID service during genesis migrations, so we
         // CAREFULLY create a different WritableStates specific to the entity ID service. The different
@@ -144,7 +149,8 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                             metrics,
                             entityIdStore,
                             sharedValues,
-                            migrationStateChanges);
+                            migrationStateChanges,
+                            startupNetworks);
                     // Now commit any changes that were made to the entity ID state (since other service entities could
                     // depend on newly-generated entity IDs)
                     if (entityIdWritableStates instanceof MerkleStateRoot.MerkleWritableStates mws) {
