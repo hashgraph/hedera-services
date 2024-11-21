@@ -27,11 +27,14 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -55,6 +58,8 @@ class V057RosterSchemaTest {
             .map(NodeMetadata::rosterEntryOrThrow)
             .toList());
 
+    private static final AddressBook ADDRESS_BOOK = new AddressBook(List.of());
+
     @Mock
     private Predicate<Roster> canAdopt;
 
@@ -73,11 +78,17 @@ class V057RosterSchemaTest {
     @Mock
     private Function<WritableStates, WritableRosterStore> rosterStoreFactory;
 
+    @Mock
+    private Function<WritableStates, ReadablePlatformStateStore> platformStateStoreFactory;
+
+    @Mock
+    private ReadablePlatformStateStore platformStateStore;
+
     private V057RosterSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new V057RosterSchema(canAdopt, rosterStoreFactory);
+        subject = new V057RosterSchema(canAdopt, rosterStoreFactory, platformStateStoreFactory);
     }
 
     @Test
@@ -128,6 +139,8 @@ class V057RosterSchemaTest {
         givenContextWith(CurrentVersion.NEW, RosterLifecycle.ON, AvailableNetwork.MIGRATION);
         given(context.previousVersion()).willReturn(THEN);
         given(context.roundNumber()).willReturn(ROUND_NO);
+        given(platformStateStoreFactory.apply(writableStates)).willReturn(platformStateStore);
+        given(platformStateStore.getAddressBook()).willReturn(ADDRESS_BOOK);
 
         subject.restart(context);
 
@@ -145,7 +158,7 @@ class V057RosterSchemaTest {
 
         subject.restart(context);
 
-        verify(rosterStore).adoptCandidateRoster(ROUND_NO);
+        verify(rosterStore).adoptCandidateRoster(ROUND_NO + 1);
     }
 
     @Test
@@ -153,6 +166,8 @@ class V057RosterSchemaTest {
         given(context.roundNumber()).willReturn(ROUND_NO);
         givenContextWith(CurrentVersion.OLD, RosterLifecycle.ON, AvailableNetwork.OVERRIDE);
         given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));
+        given(platformStateStoreFactory.apply(writableStates)).willReturn(platformStateStore);
+        given(platformStateStore.getAddressBook()).willReturn(ADDRESS_BOOK);
 
         subject.restart(context);
 

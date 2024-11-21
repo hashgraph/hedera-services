@@ -104,7 +104,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
                             fakeState,
                             deserializedPbjVersion,
                             genesisNetworkInfo,
-                            nodeConfiguration,
+                            platformConfiguration,
                             sharedValues,
                             prevEntityNum,
                             startupNetworks);

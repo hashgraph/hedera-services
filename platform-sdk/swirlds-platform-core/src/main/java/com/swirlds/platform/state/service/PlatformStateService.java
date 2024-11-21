@@ -26,6 +26,7 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.state.service.schemas.V057PlatformStateSchema;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
@@ -45,9 +46,13 @@ public enum PlatformStateService implements Service {
     PLATFORM_STATE_SERVICE;
 
     private static final AtomicReference<Supplier<Roster>> ACTIVE_ROSTER = new AtomicReference<>();
+    private static final AtomicReference<Supplier<SoftwareVersion>> APP_VERSION = new AtomicReference<>();
     private static final Collection<Schema> SCHEMAS = List.of(
-            new V0540PlatformStateSchema(), new V057PlatformStateSchema(() -> requireNonNull(ACTIVE_ROSTER.get())
-                    .get()));
+            new V0540PlatformStateSchema(),
+            new V057PlatformStateSchema(
+                    () -> requireNonNull(ACTIVE_ROSTER.get()).get(),
+                    () -> requireNonNull(APP_VERSION.get()).get(),
+                    WritablePlatformStateStore::new));
 
     public static final String NAME = "PlatformStateService";
 
@@ -76,6 +81,14 @@ public enum PlatformStateService implements Service {
      */
     public void clearActiveRosterFn() {
         ACTIVE_ROSTER.set(null);
+    }
+
+    /**
+     * Sets the application version to the given version.
+     * @param appVersionFn the version to set as the application version
+     */
+    public void setAppVersionFn(@NonNull final Supplier<SoftwareVersion> appVersionFn) {
+        APP_VERSION.set(requireNonNull(appVersionFn));
     }
 
     /**

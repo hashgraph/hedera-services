@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.roster.schemas;
 
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -24,6 +25,7 @@ import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
@@ -35,12 +37,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A restart-only schema that ensures state has a current roster if {@link AddressBookConfig#useRosterLifecycle()} is
- * set; the logic is currently simplified to use the genesis roster from the genesis {@link Network}s returned by
- * {@link MigrationContext#startupNetworks()}, and to promote any candidate roster in state to the current roster on
- * an upgrade.
- * <p>
- * The full logic will be done in <a href="https://github.com/hashgraph/hedera-services/issues/16552">this</a> issue.
+ * A restart-only schema that ensures state has a current roster if {@link AddressBookConfig#useRosterLifecycle()} is set.
  */
 public class V057RosterSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V057RosterSchema.class);
@@ -59,12 +56,16 @@ public class V057RosterSchema extends Schema {
      */
     private final Function<WritableStates, WritableRosterStore> rosterStoreFactory;
 
+    private final Function<WritableStates, ReadablePlatformStateStore> platformStateStoreFactory;
+
     public V057RosterSchema(
             @NonNull final Predicate<Roster> canAdopt,
-            @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory) {
+            @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory,
+            @NonNull final Function<WritableStates, ReadablePlatformStateStore> platformStateStoreFactory) {
         super(VERSION);
         this.canAdopt = requireNonNull(canAdopt);
         this.rosterStoreFactory = requireNonNull(rosterStoreFactory);
+        this.platformStateStoreFactory = requireNonNull(platformStateStoreFactory);
     }
 
     @Override
@@ -81,21 +82,55 @@ public class V057RosterSchema extends Schema {
             final long roundNumber = ctx.roundNumber();
             final var overrideNetwork = startupNetworks.overrideNetworkFor(roundNumber);
             if (overrideNetwork.isPresent()) {
-                log.info("Found override network for round {}", roundNumber);
-                setActiveRoster(roundNumber + 1, rosterStore, overrideNetwork.get());
+                // currentRound := state round +1
+                final long currentRound = roundNumber + 1;
+                log.info("Found override network for round {}", currentRound);
+
+                // If there is no active roster in the roster state.
+                if (rosterStore.getActiveRoster() == null) {
+                    //   Read the current AddressBooks from the platform state.
+                    //   previousRoster := translateToRoster(currentAddressBook)
+                    final var platformState = platformStateStoreFactory.apply(ctx.newStates());
+                    final var previousRoster = createRoster(platformState.getAddressBook());
+                    //   (previousRoster, previousRound) := (previousRoster, 0)
+                    //   set (previousRoster, 0) as the active roster in the roster state.
+                    rosterStore.putActiveRoster(previousRoster, 0L);
+                }
+
+                // set (overrideRoster, currentRound) as the active roster in the roster state.
+                setActiveRoster(currentRound, rosterStore, overrideNetwork.get());
                 startupNetworks.setOverrideRound(roundNumber);
             } else if (isUpgrade(ctx)) {
                 if (rosterStore.getActiveRoster() == null) {
-                    log.info("Migrating active roster at round {}", roundNumber);
+                    // currentRound := state round +1
+                    final long currentRound = roundNumber + 1;
+                    log.info("Migrating active roster at round {}", currentRound);
+
+                    // Read the current AddressBooks from the platform state.
+                    // previousRoster := translateToRoster(currentAddressBook)
+                    // set (previousRoster, 0) as the active roster in the roster state.
+                    final var platformState = platformStateStoreFactory.apply(ctx.newStates());
+                    final var previousRoster = createRoster(platformState.getAddressBook());
+                    rosterStore.putActiveRoster(previousRoster, 0L);
+
                     // If there is no active roster at a migration boundary, we
                     // must have a migration network in the startup assets
+                    // configAddressBook := Read the address book in config.txt
                     final var network = startupNetworks.migrationNetworkOrThrow();
-                    rosterStore.putActiveRoster(rosterFrom(network), roundNumber + 1);
+
+                    // currentRoster := translateToRoster(configAddressBook)
+                    // set (currentRoster, currentRound) as the active roster in the roster state.
+                    rosterStore.putActiveRoster(rosterFrom(network), currentRound);
                 } else {
+                    // candidateRoster := read the candidate roster from the roster state.
                     final var candidateRoster = rosterStore.getCandidateRoster();
                     if (canAdopt.test(candidateRoster)) {
-                        log.info("Adopting candidate roster at round {}", roundNumber);
-                        rosterStore.adoptCandidateRoster(roundNumber);
+                        // currentRound := state round +1
+                        final long currentRound = roundNumber + 1;
+                        log.info("Adopting candidate roster at round {}", currentRound);
+
+                        // set (candidateRoster, currentRound) as the new active roster in the roster state.
+                        rosterStore.adoptCandidateRoster(currentRound);
                     }
                 }
             }
