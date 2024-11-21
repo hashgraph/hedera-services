@@ -36,6 +36,7 @@ import com.swirlds.platform.Browser;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -121,7 +122,7 @@ public class HelloSwirldDemoMain implements SwirldMain {
         final PlatformStatus newStatus = notification.getNewStatus();
         if (PlatformStatus.ACTIVE.equals(newStatus)) {
             final String myName =
-                    platform.getAddressBook().getAddress(platform.getSelfId()).getSelfName();
+                    RosterUtils.formatNodeName(platform.getSelfId().id());
 
             console.out.println("Hello Swirld from " + myName);
 

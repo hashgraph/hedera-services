@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.fixtures;
 
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 import static com.swirlds.state.test.fixtures.merkle.TestSchema.CURRENT_VERSION;
 import static java.util.Objects.requireNonNull;
@@ -340,7 +340,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var addressBook = new AddressBook(addresses);
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), addressBook);
             final var initialState = new FakeState();
-            final var genesisRoster = createRoster(addressBook);
+            final var genesisRoster = buildRoster(addressBook);
             final var networkInfo = new GenesisNetworkInfo(genesisRoster, Bytes.fromHex("03"));
             final var startupNetworks = new FakeStartupNetworks(Network.newBuilder()
                     .nodeMetadata(genesisRoster.rosterEntries().stream()

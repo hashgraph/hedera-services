@@ -20,11 +20,13 @@ import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
 import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -91,8 +93,10 @@ public class MigrationTestingToolMain implements SwirldMain {
                     maximumTransactionsPerNode,
                     seed);
 
-            final boolean isZeroWeight =
-                    platform.getAddressBook().getAddress(platform.getSelfId()).isZeroWeight();
+            final RosterEntry selfEntry = RosterUtils.getRosterEntry(
+                    platform.getRoster(), platform.getSelfId().id());
+
+            final boolean isZeroWeight = selfEntry.weight() == 0L;
             if (!isZeroWeight) {
                 while (transactionsCreated < maximumTransactionsPerNode) {
                     try {
@@ -121,7 +125,7 @@ public class MigrationTestingToolMain implements SwirldMain {
     private void generateEvents() {
         final long now = System.nanoTime();
         final double tps = (double) transPerSecToCreate
-                / (double) platform.getAddressBook().getSize();
+                / (double) platform.getRoster().rosterEntries().size();
         int numCreated = 0;
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
