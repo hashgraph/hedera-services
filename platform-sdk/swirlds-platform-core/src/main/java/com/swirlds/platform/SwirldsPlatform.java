@@ -22,7 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.StateInitializer.initializeState;
 import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.migratePcesToBirthRoundMode;
 import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateForBirthRoundMigration;
-import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
+import static com.swirlds.platform.state.address.RosterMetrics.registerRosterMetrics;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSavedStateFiles;
 
 import com.hedera.hapi.node.state.roster.Roster;
@@ -222,7 +222,7 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
 
-        registerAddressBookMetrics(platformContext.getMetrics(), currentAddressBook, selfId);
+        registerRosterMetrics(platformContext.getMetrics(), currentRoster, selfId);
 
         RuntimeMetrics.setup(platformContext.getMetrics());
 

@@ -78,7 +78,6 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.wiring.NoInput;
@@ -227,8 +226,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, roster);
         platformContext.getMetrics().addUpdater(networkMetrics::update);
 
-        final AddressBook addressBook = RosterUtils.buildAddressBook(roster);
-        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), addressBook);
+        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), roster);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
@@ -255,7 +253,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 new ReconnectLearnerFactory(
                         platformContext,
                         threadManager,
-                        addressBook,
+                        RosterUtils.buildAddressBook(roster),
                         reconnectConfig.asyncStreamTimeout(),
                         reconnectMetrics),
                 stateConfig);
