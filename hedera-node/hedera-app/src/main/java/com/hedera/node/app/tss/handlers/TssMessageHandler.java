@@ -76,7 +76,7 @@ public class TssMessageHandler implements TransactionHandler {
         tssMetrics.updateMessagesPerCandidateRoster(targetRosterHash);
 
         final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
-        final var messageSeqNo = tssStore.getTssMessageBodies(targetRosterHash).size();
+        final var messageSeqNo = tssStore.getMessagesForTarget(targetRosterHash).size();
         // Nodes vote for a threshold set of TSS messages by their position in consensus order
         final var key = new TssMessageMapKey(targetRosterHash, messageSeqNo);
         // Store the latest message before potentially voting
