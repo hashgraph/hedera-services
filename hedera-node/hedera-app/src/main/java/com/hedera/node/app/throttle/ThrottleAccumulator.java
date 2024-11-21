@@ -27,12 +27,12 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_A
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.calculateExpiration;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isEntityNumAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
-import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.SCHEDULING_THROTTLE;
 import static java.util.Collections.emptyList;
@@ -464,16 +464,18 @@ public class ThrottleAccumulator {
             }
             return !manager.allReqsMetAt(now);
         } else {
-            if (throttleType == BACKEND_THROTTLE) {
-                if (!manager.allReqsMetAt(now)) {
-                    return true;
-                }
-            }
-
-            if (throttleType == SCHEDULING_THROTTLE) {
+            if (throttleType != SCHEDULING_THROTTLE) {
+                return !manager.allReqsMetAt(now);
+            } else {
                 var effectivePayer = scheduleCreate.hasPayerAccountID()
                         ? scheduleCreate.payerAccountID()
                         : txnBody.transactionID().accountID();
+
+                final var expirationSecond = calculateExpiration(
+                        scheduleCreate.expirationTime(),
+                        now,
+                        configuration.getConfigData(SchedulingConfig.class).maxExpirationFutureSeconds(),
+                        true);
 
                 final var innerTxnInfo = new TransactionInfo(
                         Transaction.DEFAULT,
@@ -484,14 +486,8 @@ public class ThrottleAccumulator {
                         Bytes.EMPTY,
                         scheduledFunction,
                         null);
-                return shouldThrottleTxn(
-                        true,
-                        innerTxnInfo,
-                        Instant.ofEpochSecond(scheduleCreate.expirationTime().seconds()),
-                        state);
+                return shouldThrottleTxn(true, innerTxnInfo, Instant.ofEpochSecond(expirationSecond), state);
             }
-
-            return false;
         }
     }
 

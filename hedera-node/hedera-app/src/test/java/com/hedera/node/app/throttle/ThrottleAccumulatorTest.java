@@ -31,6 +31,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECEIPT;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.SCHEDULING_THROTTLE;
 import static com.hedera.pbj.runtime.ProtoTestTools.getThreadLocalDataBuffer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1257,7 +1258,8 @@ class ThrottleAccumulatorTest {
     }
 
     @ParameterizedTest
-    @EnumSource
+    @CsvSource({"FRONTEND_THROTTLE", "BACKEND_THROTTLE"})
+    // schedule throttle cant leak unused gas in the future
     void verifyLeakUnusedGas(ThrottleAccumulator.ThrottleType throttleType) throws IOException, ParseException {
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType, throttleMetrics);
         given(configProvider.getConfiguration()).willReturn(configuration);
@@ -1863,15 +1865,7 @@ class ThrottleAccumulatorTest {
 
         // then
         assertFalse(ans);
-        if (longTermEnabled && throttleType == FRONTEND_THROTTLE) {
-            // with long term enabled, we count the schedule create in addition to the auto
-            // associations, which
-            // is how it should have been to start with
-            assertEquals(11 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
-        } else {
-            assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
-        }
-
+        assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
         assertEquals(0, subject.activeThrottlesFor(CRYPTO_TRANSFER).get(0).used());
     }
 
@@ -1951,7 +1945,7 @@ class ThrottleAccumulatorTest {
     void reclaimsAllUsagesOnThrottledCheckAndEnforceThrottleTxn() throws IOException, ParseException {
         // given
         subject = new ThrottleAccumulator(
-                () -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE, throttleMetrics, gasThrottle);
+                () -> CAPACITY_SPLIT, configProvider, SCHEDULING_THROTTLE, throttleMetrics, gasThrottle);
 
         given(configProvider.getConfiguration()).willReturn(configuration);
         given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
@@ -1960,6 +1954,7 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
         given(configuration.getConfigData(SchedulingConfig.class)).willReturn(schedulingConfig);
         given(schedulingConfig.longTermEnabled()).willReturn(true);
+        given(schedulingConfig.maxExpirationFutureSeconds()).willReturn(30L);
 
         final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
                 .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
@@ -1976,19 +1971,16 @@ class ThrottleAccumulatorTest {
 
         assertFalse(firstAns);
         assertTrue(subsequentAns);
-        assertEquals(
-                4999250000000L,
-                subject.activeThrottlesFor(SCHEDULE_CREATE).get(0).used());
 
+        // SCHEDULING_THROTTLE is responsible only for the scheduled transaction, and not the schedule create!
         assertEquals(
-                4999999250000L,
+                5000000000000L,
                 subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
 
         // when
         subject.resetUsage();
 
         // then
-        assertEquals(0L, subject.activeThrottlesFor(SCHEDULE_CREATE).get(0).used());
         assertEquals(
                 0L, subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
     }
