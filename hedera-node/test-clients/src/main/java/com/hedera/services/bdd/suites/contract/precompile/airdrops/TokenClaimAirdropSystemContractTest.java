@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.checkForBalances;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareAccountAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareAirdrops;
-import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareNftAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareTokenAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareTokensAndBalances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -153,7 +152,7 @@ class TokenClaimAirdropSystemContractTest {
                     spec, receiver, receiver, receiver, receiver, receiver, receiver, receiver, receiver, receiver,
                     receiver);
             final var tokens = prepareTokenAddresses(spec, token1, token2, token3, token4, token5);
-            final var nfts = prepareNftAddresses(spec, nft1, nft2, nft3, nft4, nft5);
+            final var nfts = prepareTokenAddresses(spec, nft1, nft2, nft3, nft4, nft5);
             final var combined =
                     Stream.concat(Arrays.stream(tokens), Arrays.stream(nfts)).toArray(Address[]::new);
             final var serials = new long[] {0L, 0L, 0L, 0L, 0L, 1L, 1L, 1L, 1L, 1L};
@@ -221,7 +220,7 @@ class TokenClaimAirdropSystemContractTest {
                     spec, receiver, receiver, receiver, receiver, receiver, receiver, receiver, receiver, receiver,
                     receiver, receiver);
             final var tokens = prepareTokenAddresses(spec, token1, token2, token3, token4, token5);
-            final var nfts = prepareNftAddresses(spec, nft1, nft2, nft3, nft4, nft5);
+            final var nfts = prepareTokenAddresses(spec, nft1, nft2, nft3, nft4, nft5);
             final var combined =
                     Stream.concat(Arrays.stream(tokens), Arrays.stream(nfts)).toArray(Address[]::new);
             final var serials = new long[] {0L, 0L, 0L, 0L, 0L, 0L, 1L, 1L, 1L, 1L, 1L};
