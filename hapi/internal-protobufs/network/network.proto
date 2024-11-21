@@ -37,6 +37,7 @@ package com.hedera.node.internal.network;
 
 import "auxiliary/tss/tss_message.proto";
 import "state/addressbook/node.proto";
+import "state/roster/roster.proto";
 
 option java_package = "com.hedera.node.internal.network.legacy";
 // <<<pbj.java_package = "com.hedera.node.internal.network">>> This comment is special code for setting PBJ Compiler java package
@@ -99,6 +100,12 @@ message Network {
  */
 message NodeMetadata {
   /**
+   * The node's entry in the current roster at the time of the network snapshot;
+   * required to validate the network's ledger id if set.
+   */
+  com.hedera.hapi.node.state.roster.RosterEntry roster_entry = 1;
+
+  /**
   * A consensus node representation.
   * <p>
   * Each node MUST be uniquely identifiable _within_ a ledger and must not
@@ -106,7 +113,7 @@ message NodeMetadata {
   * This field MUST represent a complete address book entry for a single node
   * in the network state.<br/>
   */
-  com.hedera.hapi.node.state.addressbook.Node node = 1;
+  com.hedera.hapi.node.state.addressbook.Node node = 2;
 
   /**
     * An elliptic curve public encryption key.<br/>
@@ -114,5 +121,5 @@ message NodeMetadata {
     * This is currently a BN254 elliptic curve, but this type may be subject to
     * change in the future.
     */
-  bytes tss_encryption_key = 2;
+  bytes tss_encryption_key = 3;
 }

@@ -181,7 +181,7 @@ public class StatsDemoMain implements SwirldMain {
     private synchronized void generateTransactions() {
         byte[] transaction = new byte[bytesPerTrans];
         long now = System.nanoTime();
-        double tps = transPerSecToCreate / platform.getAddressBook().getSize();
+        double tps = transPerSecToCreate / platform.getRoster().rosterEntries().size();
         int numCreated = 0;
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)

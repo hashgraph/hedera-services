@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -40,7 +41,7 @@ import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -81,9 +82,8 @@ public class MapValueFCQTests {
         state = Mockito.spy(PlatformTestingToolState.class);
         final Platform platform = Mockito.mock(Platform.class);
         when(platform.getSelfId()).thenReturn(NodeId.of(0L));
-        AddressBook addressBook = Mockito.spy(AddressBook.class);
-        when(addressBook.getNumberWithWeight()).thenReturn(4);
-        when(platform.getAddressBook()).thenReturn(addressBook);
+        final Roster roster = RandomRosterBuilder.create(RANDOM).withSize(4).build();
+        when(platform.getRoster()).thenReturn(roster);
         state.init(platform, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
         state.initChildren();
     }
