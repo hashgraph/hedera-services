@@ -16,18 +16,19 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createRoot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
@@ -51,18 +52,16 @@ class VirtualLeafNodeTest {
 
     @Test
     void copyNotSupported() {
-        final VirtualLeafRecord<TestKey, TestValue> leafRecord = new VirtualLeafRecord<>(1, null, null);
-        final VirtualRootNode<TestKey, TestValue> root = createRoot();
-        final VirtualLeafNode<TestKey, TestValue> virtualLeaf = new VirtualLeafNode<>(leafRecord, null);
+        final VirtualLeafBytes leafRecord = new VirtualLeafBytes(1, Bytes.EMPTY, null);
+        final VirtualLeafNode virtualLeaf = new VirtualLeafNode(leafRecord, null);
         assertThrows(UnsupportedOperationException.class, virtualLeaf::copy, "Copy is not supported");
     }
 
     @Test
     void toStringTest() {
         // Shameless test to cover toString. All I really care is it doesn't throw an NPE.
-        final VirtualLeafRecord<TestKey, TestValue> leafRecord = new VirtualLeafRecord<>(1, null, null);
-        final VirtualRootNode<TestKey, TestValue> root = createRoot();
-        final VirtualLeafNode<TestKey, TestValue> leaf = new VirtualLeafNode<>(leafRecord, null);
+        final VirtualLeafBytes leafRecord = new VirtualLeafBytes(1, Bytes.EMPTY, null);
+        final VirtualLeafNode leaf = new VirtualLeafNode(leafRecord, null);
         assertNotNull(leaf.toString(), "leaf should not have a null string");
 
         // a few addition tests that also just juice the coverage numbers

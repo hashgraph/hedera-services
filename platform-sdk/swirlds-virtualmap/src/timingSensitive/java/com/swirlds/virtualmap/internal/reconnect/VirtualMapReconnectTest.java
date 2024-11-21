@@ -232,11 +232,11 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @DisplayName("Reconnect aborts 5 times before success")
     void multipleAbortedReconnectsCanSucceed(int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {
         for (int i = teacherStart; i < teacherEnd; i++) {
-            teacherMap.put(new TestKey(i), new TestValue(i));
+            teacherMap.put(TestKey.longToKey(i), TestValue.longToValue(i));
         }
 
         for (int i = learnerStart; i < learnerEnd; i++) {
-            learnerMap.put(new TestKey(i), new TestValue(i));
+            learnerMap.put(TestKey.longToKey(i), TestValue.longToValue(i));
         }
 
         learnerBuilder.setNumCallsBeforeThrow((teacherEnd - teacherStart) / 2);
@@ -262,7 +262,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
         teacherMap.put(D_KEY, DOG);
 
         final MerkleInternal teacherTree = createTreeForMap(teacherMap);
-        final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
+        final VirtualMap copy = teacherMap.copy();
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
 
         // reconnect happening
@@ -271,7 +271,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
 
         // not sure what is the better way to get the embedded Virtual map
         DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
-        VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);
+        VirtualMap afterMap = node.getChild(3);
 
         assertEquals(DOG, afterMap.get(D_KEY), "After sync, should have D_KEY available");
         assertNull(afterMap.get(C_KEY), "After sync, should not have C_KEY anymore");

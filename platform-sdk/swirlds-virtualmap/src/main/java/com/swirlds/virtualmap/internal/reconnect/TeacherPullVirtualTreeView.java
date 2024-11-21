@@ -32,8 +32,6 @@ import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
@@ -54,14 +52,8 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>This implementation is supposed to work with {@link LearnerPullVirtualTreeView} on the
  * learner side.
- *
- * @param <K>
- * 		The key
- * @param <V>
- * 		The value
  */
-public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualValue>
-        extends VirtualTreeViewBase<K, V> implements TeacherTreeView<Long> {
+public final class TeacherPullVirtualTreeView extends VirtualTreeViewBase implements TeacherTreeView<Long> {
 
     private static final Logger logger = LogManager.getLogger(TeacherPullVirtualTreeView.class);
 
@@ -70,7 +62,7 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
     /**
      * The {@link RecordAccessor} used for accessing the original map state.
      */
-    private RecordAccessor<K, V> records;
+    private RecordAccessor records;
 
     /**
      * This latch counts down when the view is fully initialized and ready for use.
@@ -92,7 +84,7 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
     public TeacherPullVirtualTreeView(
             final ThreadManager threadManager,
             final ReconnectConfig reconnectConfig,
-            final VirtualRootNode<K, V> root,
+            final VirtualRootNode root,
             final VirtualStateAccessor state,
             final VirtualPipeline pipeline) {
         // There is no distinction between originalState and reconnectState in this implementation
@@ -152,7 +144,7 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
             out.writeLong(reconnectState.getLastLeafPath());
         }
         if (!isClean && isLeaf(path) && (reconnectState.getFirstLeafPath() > 0)) {
-            out.writeSerializable(records.findLeafRecord(path, false), false);
+            VirtualReconnectUtils.writeLeafRecord(out, records.findLeafRecord(path, false));
         }
     }
 

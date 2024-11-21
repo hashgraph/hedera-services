@@ -24,9 +24,8 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.statedumpers.utils.Writer;
-import com.swirlds.state.merkle.StateMetadata;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,11 +50,10 @@ public class ContractBytecodesDumpUtils {
 
     public static void dumpModContractBytecodes(
             @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts,
-            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
-            final StateMetadata<AccountID, Account> stateMetadata,
+            @NonNull final VirtualMap contracts,
+            final VirtualMap accounts,
             @NonNull final DumpCheckpoint checkpoint) {
-        final var dumpableAccounts = gatherModContracts(contracts, accounts, stateMetadata);
+        final var dumpableAccounts = gatherModContracts(contracts, accounts);
         final var sb = generateReport(dumpableAccounts);
         try (@NonNull final var writer = new Writer(path)) {
             writer.writeln(sb.toString());
@@ -66,10 +64,7 @@ public class ContractBytecodesDumpUtils {
     }
 
     @NonNull
-    public static Contracts gatherModContracts(
-            VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts,
-            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
-            final StateMetadata<AccountID, Account> stateMetadata) {
+    public static Contracts gatherModContracts(final VirtualMap contracts, final VirtualMap accounts) {
         final var contractsToReturn = new ConcurrentLinkedQueue<BBMContract>();
         final var threadCount = 8;
         final var processed = new AtomicInteger();
@@ -80,7 +75,7 @@ public class ContractBytecodesDumpUtils {
                     contracts,
                     p -> {
                         processed.incrementAndGet();
-                        contractsToReturn.add(fromMod(p.left(), p.right(), accounts, stateMetadata));
+                        contractsToReturn.add(fromMod(p.left(), p.right(), accounts));
                     },
                     threadCount);
         } catch (final InterruptedException ex) {
@@ -97,28 +92,24 @@ public class ContractBytecodesDumpUtils {
         return new Contracts(List.of(contractArr), deletedContracts, contractArr.length - deletedContracts.size());
     }
 
-    public static BBMContract fromMod(
-            OnDiskKey<ContractID> id,
-            OnDiskValue<Bytecode> bytecode,
-            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
-            final StateMetadata<AccountID, Account> stateMetadata) {
-        final var isDeleted = accounts.get(new OnDiskKey<>(
-                        stateMetadata.onDiskKeyClassId(),
-                        stateMetadata.stateDefinition().keyCodec(),
-                        AccountID.newBuilder()
-                                .accountNum(id.getKey().contractNum())
-                                .build()))
-                .getValue()
-                .deleted();
+    public static BBMContract fromMod(final Bytes idBytes, final Bytes bytecodeBytes, final VirtualMap accounts) {
+        try {
+            final var id = ContractID.PROTOBUF.parse(idBytes);
+            final var bytecode = Bytecode.PROTOBUF.parse(bytecodeBytes);
+            final var accountId = AccountID.PROTOBUF.toBytes(
+                    AccountID.newBuilder().accountNum(id.contractNum()).build());
+            final var account = Account.PROTOBUF.parse(accounts.get(accountId));
+            final var isDeleted = account.deleted();
 
-        final var c = new BBMContract(
-                new TreeSet<>(),
-                bytecode.getValue().code().toByteArray(),
-                isDeleted ? Validity.DELETED : Validity.ACTIVE);
-        if (id.getKey().contractNum() != null) {
-            c.ids().add(id.getKey().contractNum().intValue());
+            final var c = new BBMContract(
+                    new TreeSet<>(), bytecode.code().toByteArray(), isDeleted ? Validity.DELETED : Validity.ACTIVE);
+            if (id.contractNum() != null) {
+                c.ids().add(id.contractNum().intValue());
+            }
+            return c;
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse a contract ID, or a bytecode, or an account", e);
         }
-        return c;
     }
 
     public static StringBuilder generateReport(Contracts knownContracts) {

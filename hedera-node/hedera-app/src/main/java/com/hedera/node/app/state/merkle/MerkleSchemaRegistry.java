@@ -51,9 +51,7 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
 import com.swirlds.state.merkle.disk.OnDiskValue;
-import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
 import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.merkle.memory.InMemoryWritableKVState;
 import com.swirlds.state.merkle.queue.QueueNode;
@@ -329,23 +327,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                         stateRoot.putServiceStateIfAbsent(
                                 md,
                                 () -> {
-                                    final var keySerializer = new OnDiskKeySerializer<>(
-                                            md.onDiskKeySerializerClassId(),
-                                            md.onDiskKeyClassId(),
-                                            md.stateDefinition().keyCodec());
-                                    final var valueSerializer = new OnDiskValueSerializer<>(
-                                            md.onDiskValueSerializerClassId(),
-                                            md.onDiskValueClassId(),
-                                            md.stateDefinition().valueCodec());
                                     // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                                     // PREFER_DISK_BASED_INDICES = false
                                     final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
                                             .maxNumberOfKeys(def.maxKeysHint());
                                     final var label = StateUtils.computeLabel(serviceName, stateKey);
                                     final var dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
-                                    final var virtualMap =
-                                            new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder);
-                                    return virtualMap;
+                                    return new VirtualMap(label, dsBuilder);
                                 },
                                 // Register the metrics for the virtual map if they are available.
                                 // Early rounds of migration done by services such as PlatformStateService,
@@ -399,21 +387,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     () -> new OnDiskKey<>(
                             md.onDiskKeyClassId(), md.stateDefinition().keyCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskKeySerializer.class,
-                    () -> new OnDiskKeySerializer<>(
-                            md.onDiskKeySerializerClassId(),
-                            md.onDiskKeyClassId(),
-                            md.stateDefinition().keyCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
                     OnDiskValue.class,
                     () -> new OnDiskValue<>(
                             md.onDiskValueClassId(), md.stateDefinition().valueCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskValueSerializer.class,
-                    () -> new OnDiskValueSerializer<>(
-                            md.onDiskValueSerializerClassId(),
-                            md.onDiskValueClassId(),
-                            md.stateDefinition().valueCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     SingletonNode.class,
                     () -> new SingletonNode<>(

@@ -27,8 +27,6 @@ import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.route.ReverseMerkleRouteIterator;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.test.fixtures.TestKey;
-import com.swirlds.virtualmap.test.fixtures.TestValue;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.util.Iterator;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,20 +37,21 @@ import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("SpellCheckingInspection")
 class VirtualMerkleNavigationTest extends VirtualTestBase {
-    private VirtualMap<TestKey, TestValue> vm;
-    private VirtualRootNode<TestKey, TestValue> virtualRoot;
-    private VirtualInternalNode<TestKey, TestValue> left;
-    private VirtualInternalNode<TestKey, TestValue> right;
-    private VirtualInternalNode<TestKey, TestValue> leftLeft;
-    private VirtualInternalNode<TestKey, TestValue> leftRight;
-    private VirtualInternalNode<TestKey, TestValue> rightLeft;
-    private VirtualLeafNode<TestKey, TestValue> a;
-    private VirtualLeafNode<TestKey, TestValue> b;
-    private VirtualLeafNode<TestKey, TestValue> c;
-    private VirtualLeafNode<TestKey, TestValue> d;
-    private VirtualLeafNode<TestKey, TestValue> e;
-    private VirtualLeafNode<TestKey, TestValue> f;
-    private VirtualLeafNode<TestKey, TestValue> g;
+
+    private VirtualMap vm;
+    private VirtualRootNode virtualRoot;
+    private VirtualInternalNode left;
+    private VirtualInternalNode right;
+    private VirtualInternalNode leftLeft;
+    private VirtualInternalNode leftRight;
+    private VirtualInternalNode rightLeft;
+    private VirtualLeafNode a;
+    private VirtualLeafNode b;
+    private VirtualLeafNode c;
+    private VirtualLeafNode d;
+    private VirtualLeafNode e;
+    private VirtualLeafNode f;
+    private VirtualLeafNode g;
     private TestInternal treeRoot;
     private TestInternal tl;
     private TestInternal tr;

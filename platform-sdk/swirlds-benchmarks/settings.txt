@@ -1,7 +1,7 @@
 benchmark.benchmarkData,                       data
-benchmark.saveDataDirectory,                   false
-benchmark.verifyResult,                        true
-benchmark.enableSnapshots,                     false
+benchmark.saveDataDirectory,                   true
+benchmark.verifyResult,                        false
+benchmark.enableSnapshots,                     true
 benchmark.printHistogram,                      false
 benchmark.csvOutputFolder,                     data
 benchmark.csvWriteFrequency,                   1000

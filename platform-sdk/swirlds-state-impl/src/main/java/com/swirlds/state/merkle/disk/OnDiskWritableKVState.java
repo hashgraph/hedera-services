@@ -17,7 +17,6 @@
 package com.swirlds.state.merkle.disk;
 
 import static com.swirlds.state.merkle.logging.StateLogger.logMapGet;
-import static com.swirlds.state.merkle.logging.StateLogger.logMapGetForModify;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapGetSize;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapIterate;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapPut;
@@ -25,12 +24,13 @@ import static com.swirlds.state.merkle.logging.StateLogger.logMapRemove;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.metrics.StoreMetrics;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
 
 /**
@@ -41,13 +41,15 @@ import java.util.Iterator;
  * @param <V> The type of value for the state
  */
 public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V> {
-    /** The backing merkle data structure */
-    private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
 
+    /** The backing merkle data structure */
+    private final VirtualMap virtualMap;
+
+    @NonNull
     private final Codec<K> keyCodec;
-    private final long keyClassId;
+
+    @NonNull
     private final Codec<V> valueCodec;
-    private final long valueClassId;
 
     private StoreMetrics storeMetrics;
 
@@ -55,23 +57,17 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
      * Create a new instance
      *
      * @param stateKey     the state key
-     * @param keyClassId   the class ID for the key
      * @param keyCodec     the codec for the key
-     * @param valueClassId the class ID for the value
      * @param valueCodec   the codec for the value
      * @param virtualMap   the backing merkle data structure to use
      */
     public OnDiskWritableKVState(
             String stateKey,
-            final long keyClassId,
-            @Nullable final Codec<K> keyCodec,
-            final long valueClassId,
+            @NonNull final Codec<K> keyCodec,
             @NonNull final Codec<V> valueCodec,
-            @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
+            @NonNull final VirtualMap virtualMap) {
         super(stateKey);
-        this.keyClassId = keyClassId;
         this.keyCodec = keyCodec;
-        this.valueClassId = valueClassId;
         this.valueCodec = valueCodec;
         this.virtualMap = requireNonNull(virtualMap);
     }
@@ -79,12 +75,16 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        final var k = new OnDiskKey<>(keyClassId, keyCodec, key);
+        final var k = keyCodec.toBytes(key);
         final var v = virtualMap.get(k);
-        final var value = v == null ? null : v.getValue();
-        // Log to transaction state log, what was read
-        logMapGet(getStateKey(), key, value);
-        return value;
+        try {
+            final var value = v == null ? null : valueCodec.parse(v);
+            // Log to transaction state log, what was read
+            logMapGet(getStateKey(), key, value);
+            return value;
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse value from the data store (type mismatch?)", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -92,31 +92,20 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     @Override
     protected Iterator<K> iterateFromDataSource() {
         // Log to transaction state log, what was iterated
-        logMapIterate(getStateKey(), virtualMap);
-        return new OnDiskIterator<>(virtualMap);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected V getForModifyFromDataSource(@NonNull K key) {
-        final var k = new OnDiskKey<>(keyClassId, keyCodec, key);
-        final var v = virtualMap.getForModify(k);
-        final var value = v == null ? null : v.getValue();
-        // Log to transaction state log, what was read
-        logMapGetForModify(getStateKey(), key, value);
-        return value;
+        logMapIterate(getStateKey(), virtualMap, keyCodec);
+        return new OnDiskIterator<>(virtualMap, keyCodec);
     }
 
     /** {@inheritDoc} */
     @Override
     protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
-        final var k = new OnDiskKey<>(keyClassId, keyCodec, key);
-        final var existing = virtualMap.getForModify(k);
-        if (existing != null) {
-            existing.setValue(value);
-        } else {
-            virtualMap.put(k, new OnDiskValue<>(valueClassId, valueCodec, value));
-        }
+        final Bytes k = keyCodec.toBytes(key);
+        assert k != null;
+        final Bytes v = valueCodec.toBytes(value);
+        // If we expect a lot of empty values, Bytes.EMPTY optimization below may be helpful, but
+        // for now it just adds a call to measureRecord(), but benefits are unclear
+        // final Bytes v = valueCodec.measureRecord(value) == 0 ? Bytes.EMPTY : valueCodec.toBytes(value);
+        virtualMap.put(k, v);
         // Log to transaction state log, what was put
         logMapPut(getStateKey(), key, value);
     }
@@ -124,10 +113,10 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     protected void removeFromDataSource(@NonNull K key) {
-        final var k = new OnDiskKey<>(keyClassId, keyCodec, key);
+        final var k = keyCodec.toBytes(key);
         final var removed = virtualMap.remove(k);
         // Log to transaction state log, what was removed
-        logMapRemove(getStateKey(), key, removed);
+        logMapRemove(getStateKey(), key, removed, valueCodec);
     }
 
     /** {@inheritDoc} */

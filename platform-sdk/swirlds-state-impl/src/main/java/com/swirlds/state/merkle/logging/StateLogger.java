@@ -21,9 +21,10 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.state.merkle.memory.InMemoryKey;
 import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.merkle.singleton.ValueLeaf;
@@ -178,19 +179,29 @@ public class StateLogger {
      * Log the removal of an entry from a map.
      *
      * @param label The label of the map
-     * @param key The key removed to the map
-     * @param value The value removed to the map
+     * @param key The key removed from the map
+     * @param value The value bytes removed from the map
+     * @param valueCodec The value codec
      * @param <K> The type of the key
      * @param <V> The type of the value
      */
     public static <K, V> void logMapRemove(
-            @NonNull final String label, @NonNull final K key, @Nullable final OnDiskValue<V> value) {
+            @NonNull final String label,
+            @NonNull final K key,
+            @Nullable final Bytes value,
+            @NonNull final Codec<V> valueCodec) {
         if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
+            final V v;
+            try {
+                v = (value == null) ? null : valueCodec.parse(value);
+            } catch (final ParseException e) {
+                throw new RuntimeException(e);
+            }
             logger.debug(
                     "      REMOVE from map {} key {} removed value {}",
                     label,
                     formatKey(key),
-                    value == null ? "null" : value.toString());
+                    v == null ? "null" : v.toString());
         }
     }
 
@@ -279,7 +290,7 @@ public class StateLogger {
      * @param <V> The type of the value
      */
     public static <K, V> void logMapIterate(
-            @NonNull final String label, @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
+            @NonNull final String label, @NonNull final VirtualMap virtualMap, @NonNull final Codec<K> keyCodec) {
         if (logger.isDebugEnabled()) {
             final var spliterator = Spliterators.spliterator(
                     virtualMap.treeIterator(), virtualMap.size(), Spliterator.SIZED & Spliterator.ORDERED);
@@ -293,10 +304,12 @@ public class StateLogger {
                         size,
                         StreamSupport.stream(spliterator, false)
                                 .map(merkleNode -> {
-                                    if (merkleNode instanceof VirtualLeafNode<?, ?> leaf) {
+                                    if (merkleNode instanceof VirtualLeafNode leaf) {
                                         final var k = leaf.getKey();
-                                        if (k instanceof OnDiskKey<?> onDiskKey) {
-                                            return onDiskKey.getKey().toString();
+                                        try {
+                                            return keyCodec.parse(k).toString();
+                                        } catch (final ParseException e) {
+                                            // ignore, return the unknown type below
                                         }
                                     }
                                     return "Unknown_Type";

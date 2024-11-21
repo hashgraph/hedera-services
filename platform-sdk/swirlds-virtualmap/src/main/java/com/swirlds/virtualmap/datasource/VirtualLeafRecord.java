@@ -140,8 +140,7 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
         } else {
             valueBytes = null;
         }
-        return new VirtualLeafBytes(
-                path, Bytes.wrap(keyBytes), key.hashCode(), valueBytes != null ? Bytes.wrap(valueBytes) : null);
+        return new VirtualLeafBytes(path, Bytes.wrap(keyBytes), valueBytes != null ? Bytes.wrap(valueBytes) : null);
     }
 
     /**

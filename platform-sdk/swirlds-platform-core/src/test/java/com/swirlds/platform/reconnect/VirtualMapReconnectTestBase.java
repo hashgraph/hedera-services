@@ -42,8 +42,6 @@ import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
-import com.swirlds.virtualmap.serialize.KeySerializer;
-import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -80,11 +78,8 @@ public abstract class VirtualMapReconnectTestBase {
     protected static final TestValue FOX = new TestValue("FOX");
     protected static final TestValue GOOSE = new TestValue("GOOSE");
 
-    protected static final KeySerializer<TestKey> KEY_SERIALIZER = new TestKeySerializer();
-    protected static final ValueSerializer<TestValue> VALUE_SERIALIZER = new TestValueSerializer();
-
-    protected VirtualMap<TestKey, TestValue> teacherMap;
-    protected VirtualMap<TestKey, TestValue> learnerMap;
+    protected VirtualMap teacherMap;
+    protected VirtualMap learnerMap;
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
 
@@ -105,8 +100,8 @@ public abstract class VirtualMapReconnectTestBase {
         final VirtualDataSourceBuilder dataSourceBuilder = createBuilder();
         teacherBuilder = new BrokenBuilder(dataSourceBuilder);
         learnerBuilder = new BrokenBuilder(dataSourceBuilder);
-        teacherMap = new VirtualMap<>("Teacher", KEY_SERIALIZER, VALUE_SERIALIZER, teacherBuilder);
-        learnerMap = new VirtualMap<>("Learner", KEY_SERIALIZER, VALUE_SERIALIZER, learnerBuilder);
+        teacherMap = new VirtualMap("Teacher", teacherBuilder);
+        learnerMap = new VirtualMap("Learner", learnerBuilder);
     }
 
     @BeforeAll
@@ -125,7 +120,7 @@ public abstract class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));
     }
 
-    protected MerkleInternal createTreeForMap(VirtualMap<TestKey, TestValue> map) {
+    protected MerkleInternal createTreeForMap(VirtualMap map) {
         final var tree = MerkleTestUtils.buildLessSimpleTree();
         tree.getChild(1).asInternal().setChild(3, map);
         tree.reserve();
@@ -138,7 +133,7 @@ public abstract class VirtualMapReconnectTestBase {
 
     protected void reconnectMultipleTimes(int attempts) {
         final MerkleInternal teacherTree = createTreeForMap(teacherMap);
-        final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
+        final VirtualMap copy = teacherMap.copy();
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
         try {
             for (int i = 0; i < attempts; i++) {
@@ -275,8 +270,8 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public VirtualLeafBytes loadLeafRecord(final Bytes key, final int keyHashCode) throws IOException {
-            return delegate.loadLeafRecord(key, keyHashCode);
+        public VirtualLeafBytes loadLeafRecord(final Bytes key) throws IOException {
+            return delegate.loadLeafRecord(key);
         }
 
         @Override
@@ -285,8 +280,8 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public long findKey(final Bytes key, final int keyHashCode) throws IOException {
-            return delegate.findKey(key, keyHashCode);
+        public long findKey(final Bytes key) throws IOException {
+            return delegate.findKey(key);
         }
 
         @Override
@@ -327,18 +322,6 @@ public abstract class VirtualMapReconnectTestBase {
         @Override
         public void stopAndDisableBackgroundCompaction() {
             delegate.stopAndDisableBackgroundCompaction();
-        }
-
-        @Override
-        @SuppressWarnings("rawtypes")
-        public KeySerializer getKeySerializer() {
-            throw new UnsupportedOperationException("This method should never be called");
-        }
-
-        @Override
-        @SuppressWarnings("rawtypes")
-        public ValueSerializer getValueSerializer() {
-            throw new UnsupportedOperationException("This method should never be called");
         }
     }
 }

@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.test.fixtures;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -27,6 +28,17 @@ public final class TestKey implements VirtualKey {
     private long k;
 
     private static final long CLASS_ID = 0x5491740ab996d4b1L;
+
+    public static Bytes longToKey(final long k) {
+        final byte[] bytes = new byte[Long.BYTES];
+        // sub-optimal, but easy
+        ByteBuffer.wrap(bytes).putLong(k);
+        return Bytes.wrap(bytes);
+    }
+
+    public static Bytes charToKey(final char c) {
+        return longToKey(c);
+    }
 
     public TestKey() {}
 

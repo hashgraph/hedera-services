@@ -169,9 +169,9 @@ class SerializationTest extends MerkleTestBase {
             try {
                 Field vmField = OnDiskReadableKVState.class.getDeclaredField("virtualMap");
                 vmField.setAccessible(true);
-                VirtualMap<?, ?> vm = (VirtualMap<?, ?>) vmField.get(state);
+                VirtualMap vm = (VirtualMap) vmField.get(state);
 
-                final VirtualRootNode<?, ?> root = vm.getRight();
+                final VirtualRootNode root = vm.getRight();
                 if (!vm.isEmpty()) {
                     root.enableFlush();
                     vm.release();
@@ -341,13 +341,13 @@ class SerializationTest extends MerkleTestBase {
     private static void populateVmCache(MerkleStateRoot loadedTree) {
         final var states = loadedTree.getWritableStates(FIRST_SERVICE);
         final WritableKVState<String, String> animalState = states.get(ANIMAL_STATE_KEY);
-        assertThat(animalState.getForModify(A_KEY)).isEqualTo(AARDVARK);
-        assertThat(animalState.getForModify(B_KEY)).isEqualTo(BEAR);
-        assertThat(animalState.getForModify(C_KEY)).isEqualTo(CUTTLEFISH);
-        assertThat(animalState.getForModify(D_KEY)).isEqualTo(DOG);
-        assertThat(animalState.getForModify(E_KEY)).isEqualTo(EMU);
-        assertThat(animalState.getForModify(F_KEY)).isEqualTo(FOX);
-        assertThat(animalState.getForModify(G_KEY)).isEqualTo(GOOSE);
+        assertThat(animalState.get(A_KEY)).isEqualTo(AARDVARK);
+        assertThat(animalState.get(B_KEY)).isEqualTo(BEAR);
+        assertThat(animalState.get(C_KEY)).isEqualTo(CUTTLEFISH);
+        assertThat(animalState.get(D_KEY)).isEqualTo(DOG);
+        assertThat(animalState.get(E_KEY)).isEqualTo(EMU);
+        assertThat(animalState.get(F_KEY)).isEqualTo(FOX);
+        assertThat(animalState.get(G_KEY)).isEqualTo(GOOSE);
     }
 
     private static void assertTree(MerkleStateRoot loadedTree) {

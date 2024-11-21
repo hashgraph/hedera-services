@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
@@ -33,12 +34,8 @@ import com.swirlds.merkledb.MerkleDbStatistics;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.serialize.KeySerializer;
-import com.swirlds.virtualmap.serialize.ValueSerializer;
+import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ScheduledExecutorService;
@@ -52,21 +49,17 @@ import java.util.concurrent.ScheduledExecutorService;
 public enum TestType {
 
     /** Parameterizes a test with fixed-size key and fixed-size data. */
-    fixed_fixed(true),
+    long_fixed(true),
     /** Parameterizes a test with fixed-size key and variable-size data. */
-    fixed_variable(false),
+    long_variable(false),
     /** Parameterizes a test with fixed-size complex key and fixed-size data. */
-    fixedComplex_fixed(true),
+    longLong_fixed(true),
     /** Parameterizes a test with fixed-size complex key and variable-size data. */
-    fixedComplex_variable(false),
+    longLong_variable(false),
     /** Parameterizes a test with variable-size key and fixed-size data. */
     variable_fixed(false),
     /** Parameterizes a test with variable-size key and variable-size data. */
-    variable_variable(false),
-    /** Parameterizes a test with variable-size complex key and fixed-size data. */
-    variableComplex_fixed(false),
-    /** Parameterizes a test with variable-size complex key and variable-size data. */
-    variableComplex_variable(false);
+    variable_variable(false);
 
     public final boolean fixedSize;
 
@@ -76,8 +69,8 @@ public enum TestType {
         this.fixedSize = fixedSize;
     }
 
-    public <K extends VirtualKey, V extends VirtualValue> DataTypeConfig<K, V> dataType() {
-        return new DataTypeConfig<>(this);
+    public DataTypeConfig dataType() {
+        return new DataTypeConfig(this);
     }
 
     public Metrics getMetrics() {
@@ -100,92 +93,40 @@ public enum TestType {
         return metrics;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes", "unused"})
-    public class DataTypeConfig<K extends VirtualKey, V extends VirtualValue> {
+    public class DataTypeConfig {
 
         private final TestType testType;
-        private final KeySerializer<? extends VirtualKey> keySerializer;
-        private final ValueSerializer<? extends ExampleByteArrayVirtualValue> valueSerializer;
 
         public DataTypeConfig(TestType testType) {
             this.testType = testType;
-            this.keySerializer = createKeySerializer();
-            this.valueSerializer = createValueSerializer();
         }
 
-        public KeySerializer<? extends VirtualKey> getKeySerializer() {
-            return keySerializer;
-        }
-
-        public ValueSerializer<? extends ExampleByteArrayVirtualValue> getValueSerializer() {
-            return valueSerializer;
-        }
-
-        private KeySerializer<? extends VirtualKey> createKeySerializer() {
+        public Bytes createVirtualLongKey(final int i) {
             switch (testType) {
                 default:
-                case fixed_fixed:
-                case fixed_variable:
-                    return new ExampleLongKeyFixedSize.Serializer();
-                case fixedComplex_fixed:
-                case fixedComplex_variable:
-                    return new ExampleLongLongKeyFixedSize.Serializer();
+                case long_fixed:
+                case long_variable:
+                    return ExampleLongKey.longToKey(i);
+                case longLong_fixed:
+                case longLong_variable:
+                    return ExampleLongLongKey.longToKey(i);
                 case variable_fixed:
                 case variable_variable:
-                    return new ExampleLongKeyVariableSize.Serializer();
-                case variableComplex_fixed:
-                case variableComplex_variable:
-                    return new ExampleLongLongKeyVariableSize.Serializer();
+                    return ExampleVariableKey.longToKey(i);
             }
         }
 
-        private ValueSerializer<? extends ExampleByteArrayVirtualValue> createValueSerializer() {
+        public Bytes createVirtualValue(final int i) {
             switch (testType) {
                 default:
-                case fixed_fixed:
-                case fixedComplex_fixed:
+                case long_fixed:
+                case longLong_fixed:
                 case variable_fixed:
-                case variableComplex_fixed:
-                    return new ExampleFixedSizeVirtualValueSerializer();
-                case fixed_variable:
-                case fixedComplex_variable:
+                    return ExampleFixedValue.intToValue(i);
+                case long_variable:
+                case longLong_variable:
                 case variable_variable:
-                case variableComplex_variable:
-                    return new ExampleVariableSizeVirtualValueSerializer();
-            }
-        }
-
-        public VirtualKey createVirtualLongKey(final int i) {
-            switch (testType) {
-                default:
-                case fixed_fixed:
-                case fixed_variable:
-                    return new ExampleLongKeyFixedSize(i);
-                case fixedComplex_fixed:
-                case fixedComplex_variable:
-                    return new ExampleLongLongKeyFixedSize(i);
-                case variable_fixed:
-                case variable_variable:
-                    return new ExampleLongKeyVariableSize(i);
-                case variableComplex_fixed:
-                case variableComplex_variable:
-                    return new ExampleLongLongKeyVariableSize(i);
-            }
-        }
-
-        public ExampleByteArrayVirtualValue createVirtualValue(final int i) {
-            switch (testType) {
-                default:
-                case fixed_fixed:
-                case fixedComplex_fixed:
-                case variable_fixed:
-                case variableComplex_fixed:
-                    return new ExampleFixedSizeVirtualValue(i);
-                case fixed_variable:
-                case fixedComplex_variable:
-                case variable_variable:
-                case variableComplex_variable:
-                    return new ExampleVariableSizeVirtualValue(i);
+                    return ExampleVariableValue.intToValue(i);
             }
         }
 
@@ -196,20 +137,14 @@ public enum TestType {
         public long getDataFileLowLevelTestFileSize() {
             switch (testType) {
                 default:
-                case fixed_fixed:
-                case fixed_variable:
-                case fixedComplex_fixed:
-                case fixedComplex_variable:
+                case long_fixed:
+                case long_variable:
+                case longLong_fixed:
+                case longLong_variable:
                 case variable_fixed:
                 case variable_variable:
-                case variableComplex_fixed:
-                case variableComplex_variable:
                     return 24576L;
             }
-        }
-
-        public boolean hasKeyToPathStore() {
-            return (keySerializer.getSerializedSize() != Long.BYTES);
         }
 
         public MerkleDbDataSource createDataSource(
@@ -240,27 +175,24 @@ public enum TestType {
             return new VirtualHashRecord(i, MerkleDbTestUtils.hash(i));
         }
 
-        public VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> createVirtualLeafRecord(final int i) {
+        public VirtualLeafBytes createVirtualLeafRecord(final int i) {
             return createVirtualLeafRecord(i, i, i);
         }
 
-        public VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> createVirtualLeafRecord(
-                final long path, final int i, final int valueIndex) {
+        public VirtualLeafBytes createVirtualLeafRecord(final long path, final int i, final int valueIndex) {
 
             switch (testType) {
                 default:
-                case fixed_fixed:
-                case fixedComplex_fixed:
+                case long_fixed:
+                case longLong_fixed:
                 case variable_fixed:
-                case variableComplex_fixed:
-                    return new VirtualLeafRecord<>(
-                            path, createVirtualLongKey(i), new ExampleFixedSizeVirtualValue(valueIndex));
-                case fixed_variable:
-                case fixedComplex_variable:
+                    return new VirtualLeafBytes(
+                            path, createVirtualLongKey(i), ExampleFixedValue.intToValue(valueIndex));
+                case long_variable:
+                case longLong_variable:
                 case variable_variable:
-                case variableComplex_variable:
-                    return new VirtualLeafRecord<>(
-                            path, createVirtualLongKey(i), new ExampleVariableSizeVirtualValue(valueIndex));
+                    return new VirtualLeafBytes(
+                            path, createVirtualLongKey(i), ExampleVariableValue.intToValue(valueIndex));
             }
         }
     }

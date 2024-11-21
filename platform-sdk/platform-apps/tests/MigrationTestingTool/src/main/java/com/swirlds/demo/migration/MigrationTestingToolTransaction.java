@@ -102,13 +102,13 @@ public class MigrationTestingToolTransaction implements SelfSerializable {
      * Perform a {@link TransactionType#VIRTUAL_MAP} transaction.
      */
     private void applyVirtualMapTransaction(final MigrationTestingToolState state, final Random random) {
-        final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> map = state.getVirtualMap();
+        final VirtualMap map = state.getVirtualMap();
 
         final AccountVirtualMapKey key = new AccountVirtualMapKey(0, 0, Math.abs(random.nextLong()));
         final AccountVirtualMapValue value = new AccountVirtualMapValue(
                 random.nextLong(), random.nextLong(), random.nextLong(), random.nextBoolean(), random.nextLong());
 
-        map.put(key, value);
+        map.put(key.toBytes(), value.toBytes());
     }
 
     /**

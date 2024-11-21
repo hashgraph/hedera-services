@@ -75,11 +75,6 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
     }
 
     @Override
-    protected V getForModifyFromDataSource(@NonNull K key) {
-        return backingStore.get(key);
-    }
-
-    @Override
     protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
         backingStore.put(key, value);
     }

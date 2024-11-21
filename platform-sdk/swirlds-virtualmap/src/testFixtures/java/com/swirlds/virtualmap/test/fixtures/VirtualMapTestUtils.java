@@ -27,23 +27,22 @@ public final class VirtualMapTestUtils {
 
     private VirtualMapTestUtils() {}
 
-    public static VirtualMap<TestKey, TestValue> createMap(String label) {
+    public static VirtualMap createMap(String label) {
         final VirtualDataSourceBuilder builder = new InMemoryBuilder();
-        return new VirtualMap<>(label, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder);
+        return new VirtualMap(label, builder);
     }
 
-    public static VirtualMap<TestKey, TestValue> createMap() {
+    public static VirtualMap createMap() {
         return createMap("Test");
     }
 
-    public static VirtualRootNode<TestKey, TestValue> createRoot() {
-        final VirtualRootNode<TestKey, TestValue> root =
-                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder());
+    public static VirtualRootNode createRoot() {
+        final VirtualRootNode root = new VirtualRootNode(new InMemoryBuilder());
         root.postInit(new DummyVirtualStateAccessor());
         return root;
     }
 
-    public static VirtualRootNode<TestKey, TestValue> getRoot(VirtualMap<TestKey, TestValue> map) {
+    public static VirtualRootNode getRoot(VirtualMap map) {
         return map.getChild(1);
     }
 }

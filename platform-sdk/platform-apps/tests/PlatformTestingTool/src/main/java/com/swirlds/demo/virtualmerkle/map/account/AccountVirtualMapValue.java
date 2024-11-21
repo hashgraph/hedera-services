@@ -18,10 +18,12 @@ package com.swirlds.demo.virtualmerkle.map.account;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * This class represents an account being store inside
@@ -63,6 +65,29 @@ public class AccountVirtualMapValue implements VirtualValue {
         this.receiveThreshold = accountVirtualMapValue.receiveThreshold;
         this.requireSignature = accountVirtualMapValue.requireSignature;
         this.uid = accountVirtualMapValue.uid;
+    }
+
+    public static AccountVirtualMapValue fromBytes(final Bytes bytes) {
+        if (bytes == null) {
+            return null;
+        }
+        return new AccountVirtualMapValue(
+                bytes.getLong(0),
+                bytes.getLong(Long.BYTES),
+                bytes.getLong(Long.BYTES * 2),
+                bytes.getByte(Long.BYTES * 3) != 0,
+                bytes.getLong(Long.BYTES * 3 + 1));
+    }
+
+    public Bytes toBytes() {
+        final byte[] bytes = new byte[Long.BYTES + 1];
+        ByteBuffer.wrap(bytes)
+                .putLong(balance)
+                .putLong(sendThreshold)
+                .putLong(receiveThreshold)
+                .put(getRequireSignatureAsByte())
+                .putLong(uid);
+        return Bytes.wrap(bytes);
     }
 
     /**

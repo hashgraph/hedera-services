@@ -22,7 +22,7 @@ import static com.swirlds.merkledb.collections.LongListOffHeap.DEFAULT_RESERVED_
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.createMetrics;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getMetric;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
-import static com.swirlds.merkledb.test.fixtures.TestType.fixed_fixed;
+import static com.swirlds.merkledb.test.fixtures.TestType.long_fixed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.base.units.UnitConstants;
@@ -34,8 +34,6 @@ import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.serialize.KeySerializer;
-import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,7 +68,7 @@ class MerkleDbDataSourceMetricsTest {
         assertEventuallyEquals(
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
         // create db
-        dataSource = createDataSource(testDirectory, TABLE_NAME, fixed_fixed, COUNT, HASHES_RAM_THRESHOLD);
+        dataSource = createDataSource(testDirectory, TABLE_NAME, long_fixed, COUNT, HASHES_RAM_THRESHOLD);
 
         metrics = createMetrics();
         dataSource.registerMetrics(metrics);
@@ -130,15 +128,12 @@ class MerkleDbDataSourceMetricsTest {
         // create some leaves
         final int firstLeafIndex = COUNT;
         final int lastLeafIndex = COUNT * 2;
-        final KeySerializer keySerializer = fixed_fixed.dataType().getKeySerializer();
-        final ValueSerializer valueSerializer = fixed_fixed.dataType().getValueSerializer();
         dataSource.saveRecords(
                 firstLeafIndex,
                 lastLeafIndex,
                 Stream.empty(),
                 IntStream.range(firstLeafIndex, lastLeafIndex)
-                        .mapToObj(i -> fixed_fixed.dataType().createVirtualLeafRecord(i))
-                        .map(r -> r.toBytes(keySerializer, valueSerializer)),
+                        .mapToObj(i -> long_fixed.dataType().createVirtualLeafRecord(i)),
                 Stream.empty());
 
         // only one 8 MB memory is reserved despite the fact that leaves reside in [COUNT, COUNT * 2] interval
@@ -152,8 +147,7 @@ class MerkleDbDataSourceMetricsTest {
                 lastLeafIndex + DEFAULT_RESERVED_BUFFER_LENGTH + 1,
                 Stream.empty(),
                 IntStream.range(firstLeafIndex, lastLeafIndex + DEFAULT_RESERVED_BUFFER_LENGTH + 1)
-                        .mapToObj(i -> fixed_fixed.dataType().createVirtualLeafRecord(i))
-                        .map(r -> r.toBytes(keySerializer, valueSerializer)),
+                        .mapToObj(i -> long_fixed.dataType().createVirtualLeafRecord(i)),
                 Stream.empty());
 
         // reserved additional memory chunk for a value that didn't fit into the previous chunk
@@ -168,8 +162,7 @@ class MerkleDbDataSourceMetricsTest {
                 Stream.empty(),
                 // valid leaf index
                 IntStream.of(lastLeafIndex + DEFAULT_RESERVED_BUFFER_LENGTH)
-                        .mapToObj(i -> fixed_fixed.dataType().createVirtualLeafRecord(i))
-                        .map(r -> r.toBytes(keySerializer, valueSerializer)),
+                        .mapToObj(i -> long_fixed.dataType().createVirtualLeafRecord(i)),
                 Stream.empty());
 
         // shrink the list by one chunk

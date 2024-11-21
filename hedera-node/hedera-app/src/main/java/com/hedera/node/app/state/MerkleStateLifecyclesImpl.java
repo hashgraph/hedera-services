@@ -23,6 +23,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
@@ -35,8 +36,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,18 +48,24 @@ import org.apache.logging.log4j.Logger;
  * Implements the major lifecycle events for Hedera Services, primarily by delegating to a Hedera instance.
  */
 public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
+
     private static final Logger logger = LogManager.getLogger(MerkleStateLifecyclesImpl.class);
 
-    private static final BiConsumer<
-                    VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>,
-                    BiConsumer<EntityNumber, StakingNodeInfo>>
-            WEIGHT_UPDATE_VISITOR = (map, visitor) -> {
+    private static final BiConsumer<VirtualMap, BiConsumer<EntityNumber, StakingNodeInfo>> WEIGHT_UPDATE_VISITOR =
+            (map, visitor) -> {
                 try {
                     VirtualMapMigration.extractVirtualMapData(
                             AdHocThreadManager.getStaticThreadManager(),
                             map,
-                            pair -> visitor.accept(
-                                    pair.key().getKey(), pair.value().getValue()),
+                            pair -> {
+                                try {
+                                    visitor.accept(
+                                            EntityNumber.PROTOBUF.parse(pair.key()),
+                                            StakingNodeInfo.PROTOBUF.parse(pair.value()));
+                                } catch (final ParseException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            },
                             1);
                 } catch (InterruptedException e) {
                     logger.error("Interrupted while updating weights", e);
@@ -69,10 +74,7 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
             };
 
     private final Hedera hedera;
-    private final BiConsumer<
-                    VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>,
-                    BiConsumer<EntityNumber, StakingNodeInfo>>
-            weightUpdateVisitor;
+    private final BiConsumer<VirtualMap, BiConsumer<EntityNumber, StakingNodeInfo>> weightUpdateVisitor;
 
     public MerkleStateLifecyclesImpl(@NonNull final Hedera hedera) {
         this(hedera, WEIGHT_UPDATE_VISITOR);
@@ -80,11 +82,7 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
 
     public MerkleStateLifecyclesImpl(
             @NonNull final Hedera hedera,
-            @NonNull
-                    final BiConsumer<
-                                    VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>,
-                                    BiConsumer<EntityNumber, StakingNodeInfo>>
-                            weightUpdateVisitor) {
+            @NonNull final BiConsumer<VirtualMap, BiConsumer<EntityNumber, StakingNodeInfo>> weightUpdateVisitor) {
         this.hedera = requireNonNull(hedera);
         this.weightUpdateVisitor = requireNonNull(weightUpdateVisitor);
     }
@@ -127,9 +125,7 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
             logger.warn("Staking info not found in state, skipping weight update");
             return;
         }
-        @SuppressWarnings("unchecked")
-        final var stakingInfoVMap = (VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>)
-                stateRoot.getChild(stakingInfoIndex);
+        final var stakingInfoVMap = (VirtualMap) stateRoot.getChild(stakingInfoIndex);
         // Since it is much easier to modify the in-state staking info after schemas
         // are registered with MerkleStateRoot, we do that work later in the token
         // service schema's restart() hook. Here we only update the address book weights

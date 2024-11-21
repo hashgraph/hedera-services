@@ -18,6 +18,7 @@ package com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
@@ -70,6 +71,14 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
         for (int i = 0; i < byteCodeSize; i++) {
             byteCode[i] = pttRandom.nextByte();
         }
+    }
+
+    public static SmartContractByteCodeMapValue fromBytes(final Bytes bytes) {
+        return (bytes == null) ? null : new SmartContractByteCodeMapValue(bytes.toByteArray());
+    }
+
+    public Bytes toBytes() {
+        return Bytes.wrap(byteCode);
     }
 
     /**

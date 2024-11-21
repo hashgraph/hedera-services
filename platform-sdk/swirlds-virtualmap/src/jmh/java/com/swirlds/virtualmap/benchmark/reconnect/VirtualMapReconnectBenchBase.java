@@ -36,9 +36,7 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
-import com.swirlds.virtualmap.test.fixtures.TestKeySerializer;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
-import com.swirlds.virtualmap.test.fixtures.TestValueSerializer;
 import java.io.FileNotFoundException;
 import org.junit.jupiter.api.Assertions;
 
@@ -52,8 +50,8 @@ import org.junit.jupiter.api.Assertions;
  */
 public abstract class VirtualMapReconnectBenchBase {
 
-    protected VirtualMap<TestKey, TestValue> teacherMap;
-    protected VirtualMap<TestKey, TestValue> learnerMap;
+    protected VirtualMap teacherMap;
+    protected VirtualMap learnerMap;
     protected VirtualDataSourceBuilder teacherBuilder;
     protected VirtualDataSourceBuilder learnerBuilder;
 
@@ -71,10 +69,8 @@ public abstract class VirtualMapReconnectBenchBase {
     protected void setupEach() {
         teacherBuilder = createBuilder();
         learnerBuilder = createBuilder();
-        teacherMap =
-                new VirtualMap<>("Teacher", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, teacherBuilder);
-        learnerMap =
-                new VirtualMap<>("Learner", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, learnerBuilder);
+        teacherMap = new VirtualMap("Teacher", teacherBuilder);
+        learnerMap = new VirtualMap("Learner", learnerBuilder);
     }
 
     protected static void startup() throws ConstructableRegistryException, FileNotFoundException {
@@ -92,7 +88,7 @@ public abstract class VirtualMapReconnectBenchBase {
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
     }
 
-    protected MerkleInternal createTreeForMap(VirtualMap<TestKey, TestValue> map) {
+    protected MerkleInternal createTreeForMap(VirtualMap map) {
         final var tree = MerkleTestUtils.buildLessSimpleTree();
         tree.getChild(1).asInternal().setChild(3, map);
         tree.reserve();
@@ -101,7 +97,7 @@ public abstract class VirtualMapReconnectBenchBase {
 
     protected void reconnect() throws Exception {
         final MerkleInternal teacherTree = createTreeForMap(teacherMap);
-        final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
+        final VirtualMap copy = teacherMap.copy();
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
         try {
             final var node = MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);

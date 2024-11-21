@@ -137,7 +137,7 @@ public class EndOfStakingPeriodUpdater {
         for (final var nodeId : context.knownNodeIds().stream().sorted().toList()) {
             // The node's staking info at the e end of the period, non-final because
             // we iteratively update its reward sum history,
-            var nodeInfo = requireNonNull(stakingInfoStore.getForModify(nodeId));
+            var nodeInfo = requireNonNull(stakingInfoStore.get(nodeId));
 
             // The return value here includes both the new reward sum history, and the reward rate
             // (tinybars-per-hbar) that will be paid to all accounts who had staked to reward for

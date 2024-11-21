@@ -33,9 +33,8 @@ import com.hedera.node.app.statedumpers.utils.FieldBuilder;
 import com.hedera.node.app.statedumpers.utils.LegacyTypeUtils;
 import com.hedera.node.app.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.statedumpers.utils.Writer;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -122,9 +121,7 @@ public class TokenTypesDumpUtils {
                     getFieldFormatter(BBMToken::wipeKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))));
 
     public static void dumpModTokenType(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<TokenID>, OnDiskValue<Token>> tokens,
-            @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final Path path, @NonNull final VirtualMap tokens, @NonNull final DumpCheckpoint checkpoint) {
 
         try (@NonNull final var writer = new Writer(path)) {
             final var allTokens = gatherTokensFromMod(tokens);
@@ -266,8 +263,7 @@ public class TokenTypesDumpUtils {
     }
 
     @NonNull
-    private static Map<TokenType, Map<Long, BBMToken>> gatherTokensFromMod(
-            @NonNull final VirtualMap<OnDiskKey<TokenID>, OnDiskValue<Token>> source) {
+    private static Map<TokenType, Map<Long, BBMToken>> gatherTokensFromMod(@NonNull final VirtualMap source) {
         final var r = new HashMap<TokenType, Map<Long, BBMToken>>();
 
         r.put(TokenType.FUNGIBLE_COMMON, new HashMap<>());
@@ -281,8 +277,18 @@ public class TokenTypesDumpUtils {
                     getStaticThreadManager(),
                     source,
                     p -> {
-                        var tokenId = p.left().getKey();
-                        var currentToken = p.right().getValue();
+                        final TokenID tokenId;
+                        try {
+                            tokenId = TokenID.PROTOBUF.parse(p.left());
+                        } catch (final ParseException e) {
+                            throw new RuntimeException("Failed to parse a token ID", e);
+                        }
+                        final Token currentToken;
+                        try {
+                            currentToken = Token.PROTOBUF.parse(p.right());
+                        } catch (final ParseException e) {
+                            throw new RuntimeException("Failed to parse a token", e);
+                        }
                         var tokenMap = new HashMap<Long, BBMToken>();
                         tokenMap.put(tokenId.tokenNum(), fromMod(currentToken));
                         allMappings.add(Pair.of(currentToken.tokenType(), tokenMap));

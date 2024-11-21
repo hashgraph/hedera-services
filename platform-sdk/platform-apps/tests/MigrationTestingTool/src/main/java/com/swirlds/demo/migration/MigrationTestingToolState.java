@@ -24,10 +24,6 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.demo.migration.virtual.AccountVirtualMapKey;
-import com.swirlds.demo.migration.virtual.AccountVirtualMapKeySerializer;
-import com.swirlds.demo.migration.virtual.AccountVirtualMapValue;
-import com.swirlds.demo.migration.virtual.AccountVirtualMapValueSerializer;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
@@ -183,14 +179,14 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
     /**
      * Get a {@link VirtualMap} that contains various data.
      */
-    protected VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> getVirtualMap() {
+    protected VirtualMap getVirtualMap() {
         return getChild(ChildIndices.VIRTUAL_MAP);
     }
 
     /**
      * Set a {@link VirtualMap} that contains various data.
      */
-    protected void setVirtualMap(final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> map) {
+    protected void setVirtualMap(final VirtualMap map) {
         setChild(ChildIndices.VIRTUAL_MAP, map);
     }
 
@@ -204,8 +200,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         // we create another instance of MerkleDB.
         MerkleDb.resetDefaultInstancePath();
         final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
-        setVirtualMap(new VirtualMap<>(
-                "virtualMap", new AccountVirtualMapKeySerializer(), new AccountVirtualMapValueSerializer(), dsBuilder));
+        setVirtualMap(new VirtualMap("virtualMap", dsBuilder));
         selfId = platform.getSelfId();
     }
 
@@ -221,7 +216,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         if (merkleMap != null) {
             logger.info(STARTUP.getMarker(), "MerkleMap initialized with {} values", merkleMap.size());
         }
-        final VirtualMap<?, ?> virtualMap = getVirtualMap();
+        final VirtualMap virtualMap = getVirtualMap();
         if (virtualMap != null) {
             logger.info(STARTUP.getMarker(), "VirtualMap initialized with {} values", virtualMap.size());
         }

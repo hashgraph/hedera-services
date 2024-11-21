@@ -19,14 +19,6 @@ package com.swirlds.demo.virtualmerkle.transaction.handler;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateSmartContract;
 import com.swirlds.demo.platform.fs.stresstest.proto.VirtualMerkleTransaction;
-import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKey;
-import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKeySerializer;
-import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapValue;
-import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapValueSerializer;
-import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapKey;
-import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapKeySerializer;
-import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValue;
-import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValueSerializer;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
@@ -36,8 +28,8 @@ import org.junit.jupiter.api.Test;
 
 public class VirtualMerkleTransactionHandlerTest {
 
-    private static VirtualMap<SmartContractMapKey, SmartContractMapValue> smartContract;
-    private static VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> smartContractByteCodeVM;
+    private static VirtualMap smartContract;
+    private static VirtualMap smartContractByteCodeVM;
 
     @BeforeAll
     public static void beforeAll() {
@@ -45,28 +37,23 @@ public class VirtualMerkleTransactionHandlerTest {
         // Should storage dir be set to a certain value?
 
         final long maximumNumberOfKeyValuePairsCreation = 28750;
-        final SmartContractMapKeySerializer keySerializer = new SmartContractMapKeySerializer();
-        final SmartContractMapValueSerializer valueSerializer = new SmartContractMapValueSerializer();
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
                 .maxNumberOfKeys(maximumNumberOfKeyValuePairsCreation)
                 .hashesRamToDiskThreshold(0)
                 .preferDiskIndices(false);
         final MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig);
 
-        smartContract = new VirtualMap<>("smartContracts", keySerializer, valueSerializer, dataSourceBuilder);
+        smartContract = new VirtualMap("smartContracts", dataSourceBuilder);
 
         final long totalSmartContractCreations = 23;
 
-        final SmartContractByteCodeMapKeySerializer keySerializer2 = new SmartContractByteCodeMapKeySerializer();
-        final SmartContractByteCodeMapValueSerializer valueSerializer2 = new SmartContractByteCodeMapValueSerializer();
         final MerkleDbTableConfig tableConfig2 = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
                 .maxNumberOfKeys(totalSmartContractCreations)
                 .hashesRamToDiskThreshold(0)
                 .preferDiskIndices(false);
         final MerkleDbDataSourceBuilder dataSourceBuilder2 = new MerkleDbDataSourceBuilder(tableConfig2);
 
-        smartContractByteCodeVM =
-                new VirtualMap<>("smartContractByteCode", keySerializer2, valueSerializer2, dataSourceBuilder2);
+        smartContractByteCodeVM = new VirtualMap("smartContractByteCode", dataSourceBuilder2);
     }
 
     private VirtualMerkleTransaction buildCreateSmartContractTransaction(

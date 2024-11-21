@@ -247,7 +247,7 @@ class InMemoryWritableStateTest extends MerkleTestBase {
             // sure the merkle map hasn't changed.
             fruitMerkleMap = fruitMerkleMap.copy();
             state = createState();
-            assertThat(state.getForModify(A_KEY)).isEqualTo(APPLE);
+            assertThat(state.get(A_KEY)).isEqualTo(APPLE);
             state.remove(B_KEY);
             assertThat(state.get(C_KEY)).isEqualTo(CHERRY);
             state.put(D_KEY, DATE);
