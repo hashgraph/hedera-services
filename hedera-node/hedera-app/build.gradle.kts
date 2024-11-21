@@ -50,7 +50,6 @@ testModuleInfo {
     requires("headlong")
     requires("org.assertj.core")
     requires("org.bouncycastle.provider")
-    requires("org.hamcrest")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
