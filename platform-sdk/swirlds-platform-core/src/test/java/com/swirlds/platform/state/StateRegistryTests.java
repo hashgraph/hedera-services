@@ -83,7 +83,7 @@ class StateRegistryTests {
 
         assertEquals(
                 0,
-                RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
                 "no states have been created yet");
 
         final List<MerkleRoot> states = new LinkedList<>();

@@ -41,7 +41,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -68,7 +68,7 @@ import org.apache.logging.log4j.Logger;
  * State for the ISSTestingTool.
  */
 @ConstructableIgnored
-public class ISSTestingToolState extends MerkleStateRoot {
+public class ISSTestingToolState extends PlatformMerkleStateRoot {
 
     private static final Logger logger = LogManager.getLogger(ISSTestingToolState.class);
 

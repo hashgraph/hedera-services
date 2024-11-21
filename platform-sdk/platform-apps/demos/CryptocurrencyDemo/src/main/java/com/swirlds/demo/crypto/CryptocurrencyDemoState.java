@@ -32,7 +32,7 @@ import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -62,7 +62,7 @@ import java.util.function.Function;
  * these cryptocurrencies won't have any actual value.
  */
 @ConstructableIgnored
-public class CryptocurrencyDemoState extends MerkleStateRoot {
+public class CryptocurrencyDemoState extends PlatformMerkleStateRoot {
 
     /**
      * The version history of this class.

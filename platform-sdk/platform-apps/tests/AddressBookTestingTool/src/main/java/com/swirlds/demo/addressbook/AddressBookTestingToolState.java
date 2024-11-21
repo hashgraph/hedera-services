@@ -46,7 +46,7 @@ import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -77,7 +77,7 @@ import org.apache.logging.log4j.Logger;
  * State for the AddressBookTestingTool.
  */
 @ConstructableIgnored
-public class AddressBookTestingToolState extends MerkleStateRoot {
+public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
 
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
