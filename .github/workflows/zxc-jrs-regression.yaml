@@ -412,18 +412,11 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble :test-clients:shadowJar --scan
+        run: ./gradlew assemble :test-clients:shadowJar --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
-        with:
-          build-root-directory: platform-sdk/regression
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
+        run: ./gradlew assemble --scan
 
       - name: Compute Actual Branch Name
         id: branch
