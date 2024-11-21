@@ -222,7 +222,7 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
 
-        registerAddressBookMetrics(platformContext.getMetrics(), currentAddressBook, selfId);
+        registerAddressBookMetrics(platformContext.getMetrics(), currentRoster, selfId);
 
         RuntimeMetrics.setup(platformContext.getMetrics());
 
