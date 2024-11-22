@@ -148,8 +148,6 @@ public class HandleWorkflow {
     private final ConfigProvider configProvider;
     private final TssBaseService tssBaseService;
     private final AddressBookHelper addressBookHelper;
-    private final TssBaseService tssBaseService;
-    private final ConfigProvider configProvider;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
