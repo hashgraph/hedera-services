@@ -47,7 +47,6 @@ import org.bouncycastle.util.io.pem.PemWriter;
  * Utility class that provides static methods and constants to facilitate the Address Book Services functions.
  */
 public class AddressBookHelper {
-    public static final String NODES_KEY = "NODES";
 
     private AddressBookHelper() {
         throw new IllegalStateException("Utility class");

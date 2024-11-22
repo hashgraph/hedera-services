@@ -30,26 +30,26 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,7 +61,8 @@ import org.apache.logging.log4j.Logger;
  * is 100 random bytes. So StatsSigningDemoState.handleTransaction doesn't actually do anything, other than the
  * optional sequence number check.
  */
-public class StatsSigningTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+@ConstructableIgnored
+public class StatsSigningTestingToolState extends MerkleStateRoot {
 
     private static final long CLASS_ID = 0x79900efa3127b6eL;
     /**
@@ -80,11 +81,11 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     /** the number of microseconds to wait before returning from the handle method */
     private static final int HANDLE_MICROS = 100;
 
-    public StatsSigningTestingToolState() {
-        this(() -> null);
-    }
-
-    public StatsSigningTestingToolState(@NonNull final Supplier<SttTransactionPool> transactionPoolSupplier) {
+    public StatsSigningTestingToolState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory,
+            @NonNull final Supplier<SttTransactionPool> transactionPoolSupplier) {
+        super(lifecycles, versionFactory);
         this.transactionPoolSupplier = Objects.requireNonNull(transactionPoolSupplier);
     }
 
@@ -101,6 +102,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     @Override
     public synchronized StatsSigningTestingToolState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new StatsSigningTestingToolState(this);
     }
 
@@ -193,31 +195,6 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
                     e);
         }
         return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        if (getVersion() >= ClassVersion.KEEP_STATE) {
-            out.writeLong(runningSum);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        if (version < ClassVersion.KEEP_STATE) {
-            // In this version we serialized an address book
-            in.readSerializable();
-        }
-
-        if (getVersion() >= ClassVersion.KEEP_STATE) {
-            runningSum = in.readLong();
-        }
     }
 
     /**

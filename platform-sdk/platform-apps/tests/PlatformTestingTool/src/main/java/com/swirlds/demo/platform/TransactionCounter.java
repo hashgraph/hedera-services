@@ -31,6 +31,8 @@ import org.apache.logging.log4j.MarkerManager;
  */
 public class TransactionCounter implements Cloneable, FastCopyable, SelfSerializable {
 
+    //    private static final Marker LOGM_DEMO_INFO = MarkerManager.getMarker("DEMO_INFO");
+
     /**
      * The version history of this class.
      * Versions that have been released must NEVER be given a different value.
@@ -129,7 +131,6 @@ public class TransactionCounter implements Cloneable, FastCopyable, SelfSerializ
 
     @Override
     public TransactionCounter copy() {
-        throwIfImmutable();
         return new TransactionCounter(this);
     }
 
