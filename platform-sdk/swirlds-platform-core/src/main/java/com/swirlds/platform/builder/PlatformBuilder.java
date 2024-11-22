@@ -26,8 +26,10 @@ import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConf
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.WiringConfig;
@@ -36,7 +38,9 @@ import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
@@ -279,15 +283,29 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Provide the cryptographic keys to use for this node.
+     * Provide the cryptographic keys to use for this node.  The signing certificate for this node must be valid.
      *
      * @param keysAndCerts the cryptographic keys to use
      * @return this
+     * @throws IllegalStateException if the signing certificate is not valid or does not match the signing private key.
      */
     @NonNull
     public PlatformBuilder withKeysAndCerts(@NonNull final KeysAndCerts keysAndCerts) {
         throwIfAlreadyUsed();
         this.keysAndCerts = Objects.requireNonNull(keysAndCerts);
+        // Ensure that the platform has a valid signing cert that matches the signing private key.
+        // https://github.com/hashgraph/hedera-services/issues/16648
+        if (!CryptoStatic.checkCertificate(keysAndCerts.sigCert())) {
+            throw new IllegalStateException("Starting the platform requires a signing cert.");
+        }
+        final PlatformSigner platformSigner = new PlatformSigner(keysAndCerts);
+        final String testString = "testString";
+        final Bytes testBytes = Bytes.wrap(testString.getBytes());
+        final Signature signature = platformSigner.sign(testBytes.toByteArray());
+        if (!CryptoStatic.verifySignature(
+                testBytes, signature.getBytes(), keysAndCerts.sigCert().getPublicKey())) {
+            throw new IllegalStateException("The signing certificate does not match the signing private key.");
+        }
         return this;
     }
 

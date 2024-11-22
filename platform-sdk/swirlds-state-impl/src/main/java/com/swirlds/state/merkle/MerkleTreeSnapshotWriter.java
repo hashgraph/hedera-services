@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state;
+package com.swirlds.state.merkle;
 
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
-import static com.swirlds.platform.state.MerkleTreeSnapshotReader.SIG_SET_SEPARATE_STATE_FILE_VERSION;
-import static com.swirlds.platform.state.MerkleTreeSnapshotReader.VERSIONED_FILE_BYTE;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
+import static com.swirlds.state.merkle.MerkleTreeSnapshotReader.SIGNED_STATE_FILE_NAME;
+import static com.swirlds.state.merkle.MerkleTreeSnapshotReader.SIG_SET_SEPARATE_STATE_FILE_VERSION;
+import static com.swirlds.state.merkle.MerkleTreeSnapshotReader.VERSIONED_FILE_BYTE;
 
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.common.merkle.MerkleNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,7 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Utility class for writing a snapshot of a {@link MerkleRoot} to disk.
+ * Utility class for writing a snapshot of a {@link MerkleStateRoot} to disk.
  */
 public final class MerkleTreeSnapshotWriter {
 
@@ -42,12 +43,12 @@ public final class MerkleTreeSnapshotWriter {
     }
 
     /**
-     * Writes a snapshot of the given {@link MerkleRoot} to the given {@link Path}.
-     * @param merkleRoot the {@link MerkleRoot} to write
+     * Writes a snapshot of the given {@link MerkleStateRoot} to the given {@link Path}.
+     * @param merkleRoot the {@link MerkleStateRoot} to write
      * @param targetPath the {@link Path} to write the snapshot to
      */
-    static void createSnapshot(@NonNull final MerkleRoot merkleRoot, @NonNull final Path targetPath) {
-        final long round = merkleRoot.getReadablePlatformState().getRound();
+    public static void createSnapshot(
+            @NonNull final MerkleNode merkleRoot, @NonNull final Path targetPath, long round) {
         logger.info(STATE_TO_DISK.getMarker(), "Creating a snapshot on demand in {} for round {}", targetPath, round);
         try {
             writeMerkleRootToFile(targetPath, merkleRoot);
@@ -66,7 +67,7 @@ public final class MerkleTreeSnapshotWriter {
         }
     }
 
-    private static void writeMerkleRootToFile(@NonNull final Path directory, @NonNull final MerkleRoot merkleRoot)
+    private static void writeMerkleRootToFile(@NonNull final Path directory, @NonNull final MerkleNode merkleRoot)
             throws IOException {
         writeAndFlush(
                 directory.resolve(SIGNED_STATE_FILE_NAME), out -> writeMerkleRootToStream(out, directory, merkleRoot));
@@ -75,7 +76,7 @@ public final class MerkleTreeSnapshotWriter {
     private static void writeMerkleRootToStream(
             @NonNull final MerkleDataOutputStream out,
             @NonNull final Path directory,
-            @NonNull final MerkleRoot merkleRoot)
+            @NonNull final MerkleNode merkleRoot)
             throws IOException {
         out.write(VERSIONED_FILE_BYTE);
         out.writeInt(SIG_SET_SEPARATE_STATE_FILE_VERSION);
