@@ -130,8 +130,9 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
@@ -149,6 +150,7 @@ import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -320,7 +322,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     /**
      * The state root supplier to use for creating a new state root.
      */
-    private final Supplier<MerkleStateRoot> stateRootSupplier;
+    private final Supplier<PlatformMerkleStateRoot> stateRootSupplier;
 
     /**
      * The action to take, if any, when a consensus round is sealed.
@@ -446,14 +448,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
-            final Supplier<MerkleStateRoot> baseSupplier =
-                    () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), ServicesSoftwareVersion::new);
+            final Supplier<PlatformMerkleStateRoot> baseSupplier = () ->
+                    new PlatformMerkleStateRoot(new MerkleStateLifecyclesImpl(this), ServicesSoftwareVersion::new);
             final var blockStreamsEnabled = isBlockStreamEnabled();
             stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
             onSealConsensusRound = blockStreamsEnabled ? this::manageBlockEndRound : (round, state) -> {};
             // And the factory for the MerkleStateRoot class id must be our constructor
             constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MerkleStateRoot.class, stateRootSupplier));
+                    new ClassConstructorPair(PlatformMerkleStateRoot.class, stateRootSupplier));
         } catch (final ConstructableRegistryException e) {
             logger.error("Failed to register " + MerkleStateRoot.class + " factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
@@ -583,7 +585,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                     state,
                     metrics,
                     trigger,
-                    platform.getAddressBook(),
+                    RosterUtils.buildAddressBook(platform.getRoster()),
                     platform.getContext().getConfiguration());
         }
         // With the States API grounded in the working state, we can create the object graph from it
@@ -969,12 +971,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
 
         final var activeRoster = tssBaseService.chooseRosterForNetwork(
-                state,
-                trigger,
-                serviceMigrator,
-                version,
-                configProvider.getConfiguration(),
-                buildRoster(platform.getAddressBook()));
+                state, trigger, serviceMigrator, version, configProvider.getConfiguration(), platform.getRoster());
         final var networkInfo =
                 new StateNetworkInfo(state, activeRoster, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc
@@ -1127,7 +1124,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         }
     }
 
-    private MerkleStateRoot withListeners(@NonNull final MerkleStateRoot root) {
+    private PlatformMerkleStateRoot withListeners(@NonNull final PlatformMerkleStateRoot root) {
         root.registerCommitListener(boundaryStateChangeListener);
         root.registerCommitListener(kvStateChangeListener);
         return root;

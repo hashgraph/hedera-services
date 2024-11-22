@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle;
+package com.swirlds.state.test.fixtures.merkle;
 
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.state.merkle.MerkleStateRoot;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
-/**
- * A callback that is invoked when platform calls updateWeight during upgrade.
- */
-public interface OnUpdateWeight {
-    void updateWeight(
-            @NonNull final MerkleStateRoot state,
-            @NonNull AddressBook configAddressBook,
-            @NonNull final PlatformContext context);
+@ConstructableIgnored
+public class TestMerkleStateRoot extends MerkleStateRoot<TestMerkleStateRoot> {
+
+    @Override
+    protected TestMerkleStateRoot copyingConstructor() {
+        return new TestMerkleStateRoot();
+    }
+
+    @Override
+    public long getCurrentRound() {
+        return 0;
+    }
 }

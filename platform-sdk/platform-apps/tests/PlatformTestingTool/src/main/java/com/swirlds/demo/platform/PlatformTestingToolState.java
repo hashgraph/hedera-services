@@ -86,7 +86,7 @@ import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.*;
 import com.swirlds.platform.system.address.AddressBook;
@@ -128,7 +128,7 @@ import org.apache.logging.log4j.MarkerManager;
  * consists of an optional sequence number and random bytes.
  */
 @ConstructableIgnored
-public class PlatformTestingToolState extends MerkleStateRoot {
+public class PlatformTestingToolState extends PlatformMerkleStateRoot {
 
     static final long CLASS_ID = 0xc0900cfa7a24db76L;
     private static final Logger logger = LogManager.getLogger(PlatformTestingToolState.class);
@@ -244,6 +244,10 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     private QuorumTriggeredAction<ControlAction> controlQuorum;
 
     private long transactionsIgnoredByExpectedMap = 0;
+
+    public PlatformTestingToolState() {
+        this(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+    }
 
     public PlatformTestingToolState(
             @NonNull final MerkleStateLifecycles lifecycles,
