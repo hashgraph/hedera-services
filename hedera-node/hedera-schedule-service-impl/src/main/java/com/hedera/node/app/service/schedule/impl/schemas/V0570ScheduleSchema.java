@@ -20,23 +20,24 @@ import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSch
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
+import static java.util.Spliterators.spliterator;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.schedule.ScheduledCounts;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.Set;
-import java.util.Spliterators;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,15 +47,25 @@ import org.apache.logging.log4j.Logger;
  */
 public final class V0570ScheduleSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V0570ScheduleSchema.class);
-    private static final long MAX_SCHEDULE_IDS_BY_EXPIRY_SEC_KEY = 50_000_000L;
+
+    private static final long MAX_SCHEDULED_COUNTS = 50_000_000L;
+    private static final long MAX_SCHEDULED_ORDERS = 50_000_000L;
     private static final long MAX_SCHEDULE_ID_BY_EQUALITY = 50_000_000L;
-    /**
-     * The version of the schema.
-     */
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(57).patch(0).build();
-
-    public static final String SCHEDULE_IDS_BY_EXPIRY_SEC_KEY = "SCHEDULE_IDS_BY_EXPIRY_SEC";
+    /**
+     * The state key of a map from consensus second to the counts of transactions scheduled
+     * and processed within that second.
+     */
+    public static final String SCHEDULED_COUNTS_KEY = "SCHEDULED_COUNTS";
+    /**
+     * The state key of a map from an order position within a consensus second to the id of
+     * the transaction scheduled to executed in that order within that second.
+     */
+    public static final String SCHEDULED_ORDERS_KEY = "SCHEDULED_ORDERS";
+    /**
+     * The state key of a map from a hash of the schedule's equality values to its schedule id.
+     */
     public static final String SCHEDULE_ID_BY_EQUALITY_KEY = "SCHEDULE_ID_BY_EQUALITY";
 
     /**
@@ -65,15 +76,13 @@ public final class V0570ScheduleSchema extends Schema {
     }
 
     @SuppressWarnings("rawtypes")
-    @NonNull
     @Override
-    public Set<StateDefinition> statesToCreate() {
-        return Set.of(scheduleIdsByExpirySec(), scheduleIdByEquality());
+    public @NonNull Set<StateDefinition> statesToCreate() {
+        return Set.of(scheduleIdByEquality(), scheduledOrders(), scheduledCounts());
     }
 
-    @NonNull
     @Override
-    public Set<String> statesToRemove() {
+    public @NonNull Set<String> statesToRemove() {
         return Set.of(SCHEDULES_BY_EXPIRY_SEC_KEY, SCHEDULES_BY_EQUALITY_KEY);
     }
 
@@ -81,30 +90,39 @@ public final class V0570ScheduleSchema extends Schema {
     public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
 
-        log.info("Started migrating Schedule Schema from 0.49.0 to 0.57.0");
-        final WritableKVState<ProtoLong, ScheduleIdList> writableScheduleIdsByExpirySec =
-                ctx.newStates().get(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
-        final ReadableKVState<ProtoLong, ScheduleList> readableSchedulesByExpirySec =
+        final ReadableKVState<ProtoLong, ScheduleList> schedulesByExpiry =
                 ctx.previousStates().get(SCHEDULES_BY_EXPIRY_SEC_KEY);
-        StreamSupport.stream(
-                        Spliterators.spliterator(
-                                readableSchedulesByExpirySec.keys(), readableSchedulesByExpirySec.size(), DISTINCT),
-                        false)
-                .forEach(key -> {
-                    final var scheduleList = readableSchedulesByExpirySec.get(key);
+        final WritableKVState<TimestampSeconds, ScheduledCounts> scheduledCounts =
+                ctx.newStates().get(SCHEDULED_COUNTS_KEY);
+        final WritableKVState<ScheduledOrder, ScheduleID> scheduledOrders =
+                ctx.newStates().get(SCHEDULED_ORDERS_KEY);
+
+        final var secondsMigrated = new AtomicInteger();
+        final var schedulesMigrated = new AtomicInteger();
+        StreamSupport.stream(spliterator(schedulesByExpiry.keys(), schedulesByExpiry.size(), DISTINCT), false)
+                .forEach(second -> {
+                    final var scheduleList = schedulesByExpiry.get(second);
                     if (scheduleList != null) {
-                        writableScheduleIdsByExpirySec.put(key, convertToScheduleIdList(scheduleList));
+                        secondsMigrated.incrementAndGet();
+                        final var schedules = scheduleList.schedules();
+                        final var n = schedules.size();
+                        scheduledCounts.put(new TimestampSeconds(second.value()), new ScheduledCounts(n, 0));
+                        for (int i = 0; i < n; i++) {
+                            scheduledOrders.put(
+                                    new ScheduledOrder(second.value(), i),
+                                    schedules.get(i).scheduleIdOrThrow());
+                        }
+                        schedulesMigrated.addAndGet(n);
                     }
                 });
-        log.info("Migrated {} Schedules from SCHEDULES_BY_EXPIRY_SEC_KEY", readableSchedulesByExpirySec.size());
+        log.info("Migrated {} schedules from {} seconds", schedulesMigrated.get(), secondsMigrated.get());
 
         final WritableKVState<ProtoBytes, ScheduleID> writableScheduleByEquality =
                 ctx.newStates().get(SCHEDULE_ID_BY_EQUALITY_KEY);
         final ReadableKVState<ProtoBytes, ScheduleList> readableSchedulesByEquality =
                 ctx.previousStates().get(SCHEDULES_BY_EQUALITY_KEY);
         StreamSupport.stream(
-                        Spliterators.spliterator(
-                                readableSchedulesByEquality.keys(), readableSchedulesByEquality.size(), DISTINCT),
+                        spliterator(readableSchedulesByEquality.keys(), readableSchedulesByEquality.size(), DISTINCT),
                         false)
                 .forEach(key -> {
                     final var scheduleList = readableSchedulesByEquality.get(key);
@@ -115,25 +133,17 @@ public final class V0570ScheduleSchema extends Schema {
                         writableScheduleByEquality.put(key, newScheduleId);
                     }
                 });
-        log.info("Migrated {} Schedules from SCHEDULES_BY_EQUALITY_KEY", readableSchedulesByEquality.size());
+        log.info("Migrated {} schedules from SCHEDULES_BY_EQUALITY_KEY", readableSchedulesByEquality.size());
     }
 
-    private ScheduleIdList convertToScheduleIdList(@NonNull final ScheduleList scheduleList) {
-        return ScheduleIdList.newBuilder()
-                .scheduleIds(scheduleList.schedules().stream()
-                        .map(Schedule::scheduleId)
-                        .filter(Objects::nonNull)
-                        .map(id -> id.copyBuilder().build())
-                        .toList())
-                .build();
-    }
-
-    private static StateDefinition<ProtoLong, ScheduleIdList> scheduleIdsByExpirySec() {
+    private static StateDefinition<TimestampSeconds, ScheduledCounts> scheduledCounts() {
         return StateDefinition.onDisk(
-                SCHEDULE_IDS_BY_EXPIRY_SEC_KEY,
-                ProtoLong.PROTOBUF,
-                ScheduleIdList.PROTOBUF,
-                MAX_SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
+                SCHEDULED_COUNTS_KEY, TimestampSeconds.PROTOBUF, ScheduledCounts.PROTOBUF, MAX_SCHEDULED_COUNTS);
+    }
+
+    private static StateDefinition<ScheduledOrder, ScheduleID> scheduledOrders() {
+        return StateDefinition.onDisk(
+                SCHEDULED_ORDERS_KEY, ScheduledOrder.PROTOBUF, ScheduleID.PROTOBUF, MAX_SCHEDULED_ORDERS);
     }
 
     private static StateDefinition<ProtoBytes, ScheduleID> scheduleIdByEquality() {

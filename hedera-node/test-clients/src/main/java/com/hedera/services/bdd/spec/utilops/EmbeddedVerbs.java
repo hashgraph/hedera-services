@@ -20,12 +20,12 @@ import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.schedule.ScheduleIdList;
+import com.hedera.hapi.node.state.schedule.ScheduledCounts;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
@@ -38,7 +38,7 @@ import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
-import com.hedera.services.bdd.spec.utilops.embedded.MutateScheduleExpiriesOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateScheduleCountsOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateStakingInfosOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTokenOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTssMessagesOp;
@@ -87,14 +87,14 @@ public final class EmbeddedVerbs {
     }
 
     /**
-     * Returns an operation that allows the test author to directly mutate the schedule expiries.
+     * Returns an operation that allows the test author to directly mutate the schedule counts.
      *
-     * @param mutation the mutation to apply to the schedule expiries
-     * @return the operation that will mutate the schedule expiries
+     * @param mutation the mutation to apply to the schedule counts
+     * @return the operation that will mutate the schedule counts
      */
-    public static MutateScheduleExpiriesOp mutateScheduleExpiries(
-            @NonNull final Consumer<WritableKVState<ProtoLong, ScheduleIdList>> mutation) {
-        return new MutateScheduleExpiriesOp(mutation);
+    public static MutateScheduleCountsOp mutateScheduleCounts(
+            @NonNull final Consumer<WritableKVState<TimestampSeconds, ScheduledCounts>> mutation) {
+        return new MutateScheduleCountsOp(mutation);
     }
 
     /**

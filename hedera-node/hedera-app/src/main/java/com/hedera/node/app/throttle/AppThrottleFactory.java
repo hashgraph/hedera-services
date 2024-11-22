@@ -18,17 +18,22 @@ package com.hedera.node.app.throttle;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
@@ -72,21 +77,37 @@ public class AppThrottleFactory implements Throttle.Factory {
         for (int i = 0, n = tpsThrottles.size(); i < n; i++) {
             tpsThrottles.get(i).resetUsageTo(tpsUsageSnapshots.get(i));
         }
-        if (usageSnapshots.hasGasThrottle()) {
-            throttleAccumulator.gasLimitThrottle().resetUsageTo(usageSnapshots.gasThrottleOrThrow());
-        }
+        throttleAccumulator.gasLimitThrottle().resetUsageTo(usageSnapshots.gasThrottleOrThrow());
         // Throttle.allow() has the opposite polarity of ThrottleAccumulator.checkAndEnforceThrottle()
-        return (payerId, body, function, now) -> !throttleAccumulator.checkAndEnforceThrottle(
-                new TransactionInfo(
-                        Transaction.DEFAULT,
-                        body,
-                        TransactionID.DEFAULT,
-                        payerId,
-                        SignatureMap.DEFAULT,
-                        Bytes.EMPTY,
-                        function,
-                        null),
-                now,
-                stateSupplier.get());
+        return new Throttle() {
+            @Override
+            public boolean allow(
+                    @NonNull final AccountID payerId,
+                    @NonNull final TransactionBody body,
+                    @NonNull final HederaFunctionality function,
+                    @NonNull final Instant now) {
+                return !throttleAccumulator.checkAndEnforceThrottle(
+                        new TransactionInfo(
+                                Transaction.DEFAULT,
+                                body,
+                                TransactionID.DEFAULT,
+                                payerId,
+                                SignatureMap.DEFAULT,
+                                Bytes.EMPTY,
+                                function,
+                                null),
+                        now,
+                        stateSupplier.get());
+            }
+
+            @Override
+            public ThrottleUsageSnapshots usageSnapshots() {
+                return new ThrottleUsageSnapshots(
+                        throttleAccumulator.allActiveThrottles().stream()
+                                .map(DeterministicThrottle::usageSnapshot)
+                                .toList(),
+                        throttleAccumulator.gasLimitThrottle().usageSnapshot());
+            }
+        };
     }
 }

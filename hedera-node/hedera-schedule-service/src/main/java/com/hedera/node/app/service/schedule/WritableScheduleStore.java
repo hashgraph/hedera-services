@@ -43,10 +43,11 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
     /**
      * Given the ID of a schedule, return a mutable reference to the schedule in this state.
      *
-     * @param idToFind The ID to find
+     * @param scheduleId The ID to find
      * @return the Schedule to modify
      */
-    Schedule getForModify(ScheduleID idToFind);
+    @Nullable
+    Schedule getForModify(@NonNull ScheduleID scheduleId);
 
     /**
      * Add a schedule to this state.
@@ -54,7 +55,7 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      *
      * @param scheduleToAdd The schedule to add
      */
-    void put(Schedule scheduleToAdd);
+    void put(@NonNull Schedule scheduleToAdd);
 
     /**
      * Purges expired schedules from the store.
@@ -62,5 +63,5 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @param firstSecondToExpire The consensus second of the first schedule to expire.
      * @param lastSecondToExpire  The consensus second of the last schedule to expire.
      */
-    void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire);
+    void purgeExpiredRangeClosed(long firstSecondToExpire, long lastSecondToExpire);
 }

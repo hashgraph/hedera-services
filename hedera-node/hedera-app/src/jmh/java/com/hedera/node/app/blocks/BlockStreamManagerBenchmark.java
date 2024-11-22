@@ -122,8 +122,11 @@ public class BlockStreamManagerBenchmark {
                     Instant::now,
                     fakeSignatureVerifier(),
                     UNAVAILABLE_GOSSIP,
-                    () -> configProvider.getConfiguration(),
-                    () -> DEFAULT_NODE_INFO),
+                    configProvider::getConfiguration,
+                    () -> DEFAULT_NODE_INFO,
+                    (definitions, split, snapshots) -> {
+                        throw new UnsupportedOperationException();
+                    }),
             ForkJoinPool.commonPool(),
             ForkJoinPool.commonPool(),
             new PlaceholderTssLibrary(),

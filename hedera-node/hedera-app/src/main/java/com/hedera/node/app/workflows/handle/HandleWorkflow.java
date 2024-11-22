@@ -645,7 +645,7 @@ public class HandleWorkflow {
                 final var scheduleStore = new WritableStoreFactory(
                                 userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
                         .getStore(WritableScheduleStore.class);
-                scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+                scheduleStore.purgeExpiredRangeClosed(startSecond, endSecond);
                 userTxn.stack().commitSystemStateChanges();
                 return true;
             }
@@ -690,7 +690,7 @@ public class HandleWorkflow {
 
                 // purge all schedules
                 if (i == schedulesToExecute.size() - 1) {
-                    scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+                    scheduleStore.purgeExpiredRangeClosed(startSecond, endSecond);
                     scheduleUserTnx.stack().commitSystemStateChanges();
                 }
 

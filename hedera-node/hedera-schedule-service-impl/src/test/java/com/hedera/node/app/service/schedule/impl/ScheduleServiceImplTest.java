@@ -96,9 +96,10 @@ class ScheduleServiceImplTest {
         BDDAssertions.assertThat(statesToCreate).isNotNull();
         statesList =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().toList();
-        BDDAssertions.assertThat(statesToCreate.size()).isEqualTo(2);
-        BDDAssertions.assertThat(statesList.get(0)).isEqualTo(V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
-        BDDAssertions.assertThat(statesList.get(1)).isEqualTo(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
+        BDDAssertions.assertThat(statesToCreate.size()).isEqualTo(3);
+        BDDAssertions.assertThat(statesList.get(0)).isEqualTo(V0570ScheduleSchema.SCHEDULED_COUNTS_KEY);
+        BDDAssertions.assertThat(statesList.get(1)).isEqualTo(V0570ScheduleSchema.SCHEDULED_ORDERS_KEY);
+        BDDAssertions.assertThat(statesList.get(2)).isEqualTo(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
     }
 
     @Test
@@ -225,7 +226,7 @@ class ScheduleServiceImplTest {
         }
 
         // Verify cleanUpExpiredSchedules is called exactly once
-        verify(writableStore, times(1)).purgeExpiredSchedulesBetween(start.getEpochSecond(), end.getEpochSecond());
+        verify(writableStore, times(1)).purgeExpiredRangeClosed(start.getEpochSecond(), end.getEpochSecond());
     }
 
     @Test
@@ -246,7 +247,7 @@ class ScheduleServiceImplTest {
         assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
 
         // Verify cleanUpExpiredSchedules is called exactly once
-        verify(writableStore, times(1)).purgeExpiredSchedulesBetween(start.getEpochSecond(), end.getEpochSecond());
+        verify(writableStore, times(1)).purgeExpiredRangeClosed(start.getEpochSecond(), end.getEpochSecond());
     }
 
     @Test
@@ -272,7 +273,7 @@ class ScheduleServiceImplTest {
         assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
 
         // Verify cleanUpExpiredSchedules is only called once despite multiple calls to next()
-        verify(writableStore, times(1)).purgeExpiredSchedulesBetween(start.getEpochSecond(), end.getEpochSecond());
+        verify(writableStore, times(1)).purgeExpiredRangeClosed(start.getEpochSecond(), end.getEpochSecond());
     }
 
     private Schedule createMockSchedule(final Instant expiration) {

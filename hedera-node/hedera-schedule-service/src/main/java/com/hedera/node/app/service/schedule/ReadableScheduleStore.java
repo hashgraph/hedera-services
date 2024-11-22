@@ -68,7 +68,7 @@ public interface ReadableScheduleStore {
      *     to be returned.
      * @return a {@code List<Schedule>} of entries that have expiration times within the requested second
      */
-    @Nullable
+    @NonNull
     List<ScheduleID> getByExpirationSecond(long expirationTime);
 
     /**

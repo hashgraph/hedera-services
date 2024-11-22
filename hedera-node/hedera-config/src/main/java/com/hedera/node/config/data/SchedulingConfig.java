@@ -16,6 +16,7 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.config.NetworkProperty;
 import com.hedera.node.config.types.HederaFunctionalitySet;
 import com.swirlds.config.api.ConfigData;
@@ -25,6 +26,10 @@ import com.swirlds.config.api.ConfigProperty;
 // spotless:off
 @ConfigData("scheduling")
 public record SchedulingConfig(
+        /**
+         * The fraction of total network capacity that can be scheduled to execute in a second.
+         */
+        @ConfigProperty(defaultValue = "1:10") ScaleFactor schedulableCapacityFraction,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean longTermEnabled,
         @ConfigProperty(defaultValue = "100") @NetworkProperty long maxTxnPerSec,
         @ConfigProperty(defaultValue = "10000000") @NetworkProperty long maxNumber,

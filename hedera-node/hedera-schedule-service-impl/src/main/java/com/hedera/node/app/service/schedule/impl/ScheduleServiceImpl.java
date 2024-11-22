@@ -101,7 +101,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
                 if (shouldCleanUp) {
                     // After we finish iterating, clean up the expired schedules
                     var cleanUpStore = cleanupStoreFactory.get().writableStore(WritableScheduleStoreImpl.class);
-                    cleanUpStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+                    cleanUpStore.purgeExpiredRangeClosed(startSecond, endSecond);
                     shouldCleanUp = false;
                 }
             }

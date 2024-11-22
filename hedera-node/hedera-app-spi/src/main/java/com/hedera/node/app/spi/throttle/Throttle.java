@@ -29,7 +29,6 @@ import java.time.Instant;
  * A throttle that can be used to limit the rate of transactions. Provided in the {@link AppContext} so that services
  * can align to the application's strategy for throttling transactions.
  */
-@FunctionalInterface
 public interface Throttle {
     /**
      * A factory for creating {@link Throttle} instances.
@@ -61,4 +60,9 @@ public interface Throttle {
             @NonNull TransactionBody body,
             @NonNull HederaFunctionality function,
             @NonNull Instant now);
+
+    /**
+     * Returns the usage snapshots of the throttle.
+     */
+    ThrottleUsageSnapshots usageSnapshots();
 }

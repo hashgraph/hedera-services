@@ -19,6 +19,7 @@ package com.hedera.node.app.throttle;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -121,5 +122,12 @@ class AppThrottleFactoryTest {
                 .willReturn(true);
         assertThat(throttle.allow(PAYER_ID, TXN_INFO.txBody(), TXN_INFO.functionality(), CONSENSUS_NOW))
                 .isFalse();
+
+        given(firstThrottle.usageSnapshot())
+                .willReturn(FAKE_SNAPSHOTS.tpsThrottles().getFirst());
+        given(lastThrottle.usageSnapshot())
+                .willReturn(FAKE_SNAPSHOTS.tpsThrottles().getLast());
+        given(gasThrottle.usageSnapshot()).willReturn(FAKE_SNAPSHOTS.gasThrottleOrThrow());
+        assertEquals(FAKE_SNAPSHOTS, throttle.usageSnapshots());
     }
 }
