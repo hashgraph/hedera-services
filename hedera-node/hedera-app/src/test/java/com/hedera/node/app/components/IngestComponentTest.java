@@ -149,6 +149,7 @@ class IngestComponentTest {
                 .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .networkInfo(mock(NetworkInfo.class))
                 .startupNetworks(startupNetworks)
+                .throttleFactory(throttleFactory)
                 .build();
 
         final var state = new FakeState();

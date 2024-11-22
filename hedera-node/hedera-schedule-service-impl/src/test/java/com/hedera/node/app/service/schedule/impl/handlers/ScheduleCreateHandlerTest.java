@@ -41,6 +41,7 @@ import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -52,15 +53,19 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
+    @Mock
+    private Throttle.Factory throttleFactory;
+
     private ScheduleCreateHandler subject;
     private PreHandleContext realPreContext;
 
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
-        subject = new ScheduleCreateHandler(InstantSource.system());
+        subject = new ScheduleCreateHandler(InstantSource.system(), throttleFactory);
         setUpBase();
     }
 

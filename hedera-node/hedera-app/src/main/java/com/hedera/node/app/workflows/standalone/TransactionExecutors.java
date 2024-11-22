@@ -124,6 +124,7 @@ public enum TransactionExecutors {
                 .fileServiceImpl(fileService)
                 .contractServiceImpl(contractService)
                 .metrics(new NoOpMetrics())
+                .throttleFactory(appContext.throttleFactory())
                 .build();
     }
 

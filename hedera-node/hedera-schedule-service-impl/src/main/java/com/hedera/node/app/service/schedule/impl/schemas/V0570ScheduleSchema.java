@@ -30,6 +30,7 @@ import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.schedule.ScheduledCounts;
 import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
@@ -50,6 +51,7 @@ public final class V0570ScheduleSchema extends Schema {
 
     private static final long MAX_SCHEDULED_COUNTS = 50_000_000L;
     private static final long MAX_SCHEDULED_ORDERS = 50_000_000L;
+    private static final long MAX_SCHEDULED_USAGES = 50_000_000L;
     private static final long MAX_SCHEDULE_ID_BY_EQUALITY = 50_000_000L;
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(57).patch(0).build();
@@ -63,6 +65,11 @@ public final class V0570ScheduleSchema extends Schema {
      * the transaction scheduled to executed in that order within that second.
      */
     public static final String SCHEDULED_ORDERS_KEY = "SCHEDULED_ORDERS";
+    /**
+     * The state key of a map from consensus second to the throttle utilization of transactions
+     * scheduled so far in that second.
+     */
+    public static final String SCHEDULED_USAGES_KEY = "SCHEDULED_USAGES";
     /**
      * The state key of a map from a hash of the schedule's equality values to its schedule id.
      */
@@ -78,7 +85,7 @@ public final class V0570ScheduleSchema extends Schema {
     @SuppressWarnings("rawtypes")
     @Override
     public @NonNull Set<StateDefinition> statesToCreate() {
-        return Set.of(scheduleIdByEquality(), scheduledOrders(), scheduledCounts());
+        return Set.of(scheduleIdByEquality(), scheduledOrders(), scheduledCounts(), scheduledUsages());
     }
 
     @Override
@@ -144,6 +151,11 @@ public final class V0570ScheduleSchema extends Schema {
     private static StateDefinition<ScheduledOrder, ScheduleID> scheduledOrders() {
         return StateDefinition.onDisk(
                 SCHEDULED_ORDERS_KEY, ScheduledOrder.PROTOBUF, ScheduleID.PROTOBUF, MAX_SCHEDULED_ORDERS);
+    }
+
+    private static StateDefinition<TimestampSeconds, ThrottleUsageSnapshots> scheduledUsages() {
+        return StateDefinition.onDisk(
+                SCHEDULED_USAGES_KEY, TimestampSeconds.PROTOBUF, ThrottleUsageSnapshots.PROTOBUF, MAX_SCHEDULED_USAGES);
     }
 
     private static StateDefinition<ProtoBytes, ScheduleID> scheduleIdByEquality() {

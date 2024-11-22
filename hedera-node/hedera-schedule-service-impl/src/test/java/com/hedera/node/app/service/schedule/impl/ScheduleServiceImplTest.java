@@ -96,10 +96,11 @@ class ScheduleServiceImplTest {
         BDDAssertions.assertThat(statesToCreate).isNotNull();
         statesList =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().toList();
-        BDDAssertions.assertThat(statesToCreate.size()).isEqualTo(3);
+        BDDAssertions.assertThat(statesToCreate.size()).isEqualTo(4);
         BDDAssertions.assertThat(statesList.get(0)).isEqualTo(V0570ScheduleSchema.SCHEDULED_COUNTS_KEY);
         BDDAssertions.assertThat(statesList.get(1)).isEqualTo(V0570ScheduleSchema.SCHEDULED_ORDERS_KEY);
-        BDDAssertions.assertThat(statesList.get(2)).isEqualTo(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
+        BDDAssertions.assertThat(statesList.get(2)).isEqualTo(V0570ScheduleSchema.SCHEDULED_USAGES_KEY);
+        BDDAssertions.assertThat(statesList.get(3)).isEqualTo(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
     }
 
     @Test

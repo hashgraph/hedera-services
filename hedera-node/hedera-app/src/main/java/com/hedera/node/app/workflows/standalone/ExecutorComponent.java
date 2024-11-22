@@ -23,6 +23,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.tss.TssBaseService;
@@ -76,6 +77,9 @@ public interface ExecutorComponent {
 
         @BindsInstance
         Builder metrics(Metrics metrics);
+
+        @BindsInstance
+        Builder throttleFactory(Throttle.Factory throttleFactory);
 
         ExecutorComponent build();
     }

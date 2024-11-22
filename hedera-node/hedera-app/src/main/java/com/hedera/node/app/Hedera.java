@@ -234,9 +234,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     private final SemanticVersion hapiVersion;
 
     /**
-     * The source of time the node should use for screening transactions at ingest.
+     * The application context for the node.
      */
-    private final InstantSource instantSource;
+    private final AppContext appContext;
 
     /**
      * The contract service singleton, kept as a field here to avoid constructing twice
@@ -388,7 +388,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         requireNonNull(constructableRegistry);
         this.selfNodeId = requireNonNull(selfNodeId);
         this.serviceMigrator = requireNonNull(migrator);
-        this.instantSource = requireNonNull(instantSource);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         logger.info(
                 """
@@ -413,7 +412,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         fileServiceImpl = new FileServiceImpl();
 
         final Supplier<Configuration> configSupplier = () -> configProvider.getConfiguration();
-        final var appContext = new AppContextImpl(
+        this.appContext = new AppContextImpl(
                 instantSource,
                 new AppSignatureVerifier(
                         bootstrapConfig.getConfigData(HederaConfig.class),
@@ -993,7 +992,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .crypto(CryptographyHolder.get())
                 .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
                 .servicesRegistry(servicesRegistry)
-                .instantSource(instantSource)
+                .instantSource(appContext.instantSource())
+                .throttleFactory(appContext.throttleFactory())
                 .metrics(metrics)
                 .kvStateChangeListener(kvStateChangeListener)
                 .boundaryStateChangeListener(boundaryStateChangeListener)
@@ -1144,7 +1144,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @return true if the source of time is the system time
      */
     private boolean isNotEmbedded() {
-        return instantSource == InstantSource.system();
+        return appContext.instantSource() == InstantSource.system();
     }
 
     private class ReadReconnectStartingStateHash implements ReconnectCompleteListener {

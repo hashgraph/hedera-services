@@ -50,6 +50,7 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -74,10 +75,13 @@ import javax.inject.Singleton;
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
     private final InstantSource instantSource;
+    private final Throttle.Factory throttleFactory;
 
     @Inject
-    public ScheduleCreateHandler(@NonNull final InstantSource instantSource) {
-        this.instantSource = instantSource;
+    public ScheduleCreateHandler(
+            @NonNull final InstantSource instantSource, @NonNull final Throttle.Factory throttleFactory) {
+        this.instantSource = requireNonNull(instantSource);
+        this.throttleFactory = requireNonNull(throttleFactory);
     }
 
     @Override
