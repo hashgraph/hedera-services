@@ -63,7 +63,7 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @param consensusSecond The consensus second to track the usage for.
      * @param usageSnapshots The usage snapshots to track.
      */
-    void trackUsage(long consensusSecond, @NonNull final ThrottleUsageSnapshots usageSnapshots);
+    void trackUsage(long consensusSecond, @NonNull ThrottleUsageSnapshots usageSnapshots);
 
     /**
      * Purges expired schedules from the store.
