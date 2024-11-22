@@ -56,6 +56,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
@@ -422,7 +423,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 configSupplier,
                 () -> daggerApp.networkInfo().selfNodeInfo(),
                 new AppThrottleFactory(
-                        configSupplier, () -> daggerApp.workingStateAccessor().getState(), ThrottleAccumulator::new));
+                        configSupplier,
+                        () -> daggerApp.workingStateAccessor().getState(),
+                        () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
+                        ThrottleAccumulator::new));
         tssBaseService = tssBaseServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
         blockStreamService = new BlockStreamService();
@@ -920,8 +924,16 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         return daggerApp.handleWorkflow();
     }
 
+    public ConfigProvider configProvider() {
+        return configProvider;
+    }
+
     public BlockStreamManager blockStreamManager() {
         return daggerApp.blockStreamManager();
+    }
+
+    public ThrottleDefinitions activeThrottleDefinitions() {
+        return daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow();
     }
 
     public boolean isBlockStreamEnabled() {

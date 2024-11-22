@@ -25,6 +25,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduledCounts;
 import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
@@ -50,6 +51,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     private final WritableKVState<ScheduleID, Schedule> schedulesByIdMutable;
     private final WritableKVState<ProtoBytes, ScheduleID> scheduleIdByEqualityMutable;
     private final WritableKVState<TimestampSeconds, ScheduledCounts> scheduleCountsMutable;
+    private final WritableKVState<TimestampSeconds, ThrottleUsageSnapshots> scheduleUsagesMutable;
     private final WritableKVState<ScheduledOrder, ScheduleID> scheduleOrdersMutable;
 
     /**
@@ -70,6 +72,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         schedulesByIdMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
         scheduleCountsMutable = states.get(V0570ScheduleSchema.SCHEDULED_COUNTS_KEY);
         scheduleOrdersMutable = states.get(V0570ScheduleSchema.SCHEDULED_ORDERS_KEY);
+        scheduleUsagesMutable = states.get(V0570ScheduleSchema.SCHEDULED_USAGES_KEY);
         scheduleIdByEqualityMutable = states.get(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
 
         final long maxCapacity =
@@ -134,14 +137,20 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         scheduleOrdersMutable.put(orderKey, schedule.scheduleIdOrThrow());
     }
 
+    @Override
+    public void trackUsage(final long consensusSecond, @NonNull final ThrottleUsageSnapshots usageSnapshots) {
+        requireNonNull(usageSnapshots);
+        scheduleUsagesMutable.put(new TimestampSeconds(consensusSecond), usageSnapshots);
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public void purgeExpiredRangeClosed(final long start, final long end) {
         for (long i = start; i <= end; i++) {
-            final var countsKey = new TimestampSeconds(i);
-            final var counts = scheduleCountsMutable.get(countsKey);
+            final var countsAndUsagesKey = new TimestampSeconds(i);
+            final var counts = scheduleCountsMutable.get(countsAndUsagesKey);
             if (counts != null) {
                 for (int j = 0, n = counts.numberScheduled(); j < n; j++) {
                     final var orderKey = new ScheduledOrder(i, j);
@@ -149,7 +158,8 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                     purge(scheduleId);
                     scheduleOrdersMutable.remove(orderKey);
                 }
-                scheduleCountsMutable.remove(countsKey);
+                scheduleCountsMutable.remove(countsAndUsagesKey);
+                scheduleUsagesMutable.remove(countsAndUsagesKey);
             }
         }
     }

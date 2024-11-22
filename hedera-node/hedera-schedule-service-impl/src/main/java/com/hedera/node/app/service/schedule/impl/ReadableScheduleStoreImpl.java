@@ -24,6 +24,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduledCounts;
 import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
@@ -46,6 +47,7 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
 
     private final ReadableKVState<ScheduleID, Schedule> schedulesById;
     private final ReadableKVState<TimestampSeconds, ScheduledCounts> scheduledCounts;
+    private final ReadableKVState<TimestampSeconds, ThrottleUsageSnapshots> scheduledUsages;
     private final ReadableKVState<ScheduledOrder, ScheduleID> scheduledOrders;
     private final ReadableKVState<ProtoBytes, ScheduleID> scheduleIdByStringHash;
 
@@ -59,6 +61,7 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
         schedulesById = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
         scheduledCounts = states.get(V0570ScheduleSchema.SCHEDULED_COUNTS_KEY);
         scheduledOrders = states.get(V0570ScheduleSchema.SCHEDULED_ORDERS_KEY);
+        scheduledUsages = states.get(V0570ScheduleSchema.SCHEDULED_USAGES_KEY);
         scheduleIdByStringHash = states.get(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
     }
 
@@ -119,5 +122,10 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
     public int numTransactionsScheduledAt(final long consensusSecond) {
         final var counts = scheduledCounts.get(new TimestampSeconds(consensusSecond));
         return counts == null ? 0 : counts.numberScheduled();
+    }
+
+    @Override
+    public @Nullable ThrottleUsageSnapshots usageSnapshotsForScheduled(final long consensusSecond) {
+        return scheduledUsages.get(new TimestampSeconds(consensusSecond));
     }
 }

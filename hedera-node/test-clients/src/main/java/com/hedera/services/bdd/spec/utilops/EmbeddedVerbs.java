@@ -17,10 +17,15 @@
 package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.node.config.types.StreamMode.RECORDS;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.TimestampSeconds;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
@@ -32,8 +37,13 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
@@ -48,11 +58,13 @@ import com.hedera.services.bdd.spec.utilops.embedded.ViewMappingValueOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewPendingAirdropOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewSingletonOp;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 /**
  * Contains operations that are usable only with an {@link EmbeddedNetwork}.
@@ -198,6 +210,50 @@ public final class EmbeddedVerbs {
      */
     public static ViewNodeOp viewNode(@NonNull final String name, @NonNull final Consumer<Node> observer) {
         return new ViewNodeOp(name, observer);
+    }
+
+    /**
+     * Returns an operation that exposes the maximum number of the given functionality that can be scheduled
+     * in a single consensus second with the embedded network's active throttles and configuration.
+     * @param function the functionality to check
+     * @param observer the observer to receive to the maximum number of transactions
+     * @return the operation that will expose the maximum number of transactions
+     */
+    public static SpecOperation exposeMaxSchedulable(
+            @NonNull final HederaFunctionality function, @NonNull final IntConsumer observer) {
+        requireNonNull(function);
+        requireNonNull(observer);
+        return doingContextual(spec -> {
+            final var properties = spec.startupProperties();
+            final var capacityUtilization = properties.getScaleFactor("scheduling.schedulableCapacityFraction");
+            final var hedera = spec.embeddedHederaOrThrow().hedera();
+            final var throttleAccumulator = new ThrottleAccumulator(
+                    hedera.configProvider()::getConfiguration,
+                    capacityUtilization::asApproxCapacitySplit,
+                    ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE);
+            throttleAccumulator.applyGasConfig();
+            throttleAccumulator.rebuildFor(hedera.activeThrottleDefinitions());
+            final var now = spec.consensusTime();
+            final var state = spec.embeddedStateOrThrow();
+            final var pbjFunction = CommonPbjConverters.toPbj(function);
+            final var throttledPayerId = AccountID.newBuilder()
+                    .accountNum(properties.getLong("accounts.lastThrottleExempt") + 1)
+                    .build();
+            final var txnInfo = new TransactionInfo(
+                    Transaction.DEFAULT,
+                    TransactionBody.DEFAULT,
+                    TransactionID.DEFAULT,
+                    throttledPayerId,
+                    SignatureMap.DEFAULT,
+                    Bytes.EMPTY,
+                    pbjFunction,
+                    null);
+            int numSchedulable = 0;
+            for (; !throttleAccumulator.checkAndEnforceThrottle(txnInfo, now, state); numSchedulable++) {
+                // Count until we are throttled
+            }
+            observer.accept(numSchedulable);
+        });
     }
 
     /***

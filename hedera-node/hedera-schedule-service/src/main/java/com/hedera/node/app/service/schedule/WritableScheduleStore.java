@@ -18,6 +18,7 @@ package com.hedera.node.app.service.schedule;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -56,6 +57,13 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @param scheduleToAdd The schedule to add
      */
     void put(@NonNull Schedule scheduleToAdd);
+
+    /**
+     * Updates the usage of the throttles for the given consensus second.
+     * @param consensusSecond The consensus second to track the usage for.
+     * @param usageSnapshots The usage snapshots to track.
+     */
+    void trackUsage(long consensusSecond, @NonNull final ThrottleUsageSnapshots usageSnapshots);
 
     /**
      * Purges expired schedules from the store.

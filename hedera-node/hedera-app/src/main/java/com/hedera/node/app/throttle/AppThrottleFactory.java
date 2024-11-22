@@ -33,6 +33,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
@@ -43,6 +44,7 @@ import java.util.function.Supplier;
 public class AppThrottleFactory implements Throttle.Factory {
     private final Supplier<State> stateSupplier;
     private final Supplier<Configuration> configSupplier;
+    private final Supplier<ThrottleDefinitions> definitionsSupplier;
     private final ThrottleAccumulatorFactory throttleAccumulatorFactory;
 
     public interface ThrottleAccumulatorFactory {
@@ -55,29 +57,28 @@ public class AppThrottleFactory implements Throttle.Factory {
     public AppThrottleFactory(
             @NonNull final Supplier<Configuration> configSupplier,
             @NonNull final Supplier<State> stateSupplier,
+            @NonNull final Supplier<ThrottleDefinitions> definitionsSupplier,
             @NonNull final ThrottleAccumulatorFactory throttleAccumulatorFactory) {
         this.configSupplier = requireNonNull(configSupplier);
         this.stateSupplier = requireNonNull(stateSupplier);
+        this.definitionsSupplier = requireNonNull(definitionsSupplier);
         this.throttleAccumulatorFactory = requireNonNull(throttleAccumulatorFactory);
     }
 
     @Override
-    public Throttle newThrottle(
-            @NonNull final ThrottleDefinitions definitions,
-            final int capacitySplit,
-            @NonNull final ThrottleUsageSnapshots usageSnapshots) {
-        requireNonNull(definitions);
-        requireNonNull(usageSnapshots);
+    public Throttle newThrottle(final int capacitySplit, @Nullable final ThrottleUsageSnapshots initialUsageSnapshots) {
         final var throttleAccumulator = throttleAccumulatorFactory.newThrottleAccumulator(
                 configSupplier, () -> capacitySplit, ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE);
         throttleAccumulator.applyGasConfig();
-        throttleAccumulator.rebuildFor(definitions);
-        final var tpsThrottles = throttleAccumulator.allActiveThrottles();
-        final var tpsUsageSnapshots = usageSnapshots.tpsThrottles();
-        for (int i = 0, n = tpsThrottles.size(); i < n; i++) {
-            tpsThrottles.get(i).resetUsageTo(tpsUsageSnapshots.get(i));
+        throttleAccumulator.rebuildFor(definitionsSupplier.get());
+        if (initialUsageSnapshots != null) {
+            final var tpsThrottles = throttleAccumulator.allActiveThrottles();
+            final var tpsUsageSnapshots = initialUsageSnapshots.tpsThrottles();
+            for (int i = 0, n = tpsThrottles.size(); i < n; i++) {
+                tpsThrottles.get(i).resetUsageTo(tpsUsageSnapshots.get(i));
+            }
+            throttleAccumulator.gasLimitThrottle().resetUsageTo(initialUsageSnapshots.gasThrottleOrThrow());
         }
-        throttleAccumulator.gasLimitThrottle().resetUsageTo(usageSnapshots.gasThrottleOrThrow());
         // Throttle.allow() has the opposite polarity of ThrottleAccumulator.checkAndEnforceThrottle()
         return new Throttle() {
             @Override

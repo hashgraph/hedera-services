@@ -18,6 +18,7 @@ package com.hedera.node.app.service.schedule;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -96,4 +97,15 @@ public interface ReadableScheduleStore {
      * @return the number of schedules that are scheduled to execute at the given consensus second
      */
     int numTransactionsScheduledAt(long consensusSecond);
+
+    /**
+     * If the given consensus second has any scheduled transactions, returns a snapshot of the throttle
+     * usage for those transactions within that second. The throttles are implicit in the combination of
+     * the network throttle definitions and the fraction of network capacity that is allowed to be
+     * scheduled to execute in a single second.
+     * @param consensusSecond the consensus second to check for scheduling usage
+     * @return null or a usage snapshot for the transactions scheduled at the given consensus second
+     */
+    @Nullable
+    ThrottleUsageSnapshots usageSnapshotsForScheduled(long consensusSecond);
 }
