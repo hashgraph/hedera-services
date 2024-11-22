@@ -18,16 +18,17 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.uptime.UptimeTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -74,27 +75,27 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * Constructor.
      *
      * @param platformContext       the platform context
-     * @param addressBook           the address book
+     * @param roster                the current roster
      * @param selfId                this node's id
      * @param statusActionSubmitter enables submitting platform status actions
      * @param softwareVersion       the current software version
      */
     public SwirldStateManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final NodeId selfId,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final SoftwareVersion softwareVersion) {
 
         Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(roster);
         Objects.requireNonNull(selfId);
         this.stats = new SwirldStateMetrics(platformContext.getMetrics());
         Objects.requireNonNull(statusActionSubmitter);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.transactionHandler = new TransactionHandler(selfId, stats);
-        this.uptimeTracker = new UptimeTracker(
-                platformContext, addressBook, statusActionSubmitter, selfId, platformContext.getTime());
+        this.uptimeTracker =
+                new UptimeTracker(platformContext, roster, statusActionSubmitter, selfId, platformContext.getTime());
     }
 
     /**
@@ -125,7 +126,9 @@ public class SwirldStateManager implements FreezePeriodChecker {
     public void handleConsensusRound(final ConsensusRound round) {
         final MerkleRoot state = stateRef.get();
 
-        uptimeTracker.handleRound(round, state.getReadablePlatformState().getAddressBook());
+        uptimeTracker.handleRound(
+                round,
+                RosterRetriever.buildRoster(state.getReadablePlatformState().getAddressBook()));
         transactionHandler.handleRound(round, state);
     }
 
