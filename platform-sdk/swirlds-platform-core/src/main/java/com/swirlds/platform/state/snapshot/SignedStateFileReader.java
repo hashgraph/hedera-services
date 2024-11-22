@@ -206,4 +206,20 @@ public final class SignedStateFileReader {
                     }
                 });
     }
+
+    /**
+     * Unregister the PlatformStateService and RosterService so that the app
+     * can initialize States API eventually. Currently, it wouldn't initialize it
+     * if it sees the PlatformStateService already present.
+     *
+     * See the doc for registerServiceStates above for more details on why
+     * we initialize these stub states in the first place.
+     *
+     * @param signedState a signed state to unregister services from
+     */
+    public static void unregisterServiceStates(@NonNull final SignedState signedState) {
+        final MerkleStateRoot state = (MerkleStateRoot) signedState.getState();
+        state.unregisterService(PlatformStateService.NAME);
+        state.unregisterService(RosterStateId.NAME);
+    }
 }

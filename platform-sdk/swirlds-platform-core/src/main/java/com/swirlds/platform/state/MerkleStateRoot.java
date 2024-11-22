@@ -503,6 +503,37 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     /**
+     * Unregister a service without removing its nodes from the state.
+     *
+     * Services such as the PlatformStateService and RosterService may be registered
+     * on a newly loaded (or received via Reconnect) SignedState object in order
+     * to access the PlatformState and RosterState/RosterMap objects so that the code
+     * can fetch the current active Roster for the state and validate it. Once validated,
+     * the state may need to be loaded into the system as the actual state,
+     * and as a part of this process, the States API
+     * is going to be initialized to allow access to all the services known to the app.
+     * However, the States API initialization is guarded by a
+     * {@code state.getReadableStates(PlatformStateService.NAME).isEmpty()} check.
+     * So if this service has previously been initialized, then the States API
+     * won't be initialized in full.
+     *
+     * To prevent this and to allow the system to initialize all the services,
+     * we unregister the PlatformStateService and RosterService after the validation is performed.
+     *
+     * Note that unlike the MerkleStateRoot.removeServiceState() method below in this class,
+     * the unregisterService() method will NOT remove the nodes that store the states of
+     * the services being unregistered by design.
+     *
+     * @param serviceName a service to unregister
+     */
+    public void unregisterService(@NonNull final String serviceName) {
+        readableStatesMap.remove(serviceName);
+        writableStatesMap.remove(serviceName);
+
+        services.remove(serviceName);
+    }
+
+    /**
      * Removes the node and metadata from the state merkle tree.
      *
      * @param serviceName The service name. Cannot be null.
