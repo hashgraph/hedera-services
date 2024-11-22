@@ -19,6 +19,7 @@ package com.swirlds.merkledb.collections;
 import static java.lang.Math.toIntExact;
 import static java.nio.ByteBuffer.allocateDirect;
 
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -78,10 +79,11 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
      * Create a {@link LongListHeap} from a file that was saved.
      *
      * @param file the file to read from
+     * @param configuration the configuration to use
      * @throws IOException If there was a problem reading the file
      */
-    public LongListHeap(final Path file) throws IOException {
-        super(file, 0, null);
+    public LongListHeap(final Path file, final Configuration configuration) throws IOException {
+        super(file, 0, configuration);
     }
 
     /** {@inheritDoc} */

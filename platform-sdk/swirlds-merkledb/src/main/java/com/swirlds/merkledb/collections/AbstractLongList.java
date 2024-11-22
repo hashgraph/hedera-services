@@ -21,6 +21,7 @@ import static com.swirlds.merkledb.utilities.MerkleDbFileUtils.readFromFileChann
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -174,7 +175,7 @@ public abstract class AbstractLongList<C> implements LongList {
     protected AbstractLongList(
             final Path path, final long reservedBufferLength, @NonNull final Configuration configuration)
             throws IOException {
-        this.configuration = configuration;
+        this.configuration = requireNonNull(configuration);
         final File file = path.toFile();
         this.reservedBufferLength = reservedBufferLength;
         if (!file.exists() || file.length() == 0) {

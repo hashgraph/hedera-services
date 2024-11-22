@@ -19,6 +19,7 @@ package com.swirlds.merkledb.collections;
 import static com.swirlds.base.units.UnitConstants.BYTES_TO_MEBIBYTES;
 import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.collections.AbstractLongList.FILE_HEADER_SIZE_V2;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.config.api.Configuration;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,7 +60,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     protected abstract T createFullyParameterizedLongListWith(final int numLongsPerChunk, final long maxLongs);
 
-    protected abstract T createLongListFromFile(final Path file) throws IOException;
+    protected abstract T createLongListFromFile(final Path file, final Configuration configuration) throws IOException;
 
     /**
      * Keep track of initial direct memory used already, so we can check if we leek over and above what we started with
@@ -139,7 +141,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             assertEquals(i, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
         }
         // now try and construct a new LongList reading from the file
-        try (final LongList longList2 = createLongListFromFile(file)) {
+        try (final LongList longList2 = createLongListFromFile(file, CONFIGURATION)) {
             // now check data and other attributes
             assertEquals(longList.capacity(), longList2.capacity(), "Unexpected value for longList2.capacity()");
             assertEquals(longList.size(), longList2.size(), "Unexpected value for longList2.size()");
