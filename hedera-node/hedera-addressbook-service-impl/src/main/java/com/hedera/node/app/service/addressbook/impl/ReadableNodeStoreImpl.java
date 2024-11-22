@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl;
 
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
+import static com.swirlds.platform.system.address.AddressBookUtils.endpointPairFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.addressbook.Node;
@@ -24,12 +25,13 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 
@@ -93,22 +95,25 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
         for (final var it = nodesState.keys(); it.hasNext(); ) {
             final var nodeNumber = it.next();
             final var node = requireNonNull(nodesState.get(nodeNumber));
-            final var nodeEndpoints = node.gossipEndpoint();
-            // we want to swap the internal and external node endpoints
-            // so that the external one is at index 0
-            if (nodeEndpoints.size() > 1) {
-                Collections.swap(nodeEndpoints, 0, 1);
-            }
             if (!node.deleted()) {
-                final var entry = RosterEntry.newBuilder()
-                        .nodeId(node.nodeId())
-                        .weight(node.weight())
-                        .gossipCaCertificate(node.gossipCaCertificate())
-                        .gossipEndpoint(nodeEndpoints)
-                        .build();
-                rosterEntries.add(entry);
+                // If we're retrieving from state, the endpoint order SHOULD match the address book, which always has
+                // the internal endpoint at index 0
+                final var serviceEndpoints = node.serviceEndpoint();
+                final var internalEndpoint = endpointPairFor(serviceEndpoints.get(0));
+                final var externalEndpoint = endpointPairFor(serviceEndpoints.get(1));
+
+                final var rosterEntry = RosterRetriever.buildRosterEntry(
+                        NodeId.of(node.nodeId()),
+                        node.weight(),
+                        node.gossipCaCertificate(),
+                        // The roster entry orders the EXTERNAL endpoint first intentionally
+                        externalEndpoint,
+                        internalEndpoint);
+
+                rosterEntries.add(rosterEntry);
             }
         }
+
         rosterEntries.sort(Comparator.comparingLong(RosterEntry::nodeId));
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }

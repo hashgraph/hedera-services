@@ -21,12 +21,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.spi.WritableStates;
@@ -72,9 +72,7 @@ public class V057PlatformStateSchema extends Schema {
         final var startupNetworks = ctx.startupNetworks();
         if (ctx.isGenesis()) {
             final var genesisNetwork = startupNetworks.genesisNetworkOrThrow();
-            final var roster = new Roster(genesisNetwork.nodeMetadata().stream()
-                    .map(NodeMetadata::rosterEntryOrThrow)
-                    .toList());
+            final var roster = AddressBookUtils.fromNetwork(genesisNetwork);
             final var addressBook = RosterUtils.buildAddressBook(roster);
             platformStateStore.bulkUpdate(v -> {
                 v.setAddressBook(addressBook);

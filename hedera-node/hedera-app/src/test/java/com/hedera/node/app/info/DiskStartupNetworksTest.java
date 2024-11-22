@@ -72,6 +72,7 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -323,10 +324,7 @@ class DiskStartupNetworksTest {
 
     private void addRosterInfo(@NonNull final FakeState state, @NonNull final Network network) {
         final var writableStates = state.getWritableStates(RosterService.NAME);
-        final var rosterEntries = network.nodeMetadata().stream()
-                .map(NodeMetadata::rosterEntryOrThrow)
-                .toList();
-        final var currentRoster = new Roster(rosterEntries);
+        final var currentRoster = AddressBookUtils.fromNetwork(network);
         final var currentRosterHash = RosterUtils.hash(currentRoster).getBytes();
         final var rosters = writableStates.<ProtoBytes, Roster>get(ROSTER_KEY);
         rosters.put(new ProtoBytes(currentRosterHash), currentRoster);

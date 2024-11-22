@@ -35,6 +35,7 @@ import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
@@ -180,18 +181,6 @@ public class V053AddressBookSchema extends Schema {
      * @return the {@link ServiceEndpoint} object
      */
     public static ServiceEndpoint endpointFor(@NonNull final String host, final int port) {
-        final var builder = ServiceEndpoint.newBuilder().port(port);
-        if (IPV4_ADDRESS_PATTERN.matcher(host).matches()) {
-            final var octets = host.split("[.]");
-            builder.ipAddressV4(Bytes.wrap(new byte[] {
-                (byte) Integer.parseInt(octets[0]),
-                (byte) Integer.parseInt(octets[1]),
-                (byte) Integer.parseInt(octets[2]),
-                (byte) Integer.parseInt(octets[3])
-            }));
-        } else {
-            builder.domainName(host);
-        }
-        return builder.build();
+        return AddressBookUtils.endpointFor(host, port);
     }
 }

@@ -18,8 +18,6 @@ package com.hedera.node.app.info;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -41,6 +39,7 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -230,13 +229,7 @@ public class DiskStartupNetworks implements StartupNetworks {
     private void assertValidTssKeys(@NonNull final Network network) {
         final var expectedLedgerId = network.ledgerId();
         if (!Bytes.EMPTY.equals(expectedLedgerId)) {
-            final var roster = new Roster(network.nodeMetadata().stream()
-                    .map(metadata -> new RosterEntry(
-                            metadata.nodeOrThrow().nodeId(),
-                            metadata.nodeOrThrow().weight(),
-                            metadata.nodeOrThrow().gossipCaCertificate(),
-                            metadata.nodeOrThrow().gossipEndpoint()))
-                    .toList());
+            final var roster = AddressBookUtils.fromMetadata(network.nodeMetadata());
             final var maxSharesPerNode = configProvider
                     .getConfiguration()
                     .getConfigData(TssConfig.class)

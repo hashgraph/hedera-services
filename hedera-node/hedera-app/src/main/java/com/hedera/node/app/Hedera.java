@@ -36,7 +36,6 @@ import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -630,8 +629,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (trigger == GENESIS) {
             final var config = configProvider.getConfiguration();
             final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-            final var genesisRoster = buildRoster(requireNonNull(genesisAddressBook));
-            genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
+            genesisNetworkInfo = new GenesisNetworkInfo(requireNonNull(genesisAddressBook), ledgerConfig.id());
         }
         blockStreamService.resetMigratedLastBlockHash();
         startupNetworks = startupNetworksFactory.apply(selfNodeId.id(), configProvider, tssBaseService);

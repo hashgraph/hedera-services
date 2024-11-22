@@ -16,14 +16,15 @@
 
 package com.hedera.node.app.fixtures;
 
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
+import static com.swirlds.platform.system.address.AddressBookUtils.endpointPairFor;
 import static com.swirlds.state.test.fixtures.merkle.TestSchema.CURRENT_VERSION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fixtures.state.FakePlatform;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
@@ -52,9 +53,11 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -66,6 +69,7 @@ import com.swirlds.state.test.fixtures.MapWritableStates;
 import com.swirlds.state.test.fixtures.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -340,14 +344,18 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var addressBook = new AddressBook(addresses);
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), addressBook);
             final var initialState = new FakeState();
-            final var genesisRoster = buildRoster(addressBook);
-            final var networkInfo = new GenesisNetworkInfo(genesisRoster, Bytes.fromHex("03"));
-            final var startupNetworks = new FakeStartupNetworks(Network.newBuilder()
-                    .nodeMetadata(genesisRoster.rosterEntries().stream()
-                            .map(entry ->
-                                    NodeMetadata.newBuilder().rosterEntry(entry).build())
-                            .toList())
-                    .build());
+            final var networkInfo = new GenesisNetworkInfo(addressBook, Bytes.fromHex("03"));
+
+            final var nodeMetadata = new ArrayList<NodeMetadata>();
+            for (final var nodeInfo : networkInfo.addressBook()) {
+                final var address = addressBook.getAddress(NodeId.of(nodeInfo.nodeId()));
+                final var rosterEntry = toRosterEntry(nodeInfo, address);
+                nodeMetadata.add(
+                        NodeMetadata.newBuilder().rosterEntry(rosterEntry).build());
+            }
+            final var startupNetworks = new FakeStartupNetworks(
+                    Network.newBuilder().nodeMetadata(nodeMetadata).build());
+
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
                 svc.registerSchemas(reg);
@@ -395,5 +403,15 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 }
             };
         }
+    }
+
+    private static RosterEntry toRosterEntry(@NonNull final NodeInfo nodeInfo, @NonNull final Address address) {
+        final var nodeId = NodeId.of(nodeInfo.nodeId());
+
+        // Since we're retrieving endpoints from the address book, the internal endpoint should be first
+        final var serviceEndpoints = AddressBookUtils.endpointsFor(address);
+        final var internal = endpointPairFor(serviceEndpoints.get(0));
+        final var external = serviceEndpoints.size() > 1 ? endpointPairFor(serviceEndpoints.get(1)) : null;
+        return RosterRetriever.buildRosterEntry(nodeId, nodeInfo.stake(), nodeInfo.sigCertBytes(), external, internal);
     }
 }

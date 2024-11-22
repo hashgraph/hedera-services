@@ -17,10 +17,15 @@
 package com.swirlds.platform.system.address;
 
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
@@ -33,7 +38,11 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -273,6 +282,29 @@ public class AddressBookUtils {
     }
 
     /**
+     * Extracts the internal and external service endpoints from the given address. If the internal or external
+     * service endpoint is null, it is not added to the list of service endpoints.
+     * <p>
+     * NOTE: this method assumes that the internal service endpoint is at index 0 and the external service endpoint
+     * is at index 1 per address book semantics.
+     * @param address the address to extract the service endpoints from
+     * @return a list of (non-null) service endpoints, with the internal service endpoint at index 0 and the
+     * external service endpoint at index 1.
+     */
+    public static List<ServiceEndpoint> endpointsFor(@NonNull final Address address) {
+        requireNonNull(address);
+        final List<ServiceEndpoint> serviceEndpoints = new ArrayList<>(2);
+        if (address.getHostnameInternal() != null) {
+            serviceEndpoints.add(endpointFor(address.getHostnameInternal(), address.getPortInternal()));
+        }
+        if (address.getHostnameExternal() != null) {
+            serviceEndpoints.add(endpointFor(address.getHostnameExternal(), address.getPortExternal()));
+        }
+
+        return serviceEndpoints;
+    }
+
+    /**
      * Initializes the address book from the configuration and platform saved state.
      *
      * @param selfId               the node ID of the current node
@@ -355,5 +387,95 @@ public class AddressBookUtils {
         } else {
             return String.valueOf(selfId);
         }
+    }
+
+    /**
+     * Extracts the bytes of the given signing certificate. If the certificate is null, an empty byte
+     * array is returned.
+     *
+     * @param signingCert the signing certificate
+     * @return the bytes of the signing certificate wrapped in a {@link Bytes} object
+     */
+    public static Bytes extractSigCertBytes(@Nullable final X509Certificate signingCert) {
+        Bytes signingCertificateBytes;
+        try {
+            signingCertificateBytes = signingCert == null ? Bytes.EMPTY : Bytes.wrap(signingCert.getEncoded());
+        } catch (final CertificateEncodingException e) {
+            signingCertificateBytes = Bytes.EMPTY;
+        }
+
+        return signingCertificateBytes;
+    }
+
+    /**
+     * Convenience method for converting a {@link ServiceEndpoint} to a pair of domain name and port.
+     *
+     * @param endpoint the service endpoint to convert
+     * @return a pair of domain name and port
+     */
+    public static Pair<String, Integer> endpointPairFor(@NonNull final ServiceEndpoint endpoint) {
+        requireNonNull(endpoint);
+        return Pair.of(endpoint.domainName(), endpoint.port());
+    }
+
+    /**
+     * Maps a {@link Network} object to its equivalent {@link Roster}.
+     *
+     * @param network the network to represent as a roster
+     * @return the converted roster
+     */
+    public static Roster fromNetwork(@NonNull final Network network) {
+        return fromMetadata(network.nodeMetadata());
+    }
+
+    /**
+     * Much like {@link #endpointPairFor(ServiceEndpoint)}, this method maps a _list_ of {@link ServiceEndpoint}
+     * objects to a corresponding list of domain names and ports. This method does _not_ order the endpoints–it
+     * only maps them in the order they are provided.
+     *
+     * @param endpoints the list of service endpoints to convert
+     * @return a list of domain name and port pairs
+     */
+    public static List<Pair<String, Integer>> endpointsFromMetadata(@NonNull final List<ServiceEndpoint> endpoints) {
+        final List<Pair<String, Integer>> domainAndPortPairs = new ArrayList<>();
+        for (int i = 0; i < endpoints.size(); i++) {
+            final ServiceEndpoint endpoint = endpoints.get(i);
+            if (endpoint != null) {
+                domainAndPortPairs.add(endpointPairFor(endpoint));
+            }
+        }
+        return domainAndPortPairs;
+    }
+
+    /**
+     * Maps a list of {@link NodeMetadata} objects to the corresponding {@link Roster}.
+     *
+     * @param metadata the list of node metadata to represent as a roster
+     * @return the converted roster
+     */
+    public static Roster fromMetadata(@NonNull final List<NodeMetadata> metadata) {
+        return new Roster(metadata.stream()
+                .filter(Objects::nonNull)
+                .map(AddressBookUtils::entryFromMetadata)
+                .toList());
+    }
+
+    private static RosterEntry entryFromMetadata(@NonNull final NodeMetadata metadata) {
+        if (metadata.hasRosterEntry()) {
+            return metadata.rosterEntryOrThrow();
+        }
+
+        // If we're reading metadata, the endpoint order SHOULD match the address book, which always has the internal
+        // endpoint at index 0
+        final var node = metadata.nodeOrThrow();
+        final var endpoints = endpointsFromMetadata(node.serviceEndpoint());
+        var internalEndpoint = endpoints.get(0);
+        var externalEndpoint = endpoints.get(1);
+        return RosterRetriever.buildRosterEntry(
+                NodeId.of(node.nodeId()),
+                node.weight(),
+                node.gossipCaCertificate(),
+                externalEndpoint,
+                internalEndpoint);
     }
 }

@@ -23,10 +23,10 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.internal.network.Network;
-import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.spi.WritableStates;
@@ -143,9 +143,7 @@ public class V057RosterSchema extends Schema {
     }
 
     private Roster rosterFrom(@NonNull final Network network) {
-        return new Roster(network.nodeMetadata().stream()
-                .map(NodeMetadata::rosterEntryOrThrow)
-                .toList());
+        return AddressBookUtils.fromMetadata(network.nodeMetadata());
     }
 
     private boolean isUpgrade(@NonNull final MigrationContext ctx) {
