@@ -418,7 +418,7 @@ jobs:
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
-        run: ./regression/gradlew assemble --scan
+        run: ./regression/gradlew assemble --scan --project-dir=/home/runner/_work/hedera-services/hedera-services/gradle
 
       - name: Compute Actual Branch Name
         id: branch
