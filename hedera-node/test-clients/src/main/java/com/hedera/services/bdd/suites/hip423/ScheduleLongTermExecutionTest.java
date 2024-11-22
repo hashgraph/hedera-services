@@ -1286,16 +1286,16 @@ public class ScheduleLongTermExecutionTest {
                 newKeyNamed(receiver2),
                 newKeyNamed(receiver3),
                 newKeyNamed(receiver4),
+                uploadInitCode(contract),
+                contractCreate(contract),
                 scheduleCreate(
                                 VALID_SCHEDULE,
                                 cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver1, ONE_HBAR, false)))
                         .payingWith(PAYING_ACCOUNT)
                         .waitForExpiry()
-                        .withRelativeExpiry("createPayerTxn", 4)
+                        .withRelativeExpiry("createPayerTxn", 10)
                         .recordingScheduledTxn()
                         .via("firstSchedule"),
-                uploadInitCode(contract),
-                contractCreate(contract),
                 scheduleCreate(
                                 VALID_SCHEDULE,
                                 contractCall(
@@ -1308,7 +1308,7 @@ public class ScheduleLongTermExecutionTest {
                                         .hasKnownStatusFrom(SUCCESS, INVALID_SOLIDITY_ADDRESS))
                         .payingWith(DEFAULT_PAYER)
                         .waitForExpiry()
-                        .withRelativeExpiry("createPayerTxn", 4)
+                        .withRelativeExpiry("createPayerTxn", 10)
                         .recordingScheduledTxn()
                         .via("secondSchedule"),
                 scheduleCreate(
@@ -1318,21 +1318,27 @@ public class ScheduleLongTermExecutionTest {
                                         tinyBarsFromAccountToAlias(PAYING_ACCOUNT, receiver4, ONE_HBAR, false)))
                         .payingWith(PAYING_ACCOUNT)
                         .waitForExpiry()
-                        .withRelativeExpiry("createPayerTxn", 4)
+                        .withRelativeExpiry("createPayerTxn", 10)
                         .recordingScheduledTxn()
                         .via("thirdSchedule"),
-                sleepFor(5000),
+                sleepFor(11000),
                 cryptoTransfer(tinyBarsFromAccountToAlias(PAYING_ACCOUNT_2, receiver3, ONE_HBAR, false))
                         .via(TRIGGERING_TXN),
                 withOpContext((spec, opLog) -> {
                     // get all records
                     final var trigger = getTxnRecord(TRIGGERING_TXN).andAllChildRecords();
-                    final var firstSchedule =
-                            getTxnRecord("firstSchedule").scheduled().andAllChildRecords();
-                    final var secondSchedule =
-                            getTxnRecord("secondSchedule").scheduled().andAllChildRecords();
-                    final var thirdSchedule =
-                            getTxnRecord("thirdSchedule").scheduled().andAllChildRecords();
+                    final var firstSchedule = getTxnRecord("firstSchedule")
+                            .scheduled()
+                            .andAllChildRecords()
+                            .logged();
+                    final var secondSchedule = getTxnRecord("secondSchedule")
+                            .scheduled()
+                            .andAllChildRecords()
+                            .logged();
+                    final var thirdSchedule = getTxnRecord("thirdSchedule")
+                            .scheduled()
+                            .andAllChildRecords()
+                            .logged();
                     allRunFor(spec, trigger, firstSchedule, secondSchedule, thirdSchedule);
 
                     // get all nanoseconds

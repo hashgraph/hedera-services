@@ -23,6 +23,7 @@ import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.FilteredWritableStates;
 import com.swirlds.state.spi.ReadableStates;
@@ -37,6 +38,7 @@ import java.util.Map;
  * @param previousStates        The previous states.
  * @param newStates             The new states, preloaded with any new state definitions.
  * @param configuration         The configuration to use
+ * @param genesisNetworkInfo    The genesis network info
  * @param writableEntityIdStore The instance responsible for generating new entity IDs (ONLY during
  *                              migrations). Note that this is nullable only because it cannot exist
  *                              when the entity ID service itself is being migrated
@@ -49,7 +51,9 @@ public record MigrationContextImpl(
         @Nullable NetworkInfo genesisNetworkInfo,
         @Nullable WritableEntityIdStore writableEntityIdStore,
         @Nullable SemanticVersion previousVersion,
-        @NonNull Map<String, Object> sharedValues)
+        long roundNumber,
+        @NonNull Map<String, Object> sharedValues,
+        @NonNull StartupNetworks startupNetworks)
         implements MigrationContext {
     public MigrationContextImpl {
         requireNonNull(previousStates);
