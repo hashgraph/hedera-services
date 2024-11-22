@@ -25,7 +25,7 @@ import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccou
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.EVM_ADDRESSES;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.NUM_RESERVED_SYSTEM_ENTITIES;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.buildConfig;
-import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.swirlds.state.test.fixtures.merkle.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -38,9 +38,9 @@ import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.services.MigrationContextImpl;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.EmptyReadableStates;
@@ -48,17 +48,19 @@ import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
+import com.swirlds.state.test.fixtures.MapWritableStates;
 import java.util.HashMap;
 import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 final class V0490TokenSchemaTest {
-
+    private static final long NON_GENESIS_ROUND = 123L;
     private static final long BEGINNING_ENTITY_ID = 1000;
 
     private static final AccountID[] ACCT_IDS = new AccountID[1001];
@@ -80,6 +82,9 @@ final class V0490TokenSchemaTest {
     private Configuration config;
     private NetworkInfo networkInfo;
     private WritableEntityIdStore entityIdStore;
+
+    @Mock
+    private StartupNetworks startupNetworks;
 
     @BeforeEach
     void setUp() {
@@ -110,7 +115,15 @@ final class V0490TokenSchemaTest {
                 newWritableEntityIdState());
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
-                nonEmptyPrevStates, newStates, config, networkInfo, entityIdStore, CURRENT_VERSION, new HashMap<>());
+                nonEmptyPrevStates,
+                newStates,
+                config,
+                networkInfo,
+                entityIdStore,
+                CURRENT_VERSION,
+                NON_GENESIS_ROUND,
+                new HashMap<>(),
+                startupNetworks);
 
         schema.migrate(migrationContext);
 
@@ -126,7 +139,15 @@ final class V0490TokenSchemaTest {
     void initializesStakingDataOnGenesisStart() {
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, entityIdStore, null, new HashMap<>());
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                entityIdStore,
+                null,
+                0L,
+                new HashMap<>(),
+                startupNetworks);
 
         schema.migrate(migrationContext);
 
@@ -140,7 +161,15 @@ final class V0490TokenSchemaTest {
     void createsAllAccountsOnGenesisStart() {
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, entityIdStore, null, new HashMap<>());
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                entityIdStore,
+                null,
+                0L,
+                new HashMap<>(),
+                startupNetworks);
 
         schema.migrate(migrationContext);
 
@@ -213,7 +242,9 @@ final class V0490TokenSchemaTest {
                 networkInfo,
                 entityIdStore,
                 CURRENT_VERSION,
-                new HashMap<>());
+                NON_GENESIS_ROUND,
+                new HashMap<>(),
+                startupNetworks);
 
         schema.migrate(migrationContext);
 
@@ -232,7 +263,15 @@ final class V0490TokenSchemaTest {
     void onlyExpectedIdsUsed() {
         final var schema = newSubjectWithAllExpected();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, entityIdStore, null, new HashMap<>()));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                entityIdStore,
+                null,
+                0L,
+                new HashMap<>(),
+                startupNetworks));
 
         // Verify contract entity IDs aren't used
         for (int i = 350; i < 400; i++) {

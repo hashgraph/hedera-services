@@ -51,9 +51,9 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
-import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
@@ -64,6 +64,7 @@ import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.test.fixtures.merkle.TestSchema;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
@@ -96,6 +97,9 @@ class SerializationTest extends MerkleTestBase {
 
     @Mock
     private MigrationStateChanges migrationStateChanges;
+
+    @Mock
+    private StartupNetworks startupNetworks;
 
     @TempDir
     Path tempDir;
@@ -327,7 +331,8 @@ class SerializationTest extends MerkleTestBase {
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
                 new HashMap<>(),
-                migrationStateChanges);
+                migrationStateChanges,
+                startupNetworks);
         loadedTree.migrate(MerkleStateRoot.CURRENT_VERSION);
     }
 
@@ -349,7 +354,8 @@ class SerializationTest extends MerkleTestBase {
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
                 new HashMap<>(),
-                migrationStateChanges);
+                migrationStateChanges,
+                startupNetworks);
         return originalTree;
     }
 

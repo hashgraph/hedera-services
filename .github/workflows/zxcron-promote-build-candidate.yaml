@@ -43,7 +43,7 @@ jobs:
       build-candidate-commit: ${{ steps.find-build-candidates.outputs.build-candidate-commit }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -97,7 +97,7 @@ jobs:
     if: ${{ needs.determine-build-candidate.result == 'success' && needs.determine-build-candidate.outputs.build-candidate-exists == 'true' }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -131,7 +131,7 @@ jobs:
           echo "build-tag=${BUILD_TAG}" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Increment Build Promotion Index
-        uses: action-pack/increment@14c9f7fbbf560e7518ccaeab781aeca7bff15069 # v2.12
+        uses: step-security/increment@f806ba7e868d0298aa216a18049c42690f0e4736 # v2.0.0
         id: increment
         with:
           name: 'XTS_BUILD_PROMOTION_INDEX'
@@ -154,12 +154,12 @@ jobs:
     if: ${{ (needs.determine-build-candidate.result != 'success' || needs.promote-build-candidate.result != 'success') && !cancelled() && always() }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
       - name: Report failure (slack)
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_WEBHOOK }}
