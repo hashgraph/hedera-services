@@ -354,9 +354,10 @@ enum StateIdentifier {
     STATE_ID_ROSTERS = 28;
 
     /**
-    * A state identifier for scheduled transaction expiration.
+    * A state identifier for counts of transactions scheduled and
+    * processed in a second.
     */
-    STATE_ID_SCHEDULE_IDS_BY_EXPIRY = 29;
+    STATE_ID_SCHEDULED_COUNTS = 29;
 
     /**
      * A state identifier for scheduled transaction deduplication.
@@ -372,6 +373,16 @@ enum StateIdentifier {
      * A state identifier for TSS votes.
      */
     STATE_ID_TSS_VOTES = 32;
+
+    /**
+    * A state identifier for the ordering of scheduled transactions.
+    */
+    STATE_ID_SCHEDULED_ORDERS = 33;
+
+    /**
+     * A state identifier for scheduled throttle usage snapshots.
+     */
+    STATE_ID_SCHEDULED_USAGES = 34;
 
     /**
      * A state identifier for the round receipts queue.
@@ -427,12 +438,6 @@ enum StateIdentifier {
      * A state for the `159` upgrade file data
      */
     STATE_ID_UPGRADE_DATA_159 = 10010;
-
-    STATE_ID_SCHEDULED_COUNTS = 10011;
-
-    STATE_ID_SCHEDULED_ORDER = 10012;
-
-    STATE_ID_SCHEDULED_USAGE = 10013;
 }
 
 /**
