@@ -640,64 +640,63 @@ public class HandleWorkflow {
             final var scheduleConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
             final var startSecond = lastProcessTime.getEpochSecond();
             final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
-            // if long term schedules are disabled, the schedule purge needs to be commited with the userTxn stack
-            if (!scheduleConfig.longTermEnabled()) {
-                final var scheduleStore = new WritableStoreFactory(
-                                userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
-                        .getStore(WritableScheduleStore.class);
-                scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
-                userTxn.stack().commitSystemStateChanges();
-                return true;
-            }
 
-            final var readableStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
-            final var schedulesToExecute = readableStore.getByExpirationBetween(startSecond, endSecond);
+            // try to execute schedules only if longTermEnabled
+            if (scheduleConfig.longTermEnabled()) {
+                final var readableStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
+                final var schedulesToExecute = readableStore.getByExpirationBetween(startSecond, endSecond);
+                // future: consensus nanos offset will be calculated more precisely in following PR,
+                //  for now just add 1 nano on each iteration.
+                var consensusNanosOffset = 1;
+                // try to execute schedules
+                for (var i = 0; i < schedulesToExecute.size(); i++) {
+                    final var schedule = schedulesToExecute.get(i);
+                    // skip deleted or executed transactions
+                    if (schedule.deleted() || schedule.executed()) {
+                        continue;
+                    }
+                    // update schedule consensus timestamp
+                    final var scheduleConsensus = Instant.from(consensusNow.plusNanos(consensusNanosOffset));
+                    final var txnBody = childAsOrdinary(schedule);
+                    final var scheduleUserTnx = userTxnFactory.createUserTxn(
+                            state,
+                            event,
+                            creator,
+                            scheduleConsensus,
+                            ORDINARY_TRANSACTION,
+                            schedule.payerAccountIdOrThrow(),
+                            txnBody);
+                    final var baseBuilder = initializeBuilderInfo(
+                            scheduleUserTnx.baseBuilder(),
+                            scheduleUserTnx.txnInfo(),
+                            exchangeRateManager.exchangeRates());
+                    ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
+                    final var scheduleDispatch = userTxnFactory.createDispatch(
+                            scheduleUserTnx,
+                            baseBuilder,
+                            k -> schedule.signatories().contains(k),
+                            SCHEDULED);
 
-            // future: consensus nanos offset will be calculated more precisely in following PR,
-            //  for now just add 1 nano on each iteration.
-            var consensusNanosOffset = 1;
-            // try to execute schedules
-            for (var i = 0; i < schedulesToExecute.size(); i++) {
-                // update schedule consensus timestamp
-                final var schedule = schedulesToExecute.get(i);
-                final var scheduleConsensus = Instant.from(consensusNow.plusNanos(consensusNanosOffset));
-                final var txnBody = childAsOrdinary(schedule);
-                final var scheduleUserTnx = userTxnFactory.createUserTxn(
-                        state,
-                        event,
-                        creator,
-                        scheduleConsensus,
-                        ORDINARY_TRANSACTION,
-                        schedule.payerAccountIdOrThrow(),
-                        txnBody);
-                final var baseBuilder = initializeBuilderInfo(
-                        scheduleUserTnx.baseBuilder(), scheduleUserTnx.txnInfo(), exchangeRateManager.exchangeRates());
-                ((ScheduleStreamBuilder) baseBuilder).scheduleRef(schedule.scheduleId());
-                final var scheduleDispatch = userTxnFactory.createDispatch(
-                        scheduleUserTnx,
-                        baseBuilder,
-                        k -> schedule.signatories().contains(k),
-                        SCHEDULED);
-
-                // mark as deleted
-                final var scheduleStore =
-                        getScheduleServiceStoreFactory(scheduleUserTnx).writableStore(WritableScheduleStore.class);
-                scheduleStore.delete(schedule.scheduleId(), consensusNow);
-                scheduleUserTnx.stack().commitSystemStateChanges();
-
-                // execute the schedule
-                dispatchProcessor.processDispatch(scheduleDispatch);
-
-                // purge all schedules
-                if (i == schedulesToExecute.size() - 1) {
-                    scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+                    // mark as deleted
+                    final var scheduleStore =
+                            getScheduleServiceStoreFactory(scheduleUserTnx).writableStore(WritableScheduleStore.class);
+                    scheduleStore.delete(schedule.scheduleId(), consensusNow);
                     scheduleUserTnx.stack().commitSystemStateChanges();
-                }
 
-                // build the output and save the record/stream
-                generateStreams(state, scheduleUserTnx);
-                consensusNanosOffset++;
+                    // execute the schedule
+                    dispatchProcessor.processDispatch(scheduleDispatch);
+
+                    // build the output and save the record/stream
+                    generateStreams(state, scheduleUserTnx);
+                    consensusNanosOffset++;
+                }
             }
+
+            final var scheduleStore = new WritableStoreFactory(
+                            userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
+                    .getStore(WritableScheduleStore.class);
+            scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+            userTxn.stack().commitSystemStateChanges();
             return true;
         }
         return false;
