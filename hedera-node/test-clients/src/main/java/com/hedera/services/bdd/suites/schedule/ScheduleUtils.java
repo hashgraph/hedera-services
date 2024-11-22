@@ -51,7 +51,7 @@ public final class ScheduleUtils {
     static final String ORIGINAL = "original";
     static final String OTHER_PAYER = "otherPayer";
     static final String PAYER = "payer";
-    static final String PAYING_ACCOUNT = "payingAccount";
+    public static final String PAYING_ACCOUNT = "payingAccount";
     static final String PAYING_ACCOUNT_2 = "payingAccount2";
     static final String PAYING_SENDER = "payingSender";
     static final String RANDOM_KEY = "randomKey";

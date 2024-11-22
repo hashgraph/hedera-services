@@ -108,7 +108,7 @@ public class BlockImplUtils {
                     case "CongestionThrottleService" -> switch (stateKey) {
                         case "CONGESTION_LEVEL_STARTS" -> STATE_ID_CONGESTION_STARTS.protoOrdinal();
                         case "THROTTLE_USAGE_SNAPSHOTS" -> STATE_ID_THROTTLE_USAGE.protoOrdinal();
-                        case "SCHEDULE_THROTTLE_USAGE_PER_SECOND" -> STATE_ID_SCHEDULE_THROTTLE_USAGE.protoOrdinal();
+                        case "SCHEDULE_THROTTLE_USAGE" -> STATE_ID_SCHEDULE_THROTTLE_USAGE.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
                     case "ConsensusService" -> switch (stateKey) {

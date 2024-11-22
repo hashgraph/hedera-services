@@ -89,7 +89,7 @@ class BlockImplUtilsTest {
             case STATE_ID_RUNNING_HASHES -> "BlockRecordService.RUNNING_HASHES";
             case STATE_ID_BLOCK_STREAM_INFO -> "BlockStreamService.BLOCK_STREAM_INFO";
             case STATE_ID_CONGESTION_STARTS -> "CongestionThrottleService.CONGESTION_LEVEL_STARTS";
-            case STATE_ID_THROTTLE_USAGE -> "CongestionThrottleService.SCHEDULE_THROTTLE_USAGE_PER_SECOND";
+            case STATE_ID_THROTTLE_USAGE -> "CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS";
             case STATE_ID_SCHEDULE_THROTTLE_USAGE -> "CongestionThrottleService.SCHEDULE_THROTTLE_USAGE";
             case STATE_ID_TOPICS -> "ConsensusService.TOPICS";
             case STATE_ID_CONTRACT_BYTECODE -> "ContractService.BYTECODE";

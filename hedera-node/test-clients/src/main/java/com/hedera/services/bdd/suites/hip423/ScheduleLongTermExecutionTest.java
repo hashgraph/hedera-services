@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.hip423;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
@@ -41,7 +40,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThrottles;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
@@ -73,7 +71,6 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_TRANSFER_LIST;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.scheduleFakeUpgrade;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
-import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -83,14 +80,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -120,7 +114,7 @@ public class ScheduleLongTermExecutionTest {
     private static final String LUCKY_RECEIVER = "luckyReceiver";
     private static final String FAILED_XFER = "failedXfer";
     private static final String WEIRDLY_POPULAR_KEY_TXN = "weirdlyPopularKeyTxn";
-    private static final String PAYER_TXN = "payerTxn";
+    static final String PAYER_TXN = "payerTxn";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -1239,92 +1233,5 @@ public class ScheduleLongTermExecutionTest {
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
                                     SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
                         }));
-    }
-
-    @HapiTest
-    @Order(21)
-    final Stream<DynamicTest> scheduledSystemDeleteUnauthorizedPayerFails() {
-
-        return defaultHapiSpec("ScheduledSystemDeleteUnauthorizedPayerFailsAtExpiry")
-                .given(
-                        cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
-                        cryptoCreate(PAYING_ACCOUNT_2),
-                        fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE))
-                .when()
-                .then(scheduleCreate(VALID_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
-                        .withEntityMemo(randomUppercase(100))
-                        .designatingPayer(PAYING_ACCOUNT_2)
-                        .payingWith(PAYING_ACCOUNT)
-                        .waitForExpiry()
-                        .withRelativeExpiry(PAYER_TXN, 4)
-                        // future throttles will be exceeded because there is no throttle
-                        // for system delete
-                        // and the custom payer is not exempt from throttles like and admin
-                        // user would be
-                        .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED));
-    }
-
-    @HapiTest
-    @Order(22)
-    final Stream<DynamicTest> throttleWorksAsExpected() {
-        return hapiTest(
-                cryptoCreate(PAYING_ACCOUNT),
-                cryptoCreate(RECEIVER),
-                cryptoCreate(SENDER).via(SENDER_TXN),
-                overridingThrottles("testSystemFiles/artificial-limits-schedule.json"),
-                scheduleCreate("firstSchedule", cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
-                        .designatingPayer(PAYING_ACCOUNT)
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .recordingScheduledTxn()
-                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
-                        .payingWith(PAYING_ACCOUNT),
-                scheduleCreate("secondSchedule", cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 2)))
-                        .designatingPayer(PAYING_ACCOUNT)
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .recordingScheduledTxn()
-                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
-                        .payingWith(PAYING_ACCOUNT),
-                scheduleCreate("thirdSchedule", cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 3)))
-                        .designatingPayer(PAYING_ACCOUNT)
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .recordingScheduledTxn()
-                        .alsoSigningWith(PAYING_ACCOUNT, SENDER)
-                        .payingWith(PAYING_ACCOUNT)
-                        .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED));
-    }
-
-    @HapiTest
-    @Order(23)
-    final Stream<DynamicTest> gasThrottleWorksAsExpected() {
-        final var contract = "HollowAccountCreator";
-        final var gasToOffer = 2_000_000L;
-        return hapiTest(
-                cryptoCreate(PAYING_ACCOUNT),
-                uploadInitCode(contract),
-                contractCreate(contract).via("contractCreate"),
-                // schedule at another second, should not affect the throttle
-                scheduleCreate("1", testContractCall(1, gasToOffer))
-                        .withRelativeExpiry("contractCreate", 100)
-                        .payingWith(PAYING_ACCOUNT),
-                scheduleCreate("2", testContractCall(2, gasToOffer))
-                        .withRelativeExpiry("contractCreate", 10)
-                        .payingWith(PAYING_ACCOUNT),
-                scheduleCreate("3", testContractCall(3, gasToOffer))
-                        .withRelativeExpiry("contractCreate", 10)
-                        .payingWith(PAYING_ACCOUNT),
-                scheduleCreate("4", testContractCall(4, gasToOffer))
-                        .withRelativeExpiry("contractCreate", 10)
-                        .payingWith(PAYING_ACCOUNT)
-                        .hasKnownStatus(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED));
-    }
-
-    private HapiContractCall testContractCall(long sending, long gas) {
-        final var contract = "HollowAccountCreator";
-        return contractCall(contract, "testCallFoo", randomHeadlongAddress(), BigInteger.valueOf(500_000L))
-                .sending(sending)
-                .gas(gas);
     }
 }

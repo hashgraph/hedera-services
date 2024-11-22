@@ -19,7 +19,7 @@ package com.hedera.node.app.throttle;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
-import static com.hedera.node.app.throttle.schemas.V0570CongestionThrottleSchema.SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY;
+import static com.hedera.node.app.throttle.schemas.V0570CongestionThrottleSchema.SCHEDULE_THROTTLE_USAGE_STATE_KEY;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -133,7 +133,7 @@ public class ThrottleServiceManager {
         final var gasScheduleThrottle = scheduleThrottle.gasLimitThrottle();
         final var gasScheduleThrottleSnapshot = gasScheduleThrottle.usageSnapshot();
         final WritableKVState<ProtoLong, ThrottleUsageSnapshots> scheduleThrottleSnapshots =
-                serviceStates.get(SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY);
+                serviceStates.get(SCHEDULE_THROTTLE_USAGE_STATE_KEY);
         scheduleThrottleSnapshots.put(
                 new ProtoLong(second),
                 new ThrottleUsageSnapshots(scheduleHapiThrottleSnapshots, gasScheduleThrottleSnapshot));
@@ -259,7 +259,7 @@ public class ThrottleServiceManager {
     public void populateSchedulesUsedCapacityForGivenSecond(
             @NonNull final ReadableStates serviceStates, @NonNull final Timestamp expirationTime) {
         final ReadableKVState<ProtoLong, ThrottleUsageSnapshots> usageSnapshotsState =
-                serviceStates.get(SCHEDULE_THROTTLE_USAGE_PER_SECOND_STATE_KEY);
+                serviceStates.get(SCHEDULE_THROTTLE_USAGE_STATE_KEY);
         final var usageSnapshots = usageSnapshotsState.get(new ProtoLong(expirationTime.seconds()));
         if (usageSnapshots == null) {
             scheduleThrottle.resetUsage();
