@@ -28,6 +28,8 @@ import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.cryptography.tss.api.TssPrivateShare;
 import com.hedera.cryptography.tss.api.TssPublicShare;
 import com.hedera.cryptography.tss.api.TssShareSignature;
+import com.hedera.node.app.tss.api.FakeFieldElement;
+import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -158,7 +160,7 @@ public class FakeTssLibrary implements TssLibrary {
     @NonNull
     @Override
     public BlsPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares) {
-        return PRIVATE_KEY.createPublicKey();
+        return FAKE_LEDGER_ID;
     }
 
     @NonNull
