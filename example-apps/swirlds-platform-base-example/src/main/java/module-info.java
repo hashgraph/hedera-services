@@ -23,6 +23,7 @@ module com.swirlds.platform.base.example {
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
+    requires com.hedera.cryptography.bls;
 
     provides ConfigurationExtension with
             BaseConfigurationExtension;

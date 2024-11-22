@@ -65,6 +65,7 @@ public class BlockStreamUtils {
             case STATE_ID_TOKENS -> "TokenService.TOKENS";
             case STATE_ID_TSS_MESSAGES -> "TssBaseService.TSS_MESSAGES";
             case STATE_ID_TSS_VOTES -> "TssBaseService.TSS_VOTES";
+            case STATE_ID_TSS_ENCRYPTION_KEY -> "TssBaseService.TSS_ENCRYPTION_KEY";
         };
     }
 }

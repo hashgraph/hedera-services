@@ -238,4 +238,15 @@ dependencies.constraints {
 
     api("com.google.protobuf:protoc:3.25.4")
     api("io.grpc:protoc-gen-grpc-java:1.66.0")
+
+    api("com.hedera.cryptography:hedera-cryptography-bls:0.1.0-SNAPSHOT") {
+        because("com.hedera.cryptography.bls")
+    }
+    api("com.hedera.cryptography:hedera-cryptography-altbn128:0.1.0-SNAPSHOT") {
+        because("com.hedera.cryptography.altbn128")
+    }
+    api("com.hedera.cryptography:hedera-cryptography-pairings-api:0.1.0-SNAPSHOT"){
+        because("com.hedera.cryptography.pairings.api")
+    }
+
 }

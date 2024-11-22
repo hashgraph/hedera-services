@@ -21,4 +21,5 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public record TssHandlers(
         @NonNull TssMessageHandler tssMessageHandler,
         @NonNull TssVoteHandler tssVoteHandler,
-        @NonNull TssShareSignatureHandler tssShareSignatureHandler) {}
+        @NonNull TssShareSignatureHandler tssShareSignatureHandler,
+        @NonNull TssEncryptionKeyHandler tssEncryptionKeyHandler) {}

@@ -67,6 +67,8 @@ import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
@@ -209,6 +211,9 @@ public class ServicesMain implements SwirldMain {
 
         // Register with the ConstructableRegistry classes which need configuration.
         BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
+
+//        final var keys = CryptoStatic.generateBlsKeyPair();
+//        System.out.println("Keys ------------------: " +keys);
 
         final var keysAndCerts =
                 initNodeSecurity(diskAddressBook, configuration).get(selfId);

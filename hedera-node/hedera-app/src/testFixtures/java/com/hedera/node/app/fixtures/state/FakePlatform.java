@@ -36,6 +36,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
@@ -145,4 +146,12 @@ public final class FakePlatform implements Platform {
 
     @Override
     public void start() {}
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public KeysAndCerts getKeysAndCerts() {
+        return null;
+    }
 }

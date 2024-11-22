@@ -16,7 +16,14 @@
 
 package com.swirlds.platform.crypto;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+
+import com.hedera.cryptography.bls.BlsKeyPair;
+import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.bls.SignatureSchema;
 import com.swirlds.common.crypto.internal.CryptoUtils;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.Key;
 import java.security.KeyPair;
@@ -30,6 +37,8 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An instantiation of this class holds all the keys and CSPRNG state for one Platform object. No other class should
@@ -59,9 +68,13 @@ public record KeysAndCerts(
         KeyPair agrKeyPair,
         X509Certificate sigCert,
         X509Certificate agrCert,
-        PublicStores publicStores) {
+        PublicStores publicStores,
+        BlsPrivateKey privateTssEncryptionKey,
+        BlsPublicKey publicTssEncryptionKey) {
     private static final int SIG_SEED = 2;
     private static final int AGR_SEED = 0;
+
+    private static final Logger logger = LogManager.getLogger(KeysAndCerts.class);
 
     /**
      * Creates an instance holding all the keys and certificates. It reads its own key pairs from privateKeyStore
@@ -111,7 +124,7 @@ public record KeysAndCerts(
             publicStores.setCertificate(KeyCertPurpose.AGREEMENT, agreementCert, dnA);
         }
 
-        return new KeysAndCerts(signingKeyPair, agreementKeyPair, signingCert, agreementCert, publicStores);
+        return new KeysAndCerts(signingKeyPair, agreementKeyPair, signingCert, agreementCert, publicStores, null, null);
     }
 
     private static KeyPair getKeyPair(final KeyStore privateKeyStore, final char[] password, final String storeName)
@@ -188,7 +201,10 @@ public record KeysAndCerts(
         publicStores.setCertificate(KeyCertPurpose.SIGNING, sigCert, name);
         publicStores.setCertificate(KeyCertPurpose.AGREEMENT, agrCert, name);
 
-        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores);
+        BlsKeyPair blsKeyPair = CryptoStatic.generateBlsKeyPair();
+        CommonUtils.tellUserConsole("KeysAndCerts KeyPair: " + blsKeyPair);
+
+        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores, blsKeyPair.privateKey(), blsKeyPair.publicKey());
     }
 
     /**

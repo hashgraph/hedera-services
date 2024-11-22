@@ -40,6 +40,7 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
@@ -135,6 +136,9 @@ class HandleWorkflowTest {
 
     @Mock
     private TssBaseService tssBaseService;
+
+    @Mock
+    private TssSubmissions tssSubmissions;
 
     private HandleWorkflow subject;
 

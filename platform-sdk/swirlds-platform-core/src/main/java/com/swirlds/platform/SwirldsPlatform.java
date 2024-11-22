@@ -407,6 +407,15 @@ public class SwirldsPlatform implements Platform {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public KeysAndCerts getKeysAndCerts() {
+        return keysAndCerts;
+    }
+
+    /**
      * Performs a PCES recovery:
      * <ul>
      *     <li>Starts all components for handling events</li>

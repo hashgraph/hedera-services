@@ -42,6 +42,7 @@ import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
@@ -73,6 +74,7 @@ import dagger.Component;
 import java.nio.charset.Charset;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.inject.Provider;
@@ -210,6 +212,12 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder startupNetworks(StartupNetworks startupNetworks);
+
+//        @BindsInstance
+//        Builder appContext(AppContext appContext);
+//
+//        @BindsInstance
+//        Builder executor(Executor executor);
 
         HederaInjectionComponent build();
     }

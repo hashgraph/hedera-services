@@ -18,6 +18,7 @@ package com.hedera.node.app.tss;
 
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.handlers.TssEncryptionKeyHandler;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
 import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
@@ -57,4 +58,6 @@ public interface TssBaseServiceComponent {
     TssKeysAccessor tssKeysAccessor();
 
     TssDirectoryAccessor tssDirectoryAccessor();
+
+    TssEncryptionKeyHandler tssEncryptionKeyHandler();
 }

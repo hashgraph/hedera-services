@@ -125,6 +125,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -690,6 +691,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
         Locale.setDefault(Locale.US);
         logger.info("Locale to set to US en");
+        System.out.println("TSS Public Key: " + platform.getKeysAndCerts().publicTssEncryptionKey());
+        handleWorkflow().setKeysAndCerts(platform.getKeysAndCerts());
     }
 
     @Override

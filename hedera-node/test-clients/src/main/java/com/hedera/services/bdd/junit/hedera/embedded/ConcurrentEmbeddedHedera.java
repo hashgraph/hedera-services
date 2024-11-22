@@ -30,6 +30,7 @@ import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeRound;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -127,6 +128,11 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         public void start() {
             executorService.scheduleWithFixedDelay(
                     this::handleTransactions, 0, WALL_CLOCK_ROUND_DURATION.toMillis(), MILLISECONDS);
+        }
+
+        @Override
+        public KeysAndCerts getKeysAndCerts() {
+            return null;
         }
 
         @Override

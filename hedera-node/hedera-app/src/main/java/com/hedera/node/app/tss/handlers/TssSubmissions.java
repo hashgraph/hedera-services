@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
@@ -61,6 +62,9 @@ public class TssSubmissions {
      * The next offset to use for the transaction valid start time within the current {@link HandleContext}.
      */
     private final AtomicInteger nextOffset = new AtomicInteger(0);
+
+    private Instant lastSuccessfulTssEncryptionKeySubmission;
+    private int tssEncryptionKeySubmissionAttempts = 0;
 
     private final AppContext appContext;
 
@@ -114,6 +118,17 @@ public class TssSubmissions {
                 nextValidStartFor(context));
     }
 
+    public CompletableFuture<Void> submitTssEncryptionKey(
+            @NonNull final TssEncryptionKeyTransactionBody body, @NonNull final HandleContext context) {
+        requireNonNull(body);
+        requireNonNull(context);
+        return submit(
+                b -> b.tssEncryptionKey(body),
+                context.configuration(),
+                context.networkInfo().selfNodeInfo().accountId(),
+                nextValidStartFor(context));
+    }
+
     /**
      * Attempts to submit a TSS share signature to the network.
      *
@@ -154,6 +169,10 @@ public class TssSubmissions {
                             body = builder.build();
                             try {
                                 appContext.gossip().submit(body);
+                                if (body.hasTssEncryptionKey()) {
+                                    lastSuccessfulTssEncryptionKeySubmission = validStartTime.get();
+                                    tssEncryptionKeySubmissionAttempts++;
+                                }
                                 return;
                             } catch (IllegalArgumentException iae) {
                                 failureReason = iae.getMessage();
@@ -200,5 +219,17 @@ public class TssSubmissions {
                 .nodeAccountID(selfAccountId)
                 .transactionValidDuration(validDuration)
                 .transactionID(new TransactionID(asTimestamp(validStartTime), selfAccountId, false, 0));
+    }
+
+    /**
+     * Returns the last successful TSS encryption key submission time.
+     * @return the last successful TSS encryption key submission time
+     */
+    public Instant getLastSuccessfulTssEncryptionKeySubmission() {
+        return lastSuccessfulTssEncryptionKeySubmission;
+    }
+
+    public int getTssEncryptionKeySubmissionAttempts() {
+        return tssEncryptionKeySubmissionAttempts;
     }
 }

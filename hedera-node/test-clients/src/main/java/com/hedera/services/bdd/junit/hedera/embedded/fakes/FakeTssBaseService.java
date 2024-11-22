@@ -30,11 +30,13 @@ import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -263,5 +265,11 @@ public class FakeTssBaseService implements TssBaseService {
         requireNonNull(directory);
         requireNonNull(tssMessages);
         return delegate.ledgerIdFrom(directory, tssMessages);
+    }
+
+    @Override
+    public void processTssEncryptionKeyChecks(@NonNull UserTxn userTxn,
+            @NonNull HandleContext handleContext, @NonNull KeysAndCerts keysAndCerts) {
+        delegate.processTssEncryptionKeyChecks(userTxn, handleContext, keysAndCerts);
     }
 }

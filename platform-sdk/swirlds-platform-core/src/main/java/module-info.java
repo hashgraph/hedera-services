@@ -71,12 +71,7 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test,
             com.swirlds.platform.core.test.fixtures,
             com.hedera.node.app;
-    exports com.swirlds.platform.crypto to
-            com.swirlds.platform.test,
-            com.hedera.node.test.clients,
-            com.swirlds.platform.core.test.fixtures,
-            com.hedera.node.app.test.fixtures,
-            com.hedera.node.app;
+    exports com.swirlds.platform.crypto;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
             com.swirlds.platform.test,
@@ -151,6 +146,7 @@ module com.swirlds.platform.core {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
     requires com.github.spotbugs.annotations;
+    requires com.hedera.cryptography.bls;
     requires java.desktop;
     requires java.management;
     requires java.scripting;
