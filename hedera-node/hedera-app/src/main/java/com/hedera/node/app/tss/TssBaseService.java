@@ -180,6 +180,8 @@ public interface TssBaseService extends Service {
      * @param handleContext the handle context
      * @param keysAndCerts  the keys and certificates
      */
-    void processTssEncryptionKeyChecks(@NonNull final UserTxn userTxn, @NonNull final HandleContext handleContext, @NonNull final
-    KeysAndCerts keysAndCerts);
+    void processTssEncryptionKeyChecks(
+            @NonNull final UserTxn userTxn,
+            @NonNull final HandleContext handleContext,
+            @NonNull final KeysAndCerts keysAndCerts);
 }

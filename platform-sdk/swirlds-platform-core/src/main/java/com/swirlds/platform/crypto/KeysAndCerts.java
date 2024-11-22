@@ -16,12 +16,9 @@
 
 package com.swirlds.platform.crypto;
 
-import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-
 import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPrivateKey;
 import com.hedera.cryptography.bls.BlsPublicKey;
-import com.hedera.cryptography.bls.SignatureSchema;
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -204,7 +201,14 @@ public record KeysAndCerts(
         BlsKeyPair blsKeyPair = CryptoStatic.generateBlsKeyPair();
         CommonUtils.tellUserConsole("KeysAndCerts KeyPair: " + blsKeyPair);
 
-        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores, blsKeyPair.privateKey(), blsKeyPair.publicKey());
+        return new KeysAndCerts(
+                sigKeyPair,
+                agrKeyPair,
+                sigCert,
+                agrCert,
+                publicStores,
+                blsKeyPair.privateKey(),
+                blsKeyPair.publicKey());
     }
 
     /**

@@ -50,7 +50,6 @@ public class TssEncryptionKeySuite {
                 cryptoCreate("anotherAcct").balance(ONE_HUNDRED_HBARS),
                 sleepFor(3000L),
                 // Verify the TSS Encryption Key transaction is submitted
-                blockStreamMustIncludePassFrom(TssEncryptionKeyAssertion::new)
-        );
+                blockStreamMustIncludePassFrom(TssEncryptionKeyAssertion::new));
     }
 }

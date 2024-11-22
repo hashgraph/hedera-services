@@ -22,8 +22,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
@@ -84,11 +86,17 @@ class V057RosterSchemaTest {
     @Mock
     private ReadablePlatformStateStore platformStateStore;
 
+    @Mock
+    private Function<WritableStates, WritableTssStore> tssStoreFactory;
+
+    @Mock
+    private WritableTssStore tssStore;
+
     private V057RosterSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new V057RosterSchema(canAdopt, rosterStoreFactory, platformStateStoreFactory);
+        subject = new V057RosterSchema(canAdopt, rosterStoreFactory, platformStateStoreFactory, tssStoreFactory);
     }
 
     @Test
@@ -108,6 +116,7 @@ class V057RosterSchemaTest {
         subject.restart(context);
 
         verify(rosterStore).putActiveRoster(ROSTER, 0L);
+        //verify(tssStore).removeIfNotPresent(List.of(EntityNumber.newBuilder().number(1L).build()));
     }
 
     @Test

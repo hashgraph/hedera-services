@@ -41,8 +41,8 @@ class UtilitiesTest {
 
     @Test
     void testBlsKeyGeneration() throws NoSuchAlgorithmException {
-       final var keyPair = CryptoStatic.generateBlsKeyPair();
-       System.out.println("Key Pair: " + keyPair);
+        final var keyPair = CryptoStatic.generateBlsKeyPair();
+        System.out.println("Key Pair: " + keyPair);
     }
 
     @Test
