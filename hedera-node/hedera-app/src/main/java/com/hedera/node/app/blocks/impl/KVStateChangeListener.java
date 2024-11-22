@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -47,6 +48,8 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.schedule.ScheduledCounts;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
@@ -161,6 +164,12 @@ public class KVStateChangeListener implements StateChangeListener {
             case PendingAirdropId pendingAirdropId -> MapChangeKey.newBuilder()
                     .pendingAirdropIdKey(pendingAirdropId)
                     .build();
+            case TimestampSeconds timestampSeconds -> MapChangeKey.newBuilder()
+                    .timestampSecondsKey(timestampSeconds)
+                    .build();
+            case ScheduledOrder scheduledOrder -> MapChangeKey.newBuilder()
+                    .scheduledOrderKey(scheduledOrder)
+                    .build();
             default -> throw new IllegalStateException(
                     "Unrecognized key type " + key.getClass().getSimpleName());
         };
@@ -211,6 +220,12 @@ public class KVStateChangeListener implements StateChangeListener {
             case Topic topic -> MapChangeValue.newBuilder().topicValue(topic).build();
             case AccountPendingAirdrop accountPendingAirdrop -> MapChangeValue.newBuilder()
                     .accountPendingAirdropValue(accountPendingAirdrop)
+                    .build();
+            case ScheduledCounts scheduledCounts -> MapChangeValue.newBuilder()
+                    .scheduledCountsValue(scheduledCounts)
+                    .build();
+            case ScheduledOrder scheduledOrder -> MapChangeValue.newBuilder()
+                    .scheduledOrderValue(scheduledOrder)
                     .build();
             default -> throw new IllegalStateException(
                     "Unexpected value: " + value.getClass().getSimpleName());

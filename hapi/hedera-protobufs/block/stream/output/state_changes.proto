@@ -427,6 +427,12 @@ enum StateIdentifier {
      * A state for the `159` upgrade file data
      */
     STATE_ID_UPGRADE_DATA_159 = 10010;
+
+    STATE_ID_SCHEDULED_COUNTS = 10011;
+
+    STATE_ID_SCHEDULED_ORDER = 10012;
+
+    STATE_ID_SCHEDULED_USAGE = 10013;
 }
 
 /**
@@ -711,6 +717,17 @@ message MapChangeKey {
          * A change to a virtual map keyed by pending airdrop id identifier.
          */
         proto.PendingAirdropId pending_airdrop_id_key = 14;
+
+        /**
+         * An exact date and time,  with a resolution of one second
+         */
+        proto.TimestampSeconds timestamp_seconds_key = 15;
+
+        /**
+         * A key mapping to a particular ScheduleID that will execute at a given order number
+         * within a given consensus second.
+         */
+        proto.ScheduledOrder scheduled_order_key = 16;
     }
 }
 
@@ -825,6 +842,17 @@ message MapChangeValue {
          * A scheduled id value.
          */
         proto.ScheduleID schedule_id_value = 18;
+
+        /**
+         * The value of a map summarizing the counts of scheduled and processed transactions
+         * within a particular consensus second.
+         */
+        proto.ScheduledCounts scheduled_counts_value = 19;
+
+        /**
+         * A scheduled order value.
+         */
+        proto.ScheduledOrder scheduled_order_value = 20;
     }
 }
 
