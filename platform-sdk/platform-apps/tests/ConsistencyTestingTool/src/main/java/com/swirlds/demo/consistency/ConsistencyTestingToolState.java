@@ -61,8 +61,8 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
         public static final int ORIGINAL = 1;
     }
 
-    private static final int STATE_LONG_INDEX = 1;
-    private static final int ROUND_HANDLED_INDEX = 2;
+    private static final int STATE_LONG_INDEX = 2;
+    private static final int ROUND_HANDLED_INDEX = 3;
 
     /**
      * The history of transactions that have been handled by this app.
