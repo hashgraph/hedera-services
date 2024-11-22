@@ -377,6 +377,11 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         return false;
     }
 
+    /**
+     * Returns the number of preceding stream builders in this stack.
+     *
+     * @return the number of preceding stream builders
+     */
     public int numPreceding() {
         return builderSink == null ? 0 : builderSink.numPreceding();
     }

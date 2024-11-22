@@ -1210,7 +1210,7 @@ public class ScheduleLongTermExecutionTest {
                                 .payingWith(PAYING_ACCOUNT)
                                 .waitForExpiry()
                                 .withRelativeExpiry(PAYER_TXN, 4),
-                        sleepFor(5000),
+                        sleepFor(6000),
                         cryptoCreate("foo").via(TRIGGERING_TXN)
                         // future throttles will be exceeded because there is no throttle
                         // for system delete

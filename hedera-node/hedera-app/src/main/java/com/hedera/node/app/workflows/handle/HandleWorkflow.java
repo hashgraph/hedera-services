@@ -663,7 +663,6 @@ public class HandleWorkflow {
         } else if (lastProcessTime.getEpochSecond() < consensusNow.getEpochSecond()) {
             // There is at least one unprocessed second since the last processing time
             final var scheduleConfig = configProvider.getConfiguration().getConfigData(SchedulingConfig.class);
-            final var consensusConfig = configProvider.getConfiguration().getConfigData(ConsensusConfig.class);
             final var startSecond = lastProcessTime.getEpochSecond();
             final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
             // if long term schedules are disabled, the schedule purge needs to be commited with the userTxn stack
@@ -679,6 +678,7 @@ public class HandleWorkflow {
             final var readableStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
             final var schedulesToExecute = readableStore.getByExpirationBetween(startSecond, endSecond);
             // reserve first timestamp slots for userTxn child transactions
+            final var consensusConfig = configProvider.getConfiguration().getConfigData(ConsensusConfig.class);
             var lastAssignedConsensusTime = consensusNow.plusNanos(consensusConfig.handleMaxFollowingRecords());
             // try to execute schedules
             for (var i = 0; i < schedulesToExecute.size(); i++) {
