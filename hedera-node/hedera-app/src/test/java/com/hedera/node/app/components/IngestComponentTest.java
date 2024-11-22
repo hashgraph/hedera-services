@@ -61,6 +61,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import java.time.InstantSource;
 import java.util.ArrayDeque;
@@ -89,6 +90,9 @@ class IngestComponentTest {
 
     @Mock
     private TssShareSignatureHandler tssShareSignatureHandler;
+
+    @Mock
+    private StartupNetworks startupNetworks;
 
     private HederaInjectionComponent app;
 
@@ -139,6 +143,7 @@ class IngestComponentTest {
                 .tssBaseService(tssBaseService)
                 .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .networkInfo(mock(NetworkInfo.class))
+                .startupNetworks(startupNetworks)
                 .build();
 
         final var state = new FakeState();

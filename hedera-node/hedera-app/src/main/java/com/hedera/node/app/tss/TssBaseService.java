@@ -17,8 +17,11 @@
 package com.hedera.node.app.tss;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.tss.api.TssMessage;
+import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -29,16 +32,23 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * Provides the network's threshold signature scheme (TSS) capability and, as a side effect, the ledger id, as this
- * is the exactly the same as the TSS public key.
- * <p>
- * The
+ * Provides the network's threshold signature scheme (TSS) capability and,
+ * as a side effect, the ledger id; as this is exactly the same as the TSS
+ * public key.
  */
 public interface TssBaseService extends Service {
+    /**
+     * Since the roster service has to decide to adopt the candidate roster
+     * based on the available key material, the TSS service must be migrated
+     * before the roster service.
+     */
+    int MIGRATION_ORDER = RosterService.MIGRATION_ORDER - 1;
+
     String NAME = "TssBaseService";
 
     /**
@@ -96,7 +106,7 @@ public interface TssBaseService extends Service {
      * @param messageHash           The hash of the message to be signed by the ledger.
      * @param lastUsedConsensusTime The last used consensus time in the round.
      */
-    void requestLedgerSignature(byte[] messageHash, Instant lastUsedConsensusTime);
+    void requestLedgerSignature(@NonNull byte[] messageHash, @NonNull Instant lastUsedConsensusTime);
 
     /**
      * Registers a consumer of the message hash and the ledger signature on the message hash.
@@ -152,4 +162,12 @@ public interface TssBaseService extends Service {
      * @param state the network state
      */
     void generateParticipantDirectory(@NonNull State state);
+
+    /**
+     * Returns the ledger id from the given TSS participant directory and TSS messages.
+     * @param directory the participant directory
+     * @param tssMessages the TSS messages
+     * @return the ledger id
+     */
+    Bytes ledgerIdFrom(@NonNull TssParticipantDirectory directory, @NonNull List<TssMessage> tssMessages);
 }

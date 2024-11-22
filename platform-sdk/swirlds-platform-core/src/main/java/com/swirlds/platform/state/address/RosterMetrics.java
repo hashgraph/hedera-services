@@ -16,36 +16,36 @@
 
 package com.swirlds.platform.state.address;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A utility class to encapsulate the metrics for the address book.
  */
-public final class AddressBookMetrics {
+public final class RosterMetrics {
 
-    private AddressBookMetrics() {}
+    private RosterMetrics() {}
 
     /**
      * Register the metrics for the address book.
      *
      * @param metrics     the metrics engine
-     * @param addressBook the address book to register metrics for
+     * @param roster      the roster to register metrics for
      * @param selfId      the ID of the node
      */
-    public static void registerAddressBookMetrics(
-            @NonNull final Metrics metrics, @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
+    public static void registerRosterMetrics(
+            @NonNull final Metrics metrics, @NonNull final Roster roster, @NonNull final NodeId selfId) {
 
         metrics.getOrCreate(new FunctionGauge.Config<>(Metrics.INFO_CATEGORY, "memberID", Long.class, selfId::id)
                 .withUnit("nodeID")
                 .withDescription("The node ID number of this member"));
 
-        metrics.getOrCreate(
-                new FunctionGauge.Config<>(Metrics.INFO_CATEGORY, "members", Integer.class, addressBook::getSize)
-                        .withUnit("count")
-                        .withDescription("total number of nodes currently in the address book"));
+        metrics.getOrCreate(new FunctionGauge.Config<>(
+                        Metrics.INFO_CATEGORY, "members", Integer.class, roster.rosterEntries()::size)
+                .withUnit("count")
+                .withDescription("total number of nodes currently in the roster"));
     }
 }
