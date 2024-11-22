@@ -30,7 +30,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -48,7 +48,7 @@ import java.util.function.Function;
  * purposes.
  */
 @ConstructableIgnored
-public class StressTestingToolState extends MerkleStateRoot {
+public class StressTestingToolState extends PlatformMerkleStateRoot {
     private static final long CLASS_ID = 0x79900efa3127b6eL;
 
     /** A running sum of transaction contents */
