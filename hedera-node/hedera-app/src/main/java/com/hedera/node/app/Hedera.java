@@ -36,12 +36,12 @@ import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -132,6 +132,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -588,7 +589,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                     state,
                     metrics,
                     trigger,
-                    platform.getAddressBook(),
+                    RosterUtils.buildAddressBook(platform.getRoster()),
                     platform.getContext().getConfiguration());
         }
         // With the States API grounded in the working state, we can create the object graph from it
@@ -633,7 +634,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (trigger == GENESIS) {
             final var config = configProvider.getConfiguration();
             final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-            final var genesisRoster = createRoster(requireNonNull(genesisAddressBook));
+            final var genesisRoster = buildRoster(requireNonNull(genesisAddressBook));
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
         blockStreamService.resetMigratedLastBlockHash();
@@ -974,12 +975,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
 
         final var activeRoster = tssBaseService.chooseRosterForNetwork(
-                state,
-                trigger,
-                serviceMigrator,
-                version,
-                configProvider.getConfiguration(),
-                createRoster(platform.getAddressBook()));
+                state, trigger, serviceMigrator, version, configProvider.getConfiguration(), platform.getRoster());
         final var networkInfo =
                 new StateNetworkInfo(state, activeRoster, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc

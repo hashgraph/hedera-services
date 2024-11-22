@@ -45,6 +45,7 @@ import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
@@ -253,6 +254,11 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
         return ClassVersion.ORIGINAL;
     }
 
+    @Override
+    public int getMinimumSupportedVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -357,7 +363,7 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -376,7 +382,7 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -408,7 +414,7 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -427,7 +433,7 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -445,7 +451,7 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -464,7 +470,7 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -483,7 +489,7 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -501,7 +507,7 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
