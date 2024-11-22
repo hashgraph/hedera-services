@@ -608,6 +608,12 @@ public class SignedState implements SignedStateInfo {
             return false;
         }
 
+        if (address.getSigPublicKey() == null) {
+            // If the address does not have a valid public key, the signature is invalid.
+            // https://github.com/hashgraph/hedera-services/issues/16648
+            return false;
+        }
+
         return signatureVerifier.verifySignature(
                 state.getHash().getBytes(), signature.getBytes(), address.getSigPublicKey());
     }
