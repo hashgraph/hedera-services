@@ -83,7 +83,6 @@ public class TssLibraryImpl implements TssLibrary {
     @Override
     public List<TssPrivateShare> decryptPrivateShares(
             @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> validTssMessages) {
-        // TODO: How to get the BlsPrivateKey here
         final var tssPrivateInfo =
                 new TssParticipantPrivateInfo(selfNodeInfo.get().nodeId(), AGGREGATED_PRIVATE_KEY);
         return tssService
