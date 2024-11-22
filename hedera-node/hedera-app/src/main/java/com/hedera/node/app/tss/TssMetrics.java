@@ -147,9 +147,10 @@ public class TssMetrics {
      */
     public void updateCandidateRosterLifecycle(@NonNull final Instant rosterLifecycleEndTime) {
         requireNonNull(rosterLifecycleEndTime, "rosterLifecycleEndTime must not be null");
-        final long lifecycle = Duration.between(this.candidateRosterLifecycleStart, rosterLifecycleEndTime)
-                .toMillis();
-        tssCandidateRosterLifecycle.set(lifecycle);
+        if (candidateRosterLifecycleStart != null) {
+            tssCandidateRosterLifecycle.set(Duration.between(candidateRosterLifecycleStart, rosterLifecycleEndTime)
+                    .toMillis());
+        }
     }
 
     /**

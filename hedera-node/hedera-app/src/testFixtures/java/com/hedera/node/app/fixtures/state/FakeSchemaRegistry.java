@@ -30,6 +30,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.FilteredReadableStates;
 import com.swirlds.state.spi.FilteredWritableStates;
@@ -68,8 +69,19 @@ public class FakeSchemaRegistry implements SchemaRegistry {
 
     @SuppressWarnings("rawtypes")
     public void migrate(
-            @NonNull final String serviceName, @NonNull final FakeState state, @NonNull final NetworkInfo networkInfo) {
-        migrate(serviceName, state, CURRENT_VERSION, networkInfo, DEFAULT_CONFIG, new HashMap<>(), new AtomicLong());
+            @NonNull final String serviceName,
+            @NonNull final FakeState state,
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final StartupNetworks startupNetworks) {
+        migrate(
+                serviceName,
+                state,
+                CURRENT_VERSION,
+                networkInfo,
+                DEFAULT_CONFIG,
+                new HashMap<>(),
+                new AtomicLong(),
+                startupNetworks);
     }
 
     public void migrate(
@@ -79,7 +91,8 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Configuration config,
             @NonNull final Map<String, Object> sharedValues,
-            @NonNull final AtomicLong nextEntityNum) {
+            @NonNull final AtomicLong nextEntityNum,
+            @NonNull final StartupNetworks startupNetworks) {
         if (schemas.isEmpty()) {
             logger.info("Service {} does not use state", serviceName);
             return;
@@ -109,7 +122,14 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 newStates = writableStates = state.getWritableStates(serviceName);
             }
             final var context = newMigrationContext(
-                    previousVersion, previousStates, newStates, config, networkInfo, nextEntityNum, sharedValues);
+                    previousVersion,
+                    previousStates,
+                    newStates,
+                    config,
+                    networkInfo,
+                    nextEntityNum,
+                    sharedValues,
+                    startupNetworks);
             if (applications.contains(MIGRATION)) {
                 schema.migrate(context);
             }
@@ -166,11 +186,23 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final AtomicLong nextEntityNum,
-            @NonNull final Map<String, Object> sharedValues) {
+            @NonNull final Map<String, Object> sharedValues,
+            @NonNull final StartupNetworks startupNetworks) {
         return new MigrationContext() {
             @Override
             public void copyAndReleaseOnDiskState(String stateKey) {
                 // No-op
+            }
+
+            @Override
+            public long roundNumber() {
+                return 0;
+            }
+
+            @NonNull
+            @Override
+            public StartupNetworks startupNetworks() {
+                return startupNetworks;
             }
 
             @Override
