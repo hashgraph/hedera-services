@@ -93,13 +93,6 @@ public class TssLibraryImpl implements TssLibrary {
 
     @NonNull
     @Override
-    public BlsPrivateKey aggregatePrivateShares(@NonNull List<TssPrivateShare> privateShares) {
-        return BlsPrivateKey.aggregate(
-                privateShares.stream().map(TssPrivateShare::privateKey).toList());
-    }
-
-    @NonNull
-    @Override
     public List<TssPublicShare> computePublicShares(
             @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> validTssMessages) {
         return tssService
@@ -111,15 +104,13 @@ public class TssLibraryImpl implements TssLibrary {
     @NonNull
     @Override
     public BlsPublicKey aggregatePublicShares(@NonNull List<TssPublicShare> publicShares) {
-        return BlsPublicKey.aggregate(
-                publicShares.stream().map(TssPublicShare::publicKey).toList());
+        return TssPublicShare.aggregate(publicShares);
     }
 
     @NonNull
     @Override
     public BlsSignature aggregateSignatures(@NonNull List<TssShareSignature> partialSignatures) {
-        return BlsSignature.aggregate(
-                partialSignatures.stream().map(TssShareSignature::signature).toList());
+        return TssShareSignature.aggregate(partialSignatures);
     }
 
     @NonNull
@@ -133,7 +124,9 @@ public class TssLibraryImpl implements TssLibrary {
             @NonNull final TssParticipantDirectory participantDirectory,
             @NonNull final List<TssPublicShare> publicShares,
             @NonNull final TssShareSignature signature) {
-        return signature.verify(publicShares.get(signature.shareId()), message);
+        // shareIds are starting from 1. So, when looking up in publicShares list, we
+        // need to subtract 1
+        return signature.verify(publicShares.get(signature.shareId() - 1), message);
     }
 
     @Override
@@ -143,10 +136,5 @@ public class TssLibraryImpl implements TssLibrary {
         } catch (Exception e) {
             return null;
         }
-    }
-
-    // This method is not part of the TssLibrary interface, used for testing purposes
-    public void setTestMessage(byte[] message) {
-        this.message = message;
     }
 }

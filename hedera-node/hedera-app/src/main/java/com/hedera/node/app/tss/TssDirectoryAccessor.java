@@ -61,8 +61,7 @@ public class TssDirectoryAccessor {
         final var readableStoreFactory = new ReadableStoreFactory(state);
         final var rosterStore = readableStoreFactory.getStore(ReadableRosterStore.class);
         final var activeRoster = requireNonNull(rosterStore.getActiveRoster());
-        this.tssParticipantDirectory = computeParticipantDirectory(
-                activeRoster, maxSharesPerNode, (int) nodeInfoSupplier.get().nodeId());
+        this.tssParticipantDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode);
     }
 
     public TssParticipantDirectory activeParticipantDirectory() {

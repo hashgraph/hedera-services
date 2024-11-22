@@ -240,7 +240,7 @@ public class DiskStartupNetworks implements StartupNetworks {
                     .getConfiguration()
                     .getConfigData(TssConfig.class)
                     .maxSharesPerNode();
-            final var directory = TssUtils.computeParticipantDirectory(roster, maxSharesPerNode, (int) selfNodeId);
+            final var directory = TssUtils.computeParticipantDirectory(roster, maxSharesPerNode);
             final var tssMessages = network.tssMessages().stream()
                     .map(TssMessageTransactionBody::tssMessage)
                     .map(Bytes::toByteArray)

@@ -42,13 +42,12 @@ public class TssUtils {
     /**
      * Compute the TSS participant directory from the roster.
      *
-     * @param roster the roster
+     * @param roster           the roster
      * @param maxSharesPerNode the maximum number of shares per node
-     * @param selfNodeId the node ID of the current node
      * @return the TSS participant directory
      */
     public static TssParticipantDirectory computeParticipantDirectory(
-            @NonNull final Roster roster, final long maxSharesPerNode, final int selfNodeId) {
+            @NonNull final Roster roster, final long maxSharesPerNode) {
         final var computedShares = computeNodeShares(roster.rosterEntries(), maxSharesPerNode);
         final var totalShares =
                 computedShares.values().stream().mapToLong(Long::longValue).sum();
@@ -61,7 +60,7 @@ public class TssUtils {
             // FUTURE: Use the actual public key from the node
             final var pairingPublicKey =
                     new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(10L)), SIGNATURE_SCHEMA);
-            builder.withParticipant((int) rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
+            builder.withParticipant(rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
         }
         // FUTURE: Use the actual signature schema
         return builder.build();
@@ -108,9 +107,9 @@ public class TssUtils {
      * @return list of TSS messages
      */
     public static List<TssMessage> getTssMessages(
-            List<TssMessageTransactionBody> validTssOps,
-            final TssParticipantDirectory tssParticipantDirectory,
-            final TssLibrary tssLibrary) {
+            @NonNull final List<TssMessageTransactionBody> validTssOps,
+            @NonNull final TssParticipantDirectory tssParticipantDirectory,
+            @NonNull final TssLibrary tssLibrary) {
         return validTssOps.stream()
                 .map(TssMessageTransactionBody::tssMessage)
                 .map(k -> tssLibrary.getTssMessageFromBytes(k, tssParticipantDirectory))

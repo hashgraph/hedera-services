@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.tss.api;
 
-import com.hedera.cryptography.bls.BlsPrivateKey;
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.cryptography.tss.api.TssMessage;
@@ -92,16 +91,6 @@ public interface TssLibrary {
     @NonNull
     List<TssPrivateShare> decryptPrivateShares(
             @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> validTssMessages);
-
-    /**
-     * Aggregate a threshold number of {@link TssPrivateShare}s.
-     *
-     * @param privateShares the private shares to aggregate
-     * @return the aggregate private key
-     * @throws IllegalStateException the list of private shares does not meet the required threshold.
-     */
-    @NonNull
-    BlsPrivateKey aggregatePrivateShares(@NonNull List<TssPrivateShare> privateShares);
 
     /**
      * Compute all public shares for all the participants in the scheme.

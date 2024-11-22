@@ -80,9 +80,8 @@ public class TssShareSignatureHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var body = context.body().tssShareSignatureOrThrow();
-        final var shareSignature = body.shareSignature();
         final var messageHash = body.messageHash();
-        final var shareIndex = body.shareIndex();
+        final var shareIndex = (int) body.shareIndex();
         final var rosterHash = body.rosterHash();
 
         // verify if the signature is already present
@@ -93,7 +92,7 @@ public class TssShareSignatureHandler implements TransactionHandler {
         if (!isPresent) {
             // For each signature not already present for this message hash, verify with
             // tssLibrary and accumulate in map
-            validateAndAccumulateSignatures(shareSignature, messageHash, shareIndex, tssShareSignatures);
+            validateAndAccumulateSignatures(messageHash, shareIndex, tssShareSignatures);
             // If message hash now has enough signatures to aggregate, do so and notify
             // tssBaseService of sign the message hash with ledger signature
             if (isThresholdMet(messageHash, rosterHash)) {
@@ -124,14 +123,10 @@ public class TssShareSignatureHandler implements TransactionHandler {
     }
 
     private void validateAndAccumulateSignatures(
-            final Bytes shareSignature,
-            final Bytes messageHash,
-            final long shareIndex,
-            final Set<TssShareSignature> tssShareSignatures) {
+            final Bytes messageHash, final int shareIndex, final Set<TssShareSignature> tssShareSignatures) {
         // Future: Use non-fake signature
         final var tssShareSignature = new TssShareSignature(
-                (int) shareIndex,
-                new BlsSignature(new FakeGroupElement(BigInteger.valueOf(shareIndex)), SIGNATURE_SCHEMA));
+                shareIndex, new BlsSignature(new FakeGroupElement(BigInteger.valueOf(shareIndex)), SIGNATURE_SCHEMA));
         final var isValid = tssLibrary.verifySignature(
                 rosterKeyMaterialAccessor.accessTssKeys().activeParticipantDirectory(),
                 rosterKeyMaterialAccessor.accessTssKeys().activeRosterPublicShares(),

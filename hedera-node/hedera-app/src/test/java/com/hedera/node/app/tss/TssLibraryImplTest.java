@@ -18,7 +18,6 @@ package com.hedera.node.app.tss;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -56,34 +55,6 @@ class TssLibraryImplTest {
         assertNotNull(tssShareSignature);
         assertEquals(privateShare.shareId(), tssShareSignature.shareId());
         assertNotNull(tssShareSignature.signature());
-    }
-
-    @Test
-    void aggregatePrivateShares() {
-        final var fakeTssLibrary = new TssLibraryImpl(appContext);
-        final var privateShares = new ArrayList<TssPrivateShare>();
-        final var privateKeyShares = new long[] {1, 2, 3};
-        for (int i = 0; i < privateKeyShares.length; i++) {
-            privateShares.add(new TssPrivateShare(i, BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom())));
-        }
-
-        final var aggregatedPrivateKey = fakeTssLibrary.aggregatePrivateShares(privateShares);
-
-        assertNotNull(aggregatedPrivateKey);
-    }
-
-    @Test
-    void aggregatePrivateSharesWithNotEnoughShares() {
-        final var fakeTssLibrary = new TssLibraryImpl(appContext);
-        final var privateShares = new ArrayList<TssPrivateShare>();
-        final var privateKeyShares = new long[] {1};
-        for (int i = 0; i < privateKeyShares.length; i++) {
-            privateShares.add(new TssPrivateShare(i, BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom())));
-        }
-
-        assertThrows(IllegalArgumentException.class, () -> fakeTssLibrary.aggregatePrivateShares(privateShares))
-                .getMessage()
-                .contains("Not enough shares to aggregate");
     }
 
     @Test

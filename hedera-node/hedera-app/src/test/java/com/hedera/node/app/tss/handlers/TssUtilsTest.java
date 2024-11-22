@@ -43,8 +43,8 @@ public class TssUtilsTest {
         long maxSharesPerNode = 10L;
         int selfNodeId = 1;
 
-        TssParticipantDirectory directory = TssUtils.computeParticipantDirectory(
-                new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode, selfNodeId);
+        TssParticipantDirectory directory =
+                TssUtils.computeParticipantDirectory(new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode);
 
         assertNotNull(directory);
         assertEquals((15 + 2) / 2, directory.getThreshold());
@@ -90,8 +90,8 @@ public class TssUtilsTest {
         given(library.getTssMessageFromBytes(any(), any())).willReturn(tssMessage);
         given(tssMessage.toBytes())
                 .willReturn(Bytes.wrap("tssMessage".getBytes()).toByteArray());
-        TssParticipantDirectory directory = TssUtils.computeParticipantDirectory(
-                new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode, selfNodeId);
+        TssParticipantDirectory directory =
+                TssUtils.computeParticipantDirectory(new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode);
 
         final var body = getTssBody();
         final var validTssOps = List.of(body.tssMessageOrThrow());

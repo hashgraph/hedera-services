@@ -187,12 +187,6 @@ public class FakeTssLibrary implements TssLibrary {
 
     @NonNull
     @Override
-    public BlsPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares) {
-        return PRIVATE_KEY;
-    }
-
-    @NonNull
-    @Override
     public TssMessage getTssMessageFromBytes(Bytes tssMessage, TssParticipantDirectory participantDirectory) {
         return new FakeTssMessage(new byte[0]);
     }
