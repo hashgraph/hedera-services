@@ -412,13 +412,18 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        run: |
-          pwd
-          ../gradlew assemble :test-clients:shadowJar --scan
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: assemble :test-clients:shadowJar --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
-        run: ./regression/gradlew assemble --scan --project-dir=/home/runner/_work/hedera-services/hedera-services/gradle
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
+        with:
+          build-root-directory: platform-sdk/regression
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: assemble --scan
 
       - name: Compute Actual Branch Name
         id: branch
