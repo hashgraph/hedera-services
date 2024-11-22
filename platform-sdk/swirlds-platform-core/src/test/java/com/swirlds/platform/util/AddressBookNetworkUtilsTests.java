@@ -124,7 +124,9 @@ class AddressBookNetworkUtilsTests {
     @Test
     void testToRosterEntryWithCertificateEncodingException() throws CertificateEncodingException {
         final X509Certificate certificate = mock(X509Certificate.class);
-        final Address address = new Address().copySetSigCert(certificate);
+        final Address address = mock(Address.class);
+        when(address.getSigCert()).thenReturn(certificate);
+        when(address.getNodeId()).thenReturn(NodeId.FIRST_NODE_ID);
         when(certificate.getEncoded()).thenThrow(new CertificateEncodingException());
 
         final AddressBook addressBook = new AddressBook(List.of(address));
