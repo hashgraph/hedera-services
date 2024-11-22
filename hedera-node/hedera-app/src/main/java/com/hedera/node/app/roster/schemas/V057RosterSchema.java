@@ -166,15 +166,37 @@ public class V057RosterSchema extends Schema {
     private List<EntityNumber> combinedEntriesNodeIds(@NonNull final WritableRosterStore rosterStore) {
         requireNonNull(rosterStore);
         final var activeRoster = rosterStore.getActiveRoster();
+        final var candidateRoster = rosterStore.getCandidateRoster();
 
-        var activeRosterEntries =
-                rosterStore.getActiveRoster().rosterEntries().stream().map(RosterEntry::nodeId);
-        var candidateRosterEntries = requireNonNull(rosterStore.getCandidateRoster()).rosterEntries().stream()
-                .map(RosterEntry::nodeId);
-        return Stream.concat(activeRosterEntries, candidateRosterEntries)
-                .distinct()
-                .map(EntityNumber::new)
-                .toList();
+        if (activeRoster != null && candidateRoster != null) {
+            Stream<Long> activeRosterEntries =
+                    activeRoster.rosterEntries().stream().map(RosterEntry::nodeId);
+            Stream<Long> candidateRosterEntries =
+                    candidateRoster.rosterEntries().stream().map(RosterEntry::nodeId);
+            return Stream.concat(activeRosterEntries, candidateRosterEntries)
+                    .distinct()
+                    .map(EntityNumber::new)
+                    .toList();
+        }
+        // If we are here, at least one of the rosters is null
+        // if activeRoster is not null, then candidateRoster is null
+        // so we return only the entries from activeRoster.
+        if (activeRoster != null) {
+            return activeRoster.rosterEntries().stream()
+                    .map(RosterEntry::nodeId)
+                    .map(EntityNumber::new)
+                    .toList();
+        }
+        // Iff we are here, then activeRoster is null
+        // so we check whether to return the candidateRoster's entries.
+        if (candidateRoster != null) {
+            return candidateRoster.rosterEntries().stream()
+                    .map(RosterEntry::nodeId)
+                    .map(EntityNumber::new)
+                    .toList();
+        }
+        // Empty list if both rosters are null.
+        return List.of();
     }
 
     private void cleanUpTssEncryptionKeysFromState(
