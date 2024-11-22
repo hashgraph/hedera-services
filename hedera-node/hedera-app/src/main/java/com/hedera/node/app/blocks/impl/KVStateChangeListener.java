@@ -46,10 +46,10 @@ import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.schedule.ScheduledCounts;
 import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
@@ -204,9 +204,6 @@ public class KVStateChangeListener implements StateChangeListener {
             case ScheduleList scheduleList -> MapChangeValue.newBuilder()
                     .scheduleListValue(scheduleList)
                     .build();
-            case ScheduleIdList scheduleIdList -> MapChangeValue.newBuilder()
-                    .scheduleIdListValue(scheduleIdList)
-                    .build();
             case SlotValue slotValue -> MapChangeValue.newBuilder()
                     .slotValueValue(slotValue)
                     .build();
@@ -224,8 +221,8 @@ public class KVStateChangeListener implements StateChangeListener {
             case ScheduledCounts scheduledCounts -> MapChangeValue.newBuilder()
                     .scheduledCountsValue(scheduledCounts)
                     .build();
-            case ScheduledOrder scheduledOrder -> MapChangeValue.newBuilder()
-                    .scheduledOrderValue(scheduledOrder)
+            case ThrottleUsageSnapshots throttleUsageSnapshots -> MapChangeValue.newBuilder()
+                    .throttleUsageSnapshotsValue(throttleUsageSnapshots)
                     .build();
             default -> throw new IllegalStateException(
                     "Unexpected value: " + value.getClass().getSimpleName());

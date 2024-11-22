@@ -839,9 +839,10 @@ message MapChangeValue {
         com.hedera.hapi.node.state.roster.Roster roster_value = 16;
 
         /**
-         * A list of scheduled ids.
+         * The value of a map summarizing the counts of scheduled and processed transactions
+         * within a particular consensus second.
          */
-        proto.ScheduleIdList schedule_id_list_value = 17;
+        proto.ScheduledCounts scheduled_counts_value = 17;
 
         /**
          * A scheduled id value.
@@ -849,15 +850,9 @@ message MapChangeValue {
         proto.ScheduleID schedule_id_value = 18;
 
         /**
-         * The value of a map summarizing the counts of scheduled and processed transactions
-         * within a particular consensus second.
+         * A change to the scheduled throttle usage snapshots.
          */
-        proto.ScheduledCounts scheduled_counts_value = 19;
-
-        /**
-         * A scheduled order value.
-         */
-        proto.ScheduledOrder scheduled_order_value = 20;
+        proto.ThrottleUsageSnapshots throttle_usage_snapshots_value = 19;
     }
 }
 
