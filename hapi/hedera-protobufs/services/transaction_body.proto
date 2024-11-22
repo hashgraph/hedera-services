@@ -436,12 +436,12 @@ message TransactionBody {
         com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody tssVote = 62;
 
         /**
-         * A transaction body for a 'tssShareSignature` request
+         * A transaction body for node signature as part of the Threshold Signature Scheme (TSS) processing.
          */
         com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody tssShareSignature = 63;
 
         /**
-         * A transaction body for state signature
+         * A transaction body for signature of a state snapshot gossiped to other nodes
          */
         com.hedera.hapi.platform.event.StateSignatureTransaction state_signature_transaction = 64;
     }
