@@ -618,6 +618,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TOPIC_ID_KEY -> mapChangeKey.topicIdKeyOrThrow();
             case CONTRACT_ID_KEY -> mapChangeKey.contractIdKeyOrThrow();
             case PENDING_AIRDROP_ID_KEY -> mapChangeKey.pendingAirdropIdKeyOrThrow();
+            case TIMESTAMP_SECONDS_KEY -> mapChangeKey.timestampSecondsKeyOrThrow();
+            case SCHEDULED_ORDER_KEY -> mapChangeKey.scheduledOrderKeyOrThrow();
         };
     }
 
@@ -633,7 +635,6 @@ public class StateChangesValidator implements BlockStreamValidator {
             case SCHEDULE_VALUE -> mapChangeValue.scheduleValueOrThrow();
             case SCHEDULE_ID_VALUE -> mapChangeValue.scheduleIdValueOrThrow();
             case SCHEDULE_LIST_VALUE -> mapChangeValue.scheduleListValueOrThrow();
-            case SCHEDULE_ID_LIST_VALUE -> mapChangeValue.scheduleIdListValueOrThrow();
             case SLOT_VALUE_VALUE -> mapChangeValue.slotValueValueOrThrow();
             case STAKING_NODE_INFO_VALUE -> mapChangeValue.stakingNodeInfoValueOrThrow();
             case TOKEN_VALUE -> mapChangeValue.tokenValueOrThrow();
@@ -642,6 +643,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case NODE_VALUE -> mapChangeValue.nodeValueOrThrow();
             case ACCOUNT_PENDING_AIRDROP_VALUE -> mapChangeValue.accountPendingAirdropValueOrThrow();
             case ROSTER_VALUE -> mapChangeValue.rosterValueOrThrow();
+            case SCHEDULED_COUNTS_VALUE -> mapChangeValue.scheduledCountsValueOrThrow();
+            case THROTTLE_USAGE_SNAPSHOTS_VALUE -> mapChangeValue.throttleUsageSnapshotsValue();
         };
     }
 

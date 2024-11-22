@@ -354,9 +354,10 @@ enum StateIdentifier {
     STATE_ID_ROSTERS = 28;
 
     /**
-    * A state identifier for scheduled transaction expiration.
+    * A state identifier for counts of transactions scheduled and
+    * processed in a second.
     */
-    STATE_ID_SCHEDULE_IDS_BY_EXPIRY = 29;
+    STATE_ID_SCHEDULED_COUNTS = 29;
 
     /**
      * A state identifier for scheduled transaction deduplication.
@@ -372,6 +373,16 @@ enum StateIdentifier {
      * A state identifier for TSS votes.
      */
     STATE_ID_TSS_VOTES = 32;
+
+    /**
+    * A state identifier for the ordering of scheduled transactions.
+    */
+    STATE_ID_SCHEDULED_ORDERS = 33;
+
+    /**
+     * A state identifier for scheduled throttle usage snapshots.
+     */
+    STATE_ID_SCHEDULED_USAGES = 34;
 
     /**
      * A state identifier for the round receipts queue.
@@ -711,6 +722,17 @@ message MapChangeKey {
          * A change to a virtual map keyed by pending airdrop id identifier.
          */
         proto.PendingAirdropId pending_airdrop_id_key = 14;
+
+        /**
+         * An exact date and time,  with a resolution of one second
+         */
+        proto.TimestampSeconds timestamp_seconds_key = 15;
+
+        /**
+         * A key mapping to a particular ScheduleID that will execute at a given order number
+         * within a given consensus second.
+         */
+        proto.ScheduledOrder scheduled_order_key = 16;
     }
 }
 
@@ -817,14 +839,20 @@ message MapChangeValue {
         com.hedera.hapi.node.state.roster.Roster roster_value = 16;
 
         /**
-         * A list of scheduled ids.
+         * The value of a map summarizing the counts of scheduled and processed transactions
+         * within a particular consensus second.
          */
-        proto.ScheduleIdList schedule_id_list_value = 17;
+        proto.ScheduledCounts scheduled_counts_value = 17;
 
         /**
          * A scheduled id value.
          */
         proto.ScheduleID schedule_id_value = 18;
+
+        /**
+         * A change to the scheduled throttle usage snapshots.
+         */
+        proto.ThrottleUsageSnapshots throttle_usage_snapshots_value = 19;
     }
 }
 

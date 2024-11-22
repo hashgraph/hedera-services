@@ -124,7 +124,7 @@ public class BlockStreamManagerBenchmark {
                     UNAVAILABLE_GOSSIP,
                     configProvider::getConfiguration,
                     () -> DEFAULT_NODE_INFO,
-                    (definitions, split, snapshots) -> {
+                    (split, snapshots) -> {
                         throw new UnsupportedOperationException();
                     }),
             ForkJoinPool.commonPool(),
