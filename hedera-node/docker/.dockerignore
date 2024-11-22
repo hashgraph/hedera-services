@@ -9,8 +9,8 @@ LICENSE*
 docs/
 hapi-proto/target/
 hedera-node/data/lib/
-hedera-node/data/recordstreams/
-hedera-node/data/blockstreams/
+hedera-node/data/recordStreams/
+hedera-node/data/blockStreams/
 hedera-node/data/accountBalances/
 hedera-node/data/saved/
 hedera-node/databases/
