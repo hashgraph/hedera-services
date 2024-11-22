@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
+import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_LAST_ASSIGNED_CONSENSUS_TIME;
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -36,11 +37,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateF
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -84,15 +89,43 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_R
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import java.security.SecureRandom;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 public class ScheduleCreateTest {
+    @LeakyRepeatableHapiTest(
+            value = NEEDS_LAST_ASSIGNED_CONSENSUS_TIME,
+            overrides = {"scheduling.longTermEnabled", "scheduling.maxTxnPerSec"})
+    final Stream<DynamicTest> cannotScheduleTooManyTxnsInOneSecond() {
+        final long lifetime = 123_456L;
+        final AtomicLong expiry = new AtomicLong();
+        return hapiTest(
+                overridingTwo("scheduling.longTermEnabled", "true", "scheduling.maxTxnPerSec", "2"),
+                cryptoCreate(CIVILIAN_PAYER).balance(10 * ONE_HUNDRED_HBARS),
+                scheduleCreate("first", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 123L)))
+                        .payingWith(CIVILIAN_PAYER)
+                        .fee(ONE_HBAR)
+                        .expiringIn(lifetime),
+                // Consensus time advances exactly one second per transaction in repeatable mode
+                doingContextual(spec -> expiry.set(spec.consensusTime().getEpochSecond() + lifetime - 1)),
+                sourcing(() -> scheduleCreate("second", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 456L)))
+                        .payingWith(CIVILIAN_PAYER)
+                        .fee(ONE_HBAR)
+                        .expiringAt(expiry.get())),
+                sourcing(() -> scheduleCreate("third", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 789)))
+                        .payingWith(CIVILIAN_PAYER)
+                        .fee(ONE_HBAR)
+                        .expiringAt(expiry.get())
+                        .hasPrecheck(BUSY)));
+    }
+
     @HapiTest
     final Stream<DynamicTest> aliasNotAllowedAsPayer() {
         return defaultHapiSpec("BodyAndPayerCreation")

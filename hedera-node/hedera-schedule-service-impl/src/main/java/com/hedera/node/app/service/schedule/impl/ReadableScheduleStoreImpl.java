@@ -114,4 +114,10 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
     public long numSchedulesInState() {
         return schedulesById.size();
     }
+
+    @Override
+    public int numTransactionsScheduledAt(final long consensusSecond) {
+        final var counts = scheduledCounts.get(new TimestampSeconds(consensusSecond));
+        return counts == null ? 0 : counts.numberScheduled();
+    }
 }

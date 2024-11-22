@@ -89,4 +89,11 @@ public interface ReadableScheduleStore {
      * @return the number of schedules in state
      */
     long numSchedulesInState();
+
+    /**
+     * Returns the number of schedules that are scheduled to execute at the given consensus second.
+     * @param consensusSecond the consensus second to check for scheduled transactions
+     * @return the number of schedules that are scheduled to execute at the given consensus second
+     */
+    int numTransactionsScheduledAt(long consensusSecond);
 }

@@ -42,6 +42,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
@@ -60,6 +61,8 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -70,6 +73,7 @@ import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
+import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -409,14 +413,12 @@ public class ThrottleAccumulator {
                 if (isScheduled) {
                     throw new IllegalStateException("ScheduleCreate cannot be a child!");
                 }
-
                 yield shouldThrottleScheduleCreate(manager, txnInfo, now, state);
             }
             case SCHEDULE_SIGN -> {
                 if (isScheduled) {
                     throw new IllegalStateException("ScheduleSign cannot be a child!");
                 }
-
                 yield shouldThrottleScheduleSign(manager, txnInfo, now, state);
             }
             case TOKEN_MINT -> shouldThrottleMint(manager, txnInfo.txBody().tokenMint(), now, configuration);
@@ -442,16 +444,15 @@ public class ThrottleAccumulator {
     private boolean shouldThrottleScheduleCreate(
             final ThrottleReqsManager manager, final TransactionInfo txnInfo, final Instant now, final State state) {
         final var txnBody = txnInfo.txBody();
-        final var scheduleCreate = txnBody.scheduleCreateOrThrow();
-        final var scheduled = scheduleCreate.scheduledTransactionBodyOrThrow();
+        final var op = txnBody.scheduleCreateOrThrow();
+        final var scheduled = op.scheduledTransactionBodyOrThrow();
         final var schedule = Schedule.newBuilder()
                 .originalCreateTransaction(txnBody)
                 .payerAccountId(txnInfo.payerID())
                 .scheduledTransaction(scheduled)
                 .build();
-
-        TransactionBody innerTxn;
-        HederaFunctionality scheduledFunction;
+        final TransactionBody innerTxn;
+        final HederaFunctionality scheduledFunction;
         try {
             innerTxn = childAsOrdinary(schedule);
             scheduledFunction = functionOf(innerTxn);
@@ -459,16 +460,14 @@ public class ThrottleAccumulator {
             log.debug("ScheduleCreate was associated with an invalid txn.", ex);
             return true;
         }
-
         // maintain legacy behaviour
-        final var configuration = configSupplier.get();
-        final boolean areLongTermSchedulesEnabled =
-                configuration.getConfigData(SchedulingConfig.class).longTermEnabled();
-        if (!areLongTermSchedulesEnabled) {
+        final var config = configSupplier.get();
+        final var schedulingConfig = config.getConfigData(SchedulingConfig.class);
+        if (!schedulingConfig.longTermEnabled()) {
             final boolean isAutoCreationEnabled =
-                    configuration.getConfigData(AutoCreationConfig.class).enabled();
+                    config.getConfigData(AutoCreationConfig.class).enabled();
             final boolean isLazyCreationEnabled =
-                    configuration.getConfigData(LazyCreationConfig.class).enabled();
+                    config.getConfigData(LazyCreationConfig.class).enabled();
 
             // we check for CryptoTransfer because implicit creations (i.e. auto- or lazy-creation) may happen in it,
             // and we need to throttle those separately
@@ -487,32 +486,27 @@ public class ThrottleAccumulator {
             }
             return !manager.allReqsMetAt(now);
         } else {
-            // TODO : throttles will be implemented in following PRs
-            // log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet
-            // implemented.");
+            // We first enforce the limit on the ScheduleCreate TPS
             if (!manager.allReqsMetAt(now)) {
                 return true;
             }
-
-            // only check deeply if the schedule could immediately execute
-            if ((!scheduleCreate.waitForExpiry()) && (throttleType == FRONTEND_THROTTLE)) {
-                var effectivePayer = scheduleCreate.hasPayerAccountID()
-                        ? scheduleCreate.payerAccountID()
-                        : txnBody.transactionID().accountID();
-
-                final var innerTxnInfo = new TransactionInfo(
-                        Transaction.DEFAULT,
-                        innerTxn,
-                        TransactionID.DEFAULT,
-                        effectivePayer,
-                        SignatureMap.DEFAULT,
-                        Bytes.EMPTY,
-                        scheduledFunction,
-                        null);
-
-                return shouldThrottleTxn(true, innerTxnInfo, now, state);
+            // And then at ingest, ensure that not too many schedules will expire in a given second
+            if (throttleType == FRONTEND_THROTTLE) {
+                final long expiry;
+                if (op.waitForExpiry()) {
+                    expiry = op.expirationTimeOrElse(Timestamp.DEFAULT).seconds();
+                } else {
+                    final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+                    expiry = Optional.ofNullable(txnInfo.transactionID())
+                                    .orElse(TransactionID.DEFAULT)
+                                    .transactionValidStartOrElse(Timestamp.DEFAULT)
+                                    .seconds()
+                            + ledgerConfig.scheduleTxExpiryTimeSecs();
+                }
+                final var scheduleStore = new ReadableScheduleStoreImpl(state.getReadableStates(ScheduleService.NAME));
+                final var numScheduled = scheduleStore.numTransactionsScheduledAt(expiry);
+                return numScheduled >= schedulingConfig.maxTxnPerSec();
             }
-
             return false;
         }
     }
