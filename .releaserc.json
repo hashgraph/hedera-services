@@ -1,5 +1,5 @@
 {
-  "branches": ["main", "develop"],
+  "branches": ["main", "develop", "semantic-release-workflow-update"],
   "plugins": [
     ["@semantic-release/commit-analyzer", {
       "preset": "conventional-commits",
