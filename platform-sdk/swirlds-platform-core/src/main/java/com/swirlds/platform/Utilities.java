@@ -21,6 +21,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.Deserializer;
 import com.swirlds.platform.internal.Serializer;
 import com.swirlds.platform.network.PeerInfo;
@@ -360,7 +361,8 @@ public final class Utilities {
     }
 
     /**
-     * Create a list of PeerInfos from the address book. The list will contain information about all peers but not us.
+     * Create a list of PeerInfos from the roster. The list will contain information about all peers but not us.
+     * Peers without valid gossip certificates are not included.
      *
      * @param roster
      * 		the roster to create the list from
@@ -374,6 +376,9 @@ public final class Utilities {
         Objects.requireNonNull(selfId);
         return roster.rosterEntries().stream()
                 .filter(entry -> entry.nodeId() != selfId.id())
+                // Only include peers with valid gossip certificates
+                // https://github.com/hashgraph/hedera-services/issues/16648
+                .filter(entry -> CryptoStatic.checkCertificate((RosterUtils.fetchGossipCaCertificate(entry))))
                 .map(entry -> new PeerInfo(
                         NodeId.of(entry.nodeId()),
                         // Assume that the first ServiceEndpoint describes the external hostname,
