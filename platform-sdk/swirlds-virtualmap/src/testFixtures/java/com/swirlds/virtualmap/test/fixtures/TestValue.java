@@ -16,10 +16,12 @@
 
 package com.swirlds.virtualmap.test.fixtures;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public final class TestValue implements VirtualValue {
@@ -27,6 +29,19 @@ public final class TestValue implements VirtualValue {
     private String s;
     public boolean readOnly = false;
     private boolean released = false;
+
+    public static Bytes longToValue(final long v) {
+        return stringToValue("Value " + v);
+    }
+
+    public static Bytes stringToValue(final String s) {
+        final byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+        return Bytes.wrap(bytes);
+    }
+
+    public static String valueToString(final Bytes v) {
+        return v.asUtf8String();
+    }
 
     public TestValue() {}
 

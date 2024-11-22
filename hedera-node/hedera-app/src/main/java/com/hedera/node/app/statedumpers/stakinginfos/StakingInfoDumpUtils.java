@@ -18,11 +18,9 @@ package com.hedera.node.app.statedumpers.stakinginfos;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.statedumpers.utils.Writer;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,9 +41,7 @@ public class StakingInfoDumpUtils {
      * @param path the path to the file to write to
      * @param nodes the virtual map to dump
      */
-    public static void dumpStakingInfos(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> nodes) {
+    public static void dumpStakingInfos(@NonNull final Path path, @NonNull final VirtualMap nodes) {
         final var allStakingInfos = gatherStakingInfos(nodes);
         try (@NonNull final var writer = new Writer(path)) {
             writer.writeln("[");
@@ -60,8 +56,7 @@ public class StakingInfoDumpUtils {
         }
     }
 
-    private static List<StakingNodeInfo> gatherStakingInfos(
-            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> infos) {
+    private static List<StakingNodeInfo> gatherStakingInfos(@NonNull final VirtualMap infos) {
         final var infosToReturn = new ConcurrentLinkedQueue<StakingNodeInfo>();
         final var threadCount = 8;
         final var processed = new AtomicInteger();
@@ -70,8 +65,14 @@ public class StakingInfoDumpUtils {
                     getStaticThreadManager(),
                     infos,
                     p -> {
+                        final StakingNodeInfo stakingNodeInfo;
+                        try {
+                            stakingNodeInfo = StakingNodeInfo.PROTOBUF.parse(p.right());
+                        } catch (final ParseException e) {
+                            throw new RuntimeException("Failed to parse staking node info", e);
+                        }
                         processed.incrementAndGet();
-                        infosToReturn.add(p.right().getValue());
+                        infosToReturn.add(stakingNodeInfo);
                     },
                     threadCount);
         } catch (final InterruptedException ex) {

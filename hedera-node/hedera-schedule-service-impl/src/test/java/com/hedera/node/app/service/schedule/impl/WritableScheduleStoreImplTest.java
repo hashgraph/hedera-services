@@ -43,7 +43,7 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
 
     @Test
     void verifyGetForModifyNullIsNull() {
-        final var actual = writableSchedules.getForModify(null);
+        final var actual = writableSchedules.get(null);
         assertThat(actual).isNull();
     }
 
@@ -80,7 +80,7 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
     @Test
     void verifyPutModifiesState() {
         final ScheduleID idToDelete = scheduleInState.scheduleId();
-        Schedule actual = writableById.getForModify(idToDelete);
+        Schedule actual = writableById.get(idToDelete);
         assertThat(actual).isNotNull();
         assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(scheduleInState.signatories());
         final Set<Key> modifiedSignatories = Set.of(schedulerKey, payerKey);
@@ -96,7 +96,7 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
     @Test
     void verifyPutDoesDeduplication() {
         final ScheduleID idToDelete = scheduleInState.scheduleId();
-        Schedule actual = writableById.getForModify(idToDelete);
+        Schedule actual = writableById.get(idToDelete);
         assertThat(actual).isNotNull();
         assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(scheduleInState.signatories());
         final Set<Key> modifiedSignatories = Set.of(schedulerKey, payerKey);

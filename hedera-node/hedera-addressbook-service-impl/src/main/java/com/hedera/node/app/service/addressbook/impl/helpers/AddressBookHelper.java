@@ -58,7 +58,7 @@ public class AddressBookHelper {
         requireNonNull(config);
         final var nodeStoreIds = getNodeIds(nodeStore.keys());
         nodeStoreIds.stream().sorted().forEach(nodeId -> {
-            final var node = requireNonNull(nodeStore.getForModify(nodeId));
+            final var node = requireNonNull(nodeStore.get(nodeId));
             if (!networkInfo.containsNode(nodeId) && !node.deleted()) {
                 nodeStore.put(node.copyBuilder().weight(0).deleted(true).build());
                 log.info("Marked node{} as deleted since it has been removed from the address book", nodeId);

@@ -49,11 +49,11 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
     void largeTeacherLargerLearnerPermutations(int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {
 
         for (int i = teacherStart; i < teacherEnd; i++) {
-            teacherMap.put(new TestKey(i), new TestValue(i));
+            teacherMap.put(TestKey.longToKey(i), TestValue.longToValue(i));
         }
 
         for (int i = learnerStart; i < learnerEnd; i++) {
-            learnerMap.put(new TestKey(i), new TestValue(i));
+            learnerMap.put(TestKey.longToKey(i), TestValue.longToValue(i));
         }
 
         assertDoesNotThrow(this::reconnect, "Should not throw a Exception");
@@ -65,11 +65,11 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
     @DisplayName("Reconnect aborts 3 times before success")
     void multipleAbortedReconnectsCanSucceed(int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {
         for (int i = teacherStart; i < teacherEnd; i++) {
-            teacherMap.put(new TestKey(i), new TestValue(i));
+            teacherMap.put(TestKey.longToKey(i), TestValue.longToValue(i));
         }
 
         for (int i = learnerStart; i < learnerEnd; i++) {
-            learnerMap.put(new TestKey(i), new TestValue(i));
+            learnerMap.put(TestKey.longToKey(i), TestValue.longToValue(i));
         }
 
         learnerBuilder.setNumCallsBeforeThrow((teacherEnd - teacherStart) / 2);

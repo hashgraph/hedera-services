@@ -38,8 +38,6 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
@@ -72,10 +70,7 @@ class MerkleStateLifecyclesImplTest extends MerkleTestBase {
     private MerkleStateRoot merkleStateRoot;
 
     @Mock
-    private BiConsumer<
-                    VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>,
-                    BiConsumer<EntityNumber, StakingNodeInfo>>
-            weightUpdateVisitor;
+    private BiConsumer<VirtualMap, BiConsumer<EntityNumber, StakingNodeInfo>> weightUpdateVisitor;
 
     private MerkleStateLifecyclesImpl subject;
 

@@ -93,7 +93,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     public Schedule delete(@Nullable final ScheduleID scheduleToDelete, @NonNull final Instant consensusTime) {
         Objects.requireNonNull(consensusTime, "Null consensusTime provided to schedule delete, cannot proceed.");
         if (scheduleToDelete != null) {
-            final Schedule schedule = schedulesByIdMutable.getForModify(scheduleToDelete);
+            final Schedule schedule = schedulesByIdMutable.get(scheduleToDelete);
             if (schedule != null) {
                 final Schedule deletedSchedule = markDeleted(schedule, consensusTime);
                 schedulesByIdMutable.put(scheduleToDelete, deletedSchedule);
@@ -104,17 +104,6 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         } else {
             throw new IllegalStateException(SCHEDULE_NULL_FOR_DELETE_MESSAGE);
         }
-    }
-
-    @Override
-    public Schedule getForModify(@Nullable final ScheduleID idToFind) {
-        final Schedule result;
-        if (idToFind != null) {
-            result = schedulesByIdMutable.getForModify(idToFind);
-        } else {
-            result = null;
-        }
-        return result;
     }
 
     @Override

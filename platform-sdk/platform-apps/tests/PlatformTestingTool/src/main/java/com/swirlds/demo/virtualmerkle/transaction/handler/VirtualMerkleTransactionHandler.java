@@ -25,6 +25,7 @@ import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Del
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Update;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.UpdateNotExistentAccount;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.Triple;
@@ -46,7 +47,6 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualValue;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
@@ -85,10 +85,9 @@ public class VirtualMerkleTransactionHandler {
             final Instant consensusTimestamp,
             final VirtualMerkleTransaction virtualMerkleTransaction,
             final ExpectedFCMFamily expectedFCMFamily,
-            final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> accountVirtualMap,
-            final VirtualMap<SmartContractMapKey, SmartContractMapValue> smartContractVirtualMap,
-            final VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>
-                    smartContractByteCodeVirtualMap) {
+            final VirtualMap accountVirtualMap,
+            final VirtualMap smartContractVirtualMap,
+            final VirtualMap smartContractByteCodeVirtualMap) {
         final Triple<TransactionType, MapKey, MapValueData> expectedMapInfo;
         if (virtualMerkleTransaction.hasCreateAccount()) {
             expectedMapInfo =
@@ -149,14 +148,12 @@ public class VirtualMerkleTransactionHandler {
 
     private static void handleMethodExecutionTransaction(
             final SmartContractMethodExecution methodExecution,
-            final VirtualMap<SmartContractMapKey, SmartContractMapValue> smartContractVirtualMap,
-            final VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>
-                    smartContractByteCodeVirtualMap) {
+            final VirtualMap smartContractVirtualMap,
+            final VirtualMap smartContractByteCodeVirtualMap) {
         // Perform the read of the bytecode of the smart contract executing the method.
-        final SmartContractByteCodeMapKey byteCodeKey =
-                new SmartContractByteCodeMapKey(methodExecution.getContractId());
+        final Bytes byteCodeKey = new SmartContractByteCodeMapKey(methodExecution.getContractId()).toBytes();
         final SmartContractByteCodeMapValue smartContractByteCodeMapValue =
-                smartContractByteCodeVirtualMap.get(byteCodeKey);
+                SmartContractByteCodeMapValue.fromBytes(smartContractByteCodeVirtualMap.get(byteCodeKey));
 
         if (smartContractByteCodeMapValue == null) {
             logger.warn(
@@ -166,9 +163,10 @@ public class VirtualMerkleTransactionHandler {
             return;
         }
 
-        final SmartContractMapKey contractKey = new SmartContractMapKey(methodExecution.getContractId(), 0);
+        final Bytes contractKey = new SmartContractMapKey(methodExecution.getContractId(), 0).toBytes();
 
-        final SmartContractMapValue smartContractKeyValuePairsCounter = smartContractVirtualMap.get(contractKey);
+        final SmartContractMapValue smartContractKeyValuePairsCounter =
+                SmartContractMapValue.fromBytes(smartContractVirtualMap.get(contractKey));
         if (smartContractKeyValuePairsCounter == null) {
             logger.warn(
                     DEMO_INFO.getMarker(), "Value for key {} was not found inside smart contract map.", contractKey);
@@ -179,9 +177,10 @@ public class VirtualMerkleTransactionHandler {
         final PTTRandom pttRandom = new PTTRandom(methodExecution.getSeed());
         for (int i = 0; i < methodExecution.getReads(); i++) {
             final long keyValuePairIdx = pttRandom.nextLong(1, totalKeyValuePairs + 1);
-            final SmartContractMapKey smartContractMapKey =
-                    new SmartContractMapKey(methodExecution.getContractId(), keyValuePairIdx);
-            final SmartContractMapValue smartContractMapValue = smartContractVirtualMap.get(smartContractMapKey);
+            final Bytes smartContractMapKey =
+                    new SmartContractMapKey(methodExecution.getContractId(), keyValuePairIdx).toBytes();
+            final SmartContractMapValue smartContractMapValue =
+                    SmartContractMapValue.fromBytes(smartContractVirtualMap.get(smartContractMapKey));
             if (smartContractMapValue == null) {
                 logger.warn(
                         DEMO_INFO.getMarker(),
@@ -193,9 +192,10 @@ public class VirtualMerkleTransactionHandler {
 
         for (int i = 0; i < methodExecution.getWrites(); i++) {
             final long keyValuePairIdx = pttRandom.nextLong(1, totalKeyValuePairs + 1);
-            final SmartContractMapKey smartContractMapKey =
-                    new SmartContractMapKey(methodExecution.getContractId(), keyValuePairIdx);
-            final SmartContractMapValue smartContractMapValue = smartContractVirtualMap.get(smartContractMapKey);
+            final Bytes smartContractMapKey =
+                    new SmartContractMapKey(methodExecution.getContractId(), keyValuePairIdx).toBytes();
+            final SmartContractMapValue smartContractMapValue =
+                    SmartContractMapValue.fromBytes(smartContractVirtualMap.get(smartContractMapKey));
             if (smartContractMapValue == null) {
                 logger.warn(
                         DEMO_INFO.getMarker(),
@@ -206,54 +206,58 @@ public class VirtualMerkleTransactionHandler {
 
             final SmartContractMapValue mutableSmartContractMapValue = smartContractMapValue.copy();
             mutableSmartContractMapValue.changeValue(pttRandom);
-            smartContractVirtualMap.put(smartContractMapKey, mutableSmartContractMapValue);
+            smartContractVirtualMap.put(smartContractMapKey, mutableSmartContractMapValue.toBytes());
         }
 
         for (long i = totalKeyValuePairs + 1; i <= totalKeyValuePairs + methodExecution.getAdds(); i++) {
-            final SmartContractMapKey smartContractMapKey = new SmartContractMapKey(methodExecution.getContractId(), i);
-            smartContractVirtualMap.put(smartContractMapKey, new SmartContractMapValue(pttRandom));
+            final Bytes smartContractMapKey = new SmartContractMapKey(methodExecution.getContractId(), i).toBytes();
+            smartContractVirtualMap.put(smartContractMapKey, new SmartContractMapValue(pttRandom).toBytes());
         }
 
-        smartContractVirtualMap.replace(
-                contractKey, new SmartContractMapValue(totalKeyValuePairs + methodExecution.getAdds()));
+        if (!smartContractVirtualMap.containsKey(contractKey)) {
+            throw new IllegalStateException("Contract not found for key=" + contractKey);
+        }
+        smartContractVirtualMap.put(
+                contractKey, new SmartContractMapValue(totalKeyValuePairs + methodExecution.getAdds()).toBytes());
     }
 
     private static void handleCreateSmartContractTransaction(
             final CreateSmartContract smartContract,
-            final VirtualMap<SmartContractMapKey, SmartContractMapValue> smartContractVirtualMap,
-            final VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>
-                    smartContractByteCodeVirtualMap) {
+            final VirtualMap smartContractVirtualMap,
+            final VirtualMap smartContractByteCodeVirtualMap) {
         // Create the key value pairs for the new smart contract.
         final PTTRandom random = new PTTRandom(smartContract.getSeed());
         for (int i = 1; i <= smartContract.getTotalValuePairs(); i++) {
             smartContractVirtualMap.put(
-                    new SmartContractMapKey(smartContract.getContractId(), i), new SmartContractMapValue(random));
+                    new SmartContractMapKey(smartContract.getContractId(), i).toBytes(),
+                    new SmartContractMapValue(random).toBytes());
         }
 
         // Store the number of key value pairs as the value of the special key
         // created with the id of the smart contract and the keyValuePairIndex = 0
         smartContractVirtualMap.put(
-                new SmartContractMapKey(smartContract.getContractId(), 0),
-                new SmartContractMapValue(smartContract.getTotalValuePairs()));
+                new SmartContractMapKey(smartContract.getContractId(), 0).toBytes(),
+                new SmartContractMapValue(smartContract.getTotalValuePairs()).toBytes());
 
         // Insert the bytecode of the smart contract.
         final SmartContractByteCodeMapKey byteCodeKey = new SmartContractByteCodeMapKey(smartContract.getContractId());
         final SmartContractByteCodeMapValue byteCodeValue =
                 new SmartContractByteCodeMapValue(random, smartContract.getByteCodeSize());
 
-        smartContractByteCodeVirtualMap.put(byteCodeKey, byteCodeValue);
+        smartContractByteCodeVirtualMap.put(byteCodeKey.toBytes(), byteCodeValue.toBytes());
     }
 
     private static Triple<TransactionType, MapKey, MapValueData> handleUpdateAccountTransaction(
-            final UpdateAccount updateAccount,
-            final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> accountVirtualMap) {
+            final UpdateAccount updateAccount, final VirtualMap accountVirtualMap) {
         final AccountVirtualMapKey accountVirtualMapKey = new AccountVirtualMapKey(
                 updateAccount.getRealmID(), updateAccount.getShardID(), updateAccount.getAccountID());
 
         final TransactionType transactionType;
         final MapValueData value;
-        if (accountVirtualMap.containsKey(accountVirtualMapKey)) {
-            final AccountVirtualMapValue currentValue = accountVirtualMap.get(accountVirtualMapKey);
+        final Bytes accountVirtualMapKeyBytes = accountVirtualMapKey.toBytes();
+        if (accountVirtualMap.containsKey(accountVirtualMapKeyBytes)) {
+            final AccountVirtualMapValue currentValue =
+                    AccountVirtualMapValue.fromBytes(accountVirtualMap.get(accountVirtualMapKeyBytes));
             final AccountVirtualMapValue newValue = new AccountVirtualMapValue(
                     updateAccount.getBalance(),
                     updateAccount.getSendThreshold(),
@@ -261,7 +265,7 @@ public class VirtualMerkleTransactionHandler {
                     updateAccount.getRequireSignature(),
                     currentValue.getUid());
 
-            accountVirtualMap.replace(accountVirtualMapKey, newValue);
+            accountVirtualMap.put(accountVirtualMapKeyBytes, newValue.toBytes());
 
             value = new MapValueData(
                     newValue.getBalance(),
@@ -290,12 +294,11 @@ public class VirtualMerkleTransactionHandler {
     }
 
     private static Triple<TransactionType, MapKey, MapValueData> handleDeleteAccountTransaction(
-            final DeleteAccount deleteAccount,
-            final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> accountVirtualMap) {
+            final DeleteAccount deleteAccount, final VirtualMap accountVirtualMap) {
         final AccountVirtualMapKey accountVirtualMapKey = new AccountVirtualMapKey(
                 deleteAccount.getRealmID(), deleteAccount.getShardID(), deleteAccount.getAccountID());
 
-        final VirtualValue removedValue = accountVirtualMap.remove(accountVirtualMapKey);
+        final Bytes removedValue = accountVirtualMap.remove(accountVirtualMapKey.toBytes());
         final MapKey key =
                 new MapKey(deleteAccount.getShardID(), deleteAccount.getRealmID(), deleteAccount.getAccountID());
 
@@ -310,8 +313,7 @@ public class VirtualMerkleTransactionHandler {
     }
 
     private static Triple<TransactionType, MapKey, MapValueData> handleCreateAccountTransaction(
-            final CreateAccount createAccount,
-            final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> accountVirtualMap) {
+            final CreateAccount createAccount, final VirtualMap accountVirtualMap) {
 
         final AccountVirtualMapKey accountVirtualMapKey = new AccountVirtualMapKey(
                 createAccount.getRealmID(), createAccount.getShardID(), createAccount.getAccountID());
@@ -323,13 +325,14 @@ public class VirtualMerkleTransactionHandler {
                 createAccount.getUid());
 
         final TransactionType transactionType;
-        if (accountVirtualMap.containsKey(accountVirtualMapKey)) {
+        final Bytes accountVirtualMapKeyBytes = accountVirtualMapKey.toBytes();
+        if (accountVirtualMap.containsKey(accountVirtualMapKeyBytes)) {
             transactionType = CreateExistingAccount;
         } else {
             transactionType = Create;
         }
 
-        accountVirtualMap.put(accountVirtualMapKey, accountVirtualMapValue);
+        accountVirtualMap.put(accountVirtualMapKeyBytes, accountVirtualMapValue.toBytes());
 
         final MapKey key =
                 new MapKey(createAccount.getShardID(), createAccount.getRealmID(), createAccount.getAccountID());
@@ -357,8 +360,7 @@ public class VirtualMerkleTransactionHandler {
      * 		A {@link VirtualMap} instance storing accounts inside platform state.
      */
     public static void handleExpectedMapValidation(
-            final ExpectedFCMFamily expectedFCMFamily,
-            final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> virtualMap) {
+            final ExpectedFCMFamily expectedFCMFamily, final VirtualMap virtualMap) {
         if (virtualMap == null) {
             return;
         }
@@ -369,10 +371,12 @@ public class VirtualMerkleTransactionHandler {
             }
             final AccountVirtualMapKey accountVirtualMapKey =
                     new AccountVirtualMapKey(mapKey.getRealmId(), mapKey.getShardId(), mapKey.getAccountId());
+            final Bytes accountVirtualMapKeyBytes = accountVirtualMapKey.toBytes();
             final TransactionType lastTransactionType =
                     expectedValue.getLatestHandledStatus().getTransactionType();
             if (lastTransactionType == Create || lastTransactionType == Update) {
-                final AccountVirtualMapValue virtualMapValue = virtualMap.get(accountVirtualMapKey);
+                final AccountVirtualMapValue virtualMapValue =
+                        AccountVirtualMapValue.fromBytes(virtualMap.get(accountVirtualMapKeyBytes));
                 if (virtualMapValue == null) {
                     notMismatching.set(false);
                     logger.warn(
@@ -390,14 +394,14 @@ public class VirtualMerkleTransactionHandler {
                     notMismatching.set(false);
                 }
             } else if (lastTransactionType == CreateExistingAccount) {
-                if (!virtualMap.containsKey(accountVirtualMapKey)) {
+                if (!virtualMap.containsKey(accountVirtualMapKeyBytes)) {
                     notMismatching.set(false);
                     logger.warn(DEMO_INFO.getMarker(), "A created account does not exist inside the state.");
                 }
             } else if (lastTransactionType == Delete
                     || lastTransactionType == DeleteNotExistentAccount
                     || lastTransactionType == UpdateNotExistentAccount) {
-                if (virtualMap.containsKey(accountVirtualMapKey)) {
+                if (virtualMap.containsKey(accountVirtualMapKeyBytes)) {
                     notMismatching.set(false);
                     logger.warn(DEMO_INFO.getMarker(), "A deleted account is still present inside the state.");
                 }

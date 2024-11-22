@@ -47,12 +47,8 @@ import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
-import com.swirlds.virtualmap.serialize.KeySerializer;
-import com.swirlds.virtualmap.serialize.ValueSerializer;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
-import com.swirlds.virtualmap.test.fixtures.TestKeySerializer;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
-import com.swirlds.virtualmap.test.fixtures.TestValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -65,32 +61,33 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
 public abstract class VirtualMapReconnectTestBase {
-    protected static final TestKey A_KEY = new TestKey('a');
-    protected static final TestKey B_KEY = new TestKey('b');
-    protected static final TestKey C_KEY = new TestKey('c');
-    protected static final TestKey D_KEY = new TestKey('d');
-    protected static final TestKey E_KEY = new TestKey('e');
-    protected static final TestKey F_KEY = new TestKey('f');
-    protected static final TestKey G_KEY = new TestKey('g');
 
-    protected static final TestValue APPLE = new TestValue("APPLE");
-    protected static final TestValue BANANA = new TestValue("BANANA");
-    protected static final TestValue CHERRY = new TestValue("CHERRY");
-    protected static final TestValue DATE = new TestValue("DATE");
-    protected static final TestValue EGGPLANT = new TestValue("EGGPLANT");
-    protected static final TestValue FIG = new TestValue("FIG");
-    protected static final TestValue GRAPE = new TestValue("GRAPE");
+    protected static final Bytes A_KEY = TestKey.charToKey('a');
+    protected static final Bytes B_KEY = TestKey.charToKey('b');
+    protected static final Bytes C_KEY = TestKey.charToKey('c');
+    protected static final Bytes D_KEY = TestKey.charToKey('d');
+    protected static final Bytes E_KEY = TestKey.charToKey('e');
+    protected static final Bytes F_KEY = TestKey.charToKey('f');
+    protected static final Bytes G_KEY = TestKey.charToKey('g');
 
-    protected static final TestValue AARDVARK = new TestValue("AARDVARK");
-    protected static final TestValue BEAR = new TestValue("BEAR");
-    protected static final TestValue CUTTLEFISH = new TestValue("CUTTLEFISH");
-    protected static final TestValue DOG = new TestValue("DOG");
-    protected static final TestValue EMU = new TestValue("EMU");
-    protected static final TestValue FOX = new TestValue("FOX");
-    protected static final TestValue GOOSE = new TestValue("GOOSE");
+    protected static final Bytes APPLE = TestValue.stringToValue("APPLE");
+    protected static final Bytes BANANA = TestValue.stringToValue("BANANA");
+    protected static final Bytes CHERRY = TestValue.stringToValue("CHERRY");
+    protected static final Bytes DATE = TestValue.stringToValue("DATE");
+    protected static final Bytes EGGPLANT = TestValue.stringToValue("EGGPLANT");
+    protected static final Bytes FIG = TestValue.stringToValue("FIG");
+    protected static final Bytes GRAPE = TestValue.stringToValue("GRAPE");
 
-    protected VirtualMap<TestKey, TestValue> teacherMap;
-    protected VirtualMap<TestKey, TestValue> learnerMap;
+    protected static final Bytes AARDVARK = TestValue.stringToValue("AARDVARK");
+    protected static final Bytes BEAR = TestValue.stringToValue("BEAR");
+    protected static final Bytes CUTTLEFISH = TestValue.stringToValue("CUTTLEFISH");
+    protected static final Bytes DOG = TestValue.stringToValue("DOG");
+    protected static final Bytes EMU = TestValue.stringToValue("EMU");
+    protected static final Bytes FOX = TestValue.stringToValue("FOX");
+    protected static final Bytes GOOSE = TestValue.stringToValue("GOOSE");
+
+    protected VirtualMap teacherMap;
+    protected VirtualMap learnerMap;
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
 
@@ -108,10 +105,8 @@ public abstract class VirtualMapReconnectTestBase {
         final VirtualDataSourceBuilder dataSourceBuilder = createBuilder();
         teacherBuilder = new BrokenBuilder(dataSourceBuilder);
         learnerBuilder = new BrokenBuilder(dataSourceBuilder);
-        teacherMap = new VirtualMap<>(
-                "Teacher", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, teacherBuilder, CONFIGURATION);
-        learnerMap = new VirtualMap<>(
-                "Learner", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, learnerBuilder, CONFIGURATION);
+        teacherMap = new VirtualMap("Teacher", teacherBuilder, CONFIGURATION);
+        learnerMap = new VirtualMap("Learner", learnerBuilder, CONFIGURATION);
     }
 
     @BeforeAll
@@ -131,7 +126,7 @@ public abstract class VirtualMapReconnectTestBase {
                 VirtualRootNode.class, () -> new VirtualRootNode(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
     }
 
-    protected MerkleInternal createTreeForMap(VirtualMap<TestKey, TestValue> map) {
+    protected MerkleInternal createTreeForMap(VirtualMap map) {
         final var tree = MerkleTestUtils.buildLessSimpleTree();
         tree.getChild(1).asInternal().setChild(3, map);
         tree.reserve();
@@ -144,7 +139,7 @@ public abstract class VirtualMapReconnectTestBase {
 
     protected void reconnectMultipleTimes(int attempts) {
         final MerkleInternal teacherTree = createTreeForMap(teacherMap);
-        final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
+        final VirtualMap copy = teacherMap.copy();
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
         try {
             for (int i = 0; i < attempts; i++) {
@@ -283,8 +278,8 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public VirtualLeafBytes loadLeafRecord(final Bytes key, final int keyHashCode) throws IOException {
-            return delegate.loadLeafRecord(key, keyHashCode);
+        public VirtualLeafBytes loadLeafRecord(final Bytes key) throws IOException {
+            return delegate.loadLeafRecord(key);
         }
 
         @Override
@@ -293,8 +288,8 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public long findKey(final Bytes key, final int keyHashCode) throws IOException {
-            return delegate.findKey(key, keyHashCode);
+        public long findKey(final Bytes key) throws IOException {
+            return delegate.findKey(key);
         }
 
         @Override
@@ -335,18 +330,6 @@ public abstract class VirtualMapReconnectTestBase {
         @Override
         public void stopAndDisableBackgroundCompaction() {
             // no op
-        }
-
-        @Override
-        @SuppressWarnings("rawtypes")
-        public KeySerializer getKeySerializer() {
-            throw new UnsupportedOperationException("This method should never be called");
-        }
-
-        @Override
-        @SuppressWarnings("rawtypes")
-        public ValueSerializer getValueSerializer() {
-            throw new UnsupportedOperationException("This method should never be called");
         }
     }
 }

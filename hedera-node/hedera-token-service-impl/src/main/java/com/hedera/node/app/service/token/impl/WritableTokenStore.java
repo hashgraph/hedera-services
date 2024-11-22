@@ -30,7 +30,6 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -73,19 +72,6 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
         Objects.requireNonNull(token);
         requireNotDefault(token.tokenId());
         tokenState.put(token.tokenId(), Objects.requireNonNull(token));
-    }
-
-    /**
-     * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify}.
-     * If no such token exists, returns {@code Optional.empty()}
-     * @param tokenId - the id of the token to be retrieved.
-     * @return the token with the given tokenId, or {@code Optional.empty()} if no such token exists
-     */
-    @NonNull
-    public Optional<Token> getForModify(final TokenID tokenId) {
-        requireNonNull(tokenId);
-        final var token = tokenState.getForModify(tokenId);
-        return Optional.ofNullable(token);
     }
 
     /**

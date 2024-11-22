@@ -25,6 +25,8 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.serialize.KeySerializer;
@@ -59,10 +61,9 @@ import java.util.Objects;
  *
  * @param path virtual record path
  * @param keyBytes virtual key bytes
- * @param keyHashCode virtual key hash code
  * @param valueBytes virtual value bytes
  */
-public record VirtualLeafBytes(long path, @NonNull Bytes keyBytes, int keyHashCode, @Nullable Bytes valueBytes) {
+public record VirtualLeafBytes(long path, @NonNull Bytes keyBytes, @Nullable Bytes valueBytes) {
 
     public static final FieldDefinition FIELD_LEAFRECORD_PATH =
             new FieldDefinition("path", FieldType.FIXED64, false, true, false, 1);
@@ -70,6 +71,14 @@ public record VirtualLeafBytes(long path, @NonNull Bytes keyBytes, int keyHashCo
             new FieldDefinition("key", FieldType.BYTES, false, true, false, 2);
     public static final FieldDefinition FIELD_LEAFRECORD_VALUE =
             new FieldDefinition("value", FieldType.BYTES, false, true, false, 3);
+
+    public VirtualLeafBytes withPath(final long newPath) {
+        return new VirtualLeafBytes(newPath, keyBytes, valueBytes);
+    }
+
+    public VirtualLeafBytes withValueBytes(final Bytes newValueBytes) {
+        return new VirtualLeafBytes(path, keyBytes, newValueBytes);
+    }
 
     /**
      * Reads a virtual leaf bytes object from the given sequential data.
@@ -114,7 +123,7 @@ public record VirtualLeafBytes(long path, @NonNull Bytes keyBytes, int keyHashCo
         Objects.requireNonNull(keyBytes, "Missing key bytes in the input");
 
         // Key hash code is not deserialized
-        return new VirtualLeafBytes(path, keyBytes, 0, valueBytes);
+        return new VirtualLeafBytes(path, keyBytes, valueBytes);
     }
 
     public int getSizeInBytes() {
@@ -147,6 +156,13 @@ public record VirtualLeafBytes(long path, @NonNull Bytes keyBytes, int keyHashCo
                     out, FIELD_LEAFRECORD_VALUE, Math.toIntExact(valueBytes.length()), valueBytes::writeTo);
         }
         assert out.position() == pos + getSizeInBytes();
+    }
+
+    public Hash hash(final HashBuilder builder) {
+        builder.reset();
+        builder.update(keyBytes);
+        builder.update(valueBytes);
+        return builder.build();
     }
 
     /**

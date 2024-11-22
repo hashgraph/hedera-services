@@ -18,6 +18,7 @@ package com.swirlds.demo.migration.virtual;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -64,6 +65,17 @@ public class AccountVirtualMapValue implements VirtualValue {
         this.receiveThreshold = accountVirtualMapValue.receiveThreshold;
         this.requireSignature = accountVirtualMapValue.requireSignature;
         this.uid = accountVirtualMapValue.uid;
+    }
+
+    public Bytes toBytes() {
+        final byte[] bytes = new byte[Long.BYTES * 4 + 1];
+        ByteBuffer.wrap(bytes)
+                .putLong(balance)
+                .putLong(sendThreshold)
+                .putLong(receiveThreshold)
+                .put(getRequireSignatureAsByte())
+                .putLong(uid);
+        return Bytes.wrap(bytes);
     }
 
     /**

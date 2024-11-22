@@ -16,6 +16,7 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayDeque;
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,7 +51,7 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
         logger.info(RUN_DELIMITER);
 
         final long[] map = new long[verify ? maxKey : 0];
-        VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
+        VirtualMap virtualMap = createMap(map);
 
         if (getBenchmarkConfig().enableSnapshots()) {
             enableSnapshots();
@@ -62,19 +63,20 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
 
             for (int j = 0; j < numRecords; ++j) {
                 long id = Utils.randomLong(maxKey);
-                BenchmarkKey key = new BenchmarkKey(id);
-                BenchmarkValue value = virtualMap.getForModify(key);
+                Bytes key = BenchmarkKey.longToKey(id);
+                Bytes value = virtualMap.get(key);
                 long val = nextValue();
                 if (value != null) {
                     if ((val & 0xff) == 0) {
                         virtualMap.remove(key);
                         if (verify) map[(int) id] = 0L;
                     } else {
-                        value.update(l -> l + val);
+                        value = BenchmarkValue.updatedValue(value, l -> l + val);
+                        virtualMap.put(key, value);
                         if (verify) map[(int) id] += val;
                     }
                 } else {
-                    value = new BenchmarkValue(val);
+                    value = BenchmarkValue.longToValue(val);
                     virtualMap.put(key, value);
                     if (verify) map[(int) id] = val;
                 }
@@ -106,16 +108,16 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
         logger.info(RUN_DELIMITER);
 
         final long[] map = new long[verify ? maxKey : 0];
-        VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
+        VirtualMap virtualMap = createMap(map);
 
         // Write files
         long start = System.currentTimeMillis();
         for (int i = 0; i < numFiles; i++) {
             for (int j = 0; j < numRecords; ++j) {
                 long id = Utils.randomLong(maxKey);
-                final BenchmarkKey key = new BenchmarkKey(id);
+                final Bytes key = BenchmarkKey.longToKey(id);
                 final long val = nextValue();
-                final BenchmarkValue value = new BenchmarkValue(val);
+                final Bytes value = BenchmarkValue.longToValue(val);
                 virtualMap.put(key, value);
                 if (verify) {
                     map[(int) id] = val;
@@ -148,7 +150,7 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
         logger.info(RUN_DELIMITER);
 
         final long[] map = new long[verify ? maxKey : 0];
-        VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
+        VirtualMap virtualMap = createMap(map);
 
         final int EXPIRY_DELAY = 180_000;
         record Expirable(long time, long id) {}
@@ -163,14 +165,15 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
             // Add/update new values
             for (int j = 0; j < numRecords; ++j) {
                 final long id = Utils.randomLong(maxKey);
-                final BenchmarkKey key = new BenchmarkKey(id);
-                BenchmarkValue value = virtualMap.getForModify(key);
+                final Bytes key = BenchmarkKey.longToKey(id);
+                Bytes value = virtualMap.get(key);
                 final long val = nextValue();
                 if (value != null) {
-                    value.update(l -> l + val);
+                    value = BenchmarkValue.updatedValue(value, l -> l + val);
+                    virtualMap.put(key, value);
                     if (verify) map[(int) id] += val;
                 } else {
-                    value = new BenchmarkValue(val);
+                    value = BenchmarkValue.longToValue(val);
                     virtualMap.put(key, value);
                     if (verify) map[(int) id] = val;
                 }
@@ -184,7 +187,7 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
                 if (entry == null || entry.time > curTime) {
                     break;
                 }
-                virtualMap.remove(new BenchmarkKey(entry.id));
+                virtualMap.remove(BenchmarkKey.longToKey(entry.id));
                 if (verify) map[(int) entry.id] = 0L;
                 expirables.removeFirst();
             }
@@ -215,8 +218,8 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
         long start = System.currentTimeMillis();
         int count = 0;
         for (int i = 0; i < maxKey; i++) {
-            BenchmarkKey key = new BenchmarkKey(i);
-            BenchmarkValue value = new BenchmarkValue(nextValue());
+            Bytes key = BenchmarkKey.longToKey(i);
+            Bytes value = BenchmarkValue.longToValue(nextValue());
             virtualMapP.put(key, value);
 
             if (++count == maxKey / numFiles) {
@@ -247,7 +250,7 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
             long sum = 0;
             for (int i = 0; i < numRecords; ++i) {
                 final long id = Utils.randomLong(maxKey);
-                BenchmarkValue value = virtualMapP.get(new BenchmarkKey(id));
+                Bytes value = virtualMapP.get(BenchmarkKey.longToKey(id));
                 sum += value.hashCode();
             }
             total.addAndGet(sum);

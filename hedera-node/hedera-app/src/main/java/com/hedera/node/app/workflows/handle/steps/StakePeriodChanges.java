@@ -122,11 +122,8 @@ public class StakePeriodChanges {
             final var config = tokenContext.configuration();
             try {
                 final var nodeStore = newWritableNodeStore(stack, config);
-                final BiConsumer<Long, Integer> weightUpdates = (nodeId, weight) -> nodeStore.put(nodeStore
-                        .getForModify(nodeId)
-                        .copyBuilder()
-                        .weight(weight)
-                        .build());
+                final BiConsumer<Long, Integer> weightUpdates = (nodeId, weight) -> nodeStore.put(
+                        nodeStore.get(nodeId).copyBuilder().weight(weight).build());
                 final var streamBuilder = endOfStakingPeriodUpdater.updateNodes(
                         tokenContext, exchangeRateManager.exchangeRates(), weightUpdates);
                 if (streamBuilder != null) {

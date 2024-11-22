@@ -29,9 +29,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
 import com.swirlds.state.merkle.disk.OnDiskValue;
-import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
 import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.merkle.memory.InMemoryWritableKVState;
 import com.swirlds.state.merkle.queue.QueueNode;
@@ -293,21 +291,9 @@ public final class StateUtils {
                     () -> new OnDiskKey<>(
                             md.onDiskKeyClassId(), md.stateDefinition().keyCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskKeySerializer.class,
-                    () -> new OnDiskKeySerializer<>(
-                            md.onDiskKeySerializerClassId(),
-                            md.onDiskKeyClassId(),
-                            md.stateDefinition().keyCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
                     OnDiskValue.class,
                     () -> new OnDiskValue<>(
                             md.onDiskValueClassId(), md.stateDefinition().valueCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskValueSerializer.class,
-                    () -> new OnDiskValueSerializer<>(
-                            md.onDiskValueSerializerClassId(),
-                            md.onDiskValueClassId(),
-                            md.stateDefinition().valueCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     SingletonNode.class,
                     () -> new SingletonNode<>(

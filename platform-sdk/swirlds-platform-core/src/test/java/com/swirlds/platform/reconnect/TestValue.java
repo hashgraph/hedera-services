@@ -16,13 +16,20 @@
 
 package com.swirlds.platform.reconnect;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public final class TestValue implements VirtualValue {
+
+    public static Bytes stringToBytes(final String v) {
+        final byte[] bytes = v.getBytes(StandardCharsets.UTF_8);
+        return Bytes.wrap(bytes);
+    }
 
     private String s;
 

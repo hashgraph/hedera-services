@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.benchmark.reconnect;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
@@ -50,21 +51,21 @@ public class StateBuilder {
             final long size,
             final double learnerMissingProbability,
             final double learnerDifferentProbability,
-            final BiConsumer<TestKey, TestValue> teacherPopulator,
-            final BiConsumer<TestKey, TestValue> learnerPopulator) {
+            final BiConsumer<Bytes, Bytes> teacherPopulator,
+            final BiConsumer<Bytes, Bytes> learnerPopulator) {
         LongStream.range(1, size).forEach(i -> {
-            final TestKey key = new TestKey(i);
+            final Bytes key = TestKey.longToKey(i);
 
-            final TestValue teacherValue = new TestValue(RandomUtils.randomString(random, random.nextInt(1, 64)));
+            final Bytes teacherValue = TestValue.stringToValue(RandomUtils.randomString(random, random.nextInt(1, 64)));
             teacherPopulator.accept(key, teacherValue);
 
             if (isRandomOutcome(random, learnerMissingProbability)) {
                 return;
             }
 
-            final TestValue learnerValue;
+            final Bytes learnerValue;
             if (isRandomOutcome(random, learnerDifferentProbability)) {
-                learnerValue = new TestValue(RandomUtils.randomString(random, random.nextInt(1, 64)));
+                learnerValue = TestValue.stringToValue(RandomUtils.randomString(random, random.nextInt(1, 64)));
             } else {
                 learnerValue = teacherValue;
             }

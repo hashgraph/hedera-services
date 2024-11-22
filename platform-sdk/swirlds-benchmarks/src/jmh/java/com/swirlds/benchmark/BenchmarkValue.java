@@ -18,6 +18,7 @@ package com.swirlds.benchmark;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -40,6 +41,23 @@ public class BenchmarkValue implements VirtualValue {
 
     public static int getValueSize() {
         return valueSize;
+    }
+
+    public static Bytes longToValue(final long seed) {
+        final byte[] valueBytes = new byte[valueSize];
+        Utils.toBytes(seed, valueBytes);
+        return Bytes.wrap(valueBytes);
+    }
+
+    public static long valueToLong(final Bytes value) {
+        return Utils.fromBytes(value);
+    }
+
+    public static Bytes updatedValue(final Bytes value, final LongUnaryOperator updater) {
+        final long seed = Utils.fromBytes(value);
+        final byte[] valueBytes = new byte[valueSize];
+        Utils.toBytes(updater.applyAsLong(seed), valueBytes);
+        return Bytes.wrap(valueBytes);
     }
 
     public BenchmarkValue() {
