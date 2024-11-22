@@ -135,6 +135,11 @@ public class RepeatableIntegrationTests {
                         .hasKnownStatus(SCHEDULE_EXPIRY_TOO_LONG)));
     }
 
+    /**
+     * Tests that the consensus {@link com.hedera.hapi.node.base.HederaFunctionality#SCHEDULE_CREATE} throttle is
+     * enforced by overriding the dev throttles to the more restrictive mainnet throttles and scheduling one more
+     * {@link com.hedera.hapi.node.base.HederaFunctionality#CONSENSUS_CREATE_TOPIC} that is allowed.
+     */
     @LeakyRepeatableHapiTest(
             value = {
                 NEEDS_LAST_ASSIGNED_CONSENSUS_TIME,
@@ -155,7 +160,7 @@ public class RepeatableIntegrationTests {
                 overridingAllOf(Map.of(
                         "scheduling.longTermEnabled", "true",
                         "scheduling.maxExecutionsPerUserTxn", "1",
-                        "scheduling.whitelist", "ConsensusCreateTopic,ConsensusSubmitMessage")),
+                        "scheduling.whitelist", "ConsensusCreateTopic")),
                 doWithStartupConfigNow(
                         "scheduling.maxExpirationFutureSeconds",
                         (maxLifetime, specTime) -> doAdhoc(
