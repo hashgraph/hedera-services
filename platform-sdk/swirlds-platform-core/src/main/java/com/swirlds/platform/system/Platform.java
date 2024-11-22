@@ -22,7 +22,6 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -53,14 +52,6 @@ public interface Platform {
      */
     @NonNull
     Roster getRoster();
-
-    /**
-     * Get the Address Book
-     *
-     * @return AddressBook
-     */
-    @NonNull
-    AddressBook getAddressBook();
 
     /**
      * Get the ID of current node

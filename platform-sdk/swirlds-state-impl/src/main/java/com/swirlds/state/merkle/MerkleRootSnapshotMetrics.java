@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state;
+package com.swirlds.state.merkle;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,10 +33,9 @@ public class MerkleRootSnapshotMetrics {
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
+     * @param metrics the metrics object
      */
-    public MerkleRootSnapshotMetrics(@NonNull final PlatformContext platformContext) {
-        final Metrics metrics = platformContext.getMetrics();
+    public MerkleRootSnapshotMetrics(@NonNull final Metrics metrics) {
         writeMerkleRootToDiskTime = metrics.getOrCreate(WRITE_MERKLE_ROOT_TO_DISK_TIME_CONFIG);
     }
 
