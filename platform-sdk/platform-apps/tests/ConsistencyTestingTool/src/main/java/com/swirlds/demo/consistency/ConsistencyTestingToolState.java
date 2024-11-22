@@ -61,8 +61,9 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
         public static final int ORIGINAL = 1;
     }
 
-    private static final int STATE_LONG_INDEX = 2;
-    private static final int ROUND_HANDLED_INDEX = 3;
+    // Nodes at indices 0, 1, and 2 are used by the PlatformState, RosterMap, and RosterState.
+    private static final int STATE_LONG_INDEX = 3;
+    private static final int ROUND_HANDLED_INDEX = 4;
 
     /**
      * The history of transactions that have been handled by this app.
