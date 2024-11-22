@@ -472,6 +472,16 @@ public class HapiSpec implements Runnable, Executable {
      * @return the embedded Hedera
      * @throws IllegalStateException if the spec is not in embedded mode
      */
+    public EmbeddedHedera embeddedHederaOrThrow() {
+        return embeddedNetworkOrThrow().embeddedHederaOrThrow();
+    }
+
+    /**
+     * Returns the {@link EmbeddedHedera} for a spec in embedded mode, or throws if the spec is not in embedded mode.
+     *
+     * @return the embedded Hedera
+     * @throws IllegalStateException if the spec is not in embedded mode
+     */
     public RepeatableEmbeddedHedera repeatableEmbeddedHederaOrThrow() {
         final var embeddedHedera = embeddedNetworkOrThrow().embeddedHederaOrThrow();
         if (embeddedHedera instanceof RepeatableEmbeddedHedera repeatableEmbeddedHedera) {

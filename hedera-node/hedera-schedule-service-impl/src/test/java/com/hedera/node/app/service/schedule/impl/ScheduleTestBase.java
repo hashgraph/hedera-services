@@ -19,6 +19,7 @@ package com.hedera.node.app.service.schedule.impl;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_COUNTS_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_ORDERS_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_USAGES_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -54,6 +55,7 @@ import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleIdList;
 import com.hedera.hapi.node.state.schedule.ScheduledCounts;
 import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -196,10 +198,11 @@ public class ScheduleTestBase {
     protected Map<ProtoLong, ScheduleIdList> scheduleMapByExpiration;
     protected Map<TimestampSeconds, ScheduledCounts> scheduledCounts;
     protected Map<ScheduledOrder, ScheduleID> scheduledOrders;
+    protected Map<TimestampSeconds, ThrottleUsageSnapshots> scheduledUsages;
     protected WritableKVState<ScheduleID, Schedule> writableById;
     protected WritableKVState<ProtoBytes, ScheduleID> writableByEquality;
-    protected WritableKVState<ProtoLong, ScheduleIdList> writableByExpiration;
     protected WritableKVState<TimestampSeconds, ScheduledCounts> writableScheduledCounts;
+    protected WritableKVState<TimestampSeconds, ThrottleUsageSnapshots> writableScheduledUsages;
     protected WritableKVState<ScheduledOrder, ScheduleID> writableScheduledOrders;
     protected Map<String, WritableKVState<?, ?>> writableStatesMap;
     protected ReadableStates states;
@@ -244,6 +247,7 @@ public class ScheduleTestBase {
         commit(writableByEquality);
         commit(writableScheduledOrders);
         commit(writableScheduledCounts);
+        commit(writableScheduledUsages);
         commit(writableById);
     }
 
@@ -457,11 +461,13 @@ public class ScheduleTestBase {
         scheduleMapByExpiration = new HashMap<>(0);
         scheduledCounts = new HashMap<>(0);
         scheduledOrders = new HashMap<>(0);
+        scheduledUsages = new HashMap<>(0);
         accountsMapById = new HashMap<>(0);
         writableById = new MapWritableKVState<>(SCHEDULES_BY_ID_KEY, scheduleMapById);
         writableByEquality = new MapWritableKVState<>(SCHEDULE_ID_BY_EQUALITY_KEY, scheduleMapByEquality);
         writableScheduledCounts = new MapWritableKVState<>(SCHEDULED_COUNTS_KEY, scheduledCounts);
         writableScheduledOrders = new MapWritableKVState<>(SCHEDULED_ORDERS_KEY, scheduledOrders);
+        writableScheduledUsages = new MapWritableKVState<>(SCHEDULED_USAGES_KEY, scheduledUsages);
         accountById = new MapWritableKVState<>(ACCOUNT_STATE_KEY, accountsMapById);
         accountAliases = new MapWritableKVState<>(ACCOUNT_ALIAS_STATE_KEY, new HashMap<>(0));
         writableStatesMap = new TreeMap<>();
@@ -469,6 +475,7 @@ public class ScheduleTestBase {
         writableStatesMap.put(SCHEDULE_ID_BY_EQUALITY_KEY, writableByEquality);
         writableStatesMap.put(SCHEDULED_COUNTS_KEY, writableScheduledCounts);
         writableStatesMap.put(SCHEDULED_ORDERS_KEY, writableScheduledOrders);
+        writableStatesMap.put(SCHEDULED_USAGES_KEY, writableScheduledUsages);
         writableStatesMap.put(ACCOUNT_STATE_KEY, accountById);
         writableStatesMap.put(ACCOUNT_ALIAS_STATE_KEY, accountAliases);
         scheduleStates = new MapWritableStates(writableStatesMap);

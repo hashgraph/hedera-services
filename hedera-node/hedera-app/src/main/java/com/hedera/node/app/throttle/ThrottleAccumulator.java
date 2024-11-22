@@ -908,12 +908,16 @@ public class ThrottleAccumulator {
             log.warn("{} gas throttling enabled, but limited to 0 gas/sec", throttleType.name());
         }
         gasThrottle = new GasLimitDeterministicThrottle(contractsConfig.maxGasPerSec());
-        throttleMetrics.setupGasThrottleMetric(gasThrottle, configuration);
-        log.info(
-                "Resolved {} gas throttle -\n {} gas/sec (throttling {})",
-                throttleType.name(),
-                gasThrottle.capacity(),
-                (contractsConfig.throttleThrottleByGas() ? "ON" : "OFF"));
+        if (throttleMetrics != null) {
+            throttleMetrics.setupGasThrottleMetric(gasThrottle, configuration);
+        }
+        if (verbose == Verbose.YES) {
+            log.info(
+                    "Resolved {} gas throttle -\n {} gas/sec (throttling {})",
+                    throttleType.name(),
+                    gasThrottle.capacity(),
+                    (contractsConfig.throttleThrottleByGas() ? "ON" : "OFF"));
+        }
     }
 
     @NonNull

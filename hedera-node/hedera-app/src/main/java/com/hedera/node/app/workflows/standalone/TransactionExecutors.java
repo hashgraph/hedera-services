@@ -46,6 +46,7 @@ import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
@@ -54,6 +55,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  */
 public enum TransactionExecutors {
     TRANSACTION_EXECUTORS;
+
     public static final NodeInfo DEFAULT_NODE_INFO = new NodeInfoImpl(0, asAccount(3L), 10, List.of(), Bytes.EMPTY);
 
     /**
@@ -98,6 +100,7 @@ public enum TransactionExecutors {
             @NonNull final TracerBinding tracerBinding) {
         final var bootstrapConfigProvider = new BootstrapConfigProviderImpl();
         final var configProvider = new ConfigProviderImpl(false, null, properties);
+        final AtomicReference<ExecutorComponent> componentRef = new AtomicReference<>();
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
                 new AppSignatureVerifier(
@@ -107,7 +110,11 @@ public enum TransactionExecutors {
                 UNAVAILABLE_GOSSIP,
                 bootstrapConfigProvider::getConfiguration,
                 () -> DEFAULT_NODE_INFO,
-                new AppThrottleFactory(configProvider::getConfiguration, () -> state, ThrottleAccumulator::new));
+                new AppThrottleFactory(
+                        configProvider::getConfiguration,
+                        () -> state,
+                        () -> componentRef.get().throttleServiceManager().activeThrottleDefinitionsOrThrow(),
+                        ThrottleAccumulator::new));
         final var tssBaseService = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),
@@ -117,7 +124,7 @@ public enum TransactionExecutors {
                 new NoOpMetrics());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
-        return DaggerExecutorComponent.builder()
+        final var component = DaggerExecutorComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
                 .tssBaseService(tssBaseService)
@@ -126,6 +133,8 @@ public enum TransactionExecutors {
                 .metrics(new NoOpMetrics())
                 .throttleFactory(appContext.throttleFactory())
                 .build();
+        componentRef.set(component);
+        return component;
     }
 
     /**

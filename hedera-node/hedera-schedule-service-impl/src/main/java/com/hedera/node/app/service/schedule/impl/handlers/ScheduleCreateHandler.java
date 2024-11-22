@@ -24,9 +24,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_EXPIRY_MUST_BE_FUTURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_EXPIRY_TOO_LONG;
 import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.hapi.node.base.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.createProvisionalSchedule;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.functionalityForType;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.transactionIdForScheduled;
@@ -62,6 +66,7 @@ import com.hedera.node.config.data.SchedulingConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Objects;
@@ -139,12 +144,16 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-        final var expirationSeconds = isLongTermEnabled
+        final var maxLifetime = isLongTermEnabled
                 ? schedulingConfig.maxExpirationFutureSeconds()
                 : ledgerConfig.scheduleTxExpiryTimeSecs();
         final var consensusNow = context.consensusNow();
         final var provisionalSchedule =
-                createProvisionalSchedule(context.body(), consensusNow, expirationSeconds, isLongTermEnabled);
+                createProvisionalSchedule(context.body(), consensusNow, maxLifetime, isLongTermEnabled);
+        final var now = consensusNow.getEpochSecond();
+        final var then = provisionalSchedule.calculatedExpirationSecond();
+        validateTrue(then > now, SCHEDULE_EXPIRY_MUST_BE_FUTURE);
+        validateTrue(then <= now + maxLifetime, SCHEDULE_EXPIRY_TOO_LONG);
         validateTrue(
                 isAllowedFunction(provisionalSchedule.scheduledTransactionOrThrow(), schedulingConfig),
                 SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
@@ -184,6 +193,17 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         validateTrue(
                 scheduleStore.numSchedulesInState() + 1 <= schedulingConfig.maxNumber(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        final var capacityFraction = schedulingConfig.schedulableCapacityFraction();
+        final var usageSnapshots = scheduleStore.usageSnapshotsForScheduled(then);
+        final var throttle = throttleFactory.newThrottle(capacityFraction.asApproxCapacitySplit(), usageSnapshots);
+        validateTrue(
+                throttle.allow(
+                        provisionalSchedule.payerAccountIdOrThrow(),
+                        childAsOrdinary(provisionalSchedule),
+                        functionOf(provisionalSchedule),
+                        Instant.ofEpochSecond(then)),
+                SCHEDULE_EXPIRY_IS_BUSY);
+        scheduleStore.trackUsage(then, throttle.usageSnapshots());
 
         // With all validations done, we check if the new schedule is already executable
         final var transactionKeys = getTransactionKeysOrThrow(provisionalSchedule, context::allKeysForTransaction);
@@ -279,5 +299,10 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             @NonNull final SchedulableTransactionBody body, @NonNull final SchedulingConfig config) {
         final var scheduledFunctionality = functionalityForType(body.data().kind());
         return config.whitelist().functionalitySet().contains(scheduledFunctionality);
+    }
+
+    private HederaFunctionality functionOf(@NonNull final Schedule schedule) {
+        return functionalityForType(
+                schedule.scheduledTransactionOrThrow().data().kind());
     }
 }

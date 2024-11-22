@@ -38,6 +38,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -249,7 +250,8 @@ public class TransactionExecutorsTest {
                 UNAVAILABLE_GOSSIP,
                 () -> config,
                 () -> DEFAULT_NODE_INFO,
-                new AppThrottleFactory(() -> config, () -> state, ThrottleAccumulator::new));
+                new AppThrottleFactory(
+                        () -> config, () -> state, () -> ThrottleDefinitions.DEFAULT, ThrottleAccumulator::new));
         registerServices(appContext, config, servicesRegistry);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();

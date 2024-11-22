@@ -19,10 +19,10 @@ package com.hedera.node.app.spi.throttle;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
-import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
@@ -35,16 +35,12 @@ public interface Throttle {
      */
     interface Factory {
         /**
-         * Creates a new throttle based on the given definitions, capacity split, and usage snapshots.
-         * @param definitions the definitions of the throttle
+         * Creates a new throttle based on the capacity split and usage snapshots.
          * @param capacitySplit the split of the capacity
-         * @param usageSnapshots the snapshots of the usage
+         * @param initialUsageSnapshots if not null, the usage snapshots the throttle should start with
          * @return the new throttle
          */
-        Throttle newThrottle(
-                @NonNull ThrottleDefinitions definitions,
-                int capacitySplit,
-                @NonNull ThrottleUsageSnapshots usageSnapshots);
+        Throttle newThrottle(int capacitySplit, @Nullable ThrottleUsageSnapshots initialUsageSnapshots);
     }
 
     /**

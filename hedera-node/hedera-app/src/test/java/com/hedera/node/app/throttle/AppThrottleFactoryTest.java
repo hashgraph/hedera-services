@@ -99,7 +99,8 @@ class AppThrottleFactoryTest {
 
     @BeforeEach
     void setUp() {
-        subject = new AppThrottleFactory(config, () -> state, throttleAccumulatorFactory);
+        subject = new AppThrottleFactory(
+                config, () -> state, () -> ThrottleDefinitions.DEFAULT, throttleAccumulatorFactory);
     }
 
     @Test
@@ -110,7 +111,7 @@ class AppThrottleFactoryTest {
         given(throttleAccumulator.allActiveThrottles()).willReturn(List.of(firstThrottle, lastThrottle));
         given(throttleAccumulator.gasLimitThrottle()).willReturn(gasThrottle);
 
-        final var throttle = subject.newThrottle(ThrottleDefinitions.DEFAULT, SPLIT_FACTOR, FAKE_SNAPSHOTS);
+        final var throttle = subject.newThrottle(SPLIT_FACTOR, FAKE_SNAPSHOTS);
 
         verify(throttleAccumulator).applyGasConfig();
         verify(throttleAccumulator).rebuildFor(ThrottleDefinitions.DEFAULT);

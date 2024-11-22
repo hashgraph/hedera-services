@@ -25,6 +25,7 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.state.HederaStateInjectionModule;
+import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.FacilityInitModule;
@@ -91,6 +92,8 @@ public interface ExecutorComponent {
     StandaloneNetworkInfo stateNetworkInfo();
 
     ExchangeRateManager exchangeRateManager();
+
+    ThrottleServiceManager throttleServiceManager();
 
     StandaloneDispatchFactory standaloneDispatchFactory();
 }
