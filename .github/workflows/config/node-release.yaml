@@ -3,7 +3,7 @@ release:
     execution:
       time: "20:00:00"
     schedule:
-      - on: "2024-11-22"
+      - on: "2024-11-25"
         name: release/0.57
         initial-tag:
           create: true
