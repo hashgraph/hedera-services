@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS
 import static com.hedera.node.app.service.contract.impl.test.handlers.ContractCallHandlerTest.INTRINSIC_GAS_FOR_0_ARG_METHOD;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -62,11 +63,13 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import java.util.List;
 import java.util.function.Supplier;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -144,6 +147,12 @@ class EthereumTransactionHandlerTest {
 
     @Mock
     private EthTxData ethTxDataReturned;
+
+    @Mock
+    private Configuration configuration;
+
+    @Mock
+    private ContractsConfig contractsConfig;
 
     @BeforeEach
     void setUp() {
@@ -307,7 +316,43 @@ class EthereumTransactionHandlerTest {
         given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
         given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
 
+        given(feeCtx.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+
         assertDoesNotThrow(() -> subject.calculateFees(feeCtx));
+    }
+
+    @Test
+    void testCalculateFeesWithZeroHapiFeesConfigEnabled() {
+        final var feeCtx = mock(FeeContext.class);
+
+        given(feeCtx.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.evmEthTransactionZeroHapiFeesEnabled()).willReturn(true);
+
+        assertEquals(Fees.FREE, subject.calculateFees(feeCtx));
+    }
+
+    @Test
+    void testCalculateFeesWithZeroHapiFeesConfigDisabled() {
+        final var ethTxn = EthereumTransactionBody.newBuilder()
+                .ethereumData(TestHelpers.ETH_WITH_TO_ADDRESS)
+                .build();
+        final var txn = TransactionBody.newBuilder().ethereumTransaction(ethTxn).build();
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(txn);
+
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
+
+        given(feeCtx.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.evmEthTransactionZeroHapiFeesEnabled()).willReturn(false);
+
+        assertDoesNotThrow(() -> subject.calculateFees(feeCtx));
+        verify(feeCalc).legacyCalculate(any());
     }
 
     @Test
