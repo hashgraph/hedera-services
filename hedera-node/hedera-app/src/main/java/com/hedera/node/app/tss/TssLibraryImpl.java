@@ -38,6 +38,7 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
+// Future: This intermediate class can be deleted and use `TssService` directly in all the places needed.
 
 public class TssLibraryImpl implements TssLibrary {
     private static final BlsPrivateKey AGGREGATED_PRIVATE_KEY =

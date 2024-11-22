@@ -42,6 +42,7 @@ import java.util.List;
  *     <li>Aggregate Signatures</li>
  * </ul>
  */
+// Future: This intermediate interface can be deleted and use `TssService` directly in all the places needed.
 public interface TssLibrary {
 
     /**
