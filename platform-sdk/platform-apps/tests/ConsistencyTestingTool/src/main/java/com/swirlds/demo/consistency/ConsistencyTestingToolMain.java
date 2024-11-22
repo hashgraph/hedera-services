@@ -57,7 +57,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
                     new ClassConstructorPair(ConsistencyTestingToolState.class, () -> {
                         ConsistencyTestingToolState consistencyTestingToolState = new ConsistencyTestingToolState(
                                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(consistencyTestingToolState);
+                        FAKE_MERKLE_STATE_LIFECYCLES.initStates(consistencyTestingToolState);
                         return consistencyTestingToolState;
                     }));
             registerMerkleStateRootClassIds();
@@ -114,7 +114,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     public MerkleStateRoot newMerkleStateRoot() {
         final MerkleStateRoot state = new ConsistencyTestingToolState(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
 
         return state;
     }

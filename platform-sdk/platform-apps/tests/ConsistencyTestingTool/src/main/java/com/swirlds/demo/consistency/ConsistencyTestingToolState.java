@@ -175,7 +175,7 @@ public class ConsistencyTestingToolState extends MerkleStateRoot {
         }
 
         transactionHandlingHistory.init(logFilePath);
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(this);
     }
 
     /**

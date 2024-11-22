@@ -63,6 +63,8 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -110,6 +112,13 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> registerWithSystem(new StateMetadata<>(name, schema, def), registry));
+    }
+
+    public List<StateChanges.Builder> initStates(@NonNull final State state) {
+        List<StateChanges.Builder> list = new ArrayList<>();
+        list.addAll(initPlatformState(state));
+        list.addAll(initRosterState(state));
+        return list;
     }
 
     public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {

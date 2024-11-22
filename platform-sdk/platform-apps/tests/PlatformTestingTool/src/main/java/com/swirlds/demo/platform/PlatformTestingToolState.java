@@ -1300,7 +1300,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             genesisInit();
         }
         this.invalidateHash();
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(this);
 
         // compute hash
         try {

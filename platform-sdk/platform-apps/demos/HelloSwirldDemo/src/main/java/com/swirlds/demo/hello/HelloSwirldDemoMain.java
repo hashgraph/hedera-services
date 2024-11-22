@@ -62,7 +62,7 @@ public class HelloSwirldDemoMain implements SwirldMain {
             constructableRegistry.registerConstructable(new ClassConstructorPair(HelloSwirldDemoState.class, () -> {
                 HelloSwirldDemoState helloSwirldDemoState = new HelloSwirldDemoState(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(helloSwirldDemoState);
+                FAKE_MERKLE_STATE_LIFECYCLES.initStates(helloSwirldDemoState);
                 return helloSwirldDemoState;
             }));
             registerMerkleStateRootClassIds();
@@ -134,7 +134,7 @@ public class HelloSwirldDemoMain implements SwirldMain {
         final MerkleStateRoot state = new HelloSwirldDemoState(
                 FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 
