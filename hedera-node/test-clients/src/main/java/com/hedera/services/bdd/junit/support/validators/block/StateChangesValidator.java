@@ -82,9 +82,10 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.TransactionConfig;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -125,7 +126,7 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final Set<String> servicesWritten = new HashSet<>();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
-    private MerkleStateRoot state;
+    private PlatformMerkleStateRoot state;
     private Hash genesisStateHash;
 
     public static void main(String[] args) {
@@ -231,7 +232,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                         metrics),
                 DiskStartupNetworks::new,
                 NodeId.of(0L));
-        this.state = (MerkleStateRoot) hedera.newMerkleStateRoot();
+        this.state = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
         final Configuration platformConfig = ConfigurationBuilder.create()
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(TransactionConfig.class)

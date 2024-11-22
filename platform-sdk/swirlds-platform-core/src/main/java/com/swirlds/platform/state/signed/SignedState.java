@@ -43,6 +43,7 @@ import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.merkle.SigSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -609,6 +610,12 @@ public class SignedState implements SignedStateInfo {
 
         if (address.getWeight() == 0) {
             // Signing node has no weight.
+            return false;
+        }
+
+        if (address.getSigPublicKey() == null) {
+            // If the address does not have a valid public key, the signature is invalid.
+            // https://github.com/hashgraph/hedera-services/issues/16648
             return false;
         }
 

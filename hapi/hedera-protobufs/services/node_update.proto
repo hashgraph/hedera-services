@@ -41,9 +41,8 @@ import "basic_types.proto";
  *   configuration during the next `freeze` transaction with the field
  *   `freeze_type` set to `PREPARE_UPGRADE`.
  *
- * ### Record Stream Effects
- * Upon completion the `node_id` for the updated entry SHALL be in the
- * transaction receipt.
+ * ### Block Stream Effects
+ * None.
  */
 message NodeUpdateTransactionBody {
     /**
@@ -91,9 +90,7 @@ message NodeUpdateTransactionBody {
      * details.<br/>
      * <blockquote>Example<blockquote>
      * Hedera Mainnet _requires_ that address be specified, and does not
-     * permit DNS name (FQDN) to be specified.<br/>
-     * Mainnet also requires that the first entry be an "internal" IP
-     * address and the second entry be an "external" IP address.
+     * permit DNS name (FQDN) to be specified.
      * </blockquote>
      * <blockquote>
      * Solo, however, _requires_ DNS name (FQDN) but also permits
