@@ -18,6 +18,7 @@ package com.hedera.node.config.data;
 
 import com.hedera.node.config.NetworkProperty;
 import com.hedera.node.config.NodeProperty;
+import com.hedera.node.config.types.DiskNetworkExport;
 import com.hedera.node.config.types.HederaFunctionalitySet;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
@@ -44,4 +45,6 @@ public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "application-override.properties") String upgradePropertyOverridesFile,
         @ConfigProperty(defaultValue = "api-permission-override.properties") String upgradePermissionOverridesFile,
         @ConfigProperty(defaultValue = "TssMessage,TssVote,TssShareSignature") @NetworkProperty
-                HederaFunctionalitySet nodeTransactionsAllowList) {}
+                HederaFunctionalitySet nodeTransactionsAllowList,
+        @ConfigProperty(defaultValue = "network.json") @NodeProperty String diskNetworkExportFile,
+        @ConfigProperty(defaultValue = "NEVER") DiskNetworkExport diskNetworkExport) {}

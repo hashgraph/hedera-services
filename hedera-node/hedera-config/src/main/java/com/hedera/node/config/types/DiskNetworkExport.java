@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.common;
+package com.hedera.node.config.types;
 
 /**
- * A class with constants identifying Roster entities in state.
+ * Whether and how network metadata should be exported to disk for use in a later network transplant.
  */
-public final class RosterStateId {
-    private RosterStateId() {}
-
-    /** The name of a service that owns Roster entities in state. */
-    public static final String NAME = "RosterService";
-    /** The name of the RosterMap. */
-    public static final String ROSTER_KEY = "ROSTERS";
-    /** The name of the RosterState. */
-    public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
+public enum DiskNetworkExport {
+    /**
+     * Never export network metadata to disk.
+     */
+    NEVER,
+    /**
+     * Export network metadata to disk every block, convenient for getting a file as quickly as possible in a
+     * development network that will serve as the target of a state transplant from a production network.
+     */
+    EVERY_BLOCK,
+    /**
+     * Export network metadata to disk only when the network is frozen.
+     */
+    ONLY_FREEZE_BLOCK,
 }
