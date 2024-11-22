@@ -130,6 +130,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -583,7 +584,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                     state,
                     metrics,
                     trigger,
-                    platform.getAddressBook(),
+                    RosterUtils.buildAddressBook(platform.getRoster()),
                     platform.getContext().getConfiguration());
         }
         // With the States API grounded in the working state, we can create the object graph from it
@@ -969,12 +970,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
 
         final var activeRoster = tssBaseService.chooseRosterForNetwork(
-                state,
-                trigger,
-                serviceMigrator,
-                version,
-                configProvider.getConfiguration(),
-                buildRoster(platform.getAddressBook()));
+                state, trigger, serviceMigrator, version, configProvider.getConfiguration(), platform.getRoster());
         final var networkInfo =
                 new StateNetworkInfo(state, activeRoster, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc
