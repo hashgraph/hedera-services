@@ -37,7 +37,6 @@ import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.BOTH;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
-import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
@@ -370,19 +369,24 @@ public class HandleWorkflow {
             if (Instant.EPOCH.equals(executionStart)) {
                 blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
             } else if (executionStart.getEpochSecond() > lastExecutedSecond) {
-                var executionEnd = executionStart;
                 final var schedulingConfig = userTxn.config().getConfigData(SchedulingConfig.class);
-                if (!schedulingConfig.longTermEnabled()) {
-                    executionEnd = userTxn.consensusNow();
-                } else {
+                if (schedulingConfig.longTermEnabled()) {
+                    var executionEnd = executionStart;
                     final var consensusConfig = userTxn.config().getConfigData(ConsensusConfig.class);
-                    final long nanosAfter = consensusConfig.handleMaxFollowingRecords() + 1;
-                    final var lastUsableTime =
-                            userTxn.consensusNow().plusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS - nanosAfter);
-                    final long nanosBefore = consensusConfig.handleMaxPrecedingRecords() + 1;
+                    // Since the next consensus time may be (now + separationNanos), we need to ensure that
+                    // even if the last scheduled execution time is followed by the maximum number of records,
+                    // its final assigned time will be strictly before the first of the next consensus time's
+                    // preceding records; i.e. (now + separationNanos) - (maxAfter + maxBefore + 1)
+                    final var lastUsableTime = userTxn.consensusNow()
+                            .plusNanos(schedulingConfig.consTimeSeparationNanos()
+                                    - (consensusConfig.handleMaxFollowingRecords()
+                                            + consensusConfig.handleMaxPrecedingRecords()
+                                            + 1));
+                    // And the first possible time for the next execution is strictly after the last execution
+                    // time plus the maximum number of preceding records
                     var nextTime = boundaryStateChangeListener
                             .lastConsensusTimeOrThrow()
-                            .plusNanos(nanosBefore);
+                            .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
                     final var iter = scheduleService.executableTxns(
                             executionStart,
                             userTxn.consensusNow(),
@@ -418,7 +422,7 @@ public class HandleWorkflow {
                         executionEnd = executableTxn.nbf();
                         nextTime = boundaryStateChangeListener
                                 .lastConsensusTimeOrThrow()
-                                .plusNanos(nanosBefore);
+                                .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
                         iter.remove();
                         ((CommittableWritableStates) writableStates).commit();
                     }
@@ -428,7 +432,6 @@ public class HandleWorkflow {
                         lastExecutedSecond = executionEnd.getEpochSecond() - 1;
                     }
                 }
-                purgeScheduling(state, executionStart, executionEnd);
             }
         }
     }

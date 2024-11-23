@@ -18,6 +18,7 @@ package com.hedera.node.app.service.schedule;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -57,6 +58,13 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @param scheduleToAdd The schedule to add
      */
     void put(@NonNull Schedule scheduleToAdd);
+
+    /**
+     * Purges all schedule state associated with the given order.
+     * @param order The order to purge schedules for.
+     * @return whether this was the last scheduled order in its consensus second
+     */
+    boolean purgeByOrder(@NonNull ScheduledOrder order);
 
     /**
      * Updates the usage of the throttles for the given consensus second.

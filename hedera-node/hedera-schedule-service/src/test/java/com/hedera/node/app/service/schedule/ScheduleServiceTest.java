@@ -16,13 +16,29 @@
 
 package com.hedera.node.app.service.schedule;
 
+import com.hedera.node.app.spi.store.StoreFactory;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class ScheduleServiceTest {
+import java.time.Instant;
+import java.util.Iterator;
 
-    private final ScheduleService subject = (registry) -> {
-        // no-op
+import static java.util.Collections.emptyIterator;
+
+class ScheduleServiceTest {
+    private final ScheduleService subject = new ScheduleService() {
+        @Override
+        public Iterator<ExecutableTxn<?>> executableTxns(
+                @NonNull Instant start, @NonNull Instant end, @NonNull StoreFactory storeFactory) {
+            return emptyIterator();
+        }
+
+        @Override
+        public void registerSchemas(@NonNull SchemaRegistry registry) {
+            // No-op
+        }
     };
 
     @Test

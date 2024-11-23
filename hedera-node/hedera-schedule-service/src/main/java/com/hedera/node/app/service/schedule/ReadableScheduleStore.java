@@ -18,6 +18,8 @@ package com.hedera.node.app.service.schedule;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduledCounts;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -60,6 +62,14 @@ public interface ReadableScheduleStore {
     ScheduleID getByEquality(@NonNull Schedule scheduleToMatch);
 
     /**
+     * Gets the id of the transaction scheduled to happen at the given order, if it exists.
+     * @param scheduledOrder the order of the transaction
+     * @return the id of the transaction scheduled to happen at the given order
+     */
+    @Nullable
+    ScheduleID getByOrder(@NonNull ScheduledOrder scheduledOrder);
+
+    /**
      * Given a time as seconds since the epoch, find all ScheduleID currently in state that expire at that time.
      * The {@code List<ScheduleID>} returned will contain all {@link ScheduleID} entries in the system that have a
      * calculated expiration time that matches the requested value.  The check is no more precise than one second,
@@ -97,6 +107,14 @@ public interface ReadableScheduleStore {
      * @return the number of schedules that are scheduled to execute at the given consensus second
      */
     int numTransactionsScheduledAt(long consensusSecond);
+
+    /**
+     * Returns the scheduled transaction counts at the given consensus second, if any exist.
+     * @param consensusSecond the consensus second to check for scheduled transactions
+     * @return the scheduled transaction counts at the given consensus second
+     */
+    @Nullable
+    ScheduledCounts scheduledCountsAt(long consensusSecond);
 
     /**
      * If the given consensus second has any scheduled transactions, returns a snapshot of the throttle

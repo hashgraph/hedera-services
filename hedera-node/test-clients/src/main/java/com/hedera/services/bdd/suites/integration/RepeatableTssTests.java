@@ -17,32 +17,18 @@
 package com.hedera.services.bdd.suites.integration;
 
 import static com.hedera.node.config.types.StreamMode.RECORDS;
-import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_LAST_ASSIGNED_CONSENSUS_TIME;
-import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_TSS_CONTROL;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
-import static com.hedera.services.bdd.junit.RepeatableReason.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.exposeMaxSchedulable;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.rekeyingScenario;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.startIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.stopIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeSpecSecondTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.BlockSigningType.SIGN_WITH_FAKE;
 import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.BlockSigningType.SIGN_WITH_LEDGER_ID;
@@ -52,17 +38,6 @@ import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TSS_MESSA
 import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.INVALID_MESSAGES;
 import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.VALID_MESSAGES;
 import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.UNEQUAL_NODE_STAKES;
-import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_MUST_BE_FUTURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_TOO_LONG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -72,118 +47,18 @@ import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
-import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
+@Order(1)
 @Tag(INTEGRATION)
 @TargetEmbeddedMode(REPEATABLE)
-public class RepeatableIntegrationTests {
-    @LeakyRepeatableHapiTest(
-            value = NEEDS_LAST_ASSIGNED_CONSENSUS_TIME,
-            overrides = {"scheduling.longTermEnabled", "scheduling.maxTxnPerSec"})
-    final Stream<DynamicTest> cannotScheduleTooManyTxnsInOneSecond() {
-        final long lifetime = 123_456L;
-        final AtomicLong expiry = new AtomicLong();
-        return hapiTest(
-                overridingTwo("scheduling.longTermEnabled", "true", "scheduling.maxTxnPerSec", "2"),
-                cryptoCreate(CIVILIAN_PAYER).balance(10 * ONE_HUNDRED_HBARS),
-                scheduleCreate("first", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 123L)))
-                        .payingWith(CIVILIAN_PAYER)
-                        .fee(ONE_HBAR)
-                        .expiringIn(lifetime),
-                // Consensus time advances exactly one second per transaction in repeatable mode
-                exposeSpecSecondTo(now -> expiry.set(now + lifetime - 1)),
-                sourcing(() -> scheduleCreate("second", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 456L)))
-                        .payingWith(CIVILIAN_PAYER)
-                        .fee(ONE_HBAR)
-                        .expiringAt(expiry.get())),
-                sourcing(() -> scheduleCreate("third", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 789)))
-                        .payingWith(CIVILIAN_PAYER)
-                        .fee(ONE_HBAR)
-                        .expiringAt(expiry.get())
-                        .hasPrecheck(BUSY)));
-    }
-
-    @LeakyRepeatableHapiTest(
-            value = NEEDS_LAST_ASSIGNED_CONSENSUS_TIME,
-            overrides = {"scheduling.longTermEnabled", "scheduling.maxExpirationFutureSeconds"})
-    final Stream<DynamicTest> expiryMustBeValid() {
-        final long maxLifetime = 123_456L;
-        final AtomicLong lastSecond = new AtomicLong();
-        return hapiTest(
-                overridingTwo(
-                        "scheduling.longTermEnabled",
-                        "true",
-                        "scheduling.maxExpirationFutureSeconds",
-                        "" + maxLifetime),
-                exposeSpecSecondTo(lastSecond::set),
-                sourcing(() -> scheduleCreate("tooSoon", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 12L)))
-                        .expiringAt(lastSecond.get())
-                        .hasKnownStatus(SCHEDULE_EXPIRY_MUST_BE_FUTURE)),
-                exposeSpecSecondTo(lastSecond::set),
-                sourcing(() -> scheduleCreate("tooLate", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 34L)))
-                        .expiringAt(lastSecond.get() + 1 + maxLifetime + 1)
-                        .hasKnownStatus(SCHEDULE_EXPIRY_TOO_LONG)));
-    }
-
-    /**
-     * Tests that the consensus {@link com.hedera.hapi.node.base.HederaFunctionality#SCHEDULE_CREATE} throttle is
-     * enforced by overriding the dev throttles to the more restrictive mainnet throttles and scheduling one more
-     * {@link com.hedera.hapi.node.base.HederaFunctionality#CONSENSUS_CREATE_TOPIC} that is allowed.
-     */
-    @LeakyRepeatableHapiTest(
-            value = {
-                NEEDS_LAST_ASSIGNED_CONSENSUS_TIME,
-                NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
-                NEEDS_STATE_ACCESS,
-                THROTTLE_OVERRIDES
-            },
-            overrides = {
-                "scheduling.longTermEnabled",
-                "scheduling.maxExecutionsPerUserTxn",
-                "scheduling.whitelist",
-            },
-            throttles = "testSystemFiles/mainnet-throttles.json")
-    final Stream<DynamicTest> throttlingAndExecutionAsExpected() {
-        final var expirySecond = new AtomicLong();
-        final var maxSchedulableTopicCreates = new AtomicInteger();
-        return hapiTest(
-                overridingAllOf(Map.of(
-                        "scheduling.longTermEnabled", "true",
-                        "scheduling.maxExecutionsPerUserTxn", "1",
-                        "scheduling.whitelist", "ConsensusCreateTopic")),
-                doWithStartupConfigNow(
-                        "scheduling.maxExpirationFutureSeconds",
-                        (maxLifetime, specTime) -> doAdhoc(
-                                () -> expirySecond.set(specTime.getEpochSecond() + Long.parseLong(maxLifetime)))),
-                cryptoCreate(CIVILIAN_PAYER).balance(ONE_MILLION_HBARS),
-                exposeMaxSchedulable(ConsensusCreateTopic, maxSchedulableTopicCreates::set),
-                // Schedule the maximum number of topic creations allowed
-                sourcing(() -> blockingOrder(IntStream.range(0, maxSchedulableTopicCreates.get())
-                        .mapToObj(i -> scheduleCreate(
-                                        "topic" + i, createTopic("t" + i).topicMemo("m" + i))
-                                .expiringAt(expirySecond.get())
-                                .payingWith(CIVILIAN_PAYER)
-                                .fee(ONE_HUNDRED_HBARS))
-                        .toArray(SpecOperation[]::new))),
-                // And confirm the next is throttled
-                sourcing(() -> scheduleCreate(
-                                "throttledTopicCreation", createTopic("NTB").topicMemo("NOPE"))
-                        .expiringAt(expirySecond.get())
-                        .payingWith(CIVILIAN_PAYER)
-                        .fee(ONE_HUNDRED_HBARS)
-                        .hasKnownStatus(SCHEDULE_EXPIRY_IS_BUSY)));
-    }
-
+public class RepeatableTssTests {
     /**
      * Validates behavior of the {@link BlockStreamManager} under specific conditions related to signature requests
      * and block creation.

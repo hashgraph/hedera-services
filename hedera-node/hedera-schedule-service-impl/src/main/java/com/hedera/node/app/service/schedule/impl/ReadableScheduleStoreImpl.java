@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.calculateBytesHash;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ScheduleID;
@@ -28,7 +29,6 @@ import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -81,9 +81,17 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
 
     @Override
     @Nullable
-    public ScheduleID getByEquality(final @NonNull Schedule scheduleToMatch) {
-        Bytes bytesHash = ScheduleStoreUtility.calculateBytesHash(scheduleToMatch);
+    public ScheduleID getByEquality(@NonNull final Schedule schedule) {
+        requireNonNull(schedule);
+        final var bytesHash = calculateBytesHash(schedule);
         return scheduleIdByStringHash.get(new ProtoBytes(bytesHash));
+    }
+
+    @Nullable
+    @Override
+    public ScheduleID getByOrder(@NonNull final ScheduledOrder scheduledOrder) {
+        requireNonNull(scheduledOrder);
+        return scheduledOrders.get(scheduledOrder);
     }
 
     @Override
@@ -122,6 +130,12 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
     public int numTransactionsScheduledAt(final long consensusSecond) {
         final var counts = scheduledCounts.get(new TimestampSeconds(consensusSecond));
         return counts == null ? 0 : counts.numberScheduled();
+    }
+
+    @Nullable
+    @Override
+    public ScheduledCounts scheduledCountsAt(long consensusSecond) {
+        return scheduledCounts.get(new TimestampSeconds(consensusSecond));
     }
 
     @Override

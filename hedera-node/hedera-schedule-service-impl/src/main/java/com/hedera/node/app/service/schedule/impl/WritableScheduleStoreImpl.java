@@ -138,14 +138,37 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     }
 
     @Override
+    public boolean purgeByOrder(@NonNull final ScheduledOrder order) {
+        requireNonNull(order);
+        final var scheduleId = getByOrder(order);
+        if (scheduleId != null) {
+            final var key = new TimestampSeconds(order.expirySecond());
+            final var counts = requireNonNull(scheduleCountsMutable.get(key));
+            if (order.orderNumber() != counts.numberProcessed()) {
+                throw new IllegalStateException("Order %s is not next in counts %s".formatted(order, counts));
+            }
+            purge(scheduleId);
+            scheduleOrdersMutable.remove(order);
+            final var newCounts = counts.copyBuilder()
+                    .numberProcessed(counts.numberProcessed() + 1)
+                    .build();
+            if (newCounts.numberProcessed() < newCounts.numberScheduled()) {
+                scheduleCountsMutable.put(key, newCounts);
+                return false;
+            } else {
+                scheduleCountsMutable.remove(key);
+                scheduleUsagesMutable.remove(key);
+            }
+        }
+        return true;
+    }
+
+    @Override
     public void trackUsage(final long consensusSecond, @NonNull final ThrottleUsageSnapshots usageSnapshots) {
         requireNonNull(usageSnapshots);
         scheduleUsagesMutable.put(new TimestampSeconds(consensusSecond), usageSnapshots);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void purgeExpiredRangeClosed(final long start, final long end) {
         for (long i = start; i <= end; i++) {

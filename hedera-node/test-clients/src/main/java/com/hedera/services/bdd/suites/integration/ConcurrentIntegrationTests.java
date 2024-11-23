@@ -108,8 +108,10 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
+@Order(0)
 @Tag(INTEGRATION)
 @TargetEmbeddedMode(CONCURRENT)
 public class ConcurrentIntegrationTests {
