@@ -247,6 +247,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     private final ContractServiceImpl contractServiceImpl;
 
     /**
+     * The schedule service singleton, kept as a field here to avoid constructing twice
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final ScheduleServiceImpl scheduleServiceImpl;
+
+    /**
      * The TSS base service singleton, kept as a field here to avoid constructing twice
      * (once in constructor to register schemas, again inside Dagger component).
      */
@@ -430,6 +436,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         ThrottleAccumulator::new));
         tssBaseService = tssBaseServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
+        scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
@@ -439,7 +446,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         fileServiceImpl,
                         tssBaseService,
                         new FreezeServiceImpl(),
-                        new ScheduleServiceImpl(),
+                        scheduleServiceImpl,
                         new TokenServiceImpl(),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
@@ -996,6 +1003,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
                 .fileServiceImpl(fileServiceImpl)
                 .contractServiceImpl(contractServiceImpl)
+                .scheduleService(scheduleServiceImpl)
                 .tssBaseService(tssBaseService)
                 .initTrigger(trigger)
                 .softwareVersion(version.getPbjSemanticVersion())

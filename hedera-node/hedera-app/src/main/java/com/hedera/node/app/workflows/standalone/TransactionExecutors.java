@@ -25,6 +25,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
@@ -124,12 +125,14 @@ public enum TransactionExecutors {
                 new NoOpMetrics());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
+        final var scheduleService = new ScheduleServiceImpl();
         final var component = DaggerExecutorComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
                 .tssBaseService(tssBaseService)
                 .fileServiceImpl(fileService)
                 .contractServiceImpl(contractService)
+                .scheduleServiceImpl(scheduleService)
                 .metrics(new NoOpMetrics())
                 .throttleFactory(appContext.throttleFactory())
                 .build();

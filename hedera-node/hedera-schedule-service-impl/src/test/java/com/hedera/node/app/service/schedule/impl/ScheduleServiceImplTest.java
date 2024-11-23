@@ -34,6 +34,7 @@ import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.StateDefinition;
@@ -55,6 +56,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ScheduleServiceImplTest {
     @Mock
     private SchemaRegistry registry;
+
+    @Mock
+    private State state;
 
     private StoreFactory storeFactory;
     private ReadableScheduleStoreImpl readableStore;
@@ -111,8 +115,8 @@ class ScheduleServiceImplTest {
         final var schedule2 = createMockSchedule(Instant.now().plusSeconds(120));
         when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule1, schedule2));
 
-        final var iterator =
-                scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(180), cleanupStoreFactory);
+        final var iterator = scheduleService.iterTxnsForInterval(
+                Instant.now(), Instant.now().plusSeconds(180), cleanupStoreFactory, state);
 
         // Assert both schedules can be iterated over
         assertThat(iterator.hasNext()).isTrue();
@@ -128,8 +132,8 @@ class ScheduleServiceImplTest {
         // No schedules within the interval
         when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of());
 
-        final var iterator =
-                scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(180), cleanupStoreFactory);
+        final var iterator = scheduleService.iterTxnsForInterval(
+                Instant.now(), Instant.now().plusSeconds(180), cleanupStoreFactory, state);
 
         // Assert that iterator has no elements
         assertThat(iterator.hasNext()).isFalse();
@@ -143,8 +147,8 @@ class ScheduleServiceImplTest {
         final var schedule = createMockSchedule(Instant.now().plusSeconds(60));
         when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
 
-        final var iterator =
-                scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory);
+        final var iterator = scheduleService.iterTxnsForInterval(
+                Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory, state);
 
         assertThat(iterator.hasNext()).isTrue();
         final var txn = iterator.next();
@@ -165,8 +169,8 @@ class ScheduleServiceImplTest {
         final var schedule = mock(Schedule.class);
         when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
 
-        final var iterator =
-                scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory);
+        final var iterator = scheduleService.iterTxnsForInterval(
+                Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory, state);
 
         // Attempt to remove without calling next() should throw IllegalStateException
         assertThatThrownBy(iterator::remove).isInstanceOf(IllegalStateException.class);
@@ -179,8 +183,8 @@ class ScheduleServiceImplTest {
         final var schedule = createMockSchedule(Instant.now().plusSeconds(60));
         when(readableStore.getByExpirationBetween(anyLong(), anyLong())).thenReturn(List.of(schedule));
 
-        final var iterator =
-                scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory);
+        final var iterator = scheduleService.iterTxnsForInterval(
+                Instant.now(), Instant.now().plusSeconds(120), cleanupStoreFactory, state);
 
         assertThat(iterator.hasNext()).isTrue();
         iterator.next();
@@ -200,8 +204,8 @@ class ScheduleServiceImplTest {
         when(readableStore.getByExpirationBetween(anyLong(), anyLong()))
                 .thenReturn(List.of(schedule1, schedule2, schedule3));
 
-        final var iterator =
-                scheduleService.iterTxnsForInterval(Instant.now(), Instant.now().plusSeconds(200), cleanupStoreFactory);
+        final var iterator = scheduleService.iterTxnsForInterval(
+                Instant.now(), Instant.now().plusSeconds(200), cleanupStoreFactory, state);
 
         // Only the valid schedule should be iterated over
         assertThat(iterator.hasNext()).isTrue();
@@ -219,7 +223,7 @@ class ScheduleServiceImplTest {
         final var end = Instant.now().plusSeconds(120);
         when(readableStore.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()))
                 .thenReturn(List.of(schedule));
-        final var iterator = scheduleService.iterTxnsForInterval(start, end, cleanupStoreFactory);
+        final var iterator = scheduleService.iterTxnsForInterval(start, end, cleanupStoreFactory, state);
 
         // Iterate through all elements
         while (iterator.hasNext()) {
@@ -239,7 +243,7 @@ class ScheduleServiceImplTest {
         final var end = Instant.now().plusSeconds(120);
         when(readableStore.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()))
                 .thenReturn(List.of(schedule));
-        final var iterator = scheduleService.iterTxnsForInterval(start, end, cleanupStoreFactory);
+        final var iterator = scheduleService.iterTxnsForInterval(start, end, cleanupStoreFactory, state);
 
         // Exhaust the iterator without checking hasNext()
         iterator.next();
@@ -260,7 +264,7 @@ class ScheduleServiceImplTest {
         final var end = Instant.now().plusSeconds(120);
         when(readableStore.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()))
                 .thenReturn(List.of(schedule));
-        final var iterator = scheduleService.iterTxnsForInterval(start, end, cleanupStoreFactory);
+        final var iterator = scheduleService.iterTxnsForInterval(start, end, cleanupStoreFactory, state);
 
         // Exhaust the iterator
         while (iterator.hasNext()) {

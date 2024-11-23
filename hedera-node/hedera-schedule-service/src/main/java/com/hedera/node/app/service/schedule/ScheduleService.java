@@ -17,19 +17,22 @@
 package com.hedera.node.app.service.schedule;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.RpcServiceFactory;
-import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -69,14 +72,15 @@ public interface ScheduleService extends RpcService {
     }
 
     /**
-     * An executable transaction with the verifier to use for child signature verifications. If set,
-     * "not before" (nbf) time is the earliest consensus time at which the transaction could be executed.
+     * An executable transaction with the verifier to use for child signature verifications.
      */
-    record ExecutableTxn(
-            TransactionBody body,
-            VerificationAssistant verificationAssistant,
-            AccountID payerId,
-            @Nullable Instant nbf) {}
+    record ExecutableTxn<T extends StreamBuilder>(
+            @NonNull TransactionBody body,
+            @NonNull AccountID payerId,
+            @NonNull Predicate<Key> keyVerifier,
+            @NonNull Instant nbf,
+            @NonNull Class<T> builderType,
+            @NonNull Consumer<T> builderSpec) {}
 
     /**
      * Given a [start, end) interval and a supplier of a StoreFactory that can be used in the returned
@@ -84,8 +88,8 @@ public interface ScheduleService extends RpcService {
      *
      * @return an iterator over all ExecutableTxn this service wants to execute in the interval.
      */
-    default Iterator<ExecutableTxn> iterTxnsForInterval(
-            Instant start, Instant end, Supplier<StoreFactory> cleanupStoreFactory) {
+    default Iterator<ExecutableTxn<?>> iterTxnsForInterval(
+            Instant start, Instant end, Supplier<StoreFactory> cleanupStoreFactory, State state) {
         // Default implementation returns an empty iterator
         return Collections.emptyIterator();
     }

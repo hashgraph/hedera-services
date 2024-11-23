@@ -22,7 +22,8 @@ import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.AC
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -34,6 +35,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.node.app.blocks.BlockStreamManager;
@@ -182,14 +184,12 @@ class UserTxnTest {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1));
 
         final var factory = createUserTxnFactory();
-        final var subject =
-                factory.createUserTxn(state, event, creatorInfo, PLATFORM_TXN, CONSENSUS_NOW, GENESIS_TRANSACTION);
+        final var subject = factory.createUserTxn(state, creatorInfo, PLATFORM_TXN, CONSENSUS_NOW, GENESIS_TRANSACTION);
 
         assertSame(GENESIS_TRANSACTION, subject.type());
         assertSame(CONSENSUS_CREATE_TOPIC, subject.functionality());
         assertSame(CONSENSUS_NOW, subject.consensusNow());
         assertSame(state, subject.state());
-        assertSame(event, subject.event());
         assertSame(txnInfo, subject.txnInfo());
         assertSame(preHandleResult, subject.preHandleResult());
         assertSame(creatorInfo, subject.creatorInfo());
@@ -220,10 +220,9 @@ class UserTxnTest {
         given(dispatcher.dispatchComputeFees(any())).willReturn(Fees.FREE);
 
         final var factory = createUserTxnFactory();
-        final var subject =
-                factory.createUserTxn(state, event, creatorInfo, PLATFORM_TXN, CONSENSUS_NOW, GENESIS_TRANSACTION);
+        final var subject = factory.createUserTxn(state, creatorInfo, PLATFORM_TXN, CONSENSUS_NOW, GENESIS_TRANSACTION);
 
-        final var dispatch = factory.createDispatch(subject, baseBuilder);
+        final var dispatch = factory.createDispatch(subject, ExchangeRateSet.DEFAULT);
 
         assertSame(PAYER_ID, dispatch.payerId());
         verify(baseBuilder).congestionMultiplier(CONGESTION_MULTIPLIER);
@@ -247,10 +246,9 @@ class UserTxnTest {
         given(dispatcher.dispatchComputeFees(any())).willReturn(Fees.FREE);
 
         final var factory = createUserTxnFactory();
-        final var subject =
-                factory.createUserTxn(state, event, creatorInfo, PLATFORM_TXN, CONSENSUS_NOW, GENESIS_TRANSACTION);
+        final var subject = factory.createUserTxn(state, creatorInfo, PLATFORM_TXN, CONSENSUS_NOW, GENESIS_TRANSACTION);
 
-        final var dispatch = factory.createDispatch(subject, baseBuilder);
+        final var dispatch = factory.createDispatch(subject, ExchangeRateSet.DEFAULT);
 
         assertSame(PAYER_ID, dispatch.payerId());
         verify(baseBuilder, never()).congestionMultiplier(1);

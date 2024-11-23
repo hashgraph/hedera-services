@@ -20,11 +20,12 @@ import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.
 
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.RpcService;
-import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -44,8 +45,8 @@ public final class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
-    public Iterator<ExecutableTxn> iterTxnsForInterval(
-            final Instant start, final Instant end, final Supplier<StoreFactory> cleanupStoreFactory) {
+    public Iterator<ExecutableTxn<?>> iterTxnsForInterval(
+            final Instant start, final Instant end, final Supplier<StoreFactory> cleanupStoreFactory, State state) {
         final var store = cleanupStoreFactory.get().readableStore(ReadableScheduleStoreImpl.class);
 
         // Get transactions from state that are not executed/deleted
@@ -106,14 +107,15 @@ public final class ScheduleServiceImpl implements ScheduleService {
                 }
             }
 
-            private ExecutableTxn toExecutableTxn(final Schedule schedule) {
+            private ExecutableTxn<ScheduleStreamBuilder> toExecutableTxn(final Schedule schedule) {
                 final var signatories = schedule.signatories();
-                final VerificationAssistant callback = (k, ignore) -> signatories.contains(k);
-                return new ExecutableTxn(
+                return new ExecutableTxn<>(
                         childAsOrdinary(schedule),
-                        callback,
-                        schedule.payerAccountId(),
-                        Instant.ofEpochSecond(schedule.calculatedExpirationSecond()));
+                        schedule.payerAccountIdOrThrow(),
+                        signatories::contains,
+                        Instant.ofEpochSecond(schedule.calculatedExpirationSecond()),
+                        ScheduleStreamBuilder.class,
+                        builder -> builder.scheduleRef(schedule.scheduleIdOrThrow()));
             }
         };
     }

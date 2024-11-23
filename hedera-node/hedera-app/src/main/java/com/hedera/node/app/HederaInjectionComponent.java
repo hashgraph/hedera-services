@@ -40,6 +40,7 @@ import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -154,6 +155,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder contractServiceImpl(ContractServiceImpl contractService);
+
+        @BindsInstance
+        Builder scheduleService(ScheduleService scheduleService);
 
         @BindsInstance
         Builder configProviderImpl(ConfigProviderImpl configProvider);
