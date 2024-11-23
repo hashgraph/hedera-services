@@ -113,6 +113,7 @@ module com.hedera.node.test.clients {
     requires com.swirlds.platform.core.test.fixtures;
     requires com.swirlds.state.impl;
     requires com.swirlds.virtualmap;
+    requires com.esaulpaugh.headlong;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
@@ -121,7 +122,6 @@ module com.hedera.node.test.clients {
     requires com.google.protobuf;
     requires com.hedera.cryptography.pairings.api;
     requires com.sun.jna;
-    requires headlong;
     requires io.grpc.netty;
     requires io.grpc.stub;
     requires io.grpc;

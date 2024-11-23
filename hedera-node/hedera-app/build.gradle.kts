@@ -32,7 +32,7 @@ testModuleInfo {
     requires("com.swirlds.state.api.test.fixtures")
     requires("com.swirlds.state.impl.test.fixtures")
     requires("com.swirlds.base.test.fixtures")
-    requires("headlong")
+    requires("com.esaulpaugh.headlong")
     requires("org.assertj.core")
     requires("org.bouncycastle.provider")
     requires("org.junit.jupiter.api")
