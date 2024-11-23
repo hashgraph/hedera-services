@@ -35,6 +35,7 @@ import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANS
 import static com.hedera.node.app.workflows.handle.TransactionType.ORDINARY_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
+import static com.hedera.node.config.types.StreamMode.BOTH;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -76,6 +77,7 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.tss.TssBaseService;
@@ -150,6 +152,8 @@ public class HandleWorkflow {
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
+    // The last second for which this workflow has confirmed all scheduled transactions are executed
+    private long lastExecutedSecond;
 
     @Inject
     public HandleWorkflow(
@@ -365,7 +369,7 @@ public class HandleWorkflow {
             final var executionStart = blockStreamManager.lastIntervalProcessTime();
             if (Instant.EPOCH.equals(executionStart)) {
                 blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
-            } else {
+            } else if (executionStart.getEpochSecond() > lastExecutedSecond) {
                 var executionEnd = executionStart;
                 final var schedulingConfig = userTxn.config().getConfigData(SchedulingConfig.class);
                 if (!schedulingConfig.longTermEnabled()) {
@@ -379,13 +383,11 @@ public class HandleWorkflow {
                     var nextTime = boundaryStateChangeListener
                             .lastConsensusTimeOrThrow()
                             .plusNanos(nanosBefore);
-                    final var iter = scheduleService.iterTxnsForInterval(
+                    final var iter = scheduleService.executableTxns(
                             executionStart,
                             userTxn.consensusNow(),
-                            () -> {
-                                throw new AssertionError("Not implemented");
-                            },
-                            state);
+                            StoreFactoryImpl.from(state, ScheduleService.NAME, userTxn.config(), storeMetricsService));
+                    final var writableStates = state.getWritableStates(ScheduleService.NAME);
                     while (iter.hasNext() && !nextTime.isAfter(lastUsableTime)) {
                         final var executableTxn = iter.next();
                         final var scheduledTxn = userTxnFactory.createUserTxn(
@@ -395,7 +397,7 @@ public class HandleWorkflow {
                                 ORDINARY_TRANSACTION,
                                 executableTxn.payerId(),
                                 executableTxn.body());
-                        final var baseBuilder = baseBuilderFor(scheduledTxn, executableTxn);
+                        final var baseBuilder = baseBuilderFor(executableTxn, scheduledTxn);
                         final var scheduledDispatch = userTxnFactory.createDispatch(
                                 scheduledTxn, baseBuilder, executableTxn.keyVerifier(), SCHEDULED);
                         dispatchProcessor.processDispatch(scheduledDispatch);
@@ -407,16 +409,23 @@ public class HandleWorkflow {
                                 scheduledTxn.txnInfo().txnIdOrThrow(),
                                 DueDiligenceFailure.NO,
                                 scheduledOutput.preferringBlockRecordSource());
-                        if (streamMode != BLOCKS) {
+                        scheduledOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
+                        if (streamMode == BOTH) {
                             final var records = ((LegacyListRecordSource) scheduledOutput.recordSourceOrThrow())
                                     .precomputedRecords();
                             blockRecordManager.endUserTransaction(records.stream(), state);
                         }
-                        scheduledOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
                         executionEnd = executableTxn.nbf();
                         nextTime = boundaryStateChangeListener
                                 .lastConsensusTimeOrThrow()
                                 .plusNanos(nanosBefore);
+                        iter.remove();
+                        ((CommittableWritableStates) writableStates).commit();
+                    }
+                    if (!iter.hasNext() && executionEnd.getEpochSecond() > executionStart.getEpochSecond()) {
+                        // Since the execution interval spanned at least full second and there are no remaining
+                        // transactions to execute in it, we can mark the last full second as executed
+                        lastExecutedSecond = executionEnd.getEpochSecond() - 1;
                     }
                 }
                 purgeScheduling(state, executionStart, executionEnd);
@@ -424,9 +433,18 @@ public class HandleWorkflow {
         }
     }
 
+    /**
+     * Type inference helper to compute the base builder for a {@link UserTxn} derived from a
+     * {@link com.hedera.node.app.service.schedule.ScheduleService.ExecutableTxn}.
+     *
+     * @param <T> the type of the stream builder
+     * @param executableTxn the executable transaction to compute the base builder for
+     * @param userTxn the user transaction derived from the executable transaction
+     * @return the base builder for the user transaction
+     */
     private <T extends StreamBuilder> T baseBuilderFor(
-            @NonNull final UserTxn scheduledTxn, @NonNull final ScheduleService.ExecutableTxn<T> executableTxn) {
-        return scheduledTxn.initBaseBuilder(
+            @NonNull final ScheduleService.ExecutableTxn<T> executableTxn, @NonNull final UserTxn userTxn) {
+        return userTxn.initBaseBuilder(
                 exchangeRateManager.exchangeRates(), executableTxn.builderType(), executableTxn.builderSpec());
     }
 

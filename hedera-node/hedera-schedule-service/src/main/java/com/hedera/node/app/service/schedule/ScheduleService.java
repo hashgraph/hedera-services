@@ -24,16 +24,13 @@ import com.hedera.node.app.spi.RpcServiceFactory;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Implements the HAPI <a
@@ -83,14 +80,17 @@ public interface ScheduleService extends RpcService {
             @NonNull Consumer<T> builderSpec) {}
 
     /**
-     * Given a [start, end) interval and a supplier of a StoreFactory that can be used in the returned
-     * iterator's remove() implementation to get a StoreFactory to purge a successfully executed txn,
+     * Given the endpoints of a closed interval in consensus time, returns an iterator over all
+     * {@link ExecutableTxn} instances that this service wants to execute in the interval. The
+     * given {@link StoreFactory} is used to access the state of the service to discover these
+     * executable transactions; and the returned iterator can use the same instance to remove
+     * any state that is no longer needed after the last-returned transaction has been executed.
      *
-     * @return an iterator over all ExecutableTxn this service wants to execute in the interval.
+     * @param start the start of the interval
+     * @param end the end of the interval
+     * @param storeFactory the factory for creating service stores
+     * @return an iterator over all transactions that should be executed in the interval
      */
-    default Iterator<ExecutableTxn<?>> iterTxnsForInterval(
-            Instant start, Instant end, Supplier<StoreFactory> cleanupStoreFactory, State state) {
-        // Default implementation returns an empty iterator
-        return Collections.emptyIterator();
-    }
+    Iterator<ExecutableTxn<?>> executableTxns(
+            @NonNull Instant start, @NonNull Instant end, @NonNull StoreFactory storeFactory);
 }
