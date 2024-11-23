@@ -174,7 +174,7 @@ jobs:
             {
               "attachments": [
                 {
-                  "color": "#7647cd",
+                  "color": "#00FF00",
                   "blocks": [
                     {
                       "type": "header",
@@ -240,7 +240,7 @@ jobs:
             {
               "attachments": [
                 {
-                  "color": "#7647cd",
+                  "color": "#FF0000",
                   "blocks": [
                     {
                       "type": "header",

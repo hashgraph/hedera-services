@@ -294,7 +294,7 @@ jobs:
             {
               "attachments": [
                 {
-                  "color": "#7647cd",
+                  "color": "#FF0000",
                   "blocks": [
                     {
                       "type": "header",
