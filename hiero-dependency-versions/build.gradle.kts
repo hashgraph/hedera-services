@@ -102,7 +102,7 @@ dependencies.constraints {
         because("io.grpc.stub")
     }
     api("com.esaulpaugh:headlong:6.1.1") {
-        because("headlong")
+        because("com.esaulpaugh.headlong")
     }
     api("info.picocli:picocli:4.6.3") {
         because("info.picocli")
