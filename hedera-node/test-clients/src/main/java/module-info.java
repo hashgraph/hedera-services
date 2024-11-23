@@ -65,6 +65,7 @@ module com.hedera.node.test.clients {
 
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
+    requires com.hedera.node.app.service.addressbook.impl;
     requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.schedule.impl;
@@ -81,6 +82,7 @@ module com.hedera.node.test.clients {
     requires com.swirlds.common;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions.test.fixtures;
+    requires com.swirlds.merkledb;
     requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core.test.fixtures;
     requires com.swirlds.platform.core;
@@ -90,7 +92,6 @@ module com.hedera.node.test.clients {
     requires com.google.protobuf;
     requires com.hedera.cryptography.bls;
     requires com.hedera.cryptography.tss;
-    requires headlong;
     requires io.grpc;
     requires net.i2p.crypto.eddsa;
     requires org.apache.commons.io;
@@ -112,6 +113,7 @@ module com.hedera.node.test.clients {
     requires com.swirlds.platform.core.test.fixtures;
     requires com.swirlds.state.impl;
     requires com.swirlds.virtualmap;
+    requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.dockerjava.api;

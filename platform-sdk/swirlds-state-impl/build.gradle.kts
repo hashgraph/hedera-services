@@ -15,9 +15,9 @@
  */
 
 plugins {
-    id("com.hedera.gradle.platform")
-    id("com.hedera.gradle.platform-publish")
-    id("com.hedera.gradle.feature.test-fixtures")
+    id("org.hiero.gradle.module.library")
+    id("org.hiero.gradle.feature.publish-artifactregistry")
+    id("org.hiero.gradle.feature.test-fixtures")
 }
 
 testModuleInfo {
