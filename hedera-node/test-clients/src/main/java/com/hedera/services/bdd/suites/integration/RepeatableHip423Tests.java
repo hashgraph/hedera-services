@@ -29,6 +29,7 @@ import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
@@ -49,6 +50,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
 import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.calculateBytesHash;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_COUNTS_KEY;
@@ -67,6 +69,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.exposeMaxSchedulable;
@@ -75,9 +78,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeSpecSecondTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepForSeconds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -242,6 +247,41 @@ public class RepeatableHip423Tests {
                 // Trigger them all in a single user transaction
                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
                 getAccountBalance("luckyYou").hasTinyBars(1L + 2L + 3L),
+                viewScheduleStateSizes(currentSizes::set),
+                doAdhoc(() -> currentSizes.get().assertChangesFrom(startingSizes.get(), 0, 0, 0, 0, 0)));
+    }
+
+    /**
+     * Tests that execution of scheduled transactions purges the associated state as expected when a single
+     * user transaction fully executes multiple seconds. The test uses three scheduled transactions, two of
+     * them in one second and the third one in the next second. After sleeping past the expiration time of
+     * all three transactions, executes them via a single triggering transaction and validates the schedule
+     * state is as expected.
+     */
+    @RepeatableHapiTest(value = {NEEDS_LAST_ASSIGNED_CONSENSUS_TIME, NEEDS_STATE_ACCESS})
+    final Stream<DynamicTest> executeImmediateAndDeletedLongTermAreStillPurgedWhenTimePasses() {
+        final var lastExecuteImmediateExpiry = new AtomicLong();
+        final AtomicReference<ScheduleStateSizes> startingSizes = new AtomicReference<>();
+        final AtomicReference<ScheduleStateSizes> currentSizes = new AtomicReference<>();
+        return hapiTest(
+                exposeSpecSecondTo(lastExecuteImmediateExpiry::set),
+                newKeyNamed("adminKey"),
+                cryptoCreate("luckyYou").balance(0L),
+                viewScheduleStateSizes(startingSizes::set),
+                scheduleCreate("first", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .waitForExpiry(false),
+                scheduleCreate("last", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 2L)))
+                        .waitForExpiry(false),
+                getAccountBalance("luckyYou").hasTinyBars(1L + 2L),
+                doingContextual(spec -> lastExecuteImmediateExpiry.set(expiryOf("last", spec))),
+                sourcing(() -> scheduleCreate("deleted", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 3L)))
+                        .adminKey("adminKey")
+                        .expiringAt(lastExecuteImmediateExpiry.get())),
+                scheduleDelete("deleted").signedBy(DEFAULT_PAYER, "adminKey"),
+                sourcingContextual(spec -> sleepForSeconds(
+                        lastExecuteImmediateExpiry.get() - spec.consensusTime().getEpochSecond() + 1)),
+                // Trigger all three to be purged in a single user transaction
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
                 viewScheduleStateSizes(currentSizes::set),
                 doAdhoc(() -> currentSizes.get().assertChangesFrom(startingSizes.get(), 0, 0, 0, 0, 0)));
     }
@@ -481,5 +521,19 @@ public class RepeatableHip423Tests {
             }
             assertEquals(expectedSize, counts.size(), "Failed to purge all expired seconds");
         });
+    }
+
+    /**
+     * Returns the calculated expiration second of the given schedule in the given spec.
+     * @param schedule the name of the schedule
+     * @param spec the spec
+     * @return the calculated expiration second of the schedule
+     */
+    private static long expiryOf(@NonNull final String schedule, @NonNull final HapiSpec spec) {
+        final ReadableKVState<ScheduleID, Schedule> schedules = spec.embeddedStateOrThrow()
+                .getReadableStates(ScheduleService.NAME)
+                .get(SCHEDULES_BY_ID_KEY);
+        return requireNonNull(schedules.get(protoToPbj(spec.registry().getScheduleId(schedule), ScheduleID.class)))
+                .calculatedExpirationSecond();
     }
 }

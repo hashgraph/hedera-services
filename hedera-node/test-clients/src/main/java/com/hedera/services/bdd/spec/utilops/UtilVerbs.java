@@ -566,6 +566,10 @@ public class UtilVerbs {
         });
     }
 
+    public static HapiSpecSleep sleepForSeconds(final long seconds) {
+        return new HapiSpecSleep(seconds * 1_000L);
+    }
+
     public static HapiSpecSleep sleepFor(long timeMs) {
         return new HapiSpecSleep(timeMs);
     }
