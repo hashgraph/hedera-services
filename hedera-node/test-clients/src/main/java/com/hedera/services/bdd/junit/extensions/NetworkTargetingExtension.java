@@ -18,11 +18,12 @@ package com.hedera.services.bdd.junit.extensions;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
-import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.SharedNetworkExecutionListener.*;
 import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMethodOf;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.CONCURRENT;
+import static java.util.stream.Collectors.toMap;
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
+import com.hedera.services.bdd.junit.BootstrapOverride;
 import com.hedera.services.bdd.junit.ContextRequirement;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -38,6 +39,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -63,7 +65,10 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
             if (isAnnotated(method, GenesisHapiTest.class)) {
                 final var targetNetwork =
                         new EmbeddedNetwork(method.getName().toUpperCase(), method.getName(), CONCURRENT);
-                targetNetwork.start();
+                final var a = method.getAnnotation(GenesisHapiTest.class);
+                final var bootstrapOverrides = Arrays.stream(a.bootstrapOverrides())
+                        .collect(toMap(BootstrapOverride::key, BootstrapOverride::value));
+                targetNetwork.startWithOverrides(bootstrapOverrides);
                 HapiSpec.TARGET_NETWORK.set(targetNetwork);
             } else {
                 requiredEmbeddedMode(extensionContext)

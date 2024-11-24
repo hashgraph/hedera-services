@@ -25,6 +25,8 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
+import com.hedera.node.app.tss.api.TssMessage;
+import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -86,7 +88,7 @@ public class FakeTssBaseService implements TssBaseService {
         DELEGATE
     }
 
-    private Signing signing = Signing.FAKE;
+    private Signing signing = Signing.DELEGATE;
     private boolean ignoreRequests = false;
 
     public FakeTssBaseService(@NonNull final AppContext appContext) {
@@ -174,8 +176,10 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void requestLedgerSignature(@NonNull final byte[] messageHash, final Instant lastUsedConsensusTime) {
+    public void requestLedgerSignature(
+            @NonNull final byte[] messageHash, @NonNull final Instant lastUsedConsensusTime) {
         requireNonNull(messageHash);
+        requireNonNull(lastUsedConsensusTime);
         switch (signing) {
             case FAKE -> {
                 if (ignoreRequests) {
@@ -251,5 +255,13 @@ public class FakeTssBaseService implements TssBaseService {
     @Override
     public void generateParticipantDirectory(@NonNull final State state) {
         delegate.generateParticipantDirectory(state);
+    }
+
+    @Override
+    public Bytes ledgerIdFrom(
+            @NonNull final TssParticipantDirectory directory, @NonNull final List<TssMessage> tssMessages) {
+        requireNonNull(directory);
+        requireNonNull(tssMessages);
+        return delegate.ledgerIdFrom(directory, tssMessages);
     }
 }
