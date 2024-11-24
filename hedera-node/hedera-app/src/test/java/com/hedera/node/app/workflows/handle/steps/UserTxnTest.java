@@ -22,23 +22,25 @@ import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.AC
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.withSettings;
 
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
@@ -46,13 +48,11 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -79,7 +79,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -168,8 +167,6 @@ class UserTxnTest {
     @Mock
     private WritableKVState<AccountID, Account> accountState;
 
-    private StreamBuilder baseBuilder;
-
     @BeforeEach
     void setUp() {
         given(preHandleWorkflow.getCurrentPreHandleResult(
@@ -203,17 +200,19 @@ class UserTxnTest {
 
     @Test
     void constructsDispatchAsExpectedWithCongestionMultiplierGreaterThanOne() {
-        baseBuilder = Mockito.mock(StreamBuilder.class, withSettings().extraInterfaces(FeeStreamBuilder.class));
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(BLOCKS_CONFIG, 1));
         given(txnInfo.payerID()).willReturn(PAYER_ID);
-        given(txnInfo.txBody()).willReturn(TransactionBody.DEFAULT);
+        given(txnInfo.txBody())
+                .willReturn(TransactionBody.newBuilder()
+                        .transactionID(TransactionID.DEFAULT)
+                        .build());
+        given(txnInfo.transaction()).willReturn(Transaction.DEFAULT);
         given(txnInfo.signatureMap()).willReturn(SignatureMap.DEFAULT);
         given(preHandleResult.payerKey()).willReturn(AN_ED25519_KEY);
         given(preHandleResult.getVerificationResults()).willReturn(emptyMap());
-        given(feeManager.congestionMultiplierFor(
-                        eq(TransactionBody.DEFAULT), eq(CONSENSUS_CREATE_TOPIC), any(ReadableStoreFactory.class)))
+        given(feeManager.congestionMultiplierFor(any(), eq(CONSENSUS_CREATE_TOPIC), any(ReadableStoreFactory.class)))
                 .willReturn(CONGESTION_MULTIPLIER);
-        given(serviceScopeLookup.getServiceName(TransactionBody.DEFAULT)).willReturn(ConsensusServiceImpl.NAME);
+        given(serviceScopeLookup.getServiceName(any())).willReturn(ConsensusServiceImpl.NAME);
         given(state.getWritableStates(any())).willReturn(writableStates);
         given(writableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(accountState);
         given(accountState.getStateKey()).willReturn(ACCOUNTS_KEY);
@@ -225,21 +224,29 @@ class UserTxnTest {
         final var dispatch = factory.createDispatch(subject, ExchangeRateSet.DEFAULT);
 
         assertSame(PAYER_ID, dispatch.payerId());
-        verify(baseBuilder).congestionMultiplier(CONGESTION_MULTIPLIER);
+        final var result = ((BlockStreamBuilder) subject.baseBuilder())
+                .build().blockItems().stream()
+                        .filter(BlockItem::hasTransactionResult)
+                        .findFirst()
+                        .map(BlockItem::transactionResultOrThrow)
+                        .orElseThrow();
+        assertEquals(CONGESTION_MULTIPLIER, result.congestionPricingMultiplier());
     }
 
     @Test
     void constructsDispatchAsExpectedWithCongestionMultiplierEqualToOne() {
-        baseBuilder = Mockito.mock(StreamBuilder.class, withSettings().extraInterfaces(FeeStreamBuilder.class));
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(BLOCKS_CONFIG, 1));
         given(txnInfo.payerID()).willReturn(PAYER_ID);
-        given(txnInfo.txBody()).willReturn(TransactionBody.DEFAULT);
+        given(txnInfo.txBody())
+                .willReturn(TransactionBody.newBuilder()
+                        .transactionID(TransactionID.DEFAULT)
+                        .build());
+        given(txnInfo.transaction()).willReturn(Transaction.DEFAULT);
         given(txnInfo.signatureMap()).willReturn(SignatureMap.DEFAULT);
         given(preHandleResult.getVerificationResults()).willReturn(emptyMap());
-        given(feeManager.congestionMultiplierFor(
-                        eq(TransactionBody.DEFAULT), eq(CONSENSUS_CREATE_TOPIC), any(ReadableStoreFactory.class)))
+        given(feeManager.congestionMultiplierFor(any(), eq(CONSENSUS_CREATE_TOPIC), any(ReadableStoreFactory.class)))
                 .willReturn(1L);
-        given(serviceScopeLookup.getServiceName(TransactionBody.DEFAULT)).willReturn(ConsensusServiceImpl.NAME);
+        given(serviceScopeLookup.getServiceName(any())).willReturn(ConsensusServiceImpl.NAME);
         given(state.getWritableStates(any())).willReturn(writableStates);
         given(writableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(accountState);
         given(accountState.getStateKey()).willReturn(ACCOUNTS_KEY);
@@ -251,7 +258,13 @@ class UserTxnTest {
         final var dispatch = factory.createDispatch(subject, ExchangeRateSet.DEFAULT);
 
         assertSame(PAYER_ID, dispatch.payerId());
-        verify(baseBuilder, never()).congestionMultiplier(1);
+        final var result = ((BlockStreamBuilder) subject.baseBuilder())
+                .build().blockItems().stream()
+                        .filter(BlockItem::hasTransactionResult)
+                        .findFirst()
+                        .map(BlockItem::transactionResultOrThrow)
+                        .orElseThrow();
+        assertEquals(0L, result.congestionPricingMultiplier());
     }
 
     private UserTxnFactory createUserTxnFactory() {
