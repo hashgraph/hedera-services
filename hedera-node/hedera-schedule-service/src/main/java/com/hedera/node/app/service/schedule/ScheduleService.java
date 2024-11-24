@@ -16,21 +16,14 @@
 
 package com.hedera.node.app.service.schedule;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.RpcServiceFactory;
 import com.hedera.node.app.spi.store.StoreFactory;
-import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Iterator;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /**
  * Implements the HAPI <a
@@ -69,17 +62,6 @@ public interface ScheduleService extends RpcService {
     }
 
     /**
-     * An executable transaction with the verifier to use for child signature verifications.
-     */
-    record ExecutableTxn<T extends StreamBuilder>(
-            @NonNull TransactionBody body,
-            @NonNull AccountID payerId,
-            @NonNull Predicate<Key> keyVerifier,
-            @NonNull Instant nbf,
-            @NonNull Class<T> builderType,
-            @NonNull Consumer<T> builderSpec) {}
-
-    /**
      * Given the endpoints of a closed interval in consensus time, returns an iterator over all
      * {@link ExecutableTxn} instances that this service wants to execute in the interval. The
      * given {@link StoreFactory} is used to access the state of the service to discover these
@@ -91,6 +73,6 @@ public interface ScheduleService extends RpcService {
      * @param storeFactory the factory for creating service stores
      * @return an iterator over all transactions that should be executed in the interval
      */
-    Iterator<ExecutableTxn<?>> executableTxns(
+    ExecutableTxnIterator executableTxns(
             @NonNull Instant start, @NonNull Instant end, @NonNull StoreFactory storeFactory);
 }

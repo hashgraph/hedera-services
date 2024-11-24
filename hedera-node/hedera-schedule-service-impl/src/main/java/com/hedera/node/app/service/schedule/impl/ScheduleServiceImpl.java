@@ -22,6 +22,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.node.app.service.schedule.ExecutableTxn;
+import com.hedera.node.app.service.schedule.ExecutableTxnIterator;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -35,7 +37,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
@@ -49,15 +50,15 @@ public final class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
-    public Iterator<ExecutableTxn<?>> executableTxns(
+    public ExecutableTxnIterator executableTxns(
             @NonNull final Instant start, @NonNull final Instant end, @NonNull final StoreFactory storeFactory) {
         requireNonNull(start);
         requireNonNull(end);
         requireNonNull(storeFactory);
-        return new ExecutableTxnsIterator(start.getEpochSecond(), end.getEpochSecond(), storeFactory);
+        return new PurgingIterator(start.getEpochSecond(), end.getEpochSecond(), storeFactory);
     }
 
-    private static class ExecutableTxnsIterator implements Iterator<ExecutableTxn<?>> {
+    private static class PurgingIterator implements ExecutableTxnIterator {
         private static final Comparator<ScheduledOrder> ORDER_COMPARATOR =
                 Comparator.comparingLong(ScheduledOrder::expirySecond).thenComparingInt(ScheduledOrder::orderNumber);
 
@@ -66,19 +67,49 @@ public final class ScheduleServiceImpl implements ScheduleService {
         private final StoreFactory storeFactory;
         private final WritableScheduleStore scheduleStore;
 
+        /**
+         * True if the next executable transaction to be processed is known; false otherwise.
+         */
         private boolean nextKnown = false;
 
-        @Nullable
-        private Schedule nextSchedule;
-
-        @Nullable
-        private ScheduledOrder prevOrder;
-
+        /**
+         * The order of the next executable transaction to be processed. Null in exactly two cases:
+         * <ol>
+         *     <li>When neither {@link #hasNext()} nor {@link #next()} has ever been called (so that
+         *     {@link #nextKnown} is false).</li>
+         *     <li>When the last call to {@link #hasNext()} or {@link #next()} discovered that
+         *     there are no more executable transactions in the scoped {@code [start, end]} interval (so
+         *     that {@link #nextKnown} is true).</li>
+         * </ol>
+         * If not null, then is the order of the last executable transaction to have been discovered.
+         * When {@link #nextKnown} is true, the executable transaction with this order will be returned
+         * from then next call to {@link #next()}; if {@link #nextKnown} is false, the executable
+         * transaction with this order was already returned from a call to {@link #next()}.
+         */
         @Nullable
         private ScheduledOrder nextOrder;
 
-        public ExecutableTxnsIterator(
-                final long startSecond, final long endSecond, @NonNull final StoreFactory storeFactory) {
+        /**
+         * If not null, the schedule representing the next executable transaction to be processed.
+         */
+        @Nullable
+        private Schedule nextSchedule;
+
+        /**
+         * If not null, the earliest order before {@link #nextOrder} that is known to contain scheduled
+         * transaction metadata.
+         */
+        @Nullable
+        private ScheduledOrder previousOrder;
+
+        /**
+         * If not null, the earliest order before {@link #nextOrder} that is known to contain scheduled
+         * transaction metadata.
+         */
+        @Nullable
+        private ScheduledOrder candidateOrder;
+
+        public PurgingIterator(final long startSecond, final long endSecond, @NonNull final StoreFactory storeFactory) {
             this.startSecond = startSecond;
             this.endSecond = endSecond;
             this.storeFactory = requireNonNull(storeFactory);
@@ -107,20 +138,34 @@ public final class ScheduleServiceImpl implements ScheduleService {
             if (nextOrder == null) {
                 throw new IllegalStateException("remove() called before next()");
             }
-            ScheduledOrder order;
-            if (prevOrder == null) {
-                order = nextOrder;
-            } else {
-                if (ORDER_COMPARATOR.compare(prevOrder, nextOrder) > 0) {
-                    throw new IllegalStateException("remove() called twice");
-                }
-                order = prevOrder;
+            if (candidateOrder != null && ORDER_COMPARATOR.compare(candidateOrder, nextOrder) > 0) {
+                throw new IllegalStateException("remove() called twice");
             }
+            // Pointer to the order whose executable transaction metadata should be purged
+            var order = requireNonNull(previousOrder);
             while (ORDER_COMPARATOR.compare(order, nextOrder) <= 0) {
                 final var lastOfSecond = scheduleStore.purgeByOrder(order);
                 order = next(order, lastOfSecond);
             }
-            prevOrder = order;
+            candidateOrder = order;
+            previousOrder = null;
+        }
+
+        @Override
+        public boolean purgeUntilNext() {
+            if (!nextKnown) {
+                throw new IllegalStateException("purgeUntilNext() called before next()");
+            }
+            if (previousOrder != null) {
+                var order = previousOrder;
+                final var boundaryOrder = nextOrder != null ? nextOrder : new ScheduledOrder(endSecond + 1, 0);
+                while (ORDER_COMPARATOR.compare(order, boundaryOrder) < 0) {
+                    final var lastOfSecond = scheduleStore.purgeByOrder(order);
+                    order = next(order, lastOfSecond);
+                }
+                return true;
+            }
+            return false;
         }
 
         private @Nullable ScheduledOrder prepNext() {
@@ -129,9 +174,11 @@ public final class ScheduleServiceImpl implements ScheduleService {
             }
             nextOrder = null;
             nextSchedule = null;
+            previousOrder = null;
+            // Pointer to the order of the next schedule that should possibly be executed
             ScheduledOrder order;
-            if (prevOrder != null) {
-                order = prevOrder;
+            if (candidateOrder != null) {
+                order = candidateOrder;
             } else {
                 final var startCounts = scheduleStore.scheduledCountsAt(startSecond);
                 if (startCounts == null) {
@@ -143,6 +190,9 @@ public final class ScheduleServiceImpl implements ScheduleService {
             while (order.expirySecond() <= endSecond) {
                 final var nextId = scheduleStore.getByOrder(order);
                 if (nextId != null) {
+                    if (previousOrder == null) {
+                        previousOrder = order;
+                    }
                     final var schedule = requireNonNull(scheduleStore.get(nextId));
                     if (!schedule.waitForExpiry() || schedule.deleted()) {
                         order = next(order, false);
