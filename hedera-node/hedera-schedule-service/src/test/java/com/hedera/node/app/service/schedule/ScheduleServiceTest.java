@@ -16,16 +16,15 @@
 
 package com.hedera.node.app.service.schedule;
 
+import static java.util.Collections.emptyIterator;
+
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.time.Instant;
 import java.util.Iterator;
-
-import static java.util.Collections.emptyIterator;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 class ScheduleServiceTest {
     private final ScheduleService subject = new ScheduleService() {

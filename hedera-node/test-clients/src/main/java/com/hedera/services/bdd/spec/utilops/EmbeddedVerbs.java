@@ -54,12 +54,14 @@ import com.hedera.services.bdd.spec.utilops.embedded.MutateTokenOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTssMessagesOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTssVotesOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
+import com.hedera.services.bdd.spec.utilops.embedded.ViewKVStateOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewMappingValueOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewPendingAirdropOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewSingletonOp;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -166,6 +168,26 @@ public final class EmbeddedVerbs {
         requireNonNull(stateKey);
         requireNonNull(observer);
         return new ViewSingletonOp<T>(serviceName, stateKey, observer);
+    }
+
+    /**
+     * Returns an operation that allows the test author to view a key's mapped value in an embedded state.
+     * @param serviceName the name of the service that manages the mapping
+     * @param stateKey the mapping state key
+     *
+     * @param observer the observer that will receive the value
+     * @return the operation that will expose the mapped value to the observer
+     * @param <K> the type of the key
+     * @param <V> the type of the value
+     */
+    public static <K extends Record, V extends Record> ViewKVStateOp<K, V> viewKVState(
+            @NonNull final String serviceName,
+            @NonNull final String stateKey,
+            @NonNull final Consumer<ReadableKVState<K, V>> observer) {
+        requireNonNull(serviceName);
+        requireNonNull(stateKey);
+        requireNonNull(observer);
+        return new ViewKVStateOp<>(serviceName, stateKey, observer);
     }
 
     /**

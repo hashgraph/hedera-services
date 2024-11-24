@@ -16,31 +16,11 @@
 
 package com.hedera.services.bdd.suites.integration;
 
-import com.hedera.hapi.node.base.TimestampSeconds;
-import com.hedera.hapi.node.state.schedule.ScheduledCounts;
-import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
-import com.hedera.services.bdd.junit.TargetEmbeddedMode;
-import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.SpecOperation;
-import com.swirlds.state.spi.WritableKVState;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestMethodOrder;
-
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
+import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_COUNTS_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_ORDERS_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_USAGES_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_LAST_ASSIGNED_CONSENSUS_TIME;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
@@ -61,10 +41,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeSpecSecondTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
@@ -81,6 +61,35 @@ import static java.util.Spliterator.NONNULL;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TimestampSeconds;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduledCounts;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
+import com.hedera.services.bdd.junit.TargetEmbeddedMode;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.SpecOperation;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.WritableKVState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+
 @Order(2)
 @Tag(INTEGRATION)
 @HapiTestLifecycle
@@ -94,6 +103,9 @@ public class RepeatableHip423Tests {
         testLifecycle.overrideInClass(Map.of("scheduling.longTermEnabled", "true"));
     }
 
+    /**
+     * Tests the ingest throttle limits the total number of transactions that can be scheduled in a single second.
+     */
     @LeakyRepeatableHapiTest(
             value = NEEDS_LAST_ASSIGNED_CONSENSUS_TIME,
             overrides = {"scheduling.maxTxnPerSec"})
@@ -120,25 +132,23 @@ public class RepeatableHip423Tests {
                 purgeExpiringWithin(ONE_MINUTE));
     }
 
+    /**
+     * Tests that expiration time must be in the future---but not too far in the future.
+     */
     @LeakyRepeatableHapiTest(
             value = NEEDS_LAST_ASSIGNED_CONSENSUS_TIME,
-            overrides = {"scheduling.longTermEnabled", "scheduling.maxExpirationFutureSeconds"})
+            overrides = {"scheduling.maxExpirationFutureSeconds"})
     final Stream<DynamicTest> expiryMustBeValid() {
-        final long maxLifetime = 123_456L;
-        final AtomicLong lastSecond = new AtomicLong();
+        final var lastSecond = new AtomicLong();
         return hapiTest(
-                overridingTwo(
-                        "scheduling.longTermEnabled",
-                        "true",
-                        "scheduling.maxExpirationFutureSeconds",
-                        "" + maxLifetime),
+                overriding("scheduling.maxExpirationFutureSeconds", "" + ONE_MINUTE),
                 exposeSpecSecondTo(lastSecond::set),
                 sourcing(() -> scheduleCreate("tooSoon", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 12L)))
                         .expiringAt(lastSecond.get())
                         .hasKnownStatus(SCHEDULE_EXPIRY_MUST_BE_FUTURE)),
                 exposeSpecSecondTo(lastSecond::set),
                 sourcing(() -> scheduleCreate("tooLate", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 34L)))
-                        .expiringAt(lastSecond.get() + 1 + maxLifetime + 1)
+                        .expiringAt(lastSecond.get() + 1 + ONE_MINUTE + 1)
                         .hasKnownStatus(SCHEDULE_EXPIRY_TOO_LONG)));
     }
 
@@ -155,23 +165,21 @@ public class RepeatableHip423Tests {
                 THROTTLE_OVERRIDES
             },
             overrides = {
-                "scheduling.longTermEnabled",
-                "scheduling.maxExecutionsPerUserTxn",
                 "scheduling.whitelist",
             },
             throttles = "testSystemFiles/mainnet-throttles.json")
     final Stream<DynamicTest> throttlingAndExecutionAsExpected() {
         final var expirySecond = new AtomicLong();
+        final var maxLifetime = new AtomicLong();
         final var maxSchedulableTopicCreates = new AtomicInteger();
         return hapiTest(
-                overridingAllOf(Map.of(
-                        "scheduling.longTermEnabled", "true",
-                        "scheduling.maxExecutionsPerUserTxn", "1",
-                        "scheduling.whitelist", "ConsensusCreateTopic")),
+                overriding("scheduling.whitelist", "ConsensusCreateTopic"),
                 doWithStartupConfigNow(
                         "scheduling.maxExpirationFutureSeconds",
-                        (maxLifetime, specTime) -> doAdhoc(
-                                () -> expirySecond.set(specTime.getEpochSecond() + Long.parseLong(maxLifetime)))),
+                        (value, specTime) -> doAdhoc(() -> {
+                            maxLifetime.set(Long.parseLong(value));
+                            expirySecond.set(specTime.getEpochSecond() + maxLifetime.get());
+                        })),
                 cryptoCreate(CIVILIAN_PAYER).balance(ONE_MILLION_HBARS),
                 exposeMaxSchedulable(ConsensusCreateTopic, maxSchedulableTopicCreates::set),
                 // Schedule the maximum number of topic creations allowed
@@ -188,7 +196,61 @@ public class RepeatableHip423Tests {
                         .expiringAt(expirySecond.get())
                         .payingWith(CIVILIAN_PAYER)
                         .fee(ONE_HUNDRED_HBARS)
-                        .hasKnownStatus(SCHEDULE_EXPIRY_IS_BUSY)));
+                        .hasKnownStatus(SCHEDULE_EXPIRY_IS_BUSY)),
+                sourcingContextual(spec -> purgeExpiringWithin(maxLifetime.get())));
+    }
+
+    /**
+     * Tests that execution of scheduled transactions purges the associated state as expected, by artificially
+     * restricting to a single executions per user transaction. The test uses three scheduled transactions, two of
+     * them in one second and the third one in the next second. After sleeping past the expiration time of all
+     * three transactions, executes them in a sequence of three triggering transactions and validates the schedule
+     * state is as expected.
+     */
+    @LeakyRepeatableHapiTest(
+            value = {NEEDS_LAST_ASSIGNED_CONSENSUS_TIME, NEEDS_STATE_ACCESS},
+            overrides = {"scheduling.maxExecutionsPerUserTxn"})
+    final Stream<DynamicTest> executionPurgesScheduleStateAsExpected() {
+        final var lastSecond = new AtomicLong();
+        return hapiTest(
+                overriding("scheduling.maxExecutionsPerUserTxn", "1"),
+                exposeSpecSecondTo(lastSecond::set),
+                cryptoCreate("luckyYou").balance(0L),
+                sourcing(() -> scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .expiringAt(lastSecond.get() + ONE_MINUTE)),
+                sourcing(() -> scheduleCreate("two", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 2L)))
+                        .expiringAt(lastSecond.get() + ONE_MINUTE)),
+                sourcing(() -> scheduleCreate("three", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 3L)))
+                        .expiringAt(lastSecond.get() + ONE_MINUTE + 1)),
+                viewScheduleState((byId, counts, usages, orders, byEquality) -> {
+                    assertEquals(3, byId.size(), "Wrong number of schedules by ID");
+                    assertEquals(2, counts.size(), "Wrong number of scheduled counts");
+                    assertEquals(2, usages.size(), "Wrong number of scheduled usages");
+                    assertEquals(3, orders.size(), "Wrong number of scheduled orders");
+                    assertEquals(3, byEquality.size(), "Wrong number of schedules by equality");
+                }));
+    }
+
+    private interface ScheduleStateConsumer {
+        void accept(
+                @NonNull ReadableKVState<ScheduleID, Schedule> schedulesById,
+                @NonNull ReadableKVState<TimestampSeconds, ScheduledCounts> scheduledCounts,
+                @NonNull ReadableKVState<TimestampSeconds, ThrottleUsageSnapshots> scheduledUsages,
+                @NonNull ReadableKVState<ScheduledOrder, ScheduleID> scheduledOrders,
+                @NonNull ReadableKVState<ProtoBytes, ScheduleID> scheduleIdByStringHash);
+    }
+
+    private static SpecOperation viewScheduleState(@NonNull final ScheduleStateConsumer consumer) {
+        return withOpContext((spec, opLog) -> {
+            final var state = spec.embeddedStateOrThrow();
+            final var readableStates = state.getReadableStates(ScheduleService.NAME);
+            consumer.accept(
+                    readableStates.get(SCHEDULES_BY_ID_KEY),
+                    readableStates.get(SCHEDULED_COUNTS_KEY),
+                    readableStates.get(SCHEDULED_USAGES_KEY),
+                    readableStates.get(SCHEDULED_ORDERS_KEY),
+                    readableStates.get(SCHEDULE_ID_BY_EQUALITY_KEY));
+        });
     }
 
     private static SpecOperation purgeExpiringWithin(final long seconds) {

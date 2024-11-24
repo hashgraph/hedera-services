@@ -392,7 +392,8 @@ public class HandleWorkflow {
                             userTxn.consensusNow(),
                             StoreFactoryImpl.from(state, ScheduleService.NAME, userTxn.config(), storeMetricsService));
                     final var writableStates = state.getWritableStates(ScheduleService.NAME);
-                    while (iter.hasNext() && !nextTime.isAfter(lastUsableTime)) {
+                    int n = schedulingConfig.maxExecutionsPerUserTxn();
+                    while (iter.hasNext() && !nextTime.isAfter(lastUsableTime) && n > 0) {
                         final var executableTxn = iter.next();
                         final var scheduledTxn = userTxnFactory.createUserTxn(
                                 state,
@@ -425,6 +426,7 @@ public class HandleWorkflow {
                                 .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
                         iter.remove();
                         ((CommittableWritableStates) writableStates).commit();
+                        n--;
                     }
                     if (!iter.hasNext() && executionEnd.getEpochSecond() > executionStart.getEpochSecond()) {
                         // Since the execution interval spanned at least full second and there are no remaining
