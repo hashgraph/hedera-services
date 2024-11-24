@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.junit.RepeatableReason.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -56,10 +57,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_MUST_BE_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_TOO_LONG;
+import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
 import static java.util.Spliterator.NONNULL;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TimestampSeconds;
@@ -80,6 +84,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -212,23 +218,98 @@ public class RepeatableHip423Tests {
             overrides = {"scheduling.maxExecutionsPerUserTxn"})
     final Stream<DynamicTest> executionPurgesScheduleStateAsExpected() {
         final var lastSecond = new AtomicLong();
+        final AtomicReference<ScheduleStateSizes> startingSizes = new AtomicReference<>();
+        final AtomicReference<ScheduleStateSizes> currentSizes = new AtomicReference<>();
         return hapiTest(
                 overriding("scheduling.maxExecutionsPerUserTxn", "1"),
+                viewScheduleStateSizes(startingSizes::set),
                 exposeSpecSecondTo(lastSecond::set),
                 cryptoCreate("luckyYou").balance(0L),
+                // Schedule the three transfers to lucky you
                 sourcing(() -> scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
                         .expiringAt(lastSecond.get() + ONE_MINUTE)),
                 sourcing(() -> scheduleCreate("two", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 2L)))
                         .expiringAt(lastSecond.get() + ONE_MINUTE)),
                 sourcing(() -> scheduleCreate("three", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 3L)))
                         .expiringAt(lastSecond.get() + ONE_MINUTE + 1)),
+                viewScheduleStateSizes(currentSizes::set),
+                // Check that schedule state sizes changed as expected
+                doAdhoc(() -> currentSizes.get().assertChangesFrom(startingSizes.get(), 3, 2, 2, 3, 3)),
+                // Let all the schedules expire
+                sleepFor((ONE_MINUTE + 2) * 1_000),
+                // Now execute them one at a time and assert the expected changes to state
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
                 viewScheduleState((byId, counts, usages, orders, byEquality) -> {
-                    assertEquals(3, byId.size(), "Wrong number of schedules by ID");
-                    assertEquals(2, counts.size(), "Wrong number of scheduled counts");
-                    assertEquals(2, usages.size(), "Wrong number of scheduled usages");
-                    assertEquals(3, orders.size(), "Wrong number of scheduled orders");
-                    assertEquals(3, byEquality.size(), "Wrong number of schedules by equality");
-                }));
+                    final var firstExpiry = lastSecond.get() + ONE_MINUTE;
+                    final var firstKey = new TimestampSeconds(firstExpiry);
+                    final var firstCounts = requireNonNull(counts.get(firstKey));
+                    assertEquals(1, firstCounts.numberProcessed(), "Wrong number processed for first expiry");
+                    assertEquals(2, firstCounts.numberScheduled(), "Wrong number scheduled for first expiry");
+                    assertNotNull(usages.get(firstKey), "No usage snapshot for first expiry");
+                    final var secondKey = new TimestampSeconds(firstExpiry + 1);
+                    final var secondCounts = requireNonNull(counts.get(secondKey));
+                    assertEquals(0, secondCounts.numberProcessed(), "Wrong number processed for second expiry");
+                    assertEquals(1, secondCounts.numberScheduled(), "Wrong number scheduled for second expiry");
+                }),
+                getAccountBalance("luckyYou").hasTinyBars(1L),
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
+                viewScheduleState((byId, counts, usages, orders, byEquality) -> {
+                    final var firstExpiry = lastSecond.get() + ONE_MINUTE;
+                    final var firstKey = new TimestampSeconds(firstExpiry);
+                    // The counts and usages should be expired for this second
+                    assertNull(counts.get(firstKey), "Counts not purged for first expiry");
+                    assertNull(usages.get(firstKey), "Usages not purged for first expiry");
+                    // Nothing should be different about the following second
+                    final var secondKey = new TimestampSeconds(firstExpiry + 1);
+                    final var secondCounts = requireNonNull(counts.get(secondKey));
+                    assertEquals(0, secondCounts.numberProcessed(), "Wrong number processed for second expiry");
+                    assertEquals(1, secondCounts.numberScheduled(), "Wrong number scheduled for second expiry");
+                }),
+                getAccountBalance("luckyYou").hasTinyBars(1L + 2L));
+    }
+
+    private record ScheduleStateSizes(
+            int schedulesById,
+            int scheduledCounts,
+            int scheduledUsages,
+            int scheduledOrders,
+            int scheduleIdByEquality) {
+        /**
+         * Asserts that the changes from a starting state are as expected.
+         * @param startingSizes the starting state sizes
+         * @param schedulesById the expected change in the number of schedules by ID
+         * @param scheduledCounts the expected change in the number of scheduled counts
+         * @param scheduledUsages the expected change in the number of scheduled usages
+         * @param scheduledOrders the expected change in the number of scheduled orders
+         * @param scheduleIdByEquality the expected change in the number of schedules by equality
+         */
+        public void assertChangesFrom(
+                @NonNull final ScheduleStateSizes startingSizes,
+                final int schedulesById,
+                final int scheduledCounts,
+                final int scheduledUsages,
+                final int scheduledOrders,
+                final int scheduleIdByEquality) {
+            requireNonNull(startingSizes);
+            assertEquals(
+                    startingSizes.schedulesById + schedulesById, this.schedulesById, "Wrong number of schedules by ID");
+            assertEquals(
+                    startingSizes.scheduledCounts + scheduledCounts,
+                    this.scheduledCounts,
+                    "Wrong number of scheduled counts");
+            assertEquals(
+                    startingSizes.scheduledUsages + scheduledUsages,
+                    this.scheduledUsages,
+                    "Wrong number of scheduled usages");
+            assertEquals(
+                    startingSizes.scheduledOrders + scheduledOrders,
+                    this.scheduledOrders,
+                    "Wrong number of scheduled orders");
+            assertEquals(
+                    startingSizes.scheduleIdByEquality + scheduleIdByEquality,
+                    this.scheduleIdByEquality,
+                    "Wrong number of schedules by equality");
+        }
     }
 
     private interface ScheduleStateConsumer {
@@ -237,7 +318,13 @@ public class RepeatableHip423Tests {
                 @NonNull ReadableKVState<TimestampSeconds, ScheduledCounts> scheduledCounts,
                 @NonNull ReadableKVState<TimestampSeconds, ThrottleUsageSnapshots> scheduledUsages,
                 @NonNull ReadableKVState<ScheduledOrder, ScheduleID> scheduledOrders,
-                @NonNull ReadableKVState<ProtoBytes, ScheduleID> scheduleIdByStringHash);
+                @NonNull ReadableKVState<ProtoBytes, ScheduleID> scheduleIdByEquality);
+    }
+
+    private static SpecOperation viewScheduleStateSizes(@NonNull final Consumer<ScheduleStateSizes> consumer) {
+        return viewScheduleState((byId, counts, usages, orders, byEquality) -> consumer.accept(new ScheduleStateSizes(
+                (int) byId.size(), (int) counts.size(), (int) usages.size(), (int) orders.size(), (int)
+                        byEquality.size())));
     }
 
     private static SpecOperation viewScheduleState(@NonNull final ScheduleStateConsumer consumer) {
