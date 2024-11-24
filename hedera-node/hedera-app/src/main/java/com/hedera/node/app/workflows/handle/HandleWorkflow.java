@@ -379,9 +379,8 @@ public class HandleWorkflow {
                     // preceding records; i.e. (now + separationNanos) - (maxAfter + maxBefore + 1)
                     final var lastUsableTime = userTxn.consensusNow()
                             .plusNanos(schedulingConfig.consTimeSeparationNanos()
-                                    - (consensusConfig.handleMaxFollowingRecords()
-                                            + consensusConfig.handleMaxPrecedingRecords()
-                                            + 1));
+                                    - consensusConfig.handleMaxPrecedingRecords()
+                                    - (consensusConfig.handleMaxFollowingRecords() + 1));
                     // And the first possible time for the next execution is strictly after the last execution
                     // time plus the maximum number of preceding records
                     var nextTime = boundaryStateChangeListener

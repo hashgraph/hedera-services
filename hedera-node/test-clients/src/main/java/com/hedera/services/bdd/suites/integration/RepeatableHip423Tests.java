@@ -16,6 +16,39 @@
 
 package com.hedera.services.bdd.suites.integration;
 
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TimestampSeconds;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduledCounts;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
+import com.hedera.services.bdd.junit.RepeatableHapiTest;
+import com.hedera.services.bdd.junit.TargetEmbeddedMode;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.SpecOperation;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.WritableKVState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.calculateBytesHash;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_COUNTS_KEY;
@@ -43,6 +76,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeSpecSecondTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
@@ -65,37 +99,6 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-
-import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.TimestampSeconds;
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.schedule.ScheduledCounts;
-import com.hedera.hapi.node.state.schedule.ScheduledOrder;
-import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
-import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
-import com.hedera.services.bdd.junit.TargetEmbeddedMode;
-import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.SpecOperation;
-import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.WritableKVState;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestMethodOrder;
 
 @Order(2)
 @Tag(INTEGRATION)
@@ -209,6 +212,41 @@ public class RepeatableHip423Tests {
     }
 
     /**
+     * Tests that execution of scheduled transactions purges the associated state as expected when a single
+     * user transaction fully executes multiple seconds. The test uses three scheduled transactions, two of
+     * them in one second and the third one in the next second. After sleeping past the expiration time of
+     * all three transactions, executes them via a single triggering transaction and validates the schedule
+     * state is as expected.
+     */
+    @RepeatableHapiTest(value = {NEEDS_LAST_ASSIGNED_CONSENSUS_TIME, NEEDS_STATE_ACCESS})
+    final Stream<DynamicTest> executionPurgesScheduleStateAsExpectedInSingleUserTransactions() {
+        final var lastSecond = new AtomicLong();
+        final AtomicReference<ScheduleStateSizes> startingSizes = new AtomicReference<>();
+        final AtomicReference<ScheduleStateSizes> currentSizes = new AtomicReference<>();
+        return hapiTest(
+                viewScheduleStateSizes(startingSizes::set),
+                exposeSpecSecondTo(lastSecond::set),
+                cryptoCreate("luckyYou").balance(0L),
+                // Schedule the three transfers to lucky you
+                sourcing(() -> scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .expiringAt(lastSecond.get() + ONE_MINUTE)),
+                sourcing(() -> scheduleCreate("two", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 2L)))
+                        .expiringAt(lastSecond.get() + ONE_MINUTE)),
+                sourcing(() -> scheduleCreate("three", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 3L)))
+                        .expiringAt(lastSecond.get() + ONE_MINUTE + 1)),
+                viewScheduleStateSizes(currentSizes::set),
+                // Check that schedule state sizes changed as expected
+                doAdhoc(() -> currentSizes.get().assertChangesFrom(startingSizes.get(), 3, 2, 2, 3, 3)),
+                // Let all the schedules expire
+                sleepFor((ONE_MINUTE + 2) * 1_000),
+                // Trigger them all in a single user transaction
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
+                getAccountBalance("luckyYou").hasTinyBars(1L + 2L + 3L),
+                viewScheduleStateSizes(currentSizes::set),
+                doAdhoc(() -> currentSizes.get().assertChangesFrom(startingSizes.get(), 0, 0, 0, 0, 0)));
+    }
+
+    /**
      * Tests that execution of scheduled transactions purges the associated state as expected when it takes multiple
      * user transactions to fully execute a given second, by artificially restricting to a single executions per user
      * transaction. The test uses three scheduled transactions, two of them in one second and the third one in the
@@ -289,12 +327,66 @@ public class RepeatableHip423Tests {
                 // The third execution, again in a separate user transaction
                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
                 viewScheduleState((byId, counts, usages, orders, byEquality) -> {
-                    // Nothing should be different about the following second
+                    // Now everything should be purged
                     final var firstExpiry = lastSecond.get() + ONE_MINUTE;
                     final var secondKey = new TimestampSeconds(firstExpiry + 1);
                     assertNull(counts.get(secondKey), "Counts not purged for second expiry");
                     assertNull(usages.get(secondKey), "Usages not purged for second expiry");
-                }));
+                }),
+                getAccountBalance("luckyYou").hasTinyBars(1L + 2L + 3L));
+    }
+
+    /**
+     * Tests that execution of scheduled transactions purges the associated state as expected when multiple
+     * user transactions are required due to running out of consensus times. The test uses four scheduled
+     * transactions, two of them in one second and two of them a few seconds later. After sleeping past
+     * the expiration time of all four transactions, executes them via two triggering transactions, the first
+     * of which has available consensus times for three transactions and the second of which has available
+     * consensus times for the fourth transaction.
+     */
+    @LeakyRepeatableHapiTest(
+            value = {NEEDS_LAST_ASSIGNED_CONSENSUS_TIME, NEEDS_STATE_ACCESS},
+            overrides = {
+                "consensus.handle.maxPrecedingRecords",
+                "consensus.handle.maxFollowingRecords",
+                "scheduling.consTimeSeparationNanos",
+            })
+    final Stream<DynamicTest> executionPurgesScheduleStateAsWhenRunningOutOfConsensusTimes() {
+        final var lastSecond = new AtomicLong();
+        final AtomicReference<ScheduleStateSizes> startingSizes = new AtomicReference<>();
+        final AtomicReference<ScheduleStateSizes> currentSizes = new AtomicReference<>();
+        return hapiTest(
+                exposeSpecSecondTo(lastSecond::set),
+                cryptoCreate("luckyYou").balance(0L),
+                // From time T, the first transfer will be at T+3, the second at T+6, and the third at T+9;
+                // so for a T+12 attempt to run out of time, the separating nanos must be no more than 15
+                overridingAllOf(Map.of(
+                        "consensus.handle.maxPrecedingRecords", "2",
+                        "consensus.handle.maxFollowingRecords", "1",
+                        "scheduling.consTimeSeparationNanos", "15")),
+                // Schedule the four transfers to lucky you
+                sourcing(() -> scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .expiringAt(lastSecond.get() + ONE_MINUTE)),
+                sourcing(() -> scheduleCreate("two", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 2L)))
+                        .expiringAt(lastSecond.get() + ONE_MINUTE)),
+                sourcing(() -> scheduleCreate("three", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 3L)))
+                        .expiringAt(lastSecond.get() + ONE_MINUTE + 3)),
+                sourcing(() -> scheduleCreate("four", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 4L)))
+                        .expiringAt(lastSecond.get() + ONE_MINUTE + 3)),
+                // Let all the schedules expire
+                sleepFor((ONE_MINUTE + 4) * 1_000),
+                viewScheduleStateSizes(startingSizes::set),
+                // Trigger as many as possible in a single user transaction
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
+                // Verify that was only the first three
+                getAccountBalance("luckyYou").hasTinyBars(1L + 2L + 3L),
+                viewScheduleStateSizes(currentSizes::set),
+                doAdhoc(() -> currentSizes.get().assertChangesFrom(startingSizes.get(), -3, -1, -1, -3, -3)),
+                // Then trigger the last one
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
+                getAccountBalance("luckyYou").hasTinyBars(1L + 2L + 3L + 4L),
+                viewScheduleStateSizes(currentSizes::set),
+                doAdhoc(() -> currentSizes.get().assertChangesFrom(startingSizes.get(), -4, -2, -2, -4, -4)));
     }
 
     private record ScheduleStateSizes(
