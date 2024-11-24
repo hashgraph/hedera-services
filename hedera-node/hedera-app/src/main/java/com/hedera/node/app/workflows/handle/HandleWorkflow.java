@@ -428,6 +428,7 @@ public class HandleWorkflow {
                         ((CommittableWritableStates) writableStates).commit();
                         n--;
                     }
+                    blockStreamManager.setLastIntervalProcessTime(executionEnd);
                     if (!iter.hasNext() && executionEnd.getEpochSecond() > executionStart.getEpochSecond()) {
                         // Since the execution interval spanned at least full second and there are no remaining
                         // transactions to execute in it, we can mark the last full second as executed

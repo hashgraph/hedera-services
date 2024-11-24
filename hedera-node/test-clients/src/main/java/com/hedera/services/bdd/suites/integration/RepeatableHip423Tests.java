@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.integration;
 
+import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.calculateBytesHash;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_COUNTS_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_ORDERS_KEY;
@@ -117,15 +118,16 @@ public class RepeatableHip423Tests {
             overrides = {"scheduling.maxTxnPerSec"})
     final Stream<DynamicTest> cannotScheduleTooManyTxnsInOneSecond() {
         final AtomicLong expiry = new AtomicLong();
+        final var oddLifetime = 123 * ONE_MINUTE;
         return hapiTest(
                 overriding("scheduling.maxTxnPerSec", "2"),
                 cryptoCreate(CIVILIAN_PAYER).balance(10 * ONE_HUNDRED_HBARS),
                 scheduleCreate("first", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 123L)))
                         .payingWith(CIVILIAN_PAYER)
                         .fee(ONE_HBAR)
-                        .expiringIn(ONE_MINUTE),
+                        .expiringIn(oddLifetime),
                 // Consensus time advances exactly one second per transaction in repeatable mode
-                exposeSpecSecondTo(now -> expiry.set(now + ONE_MINUTE - 1)),
+                exposeSpecSecondTo(now -> expiry.set(now + oddLifetime - 1)),
                 sourcing(() -> scheduleCreate("second", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 456L)))
                         .payingWith(CIVILIAN_PAYER)
                         .fee(ONE_HBAR)
@@ -135,7 +137,7 @@ public class RepeatableHip423Tests {
                         .fee(ONE_HBAR)
                         .expiringAt(expiry.get())
                         .hasPrecheck(BUSY)),
-                purgeExpiringWithin(ONE_MINUTE));
+                purgeExpiringWithin(oddLifetime));
     }
 
     /**
@@ -207,17 +209,19 @@ public class RepeatableHip423Tests {
     }
 
     /**
-     * Tests that execution of scheduled transactions purges the associated state as expected, by artificially
-     * restricting to a single executions per user transaction. The test uses three scheduled transactions, two of
-     * them in one second and the third one in the next second. After sleeping past the expiration time of all
-     * three transactions, executes them in a sequence of three triggering transactions and validates the schedule
-     * state is as expected.
+     * Tests that execution of scheduled transactions purges the associated state as expected when it takes multiple
+     * user transactions to fully execute a given second, by artificially restricting to a single executions per user
+     * transaction. The test uses three scheduled transactions, two of them in one second and the third one in the
+     * next second. After sleeping past the expiration time of all three transactions, executes them in a sequence of
+     * three triggering transactions and validates the schedule state is as expected.
      */
     @LeakyRepeatableHapiTest(
             value = {NEEDS_LAST_ASSIGNED_CONSENSUS_TIME, NEEDS_STATE_ACCESS},
             overrides = {"scheduling.maxExecutionsPerUserTxn"})
-    final Stream<DynamicTest> executionPurgesScheduleStateAsExpected() {
+    final Stream<DynamicTest> executionPurgesScheduleStateAsExpectedSplitAcrossUserTransactions() {
         final var lastSecond = new AtomicLong();
+        final AtomicReference<ProtoBytes> firstScheduleHash = new AtomicReference<>();
+        final AtomicReference<ScheduleID> firstScheduleId = new AtomicReference<>();
         final AtomicReference<ScheduleStateSizes> startingSizes = new AtomicReference<>();
         final AtomicReference<ScheduleStateSizes> currentSizes = new AtomicReference<>();
         return hapiTest(
@@ -237,6 +241,15 @@ public class RepeatableHip423Tests {
                 doAdhoc(() -> currentSizes.get().assertChangesFrom(startingSizes.get(), 3, 2, 2, 3, 3)),
                 // Let all the schedules expire
                 sleepFor((ONE_MINUTE + 2) * 1_000),
+                viewScheduleState((byId, counts, usages, orders, byEquality) -> {
+                    final var firstExpiry = lastSecond.get() + ONE_MINUTE;
+                    final var firstOrder = new ScheduledOrder(firstExpiry, 0);
+                    firstScheduleId.set(requireNonNull(orders.get(firstOrder)));
+                    final var firstSchedule = requireNonNull(byId.get(firstScheduleId.get()));
+                    final var equalityHash = calculateBytesHash(firstSchedule);
+                    firstScheduleHash.set(new ProtoBytes(equalityHash));
+                    assertNotNull(byEquality.get(firstScheduleHash.get()), "No equality entry for first schedule");
+                }),
                 // Now execute them one at a time and assert the expected changes to state
                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
                 viewScheduleState((byId, counts, usages, orders, byEquality) -> {
@@ -246,12 +259,19 @@ public class RepeatableHip423Tests {
                     assertEquals(1, firstCounts.numberProcessed(), "Wrong number processed for first expiry");
                     assertEquals(2, firstCounts.numberScheduled(), "Wrong number scheduled for first expiry");
                     assertNotNull(usages.get(firstKey), "No usage snapshot for first expiry");
+                    // The first transaction's information should be fully purged
+                    final var firstOrder = new ScheduledOrder(firstExpiry, 0);
+                    assertNull(orders.get(firstOrder), "Order not purged for first transaction");
+                    assertNull(byId.get(firstScheduleId.get()), "Schedule not purged for first transaction");
+                    assertNull(byEquality.get(firstScheduleHash.get()), "Equality not purged for first transaction");
+                    // The following second should not have changed yet
                     final var secondKey = new TimestampSeconds(firstExpiry + 1);
                     final var secondCounts = requireNonNull(counts.get(secondKey));
                     assertEquals(0, secondCounts.numberProcessed(), "Wrong number processed for second expiry");
                     assertEquals(1, secondCounts.numberScheduled(), "Wrong number scheduled for second expiry");
                 }),
                 getAccountBalance("luckyYou").hasTinyBars(1L),
+                // The second execution, in a separate user transaction
                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
                 viewScheduleState((byId, counts, usages, orders, byEquality) -> {
                     final var firstExpiry = lastSecond.get() + ONE_MINUTE;
@@ -265,7 +285,16 @@ public class RepeatableHip423Tests {
                     assertEquals(0, secondCounts.numberProcessed(), "Wrong number processed for second expiry");
                     assertEquals(1, secondCounts.numberScheduled(), "Wrong number scheduled for second expiry");
                 }),
-                getAccountBalance("luckyYou").hasTinyBars(1L + 2L));
+                getAccountBalance("luckyYou").hasTinyBars(1L + 2L),
+                // The third execution, again in a separate user transaction
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
+                viewScheduleState((byId, counts, usages, orders, byEquality) -> {
+                    // Nothing should be different about the following second
+                    final var firstExpiry = lastSecond.get() + ONE_MINUTE;
+                    final var secondKey = new TimestampSeconds(firstExpiry + 1);
+                    assertNull(counts.get(secondKey), "Counts not purged for second expiry");
+                    assertNull(usages.get(secondKey), "Usages not purged for second expiry");
+                }));
     }
 
     private record ScheduleStateSizes(

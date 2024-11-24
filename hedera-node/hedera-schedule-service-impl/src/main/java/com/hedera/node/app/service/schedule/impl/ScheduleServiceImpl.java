@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduledOrder;
-import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -55,36 +54,17 @@ public final class ScheduleServiceImpl implements ScheduleService {
         requireNonNull(start);
         requireNonNull(end);
         requireNonNull(storeFactory);
-        final var scheduledOrders = new ScheduledOrders(start.getEpochSecond(), end.getEpochSecond());
-        final var scheduleStore = storeFactory.writableStore(WritableScheduleStore.class);
-        return new Iterator<>() {
-            @Override
-            public boolean hasNext() {
-                return scheduledOrders.nextFrom(scheduleStore) != null;
-            }
-
-            @Override
-            public ExecutableTxn<ScheduleStreamBuilder> next() {
-                final var nextSchedule = scheduledOrders.consume(scheduleStore);
-                if (nextSchedule == null) {
-                    throw new NoSuchElementException();
-                }
-                return executableTxnFrom(storeFactory.readableStore(ReadableAccountStore.class), nextSchedule);
-            }
-
-            @Override
-            public void remove() {
-                scheduledOrders.purgeFromPrevToNext(scheduleStore);
-            }
-        };
+        return new ExecutableTxnsIterator(start.getEpochSecond(), end.getEpochSecond(), storeFactory);
     }
 
-    private static class ScheduledOrders {
+    private static class ExecutableTxnsIterator implements Iterator<ExecutableTxn<?>> {
         private static final Comparator<ScheduledOrder> ORDER_COMPARATOR =
                 Comparator.comparingLong(ScheduledOrder::expirySecond).thenComparingInt(ScheduledOrder::orderNumber);
 
         private final long startSecond;
         private final long endSecond;
+        private final StoreFactory storeFactory;
+        private final WritableScheduleStore scheduleStore;
 
         private boolean nextKnown = false;
 
@@ -97,59 +77,42 @@ public final class ScheduleServiceImpl implements ScheduleService {
         @Nullable
         private ScheduledOrder nextOrder;
 
-        public ScheduledOrders(final long startSecond, final long endSecond) {
+        public ExecutableTxnsIterator(
+                final long startSecond, final long endSecond, @NonNull final StoreFactory storeFactory) {
             this.startSecond = startSecond;
             this.endSecond = endSecond;
+            this.storeFactory = requireNonNull(storeFactory);
+            this.scheduleStore = storeFactory.writableStore(WritableScheduleStore.class);
         }
 
-        public @Nullable Schedule consume(@NonNull final ReadableScheduleStore scheduleStore) {
+        @Override
+        public boolean hasNext() {
+            return prepNext() != null;
+        }
+
+        @Override
+        public ExecutableTxn<ScheduleStreamBuilder> next() {
             if (!nextKnown) {
-                nextFrom(scheduleStore);
+                prepNext();
             }
             nextKnown = false;
-            return nextSchedule;
+            if (nextSchedule == null) {
+                throw new NoSuchElementException();
+            }
+            return executableTxnFrom(storeFactory.readableStore(ReadableAccountStore.class), nextSchedule);
         }
 
-        public @Nullable ScheduledOrder nextFrom(@NonNull final ReadableScheduleStore scheduleStore) {
-            requireNonNull(scheduleStore);
-            if (nextKnown) {
-                return nextOrder;
-            }
-            nextOrder = null;
-            nextSchedule = null;
-            long nextSecond = prevOrder == null ? startSecond : prevOrder.expirySecond();
-            int nextOrderNumber = prevOrder == null ? 0 : prevOrder.orderNumber();
-            while (nextSecond <= endSecond) {
-                final var order = new ScheduledOrder(nextSecond, nextOrderNumber);
-                final var nextId = scheduleStore.getByOrder(order);
-                if (nextId != null) {
-                    final var schedule = requireNonNull(scheduleStore.get(nextId));
-                    if (!schedule.waitForExpiry() || schedule.deleted()) {
-                        nextOrderNumber++;
-                    } else {
-                        nextOrder = order;
-                        nextSchedule = schedule;
-                        break;
-                    }
-                } else {
-                    nextSecond++;
-                    nextOrderNumber = 0;
-                }
-            }
-            nextKnown = true;
-            return nextOrder;
-        }
-
-        public void purgeFromPrevToNext(@NonNull final WritableScheduleStore scheduleStore) {
+        @Override
+        public void remove() {
             if (nextOrder == null) {
-                throw new IllegalStateException("No next order to purge to");
+                throw new IllegalStateException("remove() called before next()");
             }
             ScheduledOrder order;
             if (prevOrder == null) {
-                order = nextOrder.copyBuilder().orderNumber(0).build();
+                order = nextOrder;
             } else {
                 if (ORDER_COMPARATOR.compare(prevOrder, nextOrder) > 0) {
-                    throw new IllegalStateException("Cannot purge backwards");
+                    throw new IllegalStateException("remove() called twice");
                 }
                 order = prevOrder;
             }
@@ -158,6 +121,42 @@ public final class ScheduleServiceImpl implements ScheduleService {
                 order = next(order, lastOfSecond);
             }
             prevOrder = order;
+        }
+
+        private @Nullable ScheduledOrder prepNext() {
+            if (nextKnown) {
+                return nextOrder;
+            }
+            nextOrder = null;
+            nextSchedule = null;
+            ScheduledOrder order;
+            if (prevOrder != null) {
+                order = prevOrder;
+            } else {
+                final var startCounts = scheduleStore.scheduledCountsAt(startSecond);
+                if (startCounts == null) {
+                    order = new ScheduledOrder(startSecond + 1, 0);
+                } else {
+                    order = new ScheduledOrder(startSecond, startCounts.numberProcessed());
+                }
+            }
+            while (order.expirySecond() <= endSecond) {
+                final var nextId = scheduleStore.getByOrder(order);
+                if (nextId != null) {
+                    final var schedule = requireNonNull(scheduleStore.get(nextId));
+                    if (!schedule.waitForExpiry() || schedule.deleted()) {
+                        order = next(order, false);
+                    } else {
+                        nextOrder = order;
+                        nextSchedule = schedule;
+                        break;
+                    }
+                } else {
+                    order = next(order, true);
+                }
+            }
+            nextKnown = true;
+            return nextOrder;
         }
 
         private ScheduledOrder next(@NonNull final ScheduledOrder order, final boolean lastInSecond) {
