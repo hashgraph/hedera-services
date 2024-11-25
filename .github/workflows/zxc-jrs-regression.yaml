@@ -411,12 +411,12 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        run: ${HOME}/gradlew assemble :test-clients:shadowJar --scan
+        run: gradle assemble :test-clients:shadowJar --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
         working-directory: platform-sdk/regression
-        run: ${HOME}/gradlew assemble --scan
+        run: gradle assemble --scan
 
       - name: Compute Actual Branch Name
         id: branch
