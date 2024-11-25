@@ -52,11 +52,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
+@Order(1)
 @Tag(INTEGRATION)
 @TargetEmbeddedMode(REPEATABLE)
-public class RepeatableIntegrationTests {
+public class RepeatableTssTests {
     /**
      * Validates behavior of the {@link BlockStreamManager} under specific conditions related to signature requests
      * and block creation.
