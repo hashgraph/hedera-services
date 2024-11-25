@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.suites.integration;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
 import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.calculateBytesHash;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
@@ -40,6 +42,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.exposeMaxSchedulable;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
@@ -74,21 +77,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.hedera.hapi.block.stream.output.TransactionResult;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TimestampSeconds;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduledCounts;
 import com.hedera.hapi.node.state.schedule.ScheduledOrder;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -96,7 +106,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -466,6 +478,65 @@ public class RepeatableHip423Tests {
                 getAccountBalance("luckyYou").hasTinyBars(1L + 2L + 3L + 4L),
                 viewScheduleStateSizes(currentSizes::set),
                 doAdhoc(() -> currentSizes.get().assertChangesFrom(startingSizes.get(), -4, -2, -2, -4, -4)));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> executionResultsAreStreamedAsExpected() {
+        return hapiTest(
+                blockStreamMustIncludePassFrom(scheduledExecutionResult("one", withStatus(SUCCESS))),
+                blockStreamMustIncludePassFrom(scheduledExecutionResult("two", withStatus(INVALID_SIGNATURE))),
+                cryptoCreate("luckyYou").balance(0L),
+                cryptoCreate("cautiousYou").balance(0L).receiverSigRequired(true),
+                sourcing(
+                        () -> scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                                .expiringIn(ONE_MINUTE)
+                                .via("one")),
+                sourcing(() -> scheduleCreate(
+                                "receiverSigRequired", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "cautiousYou", 2L)))
+                        .expiringIn(ONE_MINUTE)
+                        .via("two")),
+                sleepForSeconds(ONE_MINUTE),
+                // Trigger the executions
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)));
+    }
+
+    private static BiConsumer<TransactionBody, TransactionResult> withStatus(@NonNull final ResponseCodeEnum status) {
+        requireNonNull(status);
+        return (body, result) -> assertEquals(status, result.status());
+    }
+
+    private static Function<HapiSpec, BlockStreamAssertion> scheduledExecutionResult(
+            @NonNull final String creationTxn, @NonNull final BiConsumer<TransactionBody, TransactionResult> observer) {
+        requireNonNull(creationTxn);
+        requireNonNull(observer);
+        return spec -> block -> {
+            final com.hederahashgraph.api.proto.java.TransactionID creationTxnId;
+            try {
+                creationTxnId = spec.registry().getTxnId(creationTxn);
+            } catch (RegistryNotFound ignore) {
+                return false;
+            }
+            final var executionTxnId =
+                    protoToPbj(creationTxnId.toBuilder().setScheduled(true).build(), TransactionID.class);
+            final var items = block.items();
+            for (int i = 0, n = items.size(); i < n; i++) {
+                final var item = items.get(i);
+                if (item.hasEventTransaction()) {
+                    final var parts =
+                            TransactionParts.from(item.eventTransactionOrThrow().applicationTransactionOrThrow());
+                    if (parts.transactionIdOrThrow().equals(executionTxnId)) {
+                        for (int j = i + 1; j < n; j++) {
+                            final var followingItem = items.get(j);
+                            if (followingItem.hasTransactionResult()) {
+                                observer.accept(parts.body(), followingItem.transactionResultOrThrow());
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        };
     }
 
     private record ScheduleStateSizes(
