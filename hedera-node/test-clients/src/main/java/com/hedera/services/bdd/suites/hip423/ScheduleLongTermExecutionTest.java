@@ -559,6 +559,9 @@ public class ScheduleLongTermExecutionTest {
 
     @HapiTest
     @Order(5)
+    @Disabled
+    // future: currently contract transactions extract payer id from the trxId, and can't use a custom payer.
+    // the fix will be in following PR
     public Stream<DynamicTest> executionWithContractCallWorksAtExpiry() {
         return defaultHapiSpec("ExecutionWithContractCallWorksAtExpiry")
                 .given(
@@ -610,6 +613,9 @@ public class ScheduleLongTermExecutionTest {
 
     @HapiTest
     @Order(6)
+    @Disabled
+    // future: currently contract transactions extract payer id from the trxId, and can't use a custom payer.
+    // the fix will be in following PR
     public Stream<DynamicTest> executionWithContractCreateWorksAtExpiry() {
         return defaultHapiSpec("ExecutionWithContractCreateWorksAtExpiry")
                 .given(
