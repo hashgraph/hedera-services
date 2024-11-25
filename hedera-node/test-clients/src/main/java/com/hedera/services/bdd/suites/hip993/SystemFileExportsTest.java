@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.selectedItems;
@@ -112,11 +111,11 @@ import java.util.Random;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.parallel.Isolated;
 
 /**
  * Asserts the synthetic file creations stipulated by HIP-993 match the file contents returned by the gRPC
@@ -124,7 +123,6 @@ import org.junit.jupiter.api.parallel.Isolated;
  * and tests if they needed to ensure a transaction was handled before issuing any {@code FileGetContents} queries
  * or submitting {@code FileUpdate} transactions.)
  */
-@Isolated
 public class SystemFileExportsTest {
     private static final String DESCRIPTION_PREFIX = "Revision #";
 
@@ -142,9 +140,7 @@ public class SystemFileExportsTest {
                 given(() -> gossipCertificates.set(generateCertificates(CLASSIC_HAPI_TEST_NETWORK_SIZE))),
                 // This is the genesis transaction
                 cryptoCreate("firstUser"),
-                overridingTwo(
-                        "nodes.updateAccountIdAllowed", "true",
-                        "networkAdmin.updateNodeMetadata", "false"),
+                overriding("nodes.updateAccountIdAllowed", "true"),
                 sourcing(() -> blockingOrder(nOps(CLASSIC_HAPI_TEST_NETWORK_SIZE, i -> nodeUpdate("" + i)
                         .description(DESCRIPTION_PREFIX + i)
                         .serviceEndpoint(endpointsFor(i))
@@ -167,9 +163,7 @@ public class SystemFileExportsTest {
                 given(() -> gossipCertificates.set(generateCertificates(CLASSIC_HAPI_TEST_NETWORK_SIZE))),
                 // This is the genesis transaction
                 cryptoCreate("firstUser"),
-                overridingTwo(
-                        "nodes.updateAccountIdAllowed", "true",
-                        "networkAdmin.updateNodeMetadata", "false"),
+                overriding("nodes.updateAccountIdAllowed", "true"),
                 sourcing(() -> blockingOrder(nOps(CLASSIC_HAPI_TEST_NETWORK_SIZE, i -> nodeUpdate("" + i)
                         .description(DESCRIPTION_PREFIX + i)
                         .serviceEndpoint(endpointsFor(i))
@@ -193,19 +187,12 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overridingTwo(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString(),
-                        "scheduling.whitelist",
-                        "ContractCall")),
+                sourcingContextual(spec -> overriding("scheduling.whitelist", "ContractCall")),
                 // Write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradeFeeSchedulesFile",
-                        feeSchedulesFile -> writeToNodeWorkingDirs(feeSchedulesJson, feeSchedulesFile)),
+                        feeSchedulesFile ->
+                                writeToNodeWorkingDirs(feeSchedulesJson, "data", "config", feeSchedulesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Verify the new fee schedules (which include a subtype for scheduled contract fees) are in effect
@@ -238,19 +225,11 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overridingTwo(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString(),
-                        "tokens.nfts.mintThrottleScaleFactor",
-                        "1:1")),
+                sourcingContextual(spec -> overriding("tokens.nfts.mintThrottleScaleFactor", "1:1")),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradeThrottlesFile",
-                        throttleDefsFile -> writeToNodeWorkingDirs(throttlesJson, throttleDefsFile)),
+                        throttleDefsFile -> writeToNodeWorkingDirs(throttlesJson, "data", "config", throttleDefsFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the new throttles are in effect
@@ -279,17 +258,12 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overriding(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString())),
+                cryptoCreate("genesisAccount"),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradePropertyOverridesFile",
-                        propOverridesFile -> writeToNodeWorkingDirs(overrideProperties, propOverridesFile)),
+                        propOverridesFile ->
+                                writeToNodeWorkingDirs(overrideProperties, "data", "config", propOverridesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the new properties are in effect
@@ -314,19 +288,11 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overridingTwo(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString(),
-                        "tokens.nfts.maxBatchSizeMint",
-                        "2")),
+                sourcingContextual(spec -> overriding("tokens.nfts.maxBatchSizeMint", "2")),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradePropertyOverridesFile",
-                        propOverridesFile -> writeToNodeWorkingDirs("", propOverridesFile)),
+                        propOverridesFile -> writeToNodeWorkingDirs("", "data", "config", propOverridesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the previous override properties are cleared
@@ -355,18 +321,12 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overriding(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString())),
+                cryptoCreate("genesisAccount"),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradePermissionOverridesFile",
                         permissionOverridesFile ->
-                                writeToNodeWorkingDirs(overridePermissions, permissionOverridesFile)),
+                                writeToNodeWorkingDirs(overridePermissions, "data", "config", permissionOverridesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the new permissions are in effect
@@ -380,20 +340,6 @@ public class SystemFileExportsTest {
                                         ByteString.copyFromUtf8("BE")))
                         .payingWith("civilian")
                         .hasKnownStatus(UNAUTHORIZED));
-    }
-
-    @GenesisHapiTest
-    final Stream<DynamicTest> syntheticFileCreationsMatchQueries() {
-        final AtomicReference<Map<FileID, Bytes>> preGenesisContents = new AtomicReference<>();
-        return hapiTest(
-                recordStreamMustIncludeNoFailuresFrom(visibleItems(validatorFor(preGenesisContents), "genesisTxn")),
-                getSystemFiles(preGenesisContents::set),
-                cryptoCreate("firstUser").via("genesisTxn"),
-                // Assert the first created entity still has the expected number
-                withOpContext((spec, opLog) -> assertEquals(
-                        spec.startupProperties().getLong("hedera.firstUserEntity"),
-                        spec.registry().getAccountID("firstUser").getAccountNum(),
-                        "First user entity num doesn't match config")));
     }
 
     @GenesisHapiTest
@@ -412,13 +358,7 @@ public class SystemFileExportsTest {
                 newKeyNamed("node0AdminKey").shape(ED25519_ON),
                 newKeyNamed("node3AdminKey").shape(ED25519_ON),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overriding(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString())),
+                cryptoCreate("anybody"),
                 // Now write the node admin key overrides file to the node's working dirs
                 sourcingContextual(spec -> doWithStartupConfig(
                         "networkAdmin.upgradeNodeAdminKeysFile",
@@ -426,6 +366,8 @@ public class SystemFileExportsTest {
                                 toJson(Map.of(
                                         0L, spec.registry().getKey("node0AdminKey"),
                                         3L, spec.registry().getKey("node3AdminKey"))),
+                                "data",
+                                "config",
                                 nodeAdminKeysFile))),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
@@ -447,17 +389,18 @@ public class SystemFileExportsTest {
                         .description("C"));
     }
 
-    private static String toJson(@NonNull final Map<Long, Key> nodeAdminKeys) {
-        final var mapper = new ObjectMapper();
-        try {
-            return mapper.writeValueAsString(nodeAdminKeys.entrySet().stream()
-                    .collect(toMap(
-                            entry -> entry.getKey().toString(),
-                            entry -> CommonUtils.hex(
-                                    entry.getValue().getEd25519().toByteArray()))));
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to serialize node admin keys", e);
-        }
+    @GenesisHapiTest
+    final Stream<DynamicTest> syntheticFileCreationsMatchQueries() {
+        final AtomicReference<Map<FileID, Bytes>> preGenesisContents = new AtomicReference<>();
+        return hapiTest(
+                recordStreamMustIncludeNoFailuresFrom(visibleItems(validatorFor(preGenesisContents), "genesisTxn")),
+                getSystemFiles(preGenesisContents::set),
+                cryptoCreate("firstUser").via("genesisTxn"),
+                // Assert the first created entity still has the expected number
+                withOpContext((spec, opLog) -> assertEquals(
+                        spec.startupProperties().getLong("hedera.firstUserEntity"),
+                        spec.registry().getAccountID("firstUser").getAccountNum(),
+                        "First user entity num doesn't match config")));
     }
 
     private static CurrentAndNextFeeSchedule parseFeeSchedule(final byte[] bytes)
@@ -642,7 +585,7 @@ public class SystemFileExportsTest {
         final var nextNodeId = new AtomicLong();
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(randomAddressBook.iterator(), 0), false)
                 .map(Address::getSigCert)
-                .collect(toMap(cert -> nextNodeId.getAndIncrement(), cert -> cert));
+                .collect(Collectors.toMap(cert -> nextNodeId.getAndIncrement(), cert -> cert));
     }
 
     private static byte[] derEncoded(final X509Certificate cert) {
@@ -658,6 +601,19 @@ public class SystemFileExportsTest {
             return List.of(asServiceEndpoint("127.0.0." + (i * 2 + 1) + ":" + (80 + i)));
         } else {
             return List.of(asDnsServiceEndpoint("host" + i + ":" + (80 + i)));
+        }
+    }
+
+    private static String toJson(@NonNull final Map<Long, Key> nodeAdminKeys) {
+        final var mapper = new ObjectMapper();
+        try {
+            return mapper.writeValueAsString(nodeAdminKeys.entrySet().stream()
+                    .collect(toMap(
+                            entry -> entry.getKey().toString(),
+                            entry -> CommonUtils.hex(
+                                    entry.getValue().getEd25519().toByteArray()))));
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to serialize node admin keys", e);
         }
     }
 }
