@@ -22,12 +22,6 @@ plugins {
     id("com.hedera.gradle.feature.test-timing-sensitive")
 }
 
-dependencies {
-    implementation("com.hedera.cryptography:hedera-cryptography-bls:0.1.0-SNAPSHOT")
-    implementation("com.hedera.cryptography:hedera-cryptography-altbn128:0.1.0-SNAPSHOT")
-    // Add other dependencies if needed
-}
-
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
 // and then fix the reported issues.
 tasks.withType<JavaCompile>().configureEach {
