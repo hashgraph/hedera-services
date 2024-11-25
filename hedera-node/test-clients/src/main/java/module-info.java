@@ -88,6 +88,7 @@ module com.hedera.node.test.clients {
     requires transitive org.junit.platform.launcher;
     requires transitive org.testcontainers;
     requires transitive tuweni.bytes;
+    requires com.hedera.node.app.service.addressbook.impl;
     requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.schedule.impl;
@@ -98,6 +99,7 @@ module com.hedera.node.test.clients {
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.merkledb;
     requires com.swirlds.platform.core.test.fixtures;
+    requires com.swirlds.state.impl;
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;

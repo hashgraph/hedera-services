@@ -1,7 +1,7 @@
 /**
  * #  Service
  * Block stream messages that report the results of transactions handled
- * by the `` service.
+ * by the `smart contract` service.
  *
  * > REVIEW NOTE
  * >> The use of sidecar records is a bit odd here. We may find it more

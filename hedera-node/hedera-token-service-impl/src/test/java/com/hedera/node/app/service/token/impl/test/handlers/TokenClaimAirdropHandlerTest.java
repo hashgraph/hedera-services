@@ -286,10 +286,6 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         airdrops.add(secondPendingAirdropId);
         givenClaimAirdrop(airdrops);
 
-        final var thirdAirdrop = writableAirdropState.getForModify(thirdPendingAirdropId);
-        final var secondAirdrop = writableAirdropState.getForModify(secondPendingAirdropId);
-        final var firstAirdrop = writableAirdropState.getForModify(firstPendingAirdropId);
-
         tokenClaimAirdropHandler.handle(handleContext);
 
         // check if we clear the pending state

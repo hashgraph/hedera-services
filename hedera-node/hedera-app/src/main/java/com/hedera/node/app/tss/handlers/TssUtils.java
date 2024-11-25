@@ -148,4 +148,15 @@ public class TssUtils {
         });
         return shares;
     }
+
+    /**
+     * Returns whether a vote bitset with the given weight has met the threshold for a roster with the given
+     * total weight.
+     * @param voteWeight the weight of the vote bitset
+     * @param totalWeight the total weight of the roster
+     * @return true if the threshold has been met, false otherwise
+     */
+    public static boolean hasMetThreshold(final long voteWeight, final long totalWeight) {
+        return voteWeight >= (totalWeight + 2) / 3;
+    }
 }

@@ -75,6 +75,11 @@ public final class StateProofUtils {
                 continue;
             }
 
+            if (address.getSigPublicKey() == null) {
+                // Signature cannot be validated.
+                continue;
+            }
+
             if (!signatureVerifier.verifySignature(nodeSignature.signature(), hashBytes, address.getSigPublicKey())) {
                 // Signature is invalid.
                 continue;

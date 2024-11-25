@@ -129,7 +129,7 @@ public class TssCryptographyManagerTest {
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
-        when(tssStore.getTssMessageBodies(any())).thenReturn(List.of(body));
+        when(tssStore.getMessagesForTarget(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
 
         when(tssLibrary.computePublicShares(any(), any())).thenReturn(mockPublicShares);
@@ -149,7 +149,7 @@ public class TssCryptographyManagerTest {
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
-        when(tssStore.getTssMessageBodies(any())).thenReturn(List.of(body));
+        when(tssStore.getMessagesForTarget(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
 
         when(tssLibrary.computePublicShares(any(), any())).thenThrow(new RuntimeException());
@@ -162,8 +162,8 @@ public class TssCryptographyManagerTest {
 
     @Test
     void testComputeNodeShares() {
-        RosterEntry entry1 = new RosterEntry(1L, 100L, null, null, null);
-        RosterEntry entry2 = new RosterEntry(2L, 50L, null, null, null);
+        RosterEntry entry1 = new RosterEntry(1L, 100L, null, null);
+        RosterEntry entry2 = new RosterEntry(2L, 50L, null, null);
 
         Map<Long, Long> result = computeNodeShares(List.of(entry1, entry2), 10L);
 
