@@ -38,7 +38,7 @@ import com.swirlds.config.api.validation.annotation.Min;
 public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "BOTH") @NetworkProperty StreamMode streamMode,
         @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
-        @ConfigProperty(defaultValue = "data/block-streams") @NodeProperty String blockFileDir,
+        @ConfigProperty(defaultValue = "/opt/hgcapp/blockStreams") @NodeProperty String blockFileDir,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
         @ConfigProperty(defaultValue = "32") @NetworkProperty int serializationBatchSize,
         @ConfigProperty(defaultValue = "32") @NetworkProperty int hashCombineBatchSize,

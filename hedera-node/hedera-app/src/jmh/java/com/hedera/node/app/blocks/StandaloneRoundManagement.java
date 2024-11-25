@@ -98,8 +98,12 @@ public class StandaloneRoundManagement {
             Instant::now,
             fakeSignatureVerifier(),
             UNAVAILABLE_GOSSIP,
-            () -> configProvider.getConfiguration(),
-            () -> DEFAULT_NODE_INFO);
+            configProvider::getConfiguration,
+            () -> DEFAULT_NODE_INFO,
+            (split, snapshots) -> {
+                throw new UnsupportedOperationException();
+            });
+
     private final TssBaseServiceImpl tssBaseService = new TssBaseServiceImpl(
             appContext,
             ForkJoinPool.commonPool(),
