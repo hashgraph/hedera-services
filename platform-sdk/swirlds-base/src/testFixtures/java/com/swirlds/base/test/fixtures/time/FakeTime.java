@@ -125,7 +125,7 @@ public class FakeTime implements Time {
 
     /**
      * <p>
-     * Directly set the value of the chronometer relative to when the chronometer was started
+     * Directly set the value of the chronometer relative to when the chronometer was started.
      * </p>
      *
      * <p>

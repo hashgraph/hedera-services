@@ -33,7 +33,7 @@ public class HtmlTagFactory {
     private final Map<String, List<String>> attributeMap = new HashMap<>();
 
     /**
-     * The type of HTML tag
+     * The type of HTML tag.
      */
     private final String tagName;
 
@@ -99,7 +99,7 @@ public class HtmlTagFactory {
         if (attributeMap.containsKey(attributeName)) {
             attributeMap.get(attributeName).add(value);
         } else {
-            final ArrayList<String> attributeList = new ArrayList<>();
+            final List<String> attributeList = new ArrayList<>();
             attributeList.add(value);
 
             attributeMap.put(attributeName, attributeList);

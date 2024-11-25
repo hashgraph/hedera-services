@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface BaseTask {
 
     /**
-     * Default type
+     * Default type.
      */
     String DEFAULT_TYPE = "unknown";
 

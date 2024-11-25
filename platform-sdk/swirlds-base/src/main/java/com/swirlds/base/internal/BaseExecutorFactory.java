@@ -77,7 +77,7 @@ public interface BaseExecutorFactory {
      * @param initialDelay the time to delay first execution
      * @param period       the period between successive executions
      * @param unit         the time unit of the initialDelay and period parameters
-     * @return a ScheduledFuture representing pending completion of the series of repeated tasks.
+     * @return a ScheduledFuture representing pending completion of the series of repeated tasks
      * @see java.util.concurrent.ScheduledExecutorService#scheduleAtFixedRate(Runnable, long, long, TimeUnit)
      */
     @NonNull
@@ -94,7 +94,7 @@ public interface BaseExecutorFactory {
      * @param command the task to execute
      * @param delay   the time from now to delay execution
      * @param unit    the time unit of the delay parameter
-     * @return a ScheduledFuture representing pending completion of the task.
+     * @return a ScheduledFuture representing pending completion of the task
      */
     @NonNull
     default ScheduledFuture<Void> schedule(
@@ -112,8 +112,8 @@ public interface BaseExecutorFactory {
             }
 
             @Override
-            public int compareTo(Delayed o) {
-                return scheduledFuture.compareTo(o);
+            public int compareTo(Delayed delayed) {
+                return scheduledFuture.compareTo(delayed);
             }
 
             @Override

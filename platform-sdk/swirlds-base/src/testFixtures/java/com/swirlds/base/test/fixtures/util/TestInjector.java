@@ -70,7 +70,7 @@ public class TestInjector {
      * @param parameterContext The parameter context to check for support.
      * @param cls              The class type to check support for.
      * @param <T>              The type of the class.
-     * @return True if the parameter context supports the specified class type, false otherwise.
+     * @return True if the parameter context supports the specified class type, false otherwise
      * @throws NullPointerException If either parameterContext or cls is null.
      */
     public static <T> boolean supportsParameter(
@@ -91,7 +91,7 @@ public class TestInjector {
      * @param parameterContext   The parameter context to resolve the parameter from.
      * @param instanceSupplier   The supplier that provides an instance of the parameter type.
      * @param <T>                The type of the parameter to resolve.
-     * @return The resolved parameter.
+     * @return The resolved parameter
      * @throws NullPointerException       If either parameterContext or instanceSupplier is null.
      * @throws ParameterResolutionException If the parameter cannot be resolved.
      */

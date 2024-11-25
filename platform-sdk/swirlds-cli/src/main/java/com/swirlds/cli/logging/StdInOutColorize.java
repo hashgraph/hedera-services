@@ -28,6 +28,9 @@ import java.time.ZoneId;
  * An entry point that log output can be piped into to colorize it with ANSI.
  */
 public class StdInOutColorize {
+
+    private StdInOutColorize() {}
+
     public static void main(final String[] args) throws IOException {
         TextEffect.setTextEffectsEnabled(true);
 

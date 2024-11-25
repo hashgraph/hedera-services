@@ -82,12 +82,12 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
 
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
-    /** the suffix for the debug address book */
+    /** the suffix for the debug address book. */
     private static final String DEBUG = "debug";
 
-    /** the suffix for the test address book */
+    /** the suffix for the test address book. */
     private AddressBookTestingToolConfig testingToolConfig;
-    /** the address book configuration */
+    /** the address book configuration. */
     private AddressBookConfig addressBookConfig;
     /** flag indicating if weighting behavior has been logged. */
     private static final AtomicBoolean logWeightingBehavior = new AtomicBoolean(true);
@@ -169,22 +169,23 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
      */
     @Override
     public void init(
-            @NonNull final Platform platform,
+            @NonNull final Platform platformInstance,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
-        Objects.requireNonNull(platform, "the platform cannot be null");
+        Objects.requireNonNull(platformInstance, "the platform cannot be null");
         Objects.requireNonNull(trigger, "the init trigger cannot be null");
-        addressBookConfig = platform.getContext().getConfiguration().getConfigData(AddressBookConfig.class);
-        testingToolConfig = platform.getContext().getConfiguration().getConfigData(AddressBookTestingToolConfig.class);
+        addressBookConfig = platformInstance.getContext().getConfiguration().getConfigData(AddressBookConfig.class);
+        testingToolConfig =
+                platformInstance.getContext().getConfiguration().getConfigData(AddressBookTestingToolConfig.class);
         this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
 
-        this.platform = platform;
-        this.context = platform.getContext();
+        this.platform = platformInstance;
+        this.context = platformInstance.getContext();
 
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
 
-        this.selfId = platform.getSelfId();
+        this.selfId = platformInstance.getSelfId();
     }
 
     /**
@@ -265,10 +266,11 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     @Override
     @NonNull
     public synchronized AddressBook updateWeight(
-            @NonNull final AddressBook addressBook, @NonNull final PlatformContext context) {
+            @NonNull final AddressBook addressBook, @NonNull final PlatformContext contextInstance) {
         Objects.requireNonNull(addressBook, "the address book cannot be null");
-        this.context = Objects.requireNonNull(context, "the platform context cannot be null");
-        final int weightingBehavior = context.getConfiguration()
+        this.context = Objects.requireNonNull(contextInstance, "the platform context cannot be null");
+        final int weightingBehavior = contextInstance
+                .getConfiguration()
                 .getConfigData(AddressBookTestingToolConfig.class)
                 .weightingBehavior();
         logger.info(DEMO_INFO.getMarker(), "updateWeight called in State. Weighting Behavior: {}", weightingBehavior);
@@ -288,7 +290,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
      * All nodes received 10 weight.
      *
      * @param addressBook the address book to update.
-     * @return the updated address book.
+     * @return the updated address book
      */
     @NonNull
     private AddressBook weightingBehavior1(@NonNull final AddressBook addressBook) {
@@ -305,7 +307,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
      * All nodes received weight equal to their nodeId.
      *
      * @param addressBook the address book to update.
-     * @return the updated address book.
+     * @return the updated address book
      */
     @NonNull
     private AddressBook weightingBehavior2(@NonNull final AddressBook addressBook) {
@@ -600,7 +602,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
      *
      * @param addressBook1 the first address book
      * @param addressBook2 the second address book
-     * @return true if the comparison matches the expected result, false otherwise.
+     * @return true if the comparison matches the expected result, false otherwise
      */
     private boolean equalsAsRoster(
             @NonNull final AddressBook addressBook1,
@@ -624,7 +626,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     /**
      * Checks if the state address book was used.
      *
-     * @return true if the state address book was used, false otherwise.
+     * @return true if the state address book was used, false otherwise
      */
     private boolean theStateAddressBookWasUsed() throws IOException {
         final String fileContents = getLastAddressBookFileEndsWith(DEBUG);
@@ -639,7 +641,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     /**
      * Checks if the configuration address book was used.
      *
-     * @return true if the configuration address book was used, false otherwise.
+     * @return true if the configuration address book was used, false otherwise
      */
     private boolean theConfigurationAddressBookWasUsed() throws IOException {
         final String fileContents = getLastAddressBookFileEndsWith(DEBUG);
@@ -733,7 +735,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     /**
      * Get the address book in the last usedAddressBook file.
      *
-     * @return the address book in the last usedAddressBook file.
+     * @return the address book in the last usedAddressBook file
      */
     @NonNull
     private AddressBook getUsedAddressBook() throws IOException, ParseException {
@@ -744,7 +746,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     /**
      * Get the config address book from the last debug addressBook file.
      *
-     * @return the config address book from the last debug addressBook file.
+     * @return the config address book from the last debug addressBook file
      */
     @NonNull
     private AddressBook getConfigAddressBook() throws IOException, ParseException {
@@ -754,7 +756,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     /**
      * Get the state address book from the last debug addressBook file.
      *
-     * @return the state address book from the last debug addressBook file.
+     * @return the state address book from the last debug addressBook file
      */
     @NonNull
     private AddressBook getStateAddressBook() throws IOException, ParseException {
@@ -765,7 +767,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
      * Get the address book in the last debug addressBook file after the header.
      *
      * @param header the header to find.
-     * @return the address book in the last debug addressBook file after the header.
+     * @return the address book in the last debug addressBook file after the header
      */
     @NonNull
     AddressBook getDebugAddressBookAfterHeader(@NonNull final String header) throws IOException, ParseException {
@@ -779,24 +781,24 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
      *
      * @param fileContents the file contents.
      * @param header       the header to find.
-     * @return the text from the fileContents after the header.
+     * @return the text from the fileContents after the header
      */
     @NonNull
     String getTextAfterHeader(@NonNull final String fileContents, @NonNull final String header) {
         Objects.requireNonNull(fileContents, "fileContents must not be null");
         Objects.requireNonNull(header, "header must not be null");
-        final int configABHeaderStart = fileContents.indexOf(CONFIG_ADDRESS_BOOK_HEADER);
-        final int stateABHeaderStart = fileContents.indexOf(STATE_ADDRESS_BOOK_HEADER);
-        final int usedABHeaderStart = fileContents.indexOf(USED_ADDRESS_BOOK_HEADER);
+        final int configAbHeaderStart = fileContents.indexOf(CONFIG_ADDRESS_BOOK_HEADER);
+        final int stateAbHeaderStart = fileContents.indexOf(STATE_ADDRESS_BOOK_HEADER);
+        final int usedAbHeaderStart = fileContents.indexOf(USED_ADDRESS_BOOK_HEADER);
 
         final int headerStartIndex = fileContents.indexOf(header);
         final int addressBookStartIndex = headerStartIndex + header.length();
 
         final int addressBookEndIndex;
-        if (headerStartIndex == configABHeaderStart) {
-            addressBookEndIndex = stateABHeaderStart;
-        } else if (headerStartIndex == stateABHeaderStart) {
-            addressBookEndIndex = usedABHeaderStart;
+        if (headerStartIndex == configAbHeaderStart) {
+            addressBookEndIndex = stateAbHeaderStart;
+        } else if (headerStartIndex == stateAbHeaderStart) {
+            addressBookEndIndex = usedAbHeaderStart;
         } else {
             addressBookEndIndex = fileContents.length();
         }
@@ -810,7 +812,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
      * Parse the address book from the given string.
      *
      * @param addressBookString the address book string.
-     * @return the address book.
+     * @return the address book
      * @throws ParseException if unable to parse the address book.
      */
     @NonNull
@@ -823,7 +825,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
      * Get the last address book file that ends with the given suffix.
      *
      * @param suffix the suffix to match.
-     * @return the last address book file that ends with the given suffix.
+     * @return the last address book file that ends with the given suffix
      * @throws IOException if unable to read the file.
      */
     @NonNull

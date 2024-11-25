@@ -21,6 +21,7 @@ import com.swirlds.config.api.ConfigProperty;
 import java.nio.file.Path;
 
 /**
+ * This class represents the configuration for the state common settings.
  *
  * @param savedStateDirectory           The directory where states are saved. This is relative to the current working
  *                                      directory, unless the provided path begins with "/", in which case it will be

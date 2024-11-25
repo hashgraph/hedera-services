@@ -128,8 +128,8 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
     /**
      * Wraps the given callable with the observer calls.
      * @param callable the callable to wrap
-     * @return the wrapped callable
      * @param <V> the type of the callable's result
+     * @return the wrapped callable
      */
     @NonNull
     private <V> Callable<V> wrapOnSubmit(@NonNull final Callable<V> callable) {

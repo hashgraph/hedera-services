@@ -17,19 +17,19 @@
 package com.swirlds.cli.logging;
 
 /**
- * Format types that logs can be in
+ * Format types that logs can be in.
  */
 public enum LogOutputFormat {
     /**
-     * Plain text formatting
+     * Plain text formatting.
      */
     PLAINTEXT,
     /**
-     * Formatting for ANSI terminals
+     * Formatting for ANSI terminals.
      */
     ANSI,
     /**
-     * HTML formatting
+     * HTML formatting.
      */
     HTML
 }

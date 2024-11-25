@@ -24,7 +24,7 @@ import picocli.CommandLine;
 /**
  * This class does preliminary parsing for arguments that need to be handled prior to the main CLI argument parsing.
  */
-@CommandLine.Command()
+@CommandLine.Command
 public class PlatformCliPreParser implements Runnable {
 
     private List<String> cliPackagePrefixes;
@@ -48,7 +48,7 @@ public class PlatformCliPreParser implements Runnable {
         this.log4jPath = log4jPath;
     }
 
-    @CommandLine.Option(names = {"--no-color"})
+    @CommandLine.Option(names = "--no-color")
     private void setColorDisabled(final boolean colorDisabled) {
         this.colorDisabled = colorDisabled;
     }
