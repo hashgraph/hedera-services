@@ -44,7 +44,11 @@ public class AllLeakyTestsWithLongTermFlagEnabledTest {
         StatefulScheduleExecutionTest::new
     };
 
-    private static final List<String> IGNORED_TESTS = List.of("whitelistWorks");
+    private static final List<String> IGNORED_TESTS = List.of(
+            // The test is setting ledger.schedule.txExpiryTimeSecs to 1 second in order
+            // to expire the transaction. Since this test class is turning on the longTermEnabled
+            // we never use the txExpiryTimeSecs, thus the test is failing which is expected.
+            "signFailsDueToDeletedExpiration");
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
@@ -63,6 +67,7 @@ public class AllLeakyTestsWithLongTermFlagEnabledTest {
                 "ledger.schedule.txExpiryTimeSecs",
                 "ledger.transfers.maxLen",
                 "ledger.tokenTransfers.maxLen",
+                "scheduling.whitelist"
             },
             requirement = ContextRequirement.FEE_SCHEDULE_OVERRIDES)
     final Stream<DynamicTest> runAllTests() {
