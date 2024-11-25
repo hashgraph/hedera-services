@@ -155,4 +155,12 @@ message BlockStreamInfo {
      * at which an interval of time-dependent events were processed.
      */
     proto.Timestamp last_interval_process_time = 12;
+
+    /**
+     * The time stamp at which the last user transaction was handled.
+     * <p>
+     * This field SHALL hold the consensus time for the last time
+     * at which a user transaction was handled.
+     */
+    proto.Timestamp last_handle_time = 13;
 }
