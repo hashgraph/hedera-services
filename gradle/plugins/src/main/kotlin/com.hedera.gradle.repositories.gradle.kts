@@ -15,7 +15,6 @@
  */
 
 repositories {
-    mavenLocal()
     mavenCentral()
     maven { url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel") }
     maven { url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-commits") }

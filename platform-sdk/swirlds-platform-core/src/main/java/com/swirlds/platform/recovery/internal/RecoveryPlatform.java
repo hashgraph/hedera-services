@@ -19,6 +19,7 @@ package com.swirlds.platform.recovery.internal;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
@@ -28,6 +29,7 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
@@ -43,6 +45,7 @@ import java.util.Objects;
 public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
 
     private final NodeId selfId;
+    private final Roster roster;
 
     private final AddressBook addressBook;
     private final KeysAndCerts keysAndCerts;
@@ -72,6 +75,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
 
         this.addressBook = initialState.getAddressBook();
+        this.roster = RosterRetriever.buildRoster(addressBook);
 
         if (loadSigningKeys) {
             keysAndCerts = initNodeSecurity(addressBook, configuration).get(selfId);
@@ -130,8 +134,8 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      */
     @Override
     @NonNull
-    public AddressBook getAddressBook() {
-        return addressBook;
+    public Roster getRoster() {
+        return roster;
     }
 
     /**

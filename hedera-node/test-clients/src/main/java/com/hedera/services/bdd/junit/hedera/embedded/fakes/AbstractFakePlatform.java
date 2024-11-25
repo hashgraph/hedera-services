@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
@@ -25,6 +26,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
@@ -41,6 +43,7 @@ public abstract class AbstractFakePlatform implements Platform {
 
     private final NodeId selfId;
     private final AddressBook addressBook;
+    private final Roster roster;
     private final PlatformContext platformContext;
     private final FakeNotificationEngine notificationEngine = new FakeNotificationEngine();
 
@@ -51,6 +54,7 @@ public abstract class AbstractFakePlatform implements Platform {
         requireNonNull(executorService);
         this.selfId = requireNonNull(selfId);
         this.addressBook = requireNonNull(addressBook);
+        this.roster = RosterRetriever.buildRoster(addressBook);
         platformContext = new FakePlatformContext(selfId, executorService);
     }
 
@@ -96,8 +100,8 @@ public abstract class AbstractFakePlatform implements Platform {
 
     @NonNull
     @Override
-    public AddressBook getAddressBook() {
-        return addressBook;
+    public Roster getRoster() {
+        return roster;
     }
 
     @NonNull

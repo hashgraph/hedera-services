@@ -345,7 +345,7 @@ public class EnhancedKeyStoreLoader {
                     keyLocation.getFileName());
             try {
                 return AsciiArmoredFiles.readPrivateKey(keyLocation);
-            } catch (final IOException e) {
+            } catch (final Exception e) {
                 logger.error(ERROR.getMarker(), "Failed to read TSS encryption private key from disk", e);
                 throw new KeyLoadingException("Failed to read TSS encryption private key from disk", e);
             }
@@ -396,7 +396,7 @@ public class EnhancedKeyStoreLoader {
 
             if (!tssPrivateKeys.containsKey(node)) {
                 // Create a new public/private key pair for the TSS encryption key
-                BlsKeyPair tssKeyPair = CryptoStatic.generateBlsKeyPair();
+                BlsKeyPair tssKeyPair = CryptoStatic.generateBlsKeyPair(null);
                 tssPrivateKeys.put(node, tssKeyPair.privateKey());
                 tssPublicKeys.put(node, tssKeyPair.publicKey());
                 // Write the private key to disk

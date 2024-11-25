@@ -30,6 +30,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOIN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.readCertificatePemFile;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.writeCertificatePemFile;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
@@ -47,10 +49,8 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -175,15 +175,22 @@ public class AddressBookValidator {
     }
 
     /**
-     * Validate the Bytes is a real X509Certificate bytes.
-     * @param certBytes the Bytes to validate
+     * Validates the given bytes encode an X509 certificate can be serialized and deserialized from
+     * PEM format to recover a usable certificate.
+     * @param x509CertBytes the bytes to validate
      * @throws PreCheckException if the certificate is invalid
      */
-    public static void validateX509Certificate(@NonNull Bytes certBytes) throws PreCheckException {
+    public static void validateX509Certificate(@NonNull final Bytes x509CertBytes) throws PreCheckException {
         try {
-            final var cert = (X509Certificate) CertificateFactory.getInstance("X.509")
-                    .generateCertificate(new ByteArrayInputStream(certBytes.toByteArray()));
-        } catch (final CertificateException e) {
+            // Serialize the given bytes to a PEM file just as we would on a PREPARE_UPGRADE
+            final var baos = new ByteArrayOutputStream();
+            writeCertificatePemFile(x509CertBytes.toByteArray(), baos);
+            // Deserialize an X509 certificate from the resulting PEM file
+            final var bais = new ByteArrayInputStream(baos.toByteArray());
+            final var cert = readCertificatePemFile(bais);
+            // And check its validity for completeness
+            cert.checkValidity();
+        } catch (Exception ignore) {
             throw new PreCheckException(INVALID_GOSSIP_CA_CERTIFICATE);
         }
     }

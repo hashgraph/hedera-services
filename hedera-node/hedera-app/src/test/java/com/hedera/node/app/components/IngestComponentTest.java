@@ -39,11 +39,13 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.handlers.TssEncryptionKeyHandler;
@@ -62,6 +64,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import java.time.InstantSource;
 import java.util.ArrayDeque;
@@ -94,6 +97,12 @@ class IngestComponentTest {
     @Mock
     private TssEncryptionKeyHandler tssEncryptionKeyHandler;
 
+    @Mock
+    private Throttle.Factory throttleFactory;
+
+    @Mock
+    private StartupNetworks startupNetworks;
+
     private HederaInjectionComponent app;
 
     @BeforeEach
@@ -119,7 +128,8 @@ class IngestComponentTest {
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP,
                 () -> configuration,
-                () -> DEFAULT_NODE_INFO);
+                () -> DEFAULT_NODE_INFO,
+                throttleFactory);
         given(tssBaseService.tssHandlers())
                 .willReturn(new TssHandlers(
                         tssMessageHandler, tssVoteHandler, tssShareSignatureHandler, tssEncryptionKeyHandler));
@@ -128,6 +138,7 @@ class IngestComponentTest {
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
                 .fileServiceImpl(new FileServiceImpl())
                 .contractServiceImpl(new ContractServiceImpl(appContext))
+                .scheduleService(new ScheduleServiceImpl())
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
@@ -144,6 +155,8 @@ class IngestComponentTest {
                 .tssBaseService(tssBaseService)
                 .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .networkInfo(mock(NetworkInfo.class))
+                .startupNetworks(startupNetworks)
+                .throttleFactory(throttleFactory)
                 .build();
 
         final var state = new FakeState();

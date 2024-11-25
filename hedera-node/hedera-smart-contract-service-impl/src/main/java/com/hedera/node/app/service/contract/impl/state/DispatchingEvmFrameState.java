@@ -106,6 +106,12 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     private static final String ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY =
             "6080604052348015600f57600080fd5b50600061016a905077e4cbd3a7fefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
+    // The following byte code is copied from the `redirectForToken` and `redirectForAccount` contract defined above.
+    // The only exception is that the function selector for `redirectForScheduleTxn` (0x5c3889ca)
+    // has been pre substituted before the ADDRESS_BYTECODE_PATTERN.
+    private static final String SCHEDULE_CALL_REDIRECT_CONTRACT_BINARY =
+            "6080604052348015600f57600080fd5b50600061016a9050775c3889cafefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
+
     private final HederaNativeOperations nativeOperations;
     private final ContractStateStore contractStateStore;
 
@@ -256,6 +262,23 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
+    public @NonNull Bytes getScheduleRedirectCode(@Nullable final Address address) {
+        return scheduleProxyBytecodeFor(address);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NonNull Hash getScheduleRedirectCodeHash(@Nullable final Address address) {
+        return CodeFactory.createCode(scheduleProxyBytecodeFor(address), 0, false)
+                .getCodeHash();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public long getNonce(final AccountID accountID) {
         return validatedAccount(accountID).ethereumNonce();
     }
@@ -332,23 +355,22 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     public @Nullable Address getAddress(final long number) {
         final AccountID accountID = AccountID.newBuilder().accountNum(number).build();
         final var account = nativeOperations.getAccount(accountID);
-        if (account == null) {
-            final var token = nativeOperations.getToken(number);
-            if (token != null) {
-                // If the token is deleted or expired, the system contract executed by the redirect
-                // bytecode will fail with a more meaningful error message, so don't check that here
-                return asLongZeroAddress(number);
-            } else {
-                throw new IllegalArgumentException("No account or token has number " + number);
+        if (account != null) {
+            if (account.deleted()) {
+                return null;
             }
-        }
 
-        if (account.deleted()) {
-            return null;
+            final var evmAddress = extractEvmAddress(account.alias());
+            return evmAddress == null ? asLongZeroAddress(number) : pbjToBesuAddress(evmAddress);
         }
-
-        final var evmAddress = extractEvmAddress(account.alias());
-        return evmAddress == null ? asLongZeroAddress(number) : pbjToBesuAddress(evmAddress);
+        final var token = nativeOperations.getToken(number);
+        final var schedule = nativeOperations.getSchedule(number);
+        if (token != null || schedule != null) {
+            // If the token or schedule  is deleted or expired, the system contract executed by the redirect
+            // bytecode will fail with a more meaningful error message, so don't check that here
+            return asLongZeroAddress(number);
+        }
+        throw new IllegalArgumentException("No account, token or schedule has number " + number);
     }
 
     /**
@@ -414,7 +436,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         final var to = getAccount(recipient);
         if (to == null) {
             return Optional.of(INVALID_SOLIDITY_ADDRESS);
-        } else if (to instanceof TokenEvmAccount) {
+        } else if (to instanceof TokenEvmAccount || to instanceof ScheduleEvmAccount) {
             return Optional.of(ILLEGAL_STATE_CHANGE);
         }
         // Note we can still use top-level signatures to meet receiver signature requirements
@@ -483,7 +505,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             return Optional.of(SELF_DESTRUCT_TO_SELF);
         }
         final var beneficiaryAccount = getAccount(beneficiary);
-        if (beneficiaryAccount == null || beneficiaryAccount instanceof TokenEvmAccount) {
+        if (beneficiaryAccount == null
+                || beneficiaryAccount instanceof TokenEvmAccount
+                || beneficiaryAccount instanceof ScheduleEvmAccount) {
             return Optional.of(INVALID_SOLIDITY_ADDRESS);
         }
         // Token addresses don't have bytecode that could run a selfdestruct, so this cast is safe
@@ -518,23 +542,29 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         }
         final AccountID accountID = AccountID.newBuilder().accountNum(number).build();
         final var account = nativeOperations.getAccount(accountID);
-        if (account == null) {
-            final var token = nativeOperations.getToken(number);
-            if (token != null) {
-                // If the token is deleted or expired, the system contract executed by the redirect
-                // bytecode will fail with a more meaningful error message, so don't check that here
-                return new TokenEvmAccount(address, this);
+        if (account != null) {
+            if (account.deleted() || account.expiredAndPendingRemoval() || isNotPriority(address, account)) {
+                return null;
             }
-            return null;
+            if (account.smartContract()) {
+                return new ProxyEvmContract(account.accountId(), this);
+            } else {
+                return new ProxyEvmAccount(account.accountId(), this);
+            }
         }
-        if (account.deleted() || account.expiredAndPendingRemoval() || isNotPriority(address, account)) {
-            return null;
+        final var token = nativeOperations.getToken(number);
+        if (token != null) {
+            // If the token is deleted or expired, the system contract executed by the redirect
+            // bytecode will fail with a more meaningful error message, so don't check that here
+            return new TokenEvmAccount(address, this);
         }
-        if (account.smartContract()) {
-            return new ProxyEvmContract(account.accountId(), this);
-        } else {
-            return new ProxyEvmAccount(account.accountId(), this);
+        final var schedule = nativeOperations.getSchedule(number);
+        if (schedule != null) {
+            // If the schedule is deleted or expired, the system contract executed by the redirect
+            // bytecode will fail with a more meaningful error message, so don't check that here
+            return new ScheduleEvmAccount(address, this);
         }
+        return null;
     }
 
     private Bytes proxyBytecodeFor(@NonNull final Address address) {
@@ -547,6 +577,13 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         return address == null
                 ? Bytes.EMPTY
                 : Bytes.fromHexString(ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY.replace(
+                        ADDRESS_BYTECODE_PATTERN, address.toUnprefixedHexString()));
+    }
+
+    private Bytes scheduleProxyBytecodeFor(@Nullable final Address address) {
+        return address == null
+                ? Bytes.EMPTY
+                : Bytes.fromHexString(SCHEDULE_CALL_REDIRECT_CONTRACT_BINARY.replace(
                         ADDRESS_BYTECODE_PATTERN, address.toUnprefixedHexString()));
     }
 

@@ -81,10 +81,16 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(testDataDirectory.resolve("enhanced-valid-no-agreement-key"))
                 .exists()
                 .isNotEmptyDirectory();
+        assertThat(testDataDirectory.resolve("enhanced-valid-no-tss-key"))
+                .exists()
+                .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-invalid-case-1"))
                 .exists()
                 .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-invalid-case-2"))
+                .exists()
+                .isNotEmptyDirectory();
+        assertThat(testDataDirectory.resolve("enhanced-invalid-case-3"))
                 .exists()
                 .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("legacy-valid").resolve("public.pfx"))
@@ -202,6 +208,26 @@ class EnhancedKeyStoreLoaderTest {
         assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
+    }
+
+    /**
+     * The KeyStore Loader Corrupt TSS Key Test is designed to test the case where the key store loader is able to scan
+     * the key directory, but the TSS key is corrupt.
+     *
+     * @throws IOException if an I/O error occurs during test setup.
+     */
+    @Test
+    @DisplayName("KeyStore Loader Corrupt TSS Key Test")
+    void keyStoreLoaderNegativeCorruptTssKey() throws IOException {
+        final Path keyDirectory = testDataDirectory.resolve("enhanced-invalid-case-3");
+        final AddressBook addressBook = addressBook();
+        final EnhancedKeyStoreLoader loader = EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory));
+
+        assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
+
+        assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
+        assertThatCode(loader::scan).isInstanceOf(KeyLoadingException.class);
     }
 
     /**

@@ -40,12 +40,6 @@ import org.junit.jupiter.api.Test;
 class UtilitiesTest {
 
     @Test
-    void testBlsKeyGeneration() throws NoSuchAlgorithmException {
-       final var keyPair = CryptoStatic.generateBlsKeyPair();
-       System.out.println("Key Pair: " + keyPair);
-    }
-
-    @Test
     void writeReadList() throws IOException {
         ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         SerializableDataOutputStream fcOut = new SerializableDataOutputStream(byteOut);

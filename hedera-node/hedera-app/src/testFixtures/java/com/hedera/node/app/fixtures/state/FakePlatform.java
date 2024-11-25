@@ -19,6 +19,7 @@ package com.hedera.node.app.fixtures.state;
 import static com.hedera.node.app.fixtures.AppTestBase.METRIC_EXECUTOR;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -36,6 +37,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
@@ -50,6 +52,7 @@ import java.util.Random;
 public final class FakePlatform implements Platform {
     private final NodeId selfNodeId;
     private final AddressBook addressBook;
+    private final Roster roster;
     private final PlatformContext context;
     private final NotificationEngine notificationEngine;
     private final Random random = new Random(12345L);
@@ -64,6 +67,8 @@ public final class FakePlatform implements Platform {
                 addressBuilder.withNodeId(selfNodeId).withWeight(500L).build();
 
         this.addressBook = new AddressBook(List.of(address));
+        this.roster = RosterRetriever.buildRoster(addressBook);
+
         this.context = createPlatformContext();
         this.notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
     }
@@ -76,6 +81,7 @@ public final class FakePlatform implements Platform {
     public FakePlatform(final long nodeId, final AddressBook addresses) {
         this.selfNodeId = NodeId.of(nodeId);
         this.addressBook = addresses;
+        this.roster = RosterRetriever.buildRoster(addressBook);
         this.context = createPlatformContext();
         this.notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
     }
@@ -119,8 +125,8 @@ public final class FakePlatform implements Platform {
     }
 
     @Override
-    public AddressBook getAddressBook() {
-        return addressBook;
+    public Roster getRoster() {
+        return roster;
     }
 
     @Override

@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -53,6 +52,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
@@ -98,33 +98,29 @@ public class ContractUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateMaxAutomaticAssociationsAndRequireKey() {
-        return defaultHapiSpec("updateMaxAutomaticAssociationsAndRequireKey")
-                .given(
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
-                .when(
-                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).signedBy(DEFAULT_PAYER, ADMIN_KEY),
-                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).signedBy(DEFAULT_PAYER, ADMIN_KEY),
-                        doWithStartupConfigNow("entities.maxLifetime", (value, now) -> contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(20)
-                                .newExpirySecs(now.getEpochSecond() + Long.parseLong(value) - 12345L)
-                                .signedBy(DEFAULT_PAYER)
-                                .hasKnownStatus(INVALID_SIGNATURE)))
-                .then(getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(20)));
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(ADMIN_KEY),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).signedBy(DEFAULT_PAYER, ADMIN_KEY),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).signedBy(DEFAULT_PAYER, ADMIN_KEY),
+                doWithStartupConfigNow("entities.maxLifetime", (value, now) -> contractUpdate(CONTRACT)
+                        .newMaxAutomaticAssociations(20)
+                        .newExpirySecs(now.getEpochSecond() + Long.parseLong(value) - 12345L)
+                        .signedBy(DEFAULT_PAYER)
+                        .hasKnownStatus(INVALID_SIGNATURE)),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(20)));
     }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(
-                        newKeyNamed(ADMIN_KEY),
-                        cryptoCreate("a"),
-                        cryptoCreate("b"),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).autoRenewAccountId("a").stakedAccountId("b"))
-                .when()
-                .then(submitModified(
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                cryptoCreate("a"),
+                cryptoCreate("b"),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).autoRenewAccountId("a").stakedAccountId("b"),
+                submitModified(
                         withSuccessivelyVariedBodyIds(),
                         () -> contractUpdate(CONTRACT).newAutoRenewAccount("b").newStakedAccountId("a")));
     }
@@ -556,10 +552,10 @@ public class ContractUpdateSuite {
                                                     asAddress(spec.registry().getAccountID("Player13")))
                                         }))))));
 
-        return defaultHapiSpec("playGame")
-                .given(given.toArray(HapiSpecOperation[]::new))
-                .when(when.toArray(HapiSpecOperation[]::new))
-                .then(then.toArray(HapiSpecOperation[]::new));
+        return hapiTest(flattened(
+                given.toArray(HapiSpecOperation[]::new),
+                when.toArray(HapiSpecOperation[]::new),
+                then.toArray(HapiSpecOperation[]::new)));
     }
 
     @HapiTest

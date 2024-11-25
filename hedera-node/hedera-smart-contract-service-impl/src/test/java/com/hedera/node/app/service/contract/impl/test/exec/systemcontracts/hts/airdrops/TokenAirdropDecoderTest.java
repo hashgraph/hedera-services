@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.airdrops;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops.TokenAirdropTranslator.TOKEN_AIRDROP;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
@@ -26,9 +28,9 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_I
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SYSTEM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -152,7 +154,9 @@ public class TokenAirdropDecoderTest {
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
         given(addressIdConverter.convert(asHeadlongAddress(SYSTEM_ADDRESS)))
                 .willReturn(AccountID.newBuilder().accountNum(750).build());
-        assertThrows(HandleException.class, () -> subject.decodeAirdrop(attempt));
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeAirdrop(attempt))
+                .withMessage(INVALID_RECEIVING_NODE_ACCOUNT.protoName());
     }
 
     @Test
@@ -243,7 +247,9 @@ public class TokenAirdropDecoderTest {
         given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
         given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
-        assertThrows(HandleException.class, () -> subject.decodeAirdrop(attempt));
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeAirdrop(attempt))
+                .withMessage(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED.protoName());
     }
 
     @Test
@@ -291,6 +297,8 @@ public class TokenAirdropDecoderTest {
         given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
         given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
-        assertThrows(HandleException.class, () -> subject.decodeAirdrop(attempt));
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeAirdrop(attempt))
+                .withMessage(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED.protoName());
     }
 }
