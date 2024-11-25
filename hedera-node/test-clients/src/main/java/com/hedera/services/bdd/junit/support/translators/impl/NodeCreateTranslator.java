@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.support.translators.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.config.types.EntityType.NODE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
@@ -46,15 +47,18 @@ public class NodeCreateTranslator implements BlockTransactionPartsTranslator {
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
                 final var iter = remainingStateChanges.listIterator();
+                final long createdNodeId = baseTranslator.nextCreatedNum(NODE);
                 while (iter.hasNext()) {
                     final var stateChange = iter.next();
                     if (stateChange.hasMapUpdate()
                             && stateChange.mapUpdateOrThrow().valueOrThrow().hasNodeValue()) {
-                        final var nodeId =
+                        final long nodeId =
                                 stateChange.mapUpdateOrThrow().keyOrThrow().entityNumberKeyOrThrow();
-                        receiptBuilder.nodeId(nodeId);
-                        iter.remove();
-                        return;
+                        if (nodeId == createdNodeId) {
+                            receiptBuilder.nodeId(nodeId);
+                            iter.remove();
+                            return;
+                        }
                     }
                 }
                 log.error(

@@ -17,10 +17,14 @@
 package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.updateBootstrapProperties;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
@@ -40,7 +44,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -76,27 +80,36 @@ public class EmbeddedNetwork extends AbstractNetwork {
 
     public EmbeddedNetwork(
             @NonNull final String name, @NonNull final String workingDir, @NonNull final EmbeddedMode mode) {
-        super(name, List.of(new EmbeddedNode(classicMetadataFor(0, name, FAKE_HOST, workingDir, 0, 0, 0, 0, 0))));
+        super(
+                name,
+                IntStream.range(0, CLASSIC_HAPI_TEST_NETWORK_SIZE)
+                        .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(
+                                // All non-embedded node working directories are mapped to the embedded node0
+                                classicMetadataFor(
+                                        nodeId, name, FAKE_HOST, 0, 0, 0, 0, 0, workingDirFor(0, workingDir))))
+                        .toList());
         this.mode = requireNonNull(mode);
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
         // Even though we are only embedding node0, we generate an address book
         // for a "classic" HapiTest network with 4 nodes so that tests can still
         // submit transactions with different creator accounts; c.f. EmbeddedHedera,
         // which skips ingest and directly submits transactions for other nodes
-        this.configTxt = configTxtForLocal(
-                name(),
-                IntStream.range(0, CLASSIC_HAPI_TEST_NETWORK_SIZE)
-                        .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(
-                                classicMetadataFor(nodeId, name, FAKE_HOST, workingDir, 0, 0, 0, 0, 0)))
-                        .toList(),
-                0,
-                0);
+        this.configTxt = configTxtForLocal(name(), nodes(), 1, 1);
     }
 
     @Override
     public void start() {
+        startWithOverrides(emptyMap());
+    }
+
+    @Override
+    public void startWithOverrides(@NonNull final Map<String, String> bootstrapOverrides) {
+        requireNonNull(bootstrapOverrides);
         // Initialize the working directory
         embeddedNode.initWorkingDir(configTxt);
+        if (!bootstrapOverrides.isEmpty()) {
+            updateBootstrapProperties(embeddedNode.getExternalPath(APPLICATION_PROPERTIES), bootstrapOverrides);
+        }
         embeddedNode.start();
         // Start the embedded Hedera "network"
         embeddedHedera = switch (mode) {
@@ -136,8 +149,9 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public Response send(
             @NonNull final Query query,
             @NonNull final HederaFunctionality functionality,
-            @NonNull final AccountID nodeAccountId) {
-        return requireNonNull(embeddedHedera).send(query, nodeAccountId);
+            @NonNull final AccountID nodeAccountId,
+            final boolean asNodeOperator) {
+        return requireNonNull(embeddedHedera).send(query, nodeAccountId, asNodeOperator);
     }
 
     @Override

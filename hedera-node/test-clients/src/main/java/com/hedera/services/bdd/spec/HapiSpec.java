@@ -16,10 +16,11 @@
 
 package com.hedera.services.bdd.spec;
 
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
-import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY;
+import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
@@ -42,7 +43,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.resourceAsStrin
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.turnLoggingOff;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
-import static com.hedera.services.bdd.spec.utilops.SysFileOverrideOp.Target.*;
+import static com.hedera.services.bdd.spec.utilops.SysFileOverrideOp.Target.FEES;
+import static com.hedera.services.bdd.spec.utilops.SysFileOverrideOp.Target.THROTTLES;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.createEthereumAccountForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
@@ -66,15 +68,21 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.schedule.ScheduleIdList;
+import com.hedera.hapi.node.state.roster.RosterState;
+import com.hedera.hapi.node.state.schedule.ScheduledCounts;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
@@ -82,6 +90,7 @@ import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedHedera;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
+import com.hedera.services.bdd.junit.hedera.embedded.RepeatableEmbeddedHedera;
 import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
@@ -101,6 +110,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -458,11 +468,27 @@ public class HapiSpec implements Runnable, Executable {
 
     /**
      * Returns the {@link EmbeddedHedera} for a spec in embedded mode, or throws if the spec is not in embedded mode.
+     *
      * @return the embedded Hedera
      * @throws IllegalStateException if the spec is not in embedded mode
      */
     public EmbeddedHedera embeddedHederaOrThrow() {
         return embeddedNetworkOrThrow().embeddedHederaOrThrow();
+    }
+
+    /**
+     * Returns the {@link EmbeddedHedera} for a spec in embedded mode, or throws if the spec is not in embedded mode.
+     *
+     * @return the embedded Hedera
+     * @throws IllegalStateException if the spec is not in embedded mode
+     */
+    public RepeatableEmbeddedHedera repeatableEmbeddedHederaOrThrow() {
+        final var embeddedHedera = embeddedNetworkOrThrow().embeddedHederaOrThrow();
+        if (embeddedHedera instanceof RepeatableEmbeddedHedera repeatableEmbeddedHedera) {
+            return repeatableEmbeddedHedera;
+        } else {
+            throw new IllegalStateException(embeddedHedera.getClass().getSimpleName() + " is not repeatable");
+        }
     }
 
     /**
@@ -516,15 +542,39 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     /**
-     * Get the {@link WritableKVState} for the embedded network's schedule expiries, if this spec is
+     * Get the {@link WritableKVState} for the embedded network's schedule counts, if this spec is
      * targeting an embedded network.
      *
-     * @return the embedded schedule expiries state
+     * @return the embedded schedule counts state
      * @throws IllegalStateException if this spec is not targeting an embedded network
      */
-    public @NonNull WritableKVState<ProtoLong, ScheduleIdList> embeddedScheduleExpiriesOrThrow() {
+    public @NonNull WritableKVState<TimestampSeconds, ScheduledCounts> embeddedScheduleCountsOrThrow() {
         final var state = embeddedStateOrThrow();
-        return state.getWritableStates(ScheduleService.NAME).get(SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
+        return state.getWritableStates(ScheduleService.NAME).get(V0570ScheduleSchema.SCHEDULED_COUNTS_KEY);
+    }
+
+    /**
+     * Get the {@link WritableKVState} for the embedded network's tssMessages, if this spec is targeting an
+     * embedded network.
+     *
+     * @return the embedded tss messages state
+     * @throws IllegalStateException if this spec is not targeting an embedded network
+     */
+    public @NonNull WritableKVState<TssMessageMapKey, TssMessageTransactionBody> embeddedTssMsgStateOrThrow() {
+        final var state = embeddedStateOrThrow();
+        return state.getWritableStates(TssBaseService.NAME).get(TSS_MESSAGE_MAP_KEY);
+    }
+
+    /**
+     * Get the {@link WritableKVState} for the embedded network's rosters, if this spec is targeting an
+     * embedded network.
+     *
+     * @return the embedded roster state
+     * @throws IllegalStateException if this spec is not targeting an embedded network
+     */
+    public @NonNull WritableSingletonState<RosterState> embeddedRosterStateOrThrow() {
+        final var state = embeddedStateOrThrow();
+        return state.getWritableStates(RosterService.NAME).getSingleton(ROSTER_STATES_KEY);
     }
 
     /**
@@ -938,7 +988,7 @@ public class HapiSpec implements Runnable, Executable {
      * can be used to choose which keys to sign with in both the initial {@code ScheduleCreate},
      * and any {@code ScheduleSign} transactions.
      *
-     * @param numKeys the number of keys that will be used to sign the transaction
+     * @param numKeys     the number of keys that will be used to sign the transaction
      * @param numSignTxns the number of {@code ScheduleSign} transactions that will be executed
      * @return a list of indices that can be used to choose signing keys
      */
@@ -1197,7 +1247,7 @@ public class HapiSpec implements Runnable, Executable {
      * restored to their original values after running the tests.
      *
      * @param propertiesToPreserve the properties to preserve
-     * @param ops the operations
+     * @param ops                  the operations
      * @return a {@link Stream} of {@link DynamicTest}s
      */
     public static Stream<DynamicTest> propertyPreservingHapiTest(
@@ -1243,7 +1293,7 @@ public class HapiSpec implements Runnable, Executable {
     /**
      * Customizes the {@link HapiSpec} to target the given network.
      *
-     * @param spec the {@link HapiSpec} to customize
+     * @param spec          the {@link HapiSpec} to customize
      * @param targetNetwork the target network
      */
     public static void doTargetSpec(@NonNull final HapiSpec spec, @NonNull final HederaNetwork targetNetwork) {

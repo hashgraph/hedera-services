@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl;
 
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.addressbook.Node;
@@ -29,8 +29,9 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Objects;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -54,7 +55,7 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
     }
 
     @Override
-    public Roster newRosterFromNodes() {
+    public Roster snapshotOfFutureRoster() {
         return constructFromNodesState(nodesState());
     }
 
@@ -89,22 +90,26 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
 
     private Roster constructFromNodesState(@NonNull final ReadableKVState<EntityNumber, Node> nodesState) {
         final var rosterEntries = new ArrayList<RosterEntry>();
-        for (final Iterator<EntityNumber> it = nodesState.keys(); it.hasNext(); ) {
+        for (final var it = nodesState.keys(); it.hasNext(); ) {
             final var nodeNumber = it.next();
-            final var nodeDetail = nodesState.get(nodeNumber);
-            if (!nodeDetail.deleted()) {
+            final var node = requireNonNull(nodesState.get(nodeNumber));
+            final var nodeEndpoints = node.gossipEndpoint();
+            // we want to swap the internal and external node endpoints
+            // so that the external one is at index 0
+            if (nodeEndpoints.size() > 1) {
+                Collections.swap(nodeEndpoints, 0, 1);
+            }
+            if (!node.deleted()) {
                 final var entry = RosterEntry.newBuilder()
-                        .nodeId(nodeDetail.nodeId())
-                        .weight(nodeDetail.weight())
-                        .gossipCaCertificate(nodeDetail.gossipCaCertificate())
-                        .gossipEndpoint(nodeDetail.gossipEndpoint())
-                        .tssEncryptionKey(nodeDetail.tssEncryptionKey())
+                        .nodeId(node.nodeId())
+                        .weight(node.weight())
+                        .gossipCaCertificate(node.gossipCaCertificate())
+                        .gossipEndpoint(nodeEndpoints)
                         .build();
                 rosterEntries.add(entry);
             }
         }
-
-        rosterEntries.sort((re1, re2) -> Objects.compare(re1.nodeId(), re2.nodeId(), Long::compareTo));
+        rosterEntries.sort(Comparator.comparingLong(RosterEntry::nodeId));
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }
 }

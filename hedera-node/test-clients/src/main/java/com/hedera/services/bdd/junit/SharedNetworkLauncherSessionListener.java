@@ -94,7 +94,7 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
             if (embedding == Embedding.NA) {
                 HapiClients.tearDown();
             }
-            SHARED_NETWORK.get().terminate();
+            Optional.ofNullable(SHARED_NETWORK.get()).ifPresent(HederaNetwork::terminate);
         }
 
         /**

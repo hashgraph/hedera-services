@@ -18,10 +18,11 @@ package com.hedera.node.app.service.schedule;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.List;
 
 /**
  * The interface Writable schedule store.
@@ -44,10 +45,11 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
     /**
      * Given the ID of a schedule, return a mutable reference to the schedule in this state.
      *
-     * @param idToFind The ID to find
+     * @param scheduleId The ID to find
      * @return the Schedule to modify
      */
-    Schedule getForModify(ScheduleID idToFind);
+    @Nullable
+    Schedule getForModify(@NonNull ScheduleID scheduleId);
 
     /**
      * Add a schedule to this state.
@@ -55,7 +57,21 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      *
      * @param scheduleToAdd The schedule to add
      */
-    void put(Schedule scheduleToAdd);
+    void put(@NonNull Schedule scheduleToAdd);
+
+    /**
+     * Purges all schedule state associated with the given order.
+     * @param order The order to purge schedules for.
+     * @return whether this was the last scheduled order in its consensus second
+     */
+    boolean purgeByOrder(@NonNull ScheduledOrder order);
+
+    /**
+     * Updates the usage of the throttles for the given consensus second.
+     * @param consensusSecond The consensus second to track the usage for.
+     * @param usageSnapshots The usage snapshots to track.
+     */
+    void trackUsage(long consensusSecond, @NonNull ThrottleUsageSnapshots usageSnapshots);
 
     /**
      * Purges expired schedules from the store.
@@ -63,7 +79,5 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @param firstSecondToExpire The consensus second of the first schedule to expire.
      * @param lastSecondToExpire  The consensus second of the last schedule to expire.
      */
-    void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire);
-
-    List<Schedule> getByExpirationBetween(long firstSecondToExpire, long lastSecondToExpire);
+    void purgeExpiredRangeClosed(long firstSecondToExpire, long lastSecondToExpire);
 }

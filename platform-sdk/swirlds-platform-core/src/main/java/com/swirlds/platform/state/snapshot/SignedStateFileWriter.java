@@ -24,7 +24,7 @@ import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSett
 import static com.swirlds.platform.event.preconsensus.BestEffortPcesFileCopy.copyPcesFilesRetryOnFailure;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.HASH_INFO_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.INIT_STATE_FILE_VERSION;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.INIT_SIG_SET_FILE_VERSION;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNATURE_SET_FILE_NAME;
 
 import com.swirlds.common.context.PlatformContext;
@@ -35,9 +35,10 @@ import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.merkle.MerkleStateRoot;
+import com.swirlds.state.merkle.SigSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -109,14 +110,14 @@ public final class SignedStateFileWriter {
     }
 
     /**
-     * Write a {@link com.swirlds.platform.state.signed.SigSet} to a stream.
+     * Write a {@link SigSet} to a stream.
      *
      * @param out         the stream to write to
      * @param signedState the signed state to write
      */
     private static void writeSignatureSetToStream(final MerkleDataOutputStream out, final SignedState signedState)
             throws IOException {
-        out.writeInt(INIT_STATE_FILE_VERSION);
+        out.writeInt(INIT_SIG_SET_FILE_VERSION);
         out.writeProtocolVersion();
         out.writeSerializable(signedState.getSigSet(), true);
     }
@@ -221,7 +222,8 @@ public final class SignedStateFileWriter {
 
             executeAndRename(
                     savedStateDirectory,
-                    directory -> writeSignedStateFilesToDirectory(platformContext, selfId, directory, signedState));
+                    directory -> writeSignedStateFilesToDirectory(platformContext, selfId, directory, signedState),
+                    platformContext.getConfiguration());
 
             logger.info(STATE_TO_DISK.getMarker(), () -> new StateSavedToDiskPayload(
                             signedState.getRound(),

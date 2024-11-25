@@ -31,18 +31,23 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
-import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
+import com.hedera.node.app.workflows.handle.steps.StakePeriodChanges;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -53,8 +58,8 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -72,7 +77,7 @@ class HandleWorkflowTest {
     private NetworkInfo networkInfo;
 
     @Mock
-    private NodeStakeUpdates nodeStakeUpdates;
+    private StakePeriodChanges stakePeriodChanges;
 
     @Mock
     private DispatchProcessor dispatchProcessor;
@@ -94,6 +99,15 @@ class HandleWorkflowTest {
 
     @Mock
     private CacheWarmer cacheWarmer;
+
+    @Mock
+    private ScheduleService scheduleService;
+
+    @Mock
+    private KVStateChangeListener kvStateChangeListener;
+
+    @Mock
+    private BoundaryStateChangeListener boundaryStateChangeListener;
 
     @Mock
     private OpWorkflowMetrics opWorkflowMetrics;
@@ -130,6 +144,9 @@ class HandleWorkflowTest {
 
     @Mock
     private UserTxnFactory userTxnFactory;
+
+    @Mock
+    private TssBaseService tssBaseService;
 
     private HandleWorkflow subject;
 
@@ -187,7 +204,7 @@ class HandleWorkflowTest {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
         subject = new HandleWorkflow(
                 networkInfo,
-                nodeStakeUpdates,
+                stakePeriodChanges,
                 dispatchProcessor,
                 configProvider,
                 storeMetricsService,
@@ -205,6 +222,11 @@ class HandleWorkflowTest {
                 exchangeRateManager,
                 stakePeriodManager,
                 migrationStateChanges,
-                userTxnFactory);
+                userTxnFactory,
+                new AddressBookHelper(),
+                tssBaseService,
+                kvStateChangeListener,
+                boundaryStateChangeListener,
+                scheduleService);
     }
 }

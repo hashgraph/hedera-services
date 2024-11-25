@@ -103,7 +103,8 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         final var transactionKeys = getTransactionKeysOrThrow(schedule, context::allKeysForTransaction);
         final var requiredKeys = allRequiredKeys(transactionKeys);
         final var signatories = schedule.signatories();
-        final var newSignatories = newSignatories(context.keyVerifier().signingCryptoKeys(), signatories, requiredKeys);
+        final var newSignatories =
+                newSignatories(context.keyVerifier().authorizingSimpleKeys(), signatories, requiredKeys);
         schedule = schedule.copyBuilder().signatories(newSignatories).build();
         if (isLongTermEnabled && schedule.waitForExpiry()) {
             validateTrue(!newSignatories.equals(signatories), NO_NEW_VALID_SIGNATURES);

@@ -16,13 +16,10 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.platform.state.MerkleStateRoot.CURRENT_VERSION;
-import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
-import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
+import static com.swirlds.state.merkle.MerkleStateRoot.CURRENT_VERSION;
 import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -35,11 +32,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.base.state.MutabilityException;
-import com.swirlds.common.context.PlatformContext;
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -49,31 +44,21 @@ import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
-import com.swirlds.platform.test.fixtures.state.TestSchema;
-import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableSingletonState;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
-import com.swirlds.state.spi.WritableStates;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import com.swirlds.state.test.fixtures.merkle.TestMerkleStateRoot;
+import com.swirlds.state.test.fixtures.merkle.TestSchema;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -81,7 +66,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -94,49 +78,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MerkleStateRootTest extends MerkleTestBase {
     /** The merkle tree we will test with */
-    private MerkleStateRoot stateRoot;
-
-    private final AtomicBoolean onPreHandleCalled = new AtomicBoolean(false);
-    private final AtomicBoolean onHandleCalled = new AtomicBoolean(false);
-    private final AtomicBoolean onUpdateWeightCalled = new AtomicBoolean(false);
-
-    private final MerkleStateLifecycles lifecycles = new MerkleStateLifecycles() {
-
-        @Override
-        public void onSealConsensusRound(@NonNull Round round, @NonNull State state) {
-            // No-op
-        }
-
-        @Override
-        public void onPreHandle(@NonNull Event event, @NonNull State state) {
-            onPreHandleCalled.set(true);
-        }
-
-        @Override
-        public void onNewRecoveredState(@NonNull MerkleStateRoot recoveredState) {
-            // No-op
-        }
-
-        @Override
-        public void onHandleConsensusRound(@NonNull Round round, @NonNull State state) {
-            onHandleCalled.set(true);
-        }
-
-        @Override
-        public void onStateInitialized(
-                @NonNull State state,
-                @NonNull Platform platform,
-                @NonNull InitTrigger trigger,
-                @Nullable SoftwareVersion previousVersion) {}
-
-        @Override
-        public void onUpdateWeight(
-                @NonNull MerkleStateRoot state,
-                @NonNull AddressBook configAddressBook,
-                @NonNull PlatformContext context) {
-            onUpdateWeightCalled.set(true);
-        }
-    };
+    private MerkleStateRoot<?> stateRoot;
 
     /**
      * Start with an empty Merkle Tree, but with the "fruit" map and metadata created and ready to
@@ -147,8 +89,8 @@ class MerkleStateRootTest extends MerkleTestBase {
         setupConstructableRegistry();
         FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
         setupFruitMerkleMap();
-        stateRoot = new MerkleStateRoot(lifecycles, softwareVersionSupplier);
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(stateRoot);
+        stateRoot = new TestMerkleStateRoot();
+        stateRoot.init(new FakeTime(), new NoOpMetrics(), mock(MerkleCryptography.class));
     }
 
     /** Looks for a merkle node with the given label */
@@ -204,7 +146,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @DisplayName("Adding a service")
         void addingService() {
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(2);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
             assertThat(getNodeForLabel(fruitLabel)).isSameAs(fruitMerkleMap);
         }
 
@@ -218,7 +160,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitVirtualMap);
 
             // Then we can see it is on the tree
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(2);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
             assertThat(getNodeForLabel(fruitLabel)).isSameAs(fruitVirtualMap);
         }
 
@@ -232,7 +174,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
 
             // Then we can see it is on the tree
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(2);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
             assertThat(getNodeForLabel(countryLabel)).isSameAs(countrySingleton);
         }
 
@@ -246,7 +188,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
 
             // Then we can see it is on the tree
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(2);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
             assertThat(getNodeForLabel(steamLabel)).isSameAs(steamQueue);
         }
 
@@ -264,7 +206,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         void addingServiceTwiceIsIdempotent() {
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(2);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
             assertThat(getNodeForLabel(fruitLabel)).isSameAs(fruitMerkleMap);
         }
 
@@ -278,7 +220,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> map2);
 
             // Then the original node is kept and the second node ignored
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(2);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
             assertThat(getNodeForLabel(fruitLabel)).isSameAs(fruitMerkleMap);
         }
 
@@ -296,7 +238,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.putServiceStateIfAbsent(fruitMetadata2, () -> fruitMerkleMap);
 
             // Then the original node is kept and the second node ignored
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(2);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
             assertThat(getNodeForLabel(fruitLabel)).isSameAs(fruitMerkleMap);
 
             // NOTE: I don't have a good way to test that the metadata is intact...
@@ -410,7 +352,6 @@ class MerkleStateRootTest extends MerkleTestBase {
     @Nested
     @DisplayName("ReadableStates Tests")
     final class ReadableStatesTest {
-
         @BeforeEach
         void setUp() {
             setupAnimalMerkleMap();
@@ -470,7 +411,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             // Given a State with the fruit merkle map, which somehow has
             // lost the merkle node (this should NEVER HAPPEN in real life!)
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            stateRoot.setChild(1, null);
+            stateRoot.setChild(0, null);
 
             // When we get the ReadableStates
             final var states = stateRoot.getReadableStates(FIRST_SERVICE);
@@ -654,7 +595,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             // Given a State with the fruit virtual map, which somehow has
             // lost the merkle node (this should NEVER HAPPEN in real life!)
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            stateRoot.setChild(1, null);
+            stateRoot.setChild(0, null);
 
             // When we get the WritableStates
             final var states = stateRoot.getWritableStates(FIRST_SERVICE);
@@ -753,50 +694,8 @@ class MerkleStateRootTest extends MerkleTestBase {
     }
 
     @Nested
-    @DisplayName("Handling Pre-Handle Tests")
-    final class PreHandleTest {
-        @Test
-        @DisplayName("The onPreHandle handler is called when a pre-handle happens")
-        void onPreHandleCalled() {
-            assertThat(onPreHandleCalled).isFalse();
-            stateRoot.preHandle(Mockito.mock(Event.class));
-            assertThat(onPreHandleCalled).isTrue();
-        }
-    }
-
-    @Nested
-    @DisplayName("Handling Consensus Rounds Tests")
-    final class ConsensusRoundTest {
-        @Test
-        @DisplayName("Notifications are sent to onHandleConsensusRound when handleConsensusRound is called")
-        void handleConsensusRoundCallback() {
-            final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformStateModifier.class);
-            final var state = new MerkleStateRoot(lifecycles, softwareVersionSupplier);
-
-            state.handleConsensusRound(round, platformState);
-            assertThat(onHandleCalled).isTrue();
-        }
-    }
-
-    @Nested
     @DisplayName("Copy Tests")
     final class CopyTest {
-        @Test
-        @DisplayName("When a copy is made, the original loses the onConsensusRoundCallback, and the copy gains it")
-        void originalLosesConsensusRoundCallbackAfterCopy() {
-            final var copy = stateRoot.copy();
-
-            // The original no longer has the listener
-            final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformStateModifier.class);
-            assertThrows(MutabilityException.class, () -> stateRoot.handleConsensusRound(round, platformState));
-
-            // But the copy does
-            copy.handleConsensusRound(round, platformState);
-            assertThat(onHandleCalled).isTrue();
-        }
-
         @Test
         @DisplayName("Cannot call copy on original after copy")
         void callCopyTwiceOnOriginalThrows() {
@@ -829,18 +728,6 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.copy();
             assertThatThrownBy(() -> stateRoot.getWritableStates(FRUIT_STATE_KEY))
                     .isInstanceOf(MutabilityException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("Handling updateWeight Tests")
-    final class UpdateWeightTest {
-        @Test
-        @DisplayName("The onUpdateWeight handler is called when a updateWeight is called")
-        void onUpdateWeightCalled() {
-            assertThat(onUpdateWeightCalled).isFalse();
-            stateRoot.updateWeight(Mockito.mock(AddressBook.class), Mockito.mock(PlatformContext.class));
-            assertThat(onUpdateWeightCalled).isTrue();
         }
     }
 
@@ -913,60 +800,8 @@ class MerkleStateRootTest extends MerkleTestBase {
     }
 
     @Nested
-    @DisplayName("Platform state related tests")
-    class PlatformStateTests {
-
-        @Test
-        @DisplayName("Platform state should be registered by default")
-        void platformStateIsRegisteredByDefault() {
-            assertThat(stateRoot.getWritablePlatformState()).isNotNull();
-        }
-
-        @Test
-        @DisplayName("Test access to the platform state")
-        void testAccessToPlatformStateData() {
-            PlatformStateModifier randomPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
-            stateRoot.updatePlatformState(randomPlatformState);
-            ReadableSingletonState<PlatformState> readableSingletonState = stateRoot
-                    .getReadableStates(PlatformStateService.NAME)
-                    .getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
-            WritableSingletonState<PlatformState> writableSingletonState = stateRoot
-                    .getWritableStates(PlatformStateService.NAME)
-                    .getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
-
-            assertThat(readableSingletonState.get()).isEqualTo(toPbjPlatformState(randomPlatformState));
-            assertThat(writableSingletonState.get()).isEqualTo(toPbjPlatformState(randomPlatformState));
-        }
-
-        @Test
-        @DisplayName("Test update of the platform state")
-        void testUpdatePlatformStateData() {
-            PlatformStateModifier randomPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
-            stateRoot.updatePlatformState(randomPlatformState);
-            WritableStates writableStates = stateRoot.getWritableStates(PlatformStateService.NAME);
-            WritableSingletonState<PlatformState> writableSingletonState =
-                    writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
-            PlatformStateModifier newPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
-            writableSingletonState.put(toPbjPlatformState(newPlatformState));
-            ((CommittableWritableStates) writableStates).commit();
-
-            PlatformStateAccessor stateAccessor = stateRoot.getReadablePlatformState();
-            assertThat(stateAccessor.getAddressBook()).isEqualTo(newPlatformState.getAddressBook());
-            assertThat(stateAccessor.getRound())
-                    .isEqualTo(newPlatformState.getSnapshot().round());
-        }
-    }
-
-    @Nested
     @DisplayName("Migrate test")
     class MigrateTest {
-        @Test
-        @DisplayName("Migrate fails if the first child is not PlatformState")
-        void migrate_fail() {
-            stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            assertThrows(IllegalStateException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
-        }
-
         @Test
         @DisplayName("If the version is current, nothing ever happens")
         void migrate_currentVersion() {
@@ -980,21 +815,15 @@ class MerkleStateRootTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("Migrate fails if the platform state is absent")
-        void migrate_platform_absent() {
-            var node1 = mock(MerkleNode.class);
-            stateRoot.setChild(0, node1);
-            var node2 = mock(MerkleNode.class);
-            stateRoot.setChild(1, node2);
-
-            assertThrows(IllegalStateException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
+        @DisplayName("Migration from previous versions is not supported")
+        void migration_not_supported() {
+            assertThrows(UnsupportedOperationException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
         }
     }
 
     @Nested
     @DisplayName("Hashing test")
     class HashingTest {
-
         private MerkleCryptography merkleCryptography;
 
         @BeforeEach
@@ -1018,17 +847,12 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
             stateRoot.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
 
-            final Platform platform = mock(Platform.class);
             merkleCryptography = MerkleCryptographyFactory.create(
                     ConfigurationBuilder.create()
                             .withConfigDataType(CryptoConfig.class)
                             .build(),
                     CryptographyFactory.create());
-            final PlatformContext platformContext = mock(PlatformContext.class);
-            when(platform.getContext()).thenReturn(platformContext);
-            when(platformContext.getMerkleCryptography()).thenReturn(merkleCryptography);
-            when(platformContext.getMetrics()).thenReturn(new NoOpMetrics());
-            stateRoot.init(platform, InitTrigger.GENESIS, mock(SoftwareVersion.class));
+            stateRoot.init(new FakeTime(), new NoOpMetrics(), merkleCryptography);
         }
 
         @Test

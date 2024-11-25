@@ -42,7 +42,7 @@ import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.config.data.ContractsConfig;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.Set;

@@ -26,18 +26,21 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.swirlds.base.time.Time;
@@ -55,23 +58,29 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.roster.RosterHistory;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
+import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
@@ -91,39 +100,43 @@ public class ServicesMain implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);
 
     /**
-     * The {@link SwirldMain} to actually use, depending on whether workflows are enabled.
+     * The {@link Hedera} singleton.
      */
-    private final SwirldMain delegate;
+    private static Hedera hedera;
 
     /**
-     * Create a new instance
+     * The {@link Metrics} to use.
      */
+    private static Metrics metrics;
+
     public ServicesMain() {
-        delegate = newHedera();
+        // No-op, everything must be initialized in the main() entrypoint
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public SoftwareVersion getSoftwareVersion() {
-        return delegate.getSoftwareVersion();
+    public @NonNull SoftwareVersion getSoftwareVersion() {
+        return hederaOrThrow().getSoftwareVersion();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void init(@NonNull final Platform ignored, @NonNull final NodeId nodeId) {
-        delegate.init(ignored, nodeId);
+    public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
+        requireNonNull(platform);
+        requireNonNull(nodeId);
+        hederaOrThrow().init(platform, nodeId);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public MerkleRoot newMerkleStateRoot() {
-        return delegate.newMerkleStateRoot();
+    public @NonNull MerkleRoot newMerkleStateRoot() {
+        return hederaOrThrow().newMerkleStateRoot();
     }
 
     /**
@@ -131,7 +144,7 @@ public class ServicesMain implements SwirldMain {
      */
     @Override
     public void run() {
-        delegate.run();
+        hederaOrThrow().run();
     }
 
     /**
@@ -169,7 +182,6 @@ public class ServicesMain implements SwirldMain {
      */
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
-        final Hedera hedera = newHedera();
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
         final AddressBook diskAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
@@ -193,15 +205,21 @@ public class ServicesMain implements SwirldMain {
 
         final NodeId selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
 
-        final SoftwareVersion version = hedera.getSoftwareVersion();
-        logger.info("Starting node {} with version {}", selfId, version);
-
         final var configuration = buildConfiguration();
+
+        // Register with the ConstructableRegistry classes which need configuration.
+        BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
+
         final var keysAndCerts =
                 initNodeSecurity(diskAddressBook, configuration).get(selfId);
 
         setupGlobalMetrics(configuration);
-        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        metrics = getMetricsProvider().createPlatformMetrics(selfId);
+
+        hedera = newHedera(selfId);
+        final SoftwareVersion version = hedera.getSoftwareVersion();
+        logger.info("Starting node {} with version {}", selfId, version);
+
         final var time = Time.getCurrent();
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
@@ -217,10 +235,13 @@ public class ServicesMain implements SwirldMain {
                     isGenesis.set(true);
                     final var genesisState = hedera.newMerkleStateRoot();
                     hedera.initializeStatesApi(
-                            (MerkleStateRoot) genesisState, metrics, InitTrigger.GENESIS, diskAddressBook);
+                            (MerkleStateRoot) genesisState,
+                            metrics,
+                            InitTrigger.GENESIS,
+                            diskAddressBook,
+                            configuration);
                     return genesisState;
                 },
-                SignedStateFileUtils::readState,
                 Hedera.APP_NAME,
                 Hedera.SWIRLD_NAME,
                 selfId,
@@ -231,7 +252,8 @@ public class ServicesMain implements SwirldMain {
                     (MerkleStateRoot) initialState.get().getState().getSwirldState(),
                     metrics,
                     InitTrigger.RESTART,
-                    null);
+                    null,
+                    configuration);
         }
 
         final var cryptography = CryptographyFactory.create();
@@ -258,20 +280,37 @@ public class ServicesMain implements SwirldMain {
         // Initialize the address book and set on platform builder
         final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
 
+        final RosterHistory rosterHistory;
+        final boolean shouldUseRosterLifecycle =
+                configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle();
+        if (shouldUseRosterLifecycle) {
+            final SignedState loadedSignedState = initialState.get();
+            final var state = ((MerkleStateRoot) loadedSignedState.getState());
+            final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
+            rosterHistory = RosterUtils.createRosterHistory(rosterStore);
+        } else {
+            rosterHistory =
+                    RosterUtils.buildRosterHistory(initialState.get().getState().getReadablePlatformState());
+        }
+
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
-        final var roster = createRoster(addressBook);
+        final var roster = buildRoster(addressBook);
         final var platformBuilder = PlatformBuilder.create(
-                        Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
+                        Hedera.APP_NAME,
+                        Hedera.SWIRLD_NAME,
+                        version,
+                        initialState,
+                        selfId,
+                        AddressBookUtils.formatConsensusEventStreamName(addressBook, selfId),
+                        // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
+                        // we need to choose the correct roster in the following cases:
+                        //  - At genesis, a roster loaded from disk
+                        //  - At restart, the active roster in the saved state
+                        //  - At upgrade boundary, the candidate roster in the saved state IF
+                        //    that state satisfies conditions (e.g. the roster has been keyed)
+                        rosterHistory)
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration)
-                .withAddressBook(addressBook)
-                // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
-                // we need to choose the correct roster in the following cases:
-                //  - At genesis, a roster loaded from disk
-                //  - At restart, the active roster in the saved state
-                //  - At upgrade boundary, the candidate roster in the saved state IF
-                //    that state satisfies conditions (e.g. the roster has been keyed)
-                .withRoster(roster)
                 .withKeysAndCerts(keysAndCerts);
 
         hedera.setInitialStateHash(stateHash);
@@ -382,7 +421,11 @@ public class ServicesMain implements SwirldMain {
         }
     }
 
-    private static Hedera newHedera() {
+    private static @NonNull Hedera hederaOrThrow() {
+        return requireNonNull(hedera);
+    }
+
+    private static Hedera newHedera(@NonNull final NodeId selfNodeId) {
         return new Hedera(
                 ConstructableRegistry.getInstance(),
                 ServicesRegistryImpl::new,
@@ -393,6 +436,15 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
-                        ForkJoinPool.commonPool()));
+                        ForkJoinPool.commonPool(),
+                        metrics),
+                DiskStartupNetworks::new,
+                selfNodeId);
+    }
+
+    @VisibleForTesting
+    static void initGlobal(@NonNull final Hedera hedera, @NonNull final Metrics metrics) {
+        ServicesMain.hedera = hedera;
+        ServicesMain.metrics = metrics;
     }
 }

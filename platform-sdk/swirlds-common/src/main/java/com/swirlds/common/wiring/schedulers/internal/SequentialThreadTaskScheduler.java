@@ -16,8 +16,6 @@
 
 package com.swirlds.common.wiring.schedulers.internal;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
@@ -27,7 +25,6 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -35,6 +32,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.ToLongFunction;
 
 /**
  * A scheduler that performs work sequentially on a dedicated thread. This class has very similar semantics to
@@ -47,8 +45,8 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
+    private final ToLongFunction<Object> dataCounter;
     private final FractionalTimer busyTimer;
-    private final Duration sleepDuration;
     private final long capacity;
 
     private final BlockingQueue<SequentialThreadTask> tasks = new LinkedBlockingQueue<>();
@@ -67,8 +65,8 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      * @param uncaughtExceptionHandler the handler to call when an exception is thrown by a task
      * @param onRamp                   the counter to increment when a task is added to the queue
      * @param offRamp                  the counter to decrement when a task is removed from the queue
+     * @param dataCounter              the function to weight input data objects for health monitoring
      * @param busyTimer                the timer to activate when a task is being handled
-     * @param sleepDuration            the duration to sleep when the queue is empty
      * @param capacity                 the maximum desired capacity for this task scheduler
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param squelchingEnabled        if true, then squelching will be enabled, otherwise trying to squelch will throw
@@ -81,8 +79,8 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
+            @NonNull final ToLongFunction<Object> dataCounter,
             @NonNull final FractionalTimer busyTimer,
-            @NonNull final Duration sleepDuration,
             final long capacity,
             final boolean flushEnabled,
             final boolean squelchingEnabled,
@@ -92,8 +90,8 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
         this.onRamp = Objects.requireNonNull(onRamp);
         this.offRamp = Objects.requireNonNull(offRamp);
+        this.dataCounter = dataCounter;
         this.busyTimer = Objects.requireNonNull(busyTimer);
-        this.sleepDuration = Objects.requireNonNull(sleepDuration);
         this.capacity = capacity;
 
         thread = new Thread(this::run, "<scheduler " + name + ">");
@@ -129,7 +127,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      */
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        onRamp.onRamp();
+        onRamp.onRamp(dataCounter.applyAsLong(data));
         tasks.add(new SequentialThreadTask(handler, data));
     }
 
@@ -138,11 +136,10 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      */
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        final boolean accepted = onRamp.attemptOnRamp();
+        final boolean accepted = onRamp.attemptOnRamp(dataCounter.applyAsLong(data));
         if (!accepted) {
             return false;
         }
-
         tasks.add(new SequentialThreadTask(handler, data));
         return true;
     }
@@ -152,7 +149,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      */
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        onRamp.forceOnRamp();
+        onRamp.forceOnRamp(dataCounter.applyAsLong(data));
         tasks.add(new SequentialThreadTask(handler, data));
     }
 
@@ -179,17 +176,9 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
         final List<SequentialThreadTask> buffer = new ArrayList<>(BUFFER_SIZE);
 
         while (alive.get()) {
-            tasks.drainTo(buffer, BUFFER_SIZE);
-            if (buffer.isEmpty()) {
-                if (sleepDuration.toNanos() <= 0) {
-                    continue;
-                }
-
+            if (tasks.drainTo(buffer, BUFFER_SIZE) == 0) {
                 try {
-                    final SequentialThreadTask task = tasks.poll(sleepDuration.toNanos(), NANOSECONDS);
-                    if (task == null) {
-                        continue;
-                    }
+                    final SequentialThreadTask task = tasks.take();
                     buffer.add(task);
                 } catch (final InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -204,7 +193,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
                 } catch (final Throwable t) {
                     uncaughtExceptionHandler.uncaughtException(thread, t);
                 } finally {
-                    offRamp.offRamp();
+                    offRamp.offRamp(dataCounter.applyAsLong(task.data()));
                 }
             }
             busyTimer.deactivate();

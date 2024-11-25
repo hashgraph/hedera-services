@@ -23,12 +23,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertS
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HasSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallFactory;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -45,19 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HasSystemContractTest {
     @Mock
-    private Call call;
-
-    @Mock
-    private HtsCallAttempt attempt;
-
-    @Mock
     private MessageFrame frame;
-
-    @Mock
-    private ProxyWorldUpdater updater;
-
-    @Mock
-    private HederaWorldUpdater.Enhancement enhancement;
 
     @Mock
     private ContractsConfig contractsConfig;

@@ -17,8 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.*;
 import static com.swirlds.merkledb.test.fixtures.files.DataFileCollectionTestUtils.checkData;
 import static com.swirlds.merkledb.test.fixtures.files.DataFileCollectionTestUtils.getVariableSizeDataForI;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -36,7 +35,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.base.units.UnitConstants;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
@@ -80,7 +78,7 @@ import org.mockito.Mockito;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DataFileCollectionTest {
 
-    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+    private static final MerkleDbConfig MERKLE_DB_CONFIG = CONFIGURATION.getConfigData(MerkleDbConfig.class);
 
     /** Temporary directory provided by JUnit */
     @SuppressWarnings("unused")
@@ -118,7 +116,7 @@ class DataFileCollectionTest {
     @EnumSource(FilesTestType.class)
     void createDataFileCollection(FilesTestType testType) throws Exception {
         final DataFileCollection fileCollection =
-                new DataFileCollection(config, tempFileDir.resolve(testType.name()), "test", null);
+                new DataFileCollection(MERKLE_DB_CONFIG, tempFileDir.resolve(testType.name()), "test", null);
 
         assertSame(
                 Collections.emptyList(),
@@ -219,8 +217,8 @@ class DataFileCollectionTest {
     void createDataFileCollectionWithLoadedDataCallback(final FilesTestType testType) throws Exception {
         fileCollectionMap.get(testType).close(); // close the old one so metadata is written to disk
         final LoadedDataCallbackImpl loadedDataCallbackImpl = new LoadedDataCallbackImpl();
-        final DataFileCollection fileCollection =
-                new DataFileCollection(config, tempFileDir.resolve(testType.name()), "test", loadedDataCallbackImpl);
+        final DataFileCollection fileCollection = new DataFileCollection(
+                MERKLE_DB_CONFIG, tempFileDir.resolve(testType.name()), "test", loadedDataCallbackImpl);
         fileCollectionMap.put(testType, fileCollection);
         reinitializeDirectMemoryUsage();
         // check that the 10 files were created previously (in the very first unit test) still are
@@ -249,8 +247,8 @@ class DataFileCollectionTest {
 
         // also try specifying a testStore (that doesn't exist) in a storeDir that does
         final LoadedDataCallbackImpl loadedDataCallbackImpl2 = new LoadedDataCallbackImpl();
-        final DataFileCollection fileCollection2 =
-                new DataFileCollection(config, tempFileDir.resolve(testType.name()), "test2", loadedDataCallbackImpl2);
+        final DataFileCollection fileCollection2 = new DataFileCollection(
+                MERKLE_DB_CONFIG, tempFileDir.resolve(testType.name()), "test2", loadedDataCallbackImpl2);
         assertEquals(
                 0,
                 loadedDataCallbackImpl2.dataLocationMap.size(),
@@ -276,8 +274,8 @@ class DataFileCollectionTest {
         fileCollection.close();
         assertDoesNotThrow(
                 () -> {
-                    final DataFileCollection reopenedFileCollection =
-                            new DataFileCollection(config, tempFileDir.resolve(testType.name()), "test", testCallback);
+                    final DataFileCollection reopenedFileCollection = new DataFileCollection(
+                            MERKLE_DB_CONFIG, tempFileDir.resolve(testType.name()), "test", testCallback);
                     fileCollectionMap.put(testType, reopenedFileCollection);
                 },
                 "Shouldn't be a problem re-opening a closed collection");
@@ -327,7 +325,7 @@ class DataFileCollectionTest {
         assertDoesNotThrow(
                 () -> {
                     final DataFileCollection reopenedFileCollection = new DataFileCollection(
-                            config,
+                            MERKLE_DB_CONFIG,
                             tempFileDir.resolve(testType.name()),
                             "test",
                             null,
@@ -606,7 +604,7 @@ class DataFileCollectionTest {
     private static DataFileCompactor createFileCompactor(
             String storeName, DataFileCollection fileCollection, FilesTestType testType) {
         return new DataFileCompactor(
-                config, storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null, null) {
+                MERKLE_DB_CONFIG, storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null, null) {
             @Override
             int getMinNumberOfFilesToCompact() {
                 return 2;
@@ -635,7 +633,7 @@ class DataFileCollectionTest {
     void mergeWorksAfterOpen(final FilesTestType testType) throws Exception {
         final Path dbDir = tempFileDir.resolve(testType.name());
         final String storeName = "mergeWorksAfterOpen";
-        final DataFileCollection fileCollection = new DataFileCollection(config, dbDir, storeName, null);
+        final DataFileCollection fileCollection = new DataFileCollection(MERKLE_DB_CONFIG, dbDir, storeName, null);
         assertSame(0, fileCollection.getAllCompletedFiles().size(), "Should be no files");
         fileCollectionMap.put(testType, fileCollection);
         // create stored offsets list
@@ -658,9 +656,9 @@ class DataFileCollectionTest {
         // close
         fileCollection.close();
         // reopen
-        final DataFileCollection fileCollection2 = new DataFileCollection(config, dbDir, storeName, null);
+        final DataFileCollection fileCollection2 = new DataFileCollection(MERKLE_DB_CONFIG, dbDir, storeName, null);
         final DataFileCompactor fileCompactor = new DataFileCompactor(
-                config, storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null, null);
+                MERKLE_DB_CONFIG, storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null, null);
         fileCollectionMap.put(testType, fileCollection2);
         // check 10 files were opened and data is correct
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files");
@@ -725,11 +723,11 @@ class DataFileCollectionTest {
         final String storeName = "testClosedByInterruptException";
 
         // init file collection with some content to compact
-        final DataFileCollection fileCollection = new DataFileCollection(config, dbDir, storeName, null);
+        final DataFileCollection fileCollection = new DataFileCollection(MERKLE_DB_CONFIG, dbDir, storeName, null);
         final LongListHeap storedOffsets = new LongListHeap(5000);
         storedOffsets.updateValidRange(0, 1100);
-        final DataFileCompactor compactor =
-                new DataFileCompactor(config, storeName, fileCollection, storedOffsets, null, null, null, null);
+        final DataFileCompactor compactor = new DataFileCompactor(
+                MERKLE_DB_CONFIG, storeName, fileCollection, storedOffsets, null, null, null, null);
         populateDataFileCollection(FilesTestType.fixed, fileCollection, storedOffsets);
 
         // a flag to make sure that `compactFiles` th

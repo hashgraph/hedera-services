@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.claimairdrops;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.claimairdrops.TokenClaimAirdropTranslator.CLAIM_AIRDROP;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.claimairdrops.TokenClaimAirdropTranslator.HRC_CLAIM_AIRDROP_FT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.claimairdrops.TokenClaimAirdropTranslator.HRC_CLAIM_AIRDROP_NFT;
@@ -30,6 +30,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_A
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -212,10 +213,9 @@ public class TokenClaimAirdropDecoderTest {
         })));
         given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
 
-        assertThrows(
-                HandleException.class,
-                () -> subject.decodeTokenClaimAirdrop(attempt),
-                PENDING_AIRDROP_ID_LIST_TOO_LONG.protoName());
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeTokenClaimAirdrop(attempt))
+                .withMessage(INVALID_TOKEN_ID.protoName());
     }
 
     @Test
@@ -223,10 +223,9 @@ public class TokenClaimAirdropDecoderTest {
         final var encoded = Bytes.wrapByteBuffer(HRC_CLAIM_AIRDROP_FT.encodeCallWithArgs(OWNER_ACCOUNT_AS_ADDRESS));
         given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
 
-        assertThrows(
-                HandleException.class,
-                () -> subject.decodeHrcClaimAirdropFt(attempt),
-                PENDING_AIRDROP_ID_LIST_TOO_LONG.protoName());
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeHrcClaimAirdropFt(attempt))
+                .withMessage(INVALID_TOKEN_ID.protoName());
     }
 
     @Test
@@ -235,10 +234,9 @@ public class TokenClaimAirdropDecoderTest {
                 Bytes.wrapByteBuffer(HRC_CLAIM_AIRDROP_NFT.encodeCallWithArgs(OWNER_ACCOUNT_AS_ADDRESS, 1L));
         given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
 
-        assertThrows(
-                HandleException.class,
-                () -> subject.decodeHrcClaimAirdropNft(attempt),
-                PENDING_AIRDROP_ID_LIST_TOO_LONG.protoName());
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.decodeHrcClaimAirdropNft(attempt))
+                .withMessage(INVALID_TOKEN_ID.protoName());
     }
 
     @Test

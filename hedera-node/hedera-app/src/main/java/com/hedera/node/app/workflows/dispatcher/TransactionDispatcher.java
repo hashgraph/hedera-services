@@ -224,6 +224,7 @@ public class TransactionDispatcher {
 
             case TSS_MESSAGE -> handlers.tssMessageHandler();
             case TSS_VOTE -> handlers.tssVoteHandler();
+            case TSS_SHARE_SIGNATURE -> handlers.tssShareSignatureHandler();
 
             default -> throw new UnsupportedOperationException(TYPE_NOT_SUPPORTED);
         };

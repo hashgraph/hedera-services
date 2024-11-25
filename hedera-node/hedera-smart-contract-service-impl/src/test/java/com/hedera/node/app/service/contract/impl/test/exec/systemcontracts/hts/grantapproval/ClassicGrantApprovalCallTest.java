@@ -40,6 +40,9 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
+/**
+ * Unit tests for {@link ClassicGrantApprovalCall}.
+ */
 public class ClassicGrantApprovalCallTest extends CallTestBase {
 
     private ClassicGrantApprovalCall subject;

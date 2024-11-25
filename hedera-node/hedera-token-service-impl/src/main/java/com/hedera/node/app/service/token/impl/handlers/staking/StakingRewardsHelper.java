@@ -226,9 +226,11 @@ public class StakingRewardsHelper {
      * @return The clamped pending rewards
      */
     public StakingNodeInfo increasePendingRewardsBy(
-            final WritableNetworkStakingRewardsStore stakingRewardsStore,
-            long amount,
-            final StakingNodeInfo currStakingInfo) {
+            @NonNull final WritableNetworkStakingRewardsStore stakingRewardsStore,
+            final long amount,
+            @NonNull final StakingNodeInfo currStakingInfo) {
+        requireNonNull(stakingRewardsStore);
+        requireNonNull(currStakingInfo);
         // increment the total pending rewards being tracked for the network
         final var currentPendingRewards = stakingRewardsStore.pendingRewards();
         long nodePendingRewards = currStakingInfo.pendingRewards();

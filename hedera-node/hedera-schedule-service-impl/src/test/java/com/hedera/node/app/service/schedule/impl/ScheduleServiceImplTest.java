@@ -18,13 +18,14 @@ package com.hedera.node.app.service.schedule.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.StateDefinition;
 import java.util.List;
 import java.util.Set;
 import org.assertj.core.api.BDDAssertions;
@@ -32,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,7 +54,7 @@ class ScheduleServiceImplTest {
         final ScheduleServiceImpl subject = new ScheduleServiceImpl();
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
         subject.registerSchemas(registry);
-        Mockito.verify(registry, times(2)).register(schemaCaptor.capture());
+        verify(registry, times(2)).register(schemaCaptor.capture());
 
         final var schemas = schemaCaptor.getAllValues();
         assertThat(schemas).hasSize(2);
@@ -74,8 +74,10 @@ class ScheduleServiceImplTest {
         BDDAssertions.assertThat(statesToCreate).isNotNull();
         statesList =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().toList();
-        BDDAssertions.assertThat(statesToCreate.size()).isEqualTo(2);
-        BDDAssertions.assertThat(statesList.get(0)).isEqualTo(V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
-        BDDAssertions.assertThat(statesList.get(1)).isEqualTo(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
+        BDDAssertions.assertThat(statesToCreate.size()).isEqualTo(4);
+        BDDAssertions.assertThat(statesList.get(0)).isEqualTo(V0570ScheduleSchema.SCHEDULED_COUNTS_KEY);
+        BDDAssertions.assertThat(statesList.get(1)).isEqualTo(V0570ScheduleSchema.SCHEDULED_ORDERS_KEY);
+        BDDAssertions.assertThat(statesList.get(2)).isEqualTo(V0570ScheduleSchema.SCHEDULED_USAGES_KEY);
+        BDDAssertions.assertThat(statesList.get(3)).isEqualTo(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
     }
 }

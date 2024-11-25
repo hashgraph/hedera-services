@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -166,11 +167,9 @@ public class HollowAccountCompletions {
                                 .key(verification.key())
                                 .build())
                         .build();
-                // Note the null key verification callback below; we bypass signature
-                // verifications when doing hollow account finalization
-                final var recordBuilder = context.dispatchPrecedingTransaction(
-                        syntheticUpdateTxn, CryptoUpdateStreamBuilder.class, null, context.payer());
-                recordBuilder.accountID(hollowAccount.accountIdOrThrow());
+                final var streamBuilder = context.dispatch(
+                        independentDispatch(context.payer(), syntheticUpdateTxn, CryptoUpdateStreamBuilder.class));
+                streamBuilder.accountID(hollowAccount.accountIdOrThrow());
             }
         }
     }

@@ -41,7 +41,7 @@ jobs:
       triggered: ${{ steps.evaluate.outputs.triggered }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -50,7 +50,7 @@ jobs:
 
       - name: Read Trigger Time
         id: time
-        uses: mikefarah/yq@f15500b20a1c991c8729870ba60a4dc3524b6a94 # v4.44.2
+        uses: mikefarah/yq@bc5b54cb1d1f720db16c9f75c5b45384d00e5cbf # v4.44.5
         with:
           cmd: yq '.release.branching.execution.time' '${{ env.WORKFLOW_CONFIG_FILE }}'
 
@@ -96,7 +96,7 @@ jobs:
     if: ${{ needs.check-trigger.outputs.triggered == 'true' && !cancelled() }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -119,7 +119,7 @@ jobs:
     if: ${{ needs.check-branch.outputs.branch-create == 'true' && !cancelled() }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -214,7 +214,7 @@ jobs:
     if: ${{ needs.check-branch.outputs.tag-create == 'true' && needs.create-branch.result == 'success' && !cancelled() }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 

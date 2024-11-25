@@ -38,8 +38,10 @@ import javax.inject.Inject;
 
 public class UpdateTokenCustomFeesTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    /** Selector for updateFungibleTokenCustomFees(address,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[]) method. */
     public static final Function UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION =
             new Function(UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING, ReturnTypes.INT);
+    /** Selector for updateNonFungibleTokenCustomFees(address,(int64,address,bool,bool,address)[],(int64,int64,int64,address,bool,address)[]) method. */
     public static final Function UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION =
             new Function(UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING, ReturnTypes.INT);
 
@@ -58,6 +60,13 @@ public class UpdateTokenCustomFeesTranslator extends AbstractCallTranslator<HtsC
                         UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION, UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION);
     }
 
+    /**
+     * @param body                          the transaction body to be dispatched
+     * @param systemContractGasCalculator   the gas calculator for the system contract
+     * @param enhancement                   the enhancement to use
+     * @param payerId                       the payer of the transaction
+     * @return the required gas
+     */
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,

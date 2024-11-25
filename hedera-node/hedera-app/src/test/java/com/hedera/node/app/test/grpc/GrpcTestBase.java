@@ -41,7 +41,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.test.fixtures.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -244,6 +244,18 @@ abstract class GrpcTestBase extends TestBase {
                 payload);
     }
 
+    /**
+     * Sends a request as a node operator using the specified service and function.
+     *
+     * This method constructs a unary call to the specified service and function,
+     * marshaling the request and response as strings. It blocks until the call is
+     * completed and returns the response payload.
+     *
+     * @param service the name of the service to call
+     * @param function the name of the function to invoke within the service
+     * @param payload the request payload to send
+     * @return the response payload received from the service
+     */
     protected String sendAsNodeOperator(final String service, final String function, final String payload) {
         return ClientCalls.blockingUnaryCall(
                 nodeOperatorChannel,
@@ -331,6 +343,12 @@ abstract class GrpcTestBase extends TestBase {
             return this;
         }
 
+        /**
+         * Sets the flag indicating whether the node operator port is enabled.
+         *
+         * @param value true to enable the node operator port; false to disable it
+         * @return the current instance of TestSource
+         */
         public TestSource withNodeOperatorPortEnabled(boolean value) {
             this.nodeOperatorPortEnabled = value;
             return this;

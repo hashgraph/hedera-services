@@ -26,11 +26,15 @@ import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.RoyaltyFeeWrapper;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.inject.Singleton;
 
+/**
+ * A factory for creating a {@link TokenCreateTransactionBody.Builder}.
+ */
 @Singleton
 public class CreateSyntheticTxnFactory {
 
@@ -38,6 +42,10 @@ public class CreateSyntheticTxnFactory {
         // Singleton constructor
     }
 
+    /**
+     * @param tokenCreateWrapper the wrapper of token create transaction
+     * @return the body of the token create transaction
+     */
     @NonNull
     public static TokenCreateTransactionBody.Builder createToken(@NonNull final TokenCreateWrapper tokenCreateWrapper) {
         final var txnBodyBuilder = TokenCreateTransactionBody.newBuilder();
@@ -67,6 +75,14 @@ public class CreateSyntheticTxnFactory {
         addCustomFees(tokenCreateWrapper, txnBodyBuilder);
 
         return txnBodyBuilder;
+    }
+
+    public static TokenCreateTransactionBody.Builder createTokenWithMetadata(
+            @NonNull final TokenCreateWrapper tokenCreateWrapper) {
+        final var transactionBodyBuilder = createToken(tokenCreateWrapper);
+        setMetadata(tokenCreateWrapper, transactionBodyBuilder);
+        setMetadataKey(tokenCreateWrapper, transactionBodyBuilder);
+        return transactionBodyBuilder;
     }
 
     private static void setTokenKeys(
@@ -112,6 +128,21 @@ public class CreateSyntheticTxnFactory {
         }
         if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != null) {
             txnBodyBuilder.autoRenewPeriod(tokenCreateWrapper.getExpiry().autoRenewPeriod());
+        }
+    }
+
+    private static void setMetadataKey(
+            @NonNull final TokenCreateWrapper tokenCreateWrapper, final Builder txnBodyBuilder) {
+        tokenCreateWrapper.getTokenKeys().stream()
+                .filter(TokenKeyWrapper::isUsedForMetadataKey)
+                .map(tokenKeyWrapper -> tokenKeyWrapper.key().asGrpc())
+                .forEach(txnBodyBuilder::metadataKey);
+    }
+
+    private static void setMetadata(
+            @NonNull final TokenCreateWrapper tokenCreateWrapper, final Builder txnBodyBuilder) {
+        if (tokenCreateWrapper.getMetadata() != null) {
+            txnBodyBuilder.metadata(tokenCreateWrapper.getMetadata());
         }
     }
 

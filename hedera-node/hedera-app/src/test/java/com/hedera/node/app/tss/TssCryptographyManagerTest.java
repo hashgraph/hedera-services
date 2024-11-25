@@ -43,8 +43,9 @@ import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import java.math.BigInteger;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
@@ -65,6 +66,9 @@ public class TssCryptographyManagerTest {
     private TssParticipantDirectory tssParticipantDirectory;
 
     @Mock
+    private AppContext appContext;
+
+    @Mock
     private AppContext.Gossip gossip;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
@@ -76,12 +80,17 @@ public class TssCryptographyManagerTest {
     @Mock
     private WritableTssStore tssStore;
 
+    @Mock
+    private TssMetrics tssMetrics;
+
     @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
 
     @BeforeEach
     void setUp() {
-        subject = new TssCryptographyManager(tssLibrary, gossip, ForkJoinPool.commonPool());
+        when(appContext.gossip()).thenReturn(gossip);
+        subject = new TssCryptographyManager(
+                tssLibrary, appContext, ForkJoinPool.commonPool(), tssMetrics, InstantSource.system());
         when(handleContext.networkInfo()).thenReturn(networkInfo);
         when(networkInfo.selfNodeInfo()).thenReturn(new NodeInfoImpl(0, AccountID.DEFAULT, 0, null, null));
     }
@@ -93,7 +102,7 @@ public class TssCryptographyManagerTest {
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(mock(TssVoteTransactionBody.class)); // Simulate vote already submitted
 
-        final var result = subject.handleTssMessageTransaction(body, tssParticipantDirectory, handleContext);
+        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, handleContext);
 
         assertNull(result.join());
     }
@@ -105,7 +114,7 @@ public class TssCryptographyManagerTest {
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
 
-        final var result = subject.handleTssMessageTransaction(body, tssParticipantDirectory, handleContext);
+        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, handleContext);
 
         assertNull(result.join());
     }
@@ -120,7 +129,7 @@ public class TssCryptographyManagerTest {
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
-        when(tssStore.getTssMessages(any())).thenReturn(List.of(body));
+        when(tssStore.getMessagesForTarget(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
 
         when(tssLibrary.computePublicShares(any(), any())).thenReturn(mockPublicShares);
@@ -128,7 +137,7 @@ public class TssCryptographyManagerTest {
         when(gossip.sign(any())).thenReturn(mockSignature);
         when(ledgerId.publicKey()).thenReturn(new FakeGroupElement(BigInteger.valueOf(5L)));
 
-        final var result = subject.handleTssMessageTransaction(body, tssParticipantDirectory, handleContext);
+        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, handleContext);
 
         assertNotNull(result.join());
         verify(gossip).sign(ledgerId.publicKey().toBytes());
@@ -140,12 +149,12 @@ public class TssCryptographyManagerTest {
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
-        when(tssStore.getTssMessages(any())).thenReturn(List.of(body));
+        when(tssStore.getMessagesForTarget(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
 
         when(tssLibrary.computePublicShares(any(), any())).thenThrow(new RuntimeException());
 
-        final var result = subject.handleTssMessageTransaction(body, tssParticipantDirectory, handleContext);
+        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, handleContext);
 
         assertNull(result.join());
         verify(gossip, never()).sign(any());
@@ -153,8 +162,8 @@ public class TssCryptographyManagerTest {
 
     @Test
     void testComputeNodeShares() {
-        RosterEntry entry1 = new RosterEntry(1L, 100L, null, null, null);
-        RosterEntry entry2 = new RosterEntry(2L, 50L, null, null, null);
+        RosterEntry entry1 = new RosterEntry(1L, 100L, null, null);
+        RosterEntry entry2 = new RosterEntry(2L, 50L, null, null);
 
         Map<Long, Long> result = computeNodeShares(List.of(entry1, entry2), 10L);
 

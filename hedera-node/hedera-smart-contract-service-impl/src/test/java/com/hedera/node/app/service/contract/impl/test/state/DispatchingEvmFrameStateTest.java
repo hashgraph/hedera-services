@@ -51,6 +51,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
@@ -62,6 +63,7 @@ import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.RentFactors;
+import com.hedera.node.app.service.contract.impl.state.ScheduleEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
@@ -92,12 +94,14 @@ class DispatchingEvmFrameStateTest {
     private static final long ACCOUNT_NUM = 0x9abcdefabcdefbbbL;
     private static final long BENEFICIARY_NUM = 0xdefdefL;
     private static final long TOKEN_NUM = 0xffffffffffffL;
+    private static final long SCHEDULE_NUM = 0xdedededededeL;
     private static final Bytes SOME_OTHER_ALIAS = Bytes.wrap("<PRETEND>");
     private static final Address EVM_ADDRESS = Address.fromHexString("abcabcabcabcabcabeeeeeee9abcdefabcdefbbb");
     private static final Address LONG_ZERO_ADDRESS = Address.fromHexString("0000000000000000000000009abcdefabcdefbbb");
     private static final Address BENEFICIARY_ADDRESS =
             Address.fromHexString("0000000000000000000000000000000000defdef");
     private static final Address TOKEN_ADDRESS = Address.fromHexString("0000000000000000000000000000ffffffffffff");
+    private static final Address SCHEDULE_ADDRESS = Address.fromHexString("0000000000000000000000000000dededededede");
     private static final Bytes SOME_PRETEND_CODE = Bytes.wrap("<NOT-REALLY-CODE>");
     private static final Bytecode SOME_PRETEND_BYTECODE =
             Bytecode.newBuilder().code(SOME_PRETEND_CODE).build();
@@ -348,6 +352,40 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
+    void interpolatesScheduleCodeByAddress() {
+        final var actualCode = subject.getScheduleRedirectCode(LONG_ZERO_ADDRESS);
+
+        assertEquals(
+                LONG_ZERO_ADDRESS.toUnprefixedHexString(),
+                actualCode
+                        .toUnprefixedHexString()
+                        // EVM 20-byte address is 40 hex chars
+                        .substring(REDIRECT_CODE_FIXED_PREFIX_LEN, REDIRECT_CODE_FIXED_PREFIX_LEN + 40));
+    }
+
+    @Test
+    void hashesInterpolatesScheduleCode() {
+        final var code = subject.getScheduleRedirectCode(LONG_ZERO_ADDRESS);
+        final var expectedHash = Hash.hash(code);
+
+        assertEquals(expectedHash, subject.getScheduleRedirectCodeHash(LONG_ZERO_ADDRESS));
+    }
+
+    @Test
+    void interpolatesScheduleCodeWhenAddressNull() {
+        final var actualCode = subject.getScheduleRedirectCode(null);
+
+        assertEquals(org.apache.tuweni.bytes.Bytes.EMPTY, actualCode);
+    }
+
+    @Test
+    void hashesInterpolatesScheduleCodeWhenNull() {
+        final var expectedHash = Hash.hash(org.apache.tuweni.bytes.Bytes.EMPTY);
+
+        assertEquals(expectedHash, subject.getScheduleRedirectCodeHash(null));
+    }
+
+    @Test
     void getsEmptyCodeForMissing() {
         final var actualCode = subject.getCode(A_CONTRACT_ID);
 
@@ -512,6 +550,15 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
+    void cannotTransferToScheduleAccount() {
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).smartContract(true));
+        givenWellKnownSchedule();
+        final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, SCHEDULE_ADDRESS, 123L, true);
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(ILLEGAL_STATE_CHANGE, reasonToHaltDeletion.get());
+    }
+
+    @Test
     void cannotLazyCreateOverExpiredAccount() {
         givenWellKnownAccount(contractWith(A_ACCOUNT_ID).expiredAndPendingRemoval(true));
         given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
@@ -651,10 +698,11 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
-    void senderAccountMustBeC() {
-        givenWellKnownToken();
+    void scheduleAccountsCannotBeBeneficiaries() {
+        givenWellKnownSchedule();
 
-        final var reasonToHaltDeletion = subject.tryTrackingSelfDestructBeneficiary(EVM_ADDRESS, TOKEN_ADDRESS, frame);
+        final var reasonToHaltDeletion =
+                subject.tryTrackingSelfDestructBeneficiary(EVM_ADDRESS, SCHEDULE_ADDRESS, frame);
 
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(INVALID_SOLIDITY_ADDRESS, reasonToHaltDeletion.get());
@@ -723,6 +771,13 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
+    void choosesScheduleAccountIfApplicable() {
+        givenWellKnownSchedule();
+        final var account = subject.getAccount(SCHEDULE_ADDRESS);
+        assertInstanceOf(ScheduleEvmAccount.class, account);
+    }
+
+    @Test
     void getAccountDelegatesToGetMutableAccount() {
         final var mockSubject = mock(DispatchingEvmFrameState.class);
         final var mockAccount = mock(TokenEvmAccount.class);
@@ -760,6 +815,11 @@ class DispatchingEvmFrameStateTest {
     private void givenWellKnownToken() {
         given(nativeOperations.getToken(TOKEN_NUM))
                 .willReturn(Token.newBuilder().build());
+    }
+
+    private void givenWellKnownSchedule() {
+        given(nativeOperations.getSchedule(SCHEDULE_NUM))
+                .willReturn(Schedule.newBuilder().build());
     }
 
     private Account.Builder accountWith(final AccountID accountID, final Bytes alias) {
