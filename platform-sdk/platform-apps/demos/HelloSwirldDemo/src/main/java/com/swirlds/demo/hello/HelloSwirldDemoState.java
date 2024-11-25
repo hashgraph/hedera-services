@@ -29,7 +29,7 @@ package com.swirlds.demo.hello;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -46,7 +46,7 @@ import java.util.function.Function;
  * order that they were handled.
  */
 @ConstructableIgnored
-public class HelloSwirldDemoState extends MerkleStateRoot {
+public class HelloSwirldDemoState extends PlatformMerkleStateRoot {
 
     /**
      * The version history of this class.

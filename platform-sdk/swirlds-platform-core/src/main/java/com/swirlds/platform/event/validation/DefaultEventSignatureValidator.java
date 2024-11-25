@@ -36,6 +36,7 @@ import com.swirlds.state.lifecycle.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -192,8 +193,8 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
             return false;
         }
 
-        final PublicKey publicKey = RosterUtils.fetchGossipCaCertificate(applicableRosterMap.get(eventCreatorId.id()))
-                .getPublicKey();
+        final X509Certificate cert = RosterUtils.fetchGossipCaCertificate(applicableRosterMap.get(eventCreatorId.id()));
+        final PublicKey publicKey = cert == null ? null : cert.getPublicKey();
         if (publicKey == null) {
             rateLimitedLogger.error(
                     EXCEPTION.getMarker(), "Cannot find publicKey for creator with ID: {}", eventCreatorId);

@@ -28,9 +28,10 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.MerkleTreeSnapshotReader;
-import com.swirlds.platform.state.signed.SigSet;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
+import com.swirlds.state.merkle.SigSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -103,7 +104,7 @@ public final class SignedStateFileReader {
         final SignedState newSignedState = new SignedState(
                 configuration,
                 CryptoStatic::verifySignature,
-                normalizedData.state(),
+                (MerkleRoot) normalizedData.state(),
                 "SignedStateFileReader.readStateFile()",
                 false,
                 false,

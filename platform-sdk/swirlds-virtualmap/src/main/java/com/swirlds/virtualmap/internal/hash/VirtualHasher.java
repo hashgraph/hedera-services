@@ -287,6 +287,18 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         }
     }
 
+    /**
+     * If a dirty leaves stream is empty, returns {@code null}. If leaf path is empty, that
+     * is when {@code firstLeafPath} and/or {@code lastLeafPath} are zero or less, and
+     * dirty leaves stream is not empty, throws an {@link IllegalArgumentException}.
+     *
+     * @param hashReader A function to read hashes for clean paths
+     * @param sortedDirtyLeaves A stream of leaf records, sorted by path
+     * @param firstLeafPath First leaf path
+     * @param lastLeafPath Last leaf path
+     * @param listener Hash listener. May be null
+     * @param virtualMapConfig VirtualMap config
+     */
     public Hash hash(
             final LongFunction<Hash> hashReader,
             final Iterator<VirtualLeafRecord<K, V>> sortedDirtyLeaves,
@@ -296,21 +308,25 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             final @NonNull VirtualMapConfig virtualMapConfig) {
         requireNonNull(virtualMapConfig);
 
-        // If the first or last leaf path are invalid, then there is nothing to hash.
-        if (firstLeafPath < 1 || lastLeafPath < 1) {
-            return null;
-        }
-
-        if (!sortedDirtyLeaves.hasNext()) {
-            return null;
-        }
-
         // We don't want to include null checks everywhere, so let the listener be NoopListener if null
         if (listener == null) {
             listener =
                     new VirtualHashListener<>() {
                         /* noop */
                     };
+        }
+
+        // Let the listener know we have started hashing.
+        listener.onHashingStarted();
+
+        if (!sortedDirtyLeaves.hasNext()) {
+            // Nothing to hash.
+            listener.onHashingCompleted();
+            return null;
+        } else {
+            if ((firstLeafPath < 1) || (lastLeafPath < 1)) {
+                throw new IllegalArgumentException("Dirty leaves stream is not empty, but leaf path range is empty");
+            }
         }
 
         this.hashReader = hashReader;
@@ -345,9 +361,6 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         final int chunkHeight = virtualMapConfig.virtualHasherChunkHeight();
         int firstLeafRank = Path.getRank(firstLeafPath);
         int lastLeafRank = Path.getRank(lastLeafPath);
-
-        // Let the listener know we have started hashing.
-        listener.onHashingStarted();
 
         // This map contains all tasks created, but not scheduled for execution yet
         final HashMap<Long, ChunkHashTask> map = new HashMap<>();
