@@ -33,8 +33,6 @@ import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -92,33 +90,6 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
     public ScheduleID getByOrder(@NonNull final ScheduledOrder scheduledOrder) {
         requireNonNull(scheduledOrder);
         return scheduledOrders.get(scheduledOrder);
-    }
-
-    @Override
-    public @NonNull List<ScheduleID> getByExpirationSecond(final long expirationTime) {
-        final List<ScheduleID> scheduleIds = new ArrayList<>();
-        final var counts = scheduledCounts.get(new TimestampSeconds(expirationTime));
-        if (counts != null) {
-            for (int i = counts.numberProcessed(), n = counts.numberScheduled(); i < n; i++) {
-                final var scheduleId = scheduledOrders.get(new ScheduledOrder(expirationTime, i));
-                scheduleIds.add(requireNonNull(scheduleId));
-            }
-        }
-        return scheduleIds;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public List<Schedule> getByExpirationBetween(final long firstSecondToExpire, final long lastSecondToExpire) {
-        final var schedules = new ArrayList<Schedule>();
-        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
-            final var scheduleIdList = getByExpirationSecond(i);
-            if (scheduleIdList != null) {
-                schedules.addAll(scheduleIdList.stream().map(this::get).toList());
-            }
-        }
-        return schedules;
     }
 
     @Override

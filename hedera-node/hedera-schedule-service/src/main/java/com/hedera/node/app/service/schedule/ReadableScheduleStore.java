@@ -23,7 +23,6 @@ import com.hedera.hapi.node.state.schedule.ScheduledOrder;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -68,31 +67,6 @@ public interface ReadableScheduleStore {
      */
     @Nullable
     ScheduleID getByOrder(@NonNull ScheduledOrder scheduledOrder);
-
-    /**
-     * Given a time as seconds since the epoch, find all ScheduleID currently in state that expire at that time.
-     * The {@code List<ScheduleID>} returned will contain all {@link ScheduleID} entries in the system that have a
-     * calculated expiration time that matches the requested value.  The check is no more precise than one second,
-     * so the list may be quite large (significantly larger than the "schedules created" throttle).
-     *
-     * @param expirationTime the number of seconds since the epoch that describes the expiration time of schedules
-     *     to be returned.
-     * @return a {@code List<Schedule>} of entries that have expiration times within the requested second
-     */
-    @NonNull
-    List<ScheduleID> getByExpirationSecond(long expirationTime);
-
-    /**
-     * Given an interval of time as seconds since the epoch, find all ScheduleID currently in state that expire.
-     * between the start and end times. The {@code List<ScheduleID>} returned will contain all {@link ScheduleID}
-     * entries in the system that have a calculated expiration time that falls between the requested start and end.
-     *
-     * @param start The start time
-     * @param end The end time
-     *
-     * @return a {@code List<Schedule>} of entries that have expiration times between the requested times
-     */
-    List<Schedule> getByExpirationBetween(long start, long end);
 
     /**
      * Returns the number of schedules in state, for use in enforcing creation limits.
