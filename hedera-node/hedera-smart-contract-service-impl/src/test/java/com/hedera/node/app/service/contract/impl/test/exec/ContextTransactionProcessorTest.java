@@ -36,8 +36,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -265,8 +265,9 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         given(context.body()).willReturn(TransactionBody.DEFAULT);
+        given(context.payer()).willReturn(AccountID.DEFAULT);
         final var ethTx = wellKnownRelayedHapiCallWithGasLimit(1_000_000L);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
+        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT, context.payer()))
                 .willReturn(ethTx);
         given(processor.processTransaction(
                         ethTx, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
