@@ -102,6 +102,54 @@ on:
 
   pull_request: #REMOVE THIS AFTER TESTING
   workflow_dispatch: #REMOVE THIS AFTER TESTING
+    inputs:
+        # Valid version policies are as follows: specified, branch-commit, adhoc-commit
+        version-policy:
+          description: "Version Policy:"
+          type: string
+          required: true
+        # Valid options are none, integration, and preview
+        trigger-env-deploy:
+          description: "Deploy to Environment:"
+          type: string
+          required: true
+          default: "none"
+        # Valid release profiles are as follows:
+        # - none
+        # - AdhocCommit
+        # - DevelopCommit
+        # - DevelopDailySnapshot
+        # - DevelopSnapshot
+        # - PrereleaseChannel
+        release-profile:
+          description: "Release Profile:"
+          type: string
+          required: true
+          default: "none"
+        new-version:
+          description: "New Version:"
+          type: string
+          required: false
+        dry-run-enabled:
+          description: "Perform Dry Run"
+          type: boolean
+          required: false
+          default: true #CHANGE THIS TO FALSE AFTER TESTING
+        java-distribution:
+          description: "Java JDK Distribution:"
+          type: string
+          required: false
+          default: "temurin"
+        java-version:
+          description: "Java JDK Version:"
+          type: string
+          required: false
+          default: "21.0.4"
+        gradle-version:
+          description: "Gradle Version:"
+          type: string
+          required: false
+          default: "wrapper"
 
 defaults:
   run:
