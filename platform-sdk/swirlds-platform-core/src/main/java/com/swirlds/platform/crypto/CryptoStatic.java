@@ -635,10 +635,13 @@ public final class CryptoStatic {
      * @return a new {@link BlsKeyPair}
      * @throws NoSuchAlgorithmException the algorithm is not supported
      */
-    public static BlsKeyPair generateBlsKeyPair() throws NoSuchAlgorithmException {
+    public static BlsKeyPair generateBlsKeyPair(@Nullable final SecureRandom secureRandom)
+            throws NoSuchAlgorithmException {
         final SignatureSchema SIGNATURE_SCHEMA =
                 SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
-        final SecureRandom secureRandom = SecureRandom.getInstanceStrong();
+        if (secureRandom == null) {
+            return BlsKeyPair.generate(SIGNATURE_SCHEMA);
+        }
         return BlsKeyPair.generate(SIGNATURE_SCHEMA, secureRandom);
     }
 

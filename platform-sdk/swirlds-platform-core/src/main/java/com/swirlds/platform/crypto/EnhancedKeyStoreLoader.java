@@ -396,7 +396,7 @@ public class EnhancedKeyStoreLoader {
 
             if (!tssPrivateKeys.containsKey(node)) {
                 // Create a new public/private key pair for the TSS encryption key
-                BlsKeyPair tssKeyPair = CryptoStatic.generateBlsKeyPair();
+                BlsKeyPair tssKeyPair = CryptoStatic.generateBlsKeyPair(null);
                 tssPrivateKeys.put(node, tssKeyPair.privateKey());
                 tssPublicKeys.put(node, tssKeyPair.publicKey());
                 // Write the private key to disk
