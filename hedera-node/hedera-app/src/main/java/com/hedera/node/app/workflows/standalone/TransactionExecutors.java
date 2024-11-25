@@ -76,8 +76,8 @@ public enum TransactionExecutors {
         final var tracerBinding =
                 customTracerBinding != null ? customTracerBinding : DefaultTracerBinding.DEFAULT_TRACER_BINDING;
         final var executor = newExecutorComponent(properties, tracerBinding);
-        executor.initializer().accept(state);
         executor.stateNetworkInfo().initFrom(state);
+        executor.initializer().accept(state);
         final var exchangeRateManager = executor.exchangeRateManager();
         return (transactionBody, consensusNow, operationTracers) -> {
             final var dispatch = executor.standaloneDispatchFactory().newDispatch(state, transactionBody, consensusNow);

@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FilesConfig;
@@ -35,6 +36,7 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -135,7 +137,17 @@ public class StandaloneNetworkInfo implements NetworkInfo {
 
     @Override
     public Roster roster() {
-        throw new UnsupportedOperationException("Not implemented");
+        return Roster.newBuilder()
+                .rosterEntries(nodeInfosOrThrow().stream()
+                        .map(node -> RosterEntry.newBuilder()
+                                .nodeId(node.nodeId())
+                                .weight(node.stake())
+                                .gossipCaCertificate(node.sigCertBytes())
+                                .gossipEndpoint(node.gossipEndpoints())
+                                .build())
+                        .sorted(Comparator.comparing(RosterEntry::nodeId))
+                        .toList())
+                .build();
     }
 
     private @NonNull List<NodeInfo> nodeInfosOrThrow() {

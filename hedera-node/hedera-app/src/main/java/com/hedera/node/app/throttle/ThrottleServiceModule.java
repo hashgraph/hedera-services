@@ -28,6 +28,7 @@ import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FeesConfig;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -57,10 +58,12 @@ public interface ThrottleServiceModule {
     @Singleton
     @IngestThrottle
     static ThrottleAccumulator provideIngestThrottleAccumulator(
-            @NonNull final IntSupplier frontendThrottleSplit,
+            @NonNull final NetworkInfo networkInfo,
             @NonNull final ConfigProvider configProvider,
             @NonNull final Metrics metrics) {
         final var throttleMetrics = new ThrottleMetrics(metrics, FRONTEND_THROTTLE);
+        final IntSupplier frontendThrottleSplit =
+                () -> networkInfo.roster().rosterEntries().size();
         return new ThrottleAccumulator(frontendThrottleSplit, configProvider, FRONTEND_THROTTLE, throttleMetrics);
     }
 
