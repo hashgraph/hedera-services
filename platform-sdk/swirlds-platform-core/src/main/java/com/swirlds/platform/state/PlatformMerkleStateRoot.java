@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -25,6 +26,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.SnapshotPlatformStateAccessor;
@@ -47,6 +49,8 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link SwirldState} and {@link State}. The Hashgraph Platform
@@ -69,6 +73,8 @@ import java.util.function.Function;
 @ConstructableIgnored
 public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleStateRoot>
         implements SwirldState, MerkleRoot {
+
+    private static final Logger logger = LogManager.getLogger(PlatformMerkleStateRoot.class);
 
     private static final long CLASS_ID = 0x8e300b0dfdafbb1bL;
     /**
@@ -202,6 +208,8 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     @NonNull
     @Override
     public PlatformStateAccessor getReadablePlatformState() {
+        logger.error(EXCEPTION.getMarker(), "getReadablePlatformState: {} ", StackTrace.getStackTrace());
+
         return getServices().isEmpty()
                 ? new SnapshotPlatformStateAccessor(getPlatformState(), versionFactory)
                 : readablePlatformStateStore();
