@@ -593,7 +593,6 @@ public final class CryptoStatic {
                         "ERROR",
                         "ERROR: This Java installation does not have the needed cryptography " + "providers installed");
             }
-            CommonUtils.tellUserConsole(e.getMessage() + ": " + e.getCause().getMessage());
             SystemExitUtils.exitSystem(SystemExitCode.KEY_LOADING_FAILED);
             throw new CryptographyException(e); // will never reach this line due to exit above
         }

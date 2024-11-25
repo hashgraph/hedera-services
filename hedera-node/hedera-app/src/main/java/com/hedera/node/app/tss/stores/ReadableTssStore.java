@@ -164,13 +164,6 @@ public interface ReadableTssStore {
     List<TssMessageTransactionBody> getMessagesForTarget(@NonNull Bytes rosterHash);
 
     /**
-     * Get the list of Tss votes for the given roster hash.
-     * @param rosterHash The roster hash to look up.
-     * @return The list of Tss votes, or an empty list if not found.
-     */
-    List<TssVoteTransactionBody> getTssVoteBodies(Bytes rosterHash);
-
-    /**
      * Get the Tss encryption key transaction body for the given node ID.
      * @param nodeID The node ID to look up.
      * @return The Tss encryption key transaction body, or null if not found.

@@ -65,6 +65,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -407,14 +408,12 @@ public class TssBaseServiceImpl implements TssBaseService {
                 handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeyRetryDelay();
         final var tssEncryptionKeySubmissionRetries =
                 handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeySubmissionRetries();
-        System.out.println("Checking submission checks for TSS Encryption Key");
-        System.out.println("tssEncryptionKeyTransactionBody: " + tssEncryptionKeyTransactionBody);
-        System.out.println("timeSinceLastSubmission: " + timeSinceLastSubmission);
         if ((tssEncryptionKeyTransactionBody == null
-                        || keysAndCerts.publicTssEncryptionKey().toBytes()
-                                != tssEncryptionKeyTransactionBody
+                        || Arrays.equals(
+                                keysAndCerts.publicTssEncryptionKey().toBytes(),
+                                tssEncryptionKeyTransactionBody
                                         .publicTssEncryptionKey()
-                                        .toByteArray())
+                                        .toByteArray()))
                 && (timeSinceLastSubmission == null
                         || timeSinceLastSubmission.compareTo(tssEncryptionKeyRetryDelay) > 0)) {
             if (tssSubmissions.getTssEncryptionKeySubmissionAttempts() >= tssEncryptionKeySubmissionRetries) {
