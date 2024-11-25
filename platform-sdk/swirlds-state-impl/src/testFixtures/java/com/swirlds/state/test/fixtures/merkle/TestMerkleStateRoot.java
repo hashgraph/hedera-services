@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.data;
+package com.swirlds.state.test.fixtures.merkle;
 
-import com.hedera.node.config.NodeProperty;
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.state.merkle.MerkleStateRoot;
 
-@ConfigData("dev")
-public record DevConfig(
-        @ConfigProperty(defaultValue = "true") @NodeProperty boolean onlyDefaultNodeListens,
-        @ConfigProperty(defaultValue = "0.0.3") @NodeProperty String defaultListeningNodeAccount) {}
+@ConstructableIgnored
+public class TestMerkleStateRoot extends MerkleStateRoot<TestMerkleStateRoot> {
+
+    @Override
+    protected TestMerkleStateRoot copyingConstructor() {
+        return new TestMerkleStateRoot();
+    }
+
+    @Override
+    public long getCurrentRound() {
+        return 0;
+    }
+}

@@ -47,6 +47,14 @@ public record ScaleFactor(int numerator, int denominator) implements Comparable<
         return Math.max(1, nominalOps * numerator / denominator);
     }
 
+    /**
+     * Returns the scale factor as an approximate 1:n split of capacity, rounding up.
+     * @return the approximate capacity split
+     */
+    public int asApproxCapacitySplit() {
+        return (denominator + numerator - 1) / numerator;
+    }
+
     @Override
     public int compareTo(final ScaleFactor that) {
         return Integer.compare(this.numerator * that.denominator, that.numerator * this.denominator);

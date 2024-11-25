@@ -26,16 +26,18 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -51,7 +53,6 @@ import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -69,7 +70,6 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
@@ -80,6 +80,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
@@ -99,55 +100,43 @@ public class ServicesMain implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);
 
     /**
-     * The {@link SwirldMain} to actually use, depending on whether workflows are enabled.
+     * The {@link Hedera} singleton.
      */
-    private final SwirldMain delegate;
+    private static Hedera hedera;
 
     /**
      * The {@link Metrics} to use.
      */
     private static Metrics metrics;
 
-    /**
-     * Create a new instance
-     */
     public ServicesMain() {
-        delegate = new Hedera(
-                ConstructableRegistry.getInstance(),
-                ServicesRegistryImpl::new,
-                new OrderedServiceMigrator(),
-                InstantSource.system(),
-                appContext -> new TssBaseServiceImpl(
-                        appContext,
-                        ForkJoinPool.commonPool(),
-                        ForkJoinPool.commonPool(),
-                        new PlaceholderTssLibrary(),
-                        ForkJoinPool.commonPool(),
-                        new NoOpMetrics()));
+        // No-op, everything must be initialized in the main() entrypoint
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public SoftwareVersion getSoftwareVersion() {
-        return delegate.getSoftwareVersion();
+    public @NonNull SoftwareVersion getSoftwareVersion() {
+        return hederaOrThrow().getSoftwareVersion();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void init(@NonNull final Platform ignored, @NonNull final NodeId nodeId) {
-        delegate.init(ignored, nodeId);
+    public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
+        requireNonNull(platform);
+        requireNonNull(nodeId);
+        hederaOrThrow().init(platform, nodeId);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public MerkleRoot newMerkleStateRoot() {
-        return delegate.newMerkleStateRoot();
+    public @NonNull MerkleRoot newMerkleStateRoot() {
+        return hederaOrThrow().newMerkleStateRoot();
     }
 
     /**
@@ -155,7 +144,7 @@ public class ServicesMain implements SwirldMain {
      */
     @Override
     public void run() {
-        delegate.run();
+        hederaOrThrow().run();
     }
 
     /**
@@ -227,7 +216,7 @@ public class ServicesMain implements SwirldMain {
         setupGlobalMetrics(configuration);
         metrics = getMetricsProvider().createPlatformMetrics(selfId);
 
-        final Hedera hedera = newHedera();
+        hedera = newHedera(selfId);
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
@@ -305,7 +294,7 @@ public class ServicesMain implements SwirldMain {
         }
 
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
-        final var roster = createRoster(addressBook);
+        final var roster = buildRoster(addressBook);
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME,
                         Hedera.SWIRLD_NAME,
@@ -432,7 +421,11 @@ public class ServicesMain implements SwirldMain {
         }
     }
 
-    private static Hedera newHedera() {
+    private static @NonNull Hedera hederaOrThrow() {
+        return requireNonNull(hedera);
+    }
+
+    private static Hedera newHedera(@NonNull final NodeId selfNodeId) {
         return new Hedera(
                 ConstructableRegistry.getInstance(),
                 ServicesRegistryImpl::new,
@@ -444,6 +437,14 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         new PlaceholderTssLibrary(),
                         ForkJoinPool.commonPool(),
-                        metrics));
+                        metrics),
+                DiskStartupNetworks::new,
+                selfNodeId);
+    }
+
+    @VisibleForTesting
+    static void initGlobal(@NonNull final Hedera hedera, @NonNull final Metrics metrics) {
+        ServicesMain.hedera = hedera;
+        ServicesMain.metrics = metrics;
     }
 }

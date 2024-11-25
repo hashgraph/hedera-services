@@ -16,30 +16,30 @@
 
 package com.hedera.services.bdd.spec.utilops.embedded;
 
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.schedule.ScheduleIdList;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 
-/**
- * An operation that allows the test author to directly mutate the schedule experies in an embedded state.
- */
-public class MutateScheduleExpiriesOp extends UtilOp {
-    private final Consumer<WritableKVState<ProtoLong, ScheduleIdList>> mutation;
+public class MutateTssVotesOp extends UtilOp {
+    private final Consumer<WritableKVState<TssVoteMapKey, TssVoteTransactionBody>> mutation;
 
-    public MutateScheduleExpiriesOp(@NonNull final Consumer<WritableKVState<ProtoLong, ScheduleIdList>> mutation) {
+    public MutateTssVotesOp(@NonNull final Consumer<WritableKVState<TssVoteMapKey, TssVoteTransactionBody>> mutation) {
         this.mutation = requireNonNull(mutation);
     }
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
-        final var state = spec.embeddedScheduleExpiriesOrThrow();
-        mutation.accept(state);
+        requireNonNull(spec);
+        final var state = spec.embeddedStateOrThrow();
+        mutation.accept(state.getWritableStates(TssBaseService.NAME).get(TSS_VOTE_MAP_KEY));
         spec.commitEmbeddedState();
         return false;
     }

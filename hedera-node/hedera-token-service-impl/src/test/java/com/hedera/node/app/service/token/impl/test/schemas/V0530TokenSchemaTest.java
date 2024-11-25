@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema;
 import com.hedera.node.app.services.MigrationContextImpl;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
@@ -52,12 +53,16 @@ import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class V0530TokenSchemaTest {
 
     private final V0530TokenSchema subject = new V0530TokenSchema();
+
+    @Mock
+    private StartupNetworks startupNetworks;
 
     @Test
     @DisplayName("verify states to create")
@@ -101,7 +106,15 @@ class V0530TokenSchemaTest {
 
         final var schema = new V0530TokenSchema();
         schema.migrate(new MigrationContextImpl(
-                previousStates, newStates, config, networkInfo, entityIdStore, null, new HashMap<>()));
+                previousStates,
+                newStates,
+                config,
+                networkInfo,
+                entityIdStore,
+                null,
+                0L,
+                new HashMap<>(),
+                startupNetworks));
 
         final var updatedStates = newStates.get(STAKING_INFO_KEY);
         // sets minStake on all nodes to 0
