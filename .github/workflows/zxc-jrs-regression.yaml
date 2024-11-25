@@ -409,6 +409,9 @@ jobs:
         with:
           gradle-version: ${{ inputs.gradle-version }}
 
+      - name: Verify Gradle Installation
+        run: gradle --version
+
       - name: Gradle Assemble
         id: gradle-build
         run: gradle assemble :test-clients:shadowJar --scan
