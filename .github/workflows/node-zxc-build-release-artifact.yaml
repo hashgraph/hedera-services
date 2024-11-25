@@ -49,7 +49,7 @@ on:
         description: "Perform Dry Run"
         type: boolean
         required: false
-        default: true #CHANGE THIS TO FALSE AFTER TESTING
+        default: false
       java-distribution:
         description: "Java JDK Distribution:"
         type: string
