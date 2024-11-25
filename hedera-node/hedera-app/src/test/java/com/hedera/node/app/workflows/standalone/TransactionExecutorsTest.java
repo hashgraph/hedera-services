@@ -38,6 +38,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -61,9 +62,12 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.AppThrottleFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FilesConfig;
@@ -240,7 +244,15 @@ public class TransactionExecutorsTest {
         final var config = configBuilder.getOrCreateConfig();
         final var networkInfo = fakeNetworkInfo();
         final var servicesRegistry = new FakeServicesRegistry();
-        registerServices(config, servicesRegistry);
+        final var appContext = new AppContextImpl(
+                InstantSource.system(),
+                signatureVerifier,
+                UNAVAILABLE_GOSSIP,
+                () -> config,
+                () -> DEFAULT_NODE_INFO,
+                new AppThrottleFactory(
+                        () -> config, () -> state, () -> ThrottleDefinitions.DEFAULT, ThrottleAccumulator::new));
+        registerServices(appContext, config, servicesRegistry);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         migrator.doMigrations(
@@ -285,17 +297,14 @@ public class TransactionExecutorsTest {
     }
 
     private void registerServices(
-            @NonNull final Configuration config, @NonNull final ServicesRegistry servicesRegistry) {
+            @NonNull final AppContext appContext,
+            @NonNull final Configuration config,
+            @NonNull final ServicesRegistry servicesRegistry) {
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(new AppContextImpl(
-                                InstantSource.system(),
-                                signatureVerifier,
-                                UNAVAILABLE_GOSSIP,
-                                () -> config,
-                                () -> DEFAULT_NODE_INFO)),
+                        new ContractServiceImpl(appContext),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
