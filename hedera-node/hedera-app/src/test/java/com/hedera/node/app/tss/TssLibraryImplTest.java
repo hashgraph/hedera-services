@@ -30,10 +30,8 @@ import com.hedera.cryptography.tss.api.TssPrivateShare;
 import com.hedera.cryptography.tss.api.TssPublicShare;
 import com.hedera.cryptography.tss.api.TssShareSignature;
 import com.hedera.node.app.spi.AppContext;
-
 import java.security.SecureRandom;
 import java.util.ArrayList;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -41,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TssLibraryImplTest {
-    private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[]{1});
+    private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
 
     @Mock
     private AppContext appContext;
@@ -63,7 +61,7 @@ class TssLibraryImplTest {
     void aggregatePublicShares() {
         final var fakeTssLibrary = new TssLibraryImpl(appContext);
         final var publicShares = new ArrayList<TssPublicShare>();
-        final var publicKeyShares = new long[]{1, 2, 3};
+        final var publicKeyShares = new long[] {1, 2, 3};
         for (int i = 0; i < publicKeyShares.length; i++) {
             publicShares.add(new TssPublicShare(
                     i,
