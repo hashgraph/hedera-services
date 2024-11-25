@@ -65,6 +65,7 @@ import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -136,7 +137,7 @@ class StateFileManagerTests {
         assertEventuallyEquals(
                 -1, originalState::getReservationCount, Duration.ofSeconds(1), "invalid reservation count");
 
-        final Path stateFile = stateDirectory.resolve(SignedStateFileUtils.SIGNED_STATE_FILE_NAME);
+        final Path stateFile = stateDirectory.resolve(MerkleTreeSnapshotReader.SIGNED_STATE_FILE_NAME);
         final Path hashInfoFile = stateDirectory.resolve(SignedStateFileUtils.HASH_INFO_FILE_NAME);
         final Path settingsUsedFile = stateDirectory.resolve("settingsUsed.txt");
 

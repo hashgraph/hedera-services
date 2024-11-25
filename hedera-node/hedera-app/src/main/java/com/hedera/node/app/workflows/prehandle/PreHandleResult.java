@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -26,6 +27,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -85,6 +87,15 @@ public record PreHandleResult(
                 && getRequiredKeys().equals(context.requiredNonPayerKeys())
                 && getOptionalKeys().equals(context.optionalNonPayerKeys())
                 && getHollowAccounts().equals(context.requiredHollowAccounts());
+    }
+
+    /**
+     * Returns whether this result represents a node due diligence failure.
+     */
+    public HederaRecordCache.DueDiligenceFailure dueDiligenceFailure() {
+        return status == NODE_DUE_DILIGENCE_FAILURE
+                ? HederaRecordCache.DueDiligenceFailure.YES
+                : HederaRecordCache.DueDiligenceFailure.NO;
     }
 
     /**

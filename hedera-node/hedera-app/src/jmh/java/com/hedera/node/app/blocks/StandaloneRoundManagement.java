@@ -44,9 +44,10 @@ import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.services.AppContextImpl;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
-import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
+import com.hedera.node.app.tss.TssLibraryImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.OneOf;
@@ -93,16 +94,21 @@ public class StandaloneRoundManagement {
     private final ConfigProvider configProvider =
             new ConfigProviderImpl(false, null, Map.of("blockStream.serializationBatchSize", "32"));
     private final List<BlockItem> roundItems = new ArrayList<>();
+    final AppContext appContext = new AppContextImpl(
+            Instant::now,
+            fakeSignatureVerifier(),
+            UNAVAILABLE_GOSSIP,
+            configProvider::getConfiguration,
+            () -> DEFAULT_NODE_INFO,
+            (split, snapshots) -> {
+                throw new UnsupportedOperationException();
+            });
+
     private final TssBaseServiceImpl tssBaseService = new TssBaseServiceImpl(
-            new AppContextImpl(
-                    Instant::now,
-                    fakeSignatureVerifier(),
-                    UNAVAILABLE_GOSSIP,
-                    () -> configProvider.getConfiguration(),
-                    () -> DEFAULT_NODE_INFO),
+            appContext,
             ForkJoinPool.commonPool(),
             ForkJoinPool.commonPool(),
-            new PlaceholderTssLibrary(),
+            new TssLibraryImpl(appContext),
             ForkJoinPool.commonPool(),
             new NoOpMetrics());
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(

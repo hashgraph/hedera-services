@@ -36,7 +36,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -62,7 +62,7 @@ import org.apache.logging.log4j.Logger;
  * optional sequence number check.
  */
 @ConstructableIgnored
-public class StatsSigningTestingToolState extends MerkleStateRoot {
+public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
 
     private static final long CLASS_ID = 0x79900efa3127b6eL;
     /**

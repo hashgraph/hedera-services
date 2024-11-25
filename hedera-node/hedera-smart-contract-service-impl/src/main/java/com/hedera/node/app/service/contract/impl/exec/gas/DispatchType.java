@@ -40,6 +40,10 @@ public enum DispatchType {
      */
     CRYPTO_UPDATE(HederaFunctionality.CRYPTO_UPDATE, DEFAULT),
     /**
+     * Dispatch for Hedera Ethereum transaction functionality with default resource prices.
+     */
+    ETHEREUM_TRANSACTION(HederaFunctionality.ETHEREUM_TRANSACTION, DEFAULT),
+    /**
      * Dispatch for Hedera crypto transfer functionality with default resource prices.
      */
     TRANSFER_HBAR(HederaFunctionality.CRYPTO_TRANSFER, DEFAULT),

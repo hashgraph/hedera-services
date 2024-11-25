@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.integration;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.services.bdd.junit.EmbeddedReason.MANIPULATES_EVENT_VERSION;
@@ -40,7 +39,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateScheduleExpiries;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateToken;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.simulatePostUpgradeTransaction;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewMappedValue;
@@ -52,7 +50,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.mutateNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usingVersion;
@@ -75,14 +72,9 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
-import com.hedera.hapi.node.state.schedule.ScheduleIdList;
-import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.services.bdd.junit.BootstrapOverride;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
@@ -97,20 +89,25 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssert
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
+@Order(0)
 @Tag(INTEGRATION)
 @TargetEmbeddedMode(CONCURRENT)
 public class ConcurrentIntegrationTests {
+    private static final Logger log = LogManager.getLogger(ConcurrentIntegrationTests.class);
+
     private static List<X509Certificate> gossipCertificates;
 
     @BeforeAll
@@ -167,16 +164,25 @@ public class ConcurrentIntegrationTests {
         final var expectedNodeStakeUpdates = 2;
         final var actualNodeStakeUpdates = new AtomicInteger(0);
         return hapiTest(
-                blockStreamMustIncludePassFrom(
-                        spec -> block -> actualNodeStakeUpdates.addAndGet((int) block.items().stream()
-                                        .filter(BlockItem::hasEventTransaction)
-                                        .map(item -> TransactionParts.from(item.eventTransactionOrThrow()
-                                                        .applicationTransactionOrThrow())
-                                                .function())
-                                        .filter(NODE_STAKE_UPDATE::equals)
-                                        .count())
-                                == expectedNodeStakeUpdates),
-                // This is the genesis transaction
+                blockStreamMustIncludePassFrom(spec -> block -> {
+                    final var blockNo =
+                            block.items().getFirst().blockHeaderOrThrow().number();
+                    final var blockNodeStakeUpdates = (int) block.items().stream()
+                            .filter(BlockItem::hasEventTransaction)
+                            .map(item -> TransactionParts.from(
+                                            item.eventTransactionOrThrow().applicationTransactionOrThrow())
+                                    .function())
+                            .filter(NODE_STAKE_UPDATE::equals)
+                            .count();
+                    final var totalNodeStakeUpdates = actualNodeStakeUpdates.addAndGet(blockNodeStakeUpdates);
+                    log.info(
+                            "Block#{} had {} node stake updates, now {}/{} observed",
+                            blockNo,
+                            blockNodeStakeUpdates,
+                            totalNodeStakeUpdates,
+                            expectedNodeStakeUpdates);
+                    return totalNodeStakeUpdates == expectedNodeStakeUpdates;
+                }), // This is the genesis transaction
                 cryptoCreate("firstUser"),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
@@ -200,37 +206,6 @@ public class ConcurrentIntegrationTests {
                 getAccountBalance("treasury")
                         .hasTinyBars(spec -> amount ->
                                 Optional.ofNullable(amount == ONE_HUNDRED_HBARS ? "Fee was not recharged" : null)));
-    }
-
-    @GenesisHapiTest
-    @DisplayName("fail invalid outside dispatch does not attempt to charge fees")
-    final Stream<DynamicTest> failInvalidOutsideDispatchDoesNotAttemptToChargeFees() {
-        final AtomicReference<BlockStreamInfo> blockStreamInfo = new AtomicReference<>();
-        final List<ScheduleID> corruptedScheduleIds = new ArrayList<>();
-        corruptedScheduleIds.add(null);
-        return hapiTest(
-                blockStreamMustIncludePassFrom(spec -> blockWithResultOf(FAIL_INVALID)),
-                cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
-                // Ensure the block with the previous transaction is sealed
-                sleepFor(100),
-                // Get the last interval process time from state
-                viewSingleton(BlockStreamService.NAME, BLOCK_STREAM_INFO_KEY, blockStreamInfo::set),
-                // Ensure the next transaction is in a new second
-                sleepFor(1000),
-                // Corrupt the state by putting invalid expiring schedules into state
-                sourcing(() -> mutateScheduleExpiries(state -> state.put(
-                        new ProtoLong(blockStreamInfo
-                                .get()
-                                .lastIntervalProcessTimeOrThrow()
-                                .seconds()),
-                        new ScheduleIdList(corruptedScheduleIds)))),
-                cryptoTransfer(tinyBarsFromTo("civilian", FUNDING, 1))
-                        .fee(ONE_HBAR)
-                        .hasKnownStatus(com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID),
-                // Confirm the payer was still charged a non-zero fee
-                getAccountBalance("civilian")
-                        .hasTinyBars(spec -> amount ->
-                                Optional.ofNullable(amount != ONE_HUNDRED_HBARS ? "Fee still charged" : null)));
     }
 
     @GenesisHapiTest(bootstrapOverrides = {@BootstrapOverride(key = "addressBook.useRosterLifecycle", value = "true")})

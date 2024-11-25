@@ -33,8 +33,6 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
@@ -43,7 +41,9 @@ import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.merkle.TestMerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
@@ -66,20 +66,17 @@ class DependencyMigrationTest extends MerkleTestBase {
             SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
     @Mock
-    private MerkleStateLifecycles lifecycles;
-
-    @Mock
     private NetworkInfo networkInfo;
 
     @Mock
     private StartupNetworks startupNetworks;
 
-    private MerkleStateRoot merkleTree;
+    private MerkleStateRoot<?> merkleTree;
 
     @BeforeEach
     void setUp() {
         registry = mock(ConstructableRegistry.class);
-        merkleTree = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0));
+        merkleTree = new TestMerkleStateRoot();
     }
 
     @Nested
@@ -285,7 +282,7 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         // Intentionally register the services in a different order than the expected migration order
-        List.of(dsService, serviceA, entityIdService, serviceB).forEach(service -> servicesRegistry.register(service));
+        List.of(dsService, serviceA, entityIdService, serviceB).forEach(servicesRegistry::register);
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator();

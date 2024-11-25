@@ -26,7 +26,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -39,6 +39,7 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -58,8 +59,8 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
         try {
             ConstructableRegistry registry = ConstructableRegistry.getInstance();
             registry.registerConstructable(new ClassConstructorPair(
-                    MerkleStateRoot.class,
-                    () -> new MerkleStateRoot(
+                    PlatformMerkleStateRoot.class,
+                    () -> new PlatformMerkleStateRoot(
                             FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
             final var schema = new V0540PlatformStateSchema();
             schema.statesToCreate().stream()
