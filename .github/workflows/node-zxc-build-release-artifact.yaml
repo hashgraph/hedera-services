@@ -101,8 +101,6 @@ on:
         required: true
 
   pull_request: #REMOVE THIS AFTER TESTING
-    branches:
-      - 16704-manually-update-the-gradleactionssetup-gradle-action-to-v421
 
 defaults:
   run:
