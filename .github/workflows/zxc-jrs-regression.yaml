@@ -344,7 +344,6 @@ jobs:
         uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          gradle-home-cache-strict-match: false
 
       - name: Install Python Virtual Environment
         run: |
@@ -412,12 +411,12 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        run: ./gradlew assemble :test-clients:shadowJar --scan
+        run: ${HOME}/gradlew assemble :test-clients:shadowJar --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
         working-directory: platform-sdk/regression
-        run: ./gradlew assemble --scan
+        run: ${HOME}/gradlew assemble --scan
 
       - name: Compute Actual Branch Name
         id: branch
