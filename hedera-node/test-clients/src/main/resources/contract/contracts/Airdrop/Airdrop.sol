@@ -151,6 +151,42 @@ contract Airdrop is HederaTokenService {
         return responseCode;
     }
 
+    function distributeMultipleTokens(address[] memory tokens, address sender, address[] memory receivers, int64 amount)
+    public payable returns (int64 responseCode) {
+        uint256 length = tokens.length;
+        IHederaTokenService.TokenTransferList[] memory tokenTransfers = new IHederaTokenService.TokenTransferList[](length);
+        for (uint256 i = 0; i < length; i++)
+        {
+            IHederaTokenService.TokenTransferList memory airdrop;
+            airdrop.token = tokens[i];
+            IHederaTokenService.AccountAmount memory senderAA;
+            senderAA.accountID = sender;
+            uint256 receiversLength = receivers.length;
+            int64 totalAmount = 0;
+            for (uint x = 0; x < receiversLength; x++) {
+                totalAmount += amount;
+            }
+            senderAA.amount = -totalAmount;
+            IHederaTokenService.AccountAmount[] memory transfers = new IHederaTokenService.AccountAmount[](receiversLength + 1);
+            transfers[0] = senderAA;
+            for (uint y = 0; y < receiversLength; y++)
+            {
+                IHederaTokenService.AccountAmount memory receiverAA;
+                receiverAA.accountID = receivers[y];
+                receiverAA.amount = amount;
+                transfers[y + 1] = receiverAA;
+            }
+            airdrop.transfers = transfers;
+            tokenTransfers[i] = airdrop;
+        }
+
+        responseCode = airdropTokens(tokenTransfers);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+        return responseCode;
+    }
+
     function prepareAA(address sender, address receiver, int64 amount) internal pure returns (IHederaTokenService.AccountAmount[] memory transfers) {
         IHederaTokenService.AccountAmount memory aa1;
         aa1.accountID = sender;

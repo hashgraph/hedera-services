@@ -66,14 +66,32 @@ public final class SystemContractAirdropHelper {
                 .toArray(Address[]::new);
     }
 
-    public static Address[] prepareAccountAddresses(@NonNull HapiSpec spec, @NonNull SpecContract... contracts) {
+    public static Address[] prepareAccountAddresses(@NonNull HapiSpec spec, @NonNull List<SpecAccount> accounts) {
+        return accounts.stream()
+                .map(account -> account.addressOn(spec.targetNetworkOrThrow()))
+                .toArray(Address[]::new);
+    }
+
+    public static Address[] prepareContractAddresses(@NonNull HapiSpec spec, @NonNull SpecContract... contracts) {
         return Arrays.stream(contracts)
+                .map(contract -> contract.addressOn(spec.targetNetworkOrThrow()))
+                .toArray(Address[]::new);
+    }
+
+    public static Address[] prepareContractAddresses(@NonNull HapiSpec spec, @NonNull List<SpecContract> contracts) {
+        return contracts.stream()
                 .map(contract -> contract.addressOn(spec.targetNetworkOrThrow()))
                 .toArray(Address[]::new);
     }
 
     public static Address[] prepareTokenAddresses(@NonNull HapiSpec spec, @NonNull SpecToken... tokens) {
         return Arrays.stream(tokens)
+                .map(token -> token.addressOn(spec.targetNetworkOrThrow()))
+                .toArray(Address[]::new);
+    }
+
+    public static Address[] prepareTokenAddresses(@NonNull HapiSpec spec, @NonNull List<? extends SpecToken> tokens) {
+        return tokens.stream()
                 .map(token -> token.addressOn(spec.targetNetworkOrThrow()))
                 .toArray(Address[]::new);
     }
@@ -179,6 +197,26 @@ public final class SystemContractAirdropHelper {
     public static SpecOperation[] prepareTokensAndBalances(
             final SpecAccount sender,
             final SpecAccount receiver,
+            final List<SpecFungibleToken> tokens,
+            final List<SpecNonFungibleToken> nfts) {
+        ArrayList<SpecOperation> specOperations = new ArrayList<>();
+        specOperations.addAll(List.of(
+                sender.associateTokens(tokens.toArray(SpecFungibleToken[]::new)),
+                sender.associateTokens(nfts.toArray(SpecNonFungibleToken[]::new)),
+                checkForEmptyBalance(receiver, tokens, nfts)));
+        specOperations.addAll(tokens.stream()
+                .map(token -> token.treasury().transferUnitsTo(sender, 1_000L, token))
+                .toList());
+        specOperations.addAll(nfts.stream()
+                .map(nft -> nft.treasury().transferNFTsTo(sender, nft, 1L))
+                .toList());
+
+        return specOperations.toArray(SpecOperation[]::new);
+    }
+
+    public static SpecOperation[] prepareTokensAndBalances(
+            final SpecAccount sender,
+            final SpecContract receiver,
             final List<SpecFungibleToken> tokens,
             final List<SpecNonFungibleToken> nfts) {
         ArrayList<SpecOperation> specOperations = new ArrayList<>();
