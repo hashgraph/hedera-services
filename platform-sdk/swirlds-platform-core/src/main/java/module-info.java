@@ -138,6 +138,7 @@ module com.swirlds.platform.core {
     requires transitive com.swirlds.state.impl;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.hedera.cryptography.bls;
     requires transitive com.hedera.pbj.runtime;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
@@ -149,9 +150,8 @@ module com.swirlds.platform.core {
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
-    requires com.hedera.cryptography.pairings.api;
-    requires transitive com.hedera.cryptography.bls;
     requires com.github.spotbugs.annotations;
+    requires com.hedera.cryptography.pairings.api;
     requires java.desktop;
     requires java.management;
     requires java.scripting;
