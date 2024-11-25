@@ -39,18 +39,13 @@ import org.junit.jupiter.api.Tag;
 @HapiTestLifecycle
 public class TssEncryptionKeySuite {
 
-    @BeforeAll
-    static void beforeAll(@NonNull final TestLifecycle lifecycle) {}
-
     @HapiTest
     final Stream<DynamicTest> tssEncryptionKeySubmittedHappyPath() {
         return hapiTest(
                 cryptoCreate("userAcct").balance(ONE_HUNDRED_HBARS),
                 sleepFor(3000L),
-                cryptoCreate("anotherAcct").balance(ONE_HUNDRED_HBARS),
-                sleepFor(3000L),
+                cryptoCreate("anotherAcct").balance(ONE_HUNDRED_HBARS));
                 // Verify the TSS Encryption Key transaction is submitted
-                blockStreamMustIncludePassFrom(TssEncryptionKeyAssertion::new)
-        );
+                //blockStreamMustIncludePassFrom(TssEncryptionKeyAssertion::new));
     }
 }

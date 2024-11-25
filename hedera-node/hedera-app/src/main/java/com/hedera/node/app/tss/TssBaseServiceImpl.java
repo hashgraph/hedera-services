@@ -391,13 +391,18 @@ public class TssBaseServiceImpl implements TssBaseService {
         return tssKeysAccessor;
     }
 
-    public void processTssEncryptionKeyChecks(@NonNull final UserTxn userTxn, @NonNull final HandleContext handleContext, @NonNull final
-            KeysAndCerts keysAndCerts) {
+    public void processTssEncryptionKeyChecks(
+            @NonNull final UserTxn userTxn,
+            @NonNull final HandleContext handleContext,
+            @NonNull final KeysAndCerts keysAndCerts) {
         final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
         final var tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
-        final var tssEncryptionKeyTransactionBody = tssStore.getTssEncryptionKey(handleContext.networkInfo().selfNodeInfo().nodeId());
-        Duration timeSinceLastSubmission = tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission() == null ? null :
-                Duration.between(tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission(), userTxn.consensusNow());
+        final var tssEncryptionKeyTransactionBody = tssStore.getTssEncryptionKey(
+                handleContext.networkInfo().selfNodeInfo().nodeId());
+        Duration timeSinceLastSubmission = tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission() == null
+                ? null
+                : Duration.between(
+                        tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission(), userTxn.consensusNow());
         final var tssEncryptionKeyRetryDelay =
                 handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeyRetryDelay();
         final var tssEncryptionKeySubmissionRetries =

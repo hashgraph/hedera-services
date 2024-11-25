@@ -261,8 +261,8 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void processTssEncryptionKeyChecks(@NotNull UserTxn userTxn,
-            @NotNull HandleContext handleContext, @NotNull KeysAndCerts keysAndCerts) {
+    public void processTssEncryptionKeyChecks(
+            @NotNull UserTxn userTxn, @NotNull HandleContext handleContext, @NotNull KeysAndCerts keysAndCerts) {
         delegate.processTssEncryptionKeyChecks(userTxn, handleContext, keysAndCerts);
     }
 
