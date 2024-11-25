@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -41,6 +42,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.exposeMaxSchedulable;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeSpecSecondTo;
@@ -51,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepForSeconds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
@@ -317,7 +320,7 @@ public class RepeatableHip423Tests {
                 // Check that schedule state sizes changed as expected
                 doAdhoc(() -> currentSizes.get().assertChangesFrom(startingSizes.get(), 3, 2, 2, 3, 3)),
                 // Let all the schedules expire
-                sleepFor((ONE_MINUTE + 2) * 1_000),
+                sleepForSeconds(ONE_MINUTE + 2),
                 viewScheduleState((byId, counts, usages, orders, byEquality) -> {
                     final var firstExpiry = lastSecond.get() + ONE_MINUTE;
                     final var firstOrder = new ScheduledOrder(firstExpiry, 0);
@@ -372,6 +375,43 @@ public class RepeatableHip423Tests {
                     assertNull(counts.get(secondKey), "Counts not purged for second expiry");
                     assertNull(usages.get(secondKey), "Usages not purged for second expiry");
                 }),
+                getAccountBalance("luckyYou").hasTinyBars(1L + 2L + 3L));
+    }
+
+    /**
+     * Tests that a "backlog" of scheduled transactions to execute does not affect detection of stake period
+     * boundary crossings.
+     */
+    @LeakyRepeatableHapiTest(
+            value = {NEEDS_LAST_ASSIGNED_CONSENSUS_TIME, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
+            overrides = {"scheduling.maxExecutionsPerUserTxn"})
+    final Stream<DynamicTest> lastProcessTimeDoesNotAffectStakePeriodBoundaryCrossingDetection() {
+        final var lastSecond = new AtomicLong();
+        final var stakePeriodMins = new AtomicLong();
+        return hapiTest(
+                overriding("scheduling.maxExecutionsPerUserTxn", "1"),
+                doWithStartupConfig(
+                        "staking.periodMins", value -> doAdhoc(() -> stakePeriodMins.set(Long.parseLong(value)))),
+                sourcing(() -> waitUntilStartOfNextStakingPeriod(stakePeriodMins.get())),
+                exposeSpecSecondTo(lastSecond::set),
+                cryptoCreate("luckyYou").balance(0L),
+                // Schedule the three transfers to lucky you
+                sourcing(() -> scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .expiringAt(lastSecond.get() + stakePeriodMins.get() * ONE_MINUTE - 1)),
+                sourcing(() -> scheduleCreate("two", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 2L)))
+                        .expiringAt(lastSecond.get() + stakePeriodMins.get() * ONE_MINUTE - 1)),
+                sourcing(() -> scheduleCreate("three", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 3L)))
+                        .expiringAt(lastSecond.get() + stakePeriodMins.get() * ONE_MINUTE - 1)),
+                sourcing(() -> waitUntilStartOfNextStakingPeriod(stakePeriodMins.get())),
+                // Now execute them one at a time and assert the expected changes to state
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)).via("boundaryCrossing"),
+                getAccountBalance("luckyYou").hasTinyBars(1L),
+                getTxnRecord("boundaryCrossing").hasChildRecordCount(1),
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 2L)).via("undistinguishedOne"),
+                getTxnRecord("undistinguishedOne").hasChildRecordCount(0),
+                getAccountBalance("luckyYou").hasTinyBars(1L + 2L),
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 2L)).via("undistinguishedTwo"),
+                getTxnRecord("undistinguishedTwo").hasChildRecordCount(0),
                 getAccountBalance("luckyYou").hasTinyBars(1L + 2L + 3L));
     }
 

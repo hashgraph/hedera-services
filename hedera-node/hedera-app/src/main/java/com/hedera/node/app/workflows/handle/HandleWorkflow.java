@@ -371,30 +371,33 @@ public class HandleWorkflow {
                 blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
             } else if (executionStart.getEpochSecond() > lastExecutedSecond) {
                 final var schedulingConfig = userTxn.config().getConfigData(SchedulingConfig.class);
-                if (schedulingConfig.longTermEnabled()) {
-                    var executionEnd = executionStart;
-                    final var consensusConfig = userTxn.config().getConfigData(ConsensusConfig.class);
-                    // Since the next consensus time may be (now + separationNanos), we need to ensure that
-                    // even if the last scheduled execution time is followed by the maximum number of records,
-                    // its final assigned time will be strictly before the first of the next consensus time's
-                    // preceding records; i.e. (now + separationNanos) - (maxAfter + maxBefore + 1)
-                    final var lastUsableTime = userTxn.consensusNow()
-                            .plusNanos(schedulingConfig.consTimeSeparationNanos()
-                                    - consensusConfig.handleMaxPrecedingRecords()
-                                    - (consensusConfig.handleMaxFollowingRecords() + 1));
-                    // And the first possible time for the next execution is strictly after the last execution
-                    // time plus the maximum number of preceding records
-                    var nextTime = boundaryStateChangeListener
-                            .lastConsensusTimeOrThrow()
-                            .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
-                    final var iter = scheduleService.executableTxns(
-                            executionStart,
-                            userTxn.consensusNow(),
-                            StoreFactoryImpl.from(state, ScheduleService.NAME, userTxn.config(), storeMetricsService));
-                    final var writableStates = state.getWritableStates(ScheduleService.NAME);
-                    int n = schedulingConfig.maxExecutionsPerUserTxn();
-                    while (iter.hasNext() && !nextTime.isAfter(lastUsableTime) && n > 0) {
-                        final var executableTxn = iter.next();
+                final var consensusConfig = userTxn.config().getConfigData(ConsensusConfig.class);
+                // Since the next consensus time may be (now + separationNanos), we need to ensure that
+                // even if the last scheduled execution time is followed by the maximum number of records,
+                // its final assigned time will be strictly before the first of the next consensus time's
+                // preceding records; i.e. (now + separationNanos) - (maxAfter + maxBefore + 1)
+                final var lastUsableTime = userTxn.consensusNow()
+                        .plusNanos(schedulingConfig.consTimeSeparationNanos()
+                                - consensusConfig.handleMaxPrecedingRecords()
+                                - (consensusConfig.handleMaxFollowingRecords() + 1));
+                // And the first possible time for the next execution is strictly after the last execution
+                // time plus the maximum number of preceding records
+                var nextTime = boundaryStateChangeListener
+                        .lastConsensusTimeOrThrow()
+                        .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
+                final var iter = scheduleService.executableTxns(
+                        executionStart,
+                        userTxn.consensusNow(),
+                        StoreFactoryImpl.from(state, ScheduleService.NAME, userTxn.config(), storeMetricsService));
+                final var writableStates = state.getWritableStates(ScheduleService.NAME);
+                int n = schedulingConfig.maxExecutionsPerUserTxn();
+                // If we discover an executable transaction somewhere in the middle of the interval, this will
+                // be revised to the NBF time of that transaction; but for now we assume that everything up to
+                // the last second of the interval was executed
+                var executionEnd = userTxn.consensusNow();
+                while (iter.hasNext() && !nextTime.isAfter(lastUsableTime) && n > 0) {
+                    final var executableTxn = iter.next();
+                    if (schedulingConfig.longTermEnabled()) {
                         final var scheduledTxn = userTxnFactory.createUserTxn(
                                 state,
                                 userTxn.creatorInfo(),
@@ -420,23 +423,23 @@ public class HandleWorkflow {
                                     .precomputedRecords();
                             blockRecordManager.endUserTransaction(records.stream(), state);
                         }
-                        executionEnd = executableTxn.nbf();
-                        nextTime = boundaryStateChangeListener
-                                .lastConsensusTimeOrThrow()
-                                .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
-                        iter.remove();
-                        ((CommittableWritableStates) writableStates).commit();
-                        n--;
                     }
-                    blockStreamManager.setLastIntervalProcessTime(executionEnd);
-                    if (!iter.hasNext() && executionEnd.getEpochSecond() > executionStart.getEpochSecond()) {
-                        // Since the execution interval spanned at least full second and there are no remaining
-                        // transactions to execute in it, we can mark the last full second as executed
-                        lastExecutedSecond = executionEnd.getEpochSecond() - 1;
-                    }
-                    if (iter.purgeUntilNext()) {
-                        ((CommittableWritableStates) writableStates).commit();
-                    }
+                    executionEnd = executableTxn.nbf();
+                    nextTime = boundaryStateChangeListener
+                            .lastConsensusTimeOrThrow()
+                            .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
+                    iter.remove();
+                    ((CommittableWritableStates) writableStates).commit();
+                    n--;
+                }
+                blockStreamManager.setLastIntervalProcessTime(executionEnd);
+                if (!iter.hasNext() && executionEnd.getEpochSecond() > executionStart.getEpochSecond()) {
+                    // Since the execution interval spanned at least full second and there are no remaining
+                    // transactions to execute in it, we can mark the last full second as executed
+                    lastExecutedSecond = executionEnd.getEpochSecond() - 1;
+                }
+                if (iter.purgeUntilNext()) {
+                    ((CommittableWritableStates) writableStates).commit();
                 }
             }
         }
@@ -503,6 +506,7 @@ public class HandleWorkflow {
                     // This updates consTimeOfLastHandledTxn as a side effect
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
+                blockStreamManager.setLastHandleTime(userTxn.consensusNow());
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
@@ -546,7 +550,10 @@ public class HandleWorkflow {
                 }
 
                 final var dispatch = userTxnFactory.createDispatch(userTxn, exchangeRateManager.exchangeRates());
+                // WARNING: this relies on the BlockStreamManager's last-handled time not being updated yet to
+                // correctly detect stake period boundary, so the order of the following two lines is important
                 processStakePeriodChanges(userTxn, dispatch);
+                blockStreamManager.setLastHandleTime(userTxn.consensusNow());
                 if (streamMode != BLOCKS) {
                     // This updates consTimeOfLastHandledTxn as a side effect
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
@@ -695,7 +702,7 @@ public class HandleWorkflow {
                     userTxn.tokenContextImpl(),
                     streamMode,
                     userTxn.type() == GENESIS_TRANSACTION,
-                    blockStreamManager.lastIntervalProcessTime());
+                    blockStreamManager.lastHandleTime());
         } catch (final Exception e) {
             // We don't propagate a failure here to avoid a catastrophic scenario
             // where we are "stuck" trying to process node stake updates and never

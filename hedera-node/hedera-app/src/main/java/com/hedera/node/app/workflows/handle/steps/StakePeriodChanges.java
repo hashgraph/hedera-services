@@ -97,7 +97,7 @@ public class StakePeriodChanges {
      * @param tokenContext the token context
      * @param streamMode the stream mode
      * @param isGenesis whether the current transaction is the genesis transaction
-     * @param lastIntervalProcessTime if known, the last instant when time-based events were processed
+     * @param lastHandleTime the last instant at which a transaction was handled
      */
     public void process(
             @NonNull final Dispatch dispatch,
@@ -105,13 +105,13 @@ public class StakePeriodChanges {
             @NonNull final TokenContext tokenContext,
             @NonNull final StreamMode streamMode,
             final boolean isGenesis,
-            @NonNull final Instant lastIntervalProcessTime) {
+            @NonNull final Instant lastHandleTime) {
         requireNonNull(stack);
         requireNonNull(dispatch);
         requireNonNull(tokenContext);
         requireNonNull(streamMode);
-        requireNonNull(lastIntervalProcessTime);
-        if (isGenesis || isStakingPeriodBoundary(streamMode, tokenContext, lastIntervalProcessTime)) {
+        requireNonNull(lastHandleTime);
+        if (isGenesis || isStakingPeriodBoundary(streamMode, tokenContext, lastHandleTime)) {
             try {
                 exchangeRateManager.updateMidnightRates(stack);
                 stack.commitSystemStateChanges();
@@ -146,20 +146,20 @@ public class StakePeriodChanges {
     private boolean isStakingPeriodBoundary(
             @NonNull final StreamMode streamMode,
             @NonNull final TokenContext tokenContext,
-            @NonNull final Instant lastIntervalProcessTime) {
+            @NonNull final Instant lastHandleTime) {
         final var consensusTime = tokenContext.consensusTime();
         if (streamMode == RECORDS) {
             final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
-            final var lastHandleTime = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
-            if (consensusTime.getEpochSecond() > lastHandleTime.seconds()) {
+            final var consTimeOfLastHandled = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
+            if (consensusTime.getEpochSecond() > consTimeOfLastHandled.seconds()) {
                 return isNextStakingPeriod(
                         consensusTime,
-                        Instant.ofEpochSecond(lastHandleTime.seconds(), lastHandleTime.nanos()),
+                        Instant.ofEpochSecond(consTimeOfLastHandled.seconds(), consTimeOfLastHandled.nanos()),
                         tokenContext);
             }
         } else {
-            if (consensusTime.getEpochSecond() > lastIntervalProcessTime.getEpochSecond()) {
-                return isNextStakingPeriod(consensusTime, lastIntervalProcessTime, tokenContext);
+            if (consensusTime.getEpochSecond() > lastHandleTime.getEpochSecond()) {
+                return isNextStakingPeriod(consensusTime, lastHandleTime, tokenContext);
             }
         }
         return false;

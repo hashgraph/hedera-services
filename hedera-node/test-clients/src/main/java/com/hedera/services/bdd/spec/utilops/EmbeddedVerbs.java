@@ -47,6 +47,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateKVStateOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateScheduleCountsOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateStakingInfosOp;
@@ -171,11 +172,11 @@ public final class EmbeddedVerbs {
     }
 
     /**
-     * Returns an operation that allows the test author to view a key's mapped value in an embedded state.
+     * Returns an operation that allows the test author to view a key/value state an embedded state.
      * @param serviceName the name of the service that manages the mapping
      * @param stateKey the mapping state key
      *
-     * @param observer the observer that will receive the value
+     * @param observer the observer that will receive the key/value state
      * @return the operation that will expose the mapped value to the observer
      * @param <K> the type of the key
      * @param <V> the type of the value
@@ -188,6 +189,26 @@ public final class EmbeddedVerbs {
         requireNonNull(stateKey);
         requireNonNull(observer);
         return new ViewKVStateOp<>(serviceName, stateKey, observer);
+    }
+
+    /**
+     * Returns an operation that allows the test author to mutate a key/value state an embedded state.
+     * @param serviceName the name of the service that manages the mapping
+     * @param stateKey the mapping state key
+     *
+     * @param observer the consumer that will receive the key/value state
+     * @return the operation that will expose the mapped value to the observer
+     * @param <K> the type of the key
+     * @param <V> the type of the value
+     */
+    public static <K extends Record, V extends Record> MutateKVStateOp<K, V> mutateKVState(
+            @NonNull final String serviceName,
+            @NonNull final String stateKey,
+            @NonNull final Consumer<WritableKVState<K, V>> observer) {
+        requireNonNull(serviceName);
+        requireNonNull(stateKey);
+        requireNonNull(observer);
+        return new MutateKVStateOp<>(serviceName, stateKey, observer);
     }
 
     /**
