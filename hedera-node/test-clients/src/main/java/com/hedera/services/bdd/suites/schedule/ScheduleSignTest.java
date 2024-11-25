@@ -628,11 +628,11 @@ public class ScheduleSignTest {
         return hapiTest(
                 cryptoCreate(SENDER).balance(1L),
                 cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true),
-                overriding("ledger.schedule.txExpiryTimeSecs", "0"),
+                overriding("ledger.schedule.txExpiryTimeSecs", "1"),
                 scheduleCreate(TWO_SIG_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
                         .alsoSigningWith(SENDER),
                 getAccountBalance(RECEIVER).hasTinyBars(0L),
-                sleepFor(1000),
+                sleepFor(2000),
                 scheduleSign(TWO_SIG_XFER)
                         .alsoSigningWith(RECEIVER)
                         .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)

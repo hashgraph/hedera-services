@@ -31,9 +31,12 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -97,6 +100,15 @@ class HandleWorkflowTest {
 
     @Mock
     private CacheWarmer cacheWarmer;
+
+    @Mock
+    private ScheduleService scheduleService;
+
+    @Mock
+    private KVStateChangeListener kvStateChangeListener;
+
+    @Mock
+    private BoundaryStateChangeListener boundaryStateChangeListener;
 
     @Mock
     private OpWorkflowMetrics opWorkflowMetrics;
@@ -216,6 +228,9 @@ class HandleWorkflowTest {
                 migrationStateChanges,
                 userTxnFactory,
                 new AddressBookHelper(),
-                tssBaseService);
+                tssBaseService,
+                kvStateChangeListener,
+                boundaryStateChangeListener,
+                scheduleService);
     }
 }

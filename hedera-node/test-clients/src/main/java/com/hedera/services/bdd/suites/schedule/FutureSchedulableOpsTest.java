@@ -44,8 +44,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelet
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -74,6 +77,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -84,8 +88,8 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 
@@ -171,7 +175,7 @@ public class FutureSchedulableOpsTest {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
 
-                    Assertions.assertEquals(
+                    assertEquals(
                             SUCCESS,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             SCHEDULED_TRANSACTION_MUST_SUCCEED);
@@ -198,7 +202,7 @@ public class FutureSchedulableOpsTest {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
 
-                    Assertions.assertEquals(
+                    assertEquals(
                             AUTHORIZATION_FAILED,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             "Scheduled transaction be AUTHORIZATION_FAILED!");
@@ -226,7 +230,7 @@ public class FutureSchedulableOpsTest {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
 
-                    Assertions.assertEquals(
+                    assertEquals(
                             SUCCESS,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             SCHEDULED_TRANSACTION_MUST_SUCCEED);
@@ -235,17 +239,21 @@ public class FutureSchedulableOpsTest {
 
     @HapiTest
     final Stream<DynamicTest> hapiTestScheduledSystemDeleteUnauthorizedPayerFails() {
+        final AtomicReference<String> unprivilegedThrottleExemptPayerId = new AtomicReference<>();
         return hapiTest(
+                doWithStartupConfig(
+                        "accounts.lastThrottleExempt",
+                        value -> doAdhoc(() -> unprivilegedThrottleExemptPayerId.set("0.0." + value))),
                 cryptoCreate(PAYING_ACCOUNT),
-                cryptoCreate(PAYING_ACCOUNT_2),
                 fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
-                scheduleCreate(A_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
+                sourcing(() -> scheduleCreate(
+                                A_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
                         .withEntityMemo(randomUppercase(100))
-                        .designatingPayer(PAYING_ACCOUNT_2)
+                        .designatingPayer(unprivilegedThrottleExemptPayerId.get())
                         .payingWith(PAYING_ACCOUNT)
-                        .via(SUCCESS_TXN),
+                        .via(SUCCESS_TXN)),
                 scheduleSign(A_SCHEDULE)
-                        .alsoSigningWith(PAYING_ACCOUNT_2)
+                        .alsoSigningWith(GENESIS)
                         .payingWith(PAYING_ACCOUNT)
                         .via(SIGN_TX)
                         .hasKnownStatus(SUCCESS),
@@ -254,8 +262,7 @@ public class FutureSchedulableOpsTest {
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
-
-                    Assertions.assertEquals(
+                    assertEquals(
                             NOT_SUPPORTED,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             "Scheduled transaction be NOT_SUPPORTED!");
