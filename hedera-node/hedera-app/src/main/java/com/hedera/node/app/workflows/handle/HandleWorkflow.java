@@ -488,7 +488,7 @@ public class HandleWorkflow {
             final var changes = kvStateChangeListener.getStateChanges();
             if (!changes.isEmpty()) {
                 final var stateChangesItem = BlockItem.newBuilder()
-                        .stateChanges(new StateChanges(asTimestamp(now), changes))
+                        .stateChanges(new StateChanges(asTimestamp(now), new ArrayList<>(changes)))
                         .build();
                 blockStreamManager.writeItem(stateChangesItem);
             }

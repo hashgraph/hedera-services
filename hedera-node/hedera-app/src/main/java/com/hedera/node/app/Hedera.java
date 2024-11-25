@@ -955,6 +955,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .useRosterLifecycle();
     }
 
+    public KVStateChangeListener kvStateChangeListener() {
+        return kvStateChangeListener;
+    }
+
+    public BoundaryStateChangeListener boundaryStateChangeListener() {
+        return boundaryStateChangeListener;
+    }
+
     /*==================================================================================================================
     *
     * Random private helper methods

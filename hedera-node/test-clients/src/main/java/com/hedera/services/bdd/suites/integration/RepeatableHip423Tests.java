@@ -292,6 +292,8 @@ public class RepeatableHip423Tests {
                         .adminKey("adminKey")
                         .expiringAt(lastExecuteImmediateExpiry.get())),
                 scheduleDelete("deleted").signedBy(DEFAULT_PAYER, "adminKey"),
+                viewScheduleStateSizes(currentSizes::set),
+                doAdhoc(() -> currentSizes.get().assertChangesFrom(startingSizes.get(), 3, 2, 2, 3, 3)),
                 sourcingContextual(spec -> sleepForSeconds(
                         lastExecuteImmediateExpiry.get() - spec.consensusTime().getEpochSecond() + 1)),
                 // Trigger all three to be purged in a single user transaction
