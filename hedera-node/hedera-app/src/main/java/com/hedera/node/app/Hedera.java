@@ -56,6 +56,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
@@ -98,7 +99,9 @@ import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.throttle.AppThrottleFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -233,15 +236,21 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     private final SemanticVersion hapiVersion;
 
     /**
-     * The source of time the node should use for screening transactions at ingest.
+     * The application context for the node.
      */
-    private final InstantSource instantSource;
+    private final AppContext appContext;
 
     /**
      * The contract service singleton, kept as a field here to avoid constructing twice
      * (once in constructor to register schemas, again inside Dagger component).
      */
     private final ContractServiceImpl contractServiceImpl;
+
+    /**
+     * The schedule service singleton, kept as a field here to avoid constructing twice
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final ScheduleServiceImpl scheduleServiceImpl;
 
     /**
      * The TSS base service singleton, kept as a field here to avoid constructing twice
@@ -387,7 +396,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         requireNonNull(constructableRegistry);
         this.selfNodeId = requireNonNull(selfNodeId);
         this.serviceMigrator = requireNonNull(migrator);
-        this.instantSource = requireNonNull(instantSource);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         logger.info(
                 """
@@ -411,17 +419,24 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 () -> HapiUtils.toString(hapiVersion));
         fileServiceImpl = new FileServiceImpl();
 
-        final var appContext = new AppContextImpl(
+        final Supplier<Configuration> configSupplier = () -> configProvider.getConfiguration();
+        this.appContext = new AppContextImpl(
                 instantSource,
                 new AppSignatureVerifier(
                         bootstrapConfig.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 this,
-                () -> configProvider.getConfiguration(),
-                () -> daggerApp.networkInfo().selfNodeInfo());
+                configSupplier,
+                () -> daggerApp.networkInfo().selfNodeInfo(),
+                new AppThrottleFactory(
+                        configSupplier,
+                        () -> daggerApp.workingStateAccessor().getState(),
+                        () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
+                        ThrottleAccumulator::new));
         tssBaseService = tssBaseServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
+        scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
@@ -431,7 +446,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         fileServiceImpl,
                         tssBaseService,
                         new FreezeServiceImpl(),
-                        new ScheduleServiceImpl(),
+                        scheduleServiceImpl,
                         new TokenServiceImpl(),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
@@ -917,8 +932,16 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         return daggerApp.handleWorkflow();
     }
 
+    public ConfigProvider configProvider() {
+        return configProvider;
+    }
+
     public BlockStreamManager blockStreamManager() {
         return daggerApp.blockStreamManager();
+    }
+
+    public ThrottleDefinitions activeThrottleDefinitions() {
+        return daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow();
     }
 
     public boolean isBlockStreamEnabled() {
@@ -930,6 +953,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .getConfiguration()
                 .getConfigData(AddressBookConfig.class)
                 .useRosterLifecycle();
+    }
+
+    public KVStateChangeListener kvStateChangeListener() {
+        return kvStateChangeListener;
+    }
+
+    public BoundaryStateChangeListener boundaryStateChangeListener() {
+        return boundaryStateChangeListener;
     }
 
     /*==================================================================================================================
@@ -980,6 +1011,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
                 .fileServiceImpl(fileServiceImpl)
                 .contractServiceImpl(contractServiceImpl)
+                .scheduleService(scheduleServiceImpl)
                 .tssBaseService(tssBaseService)
                 .initTrigger(trigger)
                 .softwareVersion(version.getPbjSemanticVersion())
@@ -989,7 +1021,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .crypto(CryptographyHolder.get())
                 .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
                 .servicesRegistry(servicesRegistry)
-                .instantSource(instantSource)
+                .instantSource(appContext.instantSource())
+                .throttleFactory(appContext.throttleFactory())
                 .metrics(metrics)
                 .kvStateChangeListener(kvStateChangeListener)
                 .boundaryStateChangeListener(boundaryStateChangeListener)
@@ -1140,7 +1173,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @return true if the source of time is the system time
      */
     private boolean isNotEmbedded() {
-        return instantSource == InstantSource.system();
+        return appContext.instantSource() == InstantSource.system();
     }
 
     private class ReadReconnectStartingStateHash implements ReconnectCompleteListener {
