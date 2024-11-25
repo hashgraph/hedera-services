@@ -104,6 +104,7 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -425,11 +426,10 @@ public class HandleWorkflow {
                         }
                     }
                     executionEnd = executableTxn.nbf();
+                    doStreamingKVChanges(writableStates, executionEnd, iter::remove);
                     nextTime = boundaryStateChangeListener
                             .lastConsensusTimeOrThrow()
                             .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
-                    iter.remove();
-                    ((CommittableWritableStates) writableStates).commit();
                     n--;
                 }
                 blockStreamManager.setLastIntervalProcessTime(executionEnd);
@@ -438,9 +438,7 @@ public class HandleWorkflow {
                     // transactions to execute in it, we can mark the last full second as executed
                     lastExecutedSecond = executionEnd.getEpochSecond() - 1;
                 }
-                if (iter.purgeUntilNext()) {
-                    ((CommittableWritableStates) writableStates).commit();
-                }
+                doStreamingKVChanges(writableStates, executionEnd, iter::purgeUntilNext);
             }
         }
     }
@@ -471,16 +469,26 @@ public class HandleWorkflow {
     private void purgeScheduling(@NonNull final State state, final Instant then, final Instant now) {
         if (!Instant.EPOCH.equals(then) && then.getEpochSecond() < now.getEpochSecond()) {
             final var writableStates = state.getWritableStates(ScheduleService.NAME);
-            final var scheduleStore = new WritableScheduleStoreImpl(
-                    writableStates, configProvider.getConfiguration(), storeMetricsService);
-            if (streamMode != RECORDS) {
-                kvStateChangeListener.reset();
-            }
-            scheduleStore.purgeExpiredRangeClosed(then.getEpochSecond(), now.getEpochSecond() - 1);
-            ((CommittableWritableStates) writableStates).commit();
-            if (streamMode != RECORDS) {
+            doStreamingKVChanges(writableStates, now, () -> {
+                final var scheduleStore = new WritableScheduleStoreImpl(
+                        writableStates, configProvider.getConfiguration(), storeMetricsService);
+                scheduleStore.purgeExpiredRangeClosed(then.getEpochSecond(), now.getEpochSecond() - 1);
+            });
+        }
+    }
+
+    private void doStreamingKVChanges(
+            @NonNull final WritableStates writableStates, @NonNull final Instant now, @NonNull final Runnable action) {
+        if (streamMode != RECORDS) {
+            kvStateChangeListener.reset();
+        }
+        action.run();
+        ((CommittableWritableStates) writableStates).commit();
+        if (streamMode != RECORDS) {
+            final var changes = kvStateChangeListener.getStateChanges();
+            if (!changes.isEmpty()) {
                 final var stateChangesItem = BlockItem.newBuilder()
-                        .stateChanges(new StateChanges(asTimestamp(now), kvStateChangeListener.getStateChanges()))
+                        .stateChanges(new StateChanges(asTimestamp(now), changes))
                         .build();
                 blockStreamManager.writeItem(stateChangesItem);
             }
