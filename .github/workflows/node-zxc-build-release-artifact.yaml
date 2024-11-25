@@ -16,6 +16,7 @@
 
 name: "ZXC: [Node] Deploy Release Artifacts"
 on:
+  workflow_dispatch:
   workflow_call:
     inputs:
       # Valid version policies are as follows: specified, branch-commit, adhoc-commit
@@ -189,18 +190,12 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Gradle Update Version (As Specified)
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
+        run: ./gradlew versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
 
       - name: Gradle Update Version (Branch Commit)
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
+        run: ./gradlew versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
 
       - name: Compute Final Effective Version
         id: effective-version
@@ -314,16 +309,10 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
+        run: ./gradlew assemble --scan
 
       - name: Gradle Version Summary
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: githubVersionSummary --scan
+        run: ./gradlew githubVersionSummary --scan
 
       - name: Stage Artifact Build Folder
         id: artifact-staging
@@ -744,16 +733,10 @@ jobs:
           key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
 
       - name: Gradle Assemble
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
+        run: ./gradlew assemble --scan
 
       - name: Gradle Version Summary
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: githubVersionSummary --scan
+        run: ./gradlew githubVersionSummary --scan
 
       - name: Stage SDK Release Archives
         working-directory: platform-sdk
@@ -828,14 +811,11 @@ jobs:
           echo "::endgroup::"
 
       - name: Gradle Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         if: ${{ inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
           NEXUS_USERNAME: ${{ secrets.sdk-ossrh-username }}
           NEXUS_PASSWORD: ${{ secrets.sdk-ossrh-password }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: "release${{ inputs.release-profile }} -PpublishingPackageGroup=com.swirlds -Ps01SonatypeHost=true -PpublishSigningEnabled=true --scan --no-configuration-cache"
+        run: ./gradlew release${{ inputs.release-profile }} -PpublishingPackageGroup=com.swirlds -Ps01SonatypeHost=true -PpublishSigningEnabled=true --scan --no-configuration-cache
 
       - name: Gradle Publish Services to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
         uses: gradle/gradle-build-action@ac2d340dc04d9e1113182899e983b5400c17cda1 # v3.5.0

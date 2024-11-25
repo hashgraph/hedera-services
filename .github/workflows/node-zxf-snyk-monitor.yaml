@@ -52,10 +52,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Compile
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
-        with:
-          gradle-version: wrapper
-          arguments: assemble --scan
+        run: ./gradlew assemble --scan
 
       - name: Disable Gradle Configuration Cache
         run: sed -i 's/^org.gradle.configuration-cache=.*$/org.gradle.configuration-cache=false/' gradle.properties
