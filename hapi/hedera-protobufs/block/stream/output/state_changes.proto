@@ -729,8 +729,12 @@ message MapChangeKey {
         proto.TimestampSeconds timestamp_seconds_key = 15;
 
         /**
-         * A key mapping to a particular ScheduleID that will execute at a given order number
-         * within a given consensus second.
+         * An ordering key mapped to a particular schedule.<br/>
+         * This identifies the order in which long term scheduled transactions
+         * that are requested to execute in the same consensus second will
+         * be executed. The value will be the `ScheduleID` for the schedule
+         * to be executed at a particular consensus second and order within
+         * that second.
          */
         proto.ScheduledOrder scheduled_order_key = 16;
     }
