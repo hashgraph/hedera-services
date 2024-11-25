@@ -43,6 +43,7 @@ public class MutateKVStateOp<K extends Record, V extends Record> extends UtilOp 
         final var state = spec.embeddedStateOrThrow();
         final var writableStates = state.getWritableStates(serviceName);
         observer.accept(requireNonNull(writableStates.get(stateKey)));
+        spec.commitEmbeddedState();
         return false;
     }
 }
