@@ -26,6 +26,8 @@ import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
@@ -38,8 +40,6 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssMessage;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
@@ -166,7 +166,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
 
-        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
+        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode);
         final var activeRoster = requireNonNull(
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster());
         final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
@@ -184,7 +184,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                                         .sourceRosterHash(activeRosterHash)
                                         .targetRosterHash(candidateRosterHash)
                                         .shareIndex(shareIndex.getAndAdd(1))
-                                        .tssMessage(Bytes.wrap(msg.bytes()))
+                                        .tssMessage(Bytes.wrap(msg.toBytes()))
                                         .build();
                                 tssSubmissions.submitTssMessage(tssMessage, context);
                             },
@@ -238,8 +238,8 @@ public class TssBaseServiceImpl implements TssBaseService {
             final var signature = tssLibrary.sign(privateShare, messageHash);
             final var tssShareSignatureBody = TssShareSignatureTransactionBody.newBuilder()
                     .messageHash(Bytes.wrap(messageHash))
-                    .shareSignature(Bytes.wrap(signature.signature().signature().toBytes()))
-                    .shareIndex(privateShare.shareId().idElement())
+                    .shareSignature(Bytes.wrap(signature.signature().toBytes()))
+                    .shareIndex(privateShare.shareId())
                     .rosterHash(activeRoster)
                     .build();
             tssSubmissions.submitTssShareSignature(
@@ -313,7 +313,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         requireNonNull(tssMessages);
         final var publicShares = tssLibrary.computePublicShares(directory, tssMessages);
         final var publicKey = tssLibrary.aggregatePublicShares(publicShares);
-        return Bytes.wrap(publicKey.publicKey().toBytes());
+        return Bytes.wrap(publicKey.toBytes());
     }
 
     /**
@@ -370,6 +370,11 @@ public class TssBaseServiceImpl implements TssBaseService {
             }
         }
         return false;
+    }
+
+    @Override
+    public TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory) {
+        return tssLibrary.getTssMessageFromBytes(wrap, directory);
     }
 
     @VisibleForTesting
