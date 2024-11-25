@@ -63,56 +63,6 @@ jobs:
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           path: workflow-run.log
-
-      - name: Report failure
-        if: ${{ !cancelled() && failure() && always() }}
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
-        env:
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_WEBHOOK }}
-        with:
-          payload: |
-            {
-              "attachments": [
-                {
-                  "color": "#7647cd",
-                  "blocks": [
-                    {
-                      "type": "header",
-                      "text": {
-                        "type": "plain_text",
-                        "text": ":grey_exclamation: Hedera Services - Workflow Logs Captured",
-                        "emoji": true
-                      }
-                    },
-                    {
-                      "type": "divider"
-                    },
-                    {
-                      "type": "section",
-                      "text": {
-                        "type": "mrkdwn",
-                        "text": "*Workflow ID*: ${{ inputs.workflow_id }}"
-                      }
-                    },
-                    {
-                      "type": "section",
-                      "text": {
-                        "type": "mrkdwn",
-                        "text": "*Workflow URL*: https://github.com/hashgraph/hedera-services/actions/runs/${{ steps.run_id.outputs.value }}"
-                      }
-                    },
-                    {
-                      "type": "section",
-                      "text": {
-                        "type": "mrkdwn",
-                        "text": "*Log file download URL*: ${{ steps.upload-log.outputs.artifact-url }}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
       
       - name: Share log information
         run: |
