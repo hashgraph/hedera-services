@@ -149,8 +149,9 @@ module com.swirlds.platform.core {
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
+    requires com.hedera.cryptography.pairings.api;
+    requires transitive com.hedera.cryptography.bls;
     requires com.github.spotbugs.annotations;
-    requires com.hedera.cryptography.bls;
     requires java.desktop;
     requires java.management;
     requires java.scripting;

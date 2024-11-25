@@ -201,7 +201,7 @@ public record KeysAndCerts(
         publicStores.setCertificate(KeyCertPurpose.SIGNING, sigCert, name);
         publicStores.setCertificate(KeyCertPurpose.AGREEMENT, agrCert, name);
 
-        BlsKeyPair blsKeyPair = CryptoStatic.generateBlsKeyPair(tssEncryptionKeyRandom);
+        final BlsKeyPair blsKeyPair = CryptoStatic.generateBlsKeyPair(tssEncryptionKeyRandom);
 
         return new KeysAndCerts(
                 sigKeyPair,
