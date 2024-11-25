@@ -506,6 +506,7 @@ public class HandleWorkflow {
                     // This updates consTimeOfLastHandledTxn as a side effect
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
+                blockStreamManager.setLastHandleTime(userTxn.consensusNow());
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
@@ -549,7 +550,10 @@ public class HandleWorkflow {
                 }
 
                 final var dispatch = userTxnFactory.createDispatch(userTxn, exchangeRateManager.exchangeRates());
+                // WARNING: this relies on the BlockStreamManager's last-handled time not being updated yet to
+                // correctly detect stake period boundary, so the order of the following two lines is important
                 processStakePeriodChanges(userTxn, dispatch);
+                blockStreamManager.setLastHandleTime(userTxn.consensusNow());
                 if (streamMode != BLOCKS) {
                     // This updates consTimeOfLastHandledTxn as a side effect
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
@@ -698,7 +702,7 @@ public class HandleWorkflow {
                     userTxn.tokenContextImpl(),
                     streamMode,
                     userTxn.type() == GENESIS_TRANSACTION,
-                    blockStreamManager.lastIntervalProcessTime());
+                    blockStreamManager.lastHandleTime());
         } catch (final Exception e) {
             // We don't propagate a failure here to avoid a catastrophic scenario
             // where we are "stuck" trying to process node stake updates and never

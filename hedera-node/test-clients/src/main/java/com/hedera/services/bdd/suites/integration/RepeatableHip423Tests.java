@@ -407,8 +407,12 @@ public class RepeatableHip423Tests {
                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)).via("boundaryCrossing"),
                 getAccountBalance("luckyYou").hasTinyBars(1L),
                 getTxnRecord("boundaryCrossing").hasChildRecordCount(1),
-                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 2L)).via("undistinguished"),
-                getTxnRecord("undistinguished").hasChildRecordCount(0));
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 2L)).via("undistinguishedOne"),
+                getTxnRecord("undistinguishedOne").hasChildRecordCount(0),
+                getAccountBalance("luckyYou").hasTinyBars(1L + 2L),
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 2L)).via("undistinguishedTwo"),
+                getTxnRecord("undistinguishedTwo").hasChildRecordCount(0),
+                getAccountBalance("luckyYou").hasTinyBars(1L + 2L + 3L));
     }
 
     /**
