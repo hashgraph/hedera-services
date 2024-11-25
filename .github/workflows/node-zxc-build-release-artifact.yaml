@@ -100,7 +100,7 @@ on:
       jf-access-token:
         required: true
 
-  pull_request: #REMOVE THIS AFTER TESTING
+  workflow_dispatch: #REMOVE THIS AFTER TESTING
 
 defaults:
   run:
