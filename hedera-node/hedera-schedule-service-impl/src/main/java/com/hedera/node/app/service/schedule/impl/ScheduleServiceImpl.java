@@ -58,6 +58,12 @@ public final class ScheduleServiceImpl implements ScheduleService {
         return new PurgingIterator(start.getEpochSecond(), end.getEpochSecond(), storeFactory);
     }
 
+    /**
+     * An {@link ExecutableTxnIterator} that traverses the executable transactions in the specified
+     * interval and purges <i>all</i> traversed scheduling metadata (not just for executable transactions)
+     * in response to calls to {@link ExecutableTxnIterator#remove()} and
+     * {@link ExecutableTxnIterator#purgeUntilNext()}.
+     */
     private static class PurgingIterator implements ExecutableTxnIterator {
         private static final Comparator<ScheduledOrder> ORDER_COMPARATOR =
                 Comparator.comparingLong(ScheduledOrder::expirySecond).thenComparingInt(ScheduledOrder::orderNumber);
@@ -103,8 +109,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
         private ScheduledOrder previousOrder;
 
         /**
-         * If not null, the earliest order before {@link #nextOrder} that is known to contain scheduled
-         * transaction metadata.
+         * If not null, the earliest order after {@link #nextOrder} that may contain scheduled transaction metadata.
          */
         @Nullable
         private ScheduledOrder candidateOrder;
@@ -168,6 +173,16 @@ public final class ScheduleServiceImpl implements ScheduleService {
             return false;
         }
 
+        /**
+         * When {@link #nextKnown} is not already true, resets the iterator to be agnostic about the next
+         * and previous orders, and then traverses orders starting from either {@link #candidateOrder} (if
+         * not null), or the first candidate order in the interval if {@link #candidateOrder} is null.
+         * <p>
+         * It sets {@link #previousOrder} to the first encountered order with scheduled transaction metadata;
+         * and sets {@link #nextOrder} and {@link #nextSchedule} to the first encountered order with an
+         * executable schedule.
+         * @return the next executable transaction to be processed, or null if there are no more
+         */
         private @Nullable ScheduledOrder prepNext() {
             if (nextKnown) {
                 return nextOrder;

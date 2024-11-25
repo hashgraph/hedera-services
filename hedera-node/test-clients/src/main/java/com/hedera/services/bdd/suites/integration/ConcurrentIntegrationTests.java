@@ -46,11 +46,13 @@ import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.simulatePostUpg
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewMappedValue;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewSingleton;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.mutateNode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -75,7 +77,6 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -97,7 +98,6 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssert
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -221,8 +221,6 @@ public class ConcurrentIntegrationTests {
     @DisplayName("fail invalid outside dispatch does not attempt to charge fees")
     final Stream<DynamicTest> failInvalidOutsideDispatchDoesNotAttemptToChargeFees() {
         final AtomicReference<BlockStreamInfo> blockStreamInfo = new AtomicReference<>();
-        final List<ScheduleID> corruptedScheduleIds = new ArrayList<>();
-        corruptedScheduleIds.add(null);
         return hapiTest(
                 blockStreamMustIncludePassFrom(spec -> blockWithResultOf(FAIL_INVALID)),
                 cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
@@ -233,12 +231,14 @@ public class ConcurrentIntegrationTests {
                 // Ensure the next transaction is in a new second
                 sleepFor(1000),
                 // Corrupt the state by putting invalid expiring schedules into state
-                sourcing(() -> mutateScheduleCounts(state -> state.put(
-                        new TimestampSeconds(blockStreamInfo
-                                .get()
-                                .lastIntervalProcessTimeOrThrow()
-                                .seconds()),
-                        new ScheduledCounts(1, 0)))),
+                sourcing(() -> blockingOrder(
+                        mutateScheduleCounts(state -> state.put(
+                                new TimestampSeconds(blockStreamInfo
+                                        .get()
+                                        .lastIntervalProcessTimeOrThrow()
+                                        .seconds()),
+                                new ScheduledCounts(1, 0))),
+                        noOp())),
                 cryptoTransfer(tinyBarsFromTo("civilian", FUNDING, 1))
                         .fee(ONE_HBAR)
                         .hasKnownStatus(com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID),
