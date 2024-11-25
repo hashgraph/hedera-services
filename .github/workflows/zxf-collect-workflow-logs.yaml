@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "XTS: Collect Failed Run Logs"
+name: "ZXF: Collect Workflow Run Logs"
 on:
   workflow_dispatch:
     inputs:
@@ -28,7 +28,7 @@ defaults:
 
 jobs:
   collect-logs:
-    name: Collect Failed Run Logs
+    name: Collect Workflow Run Logs
     runs-on: network-node-linux-medium
     steps:
       - name: Harden Runner
@@ -56,13 +56,13 @@ jobs:
       - name: Get run logs
         env:
           GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-        run: gh run view ${{ steps.run_id.outputs.value }} --log >> failed-run.log
+        run: gh run view ${{ steps.run_id.outputs.value }} --log >> workflow-run.log
 
       - name: Upload log as artifact
         id: upload-log
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
-          path: failed-run.log
+          path: workflow-run.log
 
       - name: Report failure
         if: ${{ !cancelled() && failure() && always() }}
@@ -81,7 +81,7 @@ jobs:
                       "type": "header",
                       "text": {
                         "type": "plain_text",
-                        "text": ":grey_exclamation: Hedera Services - New XTS logs available",
+                        "text": ":grey_exclamation: Hedera Services - Workflow Logs Captured",
                         "emoji": true
                       }
                     },
@@ -113,3 +113,10 @@ jobs:
                 }
               ]
             }
+      
+      - name: Share log information
+        run: |
+          echo "### Logs Collected for Workflow:" >> $GITHUB_STEP_SUMMARY
+          echo "Workflow run ID: ${{ inputs.workflow_id  }}" >> $GITHUB_STEP_SUMMARY
+          echo "Workflow URL: https://github.com/hashgraph/hedera-services/actions/runs/${{ steps.run_id.outputs.value }}" >> $GITHUB_STEP_SUMMARY
+          echo "Log file download URL: ${{ steps.upload-log.outputs.artifact-url }}" >> $GITHUB_STEP_SUMMARY
