@@ -175,6 +175,7 @@ RUN mkdir -p "/opt/hgcapp" && \
     mkdir -p "/opt/hgcapp/accountBalances" && \
     mkdir -p "/opt/hgcapp/eventsStreams" && \
     mkdir -p "/opt/hgcapp/recordStreams" && \
+    mkdir -p "/opt/hgcapp/blockStreams" && \
     mkdir -p "/opt/hgcapp/services-hedera" && \
     mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0" && \
     mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data" && \
@@ -287,6 +288,7 @@ ENV LOG_DIR_NAME ""
 VOLUME "/opt/hgcapp/accountBalances"
 VOLUME "/opt/hgcapp/eventsStreams"
 VOLUME "/opt/hgcapp/recordStreams"
+VOLUME "/opt/hgcapp/blockStreams"
 VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/config"
 VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/diskFs"
 VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/keys"

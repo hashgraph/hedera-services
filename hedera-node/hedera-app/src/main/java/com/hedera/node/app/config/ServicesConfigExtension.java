@@ -49,7 +49,6 @@ import com.hedera.node.config.data.CacheConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
-import com.hedera.node.config.data.DevConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.ExpiryConfig;
 import com.hedera.node.config.data.FeesConfig;
@@ -81,6 +80,7 @@ import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.config.api.validation.ConfigValidator;
+import com.swirlds.platform.config.AddressBookConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -95,6 +95,7 @@ public class ServicesConfigExtension implements ConfigurationExtension {
 
         return Set.of(
                 AccountsConfig.class,
+                AddressBookConfig.class,
                 NodesConfig.class,
                 ApiPermissionConfig.class,
                 AutoCreationConfig.class,
@@ -108,7 +109,6 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 ConsensusConfig.class,
                 ContractsConfig.class,
                 CryptoCreateWithAliasConfig.class,
-                DevConfig.class,
                 EntitiesConfig.class,
                 ExpiryConfig.class,
                 FeesConfig.class,

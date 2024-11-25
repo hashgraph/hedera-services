@@ -17,17 +17,21 @@
 package com.swirlds.platform.state.service;
 
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.state.service.schemas.V057PlatformStateSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,46 +45,37 @@ class PlatformStateServiceTest {
     private SchemaRegistry registry;
 
     @Mock
-    private MerkleNode node;
-
-    @Mock
     private MerkleStateRoot root;
 
     @Mock
-    private SoftwareVersion version;
-
-    @Mock
-    private com.swirlds.platform.state.PlatformState legacyState;
-
-    @Mock
     private SingletonNode<PlatformState> platformState;
+
+    @Test
+    void canSetAndClearActiveRosterFn() {
+        assertDoesNotThrow(() -> PLATFORM_STATE_SERVICE.setActiveRosterFn(() -> Roster.DEFAULT));
+        assertDoesNotThrow(PLATFORM_STATE_SERVICE::clearActiveRosterFn);
+    }
 
     @Test
     void registersOneSchema() {
         final ArgumentCaptor<Schema> captor = ArgumentCaptor.forClass(Schema.class);
         given(registry.register(captor.capture())).willReturn(registry);
         PLATFORM_STATE_SERVICE.registerSchemas(registry);
-        assertEquals(1, captor.getAllValues().size());
+        final var schemas = captor.getAllValues();
+        assertEquals(2, schemas.size());
+        assertInstanceOf(V0540PlatformStateSchema.class, schemas.getFirst());
+        assertInstanceOf(V057PlatformStateSchema.class, schemas.getLast());
     }
 
     @Test
     void emptyRootIsAtGenesis() {
-        given(root.getNumberOfChildren()).willReturn(0);
+        given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
+                .willReturn(-1);
         assertNull(PLATFORM_STATE_SERVICE.creationVersionOf(root));
     }
 
     @Test
-    void rootWithNoPlatformState_throwsException() {
-        given(root.getNumberOfChildren()).willReturn(1);
-        given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
-                .willReturn(-1);
-
-        assertThrows(IllegalStateException.class, () -> PLATFORM_STATE_SERVICE.creationVersionOf(root));
-    }
-
-    @Test
     void rootWithPlatformStateGetsVersionFromPlatformState() {
-        given(root.getNumberOfChildren()).willReturn(1);
         given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
                 .willReturn(0);
         given(root.getChild(0)).willReturn(platformState);

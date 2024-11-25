@@ -1,6 +1,5 @@
 module com.hedera.node.app.spi.test.fixtures {
     exports com.hedera.node.app.spi.fixtures;
-    exports com.hedera.node.app.spi.fixtures.state;
     exports com.hedera.node.app.spi.fixtures.workflows;
     exports com.hedera.node.app.spi.fixtures.util;
     exports com.hedera.node.app.spi.fixtures.info;
@@ -9,9 +8,9 @@ module com.hedera.node.app.spi.test.fixtures {
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.config.api;
-    requires transitive com.swirlds.platform.core.test.fixtures;
     requires transitive com.swirlds.state.api.test.fixtures;
     requires transitive com.swirlds.state.api;
+    requires transitive com.swirlds.state.impl.test.fixtures;
     requires transitive com.hedera.pbj.runtime;
     requires transitive org.apache.logging.log4j;
     requires transitive org.assertj.core;

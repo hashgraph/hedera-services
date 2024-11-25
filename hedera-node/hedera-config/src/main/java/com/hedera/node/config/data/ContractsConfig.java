@@ -78,6 +78,8 @@ public record ContractsConfig(
                 boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractAccountServiceEnabled,
+        @ConfigProperty(value = "systemContract.scheduleService.enabled", defaultValue = "false") @NetworkProperty
+                boolean systemContractScheduleServiceEnabled,
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractAccountServiceIsAuthorizedRawEnabled,
@@ -108,6 +110,8 @@ public record ContractsConfig(
         @ConfigProperty(value = "systemContract.setUnlimitedAutoAssociations.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractSetUnlimitedAutoAssociationsEnabled,
+        @ConfigProperty(value = "evm.ethTransaction.zeroHapiFees.enabled", defaultValue = "false") @NetworkProperty
+                boolean evmEthTransactionZeroHapiFeesEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
                 boolean evmVersionDynamic,
         @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "true") @NetworkProperty

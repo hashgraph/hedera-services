@@ -66,6 +66,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -94,13 +95,17 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     private TransactionBody txn;
     private NodeCreateHandler subject;
 
-    private List<X509Certificate> certList;
+    private static List<X509Certificate> certList;
+
+    @BeforeAll
+    static void beforeAll() {
+        certList = generateX509Certificates(3);
+    }
 
     @BeforeEach
     void setUp() {
         final var addressBookValidator = new AddressBookValidator();
         subject = new NodeCreateHandler(addressBookValidator);
-        certList = generateX509Certificates(4);
     }
 
     @Test

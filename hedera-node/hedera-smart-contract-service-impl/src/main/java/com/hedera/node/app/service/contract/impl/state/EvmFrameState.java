@@ -227,10 +227,29 @@ public interface EvmFrameState {
      * Returns the hash of the redirect bytecode for the account with the given address.
      *
      * @param address the account address
-     * @return the redirect code for the token
+     * @return the redirect code for the account
      */
     @NonNull
     Hash getAccountRedirectCodeHash(@Nullable Address address);
+
+    /**
+     * Returns the redirect bytecode for the schedule with the given address.  This should only be called for schedule
+     * transaction entities
+     *
+     * @param address the schedule address
+     * @return the redirect code for the schedule
+     */
+    @NonNull
+    Bytes getScheduleRedirectCode(@Nullable Address address);
+
+    /**
+     * Returns the hash of the redirect bytecode for the schedule with the given address.
+     *
+     * @param address the schedule address
+     * @return the redirect code for the schedule
+     */
+    @NonNull
+    Hash getScheduleRedirectCodeHash(@Nullable Address address);
 
     /**
      * Returns the native account with the given account id.
