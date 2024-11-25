@@ -127,7 +127,7 @@ on:
         description: "Workflow Debugging Enabled"
         required: false
         type: boolean
-        default: false
+        default: true #CHANGE TO FALSE LATER
     secrets:
       access-token:
         description: "The Github access token used to checkout the repository, submodules, and make GitHub API calls."
@@ -412,14 +412,16 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
+        working-directory: ${{ github.workspace }}
         run: |
           pwd
-          ../gradlew assemble :test-clients:shadowJar --scan
+          ./gradlew assemble :test-clients:shadowJar --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
+        working-directory: ${{ github.workspace }}/platform-sdk/regression
         run: |
-          cd regression
+          pwd
           ./gradlew assemble --scan
 
       - name: Compute Actual Branch Name
