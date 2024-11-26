@@ -148,9 +148,6 @@ public final class IngestChecker {
      */
     public void checkNodeState() throws PreCheckException {
         if (currentPlatformStatus.get() != ACTIVE) {
-            logger.info(
-                    "CURRENT PLATFORM STATUS is {} just before PLATFORM_NOT_ACTIVE error \n\n",
-                    currentPlatformStatus.get().toString());
             throw new PreCheckException(PLATFORM_NOT_ACTIVE);
         }
     }

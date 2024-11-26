@@ -35,7 +35,6 @@ import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
-import org.bouncycastle.util.BigIntegers;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,8 +46,6 @@ class EthTxDataTest {
     static final String SIGNATURE_PUBKEY = "033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d";
     static final String RAW_TX_TYPE_0 =
             "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792";
-    static final String RAW_TX_TYPE_0_WITH_CHAIN_ID_11155111 =
-            "f86b048503ff9aca0782520f94e64fac7f3df5ab44333ad3d3eb3fb68be43f2e8c830fffff808401546d71a026cf0758fda122862a4de71a82a3210ef7c172ee13eae42997f5d32b747ec78ca03587c5c2eee373b1e45693544edcde8dde883d2be3e211b3f0f3c840d6389c8a";
     static final String RAW_TX_TYPE_0_TRIMMED_LAST_BYTES =
             "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290000";
     // {
@@ -603,19 +600,5 @@ class EthTxDataTest {
         final var populateEthTxData = EthTxData.populateEthTxData(encoded);
 
         assertEquals(bigValue, populateEthTxData.value());
-    }
-
-    @Test
-    void thatPassesOnBigIntegerByteArray() {
-        final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0_WITH_CHAIN_ID_11155111));
-        byte[] passingChainId = BigIntegers.asUnsignedByteArray(BigInteger.valueOf(11155111L));
-        assertEquals(Hex.toHexString(subject.chainId()), Hex.toHexString(passingChainId));
-    }
-
-    @Test
-    void thatFailsOnBigIntegerByteArray() {
-        final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0_WITH_CHAIN_ID_11155111));
-        byte[] failingChainId = BigInteger.valueOf(11155111L).toByteArray();
-        assertNotEquals(Hex.toHexString(subject.chainId()), Hex.toHexString(failingChainId));
     }
 }
