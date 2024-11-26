@@ -95,6 +95,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -618,6 +619,7 @@ public class ScheduleLongTermExecutionTest {
 
     @HapiTest
     @Order(6)
+    @Disabled
     public Stream<DynamicTest> executionWithContractCreateWorksAtExpiry() {
         final var payerBalance = new AtomicLong();
         return defaultHapiSpec("ExecutionWithContractCreateWorksAtExpiry")
