@@ -165,12 +165,12 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
     public HapiScheduleCreate<T> expiringAt(final long expiry) {
         this.longTermExpiry = expiry;
-        return waitForExpiry();
+        return this;
     }
 
     public HapiScheduleCreate<T> expiringIn(final long lifetime) {
         this.longTermLifetime = lifetime;
-        return waitForExpiry();
+        return this;
     }
 
     public HapiScheduleCreate<T> withRelativeExpiry(String txnId, long offsetSeconds) {
