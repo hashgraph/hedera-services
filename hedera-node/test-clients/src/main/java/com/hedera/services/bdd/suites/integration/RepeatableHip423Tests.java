@@ -154,10 +154,12 @@ public class RepeatableHip423Tests {
                 // Consensus time advances exactly one second per transaction in repeatable mode
                 exposeSpecSecondTo(now -> expiry.set(now + oddLifetime - 1)),
                 sourcing(() -> scheduleCreate("second", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 456L)))
+                        .waitForExpiry()
                         .payingWith(CIVILIAN_PAYER)
                         .fee(ONE_HBAR)
                         .expiringAt(expiry.get())),
                 sourcing(() -> scheduleCreate("third", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 789)))
+                        .waitForExpiry()
                         .payingWith(CIVILIAN_PAYER)
                         .fee(ONE_HBAR)
                         .expiringAt(expiry.get())
@@ -292,6 +294,7 @@ public class RepeatableHip423Tests {
                 getAccountBalance("luckyYou").hasTinyBars(1L + 2L),
                 doingContextual(spec -> lastExecuteImmediateExpiry.set(expiryOf("last", spec))),
                 sourcing(() -> scheduleCreate("deleted", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 3L)))
+                        .waitForExpiry()
                         .adminKey("adminKey")
                         .expiringAt(lastExecuteImmediateExpiry.get())),
                 scheduleDelete("deleted").signedBy(DEFAULT_PAYER, "adminKey"),
@@ -328,10 +331,13 @@ public class RepeatableHip423Tests {
                 cryptoCreate("luckyYou").balance(0L),
                 // Schedule the three transfers to lucky you
                 sourcing(() -> scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .waitForExpiry()
                         .expiringAt(lastSecond.get() + ONE_MINUTE)),
                 sourcing(() -> scheduleCreate("two", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 2L)))
+                        .waitForExpiry()
                         .expiringAt(lastSecond.get() + ONE_MINUTE)),
                 sourcing(() -> scheduleCreate("three", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 3L)))
+                        .waitForExpiry()
                         .expiringAt(lastSecond.get() + ONE_MINUTE + 1)),
                 viewScheduleStateSizes(currentSizes::set),
                 // Check that schedule state sizes changed as expected
@@ -414,10 +420,13 @@ public class RepeatableHip423Tests {
                 cryptoCreate("luckyYou").balance(0L),
                 // Schedule the three transfers to lucky you
                 sourcing(() -> scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .waitForExpiry()
                         .expiringAt(lastSecond.get() + stakePeriodMins.get() * ONE_MINUTE - 1)),
                 sourcing(() -> scheduleCreate("two", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 2L)))
+                        .waitForExpiry()
                         .expiringAt(lastSecond.get() + stakePeriodMins.get() * ONE_MINUTE - 1)),
                 sourcing(() -> scheduleCreate("three", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 3L)))
+                        .waitForExpiry()
                         .expiringAt(lastSecond.get() + stakePeriodMins.get() * ONE_MINUTE - 1)),
                 sourcing(() -> waitUntilStartOfNextStakingPeriod(stakePeriodMins.get())),
                 // Now execute them one at a time and assert the expected changes to state
@@ -462,12 +471,16 @@ public class RepeatableHip423Tests {
                         "scheduling.consTimeSeparationNanos", "15")),
                 // Schedule the four transfers to lucky you
                 sourcing(() -> scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .waitForExpiry()
                         .expiringAt(lastSecond.get() + ONE_MINUTE)),
                 sourcing(() -> scheduleCreate("two", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 2L)))
+                        .waitForExpiry()
                         .expiringAt(lastSecond.get() + ONE_MINUTE)),
                 sourcing(() -> scheduleCreate("three", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 3L)))
+                        .waitForExpiry()
                         .expiringAt(lastSecond.get() + ONE_MINUTE + 3)),
                 sourcing(() -> scheduleCreate("four", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 4L)))
+                        .waitForExpiry()
                         .expiringAt(lastSecond.get() + ONE_MINUTE + 3)),
                 // Let all the schedules expire
                 sleepFor((ONE_MINUTE + 4) * 1_000),
@@ -494,10 +507,12 @@ public class RepeatableHip423Tests {
                 cryptoCreate("cautiousYou").balance(0L).receiverSigRequired(true),
                 sourcing(
                         () -> scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                                .waitForExpiry()
                                 .expiringIn(ONE_MINUTE)
                                 .via("one")),
                 sourcing(() -> scheduleCreate(
                                 "receiverSigRequired", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "cautiousYou", 2L)))
+                        .waitForExpiry()
                         .expiringIn(ONE_MINUTE)
                         .via("two")),
                 sleepForSeconds(ONE_MINUTE),
