@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
@@ -159,12 +158,7 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
 
         @Override
         public KeysAndCerts getKeysAndCerts() {
-            try {
-                final byte[] EMPTY_ARRAY = new byte[] {};
-                return KeysAndCerts.generate("a-name", EMPTY_ARRAY, EMPTY_ARRAY, EMPTY_ARRAY, new PublicStores());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            return null;
         }
 
         private Round nextConsensusRound() {
