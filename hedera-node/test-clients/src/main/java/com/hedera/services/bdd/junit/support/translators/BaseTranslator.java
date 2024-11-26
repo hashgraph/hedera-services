@@ -397,7 +397,13 @@ public class BaseTranslator {
 
     private void scanUnit(@NonNull final BlockTransactionalUnit unit) {
         unit.stateChanges().forEach(stateChange -> {
-            if (stateChange.hasMapUpdate()) {
+            if (stateChange.hasMapDelete()) {
+                final var mapDelete = stateChange.mapDeleteOrThrow();
+                final var key = mapDelete.keyOrThrow();
+                if (key.hasScheduleIdKey()) {
+                    scheduleRef = key.scheduleIdKeyOrThrow();
+                }
+            } else if (stateChange.hasMapUpdate()) {
                 final var mapUpdate = stateChange.mapUpdateOrThrow();
                 final var key = mapUpdate.keyOrThrow();
                 if (key.hasTokenIdKey()) {

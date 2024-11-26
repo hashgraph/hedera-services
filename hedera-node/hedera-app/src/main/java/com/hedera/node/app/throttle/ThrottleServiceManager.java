@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
+import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
@@ -42,6 +43,7 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,6 +60,9 @@ public class ThrottleServiceManager {
     private final ThrottleAccumulator ingestThrottle;
     private final ThrottleAccumulator backendThrottle;
     private final CongestionMultipliers congestionMultipliers;
+
+    @Nullable
+    private ThrottleDefinitions activeDefinitions;
 
     @Inject
     public ThrottleServiceManager(
@@ -94,6 +99,15 @@ public class ThrottleServiceManager {
         final var serviceStates = state.getReadableStates(CongestionThrottleService.NAME);
         resetThrottlesFromUsageSnapshots(serviceStates);
         syncFromCongestionLevelStarts(serviceStates);
+    }
+
+    /**
+     * Returns the throttle definitions that are currently active.
+     * @return the active throttle definitions
+     * @throws IllegalStateException if the active throttle definitions are not available
+     */
+    public @NonNull ThrottleDefinitions activeThrottleDefinitionsOrThrow() {
+        return requireNonNull(activeDefinitions);
     }
 
     /**
@@ -176,10 +190,11 @@ public class ThrottleServiceManager {
                 translateToList(congestionMultipliers.gasThrottleMultiplierCongestionStarts())));
     }
 
-    private @NonNull ThrottleParser.ValidatedThrottles rebuildThrottlesFrom(@NonNull Bytes encoded) {
+    private @NonNull ThrottleParser.ValidatedThrottles rebuildThrottlesFrom(@NonNull final Bytes encoded) {
         final var validatedThrottles = throttleParser.parse(encoded);
         ingestThrottle.rebuildFor(validatedThrottles.throttleDefinitions());
         backendThrottle.rebuildFor(validatedThrottles.throttleDefinitions());
+        this.activeDefinitions = validatedThrottles.throttleDefinitions();
         return validatedThrottles;
     }
 

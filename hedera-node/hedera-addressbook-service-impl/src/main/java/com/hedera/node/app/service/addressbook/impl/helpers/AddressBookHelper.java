@@ -46,10 +46,12 @@ public class AddressBookHelper {
     /**
      * Adjusts the node metadata after upgrade. This method will mark nodes as deleted if they are not present in the
      * address book and add new nodes to the node store.
+     * <b>IMPORTANT:</b> Once DAB is enabled, should always be a no-op.
      * @param networkInfo the network info
      * @param config configuration
      * @param nodeStore the node store
      */
+    @Deprecated
     public void adjustPostUpgradeNodeMetadata(
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Configuration config,
