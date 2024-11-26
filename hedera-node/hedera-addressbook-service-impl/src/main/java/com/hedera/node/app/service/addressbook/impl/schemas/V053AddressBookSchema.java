@@ -218,11 +218,12 @@ public class V053AddressBookSchema extends Schema {
      * @return the map from node ids to Ed25519 keys
      */
     private static Map<Long, Key> parseEd25519NodeAdminKeysFrom(@NonNull final String loc) {
+        final var path = Paths.get(loc);
         try {
-            final var json = Files.readString(Paths.get(loc));
+            final var json = Files.readString(path);
             return parseEd25519NodeAdminKeys(json);
         } catch (IOException e) {
-            log.warn("Unable to read override keys from {}", loc, e);
+            log.warn("Unable to read override keys from {}", path.toAbsolutePath(), e);
             return emptyMap();
         }
     }
