@@ -107,11 +107,11 @@ class EnhancedKeyStoreLoaderTest {
     @DisplayName("KeyStore Loader Positive Test")
     @ValueSource(
             strings = {
-                    "legacy-valid",
-                    "hybrid-valid",
-                    "enhanced-valid",
-                    "enhanced-valid-no-agreement-key",
-                    "enhanced-valid-no-tss-key"
+                "legacy-valid",
+                "hybrid-valid",
+                "enhanced-valid",
+                "enhanced-valid-no-agreement-key",
+                "enhanced-valid-no-tss-key"
             })
     void keyStoreLoaderPositiveTest(final String directoryName)
             throws IOException, KeyLoadingException, KeyStoreException {
