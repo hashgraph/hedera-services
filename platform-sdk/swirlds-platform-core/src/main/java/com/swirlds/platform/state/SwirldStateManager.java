@@ -129,6 +129,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * @param round the round to handle
      */
     public void handleConsensusRound(final ConsensusRound round) {
+        logger.error(EXCEPTION.getMarker(), "handleConsensusRound: {} ", StackTrace.getStackTrace());
         final MerkleRoot state = stateRef.get();
 
         uptimeTracker.handleRound(round, state.getReadablePlatformState().getAddressBook());
