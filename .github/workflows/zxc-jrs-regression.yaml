@@ -407,20 +407,20 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
         with:
-          gradle-version: 8.11
+          gradle-version: wrapper
           #gradle-version: ${{ inputs.gradle-version }}
 
       - name: Verify Gradle Installation
-        run: gradle --version
+        run: ./gradlew --version
 
       - name: Gradle Assemble
         id: gradle-build
-        run: gradle assemble :test-clients:shadowJar --scan
+        run: ./gradlew assemble :test-clients:shadowJar --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
         working-directory: platform-sdk/regression
-        run: gradle assemble --scan
+        run: ./gradlew assemble --scan
 
       - name: Compute Actual Branch Name
         id: branch
