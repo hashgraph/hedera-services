@@ -37,6 +37,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public class DecimalsCall extends AbstractRevertibleTokenViewCall {
     private static final int MAX_REPORTABLE_DECIMALS = 0xFF;
 
+    /**
+     * @param enhancement the enhancement to use
+     * @param gasCalculator the gas calculator to use
+     * @param token the token against the call is executed
+     */
     public DecimalsCall(
             @NonNull HederaWorldUpdater.Enhancement enhancement,
             @NonNull final SystemContractGasCalculator gasCalculator,

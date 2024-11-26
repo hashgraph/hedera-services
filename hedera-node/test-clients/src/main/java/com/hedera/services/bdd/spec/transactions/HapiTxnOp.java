@@ -199,11 +199,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                     if (spec.setup().suppressUnrecoverableNetworkFailures()) {
                         return false;
                     }
-                    log.error(
-                            "{} Status resolution failed due to unrecoverable runtime exception, "
-                                    + "possibly network connection lost.",
-                            TxnUtils.toReadableString(txn),
-                            e);
                     if (unavailableStatusIsOk) {
                         // If we expect the status to be unavailable (because e.g. the
                         // submitted transaction exceeds 6144 bytes and will have its
@@ -212,6 +207,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                         // lifecycle has ended
                         return true;
                     } else {
+                        log.error(
+                                "{} Status resolution failed due to unrecoverable runtime exception, "
+                                        + "possibly network connection lost.",
+                                TxnUtils.toReadableString(txn),
+                                e);
                         throw new HapiTxnCheckStateException("Unable to resolve txn status!");
                     }
                 }

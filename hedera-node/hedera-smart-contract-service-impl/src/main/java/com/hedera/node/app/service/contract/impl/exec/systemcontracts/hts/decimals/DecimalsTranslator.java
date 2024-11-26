@@ -30,8 +30,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class DecimalsTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for updateTokenKeys(address, TOKEN_KEY[]) method. */
     public static final Function DECIMALS = new Function("decimals()", ReturnTypes.BYTE);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public DecimalsTranslator() {
         // Dagger2

@@ -37,7 +37,7 @@ public interface ReadableNodeStore {
      *
      * @return a new roster, representing the most current node configurations available
      */
-    Roster newRosterFromNodes();
+    Roster snapshotOfFutureRoster();
 
     /**
      * Returns the node needed. If the node doesn't exist returns failureReason. If the

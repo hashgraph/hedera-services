@@ -78,7 +78,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -155,16 +155,6 @@ public class HevmTransactionFactory {
                     body.transactionIDOrThrow().accountIDOrThrow(), body.contractCallOrThrow());
             case ETHEREUM_TRANSACTION -> fromHapiEthereum(
                     body.transactionIDOrThrow().accountIDOrThrow(), body.ethereumTransactionOrThrow());
-            default -> throw new IllegalArgumentException("Not a contract operation");
-        };
-    }
-
-    // todo for schedule transactions!!
-    public HederaEvmTransaction fromHapiTransaction(@NonNull final TransactionBody body, @NonNull AccountID payer) {
-        return switch (body.data().kind()) {
-            case CONTRACT_CREATE_INSTANCE -> fromHapiCreate(payer, body.contractCreateInstanceOrThrow());
-            case CONTRACT_CALL -> fromHapiCall(payer, body.contractCallOrThrow());
-            case ETHEREUM_TRANSACTION -> fromHapiEthereum(payer, body.ethereumTransactionOrThrow());
             default -> throw new IllegalArgumentException("Not a contract operation");
         };
     }

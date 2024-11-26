@@ -18,7 +18,7 @@ package com.hedera.node.app.state.merkle;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
-import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.swirlds.state.test.fixtures.merkle.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -33,16 +33,17 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.StartupNetworks;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.test.fixtures.merkle.TestMerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
@@ -65,17 +66,17 @@ class DependencyMigrationTest extends MerkleTestBase {
             SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
     @Mock
-    private MerkleStateLifecycles lifecycles;
-
-    @Mock
     private NetworkInfo networkInfo;
 
-    private MerkleStateRoot merkleTree;
+    @Mock
+    private StartupNetworks startupNetworks;
+
+    private MerkleStateRoot<?> merkleTree;
 
     @BeforeEach
     void setUp() {
         registry = mock(ConstructableRegistry.class);
-        merkleTree = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0));
+        merkleTree = new TestMerkleStateRoot();
     }
 
     @Nested
@@ -94,8 +95,10 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             new ServicesSoftwareVersion(CURRENT_VERSION),
                             VERSIONED_CONFIG,
+                            VERSIONED_CONFIG,
                             networkInfo,
-                            mock(Metrics.class)))
+                            mock(Metrics.class),
+                            startupNetworks))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -108,13 +111,15 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             null,
                             VERSIONED_CONFIG,
+                            VERSIONED_CONFIG,
                             networkInfo,
-                            mock(Metrics.class)))
+                            mock(Metrics.class),
+                            startupNetworks))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
-        void versionedConfigRequired() {
+        void configRequired2() {
             final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
                             merkleTree,
@@ -122,8 +127,10 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             new ServicesSoftwareVersion(CURRENT_VERSION),
                             null,
+                            null,
                             networkInfo,
-                            mock(Metrics.class)))
+                            mock(Metrics.class),
+                            startupNetworks))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -136,8 +143,10 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             new ServicesSoftwareVersion(CURRENT_VERSION),
                             VERSIONED_CONFIG,
+                            VERSIONED_CONFIG,
                             networkInfo,
-                            null))
+                            null,
+                            startupNetworks))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -176,8 +185,10 @@ class DependencyMigrationTest extends MerkleTestBase {
                 new ServicesSoftwareVersion(
                         SemanticVersion.newBuilder().major(2).build()),
                 VERSIONED_CONFIG,
+                VERSIONED_CONFIG,
                 networkInfo,
-                mock(Metrics.class));
+                mock(Metrics.class),
+                startupNetworks);
 
         // Then: we verify the migrations had the desired effects on both entity ID state and DependentService state
         // First check that the entity ID service has an updated entity ID, despite its schema migration not doing
@@ -271,7 +282,7 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         // Intentionally register the services in a different order than the expected migration order
-        List.of(dsService, serviceA, entityIdService, serviceB).forEach(service -> servicesRegistry.register(service));
+        List.of(dsService, serviceA, entityIdService, serviceB).forEach(servicesRegistry::register);
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator();
@@ -282,8 +293,10 @@ class DependencyMigrationTest extends MerkleTestBase {
                 new ServicesSoftwareVersion(
                         SemanticVersion.newBuilder().major(1).build()),
                 VERSIONED_CONFIG,
+                VERSIONED_CONFIG,
                 networkInfo,
-                mock(Metrics.class));
+                mock(Metrics.class),
+                startupNetworks);
 
         // Then: we verify the migrations were run in the expected order
         Assertions.assertThat(orderedInvocations)

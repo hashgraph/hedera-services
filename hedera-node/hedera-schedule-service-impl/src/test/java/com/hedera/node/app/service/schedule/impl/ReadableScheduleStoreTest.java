@@ -22,8 +22,6 @@ import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.security.InvalidKeyException;
-import java.util.ArrayList;
-import java.util.List;
 import org.assertj.core.api.BDDAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,30 +80,5 @@ class ReadableScheduleStoreTest extends ScheduleTestBase {
         assertThat(readSchedule.payerAccountId()).isNull();
         assertThat(readSchedule.adminKey()).isEqualTo(adminKey);
         assertThat(readSchedule.scheduledTransaction()).isEqualTo(scheduled);
-    }
-
-    @Test
-    void verifyGetByExpiration() {
-        final List<ScheduleID> scheduleIdsBySecond = scheduleStore.getByExpirationSecond(expirationTime.seconds());
-        assertThat(scheduleIdsBySecond).hasSize(1).containsExactly(scheduleInState.scheduleId());
-        long altTime = testConsensusTime.getEpochSecond() + scheduleConfig.maxExpirationFutureSeconds();
-        final List<ScheduleID> altScheduleIdsBySecond = scheduleStore.getByExpirationSecond(altTime);
-        assertThat(altScheduleIdsBySecond).hasSize(1).containsExactly(otherScheduleInState.scheduleId());
-        final int expandedSize = listOfScheduledOptions.size() + 1;
-        final List<Schedule> expanded = new ArrayList<>(expandedSize);
-        expanded.add(otherScheduleInState);
-        for (Schedule next : listOfScheduledOptions) {
-            Schedule.Builder nextWithExpiry = next.copyBuilder();
-            nextWithExpiry.providedExpirationSecond(altTime).calculatedExpirationSecond(altTime);
-            final Schedule modified = nextWithExpiry.build();
-            expanded.add(modified);
-            writableSchedules.put(modified);
-        }
-        final List<ScheduleID> expandedIds =
-                expanded.stream().map(Schedule::scheduleId).toList();
-        // This works because write/read are the same object.  If that changes then we must commit and reset here
-        // to update the underlying KV states.
-        final List<ScheduleID> expandedBySecond = scheduleStore.getByExpirationSecond(altTime);
-        assertThat(expandedBySecond).hasSize(expandedSize).containsExactlyInAnyOrderElementsOf(expandedIds);
     }
 }

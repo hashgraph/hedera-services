@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.test;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.asBytes;
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -114,7 +114,7 @@ class ReadableNodeStoreImplTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("Constructing a new roster includes all of the latest nodes defined in state")
-    void newRosterFromNodesIncludesAllUndeletedDefinitions() {
+    void snapshotOfFutureRosterIncludesAllUndeletedDefinitions() {
         final ReadableKVState<EntityNumber, Node> nodesState = emptyReadableNodeStateBuilder()
                 .value(EntityNumber.newBuilder().number(1).build(), NODE_1)
                 .value(EntityNumber.newBuilder().number(2).build(), NODE_2)
@@ -126,7 +126,7 @@ class ReadableNodeStoreImplTest extends AddressBookTestBase {
         given(readableStates.<EntityNumber, Node>get(anyString())).willReturn(nodesState);
 
         subject = new ReadableNodeStoreImpl(readableStates);
-        final var result = subject.newRosterFromNodes();
+        final var result = subject.snapshotOfFutureRoster();
         org.assertj.core.api.Assertions.assertThat(result.rosterEntries())
                 .containsExactlyInAnyOrder(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3);
     }

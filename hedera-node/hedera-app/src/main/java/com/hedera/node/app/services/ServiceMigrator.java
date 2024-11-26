@@ -22,7 +22,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.StartupNetworks;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -36,13 +37,15 @@ public interface ServiceMigrator {
     /**
      * Perform the migrations on the given state.
      *
-     * @param state            The state to migrate
+     * @param state The state to migrate
      * @param servicesRegistry The services registry to use for the migrations
      * @param previousVersion The previous version of the state
      * @param currentVersion The current version of the state
-     * @param config The configuration to use for the migrations
+     * @param nodeConfiguration The configuration to use for the migrations
+     * @param platformConfiguration The platform configuration to use for subsequent object initializations
      * @param genesisNetworkInfo The network information to use for the migrations
      * @param metrics The metrics to use for the migrations
+     * @param startupNetworks The startup networks to use for the migrations
      * @return The list of builders for state changes that occurred during the migrations
      */
     List<StateChanges.Builder> doMigrations(
@@ -50,9 +53,11 @@ public interface ServiceMigrator {
             @NonNull ServicesRegistry servicesRegistry,
             @Nullable SoftwareVersion previousVersion,
             @NonNull SoftwareVersion currentVersion,
-            @NonNull Configuration config,
+            @NonNull Configuration nodeConfiguration,
+            @NonNull Configuration platformConfiguration,
             @Nullable NetworkInfo genesisNetworkInfo,
-            @NonNull Metrics metrics);
+            @NonNull Metrics metrics,
+            @NonNull StartupNetworks startupNetworks);
 
     /**
      * Given a {@link State}, returns the creation version of the state if it was deserialized, or null otherwise.

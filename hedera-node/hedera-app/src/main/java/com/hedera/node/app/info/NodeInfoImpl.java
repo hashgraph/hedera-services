@@ -21,7 +21,7 @@ import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -38,6 +38,17 @@ public record NodeInfoImpl(
         return new NodeInfoImpl(
                 rosterEntry.nodeId(),
                 node.accountIdOrThrow(),
+                rosterEntry.weight(),
+                rosterEntry.gossipEndpoint(),
+                rosterEntry.gossipCaCertificate());
+    }
+
+    @NonNull
+    public static NodeInfo fromRosterEntry(
+            @NonNull final RosterEntry rosterEntry, @NonNull final AccountID nodeAccountID) {
+        return new NodeInfoImpl(
+                rosterEntry.nodeId(),
+                nodeAccountID,
                 rosterEntry.weight(),
                 rosterEntry.gossipEndpoint(),
                 rosterEntry.gossipCaCertificate());

@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -129,18 +130,17 @@ public class Evm46ValidationSuite {
     final Stream<DynamicTest> directCallToDeletedContractResultsInSuccessfulNoop() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
-        return defaultHapiSpec("directCallToDeletedContractResultsInSuccessfulNoop")
-                .given(
-                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT)
-                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
-                                // tokenAssociate,
-                                // since we have CONTRACT_ID key
-                                .refusingEthConversion()
-                                .balance(ONE_HBAR),
-                        contractDelete(INTERNAL_CALLER_CONTRACT))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT)
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                        // tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        .refusingEthConversion()
+                        .balance(ONE_HBAR),
+                contractDelete(INTERNAL_CALLER_CONTRACT),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
                         contractCall(
@@ -148,21 +148,19 @@ public class Evm46ValidationSuite {
                                         CALL_WITH_VALUE_TO_FUNCTION,
                                         mirrorAddrWith(receiverId.get().getAccountNum()))
                                 .gas(GAS_LIMIT_FOR_CALL * 4)
-                                .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
-                        getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
+                getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest> selfdestructToExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
-        return defaultHapiSpec("selfdestructToExistingMirrorAddressResultsInSuccess")
-                .given(
-                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> {
+        return hapiTest(
+                cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> {
                     allRunFor(
                             spec,
                             balanceSnapshot("selfdestructTargetAccount", asAccountString(receiverId.get())),
@@ -172,21 +170,19 @@ public class Evm46ValidationSuite {
                                             mirrorAddrWith(receiverId.get().getAccountNum()))
                                     .gas(GAS_LIMIT_FOR_CALL * 4)
                                     .via(INNER_TXN));
-                }))
-                .then(getAccountBalance(RECEIVER)
-                        .hasTinyBars(changeFromSnapshot("selfdestructTargetAccount", 100000000)));
+                }),
+                getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("selfdestructTargetAccount", 100000000)));
     }
 
     @HapiTest
     final Stream<DynamicTest> selfdestructToExistingNonMirrorAddressResultsInSuccess() {
-        return defaultHapiSpec("selfdestructToExistingNonMirrorAddressResultsInSuccess")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> {
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> {
                     final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
@@ -197,27 +193,25 @@ public class Evm46ValidationSuite {
                             contractCall(INTERNAL_CALLER_CONTRACT, SELFDESTRUCT, asHeadlongAddress(addressBytes))
                                     .gas(GAS_LIMIT_FOR_CALL * 4)
                                     .via(INNER_TXN));
-                }))
-                .then(getAccountBalance(ECDSA_KEY)
-                        .hasTinyBars(changeFromSnapshot("selfdestructTargetAccount", 100000000)));
+                }),
+                getAccountBalance(ECDSA_KEY).hasTinyBars(changeFromSnapshot("selfdestructTargetAccount", 100000000)));
     }
 
     @HapiTest
     final Stream<DynamicTest> selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
 
-        return defaultHapiSpec("selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext((spec, op) -> {
-                            final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            nonExistingNonMirrorAddress.set(Bytes.of(addressBytes));
-                        }),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                withOpContext((spec, op) -> {
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    nonExistingNonMirrorAddress.set(Bytes.of(addressBytes));
+                }),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         contractCall(
                                         INTERNAL_CALLER_CONTRACT,
@@ -227,8 +221,8 @@ public class Evm46ValidationSuite {
                                                 .toArray()))
                                 .gas(ENOUGH_GAS_LIMIT_FOR_CREATION)
                                 .via(INNER_TXN)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))))
-                .then(getTxnRecord(INNER_TXN)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))),
+                getTxnRecord(INNER_TXN)
                         .hasPriority(recordWith()
                                 .status(INVALID_SOLIDITY_ADDRESS)
                                 .contractCallResult(resultWith().gasUsed(900000))));
@@ -236,11 +230,10 @@ public class Evm46ValidationSuite {
 
     @HapiTest
     final Stream<DynamicTest> selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress() {
-        return defaultHapiSpec("selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         contractCall(
                                         INTERNAL_CALLER_CONTRACT,
@@ -248,8 +241,8 @@ public class Evm46ValidationSuite {
                                         mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM))
                                 .gas(ENOUGH_GAS_LIMIT_FOR_CREATION)
                                 .via(INNER_TXN)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))))
-                .then(getTxnRecord(INNER_TXN)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))),
+                getTxnRecord(INNER_TXN)
                         .hasPriority(recordWith()
                                 .status(INVALID_SOLIDITY_ADDRESS)
                                 .contractCallResult(resultWith().gasUsed(900000))));
@@ -258,12 +251,12 @@ public class Evm46ValidationSuite {
     @HapiTest
     final Stream<DynamicTest> directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
 
-        return defaultHapiSpec("directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp")
-                .given(withOpContext((spec, ctxLog) -> spec.registry()
+        return hapiTest(
+                withOpContext((spec, ctxLog) -> spec.registry()
                         .saveContractId(
                                 "nonExistingMirrorAddress",
-                                asContractIdWithEvmAddress(ByteString.copyFrom(unhex(NON_EXISTING_MIRROR_ADDRESS))))))
-                .when(withOpContext((spec, ctxLog) -> allRunFor(
+                                asContractIdWithEvmAddress(ByteString.copyFrom(unhex(NON_EXISTING_MIRROR_ADDRESS))))),
+                withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
                         contractCallWithFunctionAbi("nonExistingMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
                                 .gas(GAS_LIMIT_FOR_CALL)
@@ -271,31 +264,30 @@ public class Evm46ValidationSuite {
                         // attempt call again, make sure the result is the same
                         contractCallWithFunctionAbi("nonExistingMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
                                 .gas(GAS_LIMIT_FOR_CALL)
-                                .via("directCallToNonExistingMirrorAddress2"))))
-                .then(
-                        getTxnRecord("directCallToNonExistingMirrorAddress")
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
-                        getTxnRecord("directCallToNonExistingMirrorAddress2")
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
-                        getContractInfo("nonExistingMirrorAddress").hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
+                                .via("directCallToNonExistingMirrorAddress2"))),
+                getTxnRecord("directCallToNonExistingMirrorAddress")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(
+                                        resultWith().gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
+                getTxnRecord("directCallToNonExistingMirrorAddress2")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(
+                                        resultWith().gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
+                getContractInfo("nonExistingMirrorAddress").hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
     @HapiTest
     final Stream<DynamicTest> directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp() {
 
-        return defaultHapiSpec("directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp")
-                .given(withOpContext((spec, ctxLog) -> spec.registry()
+        return hapiTest(
+                withOpContext((spec, ctxLog) -> spec.registry()
                         .saveContractId(
                                 "nonExistingNonMirrorAddress",
                                 asContractIdWithEvmAddress(
-                                        ByteString.copyFrom(unhex(NON_EXISTING_NON_MIRROR_ADDRESS))))))
-                .when(withOpContext((spec, ctxLog) -> allRunFor(
+                                        ByteString.copyFrom(unhex(NON_EXISTING_NON_MIRROR_ADDRESS))))),
+                withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
                         contractCallWithFunctionAbi(
                                         "nonExistingNonMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
@@ -305,33 +297,33 @@ public class Evm46ValidationSuite {
                         contractCallWithFunctionAbi(
                                         "nonExistingNonMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
                                 .gas(GAS_LIMIT_FOR_CALL)
-                                .via("directCallToNonExistingNonMirrorAddress2"))))
-                .then(
-                        getTxnRecord("directCallToNonExistingNonMirrorAddress")
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
-                        getTxnRecord("directCallToNonExistingNonMirrorAddress2")
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
-                        getContractInfo("nonExistingNonMirrorAddress").hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
+                                .via("directCallToNonExistingNonMirrorAddress2"))),
+                getTxnRecord("directCallToNonExistingNonMirrorAddress")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(
+                                        resultWith().gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
+                getTxnRecord("directCallToNonExistingNonMirrorAddress2")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(
+                                        resultWith().gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
+                getContractInfo("nonExistingNonMirrorAddress").hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
     @HapiTest
     final Stream<DynamicTest> directCallToRevertingContractRevertsWithCorrectRevertReason() {
 
-        return defaultHapiSpec("directCallToRevertingContractRevertsWithCorrectRevertReason")
-                .given(uploadInitCode(INTERNAL_CALLEE_CONTRACT), contractCreate(INTERNAL_CALLEE_CONTRACT))
-                .when(withOpContext((spec, ctxLog) -> allRunFor(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLEE_CONTRACT),
+                contractCreate(INTERNAL_CALLEE_CONTRACT),
+                withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
                         contractCall(INTERNAL_CALLEE_CONTRACT, REVERT_WITH_REVERT_REASON_FUNCTION)
                                 .gas(GAS_LIMIT_FOR_CALL)
                                 .via(INNER_TXN)
-                                .hasKnownStatusFrom(CONTRACT_REVERT_EXECUTED))))
-                .then(getTxnRecord(INNER_TXN)
+                                .hasKnownStatusFrom(CONTRACT_REVERT_EXECUTED))),
+                getTxnRecord(INNER_TXN)
                         .hasPriority(recordWith()
                                 .status(CONTRACT_REVERT_EXECUTED)
                                 .contractCallResult(resultWith()
@@ -346,47 +338,42 @@ public class Evm46ValidationSuite {
 
         AtomicReference<AccountID> mirrorAccountID = new AtomicReference<>();
 
-        return defaultHapiSpec("directCallToExistingCryptoAccountResultsInSuccess")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate("MirrorAccount")
-                                .balance(ONE_HUNDRED_HBARS)
-                                .exposingCreatedIdTo(mirrorAccountID::set),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> {
-                            spec.registry()
-                                    .saveContractId(
-                                            "mirrorAddress",
-                                            asContract("0.0."
-                                                    + mirrorAccountID.get().getAccountNum()));
-                            updateSpecFor(spec, ECDSA_KEY);
-                            spec.registry()
-                                    .saveContractId(
-                                            "nonMirrorAddress",
-                                            asContract("0.0."
-                                                    + spec.registry()
-                                                            .getAccountID(ECDSA_KEY)
-                                                            .getAccountNum()));
-                        }))
-                .when(withOpContext((spec, ctxLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate("MirrorAccount").balance(ONE_HUNDRED_HBARS).exposingCreatedIdTo(mirrorAccountID::set),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> {
+                    spec.registry()
+                            .saveContractId(
+                                    "mirrorAddress",
+                                    asContract("0.0." + mirrorAccountID.get().getAccountNum()));
+                    updateSpecFor(spec, ECDSA_KEY);
+                    spec.registry()
+                            .saveContractId(
+                                    "nonMirrorAddress",
+                                    asContract("0.0."
+                                            + spec.registry()
+                                                    .getAccountID(ECDSA_KEY)
+                                                    .getAccountNum()));
+                }),
+                withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
                         contractCallWithFunctionAbi("mirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
                                 .gas(GAS_LIMIT_FOR_CALL)
                                 .via("callToMirrorAddress"),
                         contractCallWithFunctionAbi("nonMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
                                 .gas(GAS_LIMIT_FOR_CALL)
-                                .via("callToNonMirrorAddress"))))
-                .then(
-                        getTxnRecord("callToMirrorAddress")
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
-                        getTxnRecord("callToNonMirrorAddress")
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))));
+                                .via("callToNonMirrorAddress"))),
+                getTxnRecord("callToMirrorAddress")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(
+                                        resultWith().gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
+                getTxnRecord("callToNonMirrorAddress")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(
+                                        resultWith().gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))));
     }
 
     @HapiTest
@@ -394,41 +381,37 @@ public class Evm46ValidationSuite {
 
         AtomicReference<AccountID> mirrorAccountID = new AtomicReference<>();
 
-        return defaultHapiSpec("directCallWithValueToExistingCryptoAccountResultsInSuccess")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate("MirrorAccount")
-                                .balance(ONE_HUNDRED_HBARS)
-                                .exposingCreatedIdTo(mirrorAccountID::set),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> {
-                            spec.registry()
-                                    .saveContractId(
-                                            "mirrorAddress",
-                                            asContract("0.0."
-                                                    + mirrorAccountID.get().getAccountNum()));
-                            updateSpecFor(spec, ECDSA_KEY);
-                            final var ecdsaKey = spec.registry()
-                                    .getKey(ECDSA_KEY)
-                                    .getECDSASecp256K1()
-                                    .toByteArray();
-                            final var senderAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                            spec.registry()
-                                    .saveContractId(
-                                            "nonMirrorAddress",
-                                            ContractID.newBuilder()
-                                                    .setEvmAddress(senderAddress)
-                                                    .build());
-                            spec.registry()
-                                    .saveAccountId(
-                                            "NonMirrorAccount",
-                                            AccountID.newBuilder()
-                                                    .setAccountNum(spec.registry()
-                                                            .getAccountID(ECDSA_KEY)
-                                                            .getAccountNum())
-                                                    .build());
-                        }))
-                .when(withOpContext((spec, ctxLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate("MirrorAccount").balance(ONE_HUNDRED_HBARS).exposingCreatedIdTo(mirrorAccountID::set),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> {
+                    spec.registry()
+                            .saveContractId(
+                                    "mirrorAddress",
+                                    asContract("0.0." + mirrorAccountID.get().getAccountNum()));
+                    updateSpecFor(spec, ECDSA_KEY);
+                    final var ecdsaKey = spec.registry()
+                            .getKey(ECDSA_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var senderAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    spec.registry()
+                            .saveContractId(
+                                    "nonMirrorAddress",
+                                    ContractID.newBuilder()
+                                            .setEvmAddress(senderAddress)
+                                            .build());
+                    spec.registry()
+                            .saveAccountId(
+                                    "NonMirrorAccount",
+                                    AccountID.newBuilder()
+                                            .setAccountNum(spec.registry()
+                                                    .getAccountID(ECDSA_KEY)
+                                                    .getAccountNum())
+                                            .build());
+                }),
+                withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
                         balanceSnapshot("mirrorSnapshot", "MirrorAccount"),
                         balanceSnapshot("nonMirrorSnapshot", "NonMirrorAccount"),
@@ -439,37 +422,34 @@ public class Evm46ValidationSuite {
                         contractCallWithFunctionAbi("nonMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
                                 .sending(ONE_HBAR)
                                 .gas(GAS_LIMIT_FOR_CALL)
-                                .via("callToNonMirrorAddress"))))
-                .then(
-                        getTxnRecord("callToMirrorAddress")
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
-                        getTxnRecord("callToNonMirrorAddress")
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
-                        getAccountBalance("MirrorAccount").hasTinyBars(changeFromSnapshot("mirrorSnapshot", ONE_HBAR)),
-                        getAccountBalance("NonMirrorAccount")
-                                .hasTinyBars(changeFromSnapshot("nonMirrorSnapshot", ONE_HBAR)));
+                                .via("callToNonMirrorAddress"))),
+                getTxnRecord("callToMirrorAddress")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(
+                                        resultWith().gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
+                getTxnRecord("callToNonMirrorAddress")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(
+                                        resultWith().gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
+                getAccountBalance("MirrorAccount").hasTinyBars(changeFromSnapshot("mirrorSnapshot", ONE_HBAR)),
+                getAccountBalance("NonMirrorAccount").hasTinyBars(changeFromSnapshot("nonMirrorSnapshot", ONE_HBAR)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalCallToNonExistingMirrorAddressResultsInNoopSuccess() {
 
-        return defaultHapiSpec("internalCallToNonExistingMirrorAddressResultsInNoopSuccess")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(contractCall(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 CALL_NON_EXISTING_FUNCTION,
                                 mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 1))
                         .gas(GAS_LIMIT_FOR_CALL)
-                        .via(INNER_TXN))
-                .then(getTxnRecord(INNER_TXN)
+                        .via(INNER_TXN),
+                getTxnRecord(INNER_TXN)
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(
@@ -481,23 +461,22 @@ public class Evm46ValidationSuite {
 
         final AtomicLong calleeNum = new AtomicLong();
 
-        return defaultHapiSpec("internalCallToExistingMirrorAddressResultsInSuccessfulCall")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT)
-                                .balance(ONE_HBAR)
-                                // Adding refusingEthConversion() due to fee differences and not supported address type
-                                .refusingEthConversion(),
-                        contractCreate(INTERNAL_CALLEE_CONTRACT)
-                                .exposingNumTo(calleeNum::set)
-                                // Adding refusingEthConversion() due to fee differences and not supported address type
-                                .refusingEthConversion())
-                .when(withOpContext((spec, ignored) -> allRunFor(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT)
+                        .balance(ONE_HBAR)
+                        // Adding refusingEthConversion() due to fee differences and not supported address type
+                        .refusingEthConversion(),
+                contractCreate(INTERNAL_CALLEE_CONTRACT)
+                        .exposingNumTo(calleeNum::set)
+                        // Adding refusingEthConversion() due to fee differences and not supported address type
+                        .refusingEthConversion(),
+                withOpContext((spec, ignored) -> allRunFor(
                         spec,
                         contractCall(INTERNAL_CALLER_CONTRACT, CALL_EXTERNAL_FUNCTION, mirrorAddrWith(calleeNum.get()))
                                 .gas(GAS_LIMIT_FOR_CALL * 2)
-                                .via(INNER_TXN))))
-                .then(getTxnRecord(INNER_TXN)
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN)
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(resultWith()
@@ -509,17 +488,16 @@ public class Evm46ValidationSuite {
     @HapiTest
     final Stream<DynamicTest> internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess() {
 
-        return defaultHapiSpec("internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(contractCall(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 CALL_NON_EXISTING_FUNCTION,
                                 nonMirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 2))
                         .gas(GAS_LIMIT_FOR_CALL)
-                        .via(INNER_TXN))
-                .then(getTxnRecord(INNER_TXN)
+                        .via(INNER_TXN),
+                getTxnRecord(INNER_TXN)
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(
@@ -531,12 +509,11 @@ public class Evm46ValidationSuite {
 
         final AtomicLong calleeNum = new AtomicLong();
 
-        return defaultHapiSpec("internalCallToExistingRevertingWithoutMessageResultsInSuccessfulTopLevelTxn")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
-                        contractCreate(INTERNAL_CALLEE_CONTRACT).exposingNumTo(calleeNum::set))
-                .when(withOpContext((spec, ignored) -> allRunFor(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                contractCreate(INTERNAL_CALLEE_CONTRACT).exposingNumTo(calleeNum::set),
+                withOpContext((spec, ignored) -> allRunFor(
                         spec,
                         contractCall(
                                         INTERNAL_CALLER_CONTRACT,
@@ -544,23 +521,22 @@ public class Evm46ValidationSuite {
                                         mirrorAddrWith(calleeNum.get()))
                                 .gas(GAS_LIMIT_FOR_CALL * 8)
                                 .hasKnownStatus(SUCCESS)
-                                .via(INNER_TXN))))
-                .then(getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)));
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey() {
-        return defaultHapiSpec("internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(contractCall(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 TRANSFER_TO_FUNCTION,
                                 mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 3))
                         .gas(GAS_LIMIT_FOR_CALL * 4)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(getAccountBalance("0.0." + (FIRST_NONEXISTENT_CONTRACT_NUM + 3))
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                getAccountBalance("0.0." + (FIRST_NONEXISTENT_CONTRACT_NUM + 3))
                         .nodePayment(ONE_HBAR)
                         .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
@@ -570,12 +546,11 @@ public class Evm46ValidationSuite {
 
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
-        return defaultHapiSpec("internalTransferToExistingMirrorAddressResultsInSuccess")
-                .given(
-                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
                         contractCall(
@@ -583,43 +558,40 @@ public class Evm46ValidationSuite {
                                         TRANSFER_TO_FUNCTION,
                                         mirrorAddrWith(receiverId.get().getAccountNum()))
                                 .gas(GAS_LIMIT_FOR_CALL * 4)
-                                .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, RECEIVER, 1)))),
-                        getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 1)));
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(recordWith()
+                                .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, RECEIVER, 1)))),
+                getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 1)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalTransferToNonExistingNonMirrorAddressResultsInRevert() {
-        return defaultHapiSpec("internalTransferToNonExistingNonMirrorAddressResultsInRevert")
-                .given(
-                        cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(contractCall(
+        return hapiTest(
+                cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 TRANSFER_TO_FUNCTION,
                                 nonMirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 4))
                         .gas(GAS_LIMIT_FOR_CALL * 4)
                         .payingWith(CUSTOM_PAYER)
                         .via(INNER_TXN)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(getTxnRecord(INNER_TXN).hasPriority(recordWith().status(CONTRACT_REVERT_EXECUTED)));
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                getTxnRecord(INNER_TXN).hasPriority(recordWith().status(CONTRACT_REVERT_EXECUTED)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalTransferToExistingNonMirrorAddressResultsInSuccess() {
 
-        return defaultHapiSpec("internalTransferToExistingNonMirrorAddressResultsInSuccess")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> {
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> {
                     final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
@@ -632,28 +604,25 @@ public class Evm46ValidationSuite {
                                             asHeadlongAddress(addressBytes))
                                     .gas(GAS_LIMIT_FOR_CALL * 4)
                                     .via(INNER_TXN));
-                }))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, ECDSA_KEY, 1)))),
-                        getAutoCreatedAccountBalance(ECDSA_KEY)
-                                .hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
+                }),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(recordWith()
+                                .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, ECDSA_KEY, 1)))),
+                getAutoCreatedAccountBalance(ECDSA_KEY).hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt() {
-        return defaultHapiSpec("internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(contractCall(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 SEND_TO_FUNCTION,
                                 mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 5))
                         .gas(GAS_LIMIT_FOR_CALL * 4)
-                        .via(INNER_TXN))
-                .then(getAccountBalance("0.0." + (FIRST_NONEXISTENT_CONTRACT_NUM + 5))
+                        .via(INNER_TXN),
+                getAccountBalance("0.0." + (FIRST_NONEXISTENT_CONTRACT_NUM + 5))
                         .nodePayment(ONE_HBAR)
                         .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
@@ -663,12 +632,11 @@ public class Evm46ValidationSuite {
 
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
-        return defaultHapiSpec("internalSendToExistingMirrorAddressResultsInSuccess")
-                .given(
-                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
                         contractCall(
@@ -676,12 +644,11 @@ public class Evm46ValidationSuite {
                                         SEND_TO_FUNCTION,
                                         mirrorAddrWith(receiverId.get().getAccountNum()))
                                 .gas(GAS_LIMIT_FOR_CALL * 4)
-                                .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, RECEIVER, 1)))),
-                        getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 1)));
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(recordWith()
+                                .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, RECEIVER, 1)))),
+                getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 1)));
     }
 
     @HapiTest
@@ -689,19 +656,18 @@ public class Evm46ValidationSuite {
 
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
 
-        return defaultHapiSpec("internalSendToNonExistingNonMirrorAddressResultsInSuccess")
-                .given(
-                        cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext((spec, op) -> {
-                            final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            nonExistingNonMirrorAddress.set(Bytes.of(addressBytes));
-                        }),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                withOpContext((spec, op) -> {
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    nonExistingNonMirrorAddress.set(Bytes.of(addressBytes));
+                }),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         balanceSnapshot("contractBalance", INTERNAL_CALLER_CONTRACT),
                         contractCall(
@@ -711,26 +677,23 @@ public class Evm46ValidationSuite {
                                                 .get()
                                                 .toArray()))
                                 .gas(GAS_LIMIT_FOR_CALL * 4)
-                                .payingWith(CUSTOM_PAYER))))
-                .then(
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("contractBalance", 0)),
-                        sourcing(() -> getAliasedAccountInfo(ByteString.copyFrom(
-                                        nonExistingNonMirrorAddress.get().toArray()))
-                                .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)));
+                                .payingWith(CUSTOM_PAYER))),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("contractBalance", 0)),
+                sourcing(() -> getAliasedAccountInfo(ByteString.copyFrom(
+                                nonExistingNonMirrorAddress.get().toArray()))
+                        .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalSendToExistingNonMirrorAddressResultsInSuccess() {
 
-        return defaultHapiSpec("internalSendToExistingNonMirrorAddressResultsInSuccess")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> {
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> {
                     final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
@@ -740,27 +703,24 @@ public class Evm46ValidationSuite {
                             contractCall(INTERNAL_CALLER_CONTRACT, SEND_TO_FUNCTION, asHeadlongAddress(addressBytes))
                                     .gas(GAS_LIMIT_FOR_CALL * 4)
                                     .via(INNER_TXN));
-                }))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, ECDSA_KEY, 1)))),
-                        getAutoCreatedAccountBalance(ECDSA_KEY)
-                                .hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
+                }),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(recordWith()
+                                .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, ECDSA_KEY, 1)))),
+                getAutoCreatedAccountBalance(ECDSA_KEY).hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey() {
-        return defaultHapiSpec("internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(contractCall(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 CALL_WITH_VALUE_TO_FUNCTION,
                                 mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 6))
-                        .gas(ENOUGH_GAS_LIMIT_FOR_CREATION))
-                .then(getAccountBalance("0.0." + (FIRST_NONEXISTENT_CONTRACT_NUM + 6))
+                        .gas(ENOUGH_GAS_LIMIT_FOR_CREATION),
+                getAccountBalance("0.0." + (FIRST_NONEXISTENT_CONTRACT_NUM + 6))
                         .nodePayment(ONE_HBAR)
                         .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
@@ -770,12 +730,11 @@ public class Evm46ValidationSuite {
 
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
-        return defaultHapiSpec("internalCallWithValueToExistingMirrorAddressResultsInSuccess")
-                .given(
-                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
                         contractCall(
@@ -783,12 +742,11 @@ public class Evm46ValidationSuite {
                                         CALL_WITH_VALUE_TO_FUNCTION,
                                         mirrorAddrWith(receiverId.get().getAccountNum()))
                                 .gas(GAS_LIMIT_FOR_CALL * 4)
-                                .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, RECEIVER, 1)))),
-                        getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 1)));
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(recordWith()
+                                .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, RECEIVER, 1)))),
+                getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 1)));
     }
 
     @HapiTest
@@ -844,14 +802,13 @@ public class Evm46ValidationSuite {
     @HapiTest
     final Stream<DynamicTest> internalCallWithValueToExistingNonMirrorAddressResultsInSuccess() {
 
-        return defaultHapiSpec("internalCallWithValueToExistingNonMirrorAddressResultsInSuccess")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> {
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> {
                     final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
@@ -864,40 +821,37 @@ public class Evm46ValidationSuite {
                                             asHeadlongAddress(addressBytes))
                                     .gas(GAS_LIMIT_FOR_CALL * 4)
                                     .via(INNER_TXN));
-                }))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, ECDSA_KEY, 1)))),
-                        getAutoCreatedAccountBalance(ECDSA_KEY)
-                                .hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
+                }),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(recordWith()
+                                .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, ECDSA_KEY, 1)))),
+                getAutoCreatedAccountBalance(ECDSA_KEY).hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalCallToDeletedContractReturnsSuccessfulNoop() {
         final AtomicLong calleeNum = new AtomicLong();
-        return defaultHapiSpec("internalCallToDeletedContractReturnsSuccessfulNoop")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT)
-                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
-                                // tokenAssociate,
-                                // since we have CONTRACT_ID key
-                                .refusingEthConversion()
-                                .balance(ONE_HBAR),
-                        contractCreate(INTERNAL_CALLEE_CONTRACT)
-                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
-                                // tokenAssociate,
-                                // since we have CONTRACT_ID key
-                                .refusingEthConversion()
-                                .exposingNumTo(calleeNum::set),
-                        contractDelete(INTERNAL_CALLEE_CONTRACT))
-                .when(withOpContext((spec, ignored) -> allRunFor(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT)
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                        // tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        .refusingEthConversion()
+                        .balance(ONE_HBAR),
+                contractCreate(INTERNAL_CALLEE_CONTRACT)
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                        // tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        .refusingEthConversion()
+                        .exposingNumTo(calleeNum::set),
+                contractDelete(INTERNAL_CALLEE_CONTRACT),
+                withOpContext((spec, ignored) -> allRunFor(
                         spec,
                         contractCall(INTERNAL_CALLER_CONTRACT, CALL_EXTERNAL_FUNCTION, mirrorAddrWith(calleeNum.get()))
                                 .gas(50_000L)
-                                .via(INNER_TXN))))
-                .then(withOpContext((spec, opLog) -> {
+                                .via(INNER_TXN))),
+                withOpContext((spec, opLog) -> {
                     final var lookup = getTxnRecord(INNER_TXN);
                     allRunFor(spec, lookup);
                     final var result =
@@ -909,38 +863,35 @@ public class Evm46ValidationSuite {
     @HapiTest
     final Stream<DynamicTest> callingDestructedContractReturnsStatusSuccess() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
-        return defaultHapiSpec("callingDestructedContractReturnsStatusSuccess")
-                .given(
-                        cryptoCreate(BENEFICIARY).exposingCreatedIdTo(accountIDAtomicReference::set),
-                        uploadInitCode(SIMPLE_UPDATE_CONTRACT))
-                .when(
-                        contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
-                                .gas(300_000L),
-                        sourcing(() -> contractCall(
-                                        SIMPLE_UPDATE_CONTRACT,
-                                        "del",
-                                        asHeadlongAddress(asAddress(accountIDAtomicReference.get())))
-                                .gas(1_000_000L)))
-                .then(contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
+        return hapiTest(
+                cryptoCreate(BENEFICIARY).exposingCreatedIdTo(accountIDAtomicReference::set),
+                uploadInitCode(SIMPLE_UPDATE_CONTRACT),
+                contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
+                contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
+                        .gas(300_000L),
+                sourcing(() -> contractCall(
+                                SIMPLE_UPDATE_CONTRACT,
+                                "del",
+                                asHeadlongAddress(asAddress(accountIDAtomicReference.get())))
+                        .gas(1_000_000L)),
+                contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
                         .gas(350_000L)
                         .hasKnownStatus(SUCCESS));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalStaticCallNonExistingMirrorAddressResultsInSuccess() {
-        return defaultHapiSpec("internalStaticCallNonExistingMirrorAddressResultsInSuccess")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(contractCall(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 STATIC_CALL_EXTERNAL_FUNCTION,
                                 mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 9))
                         .gas(GAS_LIMIT_FOR_CALL)
                         .via(INNER_TXN)
-                        .hasKnownStatus(SUCCESS))
-                .then(getTxnRecord(INNER_TXN)
+                        .hasKnownStatus(SUCCESS),
+                getTxnRecord(INNER_TXN)
                         .logged()
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(0)))));
@@ -949,12 +900,11 @@ public class Evm46ValidationSuite {
     @HapiTest
     final Stream<DynamicTest> internalStaticCallExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
-        return defaultHapiSpec("internalStaticCallExistingMirrorAddressResultsInSuccess")
-                .given(
-                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
                         contractCall(
@@ -962,30 +912,28 @@ public class Evm46ValidationSuite {
                                         STATIC_CALL_EXTERNAL_FUNCTION,
                                         mirrorAddrWith(receiverId.get().getAccountNum()))
                                 .gas(GAS_LIMIT_FOR_CALL)
-                                .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
-                        getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(
+                                recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
+                getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalStaticCallNonExistingNonMirrorAddressResultsInSuccess() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
-        return defaultHapiSpec("internalStaticCallNonExistingNonMirrorAddressResultsInSuccess")
-                .given(
-                        cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext((spec, op) -> {
-                            final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            nonExistingNonMirrorAddress.set(Bytes.of(addressBytes));
-                        }),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                withOpContext((spec, op) -> {
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    nonExistingNonMirrorAddress.set(Bytes.of(addressBytes));
+                }),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         balanceSnapshot("contractBalance", INTERNAL_CALLER_CONTRACT),
                         contractCall(
@@ -996,25 +944,22 @@ public class Evm46ValidationSuite {
                                                 .toArray()))
                                 .gas(GAS_LIMIT_FOR_CALL)
                                 .payingWith(CUSTOM_PAYER)
-                                .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("contractBalance", 0)));
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(
+                                recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("contractBalance", 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalStaticCallExistingNonMirrorAddressResultsInSuccess() {
-        return defaultHapiSpec("internalStaticCallExistingNonMirrorAddressResultsInSuccess")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> {
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> {
                     final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
@@ -1027,28 +972,26 @@ public class Evm46ValidationSuite {
                                             asHeadlongAddress(addressBytes))
                                     .gas(GAS_LIMIT_FOR_CALL)
                                     .via(INNER_TXN));
-                }))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
-                        getAutoCreatedAccountBalance(ECDSA_KEY).hasTinyBars(changeFromSnapshot("targetSnapshot", 0)));
+                }),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(
+                                recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
+                getAutoCreatedAccountBalance(ECDSA_KEY).hasTinyBars(changeFromSnapshot("targetSnapshot", 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalDelegateCallNonExistingMirrorAddressResultsInSuccess() {
-        return defaultHapiSpec("internalDelegateCallNonExistingMirrorAddressResultsInSuccess")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(contractCall(
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                contractCall(
                                 INTERNAL_CALLER_CONTRACT,
                                 DELEGATE_CALL_EXTERNAL_FUNCTION,
                                 mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 10))
                         .gas(GAS_LIMIT_FOR_CALL)
                         .via(INNER_TXN)
-                        .hasKnownStatus(SUCCESS))
-                .then(getTxnRecord(INNER_TXN)
+                        .hasKnownStatus(SUCCESS),
+                getTxnRecord(INNER_TXN)
                         .logged()
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(0)))));
@@ -1057,12 +1000,11 @@ public class Evm46ValidationSuite {
     @HapiTest
     final Stream<DynamicTest> internalDelegateCallExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
-        return defaultHapiSpec("internalDelegateCallExistingMirrorAddressResultsInSuccess")
-                .given(
-                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
                         contractCall(
@@ -1070,30 +1012,28 @@ public class Evm46ValidationSuite {
                                         DELEGATE_CALL_EXTERNAL_FUNCTION,
                                         mirrorAddrWith(receiverId.get().getAccountNum()))
                                 .gas(GAS_LIMIT_FOR_CALL)
-                                .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
-                        getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(
+                                recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
+                getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
-        return defaultHapiSpec("internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess")
-                .given(
-                        cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext((spec, op) -> {
-                            final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            nonExistingNonMirrorAddress.set(Bytes.of(addressBytes));
-                        }),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                withOpContext((spec, op) -> {
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    nonExistingNonMirrorAddress.set(Bytes.of(addressBytes));
+                }),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         balanceSnapshot("contractBalance", INTERNAL_CALLER_CONTRACT),
                         contractCall(
@@ -1104,25 +1044,22 @@ public class Evm46ValidationSuite {
                                                 .toArray()))
                                 .gas(GAS_LIMIT_FOR_CALL)
                                 .payingWith(CUSTOM_PAYER)
-                                .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("contractBalance", 0)));
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(
+                                recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("contractBalance", 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalDelegateCallExistingNonMirrorAddressResultsInSuccess() {
-        return defaultHapiSpec("internalDelegateCallExistingNonMirrorAddressResultsInSuccess")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> {
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> {
                     final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
@@ -1135,24 +1072,22 @@ public class Evm46ValidationSuite {
                                             asHeadlongAddress(addressBytes))
                                     .gas(GAS_LIMIT_FOR_CALL)
                                     .via(INNER_TXN));
-                }))
-                .then(
-                        getTxnRecord(INNER_TXN)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
-                        getAutoCreatedAccountBalance(ECDSA_KEY).hasTinyBars(changeFromSnapshot("targetSnapshot", 0)));
+                }),
+                getTxnRecord(INNER_TXN)
+                        .hasPriority(
+                                recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
+                getAutoCreatedAccountBalance(ECDSA_KEY).hasTinyBars(changeFromSnapshot("targetSnapshot", 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalCallWithValueToAccountWithReceiverSigRequiredTrue() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
-        return defaultHapiSpec("internalCallWithValueToAccountWithReceiverSigRequiredTrue")
-                .given(
-                        cryptoCreate(RECEIVER).receiverSigRequired(true).exposingCreatedIdTo(receiverId::set),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(RECEIVER).receiverSigRequired(true).exposingCreatedIdTo(receiverId::set),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
                         contractCall(
@@ -1161,11 +1096,9 @@ public class Evm46ValidationSuite {
                                         mirrorAddrWith(receiverId.get().getAccountNum()))
                                 .gas(GAS_LIMIT_FOR_CALL * 4)
                                 .via(INNER_TXN)
-                                .hasKnownStatus(INVALID_SIGNATURE))))
-                .then(
-                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(INVALID_SIGNATURE)),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+                                .hasKnownStatus(INVALID_SIGNATURE))),
+                getTxnRecord(INNER_TXN).hasPriority(recordWith().status(INVALID_SIGNATURE)),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
@@ -1173,24 +1106,20 @@ public class Evm46ValidationSuite {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(564L).build());
 
-        return defaultHapiSpec("internalCallToSystemAccount564ResultsInSuccessNoop")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(
-                        balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
-                        withOpContext((spec, op) -> allRunFor(
-                                spec,
-                                contractCall(
-                                                INTERNAL_CALLER_CONTRACT,
-                                                CALL_EXTERNAL_FUNCTION,
-                                                mirrorAddrWith(targetId.get().getAccountNum()))
-                                        .gas(GAS_LIMIT_FOR_CALL * 4)
-                                        .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
+                withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        CALL_EXTERNAL_FUNCTION,
+                                        mirrorAddrWith(targetId.get().getAccountNum()))
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
@@ -1239,31 +1168,26 @@ public class Evm46ValidationSuite {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(2L).build());
 
-        return defaultHapiSpec("internalCallToEthereumPrecompile0x2ResultsInSuccess")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(
-                        balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
-                        withOpContext((spec, op) -> allRunFor(
-                                spec,
-                                contractCall(
-                                                INTERNAL_CALLER_CONTRACT,
-                                                CALL_EXTERNAL_FUNCTION,
-                                                mirrorAddrWith(targetId.get().getAccountNum()))
-                                        .gas(GAS_LIMIT_FOR_CALL * 4)
-                                        .via(INNER_TXN))))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(INNER_TXN);
-                            allRunFor(spec, lookup);
-                            final var result = lookup.getResponseRecord()
-                                    .getContractCallResult()
-                                    .getContractCallResult();
-                            assertNotEquals(ByteString.copyFrom(new byte[32]), result);
-                        }),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
+                withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        CALL_EXTERNAL_FUNCTION,
+                                        mirrorAddrWith(targetId.get().getAccountNum()))
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .via(INNER_TXN))),
+                withOpContext((spec, opLog) -> {
+                    final var lookup = getTxnRecord(INNER_TXN);
+                    allRunFor(spec, lookup);
+                    final var result =
+                            lookup.getResponseRecord().getContractCallResult().getContractCallResult();
+                    assertNotEquals(ByteString.copyFrom(new byte[32]), result);
+                }),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
@@ -1271,22 +1195,20 @@ public class Evm46ValidationSuite {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(2L).build());
 
-        return defaultHapiSpec("internalCallWithValueToEthereumPrecompile0x2ResultsInRevert")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(
-                        balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
-                        withOpContext((spec, op) -> allRunFor(
-                                spec,
-                                contractCall(
-                                                INTERNAL_CALLER_CONTRACT,
-                                                CALL_WITH_VALUE_TO_FUNCTION,
-                                                mirrorAddrWith(targetId.get().getAccountNum()))
-                                        .gas(GAS_LIMIT_FOR_CALL * 4)
-                                        .via(INNER_TXN)
-                                        .hasKnownStatus(INVALID_CONTRACT_ID))))
-                .then(getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
+                withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        CALL_WITH_VALUE_TO_FUNCTION,
+                                        mirrorAddrWith(targetId.get().getAccountNum()))
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .via(INNER_TXN)
+                                .hasKnownStatus(INVALID_CONTRACT_ID))),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
@@ -1294,24 +1216,20 @@ public class Evm46ValidationSuite {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(852L).build());
 
-        return defaultHapiSpec("internalCallToNonExistingSystemAccount852ResultsInSuccessNoop")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(
-                        balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
-                        withOpContext((spec, op) -> allRunFor(
-                                spec,
-                                contractCall(
-                                                INTERNAL_CALLER_CONTRACT,
-                                                CALL_EXTERNAL_FUNCTION,
-                                                mirrorAddrWith(targetId.get().getAccountNum()))
-                                        .gas(GAS_LIMIT_FOR_CALL * 4)
-                                        .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
+                withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        CALL_EXTERNAL_FUNCTION,
+                                        mirrorAddrWith(targetId.get().getAccountNum()))
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
@@ -1320,23 +1238,19 @@ public class Evm46ValidationSuite {
         final var systemAccountNum = 852L;
         targetId.set(AccountID.newBuilder().setAccountNum(systemAccountNum).build());
 
-        return defaultHapiSpec("internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(
-                        balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
-                        withOpContext((spec, op) -> allRunFor(
-                                spec,
-                                contractCall(
-                                                INTERNAL_CALLER_CONTRACT,
-                                                CALL_WITH_VALUE_TO_FUNCTION,
-                                                mirrorAddrWith(targetId.get().getAccountNum()))
-                                        .gas(GAS_LIMIT_FOR_CALL * 4))))
-                .then(
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)),
-                        getAccountBalance("0.0." + systemAccountNum).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
+                withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        CALL_WITH_VALUE_TO_FUNCTION,
+                                        mirrorAddrWith(targetId.get().getAccountNum()))
+                                .gas(GAS_LIMIT_FOR_CALL * 4))),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)),
+                getAccountBalance("0.0." + systemAccountNum).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
     @HapiTest
@@ -1344,22 +1258,20 @@ public class Evm46ValidationSuite {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(564L).build());
 
-        return defaultHapiSpec("internalCallWithValueToSystemAccount564ResultsInSuccessNoopNoTransfer")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(
-                        balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
-                        withOpContext((spec, op) -> allRunFor(
-                                spec,
-                                contractCall(
-                                                INTERNAL_CALLER_CONTRACT,
-                                                CALL_WITH_VALUE_TO_FUNCTION,
-                                                mirrorAddrWith(targetId.get().getAccountNum()))
-                                        .gas(GAS_LIMIT_FOR_CALL * 4)
-                                        .via(INNER_TXN)
-                                        .hasKnownStatus(INVALID_CONTRACT_ID))))
-                .then(getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
+                withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        CALL_WITH_VALUE_TO_FUNCTION,
+                                        mirrorAddrWith(targetId.get().getAccountNum()))
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .via(INNER_TXN)
+                                .hasKnownStatus(INVALID_CONTRACT_ID))),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
@@ -1367,24 +1279,20 @@ public class Evm46ValidationSuite {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(800L).build());
 
-        return defaultHapiSpec("internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(
-                        balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
-                        withOpContext((spec, op) -> allRunFor(
-                                spec,
-                                contractCall(
-                                                INTERNAL_CALLER_CONTRACT,
-                                                CALL_WITH_VALUE_TO_FUNCTION,
-                                                mirrorAddrWith(targetId.get().getAccountNum()))
-                                        .gas(GAS_LIMIT_FOR_CALL * 4)
-                                        .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("initialBalance", -1)));
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
+                withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        CALL_WITH_VALUE_TO_FUNCTION,
+                                        mirrorAddrWith(targetId.get().getAccountNum()))
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", -1)));
     }
 
     @HapiTest
@@ -1392,24 +1300,20 @@ public class Evm46ValidationSuite {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(800L).build());
 
-        return defaultHapiSpec("internalCallToExistingSystemAccount800ResultsInSuccessNoop")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(
-                        balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
-                        withOpContext((spec, op) -> allRunFor(
-                                spec,
-                                contractCall(
-                                                INTERNAL_CALLER_CONTRACT,
-                                                CALL_EXTERNAL_FUNCTION,
-                                                mirrorAddrWith(targetId.get().getAccountNum()))
-                                        .gas(GAS_LIMIT_FOR_CALL * 4)
-                                        .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+        return hapiTest(
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
+                withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        CALL_EXTERNAL_FUNCTION,
+                                        mirrorAddrWith(targetId.get().getAccountNum()))
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .via(INNER_TXN))),
+                getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
+                getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
@@ -1433,10 +1337,11 @@ public class Evm46ValidationSuite {
                                     ContractFnResultAsserts.isEqualOrGreaterThan(
                                             BigInteger.valueOf(systemAccountBalance))));
         }
-        return defaultHapiSpec("verifiesSystemAccountBalanceOf")
-                .given(cryptoCreate("testAccount").balance(balance), uploadInitCode(contract), contractCreate(contract))
-                .when()
-                .then(opsArray);
+        return hapiTest(flattened(
+                cryptoCreate("testAccount").balance(balance),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                opsArray));
     }
 
     @HapiTest
@@ -1460,29 +1365,29 @@ public class Evm46ValidationSuite {
                                     ContractFnResultAsserts.isLiteralResult(
                                             new Object[] {BigInteger.valueOf(systemAccountBalance)})));
         }
-        return defaultHapiSpec("verifiesSystemAccountBalanceOf")
-                .given(cryptoCreate("testAccount").balance(balance), uploadInitCode(contract), contractCreate(contract))
-                .when()
-                .then(opsArray);
+        return hapiTest(flattened(
+                cryptoCreate("testAccount").balance(balance),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                opsArray));
     }
 
     @HapiTest
     final Stream<DynamicTest> directCallToSystemAccountResultsInSuccessfulNoOp() {
-        return defaultHapiSpec("directCallToSystemAccountResultsInSuccessfulNoOp")
-                .given(
-                        cryptoCreate("account").balance(ONE_HUNDRED_HBARS),
-                        withOpContext((spec, opLog) -> spec.registry()
-                                .saveContractId(
-                                        "contract",
-                                        asContractIdWithEvmAddress(ByteString.copyFrom(
-                                                unhex("0000000000000000000000000000000000000275"))))))
-                .when(withOpContext((spec, ctxLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate("account").balance(ONE_HUNDRED_HBARS),
+                withOpContext((spec, opLog) -> spec.registry()
+                        .saveContractId(
+                                "contract",
+                                asContractIdWithEvmAddress(
+                                        ByteString.copyFrom(unhex("0000000000000000000000000000000000000275"))))),
+                withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
                         contractCallWithFunctionAbi("contract", getABIFor(FUNCTION, NAME, ERC_721_ABI))
                                 .gas(GAS_LIMIT_FOR_CALL)
                                 .via("callToSystemAddress")
-                                .signingWith("account"))))
-                .then(getTxnRecord("callToSystemAddress")
+                                .signingWith("account"))),
+                getTxnRecord("callToSystemAddress")
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(resultWith().gasUsed(GAS_LIMIT_FOR_CALL))));
@@ -1493,10 +1398,7 @@ public class Evm46ValidationSuite {
         final var contract = "CallOperationsCheckerSuccess";
         final var functionName = "call";
         final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
-        return defaultHapiSpec("testCallOperationsForSystemAccounts")
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when()
-                .then(opsArray);
+        return hapiTest(flattened(uploadInitCode(contract), contractCreate(contract), opsArray));
     }
 
     @HapiTest
@@ -1504,10 +1406,7 @@ public class Evm46ValidationSuite {
         final var contract = "CallOperationsCheckerSuccess";
         final var functionName = "callCode";
         final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
-        return defaultHapiSpec("testCallCodeOperationsForSystemAccounts")
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when()
-                .then(opsArray);
+        return hapiTest(flattened(uploadInitCode(contract), contractCreate(contract), opsArray));
     }
 
     @HapiTest
@@ -1515,10 +1414,7 @@ public class Evm46ValidationSuite {
         final var contract = "CallOperationsCheckerSuccess";
         final var functionName = "delegateCall";
         final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
-        return defaultHapiSpec("testDelegateCallOperationsForSystemAccounts")
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when()
-                .then(opsArray);
+        return hapiTest(flattened(uploadInitCode(contract), contractCreate(contract), opsArray));
     }
 
     @HapiTest
@@ -1526,10 +1422,7 @@ public class Evm46ValidationSuite {
         final var contract = "CallOperationsCheckerSuccess";
         final var functionName = "staticcall";
         final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
-        return defaultHapiSpec("testStaticCallOperationsForSystemAccounts")
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when()
-                .then(opsArray);
+        return hapiTest(flattened(uploadInitCode(contract), contractCreate(contract), opsArray));
     }
 
     private HapiSpecOperation[] getCallOperationsOnSystemAccounts(final String contract, final String functionName) {

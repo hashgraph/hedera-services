@@ -18,6 +18,7 @@ module com.hedera.node.app.test.fixtures {
     requires com.swirlds.base;
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.platform.core.test.fixtures;
+    requires com.swirlds.state.impl.test.fixtures;
     requires com.hedera.pbj.runtime;
     requires org.apache.logging.log4j;
     requires org.assertj.core;

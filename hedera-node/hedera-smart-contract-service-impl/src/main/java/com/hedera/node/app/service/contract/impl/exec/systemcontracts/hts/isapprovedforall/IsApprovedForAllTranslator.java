@@ -30,10 +30,15 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class IsApprovedForAllTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for isApprovedForAll(address,address,address) method. */
     public static final Function CLASSIC_IS_APPROVED_FOR_ALL =
             new Function("isApprovedForAll(address,address,address)", "(int64,bool)");
+    /** Selector for isApprovedForAll(address,address) method. */
     public static final Function ERC_IS_APPROVED_FOR_ALL = new Function("isApprovedForAll(address,address)", "(bool)");
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public IsApprovedForAllTranslator() {
         // Dagger2

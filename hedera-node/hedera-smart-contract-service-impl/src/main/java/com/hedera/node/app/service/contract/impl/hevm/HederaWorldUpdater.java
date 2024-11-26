@@ -56,6 +56,11 @@ public interface HederaWorldUpdater extends WorldUpdater {
             @NonNull HederaOperations operations,
             @NonNull HederaNativeOperations nativeOperations,
             @NonNull SystemContractOperations systemOperations) {
+        /**
+         * @param operations the enhanced operations
+         * @param nativeOperations the enhanced native operations
+         * @param systemOperations the enhanced system operations
+         */
         public Enhancement {
             requireNonNull(operations);
             requireNonNull(nativeOperations);

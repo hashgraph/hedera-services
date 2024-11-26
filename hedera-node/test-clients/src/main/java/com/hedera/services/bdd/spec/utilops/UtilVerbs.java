@@ -136,6 +136,7 @@ import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
+import com.hedera.services.bdd.spec.utilops.inventory.NewSpecThresholdKey;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromEcdsaFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
@@ -200,6 +201,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.PrivateKey;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
@@ -227,6 +229,7 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.LongConsumer;
 import java.util.function.ObjIntConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -563,6 +566,10 @@ public class UtilVerbs {
         });
     }
 
+    public static HapiSpecSleep sleepForSeconds(final long seconds) {
+        return sleepFor(seconds * 1_000L);
+    }
+
     public static HapiSpecSleep sleepFor(long timeMs) {
         return new HapiSpecSleep(timeMs);
     }
@@ -717,6 +724,10 @@ public class UtilVerbs {
 
     public static NewSpecKeyList newKeyListNamed(String key, List<String> childKeys) {
         return new NewSpecKeyList(key, childKeys);
+    }
+
+    public static NewSpecThresholdKey newThresholdKeyNamed(String key, int nRequired, List<String> childKeys) {
+        return new NewSpecThresholdKey(key, nRequired, childKeys);
     }
 
     /**
@@ -1206,6 +1217,24 @@ public class UtilVerbs {
 
     public static HapiSpecOperation[] nOps(final int n, @NonNull final IntFunction<HapiSpecOperation> source) {
         return IntStream.range(0, n).mapToObj(source).toArray(HapiSpecOperation[]::new);
+    }
+
+    /**
+     * Returns an operation that exposes the consensus time of the current spec to the given observer.
+     * @param observer the observer to pass the consensus time to
+     * @return the operation that exposes the consensus time
+     */
+    public static SpecOperation exposeSpecSecondTo(@NonNull final LongConsumer observer) {
+        return exposeSpecTimeTo(instant -> observer.accept(instant.getEpochSecond()));
+    }
+
+    /**
+     * Returns an operation that exposes the consensus time of the current spec to the given observer.
+     * @param observer the observer to pass the consensus time to
+     * @return the operation that exposes the consensus time
+     */
+    public static SpecOperation exposeSpecTimeTo(@NonNull final Consumer<Instant> observer) {
+        return doingContextual(spec -> observer.accept(spec.consensusTime()));
     }
 
     /**
@@ -2304,6 +2333,14 @@ public class UtilVerbs {
         }
 
         return privateKeyByteArray;
+    }
+
+    public static PrivateKey getEd25519PrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
+        var key = spec.registry().getKey(privateKeyRef);
+        final var privateKey = spec.keys()
+                .getEd25519PrivateKey(com.swirlds.common.utility.CommonUtils.hex(
+                        key.getEd25519().toByteArray()));
+        return privateKey;
     }
 
     private static double getChargedUsed(@NonNull final HapiSpec spec, @NonNull final String txn) {

@@ -220,13 +220,23 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 ((SubProcessNode) node)
                         .reassignPorts(
                                 nextGrpcPort + nodeId * 2,
-                                nextNodeOperatorPort + nodeId * 2,
+                                nextNodeOperatorPort + nodeId,
                                 nextGossipPort + nodeId * 2,
                                 nextGossipTlsPort + nodeId * 2,
                                 nextPrometheusPort + nodeId);
             });
         }
         nodes.forEach(node -> ((SubProcessNode) node).reassignNodeAccountIdFrom(memoOfNode(node.getNodeId())));
+        refreshNodeConfigTxt();
+        HapiClients.tearDown();
+        this.clients = HapiClients.clientsFor(this);
+    }
+
+    /**
+     * Assigns disabled node operator port to nodes from the current <i>config.txt</i>.
+     */
+    public void assignWithDisabledNodeOperatorPort() {
+        nodes.forEach(node -> ((SubProcessNode) node).reassignWithNodeOperatorPortDisabled());
         refreshNodeConfigTxt();
         HapiClients.tearDown();
         this.clients = HapiClients.clientsFor(this);
@@ -277,6 +287,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                                 SHARED_NETWORK_NAME.equals(name()) ? null : name(),
                                 nextGrpcPort + (int) nodeId * 2,
                                 nextNodeOperatorPort + (int) nodeId * 2,
+                                true,
                                 nextGossipPort + (int) nodeId * 2,
                                 nextGossipTlsPort + (int) nodeId * 2,
                                 nextPrometheusPort + (int) nodeId),
@@ -341,6 +352,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                                         SHARED_NETWORK_NAME.equals(name) ? null : name,
                                         nextGrpcPort,
                                         nextNodeOperatorPort,
+                                        true,
                                         nextGossipPort,
                                         nextGossipTlsPort,
                                         nextPrometheusPort),
@@ -368,7 +380,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 .filter(line -> line.startsWith("address, " + id))
                 .map(line -> line.substring(line.lastIndexOf(",") + 2))
                 .findFirst()
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalStateException("No metadata found for node " + id));
     }
 
     private String consensusDabConfigTxt() {
@@ -413,21 +425,15 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      * @param firstGrpcPort the first gRPC port
      */
     public static void initializeNextPortsForNetwork(final int size, final int firstGrpcPort) {
-        // Suppose firstGrpcPort is 10000 with 4 nodes in the network, then:
-        //   - nextGrpcPort = 10000
-        //   - nextNodeOperatorPort = 10008
-        //   - nextGossipPort = 10009
-        //   - nextGossipTlsPort = 10010
-        //   - nextPrometheusPort = 10016
-        // So for a nodeId of 2, the assigned ports are:
-        //   - grpcPort = nextGrpcPort + nodeId * 2 = 10004
-        //   - grpcNodeOperatorPort = nextNodeOperatorPort + nodeId * 2 = 10012
-        //   - gossipPort = nextGossipPort + nodeId * 2 = 10013
-        //   - gossipTlsPort = nextGossipTlsPort + nodeId * 2 = 10014
-        //   - prometheusPort = nextPrometheusPort + nodeId = 10018
+        // Suppose firstGrpcPort is 10000 with 4 nodes in the network, then the port assignments are,
+        //   - grpcPort = 10000, 10002, 10004, 10006
+        //   - nodeOperatorPort = 10008, 10009, 10010, 10011
+        //   - gossipPort = 10012, 10014, 10016, 10018
+        //   - gossipTlsPort = 10013, 10015, 10017, 10019
+        //   - prometheusPort = 10020, 10021, 10022, 10023
         nextGrpcPort = firstGrpcPort;
         nextNodeOperatorPort = nextGrpcPort + 2 * size;
-        nextGossipPort = nextNodeOperatorPort + 1;
+        nextGossipPort = nextNodeOperatorPort + size;
         nextGossipTlsPort = nextGossipPort + 1;
         nextPrometheusPort = nextGossipPort + 2 * size;
         nextPortsInitialized = true;

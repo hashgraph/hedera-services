@@ -18,6 +18,7 @@ package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GRPC_CERTIFICATE_HASH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
@@ -64,6 +65,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -88,17 +90,21 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     private TransactionBody txn;
     private NodeUpdateHandler subject;
-    private List<X509Certificate> certList;
+    private static List<X509Certificate> certList;
+
+    @BeforeAll
+    static void beforeAll() {
+        certList = generateX509Certificates(3);
+    }
 
     @BeforeEach
     void setUp() {
         final var addressBookValidator = new AddressBookValidator();
         subject = new NodeUpdateHandler(addressBookValidator);
-        certList = generateX509Certificates(3);
     }
 
     @Test
-    @DisplayName("pureChecks fail when nodeId is negagive")
+    @DisplayName("pureChecks fail when nodeId is negative")
     void nodeIdCannotNegative() {
         txn = new NodeUpdateBuilder().build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
@@ -115,6 +121,18 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_CA_CERTIFICATE);
+    }
+
+    @Test
+    @DisplayName("pureChecks fail when grpcCertHash is empty")
+    void grpcCertHashCannotEmpty() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1)
+                .withAccountId(accountId)
+                .withGrpcCertificateHash(Bytes.EMPTY)
+                .build();
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_GRPC_CERTIFICATE_HASH);
     }
 
     @Test
@@ -142,7 +160,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void nodetIdMustInState() {
+    void nodeIdMustInState() {
         txn = new NodeUpdateBuilder().withNodeId(2L).build();
         given(handleContext.body()).willReturn(txn);
         refreshStoresWithCurrentNodeInWritable();
@@ -399,14 +417,13 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksWhenAdminKeyValid() throws PreCheckException {
+    void preHandleRequiresAdminKeySigForNonAddressBookAdmin() throws PreCheckException {
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAccountId(asAccount(53))
                 .withAdminKey(key)
                 .build();
         final var context = setupPreHandle(true, txn);
-
         subject.preHandle(context);
         assertThat(txn).isEqualTo(context.body());
         assertThat(context.payerKey()).isEqualTo(anotherKey);
@@ -515,19 +532,24 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     private PreHandleContext setupPreHandle(boolean updateAccountIdAllowed, TransactionBody txn)
             throws PreCheckException {
+        return setupPreHandle(updateAccountIdAllowed, txn, payerId);
+    }
+
+    private PreHandleContext setupPreHandle(
+            boolean updateAccountIdAllowed, TransactionBody txn, AccountID contextPayerId) throws PreCheckException {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("nodes.updateAccountIdAllowed", updateAccountIdAllowed)
                 .getOrCreateConfig();
-        mockPayerLookup(anotherKey);
+        mockPayerLookup(anotherKey, contextPayerId);
         final var context = new FakePreHandleContext(accountStore, txn, config);
         context.registerStore(ReadableNodeStore.class, readableStore);
         return context;
     }
 
-    private Key mockPayerLookup(Key key) {
+    private Key mockPayerLookup(Key key, AccountID contextPayerId) {
         final var account = mock(Account.class);
         given(account.key()).willReturn(key);
-        given(accountStore.getAccountById(payerId)).willReturn(account);
+        given(accountStore.getAccountById(contextPayerId)).willReturn(account);
         return key;
     }
 
@@ -543,38 +565,40 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
         private Bytes grpcCertificateHash = null;
         private Key adminKey = null;
+        private AccountID contextPayerId = payerId;
 
         private NodeUpdateBuilder() {}
 
         public TransactionBody build() {
-            final var txnId = TransactionID.newBuilder().accountID(payerId).transactionValidStart(consensusTimestamp);
-            final var txnBody = NodeUpdateTransactionBody.newBuilder();
-            txnBody.nodeId(nodeId);
+            final var txnId =
+                    TransactionID.newBuilder().accountID(contextPayerId).transactionValidStart(consensusTimestamp);
+            final var op = NodeUpdateTransactionBody.newBuilder();
+            op.nodeId(nodeId);
             if (accountId != null) {
-                txnBody.accountId(accountId);
+                op.accountId(accountId);
             }
             if (description != null) {
-                txnBody.description(description);
+                op.description(description);
             }
             if (gossipEndpoint != null) {
-                txnBody.gossipEndpoint(gossipEndpoint);
+                op.gossipEndpoint(gossipEndpoint);
             }
             if (serviceEndpoint != null) {
-                txnBody.serviceEndpoint(serviceEndpoint);
+                op.serviceEndpoint(serviceEndpoint);
             }
             if (gossipCaCertificate != null) {
-                txnBody.gossipCaCertificate(gossipCaCertificate);
+                op.gossipCaCertificate(gossipCaCertificate);
             }
             if (grpcCertificateHash != null) {
-                txnBody.grpcCertificateHash(grpcCertificateHash);
+                op.grpcCertificateHash(grpcCertificateHash);
             }
             if (adminKey != null) {
-                txnBody.adminKey(adminKey);
+                op.adminKey(adminKey);
             }
 
             return TransactionBody.newBuilder()
                     .transactionID(txnId)
-                    .nodeUpdate(txnBody.build())
+                    .nodeUpdate(op.build())
                     .build();
         }
 
@@ -585,6 +609,11 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
         public NodeUpdateBuilder withAccountId(final AccountID accountId) {
             this.accountId = accountId;
+            return this;
+        }
+
+        public NodeUpdateBuilder withPayerId(final AccountID overridePayerId) {
+            this.contextPayerId = overridePayerId;
             return this;
         }
 

@@ -21,7 +21,9 @@ import static com.swirlds.merkledb.utilities.MerkleDbFileUtils.readFromFileChann
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
+import static java.util.Objects.requireNonNull;
 
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -126,6 +128,9 @@ public abstract class AbstractLongList<C> implements LongList {
      */
     protected final long reservedBufferLength;
 
+    /** Platform configuration */
+    protected Configuration configuration;
+
     /**
      * Construct a new LongList with the specified number of longs per chunk and maximum number of
      * longs.
@@ -163,9 +168,14 @@ public abstract class AbstractLongList<C> implements LongList {
      * positioned at the start of the data after the header at the end of this constructor.
      *
      * @param path File to read header from
+     * @param configuration platform configuration
      * @throws IOException If there was a problem reading the file
      */
-    protected AbstractLongList(final Path path, final long reservedBufferLength) throws IOException {
+    protected AbstractLongList(
+            final Path path, final long reservedBufferLength, @NonNull final Configuration configuration)
+            throws IOException {
+        requireNonNull(configuration);
+        this.configuration = configuration;
         final File file = path.toFile();
         this.reservedBufferLength = reservedBufferLength;
         if (!file.exists() || file.length() == 0) {
