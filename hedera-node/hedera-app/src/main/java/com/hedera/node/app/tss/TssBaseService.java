@@ -26,7 +26,6 @@ import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Service;
@@ -138,16 +137,13 @@ public interface TssBaseService extends Service {
      * @param trigger         the initialization trigger
      * @param serviceMigrator the service migrator
      * @param version         the services software version
-     * @param configuration   the configuration
      * @return the active roster
      */
     Roster chooseRosterForNetwork(
             @NonNull State state,
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
-            @NonNull ServicesSoftwareVersion version,
-            @NonNull Configuration configuration,
-            @NonNull Roster overrideRoster);
+            @NonNull ServicesSoftwareVersion version);
 
     /**
      * Regenerates the key material for the active roster. This happens each time the active roster is updated.

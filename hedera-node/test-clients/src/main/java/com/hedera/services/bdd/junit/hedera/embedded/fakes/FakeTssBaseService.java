@@ -34,7 +34,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -241,10 +240,8 @@ public class FakeTssBaseService implements TssBaseService {
             @NonNull State state,
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
-            @NonNull ServicesSoftwareVersion version,
-            @NonNull final Configuration configuration,
-            @NonNull final Roster overrideRoster) {
-        return delegate.chooseRosterForNetwork(state, trigger, serviceMigrator, version, configuration, overrideRoster);
+            @NonNull ServicesSoftwareVersion version) {
+        return delegate.chooseRosterForNetwork(state, trigger, serviceMigrator, version);
     }
 
     @Override

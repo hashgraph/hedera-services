@@ -49,7 +49,6 @@ import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
@@ -270,12 +269,8 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull State state,
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
-            @NonNull ServicesSoftwareVersion version,
-            @NonNull final Configuration configuration,
-            @NonNull final Roster overrideRoster) {
-        if (!configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
-            return overrideRoster;
-        }
+            @NonNull ServicesSoftwareVersion version) {
+
         final var activeRoster = retrieveActiveOrGenesisRoster(state);
         if (trigger != GENESIS) {
             final var creatorVersion = requireNonNull(serviceMigrator.creationVersionOf(state));

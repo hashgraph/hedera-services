@@ -56,6 +56,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
@@ -110,6 +111,7 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -970,8 +972,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .round();
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
 
-        final var activeRoster = tssBaseService.chooseRosterForNetwork(
-                state, trigger, serviceMigrator, version, configProvider.getConfiguration(), platform.getRoster());
+        final Roster activeRoster;
+        if (!configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
+            final var platformState =
+                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+            activeRoster = buildRoster(platformState.getAddressBook());
+        } else {
+            activeRoster = tssBaseService.chooseRosterForNetwork(state, trigger, serviceMigrator, version);
+        }
         final var networkInfo =
                 new StateNetworkInfo(state, activeRoster, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc
