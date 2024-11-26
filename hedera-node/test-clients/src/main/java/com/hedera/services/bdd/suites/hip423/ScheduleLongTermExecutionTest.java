@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
@@ -96,7 +95,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -562,13 +560,10 @@ public class ScheduleLongTermExecutionTest {
 
     @HapiTest
     @Order(5)
-    @Disabled
     public Stream<DynamicTest> executionWithContractCallWorksAtExpiry() {
         final var payerBalance = new AtomicLong();
         return defaultHapiSpec("ExecutionWithContractCallWorksAtExpiry")
                 .given(
-                        // upload fees for SCHEDULE_CREATE_CONTRACT_CALL
-                        uploadScheduledContractPrices(GENESIS),
                         uploadInitCode(SIMPLE_UPDATE),
                         contractCreate(SIMPLE_UPDATE).gas(500_000L),
                         cryptoCreate(PAYING_ACCOUNT)
@@ -623,12 +618,10 @@ public class ScheduleLongTermExecutionTest {
 
     @HapiTest
     @Order(6)
-    @Disabled
     public Stream<DynamicTest> executionWithContractCreateWorksAtExpiry() {
         final var payerBalance = new AtomicLong();
         return defaultHapiSpec("ExecutionWithContractCreateWorksAtExpiry")
                 .given(
-                        // overriding(SCHEDULING_WHITELIST, "ContractCreate"),
                         uploadInitCode(SIMPLE_UPDATE),
                         cryptoCreate(PAYING_ACCOUNT)
                                 .balance(PAYER_INITIAL_BALANCE)
