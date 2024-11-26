@@ -16,27 +16,26 @@ while maintaining local copies for redundancy.
 ---
 
 ## Table of Contents
-
 1. [Summary](#summary)
 2. [Context](#context)
 3. [Dependencies](#dependencies)
-4. [Requirements](#requirements)
-5. [Core Components](#core-components)
-   1. [Extended BlockStreamWriterMode](#1-extended-blockstreamwritermode)
-   2. [CloudBucketUploader Interface](#2-cloudbucketuploader-interface)
-   3. [BlockMetadata](#3-blockmetadata)
-   4. [AwsBucketUploader](#4-awsbucketuploader)
-   5. [GcpBucketUploader](#5-gcpbucketuploader)
-   6. [BucketUploadManager](#6-bucketuploadmanager)
-   7. [Dependency Injection](#7-dependency-injection)
-   8. [BlockRetentionManager](#8-blockretentionmanager)
-   9. [Metrics](#9-metrics)
-6. [Flow Sequences](#flow-sequences)
+4. [Core Components](#core-components)
+   1. [Extended BlockStreamWriterMode](#extended-blockstreamwritermode)
+   2. [CloudBucketUploader Interface](#cloudbucketuploader-interface)
+   3. [BlockMetadata](#blockmetadata)
+   4. [AWS Implementation](#aws-implementation)
+   5. [GCP Implementation](#gcp-implementation)
+   6. [Cloud Upload Module](#cloud-upload-module)
+   7. [BucketUploadManager](#bucketuploadmanager)
+   8. [Dependency Injection](#dependency-injection)
+   9. [BlockRetentionManager](#blockretentionmanager)
+   10. [Metrics](#metrics)
+5. [Flow Sequences](#flow-sequences)
    1. [Happy Path](#happy-path)
    2. [Error Handling](#error-handling)
    3. [Hash Mismatch](#hash-mismatch)
    4. [Integration](#integration)
-7. [Testing Strategy](#testing-strategy)
+6. [Testing Strategy](#testing-strategy)
 
 
 ### Context
@@ -112,7 +111,54 @@ public record BlockStreamConfig(
 ) {}
 ```
 
-### 3. BucketUploadListener Interface
+### 3. BlockMetadata
+```java
+/**
+ * Immutable record containing metadata about a block file.
+ */
+public record BlockMetadata(
+        long blockNumber,
+        String md5Hash,
+        Instant createdAt
+) {
+    /**
+     * Creates BlockMetadata from a block file path.
+     *
+     * @param blockPath Path to the block file
+     * @param blockNumber The block number
+     * @return BlockMetadata instance
+     * @throws IOException if file operations fail
+     */
+    public static BlockMetadata create(Path blockPath, long blockNumber) throws IOException {
+        byte[] fileBytes = Files.readAllBytes(blockPath);
+        String md5 = calculateMd5(fileBytes);
+        
+        return new BlockMetadata(
+                blockNumber,
+                md5,
+                Files.getLastModifiedTime(blockPath).toInstant()
+        );
+    }
+    
+    /**
+     * Calculates MD5 hash of the given bytes.
+     *
+     * @param bytes The bytes to hash
+     * @return Base64 encoded MD5 hash
+     */
+    private static String calculateMd5(byte[] bytes) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(bytes);
+            return Base64.getEncoder().encodeToString(digest);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("MD5 algorithm not available", e);
+        }
+    }
+}
+```
+
+### 4. BucketUploadListener Interface
 ```java
 public interface BucketUploadListener {
     void onBlockClosed(Path blockPath, long blockNumber);
@@ -120,7 +166,7 @@ public interface BucketUploadListener {
 }
 ```
 
-### 4. FileBlockItemWriter Extension
+### 5. FileBlockItemWriter Extension
 Extends existing FileBlockItemWriter (reference to implementation):
 
 ```java
@@ -165,7 +211,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
 }
 ```
 
-### 5. Cloud Storage Implementations
+### 6. Cloud Storage Implementations
 
 #### Base Interface
 ```java
@@ -369,7 +415,7 @@ public class CloudUploadModule {
 ```
 
 
-### 6. BucketUploadManager
+### 7. BucketUploadManager
 ```java
 @Singleton
 public class BucketUploadManager implements BucketUploadListener {
@@ -421,7 +467,7 @@ public class BucketUploadManager implements BucketUploadListener {
 
 
 
-### 7. Dependency Injection
+### 8. Dependency Injection
 ```java
 @Module
 public class BlockStreamModule {
@@ -446,7 +492,7 @@ public class BlockStreamModule {
 }
 ```
 
-### 8. BlockRetentionManager
+### 9. BlockRetentionManager
 The BlockRetentionManager is responsible for deleting blocks that are older than the retention period. This could be invoked in HandleWorkflow every x number of minutes in which it will scan the block directory and delete any blocks that are older than the retention period.
 ```java
 /**
@@ -515,7 +561,7 @@ public class BlockRetentionManager {
 }
 ```
 
-### 9. Metrics
+### 10. Metrics
 Here are some possible metrics that could be useful, but we should discuss and confirm what is needed.
 ```java
 @Singleton
