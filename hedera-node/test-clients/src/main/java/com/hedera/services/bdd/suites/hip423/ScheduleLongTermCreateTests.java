@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.RECEIVER;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -51,8 +52,8 @@ public class ScheduleLongTermCreateTests {
     @HapiTest
     final Stream<DynamicTest> scheduleCreateDefaultsTo30min() {
         return hapiTest(
-                cryptoCreate("luckyYou").balance(0L),
-                scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                cryptoCreate(RECEIVER).balance(0L),
+                scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER,RECEIVER, 1L)))
                         .via("createTxn"),
                 getScheduleInfo("one").hasRelativeExpiry("createTxn", TimeUnit.MINUTES.toSeconds(30)));
     }
@@ -60,8 +61,8 @@ public class ScheduleLongTermCreateTests {
     @HapiTest
     final Stream<DynamicTest> scheduleCreateMinimumTime() {
         return hapiTest(
-                cryptoCreate("luckyYou").balance(0L),
-                scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                cryptoCreate(RECEIVER).balance(0L),
+                scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, RECEIVER, 1L)))
                         .waitForExpiry(false)
                         .expiringIn(2)
                         .via("createTxn"),

@@ -139,13 +139,17 @@ public final class LongTermScheduleUtils {
         return operations.toArray(SpecOperation[]::new);
     }
 
-    static SpecOperation[] triggerSchedule(String schedule) {
+    static SpecOperation[] triggerSchedule(String schedule, long waitForSeconds) {
         return flattened(
-                sleepForSeconds(5),
+                sleepForSeconds(waitForSeconds),
                 cryptoCreate("foo").via(TRIGGERING_TXN),
                 // Pause execution for 1 second to allow time for the scheduled transaction to be
                 // processed and removed from the state
                 sleepForSeconds(1),
                 getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
+    }
+
+    static SpecOperation[] triggerSchedule(String schedule) {
+        return triggerSchedule(schedule, 5);
     }
 }

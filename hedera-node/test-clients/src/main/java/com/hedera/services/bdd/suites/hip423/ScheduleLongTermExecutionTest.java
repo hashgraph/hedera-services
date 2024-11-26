@@ -117,6 +117,7 @@ public class ScheduleLongTermExecutionTest {
     private static final String FAILED_XFER = "failedXfer";
     private static final String WEIRDLY_POPULAR_KEY_TXN = "weirdlyPopularKeyTxn";
     private static final String PAYER_TXN = "payerTxn";
+    private static final String FILE_NAME = "misc";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -497,7 +498,7 @@ public class ScheduleLongTermExecutionTest {
                 uploadScheduledContractPrices(GENESIS),
                 uploadInitCode(SIMPLE_UPDATE),
                 contractCreate(SIMPLE_UPDATE).gas(500_000L),
-                cryptoCreate(PAYING_ACCOUNT).balance(1000000000000L).via(PAYING_ACCOUNT_TXN),
+                cryptoCreate(PAYING_ACCOUNT).balance(1_000_000_000_000L).via(PAYING_ACCOUNT_TXN),
                 scheduleCreate(
                                 BASIC_XFER,
                                 contractCall(SIMPLE_UPDATE, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
@@ -518,7 +519,7 @@ public class ScheduleLongTermExecutionTest {
                 triggerSchedule(BASIC_XFER),
                 getAccountBalance(PAYING_ACCOUNT)
                         .hasTinyBars(
-                                spec -> bal -> bal < 1000000000000L ? Optional.empty() : Optional.of("didnt change")),
+                                spec -> bal -> bal < 1_000_000_000_000L ? Optional.empty() : Optional.of("didnt change")),
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
                     allRunFor(spec, triggeredTx);
@@ -1052,8 +1053,8 @@ public class ScheduleLongTermExecutionTest {
     final Stream<DynamicTest> scheduledSystemDeleteWorksAsExpected() {
         return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
-                fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
-                scheduleCreate(VALID_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
+                fileCreate(FILE_NAME).lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
+                scheduleCreate(VALID_SCHEDULE, systemFileDelete(FILE_NAME).updatingExpiry(1L))
                         .withEntityMemo(randomUppercase(100))
                         .designatingPayer(SYSTEM_DELETE_ADMIN)
                         .payingWith(PAYING_ACCOUNT)
@@ -1073,7 +1074,7 @@ public class ScheduleLongTermExecutionTest {
                         .hasRelativeExpiry(PAYER_TXN, 4)
                         .hasRecordedScheduledTxn(),
                 triggerSchedule(VALID_SCHEDULE),
-                getFileInfo("misc").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
+                getFileInfo(FILE_NAME).nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
@@ -1091,8 +1092,8 @@ public class ScheduleLongTermExecutionTest {
         return hapiTest(
                 cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                 cryptoCreate(PAYING_ACCOUNT_2),
-                fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
-                scheduleCreate(VALID_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
+                fileCreate(FILE_NAME).lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
+                scheduleCreate(VALID_SCHEDULE, systemFileDelete(FILE_NAME).updatingExpiry(1L))
                         .withEntityMemo(randomUppercase(100))
                         .designatingPayer(PAYING_ACCOUNT_2)
                         .payingWith(PAYING_ACCOUNT)
