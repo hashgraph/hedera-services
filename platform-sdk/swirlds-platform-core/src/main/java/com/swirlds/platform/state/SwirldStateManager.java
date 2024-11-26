@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -34,11 +36,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Manages all interactions with the state object required by {@link SwirldState}.
  */
 public class SwirldStateManager implements FreezePeriodChecker {
+
+    private static final Logger logger = LogManager.getLogger(SwirldStateManager.class);
 
     /**
      * Stats relevant to SwirldState operations.
@@ -144,6 +150,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * made to the returned state.
      */
     public MerkleRoot getConsensusState() {
+        logger.error(EXCEPTION.getMarker(), "getConsensusState: {} ", StackTrace.getStackTrace());
         return stateRef.get();
     }
 
@@ -156,6 +163,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      */
     public void savedStateInFreezePeriod() {
         // set current DualState's lastFrozenTime to be current freezeTime
+        logger.error(EXCEPTION.getMarker(), "savedStateInFreezePeriod: {} ", StackTrace.getStackTrace());
         stateRef.get()
                 .getWritablePlatformState()
                 .setLastFrozenTime(stateRef.get().getReadablePlatformState().getFreezeTime());
