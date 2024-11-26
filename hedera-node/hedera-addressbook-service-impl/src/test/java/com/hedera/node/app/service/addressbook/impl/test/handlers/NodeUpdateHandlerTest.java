@@ -18,6 +18,7 @@ package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GRPC_CERTIFICATE_HASH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
@@ -120,6 +121,18 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_CA_CERTIFICATE);
+    }
+
+    @Test
+    @DisplayName("pureChecks fail when grpcCertHash is empty")
+    void grpcCertHashCannotEmpty() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1)
+                .withAccountId(accountId)
+                .withGrpcCertificateHash(Bytes.EMPTY)
+                .build();
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_GRPC_CERTIFICATE_HASH);
     }
 
     @Test

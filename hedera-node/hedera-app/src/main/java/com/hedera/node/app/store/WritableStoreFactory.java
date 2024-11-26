@@ -138,7 +138,7 @@ public class WritableStoreFactory {
             @NonNull final String serviceName,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
-        requireNonNull(state, "The argument 'stack' cannot be null!");
+        requireNonNull(state);
         this.serviceName = requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
         this.configuration = requireNonNull(configuration, "The argument 'configuration' cannot be null!");
         this.storeMetricsService =

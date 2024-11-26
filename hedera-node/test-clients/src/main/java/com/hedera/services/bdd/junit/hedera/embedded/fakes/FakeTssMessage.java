@@ -14,28 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss.pairings;
+package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
+import com.hedera.cryptography.tss.api.TssMessage;
 
-public class FakeGroupElement implements GroupElement {
-    public static final FakeGroupElement GENERATOR = new FakeGroupElement(BigInteger.valueOf(5L));
-    private final BigInteger value;
+public record FakeTssMessage(byte[] bytes) implements TssMessage {
 
-    public FakeGroupElement(@NonNull BigInteger value) {
-        this.value = value;
-    }
-
-    @NonNull
-    @Override
-    public GroupElement add(@NonNull GroupElement other) {
-        return new FakeGroupElement(value.add(new BigInteger(other.toBytes())));
-    }
-
-    @NonNull
     @Override
     public byte[] toBytes() {
-        return value.toByteArray();
+        return bytes;
     }
 }

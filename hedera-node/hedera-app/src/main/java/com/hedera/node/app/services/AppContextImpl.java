@@ -18,6 +18,7 @@ package com.hedera.node.app.services;
 
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,5 +38,6 @@ public record AppContextImpl(
         @NonNull SignatureVerifier signatureVerifier,
         @NonNull Gossip gossip,
         @NonNull Supplier<Configuration> configSupplier,
-        @NonNull Supplier<NodeInfo> selfNodeInfoSupplier)
+        @NonNull Supplier<NodeInfo> selfNodeInfoSupplier,
+        @NonNull Throttle.Factory throttleFactory)
         implements AppContext {}

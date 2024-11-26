@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.tss;
 
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.tss.api.TssMessage;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -166,4 +166,12 @@ public interface TssBaseService extends Service {
      * @return the ledger id
      */
     Bytes ledgerIdFrom(@NonNull TssParticipantDirectory directory, @NonNull List<TssMessage> tssMessages);
+
+    /**
+     * Returns the TSS message from the given bytes and participant directory.
+     * @param wrap the bytes
+     * @param directory the participant directory
+     * @return the TSS message
+     */
+    TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory);
 }

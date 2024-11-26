@@ -21,6 +21,7 @@ import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACK
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
+import com.hedera.node.app.throttle.ThrottleAccumulator.Verbose;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.CryptoTransferThrottleMultiplier;
 import com.hedera.node.app.throttle.annotations.GasThrottleMultiplier;
@@ -49,9 +50,11 @@ public interface ThrottleServiceModule {
     @Provides
     @Singleton
     @BackendThrottle
-    static ThrottleAccumulator provideBackendThrottleAccumulator(ConfigProvider configProvider, Metrics metrics) {
+    static ThrottleAccumulator provideBackendThrottleAccumulator(
+            @NonNull final ConfigProvider configProvider, @NonNull final Metrics metrics) {
         final var throttleMetrics = new ThrottleMetrics(metrics, BACKEND_THROTTLE);
-        return new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE, throttleMetrics);
+        return new ThrottleAccumulator(
+                SUPPLY_ONE, configProvider::getConfiguration, BACKEND_THROTTLE, throttleMetrics, Verbose.YES);
     }
 
     @Provides
@@ -64,7 +67,12 @@ public interface ThrottleServiceModule {
         final var throttleMetrics = new ThrottleMetrics(metrics, FRONTEND_THROTTLE);
         final IntSupplier frontendThrottleSplit =
                 () -> networkInfo.roster().rosterEntries().size();
-        return new ThrottleAccumulator(frontendThrottleSplit, configProvider, FRONTEND_THROTTLE, throttleMetrics);
+        return new ThrottleAccumulator(
+                frontendThrottleSplit,
+                configProvider::getConfiguration,
+                FRONTEND_THROTTLE,
+                throttleMetrics,
+                Verbose.YES);
     }
 
     @Provides
