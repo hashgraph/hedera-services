@@ -561,6 +561,7 @@ public class HandleWorkflow {
                 // WARNING: this relies on the BlockStreamManager's last-handled time not being updated yet to
                 // correctly detect stake period boundary, so the order of the following two lines is important
                 processStakePeriodChanges(userTxn, dispatch);
+                // Check if the tss encryption keys are
                 blockStreamManager.setLastHandleTime(userTxn.consensusNow());
                 if (streamMode != BLOCKS) {
                     // This updates consTimeOfLastHandledTxn as a side effect

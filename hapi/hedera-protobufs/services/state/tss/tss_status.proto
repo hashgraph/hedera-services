@@ -1,0 +1,100 @@
+/**
+ * # Tss Message Map Key
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
+syntax = "proto3";
+
+package com.hedera.hapi.node.state.tss;
+
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+option java_package = "com.hedera.hapi.node.state.tss.legacy";
+// <<<pbj.java_package = "com.hedera.hapi.node.state.tss">>> This comment is special code for setting PBJ Compiler java package
+option java_multiple_files = true;
+
+/**
+ * A key for use in the Threshold Signature Scheme (TSS) TssMessageMaps.
+ *
+ * This key SHALL be used to uniquely identify entries in the Message Maps.
+ */
+message TssStatus {
+
+  /**
+   * An enum representing the status of the TSS keying process. This status
+   * SHALL be used to determine the state of the TSS keying process.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.<br/>
+   */
+  TssKeyingStatus tss_keying_status = 1;
+
+  /**
+   * An enum representing the key either active roster or candidate roster.
+   * This value will be to key active roster if it is genesis stage
+   * <p>This value MUST be set.<br/>
+   * This value MUST be a valid sequence number.
+   */
+  RosterToKey roster_to_key = 2;
+
+  /**
+   * A hash of the ledger_id resulted from the TSS keying process.
+   * If this value is empty, the TSS keying process has not yet completed.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.<br/>
+   * This value MUST contain a valid hash.
+   */
+  bytes ledger_id = 3;
+}
+/**
+ * An enum representing the status of the TSS keying process. This status
+ * SHALL be used to determine the state of the TSS keying process.
+ */
+enum TssKeyingStatus {
+  /**
+   * The TSS keying process has not yet reached the threshold for encryption
+   * keys.
+   */
+  REACHED_THRESHOLD_ENCRYPTION_KEYS = 0;
+  /**
+   * The TSS keying process has not yet reached the threshold for TSS messages.
+   */
+  REACHED_THRESHOLD_TSS_MESSAGES = 1;
+  /**
+   * The TSS keying process has not yet reached the threshold for TSS votes.
+   */
+  REACHED_THRESHOLD_TSS_VOTES = 2;
+  /**
+   * The TSS keying process has completed and the ledger id is set.
+   */
+  KEYING_COMPLETE = 3;
+}
+
+/**
+ * An enum representing the key either active roster or candidate roster.
+ * This value will be to key active roster if it is genesis stage
+ */
+enum RosterToKey {
+  ACTIVE_ROSTER = 0;
+  CANDIDATE_ROSTER = 1;
+}
