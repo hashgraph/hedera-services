@@ -821,7 +821,7 @@ jobs:
         env:
           NEXUS_USERNAME: ${{ secrets.svcs-ossrh-username }}
           NEXUS_PASSWORD: ${{ secrets.svcs-ossrh-password }}
-        run: release${{ inputs.release-profile }} -PpublishingPackageGroup=com.hedera.hashgraph -PpublishSigningEnabled=true --scan --no-configuration-cache
+        run: ./gradlew release${{ inputs.release-profile }} -PpublishingPackageGroup=com.hedera.hashgraph -PpublishSigningEnabled=true --scan --no-configuration-cache
 
       - name: Upload SDK Release Archives
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
