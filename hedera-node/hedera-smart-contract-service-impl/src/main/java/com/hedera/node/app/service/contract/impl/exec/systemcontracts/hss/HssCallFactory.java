@@ -85,6 +85,7 @@ public class HssCallFactory implements CallFactory<HssCallAttempt> {
                 verificationStrategies,
                 systemContractGasCalculatorOf(frame),
                 callTranslators,
-                frame.isStatic());
+                frame.isStatic(),
+                frame.getOriginatorAddress());
     }
 }

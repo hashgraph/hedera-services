@@ -110,7 +110,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     // The only exception is that the function selector for `redirectForScheduleTxn` (0x5c3889ca)
     // has been pre substituted before the ADDRESS_BYTECODE_PATTERN.
     private static final String SCHEDULE_CALL_REDIRECT_CONTRACT_BINARY =
-            "6080604052348015600f57600080fd5b50600061016a9050775c3889cafefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
+            "6080604052348015600f57600080fd5b50600061016b9050775c3889cafefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
     private final HederaNativeOperations nativeOperations;
     private final ContractStateStore contractStateStore;

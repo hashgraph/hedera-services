@@ -25,6 +25,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -33,6 +34,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.config.api.Configuration;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Helper utility class to generate {@link HtsCallAttempt} object in different scenarios
@@ -242,5 +244,65 @@ public final class CallAttemptHelpers {
                 gasCalculator,
                 List.of(translator),
                 false);
+    }
+
+    /**
+     * @param function the selector to match against
+     * @param translator the translator for this specific call attempt
+     * @param enhancement the enhancement that is used
+     * @param addressIdConverter the address ID converter for this call
+     * @param verificationStrategies the verification strategy currently used
+     * @param gasCalculator the gas calculator used for the system contract
+     * @param config the current configuration that is used
+     * @param originatorAddress the address of the originator of the call
+     * @return the call attempt
+     */
+    public static HssCallAttempt prepareHssAttemptWithSelectorAndCustomConfig(
+            final Function function,
+            final CallTranslator<HssCallAttempt> translator,
+            final HederaWorldUpdater.Enhancement enhancement,
+            final AddressIdConverter addressIdConverter,
+            final VerificationStrategies verificationStrategies,
+            final SystemContractGasCalculator gasCalculator,
+            final Configuration config,
+            final Address originatorAddress) {
+        final var input = Bytes.wrap(function.selector());
+
+        return new HssCallAttempt(
+                input,
+                OWNER_BESU_ADDRESS,
+                false,
+                enhancement,
+                config,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                List.of(translator),
+                false,
+                originatorAddress);
+    }
+
+    public static HssCallAttempt prepareHssAttemptWithBytesAndCustomConfig(
+            final Bytes input,
+            final CallTranslator<HssCallAttempt> translator,
+            final HederaWorldUpdater.Enhancement enhancement,
+            final AddressIdConverter addressIdConverter,
+            final VerificationStrategies verificationStrategies,
+            final SystemContractGasCalculator gasCalculator,
+            final Configuration config,
+            final Address originatorAddress) {
+
+        return new HssCallAttempt(
+                input,
+                OWNER_BESU_ADDRESS,
+                false,
+                enhancement,
+                config,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                List.of(translator),
+                false,
+                originatorAddress);
     }
 }
