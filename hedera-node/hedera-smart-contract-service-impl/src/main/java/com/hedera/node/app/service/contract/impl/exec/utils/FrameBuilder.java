@@ -95,28 +95,41 @@ public class FrameBuilder {
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var nominalCoinbase = asLongZeroAddress(ledgerConfig.fundingAccount());
         final var contextVariables = contextVariablesFrom(config, context);
-        final var builder = MessageFrame.builder()
+        if (transaction.isCreate()) {
+            final var standardBuilder = MessageFrame.builder()
                 .maxStackSize(MAX_STACK_SIZE)
                 .worldUpdater(worldUpdater.updater())
                 .initialGas(transaction.gasAvailable(intrinsicGas))
                 .originator(from)
                 .gasPrice(Wei.of(context.gasPrice()))
                 .sender(from)
-                .value(Wei.of(1))
-                .apparentValue(Wei.of(1))
-        //        .value(value)
-        //        .apparentValue(value)
+                .value(value)
+                .apparentValue(value)
                 .blockValues(context.blockValuesOf(transaction.gasLimit()))
                 .completer(unused -> {})
                 .isStatic(context.staticCall())
                 .miningBeneficiary(nominalCoinbase)
                 .blockHashLookup(context.blocks()::blockHashOf)
                 .contextVariables(contextVariables);
-        if (transaction.isCreate()) {
-            return finishedAsCreate(to, builder, transaction);
+            return finishedAsCreate(to, standardBuilder, transaction);
         } else {
+            final var fakeValueBuilder = MessageFrame.builder()
+                .maxStackSize(MAX_STACK_SIZE)
+                .worldUpdater(worldUpdater.updater())
+                .initialGas(transaction.gasAvailable(intrinsicGas))
+                .originator(from)
+                .gasPrice(Wei.of(context.gasPrice()))
+                .sender(from)
+                .value(Wei.of(1000_000_001L))
+                .apparentValue(Wei.of(1000_000_001L))
+                .blockValues(context.blockValuesOf(transaction.gasLimit()))
+                .completer(unused -> {})
+                .isStatic(context.staticCall())
+                .miningBeneficiary(nominalCoinbase)
+                .blockHashLookup(context.blocks()::blockHashOf)
+                .contextVariables(contextVariables);
             return finishedAsCall(
-                    to, worldUpdater, builder, transaction, featureFlags, config.getConfigData(ContractsConfig.class));
+                    to, worldUpdater, fakeValueBuilder, transaction, featureFlags, config.getConfigData(ContractsConfig.class));
         }
     }
 
