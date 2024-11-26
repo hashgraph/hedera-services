@@ -53,7 +53,7 @@ public class ScheduleLongTermCreateTests {
     final Stream<DynamicTest> scheduleCreateDefaultsTo30min() {
         return hapiTest(
                 cryptoCreate(RECEIVER).balance(0L),
-                scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER,RECEIVER, 1L)))
+                scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, RECEIVER, 1L)))
                         .via("createTxn"),
                 getScheduleInfo("one").hasRelativeExpiry("createTxn", TimeUnit.MINUTES.toSeconds(30)));
     }

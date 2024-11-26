@@ -518,8 +518,8 @@ public class ScheduleLongTermExecutionTest {
                         .hasRecordedScheduledTxn(),
                 triggerSchedule(BASIC_XFER),
                 getAccountBalance(PAYING_ACCOUNT)
-                        .hasTinyBars(
-                                spec -> bal -> bal < 1_000_000_000_000L ? Optional.empty() : Optional.of("didnt change")),
+                        .hasTinyBars(spec ->
+                                bal -> bal < 1_000_000_000_000L ? Optional.empty() : Optional.of("didnt change")),
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
                     allRunFor(spec, triggeredTx);
