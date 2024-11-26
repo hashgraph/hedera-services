@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.hip423;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -43,6 +44,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
@@ -85,6 +87,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -95,7 +98,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -559,12 +561,14 @@ public class ScheduleLongTermExecutionTest {
                         }));
     }
 
-    @HapiTest
+    @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
     @Order(5)
     public Stream<DynamicTest> executionWithContractCallWorksAtExpiry() {
         final var payerBalance = new AtomicLong();
         return defaultHapiSpec("ExecutionWithContractCallWorksAtExpiry")
                 .given(
+                        // upload fees for SCHEDULE_CREATE_CONTRACT_CALL
+                        uploadScheduledContractPrices(GENESIS),
                         uploadInitCode(SIMPLE_UPDATE),
                         contractCreate(SIMPLE_UPDATE).gas(500_000L),
                         cryptoCreate(PAYING_ACCOUNT)
@@ -619,7 +623,6 @@ public class ScheduleLongTermExecutionTest {
 
     @HapiTest
     @Order(6)
-    @Disabled
     public Stream<DynamicTest> executionWithContractCreateWorksAtExpiry() {
         final var payerBalance = new AtomicLong();
         return defaultHapiSpec("ExecutionWithContractCreateWorksAtExpiry")
@@ -647,7 +650,7 @@ public class ScheduleLongTermExecutionTest {
                                 .hasRecordedScheduledTxn(),
                         sleepFor(5000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(1000),
+                        sleepFor(2000),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(PAYING_ACCOUNT)
                                 .hasTinyBars(spec -> bal ->
