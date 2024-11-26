@@ -121,17 +121,26 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     private ScheduleID scheduleIdFor(@NonNull HssCallAttempt attempt) {
         requireNonNull(attempt);
         if (attempt.isSelector(SIGN_SCHEDULE_PROXY)) {
-            final var scheduleID = attempt.redirectScheduleId();
-            validateTrue(scheduleID != null, INVALID_SCHEDULE_ID);
-            return attempt.redirectScheduleId();
-        } else {
-            final var call = AUTHORIZE_SCHEDULE.decodeCall(attempt.inputBytes());
-            final Address scheduleAddress = call.get(0);
-            final var number = numberOfLongZero(explicitFromHeadlong(scheduleAddress));
-            final var schedule = attempt.enhancement().nativeOperations().getSchedule(number);
-            validateTrue(schedule != null, INVALID_SCHEDULE_ID);
-            return schedule.scheduleId();
+            return getScheduleIDForSignSchedule(attempt);
+        } else if (attempt.isSelector(AUTHORIZE_SCHEDULE)) {
+            return getScheduleIDForAuthorizeSchedule(attempt);
         }
+        throw new IllegalStateException("Unexpected function selector");
+    }
+
+    private static ScheduleID getScheduleIDForSignSchedule(@NonNull HssCallAttempt attempt) {
+        final var scheduleID = attempt.redirectScheduleId();
+        validateTrue(scheduleID != null, INVALID_SCHEDULE_ID);
+        return attempt.redirectScheduleId();
+    }
+
+    private static ScheduleID getScheduleIDForAuthorizeSchedule(@NonNull HssCallAttempt attempt) {
+        final var call = AUTHORIZE_SCHEDULE.decodeCall(attempt.inputBytes());
+        final Address scheduleAddress = call.get(0);
+        final var number = numberOfLongZero(explicitFromHeadlong(scheduleAddress));
+        final var schedule = attempt.enhancement().nativeOperations().getSchedule(number);
+        validateTrue(schedule != null, INVALID_SCHEDULE_ID);
+        return schedule.scheduleId();
     }
 
     /**
@@ -143,24 +152,35 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     private Set<Key> keySetFor(@NonNull HssCallAttempt attempt) {
         requireNonNull(attempt);
         if (attempt.isSelector(SIGN_SCHEDULE_PROXY)) {
-            // If an Eth sender key is present, use it. Otherwise, use the account key if present.
-            Key key = attempt.enhancement().systemOperations().maybeEthSenderKey();
-            if (key != null) {
-                return Set.of(key);
-            }
-            key = attempt.enhancement().nativeOperations().getAccountKey(attempt.originatorAccount());
-            if (key != null) {
-                return Set.of(key);
-            }
-            return emptySet();
-        } else {
-            final var contractNum = maybeMissingNumberOf(attempt.senderAddress(), attempt.nativeOperations());
-            if (contractNum == MISSING_ENTITY_NUMBER) {
-                return emptySet();
-            }
-            return Set.of(Key.newBuilder()
-                    .contractID(ContractID.newBuilder().contractNum(contractNum).build())
-                    .build());
+            return getKeysForSignSchedule(attempt);
+        } else if (attempt.isSelector(AUTHORIZE_SCHEDULE)) {
+            return getKeysForAuthorizeSchedule(attempt);
         }
+        throw new IllegalStateException("Unexpected function selector");
+    }
+
+    @NonNull
+    private static Set<Key> getKeysForSignSchedule(@NonNull HssCallAttempt attempt) {
+        // If an Eth sender key is present, use it. Otherwise, use the account key if present.
+        Key key = attempt.enhancement().systemOperations().maybeEthSenderKey();
+        if (key != null) {
+            return Set.of(key);
+        }
+        key = attempt.enhancement().nativeOperations().getAccountKey(attempt.originatorAccount());
+        if (key != null) {
+            return Set.of(key);
+        }
+        return emptySet();
+    }
+
+    @NonNull
+    private static Set<Key> getKeysForAuthorizeSchedule(@NonNull HssCallAttempt attempt) {
+        final var contractNum = maybeMissingNumberOf(attempt.senderAddress(), attempt.nativeOperations());
+        if (contractNum == MISSING_ENTITY_NUMBER) {
+            return emptySet();
+        }
+        return Set.of(Key.newBuilder()
+                .contractID(ContractID.newBuilder().contractNum(contractNum).build())
+                .build());
     }
 }
