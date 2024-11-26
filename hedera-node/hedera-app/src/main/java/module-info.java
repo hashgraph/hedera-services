@@ -2,6 +2,8 @@ import com.hedera.node.app.config.ServicesConfigExtension;
 import com.swirlds.config.api.ConfigurationExtension;
 
 module com.hedera.node.app {
+    uses com.hedera.cryptography.pairings.spi.PairingFriendlyCurveProvider;
+
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.addressbook.impl;
     requires transitive com.hedera.node.app.service.addressbook;
@@ -23,6 +25,9 @@ module com.hedera.node.app {
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.state.impl;
+    requires transitive com.hedera.cryptography.bls;
+    requires transitive com.hedera.cryptography.pairings.api;
+    requires transitive com.hedera.cryptography.tss;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive io.grpc.stub;
@@ -100,7 +105,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.roster;
     exports com.hedera.node.app.tss;
     exports com.hedera.node.app.tss.api;
-    exports com.hedera.node.app.tss.pairings;
     exports com.hedera.node.app.tss.handlers;
     exports com.hedera.node.app.tss.stores;
     exports com.hedera.node.app.statedumpers;
