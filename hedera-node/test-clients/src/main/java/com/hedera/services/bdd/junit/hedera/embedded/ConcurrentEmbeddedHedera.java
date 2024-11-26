@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -132,7 +133,12 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
 
         @Override
         public KeysAndCerts getKeysAndCerts() {
-            return null;
+            try {
+                final byte[] EMPTY_ARRAY = new byte[] {};
+                return KeysAndCerts.generate("a-name", EMPTY_ARRAY, EMPTY_ARRAY, EMPTY_ARRAY, new PublicStores());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
