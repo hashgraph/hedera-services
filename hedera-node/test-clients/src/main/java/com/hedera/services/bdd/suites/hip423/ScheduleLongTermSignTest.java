@@ -650,7 +650,7 @@ public class ScheduleLongTermSignTest {
                                         tinyBarsFromTo("aSender", ADDRESS_BOOK_CONTROL, 1),
                                         tinyBarsFromTo("cSender", ADDRESS_BOOK_CONTROL, 1)))
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
+                        .withRelativeExpiry(SENDER_TXN, 10)
                         .recordingScheduledTxn(),
                 scheduleSign(DEFERRED_XFER).alsoSigningWith("aKey"),
                 scheduleSign(DEFERRED_XFER).alsoSigningWith("aKey").hasKnownStatus(NO_NEW_VALID_SIGNATURES),
@@ -673,9 +673,9 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 4)
+                        .hasRelativeExpiry(SENDER_TXN, 10)
                         .hasRecordedScheduledTxn(),
-                triggerSchedule(DEFERRED_XFER),
+                triggerSchedule(DEFERRED_XFER, 11),
                 getAccountBalance(ADDRESS_BOOK_CONTROL).hasTinyBars(changeFromSnapshot(BEFORE, +2))));
     }
 
