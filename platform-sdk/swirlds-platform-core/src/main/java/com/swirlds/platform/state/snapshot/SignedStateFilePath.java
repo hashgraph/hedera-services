@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -194,43 +195,46 @@ public class SignedStateFilePath {
                 return List.of();
             }
 
-            final List<Path> dirs = Files.list(dir).filter(Files::isDirectory).toList();
+            try (final Stream<Path> list = Files.list(dir)) {
 
-            final TreeMap<Long, SavedStateInfo> savedStates = new TreeMap<>();
-            for (final Path subDir : dirs) {
-                try {
-                    final long round = Long.parseLong(subDir.getFileName().toString());
-                    final Path stateFile = subDir.resolve(SIGNED_STATE_FILE_NAME);
-                    if (!exists(stateFile)) {
+                final List<Path> dirs = list.filter(Files::isDirectory).toList();
+
+                final TreeMap<Long, SavedStateInfo> savedStates = new TreeMap<>();
+                for (final Path subDir : dirs) {
+                    try {
+                        final long round = Long.parseLong(subDir.getFileName().toString());
+                        final Path stateFile = subDir.resolve(SIGNED_STATE_FILE_NAME);
+                        if (!exists(stateFile)) {
+                            logger.warn(
+                                    EXCEPTION.getMarker(),
+                                    "Saved state file ({}) not found, but directory exists '{}'",
+                                    stateFile.getFileName(),
+                                    subDir.toAbsolutePath());
+                            continue;
+                        }
+
+                        final Path metdataPath = subDir.resolve(SavedStateMetadata.FILE_NAME);
+                        final SavedStateMetadata metadata;
+                        try {
+                            metadata = SavedStateMetadata.parse(metdataPath);
+                        } catch (final IOException e) {
+                            logger.error(
+                                    EXCEPTION.getMarker(), "Unable to read saved state metadata file '{}'", metdataPath);
+                            continue;
+                        }
+
+                        savedStates.put(round, new SavedStateInfo(stateFile, metadata));
+
+                    } catch (final NumberFormatException e) {
                         logger.warn(
                                 EXCEPTION.getMarker(),
-                                "Saved state file ({}) not found, but directory exists '{}'",
-                                stateFile.getFileName(),
-                                subDir.toAbsolutePath());
-                        continue;
+                                "Unexpected directory '{}' in '{}'",
+                                subDir.getFileName(),
+                                dir.toAbsolutePath());
                     }
-
-                    final Path metdataPath = subDir.resolve(SavedStateMetadata.FILE_NAME);
-                    final SavedStateMetadata metadata;
-                    try {
-                        metadata = SavedStateMetadata.parse(metdataPath);
-                    } catch (final IOException e) {
-                        logger.error(
-                                EXCEPTION.getMarker(), "Unable to read saved state metadata file '{}'", metdataPath);
-                        continue;
-                    }
-
-                    savedStates.put(round, new SavedStateInfo(stateFile, metadata));
-
-                } catch (final NumberFormatException e) {
-                    logger.warn(
-                            EXCEPTION.getMarker(),
-                            "Unexpected directory '{}' in '{}'",
-                            subDir.getFileName(),
-                            dir.toAbsolutePath());
                 }
+                return new ArrayList<>(savedStates.descendingMap().values());
             }
-            return new ArrayList<>(savedStates.descendingMap().values());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
