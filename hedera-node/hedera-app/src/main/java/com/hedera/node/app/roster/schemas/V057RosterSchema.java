@@ -187,7 +187,7 @@ public class V057RosterSchema extends Schema {
                     .map(EntityNumber::new)
                     .toList();
         }
-        // Iff we are here, then activeRoster is null
+        // If we are here, then activeRoster is null
         // so we check whether to return the candidateRoster's entries.
         if (candidateRoster != null) {
             return candidateRoster.rosterEntries().stream()
