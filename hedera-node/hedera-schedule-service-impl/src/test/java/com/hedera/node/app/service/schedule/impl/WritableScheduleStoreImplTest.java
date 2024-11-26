@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -73,13 +73,12 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
     @Test
     void verifyDeleteNullScheduleThrows() {
         assertThatThrownBy(() -> writableSchedules.delete(null, testConsensusTime))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Request to delete null schedule ID cannot be fulfilled.");
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void verifyPutModifiesState() {
-        final ScheduleID idToDelete = scheduleInState.scheduleId();
+        final ScheduleID idToDelete = scheduleInState.scheduleIdOrThrow();
         Schedule actual = writableById.getForModify(idToDelete);
         assertThat(actual).isNotNull();
         assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(scheduleInState.signatories());
@@ -106,8 +105,10 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
         final var equality = writableByEquality.get(hash);
         assertThat(equality).isNotNull();
 
-        final var expiryList = writableByExpiration.get(new ProtoLong(actual.calculatedExpirationSecond()));
-        assertThat(expiryList.scheduleIds().size()).isEqualTo(1);
+        final var scheduledCounts =
+                writableScheduledCounts.get(new TimestampSeconds(actual.calculatedExpirationSecond()));
+        assertThat(scheduledCounts).isNotNull();
+        assertThat(scheduledCounts.numberScheduled()).isEqualTo(1);
 
         writableSchedules.put(modified);
         writableSchedules.put(modified);
@@ -123,27 +124,9 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
         final var equalitAfter = writableByEquality.get(hash);
         assertThat(equalitAfter).isNotNull();
 
-        final var expiryListAfter = writableByExpiration.get(new ProtoLong(actual.calculatedExpirationSecond()));
-        assertThat(expiryListAfter.scheduleIds().size()).isEqualTo(1);
-    }
-
-    @Test
-    void purgesExpiredSchedules() {
-        final ScheduleID idToDelete = scheduleInState.scheduleId();
-        final Schedule actual = writableById.get(idToDelete);
-        final var expirationTime = actual.calculatedExpirationSecond();
-        assertThat(actual).isNotNull();
-        assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(scheduleInState.signatories());
-        writableSchedules.purgeExpiredSchedulesBetween(expirationTime - 1, expirationTime + 1);
-
-        final var purged = writableSchedules.get(idToDelete);
-        assertThat(purged).isNull();
-
-        final var byEquality = writableSchedules.getByEquality(actual);
-        assertThat(byEquality).isNull();
-
-        final var byExpiry = writableSchedules.getByExpirationSecond(expirationTime);
-        assertThat(byExpiry).isNull();
+        final var countAfter = writableScheduledCounts.get(new TimestampSeconds(actual.calculatedExpirationSecond()));
+        assertThat(countAfter).isNotNull();
+        assertThat(countAfter.numberScheduled()).isEqualTo(1);
     }
 
     @NonNull
