@@ -219,12 +219,6 @@ public interface HederaInjectionComponent {
         @BindsInstance
         Builder startupNetworks(StartupNetworks startupNetworks);
 
-        //        @BindsInstance
-        //        Builder appContext(AppContext appContext);
-        //
-        //        @BindsInstance
-        //        Builder executor(Executor executor);
-
         HederaInjectionComponent build();
     }
 }

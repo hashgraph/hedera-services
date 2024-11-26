@@ -593,7 +593,6 @@ public final class CryptoStatic {
                         "ERROR",
                         "ERROR: This Java installation does not have the needed cryptography " + "providers installed");
             }
-            CommonUtils.tellUserConsole(e.getMessage() + ": " + e.getCause().getMessage());
             SystemExitUtils.exitSystem(SystemExitCode.KEY_LOADING_FAILED);
             throw new CryptographyException(e); // will never reach this line due to exit above
         }
@@ -632,6 +631,21 @@ public final class CryptoStatic {
     }
 
     /**
+     * Generate a {@link BlsKeyPair} using a {@link SignatureSchema} and a {@link SecureRandom} instance
+     * @return a new {@link BlsKeyPair}
+     * @throws NoSuchAlgorithmException the algorithm is not supported
+     */
+    public static BlsKeyPair generateBlsKeyPair(@Nullable final SecureRandom secureRandom)
+            throws NoSuchAlgorithmException {
+        final SignatureSchema SIGNATURE_SCHEMA =
+                SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
+        if (secureRandom == null) {
+            return BlsKeyPair.generate(SIGNATURE_SCHEMA);
+        }
+        return BlsKeyPair.generate(SIGNATURE_SCHEMA, secureRandom);
+    }
+
+    /**
      * Check if a certificate is valid.  A certificate is valid if it is not null, has a public key, and can be encoded.
      *
      * @param certificate the certificate to check
@@ -652,17 +666,5 @@ public final class CryptoStatic {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Generate a {@link BlsKeyPair} using a {@link SignatureSchema} and a {@link SecureRandom} instance
-     * @return a new {@link BlsKeyPair}
-     * @throws NoSuchAlgorithmException the algorithm is not supported
-     */
-    public static BlsKeyPair generateBlsKeyPair() throws NoSuchAlgorithmException {
-        final SignatureSchema SIGNATURE_SCHEMA =
-                SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
-        final SecureRandom secureRandom = SecureRandom.getInstanceStrong();
-        return BlsKeyPair.generate(SIGNATURE_SCHEMA, secureRandom);
     }
 }

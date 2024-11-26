@@ -41,8 +41,8 @@ import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
+import com.hedera.node.app.tss.TssLibraryImpl;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -209,9 +209,6 @@ public class ServicesMain implements SwirldMain {
 
         // Register with the ConstructableRegistry classes which need configuration.
         BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
-
-        //        final var keys = CryptoStatic.generateBlsKeyPair();
-        //        System.out.println("Keys ------------------: " +keys);
 
         final var keysAndCerts =
                 initNodeSecurity(diskAddressBook, configuration).get(selfId);
@@ -438,7 +435,7 @@ public class ServicesMain implements SwirldMain {
                         appContext,
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
-                        new PlaceholderTssLibrary(),
+                        new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
                         metrics),
                 DiskStartupNetworks::new,

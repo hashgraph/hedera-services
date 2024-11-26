@@ -867,7 +867,7 @@ message MapChangeValue {
         /**
          * A TSS Encryption Key Transaction Body value.
          */
-        com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody tss_encryption_key_value = 19;
+        com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody tss_encryption_key_value = 20;
     }
 }
 

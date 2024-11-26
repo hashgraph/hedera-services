@@ -219,14 +219,14 @@ public class KVStateChangeListener implements StateChangeListener {
             case AccountPendingAirdrop accountPendingAirdrop -> MapChangeValue.newBuilder()
                     .accountPendingAirdropValue(accountPendingAirdrop)
                     .build();
+            case TssEncryptionKeyTransactionBody tssEncryptionKeyTransactionBody -> MapChangeValue.newBuilder()
+                    .tssEncryptionKeyValue(tssEncryptionKeyTransactionBody)
+                    .build();
             case ScheduledCounts scheduledCounts -> MapChangeValue.newBuilder()
                     .scheduledCountsValue(scheduledCounts)
                     .build();
             case ThrottleUsageSnapshots throttleUsageSnapshots -> MapChangeValue.newBuilder()
                     .throttleUsageSnapshotsValue(throttleUsageSnapshots)
-                    .build();
-            case TssEncryptionKeyTransactionBody tssEncryptionKeyTransactionBody -> MapChangeValue.newBuilder()
-                    .tssEncryptionKeyValue(tssEncryptionKeyTransactionBody)
                     .build();
             default -> throw new IllegalStateException(
                     "Unexpected value: " + value.getClass().getSimpleName());

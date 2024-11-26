@@ -23,14 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.Deserializer;
 import com.swirlds.platform.internal.Serializer;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.SocketException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,12 +36,6 @@ import javax.net.ssl.SSLException;
 import org.junit.jupiter.api.Test;
 
 class UtilitiesTest {
-
-    @Test
-    void testBlsKeyGeneration() throws NoSuchAlgorithmException {
-        final var keyPair = CryptoStatic.generateBlsKeyPair();
-        System.out.println("Key Pair: " + keyPair);
-    }
 
     @Test
     void writeReadList() throws IOException {
