@@ -235,11 +235,7 @@ public class ServicesMain implements SwirldMain {
                     isGenesis.set(true);
                     final var genesisState = hedera.newMerkleStateRoot();
                     hedera.initializeStatesApi(
-                            (MerkleStateRoot) genesisState,
-                            metrics,
-                            InitTrigger.GENESIS,
-                            diskAddressBook,
-                            configuration);
+                            (MerkleStateRoot) genesisState, metrics, InitTrigger.GENESIS, configuration);
                     return genesisState;
                 },
                 Hedera.APP_NAME,
@@ -252,7 +248,6 @@ public class ServicesMain implements SwirldMain {
                     (MerkleStateRoot) initialState.get().getState().getSwirldState(),
                     metrics,
                     InitTrigger.RESTART,
-                    null,
                     configuration);
         }
 

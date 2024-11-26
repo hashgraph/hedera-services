@@ -147,8 +147,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         final Configuration configuration =
                 ConfigurationBuilder.create().autoDiscoverExtensions().build();
 
-        hedera.initializeStatesApi(
-                state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
+        hedera.initializeStatesApi(state, fakePlatform().getContext().getMetrics(), GENESIS, configuration);
 
         // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done
         // and we are running all CI tests with the Roster lifecycle enabled
