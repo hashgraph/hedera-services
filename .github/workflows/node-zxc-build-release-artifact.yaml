@@ -865,10 +865,9 @@ jobs:
 
       - name: Send Slack Notification (Maven Central)
         uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
-        env:
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.slack-webhook-url }}
         with:
+          webhook: ${{ secrets.slack-webhook-url }}
+          webhook-type: incoming-webhook
           payload-templated: true
           payload: |
             {
