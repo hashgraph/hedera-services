@@ -58,6 +58,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -97,6 +98,9 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     }
 
     private static final long CLASS_ID = 0xf052378c7364ef47L;
+
+    private static final int RUNNING_SUM_INDEX = 1;
+    private static final int ROUND_HANDLED_INDEX = 2;
 
     private NodeId selfId;
 
@@ -185,6 +189,17 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
         throwIfImmutable();
 
         this.selfId = platform.getSelfId();
+
+        final StringLeaf runningSumLeaf = getChild(RUNNING_SUM_INDEX);
+        if (runningSumLeaf != null && runningSumLeaf.getLabel() != null) {
+            this.runningSum = Long.parseLong(runningSumLeaf.getLabel());
+            logger.info(STARTUP.getMarker(), "State initialized with state long {}.", runningSum);
+        }
+        final StringLeaf roundsHandledLeaf = getChild(ROUND_HANDLED_INDEX);
+        if (roundsHandledLeaf != null && roundsHandledLeaf.getLabel() != null) {
+            this.roundsHandled = Long.parseLong(roundsHandledLeaf.getLabel());
+            logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled.", roundsHandled);
+        }
     }
 
     /**
@@ -206,6 +221,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
         }
 
         roundsHandled++;
+        setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
 
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
@@ -236,6 +252,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         runningSum += delta;
+        setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
     }
 
     /**
