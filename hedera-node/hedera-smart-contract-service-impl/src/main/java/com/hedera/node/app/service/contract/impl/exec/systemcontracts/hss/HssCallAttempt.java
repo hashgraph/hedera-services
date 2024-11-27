@@ -17,12 +17,10 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -53,9 +51,6 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
     @Nullable
     private final Schedule redirectScheduleTxn;
 
-    @NonNull
-    private final Address originatorAddress;
-
     // too many parameters
     @SuppressWarnings("java:S107")
     public HssCallAttempt(
@@ -68,8 +63,7 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final List<CallTranslator<HssCallAttempt>> callTranslators,
-            final boolean isStaticCall,
-            @NonNull final Address originatorAddress) {
+            final boolean isStaticCall) {
         super(
                 input,
                 senderAddress,
@@ -88,7 +82,6 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
         } else {
             this.redirectScheduleTxn = null;
         }
-        this.originatorAddress = requireNonNull(originatorAddress);
     }
 
     @Override
@@ -155,15 +148,5 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
             return enhancement.nativeOperations().getSchedule(numberOfLongZero(evmAddress));
         }
         return null;
-    }
-
-    /**
-     * Returns the AccountID of the originator of this call.
-     *
-     * @return the AccountID of the originator of this call
-     */
-    public @NonNull AccountID originatorAccount() {
-        final var number = maybeMissingNumberOf(originatorAddress, this.enhancement.nativeOperations());
-        return AccountID.newBuilder().accountNum(number).build();
     }
 }

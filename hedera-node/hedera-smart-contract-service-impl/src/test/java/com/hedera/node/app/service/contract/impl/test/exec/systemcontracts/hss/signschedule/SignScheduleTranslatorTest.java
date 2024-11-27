@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hss.
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.APPROVED_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_BESU_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.bytesForRedirectScheduleTxn;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithBytesAndCustomConfig;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithSelectorAndCustomConfig;
@@ -120,8 +121,7 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
-                configuration,
-                NON_SYSTEM_LONG_ZERO_ADDRESS);
+                configuration);
 
         // when:
         boolean matches = subject.matches(attempt);
@@ -142,8 +142,7 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
-                configuration,
-                NON_SYSTEM_LONG_ZERO_ADDRESS);
+                configuration);
 
         // when:
         boolean matches = subject.matches(attempt);
@@ -164,8 +163,7 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
-                configuration,
-                NON_SYSTEM_LONG_ZERO_ADDRESS);
+                configuration);
 
         // when:
         boolean matches = subject.matches(attempt);
@@ -186,8 +184,7 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
-                configuration,
-                NON_SYSTEM_LONG_ZERO_ADDRESS);
+                configuration);
 
         // when:
         boolean matches = subject.matches(attempt);
@@ -208,8 +205,7 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
-                configuration,
-                NON_SYSTEM_LONG_ZERO_ADDRESS);
+                configuration);
 
         // when:
         boolean matches = subject.matches(attempt);
@@ -224,6 +220,7 @@ class SignScheduleTranslatorTest {
         given(enhancement.systemOperations()).willReturn(systemContractOperations);
         given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
         given(schedule.scheduleId()).willReturn(scheduleID);
+        given(nativeOperations.getAccount(payerId)).willReturn(SOMEBODY);
         given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
         given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, false, nativeOperations))
                 .willReturn(verificationStrategy);
@@ -237,8 +234,7 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
-                configuration,
-                NON_SYSTEM_LONG_ZERO_ADDRESS);
+                configuration);
 
         // then:
         final var call = subject.callFrom(attempt);
@@ -249,7 +245,9 @@ class SignScheduleTranslatorTest {
     @Test
     void testScheduleIdForAuthorizeScheduleProxy() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(enhancement.systemOperations()).willReturn(systemContractOperations);
         given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(nativeOperations.getAccount(payerId)).willReturn(SOMEBODY);
         given(schedule.scheduleId()).willReturn(scheduleID);
         given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
         given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, false, nativeOperations))
@@ -259,14 +257,7 @@ class SignScheduleTranslatorTest {
         final var input = Bytes.wrapByteBuffer(
                 SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
         attempt = prepareHssAttemptWithBytesAndCustomConfig(
-                input,
-                subject,
-                enhancement,
-                addressIdConverter,
-                verificationStrategies,
-                gasCalculator,
-                configuration,
-                NON_SYSTEM_LONG_ZERO_ADDRESS);
+                input, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator, configuration);
 
         // then:
         final var call = subject.callFrom(attempt);

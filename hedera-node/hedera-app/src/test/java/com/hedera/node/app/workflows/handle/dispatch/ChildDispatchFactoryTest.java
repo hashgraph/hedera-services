@@ -199,7 +199,7 @@ class ChildDispatchFactoryTest {
     }
 
     @Test
-    void keyVerifierOnlySupportsKeyVerification() {
+    void noOpVerifierFailsVerification() {
         final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG, emptySet());
         assertThat(derivedVerifier.verificationFor(Key.DEFAULT, assistant).passed())
                 .isFalse();
