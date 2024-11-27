@@ -34,7 +34,6 @@ import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.config.api.Configuration;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Helper utility class to generate {@link HtsCallAttempt} object in different scenarios
@@ -254,7 +253,6 @@ public final class CallAttemptHelpers {
      * @param verificationStrategies the verification strategy currently used
      * @param gasCalculator the gas calculator used for the system contract
      * @param config the current configuration that is used
-     * @param originatorAddress the address of the originator of the call
      * @return the call attempt
      */
     public static HssCallAttempt prepareHssAttemptWithSelectorAndCustomConfig(
@@ -264,8 +262,7 @@ public final class CallAttemptHelpers {
             final AddressIdConverter addressIdConverter,
             final VerificationStrategies verificationStrategies,
             final SystemContractGasCalculator gasCalculator,
-            final Configuration config,
-            final Address originatorAddress) {
+            final Configuration config) {
         final var input = Bytes.wrap(function.selector());
 
         return new HssCallAttempt(
@@ -278,8 +275,7 @@ public final class CallAttemptHelpers {
                 verificationStrategies,
                 gasCalculator,
                 List.of(translator),
-                false,
-                originatorAddress);
+                false);
     }
 
     public static HssCallAttempt prepareHssAttemptWithBytesAndCustomConfig(
@@ -289,8 +285,7 @@ public final class CallAttemptHelpers {
             final AddressIdConverter addressIdConverter,
             final VerificationStrategies verificationStrategies,
             final SystemContractGasCalculator gasCalculator,
-            final Configuration config,
-            final Address originatorAddress) {
+            final Configuration config) {
 
         return new HssCallAttempt(
                 input,
@@ -302,7 +297,6 @@ public final class CallAttemptHelpers {
                 verificationStrategies,
                 gasCalculator,
                 List.of(translator),
-                false,
-                originatorAddress);
+                false);
     }
 }

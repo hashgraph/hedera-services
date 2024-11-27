@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_A
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_SCHEDULE_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.bytesForRedirectScheduleTxn;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
@@ -114,10 +115,10 @@ class HssCallFactoryTest extends CallTestBase {
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.enhancement()).willReturn(mockEnhancement());
         given(frame.getSenderAddress()).willReturn(EIP_1014_ADDRESS);
-        given(frame.getOriginatorAddress()).willReturn(EIP_1014_ADDRESS);
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(true);
         given(syntheticIds.converterFor(nativeOperations)).willReturn(idConverter);
         given(nativeOperations.getSchedule(CALLED_SCHEDULE_ID.scheduleNum())).willReturn(schedule);
+        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID)).willReturn(SOMEBODY);
         given(schedule.scheduleId()).willReturn(CALLED_SCHEDULE_ID);
         given(idConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
@@ -144,11 +145,11 @@ class HssCallFactoryTest extends CallTestBase {
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.enhancement()).willReturn(mockEnhancement());
         given(frame.getSenderAddress()).willReturn(ALTBN128_ADD);
-        given(frame.getOriginatorAddress()).willReturn(EIP_1014_ADDRESS);
         given(idConverter.convertSender(ALTBN128_ADD)).willReturn(A_NEW_ACCOUNT_ID);
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(true);
         given(syntheticIds.converterFor(nativeOperations)).willReturn(idConverter);
         given(nativeOperations.getSchedule(CALLED_SCHEDULE_ID.scheduleNum())).willReturn(schedule);
+        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID)).willReturn(SOMEBODY);
         given(schedule.scheduleId()).willReturn(CALLED_SCHEDULE_ID);
         given(idConverter.convertSender(ALTBN128_ADD)).willReturn(A_NEW_ACCOUNT_ID);
         given(verificationStrategies.activatingOnlyContractKeysFor(ALTBN128_ADD, true, nativeOperations))

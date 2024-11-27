@@ -151,22 +151,23 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
      */
     private Set<Key> keySetFor(@NonNull HssCallAttempt attempt) {
         requireNonNull(attempt);
-        if (attempt.isSelector(SIGN_SCHEDULE_PROXY)) {
-            return getKeysForSignSchedule(attempt);
-        } else if (attempt.isSelector(AUTHORIZE_SCHEDULE)) {
-            return getKeysForAuthorizeSchedule(attempt);
+        final var sender = attempt.enhancement().nativeOperations().getAccount(attempt.senderId());
+        requireNonNull(sender);
+        if (sender.smartContract()) {
+            return getKeysForContractSender(attempt);
+        } else {
+            return getKeysForEOASender(attempt);
         }
-        throw new IllegalStateException("Unexpected function selector");
     }
 
     @NonNull
-    private static Set<Key> getKeysForSignSchedule(@NonNull HssCallAttempt attempt) {
+    private static Set<Key> getKeysForEOASender(@NonNull HssCallAttempt attempt) {
         // If an Eth sender key is present, use it. Otherwise, use the account key if present.
         Key key = attempt.enhancement().systemOperations().maybeEthSenderKey();
         if (key != null) {
             return Set.of(key);
         }
-        key = attempt.enhancement().nativeOperations().getAccountKey(attempt.originatorAccount());
+        key = attempt.enhancement().nativeOperations().getAccountKey(attempt.senderId());
         if (key != null) {
             return Set.of(key);
         }
@@ -174,13 +175,20 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     }
 
     @NonNull
-    private static Set<Key> getKeysForAuthorizeSchedule(@NonNull HssCallAttempt attempt) {
+    private static Set<Key> getKeysForContractSender(@NonNull HssCallAttempt attempt) {
         final var contractNum = maybeMissingNumberOf(attempt.senderAddress(), attempt.nativeOperations());
         if (contractNum == MISSING_ENTITY_NUMBER) {
             return emptySet();
         }
-        return Set.of(Key.newBuilder()
-                .contractID(ContractID.newBuilder().contractNum(contractNum).build())
-                .build());
+        if (attempt.isOnlyDelegatableContractKeysActive()) {
+            return Set.of(Key.newBuilder()
+                    .delegatableContractId(
+                            ContractID.newBuilder().contractNum(contractNum).build())
+                    .build());
+        } else {
+            return Set.of(Key.newBuilder()
+                    .contractID(ContractID.newBuilder().contractNum(contractNum).build())
+                    .build());
+        }
     }
 }

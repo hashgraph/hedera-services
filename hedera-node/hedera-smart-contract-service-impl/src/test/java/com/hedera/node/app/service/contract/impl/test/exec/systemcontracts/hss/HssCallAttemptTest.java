@@ -64,8 +64,7 @@ class HssCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false,
-                NON_SYSTEM_LONG_ZERO_ADDRESS);
+                false);
         assertNull(subject.redirectScheduleTxn());
     }
 
@@ -82,8 +81,7 @@ class HssCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false,
-                NON_SYSTEM_LONG_ZERO_ADDRESS);
+                false);
         assertNull(subject.asExecutableCall());
     }
 }
