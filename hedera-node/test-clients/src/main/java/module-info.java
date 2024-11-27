@@ -79,6 +79,8 @@ module com.hedera.node.test.clients {
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
+    requires transitive com.hedera.cryptography.bls;
+    requires transitive com.hedera.cryptography.tss;
     requires transitive headlong;
     requires transitive io.grpc;
     requires transitive net.i2p.crypto.eddsa;
@@ -104,6 +106,7 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.dockerjava.api;
+    requires com.hedera.cryptography.pairings.api;
     requires com.sun.jna;
     requires io.grpc.netty;
     requires io.grpc.stub;

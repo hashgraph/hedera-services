@@ -55,8 +55,8 @@ import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
+import com.hedera.node.app.tss.TssLibraryImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.data.HederaConfig;
@@ -136,13 +136,13 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "0340d546d0bfeb6e2f12af275347f584231fa41928a700543c9595affa817da5423bc4aac0689a388f6a8b972de30028"),
+                        "65374e72c2572aaaca17fe3a0e879841c0f5ae919348fc18231f8167bd28e326438c6f93a07a45eda7888b69e9812c4d"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("config.txt"),
                 node0Dir.resolve("data/config/application.properties"),
                 Bytes.fromHex("03"));
         final var blocks =
-                BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/block-streams/block-0.0.3"));
+                BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/blockStreams/block-0.0.3"));
         validator.validateBlocks(blocks);
     }
 
@@ -227,7 +227,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                         appContext,
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
-                        new PlaceholderTssLibrary(),
+                        new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
                         metrics),
                 DiskStartupNetworks::new,
@@ -619,6 +619,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TOPIC_ID_KEY -> mapChangeKey.topicIdKeyOrThrow();
             case CONTRACT_ID_KEY -> mapChangeKey.contractIdKeyOrThrow();
             case PENDING_AIRDROP_ID_KEY -> mapChangeKey.pendingAirdropIdKeyOrThrow();
+            case TIMESTAMP_SECONDS_KEY -> mapChangeKey.timestampSecondsKeyOrThrow();
+            case SCHEDULED_ORDER_KEY -> mapChangeKey.scheduledOrderKeyOrThrow();
         };
     }
 
@@ -634,7 +636,6 @@ public class StateChangesValidator implements BlockStreamValidator {
             case SCHEDULE_VALUE -> mapChangeValue.scheduleValueOrThrow();
             case SCHEDULE_ID_VALUE -> mapChangeValue.scheduleIdValueOrThrow();
             case SCHEDULE_LIST_VALUE -> mapChangeValue.scheduleListValueOrThrow();
-            case SCHEDULE_ID_LIST_VALUE -> mapChangeValue.scheduleIdListValueOrThrow();
             case SLOT_VALUE_VALUE -> mapChangeValue.slotValueValueOrThrow();
             case STAKING_NODE_INFO_VALUE -> mapChangeValue.stakingNodeInfoValueOrThrow();
             case TOKEN_VALUE -> mapChangeValue.tokenValueOrThrow();
@@ -643,6 +644,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case NODE_VALUE -> mapChangeValue.nodeValueOrThrow();
             case ACCOUNT_PENDING_AIRDROP_VALUE -> mapChangeValue.accountPendingAirdropValueOrThrow();
             case ROSTER_VALUE -> mapChangeValue.rosterValueOrThrow();
+            case SCHEDULED_COUNTS_VALUE -> mapChangeValue.scheduledCountsValueOrThrow();
+            case THROTTLE_USAGE_SNAPSHOTS_VALUE -> mapChangeValue.throttleUsageSnapshotsValue();
         };
     }
 

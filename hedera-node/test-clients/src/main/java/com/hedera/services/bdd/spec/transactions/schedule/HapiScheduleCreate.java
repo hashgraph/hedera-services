@@ -58,6 +58,10 @@ import org.apache.logging.log4j.Logger;
 public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiScheduleCreate<T>> {
     private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
 
+    private static long NA = -1;
+
+    private long longTermExpiry = NA;
+    private long longTermLifetime = NA;
     private boolean advertiseCreation = false;
     private boolean recordScheduledTxn = false;
     private boolean skipRegistryUpdate = false;
@@ -159,6 +163,16 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
         return this;
     }
 
+    public HapiScheduleCreate<T> expiringAt(final long expiry) {
+        this.longTermExpiry = expiry;
+        return waitForExpiry();
+    }
+
+    public HapiScheduleCreate<T> expiringIn(final long lifetime) {
+        this.longTermLifetime = lifetime;
+        return waitForExpiry();
+    }
+
     public HapiScheduleCreate<T> withRelativeExpiry(String txnId, long offsetSeconds) {
         this.expirationTimeRelativeTo = Optional.of(Pair.of(txnId, offsetSeconds));
         return this;
@@ -202,7 +216,16 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
                             waitForExpiry.ifPresent(b::setWaitForExpiry);
 
-                            if (expirationTimeRelativeTo.isPresent()) {
+                            if (longTermExpiry != NA) {
+                                b.setExpirationTime(Timestamp.newBuilder()
+                                        .setSeconds(longTermExpiry)
+                                        .build());
+                            } else if (longTermLifetime != NA) {
+                                final var approxNow = spec.consensusTime();
+                                b.setExpirationTime(Timestamp.newBuilder()
+                                        .setSeconds(approxNow.getEpochSecond() + longTermLifetime)
+                                        .build());
+                            } else if (expirationTimeRelativeTo.isPresent()) {
                                 var expiry = getRelativeExpiry(
                                         spec,
                                         expirationTimeRelativeTo.get().getKey(),
