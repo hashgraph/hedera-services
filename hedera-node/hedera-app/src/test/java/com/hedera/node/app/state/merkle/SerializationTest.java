@@ -43,18 +43,19 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
-import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.merkle.MerkleStateRoot;
+import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
 import com.swirlds.state.spi.ReadableKVState;
@@ -63,6 +64,8 @@ import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.test.fixtures.merkle.TestMerkleStateRoot;
+import com.swirlds.state.test.fixtures.merkle.TestSchema;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
@@ -94,6 +97,9 @@ class SerializationTest extends MerkleTestBase {
 
     @Mock
     private MigrationStateChanges migrationStateChanges;
+
+    @Mock
+    private StartupNetworks startupNetworks;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -196,7 +202,7 @@ class SerializationTest extends MerkleTestBase {
         final var originalTree = createMerkleHederaState(schemaV1);
 
         // When we serialize it to bytes and deserialize it back into a tree
-        MerkleStateRoot copy = originalTree.copy(); // make a copy to make VM flushable
+        MerkleStateRoot<?> copy = originalTree.copy(); // make a copy to make VM flushable
         final byte[] serializedBytes;
         if (forceFlush) {
             // Force flush the VMs to disk to test serialization and deserialization
@@ -209,7 +215,7 @@ class SerializationTest extends MerkleTestBase {
             serializedBytes = writeTree(originalTree, dir);
         }
 
-        final MerkleStateRoot loadedTree = loadedMerkleTree(schemaV1, serializedBytes);
+        final MerkleStateRoot<?> loadedTree = loadedMerkleTree(schemaV1, serializedBytes);
 
         assertTree(loadedTree);
     }
@@ -243,7 +249,8 @@ class SerializationTest extends MerkleTestBase {
 
         // Restore to a fresh MerkleDb instance
         MerkleDb.resetDefaultInstancePath();
-        MerkleStateRoot state = originalTree.loadSnapshot(tempDir.resolve(SignedStateFileUtils.SIGNED_STATE_FILE_NAME));
+        final MerkleStateRoot<?> state =
+                originalTree.loadSnapshot(tempDir.resolve(MerkleTreeSnapshotReader.SIGNED_STATE_FILE_NAME));
         initServices(schemaV1, state);
         assertTree(state);
     }
@@ -258,14 +265,14 @@ class SerializationTest extends MerkleTestBase {
         final var schemaV1 = createV1Schema();
         final var originalTree = createMerkleHederaState(schemaV1);
 
-        MerkleStateRoot copy = originalTree.copy(); // make a copy to make VM flushable
+        MerkleStateRoot<?> copy = originalTree.copy(); // make a copy to make VM flushable
 
         forceFlush(originalTree.getReadableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY));
         copy.copy(); // make a fast copy because we can only write to disk an immutable copy
         CRYPTO.digestTreeSync(copy);
         final byte[] serializedBytes = writeTree(copy, dir);
 
-        MerkleStateRoot loadedTree = loadedMerkleTree(schemaV1, serializedBytes);
+        MerkleStateRoot<?> loadedTree = loadedMerkleTree(schemaV1, serializedBytes);
         ((OnDiskReadableKVState) originalTree.getReadableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY)).reset();
         populateVmCache(loadedTree);
 
@@ -277,7 +284,7 @@ class SerializationTest extends MerkleTestBase {
         final byte[] serializedBytesWithCache = writeTree(loadedTree, dir);
 
         // let's load it again and see if it works
-        MerkleStateRoot loadedTreeWithCache = loadedMerkleTree(schemaV1, serializedBytesWithCache);
+        MerkleStateRoot<?> loadedTreeWithCache = loadedMerkleTree(schemaV1, serializedBytesWithCache);
         ((OnDiskReadableKVState)
                         loadedTreeWithCache.getReadableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY))
                 .reset();
@@ -285,23 +292,22 @@ class SerializationTest extends MerkleTestBase {
         assertTree(loadedTreeWithCache);
     }
 
-    private MerkleStateRoot loadedMerkleTree(Schema schemaV1, byte[] serializedBytes)
+    private MerkleStateRoot<?> loadedMerkleTree(Schema schemaV1, byte[] serializedBytes)
             throws ConstructableRegistryException, IOException {
 
         // Register the MerkleStateRoot so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
-        final Supplier<RuntimeConstructable> constructor =
-                () -> new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0));
+        final Supplier<RuntimeConstructable> constructor = TestMerkleStateRoot::new;
         final var pair = new ClassConstructorPair(MerkleStateRoot.class, constructor);
         registry.registerConstructable(pair);
 
-        final MerkleStateRoot loadedTree = parseTree(serializedBytes, dir);
+        final MerkleStateRoot<?> loadedTree = parseTree(serializedBytes, dir);
         initServices(schemaV1, loadedTree);
 
         return loadedTree;
     }
 
-    private void initServices(Schema schemaV1, MerkleStateRoot loadedTree) {
+    private void initServices(Schema schemaV1, MerkleStateRoot<?> loadedTree) {
         final var newRegistry =
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
         newRegistry.register(schemaV1);
@@ -315,15 +321,16 @@ class SerializationTest extends MerkleTestBase {
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
                 new HashMap<>(),
-                migrationStateChanges);
+                migrationStateChanges,
+                startupNetworks);
         loadedTree.migrate(MerkleStateRoot.CURRENT_VERSION);
     }
 
-    private MerkleStateRoot createMerkleHederaState(Schema schemaV1) {
+    private PlatformMerkleStateRoot createMerkleHederaState(Schema schemaV1) {
         final SignedState randomState =
                 new RandomSignedStateGenerator().setRound(1).build();
 
-        final var originalTree = (MerkleStateRoot) randomState.getState();
+        final var originalTree = (PlatformMerkleStateRoot) randomState.getState();
         final var originalRegistry =
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
         originalRegistry.register(schemaV1);
@@ -337,11 +344,12 @@ class SerializationTest extends MerkleTestBase {
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
                 new HashMap<>(),
-                migrationStateChanges);
+                migrationStateChanges,
+                startupNetworks);
         return originalTree;
     }
 
-    private static void populateVmCache(MerkleStateRoot loadedTree) {
+    private static void populateVmCache(MerkleStateRoot<?> loadedTree) {
         final var states = loadedTree.getWritableStates(FIRST_SERVICE);
         final WritableKVState<String, String> animalState = states.get(ANIMAL_STATE_KEY);
         assertThat(animalState.getForModify(A_KEY)).isEqualTo(AARDVARK);
@@ -353,7 +361,7 @@ class SerializationTest extends MerkleTestBase {
         assertThat(animalState.getForModify(G_KEY)).isEqualTo(GOOSE);
     }
 
-    private static void assertTree(MerkleStateRoot loadedTree) {
+    private static void assertTree(MerkleStateRoot<?> loadedTree) {
         final var states = loadedTree.getReadableStates(FIRST_SERVICE);
         final ReadableKVState<String, String> fruitState = states.get(FRUIT_STATE_KEY);
         assertThat(fruitState.get(A_KEY)).isEqualTo(APPLE);

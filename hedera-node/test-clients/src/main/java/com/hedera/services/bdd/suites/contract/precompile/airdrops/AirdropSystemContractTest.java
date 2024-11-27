@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareAccountAddresses;
-import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareNftAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareTokenAddresses;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -164,7 +163,7 @@ public class AirdropSystemContractTest {
                     airdropContract
                             .call(
                                     "nftNAmountAirdrops",
-                                    prepareNftAddresses(spec, nft1, nft2, nft3),
+                                    prepareTokenAddresses(spec, nft1, nft2, nft3),
                                     prepareAccountAddresses(spec, sender, sender, sender),
                                     prepareAccountAddresses(spec, receiver1, receiver2, receiver3),
                                     serials)
@@ -226,7 +225,7 @@ public class AirdropSystemContractTest {
                             .call(
                                     "mixedAirdrop",
                                     prepareTokenAddresses(spec, token1, token2, token3),
-                                    prepareNftAddresses(spec, nft1, nft2, nft3),
+                                    prepareTokenAddresses(spec, nft1, nft2, nft3),
                                     prepareAccountAddresses(spec, sender, sender, sender),
                                     prepareAccountAddresses(spec, receiver1, receiver2, receiver3),
                                     prepareAccountAddresses(spec, sender, sender, sender),
@@ -308,7 +307,7 @@ public class AirdropSystemContractTest {
                             .call(
                                     "mixedAirdrop",
                                     prepareTokenAddresses(spec, token1, token2, token3, token4, token5),
-                                    prepareNftAddresses(spec, nft1, nft2, nft3, nft4, nft5),
+                                    prepareTokenAddresses(spec, nft1, nft2, nft3, nft4, nft5),
                                     prepareAccountAddresses(spec, sender, sender, sender, sender, sender),
                                     prepareAccountAddresses(
                                             spec, receiver1, receiver2, receiver3, receiver4, receiver5),
@@ -402,7 +401,7 @@ public class AirdropSystemContractTest {
                             .call(
                                     "mixedAirdrop",
                                     prepareTokenAddresses(spec, token1, token2, token3, token4, token5),
-                                    prepareNftAddresses(spec, nft1, nft2, nft3, nft4, nft5),
+                                    prepareTokenAddresses(spec, nft1, nft2, nft3, nft4, nft5),
                                     prepareAccountAddresses(spec, sender, sender, sender, sender, sender),
                                     prepareAccountAddresses(
                                             spec, receiver1, receiver2, receiver3, receiver4, receiver5),

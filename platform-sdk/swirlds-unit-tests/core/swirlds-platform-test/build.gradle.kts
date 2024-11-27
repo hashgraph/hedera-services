@@ -35,6 +35,7 @@ testModuleInfo {
     requires("com.swirlds.metrics.api")
     requires("org.hiero.event.creator")
     requires("org.hiero.event.creator.impl")
+    requires("com.swirlds.state.impl")
     requires("org.mockito")
     requires("org.hiero.consensus.gossip")
     requiresStatic("com.github.spotbugs.annotations")
