@@ -25,7 +25,6 @@
 
 # Hedera Node Root Protections
 /hedera-node/                                   @hashgraph/hedera-services
-/hedera-node/README.md                          @hashgraph/hedera-services
 
 # Hedera Node Deployments - Configuration & Grafana Dashboards
 /hedera-node/configuration/**                   @rbair23 @dalvizu @poulok @netopyr @Nana-EC @SimiHunjan @steven-sheehy @nathanklick
@@ -48,7 +47,6 @@
 /hedera-node/hedera-util*/                      @hashgraph/hedera-services
 /hedera-node/hedera-staking*/                   @hashgraph/hedera-services
 /hedera-node/test-clients/                      @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
-/hedera-node/**/module-info.java                @hashgraph/hedera-services
 
 ###############################
 ##### Hedera Cryptography #####
@@ -83,6 +81,11 @@
 /platform-sdk/swirlds-virtualmap/                   @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/**/module-info.java                   @hashgraph/platform-hashgraph @hashgraph/platform-base
 
+####################
+#####   HAPI  ######
+####################
+/hapi/                                              @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/platform-architects @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
+
 # Documentation
 /platform-sdk/docs/platformWiki.md                  @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base
 /platform-sdk/docs/base                             @hashgraph/platform-base
@@ -111,9 +114,6 @@ gradlew.bat                                         @hashgraph/devops-ci @hashgr
 **/build-logic/                                     @hashgraph/devops-ci @hashgraph/devops-ci-committers
 **/gradle.*                                         @hashgraph/devops-ci @hashgraph/devops-ci-committers
 **/*.gradle.*                                       @hashgraph/devops-ci @hashgraph/devops-ci-committers
-
-# JAVA module-info files
-**/*.module-info.java                               @hashgraph/platform-base @hashgraph/hedera-services @hashgraph/platform-hashgraph
 
 # Codacy Tool Configurations
 /config/                                            @hashgraph/devops-ci @hashgraph/release-engineering-managers
