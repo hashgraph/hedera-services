@@ -392,6 +392,16 @@ enum StateIdentifier {
     STATE_ID_SCHEDULED_USAGES = 34;
 
     /**
+     * A state identifier for the TSS encryption keys.
+     */
+    STATE_ID_TSS_ENCRYPTION_KEYS = 35;
+
+    /**
+     * A state identifier for the TSS status.
+     */
+    STATE_ID_TSS_STATUS = 36;
+
+    /**
      * A state identifier for the round receipts queue.
      */
     STATE_ID_TRANSACTION_RECEIPTS_QUEUE = 126;
