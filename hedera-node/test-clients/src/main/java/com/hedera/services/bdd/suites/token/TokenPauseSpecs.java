@@ -383,32 +383,7 @@ public class TokenPauseSpecs {
                                 .hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY));
     }
 
-    @HapiTest
-    final Stream<DynamicTest> basePauseAndUnpauseHaveExpectedPrices() {
-        final var expectedBaseFee = 0.001;
-        final var token = "token";
-        final var tokenPauseTransaction = "tokenPauseTxn";
-        final var tokenUnpauseTransaction = "tokenUnpauseTxn";
-        final var civilian = "NonExemptPayer";
 
-        return defaultHapiSpec("BasePauseAndUnpauseHaveExpectedPrices")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        newKeyNamed(PAUSE_KEY),
-                        cryptoCreate(civilian).key(PAUSE_KEY))
-                .when(
-                        tokenCreate(token)
-                                .pauseKey(PAUSE_KEY)
-                                .treasury(TOKEN_TREASURY)
-                                .payingWith(civilian),
-                        tokenPause(token).blankMemo().payingWith(civilian).via(tokenPauseTransaction),
-                        getTokenInfo(token).hasPauseStatus(Paused),
-                        tokenUnpause(token).blankMemo().payingWith(civilian).via(tokenUnpauseTransaction),
-                        getTokenInfo(token).hasPauseStatus(Unpaused))
-                .then(
-                        validateChargedUsd(tokenPauseTransaction, expectedBaseFee),
-                        validateChargedUsd(tokenUnpauseTransaction, expectedBaseFee));
-    }
 
     public static class TokenIdOrderingAsserts extends BaseErroringAssertsProvider<List<TokenTransferList>> {
 

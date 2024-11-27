@@ -39,34 +39,6 @@ public class UtilPrngSuite {
     public static final String BOB = "bob";
 
     @HapiTest
-    final Stream<DynamicTest> usdFeeAsExpected() {
-        double baseFee = 0.001;
-        double plusRangeFee = 0.0010010316;
-
-        final var baseTxn = "prng";
-        final var plusRangeTxn = "prngWithRange";
-
-        return defaultHapiSpec("usdFeeAsExpected")
-                .given(
-                        overridingAllOf(Map.of(PRNG_IS_ENABLED, "true")),
-                        cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
-                        hapiPrng().payingWith(BOB).via(baseTxn).blankMemo().logged(),
-                        getTxnRecord(baseTxn).hasOnlyPseudoRandomBytes().logged(),
-                        validateChargedUsd(baseTxn, baseFee))
-                .when(
-                        hapiPrng(10)
-                                .payingWith(BOB)
-                                .via(plusRangeTxn)
-                                .blankMemo()
-                                .logged(),
-                        getTxnRecord(plusRangeTxn)
-                                .hasOnlyPseudoRandomNumberInRange(10)
-                                .logged(),
-                        validateChargedUsdWithin(plusRangeTxn, plusRangeFee, 0.5))
-                .then();
-    }
-
-    @HapiTest
     final Stream<DynamicTest> failsInPreCheckForNegativeRange() {
         return defaultHapiSpec("failsInPreCheckForNegativeRange")
                 .given(

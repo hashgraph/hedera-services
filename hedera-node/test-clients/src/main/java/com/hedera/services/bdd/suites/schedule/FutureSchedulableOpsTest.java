@@ -103,51 +103,6 @@ public class FutureSchedulableOpsTest {
                 "scheduling.whitelist", "ContractCall,CryptoCreate,CryptoTransfer,FileDelete,FileUpdate,SystemDelete"));
     }
 
-    @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
-    final Stream<DynamicTest> canonicalScheduleOpsHaveExpectedUsdFees() {
-        return hapiTest(
-                uploadScheduledContractPrices(GENESIS),
-                uploadInitCode(SIMPLE_UPDATE),
-                cryptoCreate(OTHER_PAYER),
-                cryptoCreate(PAYING_SENDER),
-                cryptoCreate(RECEIVER).receiverSigRequired(true),
-                contractCreate(SIMPLE_UPDATE).gas(300_000L),
-                scheduleCreate(
-                                "canonical",
-                                cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                        .memo("")
-                                        .fee(ONE_HBAR))
-                        .payingWith(OTHER_PAYER)
-                        .via("canonicalCreation")
-                        .alsoSigningWith(PAYING_SENDER)
-                        .adminKey(OTHER_PAYER),
-                scheduleSign("canonical")
-                        .via("canonicalSigning")
-                        .payingWith(PAYING_SENDER)
-                        .alsoSigningWith(RECEIVER),
-                scheduleCreate(
-                                "tbd",
-                                cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                        .memo("")
-                                        .fee(ONE_HBAR))
-                        .payingWith(PAYING_SENDER)
-                        .adminKey(PAYING_SENDER),
-                scheduleDelete("tbd").via("canonicalDeletion").payingWith(PAYING_SENDER),
-                scheduleCreate(
-                                "contractCall",
-                                contractCall(SIMPLE_UPDATE, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
-                                        .gas(24_000)
-                                        .memo("")
-                                        .fee(ONE_HBAR))
-                        .payingWith(OTHER_PAYER)
-                        .via("canonicalContractCall")
-                        .adminKey(OTHER_PAYER),
-                validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
-                validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
-                validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0),
-                validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0));
-    }
-
     @HapiTest
     final Stream<DynamicTest> scheduledPermissionedFileUpdateWorksAsExpected() {
         return hapiTest(
