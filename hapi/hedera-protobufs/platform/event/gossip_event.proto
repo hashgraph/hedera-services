@@ -77,5 +77,5 @@ message GossipEvent {
    * This field MUST contain one entry for each transaction
    * included in this gossip event.
    */
-  repeated bytes transaction = 4;
+  repeated bytes transactions = 4;
 }
