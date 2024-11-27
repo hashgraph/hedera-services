@@ -150,17 +150,16 @@ public class LongListDisk extends AbstractLongList<Long> {
             return;
         }
         // create temporary file for writing
-        // the warning is suppressed because the file is not supposed to be closed
-        // as this implementation uses a file channel from it.
         try (final RandomAccessFile rf = new RandomAccessFile(tempFile.toFile(), "rw")) {
             // ensure that the amount of disk space is enough
             // two additional chunks are required to accommodate "compressed" first and last chunks in the original file
             rf.setLength(fileChannel.size() + 2L * memoryChunkSize);
-            FileChannel tempFileCHannel = rf.getChannel();
+            final FileChannel tempFileCHannel = rf.getChannel();
 
             final int totalNumberOfChunks = calculateNumberOfChunks(size());
             final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
             final int minValidIndexInChunk = toIntExact(minValidIndex.get() % numLongsPerChunk);
+            final int lastChunkWithDataIndex = totalNumberOfChunks - firstChunkWithDataIndex - 1;
 
             // copy the first chunk
             final ByteBuffer transferBuffer = initOrGetTransferBuffer();
@@ -175,15 +174,23 @@ public class LongListDisk extends AbstractLongList<Long> {
             chunkList.set(firstChunkWithDataIndex, 0L);
 
             // copy everything except for the first chunk and the last chunk
-            MerkleDbFileUtils.completelyTransferFrom(
-                    tempFileCHannel, fileChannel, memoryChunkSize, (long) (totalNumberOfChunks - 2) * memoryChunkSize);
+            final int numberOfFullChunks = totalNumberOfChunks - firstChunkWithDataIndex - 2;
+            if (numberOfFullChunks > 0) {
+                final long bytesToTransfer = (long) numberOfFullChunks * memoryChunkSize;
+                final long bytesTransferred = MerkleDbFileUtils.completelyTransferFrom(
+                        tempFileCHannel, fileChannel, memoryChunkSize, bytesToTransfer);
+                if (bytesTransferred != bytesToTransfer) {
+                    throw new IOException("Failed to read long list chunks, expected=" + bytesToTransfer + " actual="
+                            + bytesTransferred);
+                }
+            }
 
             // copy the last chunk
             transferBuffer.clear();
             MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
             transferBuffer.flip();
             MerkleDbFileUtils.completelyWrite(
-                    tempFileCHannel, transferBuffer, (long) (totalNumberOfChunks - 1) * memoryChunkSize);
+                    tempFileCHannel, transferBuffer, (long) lastChunkWithDataIndex * memoryChunkSize);
 
             for (int i = firstChunkWithDataIndex + 1; i < totalNumberOfChunks; i++) {
                 chunkList.set(i, (long) (i - firstChunkWithDataIndex) * memoryChunkSize);
