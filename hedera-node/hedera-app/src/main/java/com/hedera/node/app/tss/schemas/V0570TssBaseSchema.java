@@ -18,8 +18,12 @@ package com.hedera.node.app.tss.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.RosterToKey;
+import com.hedera.hapi.node.state.tss.TssKeyingStatus;
 import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,11 +45,24 @@ public class V0570TssBaseSchema extends Schema {
      */
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(57).patch(0).build();
+
     /**
      * Create a new instance
      */
     public V0570TssBaseSchema() {
         super(VERSION);
+    }
+
+    @Override
+    public void migrate(@NonNull final MigrationContext ctx) {
+        if (ctx.isGenesis()) {
+            final var tssStatusState = ctx.newStates().getSingleton(TSS_STATUS_KEY);
+            tssStatusState.put(TssStatus.newBuilder()
+                    .ledgerId(Bytes.EMPTY)
+                    .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS)
+                    .rosterToKey(RosterToKey.ACTIVE_ROSTER)
+                    .build());
+        }
     }
 
     @NonNull
