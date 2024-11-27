@@ -6,6 +6,7 @@ module com.swirlds.merkledb.test.fixtures {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.virtualmap;
     requires transitive org.apache.logging.log4j.core;
+    requires transitive com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.merkledb;
