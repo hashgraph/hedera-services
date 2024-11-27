@@ -563,7 +563,7 @@ public class HandleWorkflow {
                 // correctly detect stake period boundary, so the order of the following two lines is important
                 processStakePeriodChanges(userTxn, dispatch);
                 if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
-                    // Check if the tss encryption keys are present in the state and reached threshold
+                    // Check the tss status and manage it if necessary
                     tssBaseService.manageTssStatus(userTxn.stack());
                 }
                 blockStreamManager.setLastHandleTime(userTxn.consensusNow());

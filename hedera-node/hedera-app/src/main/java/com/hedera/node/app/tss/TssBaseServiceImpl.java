@@ -379,7 +379,9 @@ public class TssBaseServiceImpl implements TssBaseService {
 
     @Override
     public void manageTssStatus(final State state) {
-        // TODO: Implement this method
+        final var storeFactory = new ReadableStoreFactory(state);
+        final var tssStore = storeFactory.getStore(ReadableTssStore.class);
+
     }
 
     @VisibleForTesting
