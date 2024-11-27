@@ -132,6 +132,11 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
+    public int migrationOrder() {
+        return MIGRATION_ORDER;
+    }
+
+    @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0560TssBaseSchema());
