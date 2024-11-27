@@ -50,7 +50,8 @@ message TssStatus {
     /**
      * An enum representing the key either active roster or candidate roster.<br/>
      * This value will be to key active roster if it is genesis stage
-     * <p>This value MUST be set.<br/>
+     * <p>
+     * This value MUST be set.
      */
     RosterToKey roster_to_key = 2;
 
