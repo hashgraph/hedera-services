@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.fees;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -84,21 +100,17 @@ public class TokenServiceFeesSuite {
     private static final String ALICE = "alice";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
 
-
     private static final String UNFREEZE = "unfreeze";
-
 
     private static final String CIVILIAN_ACCT = "civilian";
     private static final String UNIQUE_TOKEN = "nftType";
     private static final String BASE_TXN = "baseTxn";
-
 
     private static final String WIPE_KEY = "wipeKey";
     private static final String NFT_TEST_METADATA = " test metadata";
     private static final String FUNGIBLE_COMMON_TOKEN = "fungibleCommonToken";
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String RECEIVER_WITH_0_AUTO_ASSOCIATIONS = "receiverWith0AutoAssociations";
-
 
     private static final double EXPECTED_NFT_WIPE_PRICE_USD = 0.001;
     private static final double EXPECTED_FREEZE_PRICE_USD = 0.001;
@@ -190,8 +202,8 @@ public class TokenServiceFeesSuite {
 
                         // do claim
                         tokenClaimAirdrop(
-                                HapiTokenClaimAirdrop.pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
-                                HapiTokenClaimAirdrop.pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
+                                        HapiTokenClaimAirdrop.pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
+                                        HapiTokenClaimAirdrop.pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
                                 .payingWith(RECEIVER)
                                 .via("claimTxn"))
                 .then( // assert txn record
@@ -288,7 +300,7 @@ public class TokenServiceFeesSuite {
 
                 // Cancel the airdrop
                 tokenCancelAirdrop(
-                        pendingNFTAirdrop(account, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, NON_FUNGIBLE_TOKEN, 1L))
+                                pendingNFTAirdrop(account, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, NON_FUNGIBLE_TOKEN, 1L))
                         .payingWith(account)
                         .via("cancelAirdrop"),
 
@@ -336,8 +348,8 @@ public class TokenServiceFeesSuite {
                                 .payingWith(ALICE)
                                 .via("rejectNft"),
                         cryptoTransfer(
-                                movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE),
-                                moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
+                                        movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE),
+                                        moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
                                 .payingWith(ALICE)
                                 .via("transferMix"),
                         tokenReject(ALICE, rejectingNFT(UNIQUE_TOKEN, 1), rejectingToken(FUNGIBLE_COMMON_TOKEN))
@@ -502,18 +514,18 @@ public class TokenServiceFeesSuite {
                                 .supplyKey(SUPPLY_KEY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE))
                 .when(mintToken(
-                        UNIQUE_TOKEN,
-                        List.of(
-                                standard100ByteMetadata,
-                                standard100ByteMetadata,
-                                standard100ByteMetadata,
-                                standard100ByteMetadata,
-                                standard100ByteMetadata,
-                                standard100ByteMetadata,
-                                standard100ByteMetadata,
-                                standard100ByteMetadata,
-                                standard100ByteMetadata,
-                                standard100ByteMetadata))
+                                UNIQUE_TOKEN,
+                                List.of(
+                                        standard100ByteMetadata,
+                                        standard100ByteMetadata,
+                                        standard100ByteMetadata,
+                                        standard100ByteMetadata,
+                                        standard100ByteMetadata,
+                                        standard100ByteMetadata,
+                                        standard100ByteMetadata,
+                                        standard100ByteMetadata,
+                                        standard100ByteMetadata,
+                                        standard100ByteMetadata))
                         .payingWith(CIVILIAN_ACCT)
                         .signedBy(SUPPLY_KEY)
                         .blankMemo()
@@ -670,7 +682,6 @@ public class TokenServiceFeesSuite {
                 .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_WIPE_PRICE_USD, 0.01));
     }
 
-
     @HapiTest
     final Stream<DynamicTest> updateSingleNftFeeChargedAsExpected() {
         final var expectedNftUpdatePriceUsd = 0.001;
@@ -748,5 +759,4 @@ public class TokenServiceFeesSuite {
     private String txnFor(String tokenSubType) {
         return tokenSubType + "Txn";
     }
-
 }

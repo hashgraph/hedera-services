@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
@@ -48,10 +64,10 @@ public class ScheduleServiceFeesSuite {
                 cryptoCreate(RECEIVER).receiverSigRequired(true),
                 contractCreate(SIMPLE_UPDATE).gas(300_000L),
                 scheduleCreate(
-                        "canonical",
-                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                .memo("")
-                                .fee(ONE_HBAR))
+                                "canonical",
+                                cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
+                                        .memo("")
+                                        .fee(ONE_HBAR))
                         .payingWith(OTHER_PAYER)
                         .via("canonicalCreation")
                         .alsoSigningWith(PAYING_SENDER)
@@ -61,19 +77,19 @@ public class ScheduleServiceFeesSuite {
                         .payingWith(PAYING_SENDER)
                         .alsoSigningWith(RECEIVER),
                 scheduleCreate(
-                        "tbd",
-                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                .memo("")
-                                .fee(ONE_HBAR))
+                                "tbd",
+                                cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
+                                        .memo("")
+                                        .fee(ONE_HBAR))
                         .payingWith(PAYING_SENDER)
                         .adminKey(PAYING_SENDER),
                 scheduleDelete("tbd").via("canonicalDeletion").payingWith(PAYING_SENDER),
                 scheduleCreate(
-                        "contractCall",
-                        contractCall(SIMPLE_UPDATE, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
-                                .gas(24_000)
-                                .memo("")
-                                .fee(ONE_HBAR))
+                                "contractCall",
+                                contractCall(SIMPLE_UPDATE, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
+                                        .gas(24_000)
+                                        .memo("")
+                                        .fee(ONE_HBAR))
                         .payingWith(OTHER_PAYER)
                         .via("canonicalContractCall")
                         .adminKey(OTHER_PAYER),

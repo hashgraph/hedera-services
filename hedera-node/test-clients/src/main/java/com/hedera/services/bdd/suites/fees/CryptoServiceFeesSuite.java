@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.fees;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -10,6 +26,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
@@ -154,6 +171,28 @@ public class CryptoServiceFeesSuite {
     }
 
     @HapiTest
+    final Stream<DynamicTest> cryptoDeleteUsdFeeAsExpected() {
+        double expectedCreatePriceUsd = 0.05;
+        double expectedDeletePriceUsd = 0.005;
+        final var noAutoAssocSlots = "noAutoAssocSlots";
+        return hapiTest(
+                cryptoCreate(CIVILIAN).balance(5 * ONE_HUNDRED_HBARS),
+                //                getAccountBalance(CIVILIAN).hasTinyBars(5 * ONE_HUNDRED_HBARS),
+                cryptoCreate(noAutoAssocSlots)
+                        .key(CIVILIAN)
+                        //                        .balance(0L)
+                        .via(noAutoAssocSlots)
+                        //                        .blankMemo()
+                        .signedBy(CIVILIAN)
+                        .payingWith(CIVILIAN),
+                validateChargedUsd(noAutoAssocSlots, expectedCreatePriceUsd),
+                cryptoDelete(noAutoAssocSlots).via("basicDelete"),
+                //                        .payingWith(CIVILIAN),
+                validateChargedUsd("basicDelete", expectedDeletePriceUsd));
+        //TODO: this test is failing right now
+    }
+
+    @HapiTest
     final Stream<DynamicTest> cryptoDeleteAllowanceFeesAsExpected() {
         final String owner = "owner";
         final String spender = "spender";
@@ -185,11 +224,11 @@ public class CryptoServiceFeesSuite {
                 tokenAssociate(owner, token),
                 tokenAssociate(owner, nft),
                 mintToken(
-                        nft,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                nft,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via("nftTokenMint"),
                 mintToken(token, 500L).via("tokenMint"),
                 cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)),
@@ -258,11 +297,11 @@ public class CryptoServiceFeesSuite {
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
                 cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
@@ -352,7 +391,7 @@ public class CryptoServiceFeesSuite {
     }
 
     @LeakyHapiTest(overrides = {"entities.maxLifetime", "ledger.maxAutoAssociations"})
-    final Stream<DynamicTest> usdFeeAsExpectedCryptoUpdate() {
+    final Stream<DynamicTest> cryptoUpdateUsdFeeAsExpected() {
         double baseFee = 0.000214;
         double baseFeeWithExpiry = 0.00022;
 
@@ -443,7 +482,7 @@ public class CryptoServiceFeesSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> baseCryptoTransferFeeChargedAsExpected() {
+    final Stream<DynamicTest> cryptoTransferBaseFeeChargedAsExpected() {
         final var expectedHbarXferPriceUsd = 0.0001;
         final var expectedHtsXferPriceUsd = 0.001;
         final var expectedNftXferPriceUsd = 0.001;
@@ -525,5 +564,4 @@ public class CryptoServiceFeesSuite {
                 validateChargedUsdWithin(htsXferTxnWithCustomFee, expectedHtsXferWithCustomFeePriceUsd, 0.1),
                 validateChargedUsdWithin(nftXferTxnWithCustomFee, expectedNftXferWithCustomFeePriceUsd, 0.3));
     }
-
 }
