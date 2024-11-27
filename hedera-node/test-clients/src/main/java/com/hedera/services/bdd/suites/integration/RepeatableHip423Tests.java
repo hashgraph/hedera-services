@@ -66,9 +66,9 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_MUST_BE_FUTURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_TOO_LONG;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
 import static java.util.Spliterator.NONNULL;
@@ -126,6 +126,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestMethodOrder(OrderAnnotation.class)
 public class RepeatableHip423Tests {
     private static final long ONE_MINUTE = 60;
+    private static final long TWO_MOUTHS = 5356800;
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
@@ -175,11 +176,11 @@ public class RepeatableHip423Tests {
                 exposeSpecSecondTo(lastSecond::set),
                 sourcing(() -> scheduleCreate("tooSoon", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 12L)))
                         .expiringAt(lastSecond.get())
-                        .hasKnownStatus(SCHEDULE_EXPIRY_MUST_BE_FUTURE)),
+                        .hasKnownStatus(SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME)),
                 exposeSpecSecondTo(lastSecond::set),
                 sourcing(() -> scheduleCreate("tooLate", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 34L)))
                         .expiringAt(lastSecond.get() + 1 + ONE_MINUTE + 1)
-                        .hasKnownStatus(SCHEDULE_EXPIRY_TOO_LONG)));
+                        .hasKnownStatus(SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE)));
     }
 
     /**
@@ -500,6 +501,16 @@ public class RepeatableHip423Tests {
                 sleepForSeconds(ONE_MINUTE),
                 // Trigger the executions
                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)));
+    }
+
+    // TODO: NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION not needed. Decide where to put it
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduleCreateWithExpiringInMoreThenTwoMouths() {
+        return hapiTest(
+                cryptoCreate("luckyYou").balance(0L),
+                scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .expiringIn(TWO_MOUTHS + 10)
+                        .hasKnownStatus(SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE));
     }
 
     private static BiConsumer<TransactionBody, TransactionResult> withStatus(@NonNull final ResponseCodeEnum status) {
