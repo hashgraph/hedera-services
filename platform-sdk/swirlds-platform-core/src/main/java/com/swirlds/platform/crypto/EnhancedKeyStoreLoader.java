@@ -1034,7 +1034,7 @@ public class EnhancedKeyStoreLoader {
         Objects.requireNonNull(entryType, MSG_ENTRY_TYPE_NON_NULL);
 
         try (final PEMParser parser =
-                new PEMParser(new InputStreamReader(Files.newInputStream(location), StandardCharsets.UTF_8))) {
+                     new PEMParser(new InputStreamReader(Files.newInputStream(location), StandardCharsets.UTF_8))) {
             Object entry = null;
 
             while ((entry = parser.readObject()) != null) {
@@ -1203,14 +1203,14 @@ public class EnhancedKeyStoreLoader {
 
         if (entryType.isAssignableFrom(PublicKey.class)
                 && (entry instanceof SubjectPublicKeyInfo
-                        || entry instanceof PEMKeyPair
-                        || entry instanceof PEMEncryptedKeyPair)) {
+                || entry instanceof PEMKeyPair
+                || entry instanceof PEMEncryptedKeyPair)) {
             return true;
         } else if (entryType.isAssignableFrom(PrivateKey.class)
                 && (entry instanceof PEMKeyPair
-                        || entry instanceof PrivateKeyInfo
-                        || entry instanceof PKCS8EncryptedPrivateKeyInfo
-                        || entry instanceof PEMEncryptedKeyPair)) {
+                || entry instanceof PrivateKeyInfo
+                || entry instanceof PKCS8EncryptedPrivateKeyInfo
+                || entry instanceof PEMEncryptedKeyPair)) {
             return true;
         } else if (entryType.isAssignableFrom(KeyPair.class)
                 && (entry instanceof PEMKeyPair || entry instanceof PEMEncryptedKeyPair)) {
@@ -1443,8 +1443,8 @@ public class EnhancedKeyStoreLoader {
                 final PrivateKey pemPrivateKey = readPrivateKey(nodeId, ksLocation);
                 if (pemPrivateKey == null
                         || !Arrays.equals(
-                                pemPrivateKey.getEncoded(),
-                                pfxPrivateKeys.get(nodeId).getEncoded())) {
+                        pemPrivateKey.getEncoded(),
+                        pfxPrivateKeys.get(nodeId).getEncoded())) {
                     logger.error(ERROR.getMarker(), "Private key for node {} does not match the migrated key", nodeId);
                     errorCount.incrementAndGet();
                 }
@@ -1457,8 +1457,8 @@ public class EnhancedKeyStoreLoader {
                 try {
                     if (pemCertificate == null
                             || !Arrays.equals(
-                                    pemCertificate.getEncoded(),
-                                    pfxCertificates.get(nodeId).getEncoded())) {
+                            pemCertificate.getEncoded(),
+                            pfxCertificates.get(nodeId).getEncoded())) {
                         logger.error(
                                 ERROR.getMarker(),
                                 "Certificate for node {} does not match the migrated certificate",
@@ -1552,7 +1552,7 @@ public class EnhancedKeyStoreLoader {
                 if (sPrivatePfx.exists()
                         && sPrivatePfx.isFile()
                         && !sPrivatePfx.renameTo(
-                                pfxDateDirectory.resolve(sPrivatePfx.getName()).toFile())) {
+                        pfxDateDirectory.resolve(sPrivatePfx.getName()).toFile())) {
                     cleanupErrorCount.incrementAndGet();
                 }
             }
@@ -1561,7 +1561,7 @@ public class EnhancedKeyStoreLoader {
         if (sPublicPfx.exists()
                 && sPublicPfx.isFile()
                 && !sPublicPfx.renameTo(
-                        pfxDateDirectory.resolve(sPublicPfx.getName()).toFile())) {
+                pfxDateDirectory.resolve(sPublicPfx.getName()).toFile())) {
             cleanupErrorCount.incrementAndGet();
         }
         if (cleanupErrorCount.get() > 0) {
@@ -1588,8 +1588,8 @@ public class EnhancedKeyStoreLoader {
             throws IOException {
         final PemObject pemObj = new PemObject(isPrivateKey ? "PRIVATE KEY" : "CERTIFICATE", encoded);
         try (final FileOutputStream file = new FileOutputStream(location.toFile(), false);
-                final var out = new OutputStreamWriter(file);
-                final PemWriter writer = new PemWriter(out)) {
+             final var out = new OutputStreamWriter(file);
+             final PemWriter writer = new PemWriter(out)) {
             writer.writeObject(pemObj);
             file.getFD().sync();
         }
