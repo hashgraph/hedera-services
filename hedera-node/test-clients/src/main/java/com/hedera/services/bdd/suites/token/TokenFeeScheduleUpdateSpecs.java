@@ -65,31 +65,6 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(TOKEN)
 public class TokenFeeScheduleUpdateSpecs {
-    @HapiTest
-    final Stream<DynamicTest> baseOperationIsChargedExpectedFee() {
-        final var htsAmount = 2_345L;
-        final var targetToken = "immutableToken";
-        final var feeDenom = "denom";
-        final var htsCollector = "denomFee";
-        final var feeScheduleKey = "feeSchedule";
-        final var expectedBasePriceUsd = 0.001;
-
-        return hapiTest(
-                newKeyNamed(feeScheduleKey),
-                cryptoCreate("civilian").key(feeScheduleKey),
-                cryptoCreate(htsCollector),
-                tokenCreate(feeDenom).treasury(htsCollector),
-                tokenCreate(targetToken)
-                        .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                        .feeScheduleKey(feeScheduleKey),
-                tokenFeeScheduleUpdate(targetToken)
-                        .signedBy(feeScheduleKey)
-                        .payingWith("civilian")
-                        .blankMemo()
-                        .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                        .via("baseFeeSchUpd"),
-                validateChargedUsdWithin("baseFeeSchUpd", expectedBasePriceUsd, 1.0));
-    }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {

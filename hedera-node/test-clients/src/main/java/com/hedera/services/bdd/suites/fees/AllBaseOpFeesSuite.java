@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.keys.SigControl.threshSigs;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -34,10 +33,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenReject;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingNFT;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingToken;
@@ -49,7 +45,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
@@ -67,7 +62,6 @@ import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
@@ -80,84 +74,17 @@ import org.junit.jupiter.api.Tag;
 public class AllBaseOpFeesSuite {
     private static final String PAYER = "payer";
     private static final double ALLOWED_DIFFERENCE_PERCENTAGE = 0.01;
-    private static final double ALLOWED_DIFFERENCE = 1;
 
-    private static final String FUNGIBLE_COMMON_TOKEN = "fungibleCommonToken";
-
-    private static final String MULTI_KEY = "multiKey";
     private static final String SUPPLY_KEY = "supplyKey";
 
     private static final String CIVILIAN_ACCT = "civilian";
-    private static final String ALICE = "alice";
 
     private static final String UNIQUE_TOKEN = "nftType";
 
     private static final String BASE_TXN = "baseTxn";
 
-    private static final double EXPECTED_FUNGIBLE_REJECT_PRICE_USD = 0.001;
-    private static final double EXPECTED_NFT_REJECT_PRICE_USD = 0.00100245;
-    private static final double EXPECTED_MIX_REJECT_PRICE_USD = 0.00375498;
+
     private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.02;
-    private static final double EXPECTED_NFT_BURN_PRICE_USD = 0.001;
-
-    @HapiTest
-    final Stream<DynamicTest> baseNftMintOperationIsChargedExpectedFee() {
-        final var standard100ByteMetadata = ByteString.copyFromUtf8(
-                "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
-
-        return defaultHapiSpec("BaseUniqueMintOperationIsChargedExpectedFee")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
-                        tokenCreate(UNIQUE_TOKEN)
-                                .initialSupply(0L)
-                                .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                                .supplyKey(SUPPLY_KEY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE))
-                .when(mintToken(UNIQUE_TOKEN, List.of(standard100ByteMetadata))
-                        .payingWith(CIVILIAN_ACCT)
-                        .signedBy(SUPPLY_KEY)
-                        .blankMemo()
-                        .fee(ONE_HUNDRED_HBARS)
-                        .via(BASE_TXN))
-                .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_MINT_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers() {
-        final var expectedFee = 10 * EXPECTED_NFT_MINT_PRICE_USD;
-        final var standard100ByteMetadata = ByteString.copyFromUtf8(
-                "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
-
-        return defaultHapiSpec("NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
-                        tokenCreate(UNIQUE_TOKEN)
-                                .initialSupply(0L)
-                                .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                                .supplyKey(SUPPLY_KEY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE))
-                .when(mintToken(
-                                UNIQUE_TOKEN,
-                                List.of(
-                                        standard100ByteMetadata,
-                                        standard100ByteMetadata,
-                                        standard100ByteMetadata,
-                                        standard100ByteMetadata,
-                                        standard100ByteMetadata,
-                                        standard100ByteMetadata,
-                                        standard100ByteMetadata,
-                                        standard100ByteMetadata,
-                                        standard100ByteMetadata,
-                                        standard100ByteMetadata))
-                        .payingWith(CIVILIAN_ACCT)
-                        .signedBy(SUPPLY_KEY)
-                        .blankMemo()
-                        .fee(ONE_HUNDRED_HBARS)
-                        .via(BASE_TXN))
-                .then(validateChargedUsdWithin(BASE_TXN, expectedFee, ALLOWED_DIFFERENCE_PERCENTAGE));
-    }
 
     @HapiTest
     final Stream<DynamicTest> NftMintsScaleLinearlyBasedOnNumberOfSignatures() {
@@ -185,84 +112,6 @@ public class AllBaseOpFeesSuite {
                 .then(validateChargedUsdWithin("moreSigsTxn", expectedFee, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
-
-    @HapiTest
-    final Stream<DynamicTest> baseNftBurnOperationIsChargedExpectedFee() {
-        return defaultHapiSpec("BaseUniqueBurnOperationIsChargedExpectedFee")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(CIVILIAN_ACCT).key(SUPPLY_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(UNIQUE_TOKEN)
-                                .initialSupply(0)
-                                .supplyKey(SUPPLY_KEY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY),
-                        mintToken(UNIQUE_TOKEN, List.of(metadata("memo"))))
-                .when(burnToken(UNIQUE_TOKEN, List.of(1L))
-                        .fee(ONE_HBAR)
-                        .payingWith(CIVILIAN_ACCT)
-                        .blankMemo()
-                        .via(BASE_TXN))
-                .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_BURN_PRICE_USD, 0.01));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> baseCommonTokenRejectChargedAsExpected() {
-        return defaultHapiSpec("baseCommonTokenRejectChargedAsExpected")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
-                        tokenCreate(FUNGIBLE_COMMON_TOKEN)
-                                .initialSupply(1000L)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(UNIQUE_TOKEN)
-                                .initialSupply(0)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(TOKEN_TREASURY)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE),
-                        mintToken(
-                                UNIQUE_TOKEN,
-                                List.of(
-                                        metadata("nemo the fish"),
-                                        metadata("garfield the cat"),
-                                        metadata("snoopy the dog"))),
-                        tokenAssociate(ALICE, FUNGIBLE_COMMON_TOKEN, UNIQUE_TOKEN),
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE))
-                                .payingWith(TOKEN_TREASURY)
-                                .via("nftTransfer"),
-                        cryptoTransfer(moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
-                                .payingWith(TOKEN_TREASURY)
-                                .via("fungibleTransfer"))
-                .when(
-                        tokenReject(rejectingToken(FUNGIBLE_COMMON_TOKEN))
-                                .payingWith(ALICE)
-                                .via("rejectFungible"),
-                        tokenReject(rejectingNFT(UNIQUE_TOKEN, 1))
-                                .payingWith(ALICE)
-                                .via("rejectNft"),
-                        cryptoTransfer(
-                                        movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE),
-                                        moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
-                                .payingWith(ALICE)
-                                .via("transferMix"),
-                        tokenReject(ALICE, rejectingNFT(UNIQUE_TOKEN, 1), rejectingToken(FUNGIBLE_COMMON_TOKEN))
-                                .payingWith(TOKEN_TREASURY)
-                                .via("rejectMix"))
-                .then(
-                        validateChargedUsdWithin(
-                                "fungibleTransfer", EXPECTED_FUNGIBLE_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
-                        validateChargedUsdWithin("nftTransfer", EXPECTED_NFT_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
-                        validateChargedUsdWithin("transferMix", EXPECTED_MIX_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
-                        validateChargedUsdWithin(
-                                "rejectFungible", EXPECTED_FUNGIBLE_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
-                        validateChargedUsdWithin("rejectNft", EXPECTED_NFT_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
-                        validateChargedUsdWithin("rejectMix", EXPECTED_MIX_REJECT_PRICE_USD, ALLOWED_DIFFERENCE));
-    }
 
     @HapiTest
     final Stream<DynamicTest> feeCalcUsesNumPayerKeys() {

@@ -134,7 +134,6 @@ public class TokenCreateSpecs {
     private static final String ADMIN_KEY = "adminKey";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String AUTO_RENEW = "autoRenew";
-    private static final String NAME = "012345678912";
     private static final String CREATE_TXN = "createTxn";
     private static final String PAYER = "payer";
 
@@ -376,93 +375,6 @@ public class TokenCreateSpecs {
                 tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY),
                 getAccountInfo(TOKEN_TREASURY)
                         .hasToken(relationshipWith(PRIMARY).kyc(TokenKycStatus.KycNotApplicable)));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> baseCreationsHaveExpectedPrices() {
-        final var civilian = "NonExemptPayer";
-
-        final var expectedCommonNoCustomFeesPriceUsd = 1.00;
-        final var expectedUniqueNoCustomFeesPriceUsd = 1.00;
-        final var expectedCommonWithCustomFeesPriceUsd = 2.00;
-        final var expectedUniqueWithCustomFeesPriceUsd = 2.00;
-
-        final var commonNoFees = "commonNoFees";
-        final var commonWithFees = "commonWithFees";
-        final var uniqueNoFees = "uniqueNoFees";
-        final var uniqueWithFees = "uniqueWithFees";
-
-        final var customFeeKey = "customFeeKey";
-
-        return hapiTest(
-                cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY).balance(0L),
-                cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                newKeyNamed(ADMIN_KEY),
-                newKeyNamed(SUPPLY_KEY),
-                newKeyNamed(customFeeKey),
-                tokenCreate(commonNoFees)
-                        .blankMemo()
-                        .entityMemo("")
-                        .name(NAME)
-                        .symbol("ABCD")
-                        .payingWith(civilian)
-                        .treasury(TOKEN_TREASURY)
-                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                        .adminKey(ADMIN_KEY)
-                        .via(txnFor(commonNoFees)),
-                tokenCreate(commonWithFees)
-                        .blankMemo()
-                        .entityMemo("")
-                        .name(NAME)
-                        .symbol("ABCD")
-                        .payingWith(civilian)
-                        .treasury(TOKEN_TREASURY)
-                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                        .adminKey(ADMIN_KEY)
-                        .withCustom(fixedHbarFee(ONE_HBAR, TOKEN_TREASURY))
-                        .feeScheduleKey(customFeeKey)
-                        .via(txnFor(commonWithFees)),
-                tokenCreate(uniqueNoFees)
-                        .payingWith(civilian)
-                        .blankMemo()
-                        .entityMemo("")
-                        .name(NAME)
-                        .symbol("ABCD")
-                        .initialSupply(0L)
-                        .tokenType(NON_FUNGIBLE_UNIQUE)
-                        .treasury(TOKEN_TREASURY)
-                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                        .adminKey(ADMIN_KEY)
-                        .supplyKey(SUPPLY_KEY)
-                        .via(txnFor(uniqueNoFees)),
-                tokenCreate(uniqueWithFees)
-                        .payingWith(civilian)
-                        .blankMemo()
-                        .entityMemo("")
-                        .name(NAME)
-                        .symbol("ABCD")
-                        .initialSupply(0L)
-                        .tokenType(NON_FUNGIBLE_UNIQUE)
-                        .treasury(TOKEN_TREASURY)
-                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                        .adminKey(ADMIN_KEY)
-                        .withCustom(fixedHbarFee(ONE_HBAR, TOKEN_TREASURY))
-                        .supplyKey(SUPPLY_KEY)
-                        .feeScheduleKey(customFeeKey)
-                        .via(txnFor(uniqueWithFees)),
-                validateChargedUsdWithin(txnFor(commonNoFees), expectedCommonNoCustomFeesPriceUsd, 0.01),
-                validateChargedUsdWithin(txnFor(commonWithFees), expectedCommonWithCustomFeesPriceUsd, 0.01),
-                validateChargedUsdWithin(txnFor(uniqueNoFees), expectedUniqueNoCustomFeesPriceUsd, 0.01),
-                validateChargedUsdWithin(txnFor(uniqueWithFees), expectedUniqueWithCustomFeesPriceUsd, 0.01));
-    }
-
-    private String txnFor(String tokenSubType) {
-        return tokenSubType + "Txn";
     }
 
     @HapiTest
