@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.keys.deterministic.Bip0032.mnemonicToEd25519Key;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
-import static java.util.stream.Collectors.toSet;
 
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
@@ -167,15 +166,6 @@ public class HapiSpecSetup {
             ciPropertiesMap = MapPropertySource.parsedFromCommaDelimited(props.get("ci.properties.map"));
         }
         return ciPropertiesMap;
-    }
-
-    public Set<HederaFunctionality> txnTypesToSchedule() {
-        final var commaDelimited = props.get("spec.autoScheduledTxns");
-        return commaDelimited.isBlank()
-                ? Collections.emptySet()
-                : Arrays.stream(commaDelimited.split(","))
-                        .map(HederaFunctionality::valueOf)
-                        .collect(toSet());
     }
 
     public Duration defaultAutoRenewPeriod() {
