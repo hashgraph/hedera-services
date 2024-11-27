@@ -14,33 +14,48 @@ In order for consensus nodes to upload block files to public cloud buckets, this
 ---
 
 ## Table of Contents
+
 1. [Summary](#summary)
 2. [Context](#context)
-3. [Dependencies](#dependencies)
-4. [Core Components](#core-components)
-   1. [Extended BlockStreamWriterMode](#1-extended-blockstreamwritermode)
-   2. [Configuration](#2-configuration)
-        - [Network Properties](#network-properties)
-        - [Credentials Configuration](#credentials-configuration)
-        - [Configuration Loading](#configuration-loading-and-updates)
-   3. [BlockMetadata Handling](#3-blockmetadata-handling)
-   4. [Cloud Storage Implementation](#4-cloud-storage-implementation)
-   5. [BucketUploadManager](#5-bucketuploadmanager)
-   6. [BlockRecoveryManager](#6-blockrecoverymanager)
-   7. [BlockRetentionManager](#7-blockretentionmanager)
-   8. [Metrics](#8-metrics)
-5. [Flow Sequences](#flow-sequences)
-   1. [Happy Path](#happy-path)
-   2. [Error Handling](#error-handling)
-   3. [Hash Mismatch](#hash-mismatch)
-   4. [Recovery Handling](#recovery-handling)
-6. [Testing Strategy](#testing-strategy)
+3. [Requirements](#requirements)
+4. [Dependencies](#dependencies)
+   - [Rationale for Using MinIO](#rationale-for-using-minio) 
+5. [Core Components](#core-components)
+   - [Extended BlockStreamWriterMode](#extended-blockstreamwritermode)
+   - [Configuration Classes](#configuration-classes)
+      - [Network Properties](#network-properties)
+      - [Credentials Configuration](#credentials-configuration)
+   - [BlockMetadata](#blockMetadata)
+   - [BlockMetadataManager](#BlockMetadataManager)
+   - [BlockReuploadManager](#BlockReuploadManager)
+   - [Cloud Storage Interface and Implementations](#cloud-storage-interface-and-implementations)
+   - [BucketUploadListener Interface](#BucketUploadListener-Interface)
+   - [BucketUploadManager](#BucketUploadManager)
+   - [BlockRetentionManager](#BlockRetentionManager)
+   - [Metrics](#metrics)
+6. [Flow Sequences](#flow-sequences)
+   - [Happy Path](#happy-path)
+   - [Error Handling](#error-handling)
+   - [Hash Mismatch](#hash-mismatch)
+7. [Testing Strategy](#testing-strategy)
+
 
 ### Context
 
 The following image depicts how multiple consensus nodes will be attempting to upload to the same bucket. Only the first node to upload the block will succeed, and the others will check if the block is already available. If the block is available, the node will check if the block is the same by comparing the MD5 hash. If the hashes are different, the block will be kept on the local disk, and an alert will be triggered. If the upload fails, the block will be kept on the local disk, and an alert will be triggered.
 
 <img src="./Phase1.png" alt="Phase1"></img>
+
+### Requirements
+The following requirements have been identified for this proposal:
+- We need a third BlockStreamWriterMode, which sends the blocks to one or more buckets.
+- The buckets must be configurable.
+- Both the writer mode and the addresses of the buckets must be configurable during runtime (i.e., the node must not be restarted to take the changes into effect).
+- If an error occurs, we want to keep a copy of the block on the local disk. It probably makes sense to write the block to a local file initially and upload it once done (instead of writing directly to the bucket).
+- We want to upload only one instance of a block. All consensus nodes will try to upload the same block to a bucket, and therefore only the first one can succeed.
+- If a consensus node notices the block is already available, it should check if the blocks are the same (via MD5 hash). If they are different, the block should be kept on the local disk, and an alert must be triggered.
+- If uploading a block fails, it should be kept on the local disk, and an alert needs to be triggered.
+- If the upload was successful, the local copy can be removed after a few hours.
 
 ### Dependencies
 
@@ -68,34 +83,34 @@ By leveraging the MinIO SDK, we can streamline the process of uploading block fi
 
 ## Core Components
 
-### 1. Extended BlockStreamWriterMode
+### Extended BlockStreamWriterMode
 
 ```java
 public enum BlockStreamWriterMode {
-    GRPC,
-    FILE,
-    FILE_AND_BUCKET
+    GRPC,   // Stream blocks via gRPC
+    FILE,   // Write blocks to local files
+    BUCKETS // Write blocks to cloud storage buckets
 }
 ```
 
-### 2. Configuration
+### Configuration
 
 The configuration is split into two parts:
 1. Network properties that can be updated at runtime
 2. Secure credentials stored locally
 
 #### Network Properties
-Network-wide properties that can be dynamically updated via file 0.0.121:
+`@NetworkProperty` Are network-wide properties that can be dynamically updated via file 0.0.121.
+The `writerMode` node property exists to support the ability for each node to be able to choose which modes it will use to write blocks.
 
 ```java
 @ConfigData("blockStream")
 public record BlockStreamConfig(
-    // Basic configuration
-    @ConfigProperty(defaultValue = "FILE_AND_BUCKET") @NetworkProperty BlockStreamWriterMode writerMode,
+    // ... existing code ...
+    // New Network Properties
     @ConfigProperty(defaultValue = "3") @NetworkProperty int uploadRetryAttempts,
     @ConfigProperty(defaultValue = "168") @NetworkProperty int localRetentionHours,
     @ConfigProperty(defaultValue = "data/config/bucket-credentials.json") @NetworkProperty String credentialsPath,
-    
     // Bucket configurations with default AWS and GCP public buckets
     @ConfigProperty(defaultValue = """
         [
@@ -114,7 +129,10 @@ public record BlockStreamConfig(
                 "bucketName": "hedera-mainnet-blocks"
             }
         ]
-        """) @NetworkProperty List<BucketNetworkConfig> buckets
+        """) @NetworkProperty List<BucketNetworkConfig> buckets,
+    // Updated Node Property for writerModes
+    @ConfigProperty(defaultValue = "[FILE, BUCKETS]") @NodeProperty List<BlockStreamWriterMode> writerModes,
+    // ... existing code ...
 ) {}
 
 public record BucketNetworkConfig(
@@ -177,69 +195,27 @@ public record BucketCredentialsConfig(
 ```
 
 #### Configuration Loading and Updates
-The configuration system handles both network properties and local credentials:
+The configuration system needs to handle both network properties and local credentials in a secure and maintainable way.
 
-```java
-@Singleton
-public class BucketConfigurationManager {
-    private static final Logger logger = LogManager.getLogger(BucketConfigurationManager.class);
-    private static final ObjectMapper mapper = new ObjectMapper();
-    
-    private final ConfigProvider configProvider;
-    private final Path credentialsPath;
-    private volatile BucketCredentialsConfig credentials;
-    
-    @Inject
-    public BucketConfigurationManager(ConfigProvider configProvider) {
-        this.configProvider = configProvider;
-        this.credentialsPath = Path.of(configProvider.getConfiguration()
-                .getConfigData(BlockStreamConfig.class)
-                .credentialsPath());
-        loadCredentials();
-    }
-    
-    public List<CompleteBucketConfig> getCompleteBucketConfigs() {
-        var networkConfig = configProvider.getConfiguration()
-                .getConfigData(BlockStreamConfig.class);
-                
-        return networkConfig.buckets().stream()
-                .map(bucket -> {
-                    var creds = credentials.credentials().get(bucket.name());
-                    if (creds == null) {
-                        logger.error("No credentials found for bucket: {}", bucket.name());
-                        return null;
-                    }
-                    return new CompleteBucketConfig(
-                            bucket.name(),
-                            bucket.provider(),
-                            bucket.endpoint(),
-                            bucket.region(),
-                            bucket.bucketName(),
-                            creds);
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
-    
-    private void loadCredentials() {
-        try {
-            credentials = mapper.readValue(credentialsPath.toFile(), BucketCredentialsConfig.class);
-        } catch (IOException e) {
-            logger.error("Failed to load bucket credentials from {}", credentialsPath, e);
-            throw new RuntimeException("Failed to load bucket credentials", e);
-        }
-    }
-}
+**BucketConfigurationManager Requirements**
+- Singleton class managing both network properties and local credentials
+- Load credentials from the JSON file specified in the configuration
+- Provide methods to get complete bucket configurations by combining network properties with credentials
+- Handle credential file reload if needed
+- Log appropriate warnings/errors when credentials are missing or invalid
+- Validate that all required bucket configurations have matching credentials
 
-public record CompleteBucketConfig(
-    String name,
-    String provider,
-    String endpoint,
-    String region,
-    String bucketName,
-    BucketCredentials credentials
-) {}
-```
+**CompleteBucketConfig Requirements**
+- Immutable record combining network configuration with credentials
+- Include all necessary fields for bucket connection:
+  - name
+  - provider type (AWS/GCP)
+  - endpoint
+  - region (if applicable)
+  - bucket name
+  - credentials (access key and secret key)
+- Include validation to ensure all required fields are present
+- Provide a clean interface for the MinioClientFactory to create new clients
 
 #### MinIO Client Factory
 ```java
@@ -256,527 +232,167 @@ public class MinioClientFactory {
 }
 ```
 
-This configuration approach provides several benefits:
+### BlockMetadata
 
-1. **Runtime Updates**: All non-sensitive configuration can be updated via network properties
-2. **Security**: Sensitive credentials are kept separate and secure on disk
-3. **Flexibility**: Support for multiple bucket configurations
-4. **Type Safety**: Strong typing through Java records
-5. **Validation**: Built-in validation through record constructors
-6. **Separation of Concerns**: Clear separation between network config and credentials
+The `BlockMetadata` class read/updated on disk tracks both block information and upload statuses, enabling recovery/re-upload scenarios after node restarts.
 
-The `BucketConfigurationManager` serves as the single point of access for complete bucket configurations, combining network properties with local credentials as needed.
+#### BlockMetadata class/file written to disk
 
-### 3. BlockMetadata Handling
+##### Required Fields
+- `blockNumber` (long) - Unique identifier for the block
+- `md5Hash` (String) - MD5 hash of block contents 
+- `creationTimestamp` (Instant) - When the block was created
+- `uploadStatusByProvider` (Map<String, Boolean>) - Upload status per provider
+- `hashMismatchByProvider` (Map<String, Boolean>) - Hash mismatch status per provider
 
-The `BlockMetadata` tracks both block information and upload status, enabling recovery scenarios after node restarts.
-
-#### BlockMetadata Structure
-
-```java
-public record BlockMetadata(
-    long blockNumber,
-    String md5Hash,
-    Instant createdAt,
-    Map<String, Boolean> uploadStatus,  // Maps provider -> upload status
-    boolean hashMismatch  // Indicates if a hash mismatch has occurred
-) {
-    public static BlockMetadata create(Path blockPath, long blockNumber) throws IOException {
-        byte[] fileBytes = Files.readAllBytes(blockPath);
-        String md5 = calculateMd5(fileBytes);
-        
-        return new BlockMetadata(
-            blockNumber,
-            md5,
-            Files.getLastModifiedTime(blockPath).toInstant(),
-            new ConcurrentHashMap<>(),  // Initially empty upload status
-            false  // Initially no hash mismatch
-        );
-    }
-    
-    public void markUploaded(String provider) {
-        uploadStatus.put(provider, true);
-    }
-    
-    public boolean isUploadedTo(String provider) {
-        return uploadStatus.getOrDefault(provider, false);
-    }
-    
-    public boolean isFullyUploaded() {
-        return !uploadStatus.containsValue(false) && !uploadStatus.isEmpty();
-    }
-    
-    public void markHashMismatch() {
-        this.hashMismatch = true;
-    }
-    
-    private static String calculateMd5(byte[] bytes) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] digest = md.digest(bytes);
-            return Base64.getEncoder().encodeToString(digest);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("MD5 algorithm not available", e);
-        }
-    }
-}
-```
-
-#### Writing BlockMetadata to Disk
-
-When a block is closed, the `BlockMetadata` will be serialized and written to a file with the same name as the block file, but with a `.meta` extension. This will occur in the `closeBlock()` method of the `FileBlockItemWriter`.
-
-```java
-public class FileBlockItemWriter implements BlockItemWriter {
-    private final List<BucketUploadListener> listeners = new ArrayList<>();
-    
-    public void addListener(BucketUploadListener listener) {
-        listeners.forEach(l -> logger.info("Adding bucket upload listener for provider: {}", l.getProvider()));
-        listeners.add(listener);
-    }
-    
-    @Override
-    public void closeBlock() {
-        if (state.ordinal() < State.OPEN.ordinal()) {
-            throw new IllegalStateException("Cannot close a FileBlockItemWriter that is not open");
-        } else if (state.ordinal() == State.CLOSED.ordinal()) {
-            throw new IllegalStateException("Cannot close a FileBlockItemWriter that is already closed");
-        }
-
-        try {
-            writableStreamingData.close();
-            state = State.CLOSED;
-
-            // Write BlockMetadata to disk
-            Path blockPath = getBlockFilePath(blockNumber);
-            BlockMetadata metadata = BlockMetadata.create(blockPath, blockNumber);
-            writeMetadataToFile(metadata, blockPath);
-
-            // Notify listeners
-            listeners.forEach(listener -> listener.onBlockClosed(blockPath, blockNumber));
-        } catch (final IOException e) {
-            logger.error("Error closing the FileBlockItemWriter output stream", e);
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private void writeMetadataToFile(BlockMetadata metadata, Path blockPath) throws IOException {
-        Path metadataPath = Paths.get(blockPath.toString() + ".meta");
-        try (BufferedWriter writer = Files.newBufferedWriter(metadataPath)) {
-            writer.write(metadata.toString());
-        }
-    }
-}
-```
-
-### 4. Cloud Storage Implementation
-
-#### Base Interface
-```java
-public interface CloudBucketUploader {
-    CompletableFuture<Void> uploadBlock(Path blockPath, BlockMetadata metadata);
-    CompletableFuture<Boolean> blockExists(long blockNumber);
-    CompletableFuture<String> getBlockMd5(long blockNumber);
-    String getProvider();
-}
-```
-
-#### MinIO Implementation
-```java
-@Singleton
-public class MinioBucketUploader implements CloudBucketUploader {
-    private static final Logger logger = LogManager.getLogger(MinioBucketUploader.class);
-    private final MinioClient minioClient;
-    private final String bucketName;
-    private final String provider;
-    private final ExecutorService uploadExecutor;
-    private final int maxRetryAttempts;
-    
-    @Inject
-    public MinioBucketUploader(
-            BucketConfig config,
-            @CommonExecutor ExecutorService executor,
-            ConfigProvider configProvider) {
-        this.uploadExecutor = executor;
-        this.bucketName = config.name();
-        this.provider = config.provider();
-        this.maxRetryAttempts = configProvider.getConfiguration()
-                .getConfigData(BlockStreamConfig.class)
-                .uploadRetryAttempts();
-        
-        this.minioClient = MinioClientFactory.createClient(config);
-    }
-
-    @Override
-    public CompletableFuture<Void> uploadBlock(Path blockPath, BlockMetadata metadata) {
-        return CompletableFuture.runAsync(() -> {
-            String objectKey = getObjectKey(metadata.blockNumber());
-            
-            try {
-                // First check if object already exists
-                if (blockExistsInternal(objectKey)) {
-                    String existingMd5 = getBlockMd5Internal(objectKey);
-                    if (existingMd5.equals(metadata.md5Hash())) {
-                        logger.debug("Block {} already exists with matching MD5", metadata.blockNumber());
-                        return;
-                    }
-                    throw new HashMismatchException(metadata.blockNumber(), provider);
-                }
-
-                // Upload with retry logic
-                RetryUtils.withRetry(() -> {
-                    minioClient.uploadObject(
-                            UploadObjectArgs.builder()
-                                    .bucket(bucketName)
-                                    .object(objectKey)
-                                    .filename(blockPath.toString())
-                                    .contentType("application/octet-stream")
-                                    .build());
-                    return null;
-                }, maxRetryAttempts);
-
-            } catch (Exception e) {
-                throw new CompletionException("Failed to upload block " + metadata.blockNumber(), e);
-            }
-        }, uploadExecutor);
-    }
-
-    @Override
-    public CompletableFuture<Boolean> blockExists(long blockNumber) {
-        return CompletableFuture.supplyAsync(
-                () -> blockExistsInternal(getObjectKey(blockNumber)),
-                uploadExecutor);
-    }
-
-    @Override
-    public CompletableFuture<String> getBlockMd5(long blockNumber) {
-        return CompletableFuture.supplyAsync(
-                () -> getBlockMd5Internal(getObjectKey(blockNumber)),
-                uploadExecutor);
-    }
-
-    @Override
-    public String getProvider() {
-        return provider;
-    }
-
-    private boolean blockExistsInternal(String objectKey) {
-        try {
-            minioClient.statObject(
-                    StatObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(objectKey)
-                            .build());
-            return true;
-        } catch (ErrorResponseException e) {
-            if (e.errorResponse().code().equals("NoSuchKey")) {
-                return false;
-            }
-            throw new CompletionException(e);
-        } catch (Exception e) {
-            throw new CompletionException(e);
-        }
-    }
-
-    private String getBlockMd5Internal(String objectKey) {
-        try {
-            var stat = minioClient.statObject(
-                    StatObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(objectKey)
-                            .build());
-            return stat.etag();
-        } catch (Exception e) {
-            throw new CompletionException(e);
-        }
-    }
-
-    private String getObjectKey(long blockNumber) {
-        return String.format("blocks/%d.blk", blockNumber);
-    }
-}
-```
-
-#### Retry Utility
-```java
-public class RetryUtils {
-    private static final Logger logger = LogManager.getLogger(RetryUtils.class);
-
-    public static <T> T withRetry(
-            SupplierWithException<T> operation,
-            int maxAttempts) throws Exception {
-        
-        int attempt = 0;
-        Exception lastException = null;
-
-        while (attempt < maxAttempts) {
-            try {
-                return operation.get();
-            } catch (Exception e) {
-                lastException = e;
-                attempt++;
-                
-                if (attempt == maxAttempts) {
-                    break;
-                }
-
-                long backoffMillis = calculateBackoff(attempt);
-                logger.warn("Attempt {} failed, retrying in {} ms", attempt, backoffMillis, e);
-                Thread.sleep(backoffMillis);
-            }
-        }
-        
-        throw new RetryExhaustedException("Failed after " + maxAttempts + " attempts", lastException);
-    }
-
-    private static long calculateBackoff(int attempt) {
-        // Exponential backoff with jitter: 2^n * 100ms + random(50ms)
-        return (long) (Math.pow(2, attempt) * 100 + Math.random() * 50);
-    }
-
-    @FunctionalInterface
-    public interface SupplierWithException<T> {
-        T get() throws Exception;
-    }
-}
-```
-
-#### Exception Classes
-```java
-public class HashMismatchException extends RuntimeException {
-    public HashMismatchException(long blockNumber, String provider) {
-        super(String.format("Hash mismatch for block %d in provider %s", blockNumber, provider));
-    }
-}
-
-public class RetryExhaustedException extends RuntimeException {
-    public RetryExhaustedException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
-```
-
-### 5. BucketUploadManager
-
-```java
-@Singleton
-public class BucketUploadManager implements BucketUploadListener {
-    private final ExecutorService uploadExecutor;
-    private final List<CloudBucketUploader> bucketUploaders;
-    private final BlockMetricsManager metricsManager;
-    private final BlockRetentionManager retentionManager;
-    
-    @Override
-    public void onBlockClosed(Path blockPath, long blockNumber) {
-        var metadata = BlockMetadata.create(blockPath, blockNumber);
-        
-        // Launch uploads without waiting
-        bucketUploaders.forEach(uploader -> 
-            CompletableFuture.runAsync(
-                () -> handleBlockUpload(uploader, blockPath, metadata),
-                uploadExecutor)
-            .exceptionally(throwable -> {
-                metricsManager.incrementFailedUploads();
-                logger.error("Failed to upload block {}", blockNumber, throwable);
-                return null;
-            }));
-    }
-
-    private void handleBlockUpload(CloudBucketUploader uploader, Path blockPath, BlockMetadata metadata) {
-        Timer.Sample sample = Timer.start();
-        try {
-            if (uploader.blockExists(metadata.blockNumber())) {
-                var existingMd5 = uploader.getBlockMd5(metadata.blockNumber());
-                if (existingMd5.equals(metadata.md5Hash())) {
-                    metadata.markUploaded(uploader.getProvider());
-                    updateMetadataFile(blockPath, metadata);
-                    metricsManager.incrementSkippedUpload(uploader.getProvider());
-                    return;
-                }
-                metricsManager.incrementHashMismatch(uploader.getProvider());
-                metadata.markHashMismatch();  // Mark hash mismatch
-                updateMetadataFile(blockPath, metadata);
-                throw new HashMismatchException(metadata.blockNumber(), uploader.getProvider());
-            }
-            
-            uploader.uploadBlock(blockPath, metadata);
-            metadata.markUploaded(uploader.getProvider());
-            updateMetadataFile(blockPath, metadata);
-            metricsManager.recordUploadLatency(uploader.getProvider(), sample);
-            metricsManager.incrementSuccessfulUpload(uploader.getProvider());
-            
-        } catch (Exception e) {
-            metricsManager.incrementUploadFailure(uploader.getProvider());
-            throw e;
-        }
-    }
-    
-    private void updateMetadataFile(Path blockPath, BlockMetadata metadata) throws IOException {
-        Path metadataPath = Paths.get(blockPath.toString() + ".meta");
-        try (BufferedWriter writer = Files.newBufferedWriter(metadataPath)) {
-            objectMapper.writeValue(writer, metadata);
-        }
-    }
-}
-```
-### 6. BlockRecoveryManager
-The `BlockRecoveryManager` is responsible for identifying and attempting to upload blocks that were not attempted to be uploaded before a node restart. It ensures that any blocks left in an incomplete state are retried, except those with a hash mismatch.
-```java
-@Singleton
-public class BlockRecoveryManager {
-    private static final Logger logger = LogManager.getLogger(BlockRecoveryManager.class);
-    private final Path blockDirectory;
-    private final BucketUploadManager uploadManager;
-    private final List<CloudBucketUploader> uploaders;
-    
-    @Inject
-    public BlockRecoveryManager(
-            ConfigProvider configProvider,
-            NodeInfo nodeInfo,
-            FileSystem fileSystem,
-            BucketUploadManager uploadManager,
-            List<CloudBucketUploader> uploaders) {
-        this.blockDirectory = fileSystem.getPath(configProvider.getConfiguration()
-                .getConfigData(BlockStreamConfig.class)
-                .blockDirectory(), 
-                nodeInfo.getNodeId());
-        this.uploadManager = uploadManager;
-        this.uploaders = uploaders;
-    }
-    
-    public void recoverIncompleteUploads() {
-        try (var files = Files.list(blockDirectory)) {
-            files.filter(path -> path.toString().endsWith(".blk"))
-                    .forEach(this::checkAndRecoverBlock);
-        } catch (IOException e) {
-            logger.error("Error scanning block directory during recovery: {}", e.getMessage());
-        }
-    }
-    
-    private void checkAndRecoverBlock(Path blockPath) {
-        try {
-            Path metadataPath = Paths.get(blockPath.toString() + ".meta");
-            if (!Files.exists(metadataPath)) {
-                logger.warn("Missing metadata file for block: {}", blockPath);
-                return;
-            }
-            
-            BlockMetadata metadata = readMetadata(metadataPath);
-            if (!metadata.isFullyUploaded() && !metadata.hashMismatch()) {
-                logger.info("Recovering incomplete upload for block: {}", blockPath);
-                uploadManager.uploadBlock(blockPath, metadata);
-            }
-        } catch (IOException e) {
-            logger.error("Error recovering block {}: {}", blockPath, e.getMessage());
-        }
-    }
-    
-    private BlockMetadata readMetadata(Path metadataPath) throws IOException {
-        try (BufferedReader reader = Files.newBufferedReader(metadataPath)) {
-            return objectMapper.readValue(reader, BlockMetadata.class);
-        }
-    }
-}
-```
+##### Required Methods
+- `create(Path blockPath)` - Create new metadata from block file path
+- `markUploaded(String provider)` - Mark upload complete for provider
+- `isUploaded(String provider)` - Check upload status for provider
+- `isFullyUploaded()` - Check if uploaded to all providers
+- `markHashMismatch(String provider)` - Mark hash mismatch for provider
+- `hasHashMismatch(String provider)` - Check for hash mismatch by provider
+- `validateMd5Hash()` - Calculate and validate MD5 hash
 
 
-### 7. BlockRetentionManager
+#### BlockMetadataManager
 
-```java
-@Singleton
-public class BlockRetentionManager {
-    private static final Logger logger = LogManager.getLogger(BlockRetentionManager.class);
-    private final Duration retentionPeriod;
-    private final Path blockDirectory;
-    private final BlockMetricsManager metricsManager;
-    private final ExecutorService cleanupExecutor;
+##### File Management
+- Read metadata files from disk
+- Write metadata files atomically
 
-    @Inject
-    public BlockRetentionManager(
-            ConfigProvider configProvider,
-            NodeInfo nodeInfo,
-            FileSystem fileSystem,
-            BlockMetricsManager metricsManager,
-            @CommonExecutor ExecutorService executor) {
-        var config = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
-        this.retentionPeriod = config.blockRetentionPeriod();
-        this.blockDirectory = fileSystem.getPath(config.blockDirectory(), nodeInfo.getNodeId());
-        this.metricsManager = metricsManager;
-        this.cleanupExecutor = executor;
-    }
+### BlockReuploadManager
+The BlockReuploadManager is responsible for initiating re-uploads of failed block uploads after node restarts or re-uploading blocks that were attempted to be uploaded more than the configured retry limit.
 
-    public CompletableFuture<Void> cleanExpiredBlocks() {
-        return CompletableFuture.runAsync(() -> {
-            try (var files = Files.list(blockDirectory)) {
-                files.filter(path -> path.toString().endsWith(".blk") || path.toString().endsWith(".blk.gz"))
-                        .map(path -> CompletableFuture.runAsync(() -> {
-                            try {
-                                if (isExpired(path)) {
-                                    Files.delete(path);
-                                    metricsManager.incrementDeletedBlocks();
-                                    logger.debug("Deleted expired block file: {}", path);
-                                }
-                            } catch (IOException e) {
-                                logger.error("Error deleting expired block {}: {}", path, e.getMessage());
-                            }
-                        }, cleanupExecutor))
-                        .collect(Collectors.toList())
-                        .forEach(CompletableFuture::join);
-            } catch (IOException e) {
-                logger.error("Error scanning block directory: {}", e.getMessage());
-            }
-        }, cleanupExecutor);
-    }
+This ensures blocks are eventually attempted to be uploaded even in the face of node restarts or temporary failures.
 
-    private boolean isExpired(Path blockPath) throws IOException {
-        Path metadataPath = Paths.get(blockPath.toString() + ".meta");
-        if (!Files.exists(metadataPath)) {
-            return false;  // Cannot determine expiration without metadata
-        }
-        
-        BlockMetadata metadata = readMetadata(metadataPath);
-        if (metadata.hashMismatch()) {
-            return false;  // Do not delete if there was a hash mismatch
-        }
-        
-        var lastModifiedTime = Files.getLastModifiedTime(blockPath);
-        var age = Duration.between(lastModifiedTime.toInstant(), Instant.now());
-        return age.compareTo(retentionPeriod) > 0;
-    }
+##### Key Responsibilities
+- Managing retry attempts for failed uploads while respecting configured retry limits
+- Coordinating with the BucketUploadManager to re-attempt uploads that were not successful
+- Handling error scenarios gracefully with appropriate logging and failure reporting
 
-    private BlockMetadata readMetadata(Path metadataPath) throws IOException {
-        try (BufferedReader reader = Files.newBufferedReader(metadataPath)) {
-            return objectMapper.readValue(reader, BlockMetadata.class);
-        }
-    }
-}
-```
+##### Startup Operations
+- Scan block directory on node startup
+- Identify incomplete uploads
+- Verify metadata file integrity
+- Build recovery queue
 
-### 8. Metrics
+##### Recovery Processing
+- Initiate recovery of incomplete uploads
+- Skip blocks with hash mismatches
+- Track recovery progress
+- Report recovery metrics
 
-```java
-@Singleton
-public class BlockMetricsManager {
-    private static final String METRIC_PREFIX = "hedera.blocks.bucket.";
-    
-    private final Counter uploadSuccessCounter;
-    private final Counter uploadFailureCounter;
-    private final Counter hashMismatchCounter;
-    private final Counter skippedUploadCounter;
-    private final Timer uploadLatencyTimer;
-    private final Gauge retainedBlocksGauge;
-    
-    @Inject
-    public BlockMetricsManager(MetricsRegistry registry) {
-        this.uploadSuccessCounter = registry.counter(METRIC_PREFIX + "uploads.success");
-        this.uploadFailureCounter = registry.counter(METRIC_PREFIX + "uploads.failure");
-        this.hashMismatchCounter = registry.counter(METRIC_PREFIX + "hash.mismatch");
-        this.skippedUploadCounter = registry.counter(METRIC_PREFIX + "uploads.skipped");
-        this.uploadLatencyTimer = registry.timer(METRIC_PREFIX + "upload.latency");
-        this.retainedBlocksGauge = registry.gauge(METRIC_PREFIX + "blocks.retained");
-    }
-}
-```
+### Cloud Storage Interface and Implementations
+
+#### CloudBucketUploader Interface
+The base interface defining operations for uploading blocks to cloud storage providers.
+
+Key Operations:
+- Upload a block file with associated metadata asynchronously
+- Check if a block exists in cloud storage
+- Retrieve MD5 hash of a stored block
+- Get the provider identifier
+
+#### MinioBucketUploader Implementation
+Implementation of CloudBucketUploader for MinIO/S3-compatible storage.
+
+Key Responsibilities:
+- Initialize MinIO client with provider configuration
+- Handle block uploads with retry logic and MD5 validation
+- Check for existing blocks and validate hashes
+- Manage concurrent uploads using executor service
+- Format object keys using standardized naming
+- Handle provider-specific errors and exceptions
+
+Required Features:
+- Configurable retry attempts for failed uploads
+- Exponential backoff with jitter between retries
+- Hash validation before and after uploads
+- Asynchronous operations using CompletableFuture
+- Structured logging of operations and errors
+
+#### RetryUtils Helper
+Utility class providing standardized retry logic for operations.
+
+Key Features:
+- Configurable maximum retry attempts
+- Exponential backoff with random jitter
+- Exception handling and propagation
+- Operation timeout management
+- Detailed logging of retry attempts
+- Support for operations that can throw checked exceptions
+
+
+### BucketUploadListener Interface
+Interface for components that need to be notified when block files are closed and ready for upload.
+
+Key Operations:
+- `onBlockClosed(Path blockPath)` - Called when a block file is closed and ready for upload
+
+#### FileBlockItemWriter Updates
+The FileBlockItemWriter class needs to be enhanced to support notifying listeners when blocks are closed.
+
+Required Changes:
+- Add list of registered BucketUploadListener instances
+- Add methods to register/unregister listeners
+- Update closeBlock() to notify listeners after successful block closure
+- Handle errors during block closure and notify listeners
+
+### BucketUploadManager
+
+The BucketUploadManager is responsible for coordinating block uploads to multiple cloud storage providers. It listens for block closure events and manages the asynchronous upload process, including metadata tracking and metrics collection.
+
+Key Implementation Details:
+- Implements BucketUploadListener interface to receive block closure notifications
+- Manages concurrent uploads to multiple cloud providers using an ExecutorService
+- Tracks upload status and metadata for each block
+- Performs hash validation to detect corrupted or incomplete uploads
+- Updates block metadata files to record upload status
+- Collects detailed metrics on upload operations including:
+  - Success/failure counts per provider
+  - Upload latency measurements
+  - Hash mismatch detection
+  - Skipped upload tracking
+- Handles upload failures with proper error logging and metrics
+- Uses CompletableFuture for non-blocking asynchronous operations
+
+
+### BlockRetentionManager
+
+The BlockRetentionManager is responsible for managing the lifecycle of block files on disk after they have been successfully uploaded to cloud storage. It implements a retention policy to clean up local block files that are no longer needed while ensuring data integrity and proper metrics collection.
+
+This cleanup process needs to be scheduled to run periodically (e.g., hourly or daily) on a background thread separate from the main handler thread to avoid impacting normal operations.
+
+Key Implementation Details:
+- Manages block file retention based on configurable retention period
+- Performs asynchronous cleanup of expired block files
+- Validates block metadata before deletion
+  - Checks upload status and hash validation results
+  - Preserves files with hash mismatches for investigation
+- Uses non-blocking CompletableFuture operations for cleanup tasks
+- Leverages shared executor service for background operations
+- Maintains metrics for deleted blocks and cleanup operations
+- Implements proper error handling and logging
+- Supports both raw (.blk) and compressed (.blk.gz) block files
+- Preserves blocks without metadata files as a safety measure
+
+Required Configuration:
+- Block retention period duration
+- Block storage directory path
+- Cleanup schedule interval
+- Thread pool configuration for cleanup operations
+
+### Metrics
+
+The following metrics will be tracked with prefix `hedera.blocks.bucket.<provider>.<nodeId>`:
+
+- `uploads.success` (Counter) - Number of successful block uploads per provider per node
+- `uploads.failure` (Counter) - Number of failed block uploads per provider per node
+- `hash.mismatch` (Counter) - Number of hash validation failures per provider per node
+- `uploads.skipped` (Counter) - Number of skipped block uploads per provider per node
+- `upload.latency` (Timer) - Time taken to upload blocks per provider per node
+- `blocks.retained` (Gauge) - Current number of blocks retained on disk per node
 
 ## Flow Sequences
 
@@ -785,34 +401,44 @@ public class BlockMetricsManager {
 1. Block is written to disk using FileBlockItemWriter
 2. On closeBlock():
    - FileBlockItemWriter notifies registered BucketUploadListeners
-   - BucketUploadManager launches parallel uploads for each configured bucket
-   - After successful uploads, local file is scheduled for deletion
+   - BucketUploadManager receives notification and:
+     - Validates block file exists and is readable
+     - Calculates block file hash
+     - Creates block metadata file with hash and timestamp
+     - Launches parallel uploads to each configured bucket provider
+     - Each provider:
+       - Uploads block file
+       - Validates uploaded file hash matches local hash
+       - Updates metadata with upload statuses
+   - After all uploads complete successfully:
+     - BlockRetentionManager will eventually delete the block file based on retention policy
+     - Metrics are updated to reflect successful upload
 
 ### Error Handling
 
 - Upload Failure:
-  - Retry with exponential backoff
-  - Keep local copy indefinitely
-  - Emit metrics and alerts
-  - Log detailed error information
+  - Retry with exponential backoff up to configured max attempts
+  - Keep local copy until successful upload or manual intervention
+  - Update metadata file with failure details (provider upload status)
+  - Emit upload failure metrics per provider
+  - Log error details including:
+    - Provider name
+    - Block file path
+    - Error message and stack trace
+    - Retry attempt number
 
 ### Hash Mismatch
-
-- When detected:
-    - Keep local copy
-    - Emit hash mismatch metric
-    - Log detailed comparison 
-    - Alert operators
-
-### Recovery Handling
-- On node startup, the BlockRecoveryManager checks for blocks that have not been atempted to be uploaded. If the block has a hash mismatch, it will not be uploaded again.
+- When hash validation fails:
+  - Keep local copy until manual intervention
+  - Update metadata file with hash mismatch details
+  - Emit hash mismatch metric per provider
+  - Log error details including:
+    - Provider name
+    - Block file path 
+    - Expected vs actual hash values
 
 ## Testing Strategy
 
 1. Unit tests for each component
 2. Integration tests with mocked cloud services
 3. End-to-end tests with real cloud services
-4. Credential loading and error handling tests
-5. Parallel upload and deletion tests
-
-The implementation maintains compatibility with existing systems while adding cloud storage capabilities in a way that ensures reliability and performance through parallel processing and proper error handling.
