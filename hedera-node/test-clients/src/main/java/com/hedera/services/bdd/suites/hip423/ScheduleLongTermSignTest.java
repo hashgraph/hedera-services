@@ -188,7 +188,7 @@ public class ScheduleLongTermSignTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 7)
                         .hasRecordedScheduledTxn(),
-                triggerSchedule(schedule,8),
+                triggerSchedule(schedule, 8),
                 scheduleSign(schedule)
                         .alsoSigningWith(NEW_SENDER_KEY)
                         .sigControl(forKey(NEW_SENDER_KEY, sigTwo))
