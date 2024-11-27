@@ -42,9 +42,8 @@ message TssStatus {
     /**
      * An enum representing the status of the TSS keying process.<br/>
      * <p>
-     * This status SHALL be used to determine the state of the TSS keying process.
-     * This value MUST be set when tss is enabled.<br/>
-     * This value MUST be set when tss is enabled.<br/>
+     * This status SHALL be used to determine the state of the TSS keying process.<br/>
+     * This value MUST be set when tss is enabled.
      */
     TssKeyingStatus tss_keying_status = 1;
 
