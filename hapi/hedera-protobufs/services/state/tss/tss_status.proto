@@ -33,61 +33,65 @@ option java_package = "com.hedera.hapi.node.state.tss.legacy";
 option java_multiple_files = true;
 
 /**
- * A key for use in the Threshold Signature Scheme (TSS) TssMessageMaps.
+ * A Singleton state object that represents the status of the TSS keying process.
  *
- * This key SHALL be used to uniquely identify entries in the Message Maps.
+ * This key SHALL be used to determine the stage of the TSS keying process.
  */
 message TssStatus {
 
-  /**
-   * An enum representing the status of the TSS keying process. This status
-   * SHALL be used to determine the state of the TSS keying process.
-   * <p>
-   * This value MUST be set.<br/>
-   * This value MUST NOT be empty.<br/>
-   */
-  TssKeyingStatus tss_keying_status = 1;
+    /**
+     * An enum representing the status of the TSS keying process.<br/>
+     * <p>
+     * This status SHALL be used to determine the state of the TSS keying process.
+     * This value MUST be set when tss is enabled.<br/>
+     * This value MUST be set when tss is enabled.<br/>
+     */
+    TssKeyingStatus tss_keying_status = 1;
 
-  /**
-   * An enum representing the key either active roster or candidate roster.
-   * This value will be to key active roster if it is genesis stage
-   * <p>This value MUST be set.<br/>
-   * This value MUST be a valid sequence number.
-   */
-  RosterToKey roster_to_key = 2;
+    /**
+     * An enum representing the key either active roster or candidate roster.<br/>
+     * This value will be to key active roster if it is genesis stage
+     * <p>This value MUST be set.<br/>
+     */
+    RosterToKey roster_to_key = 2;
 
-  /**
-   * A hash of the ledger_id resulted from the TSS keying process.
-   * If this value is empty, the TSS keying process has not yet completed.
-   * <p>
-   * This value MUST be set.<br/>
-   * This value MUST NOT be empty.<br/>
-   * This value MUST contain a valid hash.
-   */
-  bytes ledger_id = 3;
+    /**
+     * A hash of the ledger_id resulting from the TSS keying process.<br/>
+     * If this value is empty, the TSS keying process has not yet completed.
+     * <p>
+     * This value COULD be empty.<br/>
+     * This value MUST contain a valid hash after the TSS keying process is complete.<br/>
+     */
+    bytes ledger_id = 3;
 }
+
 /**
- * An enum representing the status of the TSS keying process. This status
- * SHALL be used to determine the state of the TSS keying process.
+ * An enum representing the status of the TSS keying process.
+ *
+ * This status SHALL be used to determine the state of the TSS keying process.
  */
 enum TssKeyingStatus {
-  /**
-   * The TSS keying process has not yet reached the threshold for encryption
-   * keys.
-   */
-  WAITING_FOR_ENCRYPTION_KEYS = 0;
-  /**
-   * The TSS keying process has not yet reached the threshold for TSS messages.
-   */
-  WAITING_FOR_THRESHOLD_TSS_MESSAGES = 1;
-  /**
-   * The TSS keying process has not yet reached the threshold for TSS votes.
-   */
-  WAITING_FOR_THRESHOLD_TSS_VOTES = 2;
-  /**
-   * The TSS keying process has completed and the ledger id is set.
-   */
-  KEYING_COMPLETE = 3;
+
+    /**
+     * The TSS keying process has not yet reached the threshold for encryption
+     * keys.
+     */
+    WAITING_FOR_ENCRYPTION_KEYS = 0;
+
+    /**
+     * The TSS keying process has not yet reached the threshold for TSS messages.
+     */
+    WAITING_FOR_THRESHOLD_TSS_MESSAGES = 1;
+
+    /**
+     * The TSS keying process has not yet reached the threshold for TSS votes.
+     */
+    WAITING_FOR_THRESHOLD_TSS_VOTES = 2;
+
+    /**
+     * The TSS keying process has completed and the ledger id is set.
+     */
+    KEYING_COMPLETE = 3;
 }
 
 /**
@@ -95,16 +99,19 @@ enum TssKeyingStatus {
  * This value will be to key active roster if it is genesis stage
  */
 enum RosterToKey {
-  /**
-   * Key the active roster. This is true when we are keying roster on genesis stage
-   */
-  ACTIVE_ROSTER = 0;
-  /**
-   * Key the candidate roster. This is true when we are keying roster on non-genesis stage`
-   */
-  CANDIDATE_ROSTER = 1;
-  /**
-   * Key none of the roster. This is true when we are not keying any roster
-   */
-  NONE = 2;
+
+    /**
+     * Key the active roster. This is true when we are keying roster on genesis stage
+     */
+    ACTIVE_ROSTER = 0;
+
+    /**
+     * Key the candidate roster. This is true when we are keying roster on non-genesis stage`
+     */
+    CANDIDATE_ROSTER = 1;
+
+    /**
+     * Key none of the roster. This is true when we are not keying any roster
+     */
+    NONE = 2;
 }

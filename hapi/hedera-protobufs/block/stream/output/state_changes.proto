@@ -67,7 +67,6 @@ import "timestamp.proto";
 import "auxiliary/tss/tss_encryption_key.proto";
 import "auxiliary/tss/tss_message.proto";
 import "auxiliary/tss/tss_vote.proto";
-import "auxiliary/tss/tss_share_signature.proto";
 import "state/tss/tss_message_map_key.proto";
 import "state/tss/tss_vote_map_key.proto";
 import "state/tss/tss_status.proto";
@@ -891,17 +890,17 @@ message MapChangeValue {
         proto.ThrottleUsageSnapshots throttle_usage_snapshots_value = 19;
 
         /**
-         * A TSS Encryption Key Transaction Body value.
+         * The value of a map that stores tss encryption keys for each node.
          */
         com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody tss_encryption_key_value = 20;
 
         /**
-         * A TSS Encryption Key Transaction Body value.
+         * The value of a map that stores tss messages submitted for each share of nodes.
          */
         com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody tss_message_value = 21;
 
         /**
-         * A TSS Encryption Key Transaction Body value.
+         * The value of a map that stores tss votes submitted by each node to recover the ledger id.
          */
         com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody tss_vote_value = 22;
     }
