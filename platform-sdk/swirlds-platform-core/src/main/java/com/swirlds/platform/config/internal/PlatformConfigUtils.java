@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.config.internal;
 
+import static com.swirlds.logging.legacy.LogMarker.CONFIG;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
@@ -75,7 +76,7 @@ public class PlatformConfigUtils {
                 .forEach(name -> {
                     final String message =
                             "Configuration property '%s' is not used by any configuration data type".formatted(name);
-                    logger.debug(EXCEPTION.getMarker(), message);
+                    logger.debug(CONFIG.getMarker(), message);
                 });
     }
 
