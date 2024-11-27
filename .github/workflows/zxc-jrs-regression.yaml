@@ -485,8 +485,8 @@ jobs:
             fi
 
             if [[ -n "${HEDERA_TESTS_ENABLED}" && "${HEDERA_TESTS_ENABLED}" = true ]]; then
-              # Override for the develop branch
-              if [[ "${SLACK_BRANCH}" != "develop" ]]; then
+              # Override for the main branch
+              if [[ "${SLACK_BRANCH}" != "main" ]]; then
                 SLACK_SUMMARY="hedera-gcp-${SLACK_BRANCH}-summary"
                 SLACK_RESULTS="hedera-gcp-${SLACK_BRANCH}-regression"
               else

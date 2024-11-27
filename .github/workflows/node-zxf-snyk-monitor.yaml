@@ -19,7 +19,7 @@ name: "ZXF: Snyk Monitor"
 on:
   push:
     branches:
-      - develop
+      - main
   workflow_dispatch:
 
 permissions:

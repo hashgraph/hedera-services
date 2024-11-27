@@ -52,7 +52,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: '0'
-          ref: develop
+          ref: main
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Find Build Candidates
@@ -74,8 +74,8 @@ jobs:
               gh run cancel ${{ github.run_id }}
             fi
 
-            # Verify the commit is on develop and continue
-            if git branch --contains "${CANDIDATE_COMMIT}" | grep --quiet develop >/dev/null 2>&1; then
+            # Verify the commit is on main and continue
+            if git branch --contains "${CANDIDATE_COMMIT}" | grep --quiet main >/dev/null 2>&1; then
               git push --delete origin $(git tag --list "${TAG_PATTERN}")
               git tag --delete $(git tag --list "${TAG_PATTERN}")
               echo "build-candidate-exists=true" >> "${GITHUB_OUTPUT}"

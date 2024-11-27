@@ -14,7 +14,7 @@ at the beginning of the issue.
 
 Suppose your feature is for issue number `123`. Follow these steps to set up and 
 iterate development of the feature.
- 1. Create a `0123-D-DoThings` branch off `develop` in the [Hedera protobufs](https://github.com/hashgraph/hedera-protobufs) 
+ 1. Create a `0123-D-DoThings` branch off `main` in the [Hedera protobufs](https://github.com/hashgraph/hedera-protobufs) 
     repository; make your changes to the _*.proto_ in this branch.
  2. Create a `0123-M-DoThings` branch off `master` in the [Hedera protobufs Java](https://github.com/hashgraph/hedera-protobufs-java) 
     repository; sync your protobuf changes to this branch and use it to deploy 
@@ -33,7 +33,7 @@ iterate development of the feature.
 
 You should open and complete PRs in the same order you created the branches above.
 That is,
- 1. Open your PR to `develop` in the [Hedera protobufs](https://github.com/hashgraph/hedera-protobufs) 
+ 1. Open your PR to `main` in the [Hedera protobufs](https://github.com/hashgraph/hedera-protobufs) 
     repo. 
  2. _Only when_ the PR from (1) is approved and merged, open a PR containing the identical _*.proto_ changes to 
     `master` in the [Hedera protobufs Java](https://github.com/hashgraph/hedera-protobufs-java). (Note

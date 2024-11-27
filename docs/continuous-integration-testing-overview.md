@@ -20,11 +20,11 @@ two major components of CITR: MATS and XTS.
 MATS is the Minimal Acceptable Test Suite; this suite of tests is run against every pull request (PR) that is opened in
 the `hashgraph/hedera-services` repository.
 
-XTS is the eXtended Test Suite; this suite of tests is run against the latest commit on the develop branch every three
+XTS is the eXtended Test Suite; this suite of tests is run against the latest commit on the main branch every three
 hours (provided there is a new commit to run against).
 
 MATS tests are inclusive of a series of unit tests and performance tests that must be executed against a PR branch prior
-to merging into develop. The MATS tests are intended to complete within a 30-minute time window to provide developers
+to merging into main. The MATS tests are intended to complete within a 30-minute time window to provide developers
 with valuable insight of the impact of new code on the default branch.
 
 XTS tests are run against the default branch once every three hours. These cover test cases that are unable to complete
@@ -38,14 +38,14 @@ There is an additional workflow: `ZXF: Extended Test Suite - Dry Run` which is a
 `hashgraph/hedera-services` repository.
 
 The XTS Dry-Run workflow runs a provided commit on any branch through the same XTS tests that would be run against the
-latest on develop every three hours. This workflow is run with a manual trigger and will execute in parallel to any
+latest on main every three hours. This workflow is run with a manual trigger and will execute in parallel to any
 other actions ongoing in the `hashgraph/hedera-services` repository.
 
 A developer can manually trigger a run using the parameters in the web UI:
 
 ```text
 Use Workflow From
-  Branch: develop # this should always be `develop`
+  Branch: main # this should always be `main`
 The commit sha to check out
   <your current commit hash>
 The branch name, for JRS Panel output
