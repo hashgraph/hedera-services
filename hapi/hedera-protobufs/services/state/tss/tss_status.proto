@@ -96,22 +96,22 @@ enum TssKeyingStatus {
 
 /**
  * An enum representing the key either active roster or candidate roster.
- * This value will be to key active roster if it is genesis stage
+ * This value will be to key active roster if it is genesis stage.
  */
 enum RosterToKey {
 
     /**
-     * Key the active roster. This is true when we are keying roster on genesis stage
+     * Key the active roster. This is true when we are keying roster on genesis stage.
      */
     ACTIVE_ROSTER = 0;
 
     /**
-     * Key the candidate roster. This is true when we are keying roster on non-genesis stage`
+     * Key the candidate roster. This is true when we are keying roster on non-genesis stage.
      */
     CANDIDATE_ROSTER = 1;
 
     /**
-     * Key none of the roster. This is true when we are not keying any roster
+     * Key none of the roster. This is true when we are not keying any roster.
      */
     NONE = 2;
 }
