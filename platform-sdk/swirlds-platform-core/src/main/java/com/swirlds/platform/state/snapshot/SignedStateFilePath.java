@@ -219,7 +219,9 @@ public class SignedStateFilePath {
                             metadata = SavedStateMetadata.parse(metdataPath);
                         } catch (final IOException e) {
                             logger.error(
-                                    EXCEPTION.getMarker(), "Unable to read saved state metadata file '{}'", metdataPath);
+                                    EXCEPTION.getMarker(),
+                                    "Unable to read saved state metadata file '{}'",
+                                    metdataPath);
                             continue;
                         }
 
