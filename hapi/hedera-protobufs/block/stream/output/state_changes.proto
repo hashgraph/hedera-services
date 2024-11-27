@@ -753,12 +753,12 @@ message MapChangeKey {
         /**
          * A TSS Message Map Key key.
          */
-        proto.TssMessageMapKey tss_message_map_key = 17;
+        com.hedera.hapi.node.state.tss.TssMessageMapKey tss_message_map_key = 17;
 
         /**
          * A TSS Message Map Key key.
          */
-        proto.TssVoteMapKey tss_vote_map_key = 18;
+        com.hedera.hapi.node.state.tss.TssVoteMapKey tss_vote_map_key = 18;
     }
 }
 

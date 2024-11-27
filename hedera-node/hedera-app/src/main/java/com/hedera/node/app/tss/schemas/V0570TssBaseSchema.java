@@ -19,6 +19,7 @@ package com.hedera.node.app.tss.schemas;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.tss.TssStatus;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,7 +51,8 @@ public class V0570TssBaseSchema extends Schema {
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(StateDefinition.singleton(TSS_STATUS_KEY, TssStatus.PROTOBUF),
+        return Set.of(
+                StateDefinition.singleton(TSS_STATUS_KEY, TssStatus.PROTOBUF),
                 StateDefinition.onDisk(
                         TSS_ENCRYPTION_KEY_MAP_KEY,
                         EntityNumber.PROTOBUF,

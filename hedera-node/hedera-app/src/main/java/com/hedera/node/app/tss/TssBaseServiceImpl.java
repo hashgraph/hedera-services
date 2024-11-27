@@ -377,6 +377,11 @@ public class TssBaseServiceImpl implements TssBaseService {
         return tssLibrary.getTssMessageFromBytes(wrap, directory);
     }
 
+    @Override
+    public void manageTssStatus(final State state) {
+        // TODO: Implement this method
+    }
+
     @VisibleForTesting
     public TssKeysAccessor getTssKeysAccessor() {
         return tssKeysAccessor;

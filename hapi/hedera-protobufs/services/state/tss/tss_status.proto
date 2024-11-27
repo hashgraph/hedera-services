@@ -75,15 +75,15 @@ enum TssKeyingStatus {
    * The TSS keying process has not yet reached the threshold for encryption
    * keys.
    */
-  REACHED_THRESHOLD_ENCRYPTION_KEYS = 0;
+  WAITING_FOR_ENCRYPTION_KEYS = 0;
   /**
    * The TSS keying process has not yet reached the threshold for TSS messages.
    */
-  REACHED_THRESHOLD_TSS_MESSAGES = 1;
+  WAITING_FOR_THRESHOLD_TSS_MESSAGES = 1;
   /**
    * The TSS keying process has not yet reached the threshold for TSS votes.
    */
-  REACHED_THRESHOLD_TSS_VOTES = 2;
+  WAITING_FOR_THRESHOLD_TSS_VOTES = 2;
   /**
    * The TSS keying process has completed and the ledger id is set.
    */
@@ -97,4 +97,5 @@ enum TssKeyingStatus {
 enum RosterToKey {
   ACTIVE_ROSTER = 0;
   CANDIDATE_ROSTER = 1;
+  NONE = 2;
 }
