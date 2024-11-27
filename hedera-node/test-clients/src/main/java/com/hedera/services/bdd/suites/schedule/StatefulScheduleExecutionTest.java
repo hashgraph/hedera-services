@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -71,12 +70,11 @@ public class StatefulScheduleExecutionTest {
     @HapiTest
     @Order(4)
     final Stream<DynamicTest> scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
-        return defaultHapiSpec("ScheduledBurnWithInvalidTokenThrowsUnresolvableSigners")
-                .given(cryptoCreate(SCHEDULE_PAYER))
-                .when(scheduleCreate(VALID_SCHEDULE, burnToken("0.0.123231", List.of(1L, 2L)))
+        return hapiTest(
+                cryptoCreate(SCHEDULE_PAYER),
+                scheduleCreate(VALID_SCHEDULE, burnToken("0.0.123231", List.of(1L, 2L)))
                         .designatingPayer(SCHEDULE_PAYER)
-                        .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS))
-                .then();
+                        .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS));
     }
 
     @LeakyHapiTest(overrides = {"tokens.nfts.areEnabled"})
