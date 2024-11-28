@@ -345,6 +345,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    @DisplayName("calculate fees correctly considering bytes per transaction")
     void testCalculateFeesConsideringBytesPerTransaction() {
         final var feeCtx = mock(FeeContext.class);
         final var feeCalcFact = mock(FeeCalculatorFactory.class);
