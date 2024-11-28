@@ -330,7 +330,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     @DisplayName("check that fees are 1 for delete account allowance trx")
-    void testCalculateFeesInvocations() {
+    void testCalculateFeesReturnsCorrectFeeForDeleteAccountAllowance() {
         final var feeCtx = mock(FeeContext.class);
         final var feeCalcFact = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);
