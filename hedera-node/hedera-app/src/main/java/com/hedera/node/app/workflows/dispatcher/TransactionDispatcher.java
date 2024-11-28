@@ -142,7 +142,7 @@ public class TransactionDispatcher {
     // Scaling the fees if certain conditions are met.
     // E.g. when we do a ScheduleCreate we want to scale the fees based on what transaction type is scheduled
     private static Fees scale(TransactionBody transactionBody, Fees fees) {
-        double multiplier = 1; // by default, we are not scaling
+        int multiplier = 1; // by default, we are not scaling
 
         final var functionality = transactionBody.data().kind();
         // We are only scaling the ScheduleCreate. In the future we can add more functionalities.
@@ -154,7 +154,7 @@ public class TransactionDispatcher {
     }
 
     // Getting the scheduled multiplier based on what transaction type is scheduled
-    private static double getScheduleMultiplier(TransactionBody transactionBody) {
+    private static int getScheduleMultiplier(TransactionBody transactionBody) {
         try {
             HederaFunctionality functionality = getScheduledHederaFunctionality(transactionBody);
             var multiplier =
@@ -173,7 +173,6 @@ public class TransactionDispatcher {
                 .originalCreateTransaction(txnBody)
                 .scheduledTransaction(scheduled)
                 .build();
-
         try {
             TransactionBody innerTxn = childAsOrdinary(schedule);
             return functionOf(innerTxn);

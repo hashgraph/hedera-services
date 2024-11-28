@@ -138,15 +138,8 @@ public record Fees(long nodeFee, long networkFee, long serviceFee) {
      * @param multiplier The multiplier used to multiply the fees
      * @return a new {@link Fees} object with the multiplied fees
      */
-    public Fees multiplyBy(double multiplier) {
-        return new Fees(
-                multiply(nodeFee, multiplier), multiply(networkFee, multiplier), multiply(serviceFee, multiplier));
-    }
-
-    // The multiplier is of type double to have more precise scaling of the fees. The method multiplies
-    // the fee by the multiplier and then rounds it down to the nearest long value.
-    private static long multiply(long fee, double multiplier) {
-        return (long) (fee * multiplier);
+    public Fees multiplyBy(int multiplier) {
+        return new Fees(nodeFee * multiplier, networkFee * multiplier, serviceFee * multiplier);
     }
 
     /**

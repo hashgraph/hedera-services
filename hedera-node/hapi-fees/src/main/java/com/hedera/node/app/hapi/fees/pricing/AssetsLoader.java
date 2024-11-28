@@ -42,7 +42,7 @@ public class AssetsLoader {
     private Map<UsableResource, BigDecimal> cachedCapacities = null;
     private Map<HederaFunctionality, BigDecimal> cachedConstWeights = null;
     private Map<HederaFunctionality, Map<SubType, BigDecimal>> cachedCanonicalPrices = null;
-    private Map<com.hedera.hapi.node.base.HederaFunctionality, Double> cachedScheduledTransactionMultipliers = null;
+    private Map<com.hedera.hapi.node.base.HederaFunctionality, Integer> cachedScheduledTransactionMultipliers = null;
 
     @Inject
     public AssetsLoader() {
@@ -149,12 +149,12 @@ public class AssetsLoader {
      * @return map of functionality to multiplier
      * @throws IOException if the backing JSON resource cannot be loaded
      */
-    public Map<com.hedera.hapi.node.base.HederaFunctionality, Double> loadScheduledTransactionMultipliers()
+    public Map<com.hedera.hapi.node.base.HederaFunctionality, Integer> loadScheduledTransactionMultipliers()
             throws IOException {
         if (cachedScheduledTransactionMultipliers != null) {
             return cachedScheduledTransactionMultipliers;
         }
-        final Map<com.hedera.hapi.node.base.HederaFunctionality, Double> multipliers = new HashMap<>();
+        final Map<com.hedera.hapi.node.base.HederaFunctionality, Integer> multipliers = new HashMap<>();
         try (final var fin =
                 AssetsLoader.class.getClassLoader().getResourceAsStream(SCHEDULED_TRANSACTION_MULTIPLIERS)) {
 
@@ -163,7 +163,7 @@ public class AssetsLoader {
 
             data.forEach((funName, multiplier) -> {
                 final var function = com.hedera.hapi.node.base.HederaFunctionality.valueOf((String) funName);
-                multipliers.put(function, (double) multiplier);
+                multipliers.put(function, (int) multiplier);
             });
         }
 
