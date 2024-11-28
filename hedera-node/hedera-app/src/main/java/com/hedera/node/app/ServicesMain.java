@@ -227,6 +227,15 @@ public class ServicesMain implements SwirldMain {
         final var recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
 
+        final var cryptography = CryptographyFactory.create();
+        CryptographyHolder.set(cryptography);
+        // the AddressBook is not changed after this point, so we calculate the hash now
+        cryptography.digestSync(diskAddressBook);
+
+        // Initialize the Merkle cryptography
+        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
+        MerkleCryptoFactory.set(merkleCryptography);
+
         // Create initial state for the platform
         final var isGenesis = new AtomicBoolean(false);
         // We want to be able to see the schema migration logs, so init logging here
@@ -259,15 +268,6 @@ public class ServicesMain implements SwirldMain {
                     null,
                     configuration);
         }
-
-        final var cryptography = CryptographyFactory.create();
-        CryptographyHolder.set(cryptography);
-        // the AddressBook is not changed after this point, so we calculate the hash now
-        cryptography.digestSync(diskAddressBook);
-
-        // Initialize the Merkle cryptography
-        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
-        MerkleCryptoFactory.set(merkleCryptography);
 
         // Create the platform context
         final var platformContext = PlatformContext.create(
