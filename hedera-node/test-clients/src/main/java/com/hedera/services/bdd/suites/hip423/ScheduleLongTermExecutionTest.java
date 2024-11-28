@@ -494,16 +494,15 @@ public class ScheduleLongTermExecutionTest {
     @Order(5)
     public Stream<DynamicTest> executionWithContractCallWorksAtExpiry() {
         final var payerBalance = new AtomicLong();
-        return defaultHapiSpec("ExecutionWithContractCallWorksAtExpiry")
-                .given(
+        return hapiTest(flattened(
                         // upload fees for SCHEDULE_CREATE_CONTRACT_CALL
                         uploadScheduledContractPrices(GENESIS),
                         uploadInitCode(SIMPLE_UPDATE),
                         contractCreate(SIMPLE_UPDATE).gas(500_000L),
                         cryptoCreate(PAYING_ACCOUNT)
                                 .balance(PAYER_INITIAL_BALANCE)
-                                .via(PAYING_ACCOUNT_TXN))
-                .when(scheduleCreate(
+                                .via(PAYING_ACCOUNT_TXN),
+                scheduleCreate(
                                 BASIC_XFER,
                                 contractCall(SIMPLE_UPDATE, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
                                         .gas(300000L))
@@ -512,8 +511,7 @@ public class ScheduleLongTermExecutionTest {
                         .designatingPayer(PAYING_ACCOUNT)
                         .alsoSigningWith(PAYING_ACCOUNT)
                         .recordingScheduledTxn()
-                        .via(CREATE_TX))
-                .then(
+                        .via(CREATE_TX),
                         getScheduleInfo(BASIC_XFER)
                                 .hasScheduleId(BASIC_XFER)
                                 .hasWaitForExpiry()
@@ -521,10 +519,7 @@ public class ScheduleLongTermExecutionTest {
                                 .isNotDeleted()
                                 .hasRelativeExpiry(PAYING_ACCOUNT_TXN, 4)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(5000),
-                        cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(500),
-                        getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                        triggerSchedule(BASIC_XFER),
                         getAccountBalance(PAYING_ACCOUNT)
                                 .hasTinyBars(spec -> bal ->
                                         bal < PAYER_INITIAL_BALANCE ? Optional.empty() : Optional.of("didnt change"))
@@ -547,20 +542,19 @@ public class ScheduleLongTermExecutionTest {
                                             .getContractCallResult()
                                             .size()
                                     >= 0);
-                        }));
+                        })));
     }
 
     @HapiTest
     @Order(6)
     public Stream<DynamicTest> executionWithContractCreateWorksAtExpiry() {
         final var payerBalance = new AtomicLong();
-        return defaultHapiSpec("ExecutionWithContractCreateWorksAtExpiry")
-                .given(
+        return hapiTest(flattened(
                         uploadInitCode(SIMPLE_UPDATE),
                         cryptoCreate(PAYING_ACCOUNT)
                                 .balance(PAYER_INITIAL_BALANCE)
-                                .via(PAYING_ACCOUNT_TXN))
-                .when(scheduleCreate(
+                                .via(PAYING_ACCOUNT_TXN),
+                scheduleCreate(
                                 BASIC_XFER,
                                 contractCreate(SIMPLE_UPDATE).gas(500_000L).adminKey(PAYING_ACCOUNT))
                         .waitForExpiry()
@@ -568,8 +562,7 @@ public class ScheduleLongTermExecutionTest {
                         .designatingPayer(PAYING_ACCOUNT)
                         .alsoSigningWith(PAYING_ACCOUNT)
                         .recordingScheduledTxn()
-                        .via(CREATE_TX))
-                .then(
+                        .via(CREATE_TX),
                         getScheduleInfo(BASIC_XFER)
                                 .hasScheduleId(BASIC_XFER)
                                 .hasWaitForExpiry()
@@ -577,10 +570,7 @@ public class ScheduleLongTermExecutionTest {
                                 .isNotDeleted()
                                 .hasRelativeExpiry(PAYING_ACCOUNT_TXN, 4)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(5000),
-                        cryptoCreate("foo").via(TRIGGERING_TXN),
-                        sleepFor(2000),
-                        getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                        triggerSchedule(BASIC_XFER),
                         getAccountBalance(PAYING_ACCOUNT)
                                 .hasTinyBars(spec -> bal ->
                                         bal < PAYER_INITIAL_BALANCE ? Optional.empty() : Optional.of("didnt change"))
@@ -606,7 +596,7 @@ public class ScheduleLongTermExecutionTest {
                                             .getContractCallResult()
                                             .size()
                                     >= 0);
-                        }));
+                        })));
     }
 
     @HapiTest
