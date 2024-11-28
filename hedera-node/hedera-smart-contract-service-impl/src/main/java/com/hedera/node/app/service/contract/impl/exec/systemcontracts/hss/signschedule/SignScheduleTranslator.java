@@ -167,11 +167,7 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
         if (key != null) {
             return Set.of(key);
         }
-        key = attempt.enhancement().nativeOperations().getAccountKey(attempt.senderId());
-        if (key != null) {
-            return Set.of(key);
-        }
-        return emptySet();
+        return attempt.enhancement().nativeOperations().authorizingSimpleKeys();
     }
 
     @NonNull
