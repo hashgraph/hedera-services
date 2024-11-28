@@ -1042,7 +1042,6 @@ public class BlockStreamBuilder
             scheduledTransactionId = null;
         }
 
-        transactionResultBuilder.scheduleRef((ScheduleID) null);
         evmAddress = Bytes.EMPTY;
         ethereumHash = Bytes.EMPTY;
         runningHash = Bytes.EMPTY;

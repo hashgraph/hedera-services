@@ -14,28 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss.pairings;
+package com.swirlds.state.test.fixtures.merkle;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
+import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.state.merkle.MerkleStateRoot;
 
-public class FakeGroupElement implements GroupElement {
-    public static final FakeGroupElement GENERATOR = new FakeGroupElement(BigInteger.valueOf(5L));
-    private final BigInteger value;
+@ConstructableIgnored
+public class TestMerkleStateRoot extends MerkleStateRoot<TestMerkleStateRoot> {
 
-    public FakeGroupElement(@NonNull BigInteger value) {
-        this.value = value;
+    @Override
+    protected TestMerkleStateRoot copyingConstructor() {
+        return new TestMerkleStateRoot();
     }
 
-    @NonNull
     @Override
-    public GroupElement add(@NonNull GroupElement other) {
-        return new FakeGroupElement(value.add(new BigInteger(other.toBytes())));
-    }
-
-    @NonNull
-    @Override
-    public byte[] toBytes() {
-        return value.toByteArray();
+    public long getCurrentRound() {
+        return 0;
     }
 }
