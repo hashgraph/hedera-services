@@ -433,50 +433,6 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(8)
-    final Stream<DynamicTest> receiverSigRequiredUpdateIsRecognized() {
-        var senderShape = threshOf(2, 3);
-        var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
-        var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
-        String sender = "X";
-        String receiver = "Y";
-        String schedule = "Z";
-        String senderKey = "sKey";
-
-        return hapiTest(flattened(
-                newKeyNamed(senderKey).shape(senderShape),
-                cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
-                cryptoCreate(receiver).balance(0L),
-                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-                        .payingWith(DEFAULT_PAYER)
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .recordingScheduledTxn()
-                        .alsoSigningWith(sender)
-                        .sigControl(forKey(senderKey, sigOne)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                cryptoUpdate(receiver).receiverSigRequired(true),
-                scheduleSign(schedule).alsoSigningWith(senderKey).sigControl(forKey(senderKey, sigTwo)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                scheduleSign(schedule).alsoSigningWith(receiver),
-                getAccountBalance(receiver).hasTinyBars(0),
-                getScheduleInfo(schedule)
-                        .hasScheduleId(schedule)
-                        .hasWaitForExpiry()
-                        .isNotExecuted()
-                        .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 4)
-                        .hasRecordedScheduledTxn(),
-                triggerSchedule(schedule),
-                getAccountBalance(receiver).hasTinyBars(1),
-                scheduleSign(schedule)
-                        .alsoSigningWith(senderKey)
-                        .sigControl(forKey(senderKey, sigTwo))
-                        .hasKnownStatus(INVALID_SCHEDULE_ID),
-                getAccountBalance(receiver).hasTinyBars(1)));
-    }
-
-    @HapiTest
     @Order(9)
     final Stream<DynamicTest> basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));

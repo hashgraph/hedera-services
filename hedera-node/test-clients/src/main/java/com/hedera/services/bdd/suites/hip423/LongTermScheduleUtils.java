@@ -44,14 +44,14 @@ import java.util.List;
 
 public final class LongTermScheduleUtils {
 
+    public static final String SENDER_TXN = "senderTxn";
+    public static final String CREATE_TXN = "createTxn";
     static final String SENDER = "sender";
     static final String PAYER = "payer";
     static final String ADMIN = "admin";
     static final String EXTRA_KEY = "extraKey";
     static final String SHARED_KEY = "sharedKey";
     static final String NEW_SENDER_KEY = "newSenderKey";
-    static final String SENDER_TXN = "senderTxn";
-    static final String CREATE_TXN = "createTxn";
     static final String TRIGGERING_TXN = "triggeringTxn";
     static final String RECEIVER = "receiver";
     static final String BASIC_XFER = "basicXfer";
@@ -139,7 +139,7 @@ public final class LongTermScheduleUtils {
         return operations.toArray(SpecOperation[]::new);
     }
 
-    static SpecOperation[] triggerSchedule(String schedule, long waitForSeconds) {
+    public static SpecOperation[] triggerSchedule(String schedule, long waitForSeconds) {
         return flattened(
                 sleepForSeconds(waitForSeconds),
                 cryptoCreate("foo").via(TRIGGERING_TXN),
@@ -149,7 +149,7 @@ public final class LongTermScheduleUtils {
                 getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 
-    static SpecOperation[] triggerSchedule(String schedule) {
+    public static SpecOperation[] triggerSchedule(String schedule) {
         return triggerSchedule(schedule, 5);
     }
 }

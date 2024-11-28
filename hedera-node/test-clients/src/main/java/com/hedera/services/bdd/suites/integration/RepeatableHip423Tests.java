@@ -32,14 +32,21 @@ import static com.hedera.services.bdd.junit.RepeatableReason.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
+import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.exposeMaxSchedulable;
@@ -65,8 +72,13 @@ import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.CREATE_TXN;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_TXN;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.triggerSchedule;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_MUST_BE_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_TOO_LONG;
@@ -532,6 +544,50 @@ public class RepeatableHip423Tests {
                         .isExecuted()
                         .hasWaitForExpiry(false)
                         .hasRelativeExpiry("createTxn", FORTY_MINUTES - 1));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> receiverSigRequiredUpdateIsRecognized() {
+        var senderShape = threshOf(2, 3);
+        var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
+        var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String senderKey = "sKey";
+
+        return hapiTest(flattened(
+                newKeyNamed(senderKey).shape(senderShape),
+                cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
+                cryptoCreate(receiver).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
+                        .payingWith(DEFAULT_PAYER)
+                        .waitForExpiry()
+                        .expiringIn(FORTY_MINUTES)
+                        .recordingScheduledTxn()
+                        .alsoSigningWith(sender)
+                        .sigControl(forKey(senderKey, sigOne))
+                        .via(CREATE_TXN),
+                getAccountBalance(receiver).hasTinyBars(0L),
+                cryptoUpdate(receiver).receiverSigRequired(true),
+                scheduleSign(schedule).alsoSigningWith(senderKey).sigControl(forKey(senderKey, sigTwo)),
+                getAccountBalance(receiver).hasTinyBars(0L),
+                scheduleSign(schedule).alsoSigningWith(receiver),
+                getAccountBalance(receiver).hasTinyBars(0),
+                getScheduleInfo(schedule)
+                        .hasScheduleId(schedule)
+                        .hasWaitForExpiry()
+                        .isNotExecuted()
+                        .isNotDeleted()
+                        .hasRelativeExpiry(CREATE_TXN, FORTY_MINUTES - 1)
+                        .hasRecordedScheduledTxn(),
+                triggerSchedule(schedule, FORTY_MINUTES),
+                getAccountBalance(receiver).hasTinyBars(1),
+                scheduleSign(schedule)
+                        .alsoSigningWith(senderKey)
+                        .sigControl(forKey(senderKey, sigTwo))
+                        .hasKnownStatus(INVALID_SCHEDULE_ID),
+                getAccountBalance(receiver).hasTinyBars(1)));
     }
 
     private static BiConsumer<TransactionBody, TransactionResult> withStatus(@NonNull final ResponseCodeEnum status) {
