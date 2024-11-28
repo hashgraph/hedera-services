@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
@@ -38,7 +39,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -97,7 +97,7 @@ public class StakePeriodChanges {
      * @param tokenContext the token context
      * @param streamMode the stream mode
      * @param isGenesis whether the current transaction is the genesis transaction
-     * @param lastIntervalProcessTime if known, the last instant when time-based events were processed
+     * @param lastHandleTime the last instant at which a transaction was handled
      */
     public void process(
             @NonNull final Dispatch dispatch,
@@ -105,13 +105,13 @@ public class StakePeriodChanges {
             @NonNull final TokenContext tokenContext,
             @NonNull final StreamMode streamMode,
             final boolean isGenesis,
-            @NonNull final Instant lastIntervalProcessTime) {
+            @NonNull final Instant lastHandleTime) {
         requireNonNull(stack);
         requireNonNull(dispatch);
         requireNonNull(tokenContext);
         requireNonNull(streamMode);
-        requireNonNull(lastIntervalProcessTime);
-        if (isGenesis || isStakingPeriodBoundary(streamMode, tokenContext, lastIntervalProcessTime)) {
+        requireNonNull(lastHandleTime);
+        if (isGenesis || isStakingPeriodBoundary(streamMode, tokenContext, lastHandleTime)) {
             try {
                 exchangeRateManager.updateMidnightRates(stack);
                 stack.commitSystemStateChanges();
@@ -146,20 +146,20 @@ public class StakePeriodChanges {
     private boolean isStakingPeriodBoundary(
             @NonNull final StreamMode streamMode,
             @NonNull final TokenContext tokenContext,
-            @NonNull final Instant lastIntervalProcessTime) {
+            @NonNull final Instant lastHandleTime) {
         final var consensusTime = tokenContext.consensusTime();
         if (streamMode == RECORDS) {
             final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
-            final var lastHandleTime = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
-            if (consensusTime.getEpochSecond() > lastHandleTime.seconds()) {
+            final var consTimeOfLastHandled = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
+            if (consensusTime.getEpochSecond() > consTimeOfLastHandled.seconds()) {
                 return isNextStakingPeriod(
                         consensusTime,
-                        Instant.ofEpochSecond(lastHandleTime.seconds(), lastHandleTime.nanos()),
+                        Instant.ofEpochSecond(consTimeOfLastHandled.seconds(), consTimeOfLastHandled.nanos()),
                         tokenContext);
             }
         } else {
-            if (consensusTime.getEpochSecond() > lastIntervalProcessTime.getEpochSecond()) {
-                return isNextStakingPeriod(consensusTime, lastIntervalProcessTime, tokenContext);
+            if (consensusTime.getEpochSecond() > lastHandleTime.getEpochSecond()) {
+                return isNextStakingPeriod(consensusTime, lastHandleTime, tokenContext);
             }
         }
         return false;
@@ -175,14 +175,15 @@ public class StakePeriodChanges {
         if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
             return isLaterUtcDay(currentConsensusTime, previousConsensusTime);
         } else {
-            return getPeriod(currentConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
-                    > getPeriod(previousConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
+            final var periodMs = stakingPeriod * MINUTES_TO_MILLISECONDS;
+            return getPeriod(currentConsensusTime, periodMs) > getPeriod(previousConsensusTime, periodMs);
         }
     }
 
     private void startKeyingCandidateRoster(
             @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
-        final var nodeStore = handleContext.storeFactory().readableStore(ReadableNodeStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
         final var roster = nodeStore.snapshotOfFutureRoster();
         if (!Objects.equals(roster, rosterStore.getCandidateRoster())
                 && !Objects.equals(roster, rosterStore.getActiveRoster())) {
@@ -193,7 +194,7 @@ public class StakePeriodChanges {
 
     private WritableRosterStore newWritableRosterStore(
             @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
-        final var writableFactory = new WritableStoreFactory(stack, RosterStateId.NAME, config, storeMetricsService);
+        final var writableFactory = new WritableStoreFactory(stack, RosterService.NAME, config, storeMetricsService);
         return writableFactory.getStore(WritableRosterStore.class);
     }
 

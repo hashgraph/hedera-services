@@ -17,13 +17,20 @@
 package com.swirlds.platform.roster;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
+import java.security.cert.CertificateEncodingException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -148,5 +155,66 @@ public class RosterUtilsTest {
                                         .build()))
                                 .build(),
                         0));
+    }
+
+    @Test
+    void testCreateRosterHistory() {
+        // Mock the ReadableRosterStore
+        ReadableRosterStore rosterStore = mock(ReadableRosterStore.class);
+
+        // Create mock data
+        RoundRosterPair pair1 = new RoundRosterPair(1, Bytes.wrap(new byte[] {1}));
+        RoundRosterPair pair2 = new RoundRosterPair(2, Bytes.wrap(new byte[] {2}));
+        List<RoundRosterPair> roundRosterPairs = List.of(pair2, pair1);
+
+        Roster roster1 = mock(Roster.class);
+        Roster roster2 = mock(Roster.class);
+
+        // Define behavior for the mock
+        when(rosterStore.getRosterHistory()).thenReturn(roundRosterPairs);
+        when(rosterStore.get(Bytes.wrap(new byte[] {1}))).thenReturn(roster1);
+        when(rosterStore.get(Bytes.wrap(new byte[] {2}))).thenReturn(roster2);
+
+        // Call the method under test
+        RosterHistory rosterHistory = RosterUtils.createRosterHistory(rosterStore);
+
+        // Verify the results
+        assertEquals(roster2, rosterHistory.getCurrentRoster());
+        assertEquals(roster1, rosterHistory.getPreviousRoster());
+        assertEquals(roster1, rosterHistory.getRosterForRound(1));
+        assertEquals(roster2, rosterHistory.getRosterForRound(2));
+    }
+
+    @Test
+    void testCreateRosterHistoryNoActiveRosters() {
+        // Mock the ReadableRosterStore
+        ReadableRosterStore rosterStore = mock(ReadableRosterStore.class);
+
+        // Define behavior for the mock
+        when(rosterStore.getRosterHistory()).thenReturn(null);
+
+        // Verify that the method throws an IllegalStateException
+        assertThrows(IllegalStateException.class, () -> RosterUtils.createRosterHistory(rosterStore));
+    }
+
+    @Test
+    void testFetchingCertificates() throws CertificateEncodingException {
+        // Positive Case
+        assertEquals(
+                PreGeneratedX509Certs.getSigCert(0).getCertificate(),
+                RosterUtils.fetchGossipCaCertificate(RosterEntry.newBuilder()
+                        .gossipCaCertificate(Bytes.wrap(PreGeneratedX509Certs.getSigCert(0)
+                                .getCertificate()
+                                .getEncoded()))
+                        .build()));
+        // Negative Cases
+        assertNull(RosterUtils.fetchGossipCaCertificate(
+                RosterEntry.newBuilder().gossipCaCertificate(null).build()));
+        assertNull(RosterUtils.fetchGossipCaCertificate(
+                RosterEntry.newBuilder().gossipCaCertificate(Bytes.EMPTY).build()));
+        assertNull(RosterUtils.fetchGossipCaCertificate(RosterEntry.newBuilder()
+                .gossipCaCertificate(
+                        Bytes.wrap(PreGeneratedX509Certs.createBadCertificate().getEncoded()))
+                .build()));
     }
 }

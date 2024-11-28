@@ -35,30 +35,30 @@ import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_AD
 import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterRetriever;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -71,13 +71,15 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * State for the AddressBookTestingTool.
  */
-public class AddressBookTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+@ConstructableIgnored
+public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
 
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
@@ -97,6 +99,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     private static final long CLASS_ID = 0xf052378c7364ef47L;
 
+    private static final int RUNNING_SUM_INDEX = 1;
+    private static final int ROUND_HANDLED_INDEX = 2;
+
     private NodeId selfId;
 
     /** false until the test scenario has been validated, true afterwards. */
@@ -113,8 +118,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     /**
      * The number of rounds handled by this app. Is incremented each time
-     * {@link #handleConsensusRound(Round, PlatformStateAccessor)} is called. Note that this may not actually equal the round
-     * number, since we don't call {@link #handleConsensusRound(Round, PlatformStateAccessor)} for rounds with no events.
+     * {@link #handleConsensusRound(Round, PlatformStateModifier)} is called. Note that this may not actually equal the round
+     * number, since we don't call {@link #handleConsensusRound(Round, PlatformStateModifier)} for rounds with no events.
      *
      * <p>
      * Affects the hash of this node.
@@ -129,7 +134,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     private Duration freezeAfterGenesis = null;
 
-    public AddressBookTestingToolState() {
+    public AddressBookTestingToolState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(lifecycles, versionFactory);
         logger.info(STARTUP.getMarker(), "New State Constructed.");
     }
 
@@ -156,6 +164,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     @Override
     public synchronized AddressBookTestingToolState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new AddressBookTestingToolState(this);
     }
 
@@ -180,6 +189,17 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         throwIfImmutable();
 
         this.selfId = platform.getSelfId();
+
+        final StringLeaf runningSumLeaf = getChild(RUNNING_SUM_INDEX);
+        if (runningSumLeaf != null && runningSumLeaf.getLabel() != null) {
+            this.runningSum = Long.parseLong(runningSumLeaf.getLabel());
+            logger.info(STARTUP.getMarker(), "State initialized with state long {}.", runningSum);
+        }
+        final StringLeaf roundsHandledLeaf = getChild(ROUND_HANDLED_INDEX);
+        if (roundsHandledLeaf != null && roundsHandledLeaf.getLabel() != null) {
+            this.roundsHandled = Long.parseLong(roundsHandledLeaf.getLabel());
+            logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled.", roundsHandled);
+        }
     }
 
     /**
@@ -201,6 +221,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         }
 
         roundsHandled++;
+        setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
 
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
@@ -231,26 +252,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         runningSum += delta;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        Objects.requireNonNull(out, "the serializable data output stream cannot be null");
-        out.writeLong(runningSum);
-        out.writeLong(roundsHandled);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        Objects.requireNonNull(in, "the serializable data input stream cannot be null");
-        runningSum = in.readLong();
-        roundsHandled = in.readLong();
+        setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
     }
 
     /**
@@ -266,6 +268,11 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @Override
     public int getVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    @Override
+    public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
     }
 
@@ -373,7 +380,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -392,7 +399,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -424,7 +431,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -443,7 +450,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -461,7 +468,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -480,7 +487,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -499,7 +506,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -517,7 +524,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterUtils.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();

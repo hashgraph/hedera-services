@@ -16,148 +16,42 @@
 
 package com.hedera.services.bdd.suites.integration;
 
-import static com.hedera.node.config.types.StreamMode.RECORDS;
-import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_TSS_CONTROL;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.TssVerbs.rekeyingScenario;
-import static com.hedera.services.bdd.spec.utilops.TssVerbs.startIgnoringTssSignatureRequests;
-import static com.hedera.services.bdd.spec.utilops.TssVerbs.stopIgnoringTssSignatureRequests;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.DabEdits.NO_DAB_EDITS;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TSS_MESSAGE_SIMS;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.INVALID_MESSAGES;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.VALID_MESSAGES;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.UNEQUAL_NODE_STAKES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hedera.services.bdd.spec.assertions.NonFungibleTransfers.changingNFTBalances;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 
-import com.hedera.hapi.block.stream.Block;
-import com.hedera.node.app.blocks.BlockStreamManager;
-import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
-import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
+@Order(1)
 @Tag(INTEGRATION)
 @TargetEmbeddedMode(REPEATABLE)
 public class RepeatableIntegrationTests {
-    /**
-     * Validates behavior of the {@link BlockStreamManager} under specific conditions related to signature requests
-     * and block creation.
-     *
-     * <p>This test follows three main steps:</p>
-     * <ul>
-     *     <li>Instructs the {@link FakeTssBaseService} to start ignoring signature requests and
-     *     produces several blocks. In this scenario, each transaction is placed into its own round
-     *     since the service is operating in repeatable mode.</li>
-     *     <li>Verifies that no blocks are written, as no block proofs are available, which is the
-     *     expected behavior when the service is ignoring signature requests.</li>
-     *     <li>Reactivates the {@link FakeTssBaseService}, creates another block, and verifies that
-     *     the {@link BlockStreamManager} processes pending block proofs. It checks that the expected
-     *     blocks are written within a brief period after the service resumes normal behavior.</li>
-     * </ul>
-     *
-     * <p>The test ensures that block production halts when block proofs are unavailable and
-     * verifies that the system can catch up on pending proofs when the service resumes.</p>
-     */
-    @RepeatableHapiTest(NEEDS_TSS_CONTROL)
-    Stream<DynamicTest> blockStreamManagerCatchesUpWithIndirectProofs() {
-        final var indirectProofsAssertion = new IndirectProofsAssertion(2);
-        return hapiTest(withOpContext((spec, opLog) -> {
-            if (spec.startupProperties().getStreamMode("blockStream.streamMode") != RECORDS) {
-                allRunFor(
-                        spec,
-                        startIgnoringTssSignatureRequests(),
-                        blockStreamMustIncludePassFrom(ignore -> indirectProofsAssertion),
-                        // Each transaction is placed into its own round and hence block with default config
-                        cryptoCreate("firstIndirectProof"),
-                        cryptoCreate("secondIndirectProof"),
-                        stopIgnoringTssSignatureRequests(),
-                        doAdhoc(indirectProofsAssertion::startExpectingBlocks),
-                        cryptoCreate("directProof"));
-            }
-        }));
-    }
-
-    /**
-     * Creates a rekeying scenario where the embedded node receives the threshold number of valid TSS messages.
-     */
-    @LeakyRepeatableHapiTest(
-            value = {NEEDS_TSS_CONTROL, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
-            overrides = {"tss.keyCandidateRoster"})
-    Stream<DynamicTest> embeddedNodeVotesGivenThresholdValidMessages() {
-        final var scenario = rekeyingScenario(
-                // Changing stakes is enough to ensure the candidate roster is different from the active roster
-                NO_DAB_EDITS,
-                // Give unequal stake to all nodes (so they have different numbers of shares in the candidate roster)
-                UNEQUAL_NODE_STAKES,
-                // Submit invalid messages from node1, to verify the embedded node votes waits for the required
-                // number of threshold valid messages
-                TSS_MESSAGE_SIMS.apply(List.of(INVALID_MESSAGES, VALID_MESSAGES, VALID_MESSAGES)));
-        return hapiTest(blockStreamMustIncludePassFrom(spec -> scenario), scenario);
-    }
-
-    /**
-     * A {@link BlockStreamAssertion} used to verify the presence of some number {@code n} of expected indirect proofs
-     * in the block stream. When constructed, it assumes proof construction is paused, and fails if any block
-     * is written in this stage.
-     * <p>
-     * After {@link #startExpectingBlocks()} is called, the assertion will verify that the next {@code n} proofs are
-     * indirect proofs with the correct number of sibling hashes; and are followed by a direct proof, at which point
-     * it passes.
-     */
-    private static class IndirectProofsAssertion implements BlockStreamAssertion {
-        private boolean proofsArePaused;
-        private int remainingIndirectProofs;
-
-        public IndirectProofsAssertion(final int remainingIndirectProofs) {
-            this.proofsArePaused = true;
-            this.remainingIndirectProofs = remainingIndirectProofs;
-        }
-
-        /**
-         * Signals that the assertion should now expect proofs to be created, hence blocks to be written.
-         */
-        public void startExpectingBlocks() {
-            proofsArePaused = false;
-        }
-
-        @Override
-        public boolean test(@NonNull final Block block) throws AssertionError {
-            if (proofsArePaused) {
-                throw new AssertionError("No blocks should be written when proofs are unavailable");
-            } else {
-                final var items = block.items();
-                final var proofItem = items.getLast();
-                assertTrue(proofItem.hasBlockProof(), "Block proof is expected as the last item");
-                final var proof = proofItem.blockProofOrThrow();
-                if (remainingIndirectProofs == 0) {
-                    assertTrue(
-                            proof.siblingHashes().isEmpty(), "No sibling hashes should be present on a direct proof");
-                    return true;
-                } else {
-                    assertEquals(
-                            // Two sibling hashes per indirection level
-                            2 * remainingIndirectProofs,
-                            proof.siblingHashes().size(),
-                            "Wrong number of sibling hashes for indirect proof");
-                }
-                remainingIndirectProofs--;
-                return false;
-            }
-        }
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    Stream<DynamicTest> burnAtStakePeriodBoundaryHasExpectedRecord(
+            @NonFungibleToken(numPreMints = 2) SpecNonFungibleToken nft) {
+        return hapiTest(
+                nft.getInfo(),
+                doWithStartupConfig(
+                        "staking.periodMins", value -> waitUntilStartOfNextStakingPeriod(Long.parseLong(value))),
+                burnToken(nft.name(), List.of(1L)).via("burn"),
+                getTxnRecord("burn")
+                        .hasPriority(recordWith()
+                                .tokenTransfers(changingNFTBalances()
+                                        .including(nft.name(), nft.treasury().name(), "0.0.0", 1L))));
     }
 }

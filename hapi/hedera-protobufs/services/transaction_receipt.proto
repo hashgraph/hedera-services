@@ -168,11 +168,10 @@ message TransactionReceipt {
     repeated int64 serialNumbers = 14;
 
     /**
-     * In the receipt of a NodeCreate, NodeUpdate, NodeDelete, the id of the newly created node.
      * An affected node identifier.<br/>
+     * In the receipt of a NodeCreate, the id of the newly created node.
+     * <p>
      * This value SHALL be set following a `createNode` transaction.<br/>
-     * This value SHALL be set following a `updateNode` transaction.<br/>
-     * This value SHALL be set following a `deleteNode` transaction.<br/>
      * This value SHALL NOT be set following any other transaction.
      */
     uint64 node_id = 15;

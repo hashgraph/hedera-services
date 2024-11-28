@@ -29,8 +29,10 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
+import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecToken;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,27 +52,44 @@ public final class SystemContractAirdropHelper {
         });
     }
 
-    public static Address[] prepareAccountAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... senders) {
-        return Arrays.stream(senders)
-                .map(sender -> sender.addressOn(spec.targetNetworkOrThrow()))
+    public static GetBalanceOperation checkForEmptyBalance(
+            final SpecContract receiver, final List<SpecFungibleToken> tokens, final List<SpecNonFungibleToken> nfts) {
+        return receiver.getBalance().andAssert(balance -> {
+            tokens.forEach(token -> balance.hasTokenBalance(token.name(), 0L));
+            nfts.forEach(nft -> balance.hasTokenBalance(nft.name(), 0L));
+        });
+    }
+
+    public static Address[] prepareAccountAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... accounts) {
+        return Arrays.stream(accounts)
+                .map(account -> account.addressOn(spec.targetNetworkOrThrow()))
                 .toArray(Address[]::new);
     }
 
-    public static Address[] prepareTokenAddresses(@NonNull HapiSpec spec, @NonNull SpecFungibleToken... tokens) {
+    public static Address[] prepareAccountAddresses(@NonNull HapiSpec spec, @NonNull SpecContract... contracts) {
+        return Arrays.stream(contracts)
+                .map(contract -> contract.addressOn(spec.targetNetworkOrThrow()))
+                .toArray(Address[]::new);
+    }
+
+    public static Address[] prepareTokenAddresses(@NonNull HapiSpec spec, @NonNull SpecToken... tokens) {
         return Arrays.stream(tokens)
                 .map(token -> token.addressOn(spec.targetNetworkOrThrow()))
-                .toArray(Address[]::new);
-    }
-
-    public static Address[] prepareNftAddresses(@NonNull HapiSpec spec, @NonNull SpecNonFungibleToken... nfts) {
-        return Arrays.stream(nfts)
-                .map(nft -> nft.addressOn(spec.targetNetworkOrThrow()))
                 .toArray(Address[]::new);
     }
 
     public static List<TokenMovement> prepareFTAirdrops(
             @NonNull final SpecAccount sender,
             @NonNull final SpecAccount receiver,
+            @NonNull final List<SpecFungibleToken> tokens) {
+        return tokens.stream()
+                .map(token -> moving(10, token.name()).between(sender.name(), receiver.name()))
+                .toList();
+    }
+
+    public static List<TokenMovement> prepareFTAirdrops(
+            @NonNull final SpecAccount sender,
+            @NonNull final SpecContract receiver,
             @NonNull final List<SpecFungibleToken> tokens) {
         return tokens.stream()
                 .map(token -> moving(10, token.name()).between(sender.name(), receiver.name()))
@@ -86,8 +105,25 @@ public final class SystemContractAirdropHelper {
                 .toList();
     }
 
+    public static List<TokenMovement> prepareNFTAirdrops(
+            @NonNull final SpecAccount sender,
+            @NonNull final SpecContract receiver,
+            @NonNull final List<SpecNonFungibleToken> nfts) {
+        return nfts.stream()
+                .map(nft -> movingUnique(nft.name(), 1L).between(sender.name(), receiver.name()))
+                .toList();
+    }
+
     public static GetBalanceOperation checkForBalances(
             final SpecAccount receiver, final List<SpecFungibleToken> tokens, final List<SpecNonFungibleToken> nfts) {
+        return receiver.getBalance().andAssert(balance -> {
+            tokens.forEach(token -> balance.hasTokenBalance(token.name(), 10L));
+            nfts.forEach(nft -> balance.hasTokenBalance(nft.name(), 1L));
+        });
+    }
+
+    public static GetBalanceOperation checkForBalances(
+            final SpecContract receiver, final List<SpecFungibleToken> tokens, final List<SpecNonFungibleToken> nfts) {
         return receiver.getBalance().andAssert(balance -> {
             tokens.forEach(token -> balance.hasTokenBalance(token.name(), 10L));
             nfts.forEach(nft -> balance.hasTokenBalance(nft.name(), 1L));
@@ -97,6 +133,29 @@ public final class SystemContractAirdropHelper {
     public static void prepareAirdrops(
             final SpecAccount sender,
             final SpecAccount receiver,
+            @NonNull List<SpecFungibleToken> tokens,
+            @NonNull List<SpecNonFungibleToken> nfts,
+            @NonNull HapiSpec spec) {
+        var tokenMovements = prepareFTAirdrops(sender, receiver, tokens);
+        var nftMovements = prepareNFTAirdrops(sender, receiver, nfts);
+        allRunFor(
+                spec,
+                tokenAirdrop(Stream.of(tokenMovements, nftMovements)
+                                .flatMap(Collection::stream)
+                                .toArray(TokenMovement[]::new))
+                        .payingWith(sender.name())
+                        .via("tokenAirdrop"),
+                getTxnRecord("tokenAirdrop")
+                        .hasPriority(recordWith()
+                                .pendingAirdrops(
+                                        includingFungiblePendingAirdrop(tokenMovements.toArray(TokenMovement[]::new)))
+                                .pendingAirdrops(
+                                        includingNftPendingAirdrop(nftMovements.toArray(TokenMovement[]::new)))));
+    }
+
+    public static void prepareAirdrops(
+            final SpecAccount sender,
+            final SpecContract receiver,
             @NonNull List<SpecFungibleToken> tokens,
             @NonNull List<SpecNonFungibleToken> nfts,
             @NonNull HapiSpec spec) {
