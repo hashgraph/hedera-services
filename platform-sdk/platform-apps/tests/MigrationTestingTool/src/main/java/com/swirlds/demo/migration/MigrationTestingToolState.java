@@ -36,7 +36,7 @@ import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -56,7 +56,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @ConstructableIgnored
-public class MigrationTestingToolState extends MerkleStateRoot {
+public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     private static final Logger logger = LogManager.getLogger(MigrationTestingToolState.class);
 
     /**

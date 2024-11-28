@@ -46,16 +46,13 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
+        uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
         with:
           build-root-directory: hedera-node
           gradle-version: wrapper
 
       - name: Compile
-        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
-        with:
-          gradle-version: wrapper
-          arguments: assemble --scan
+        run: ./gradlew assemble --scan
 
       - name: Disable Gradle Configuration Cache
         run: sed -i 's/^org.gradle.configuration-cache=.*$/org.gradle.configuration-cache=false/' gradle.properties

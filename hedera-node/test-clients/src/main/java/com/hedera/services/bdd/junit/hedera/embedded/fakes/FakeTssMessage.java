@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss.pairings;
+package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
-public record PairingPublicKey(GroupElement publicKey, SignatureSchema signatureSchema) {}
+import com.hedera.cryptography.tss.api.TssMessage;
+
+public record FakeTssMessage(byte[] bytes) implements TssMessage {
+
+    @Override
+    public byte[] toBytes() {
+        return bytes;
+    }
+}

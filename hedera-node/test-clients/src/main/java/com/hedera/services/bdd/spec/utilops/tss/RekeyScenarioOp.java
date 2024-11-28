@@ -21,6 +21,7 @@ import static com.hedera.node.app.tss.handlers.TssUtils.computeNodeShares;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeSharesFromWeights;
 import static com.hedera.node.app.tss.handlers.TssUtils.getThresholdForTssMessages;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeIds;
+import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary.FAKE_LEDGER_ID;
 import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary.FAKE_SIGNATURE;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_FIRST_NODE_ACCOUNT_NUM;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -47,6 +48,7 @@ import static java.lang.Long.parseLong;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Transaction;
@@ -59,7 +61,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.roster.RosterService;
-import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -109,8 +110,6 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
     private static final Logger log = LogManager.getLogger(RekeyScenarioOp.class);
     private static final int NA = -1;
     private static final byte[] GOSSIP_CERTIFICATE;
-    private static final Bytes FAKE_LEDGER_ID =
-            Bytes.wrap(FakeTssLibrary.PRIVATE_KEY.createPublicKey().publicKey().toBytes());
 
     private record NonEmbeddedTssMessage(long nodeId, @NonNull TssMessage tssMessage) {}
 
@@ -301,9 +300,7 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             }
         }
         final var blockProof = block.items().getLast().blockProofOrThrow();
-        if (blockProof
-                .blockSignature()
-                .equals(Bytes.wrap(FAKE_SIGNATURE.signature().toBytes()))) {
+        if (blockProof.blockSignature().equals(Bytes.wrap(FAKE_SIGNATURE.toBytes()))) {
             actualTssSignatures++;
         }
     }
@@ -478,12 +475,12 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             spec.repeatableEmbeddedHederaOrThrow()
                     .tssBaseService()
                     .fakeTssLibrary()
-                    .setupRekeyGeneration(directory -> directory
-                            .getSharesById()
-                            .forEach((nodeId, shares) -> assertEquals(
-                                    expectedShares.get(Long.valueOf(nodeId)),
-                                    shares.size(),
-                                    "Wrong number of shares for node" + nodeId)));
+                    .setupRekeyGeneration(directory -> {
+                        expectedShares.forEach((nodeId, expectedNumShares) -> assertEquals(
+                                expectedNumShares,
+                                directory.ownedShares(nodeId).size(),
+                                "Wrong number of shares for node" + nodeId));
+                    });
         }));
     }
 
@@ -514,7 +511,7 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
                             final var shareId = nextShareId.getAndIncrement();
                             final var key = new TssMessageMapKey(currentRosterHash, shareId);
                             final var tssMessage = Bytes.wrap(FakeTssLibrary.validMessage((int) key.sequenceNumber())
-                                    .bytes());
+                                    .toBytes());
                             final var value = TssMessageTransactionBody.newBuilder()
                                     .sourceRosterHash(Bytes.EMPTY)
                                     .targetRosterHash(currentRosterHash)
@@ -537,7 +534,7 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
                                 .tssVote(tssVote)
                                 .sourceRosterHash(Bytes.EMPTY)
                                 .targetRosterHash(currentRosterHash)
-                                .ledgerId(FAKE_LEDGER_ID)
+                                .ledgerId(Bytes.wrap(FAKE_LEDGER_ID.toBytes()))
                                 .build();
                         tssVotes.put(key, vote);
                     });

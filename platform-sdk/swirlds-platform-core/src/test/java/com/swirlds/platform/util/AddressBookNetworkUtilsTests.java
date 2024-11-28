@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
@@ -32,7 +30,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.network.Network;
-import com.swirlds.platform.roster.InvalidAddressBookException;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -41,8 +38,6 @@ import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.X509Certificate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -119,21 +114,6 @@ class AddressBookNetworkUtilsTests {
 
         assertNotNull(roster);
         assertTrue(roster.rosterEntries().isEmpty());
-    }
-
-    @Test
-    void testToRosterEntryWithCertificateEncodingException() throws CertificateEncodingException {
-        final X509Certificate certificate = mock(X509Certificate.class);
-        final Address address = mock(Address.class);
-        when(address.getSigCert()).thenReturn(certificate);
-        when(address.getNodeId()).thenReturn(NodeId.FIRST_NODE_ID);
-        when(certificate.getEncoded()).thenThrow(new CertificateEncodingException());
-
-        final AddressBook addressBook = new AddressBook(List.of(address));
-        assertThrows(
-                InvalidAddressBookException.class,
-                () -> buildRoster(addressBook),
-                "Invalid certificates are not allowed in Rosters.");
     }
 
     @Test
