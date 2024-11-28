@@ -25,28 +25,28 @@ While the communication is quite simple, the state diagram for a negotiator is a
 Run-through of the state diagram:
 
 - **Initial state** - each peer starts from this state and is expected to send a byte. This can be:
-    - Keepalive - if we do not wish to initiate a protocol
-    - Protocol ID - if we wish to initiate a protocol, we send its ID
+  - Keepalive - if we do not wish to initiate a protocol
+  - Protocol ID - if we wish to initiate a protocol, we send its ID
 - **Sent keepalive** - if we sent a keepalive byte, the peer sent a byte in parallel, so we wait for that byte which can
   be one of the following:
-    - Keepalive - no one initiated a protocol, we sleep and try again
-    - Protocol ID - they initiated a protocol, we should respond with accept or reject
+  - Keepalive - no one initiated a protocol, we sleep and try again
+  - Protocol ID - they initiated a protocol, we should respond with accept or reject
 - **Received initiate** - we are expected to respond with either accept or reject, so we ask the protocol and respond
   appropriately. If we accept, the protocol starts, if not, the negotiation failed.
 - **Sent initiate** - we initiated a protocol, the peer sent a byte in parallel, so we wait for that byte which could
   be:
-    - Keepalive - in this case they have to respond to our initiation
-    - Protocol ID - in case we both initiated a protocol in the same time, we proceed depending on which protocol they
-      initiated:
-        - Same ID - in case we both initiated the same protocol in parallel, then the initiated protocol must specify
-          what happens on a simultaneous initiate. For example, if we both want to start Chatter, we should start. If
-          both want to reconnect, that means that both have fallen behind and there is no point in proceeding. Also, it
-          would not be known who the teacher and who the learner is. So on a simultaneous initiate, we either start the
-          protocol, or the negotiation failed, depending on the protocol.
-        - Different ID - in case we initiated different protocols in parallel, then the priority of the protocol decides
-          the next step.
-            - If their protocol has a higher priority, we respond with accept or reject
-            - If our protocol has a higher priority, we wait for them to respond with accept or reject
+  - Keepalive - in this case they have to respond to our initiation
+  - Protocol ID - in case we both initiated a protocol in the same time, we proceed depending on which protocol they
+    initiated:
+    - Same ID - in case we both initiated the same protocol in parallel, then the initiated protocol must specify
+      what happens on a simultaneous initiate. For example, if we both want to start Chatter, we should start. If
+      both want to reconnect, that means that both have fallen behind and there is no point in proceeding. Also, it
+      would not be known who the teacher and who the learner is. So on a simultaneous initiate, we either start the
+      protocol, or the negotiation failed, depending on the protocol.
+    - Different ID - in case we initiated different protocols in parallel, then the priority of the protocol decides
+      the next step.
+      - If their protocol has a higher priority, we respond with accept or reject
+      - If our protocol has a higher priority, we wait for them to respond with accept or reject
 - **Wait for Acc/Rej** - we wait for the peer to respond with either accept or reject
 - **Received initiate** - we should respond with either accept or reject
 - **Sleep** - we do nothing for a while, this is to avoid sending lots of data over the network if no protocol can be
@@ -54,4 +54,4 @@ Run-through of the state diagram:
 - **Protocol negotiated** - we run the protocol which takes over the connection until its is done, if ever
 
 **NOTE:** this could be simplified somewhat if keepalive was not a special message, but a default protocol with the
-lowest priority. this optimization could be done in the future. 
+lowest priority. this optimization could be done in the future.

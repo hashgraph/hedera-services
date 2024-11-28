@@ -30,7 +30,7 @@ Determining this period of time is crucial, for more details see [versions](#pro
 
 - **Events** - the main payload, the purpose of the protocol is to ensure all nodes receive all events needed for
   consensus. stale events do not need to be sent.
-- **Event descriptors** - also called hashes sometimes, since this is the main part of the descriptor. sent to  
+- **Event descriptors** - also called hashes sometimes, since this is the main part of the descriptor. sent to
   inform our peer that we have an event and the peer does not need to send it to us. the main goal is to reduce the
   number of duplicate events each node receives to a minimum
 - **Generations** - informing our peer which events I consider ancient and do not need to be sent to me.
@@ -92,15 +92,15 @@ So the proposal for the delay is: `delay = P(B) + T(B->A) + F`
 ### Version 0.5 (current)
 
 - Send side (messages in order of priority)
-    - Heartbeats - they are first because delaying a heartbeat response would distort the ping time
-    - Descriptors - one queue per neighbor. sent for all other-events
-    - Self-events - one queue per neighbor.
-    - Other-events - one queue per neighbor. if the peer does not know this event, wait for a maximum of `N`
-      milliseconds before sending it
+  - Heartbeats - they are first because delaying a heartbeat response would distort the ping time
+  - Descriptors - one queue per neighbor. sent for all other-events
+  - Self-events - one queue per neighbor.
+  - Other-events - one queue per neighbor. if the peer does not know this event, wait for a maximum of `N`
+    milliseconds before sending it
 - Receive side
-    - when receiving a descriptor, remember that this peer knows this event
-    - when receiving an event, validate it. after validation, but before looking for its parents, add its descriptor to
-      the queues and add the event to the other-event queues
+  - when receiving a descriptor, remember that this peer knows this event
+  - when receiving an event, validate it. after validation, but before looking for its parents, add its descriptor to
+    the queues and add the event to the other-event queues
 
 The main problem with this approach is that the other-event delay is based on a fixed value and does not work well in
 performance tests for 2 reasons:
@@ -116,20 +116,20 @@ Example implementation of a 3 node network, showing Alice's instances:
 ![](img/OOG-dependencies.png)
 
 - `Peer state`
-    - keeps a track of which messages the peer has and which he needs
-    - makes sending decisions based on this information
+  - keeps a track of which messages the peer has and which he needs
+  - makes sending decisions based on this information
 - `Message output`
-    - responsible for managing messages that need to be sent to peers
-    - has a main instance and an instance per peer
+  - responsible for managing messages that need to be sent to peers
+  - has a main instance and an instance per peer
 - `Output aggregator`
-    - manages all peer outputs
-    - provides messages to be sent
-    - decides the priority of messages
+  - manages all peer outputs
+  - provides messages to be sent
+  - decides the priority of messages
 - `Input delegate`
-    - determines the message type
-    - passes the messages to the appropriate handler based on the type
-    - before validation, messages received by the peer should only affect the state of that peer. any other approach
-      would be a potential attack vector.
+  - determines the message type
+  - passes the messages to the appropriate handler based on the type
+  - before validation, messages received by the peer should only affect the state of that peer. any other approach
+    would be a potential attack vector.
 - `ChatterCore`
-    - manages peer instances
-    - forward messages to output
+  - manages peer instances
+  - forward messages to output

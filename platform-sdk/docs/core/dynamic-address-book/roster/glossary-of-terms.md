@@ -36,7 +36,7 @@ Specifies the window of events that are being considered in consensus. The windo
 
 ### Latest Handled Round
 
-The `latestHandledRound` is the latest round to have been completely handled and applied to the state by the node.  
+The `latestHandledRound` is the latest round to have been completely handled and applied to the state by the node.
 Note that the application of this round to state produces a new roster to become effective after a configured
 `rosterOffset`. see terminology below.
 
@@ -102,7 +102,7 @@ effective roster for round 102.
 
 All rosters that are effective for ancient rounds are ancient rosters.
 
-### Minimum Roster Non-Ancient 
+### Minimum Roster Non-Ancient
 
 `minRosterNonAncient` is the roster that is effective for `minRoundNonAncient`.
 
@@ -152,4 +152,3 @@ validated using the roster with an effective round of X.
 
 Used only in the consensus algorithm. Previously known as `roundCreated`. In the future, this data will
 not be exposed outside of consensus.
-

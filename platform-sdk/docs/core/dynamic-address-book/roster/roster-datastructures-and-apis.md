@@ -2,11 +2,11 @@
 
 The following roster api is reduced from the address book to just the fields that are needed by the platform to establish mutual TLS connections, gossip, validate events and state, come to consensus, and detect an ISS.
 
-The data for each node is contained in the node's `RosterEntry`.  
+The data for each node is contained in the node's `RosterEntry`.
 
 ## Roster Interfaces
 
-### RosterEntry 
+### RosterEntry
 
 ```java
 public interface RosterEntry extends SelfSerializable {
@@ -19,6 +19,7 @@ public interface RosterEntry extends SelfSerializable {
     boolean isZeroWeight();
 }
 ```
+
 ### Roster
 
 ```java

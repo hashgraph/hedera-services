@@ -6,11 +6,11 @@ the ledger code itself (layer-1). Each Smart Contract may have storage, handled 
 value are an unsigned 256-bit word.
 
 Smart Contracts present some particular design challenges:
- - Many contracts require non-trivial storage. ERC-20 contracts may require megabytes of storage
- - Due to gas limits, only about 25 SSTORE (put) operations are supported in a single contract call
- - Contracts may read state from anywhere within their megabytes of storage
- - Contracts need very fast TPS or excessive contract usage will cripple the network
- - A hash of the entire blob must be stored with the signed-state in the "real" merkle tree
+- Many contracts require non-trivial storage. ERC-20 contracts may require megabytes of storage
+- Due to gas limits, only about 25 SSTORE (put) operations are supported in a single contract call
+- Contracts may read state from anywhere within their megabytes of storage
+- Contracts need very fast TPS or excessive contract usage will cripple the network
+- A hash of the entire blob must be stored with the signed-state in the "real" merkle tree
 
 While many excellent solutions exist for reading and writing binary data, without a Merkle-tree like structure it is
 not possible to efficiently hash the data. While a Merkle-tree like data structure is excellent for hashing, we cannot
@@ -18,7 +18,7 @@ possibly represent the entire contract state as a Merkle tree due to the costs i
 in reading it all from disk just for a single contract execution. The solution therefore is quite natural, we need a
 virtual Merkle tree where nodes are stored on disk and `realized` into memory on demand.
 
-In other words, we need a solution that scales with the number of get/put operations and not with the size of the data 
+In other words, we need a solution that scales with the number of get/put operations and not with the size of the data
 storage. A memory-mapped virtual merkle tree is a good fit.
 
 The challenge with this solution is in reducing the cost of reading and writing individual nodes so that we can handle
@@ -74,22 +74,22 @@ level down, the `breadcrumb` bits are shifted once left, and the least significa
 the node is the left or right child of its parent branch.
 
 This arrangement has some very valuable properties:
- - Since the path is a `long`, there is no garbage generated for paths, and they can be trivially stored and read
-   from disk.
- - The algorithms for tree manipulation and hash computation need a fast way to determine the sibling of a node.
-   Finding the sibling is as simple as flipping (xor) the last bit. This is trivially fast.
- - Determining the parent of any leaf simply requires decrementing the `rank` portion of the path and right shifting
-   the `breadcrumbs` portion.
- - The `index` of the node within the `rank` is simply the lower 7 bytes. While not immediately obvious, it turns out
-   that the lower seven bytes are exactly the `index` if measured from right to left. To return an index that goes from
-   left to right, we can do some simple math to convert the index to be left to right.
- - Determining the children of any branch is trivial. Increment the `rank` and left shift.
- - Determining whether a specific node is on the left or right of its parent is trivial, simply check the last bit.
+- Since the path is a `long`, there is no garbage generated for paths, and they can be trivially stored and read
+from disk.
+- The algorithms for tree manipulation and hash computation need a fast way to determine the sibling of a node.
+Finding the sibling is as simple as flipping (xor) the last bit. This is trivially fast.
+- Determining the parent of any leaf simply requires decrementing the `rank` portion of the path and right shifting
+the `breadcrumbs` portion.
+- The `index` of the node within the `rank` is simply the lower 7 bytes. While not immediately obvious, it turns out
+that the lower seven bytes are exactly the `index` if measured from right to left. To return an index that goes from
+left to right, we can do some simple math to convert the index to be left to right.
+- Determining the children of any branch is trivial. Increment the `rank` and left shift.
+- Determining whether a specific node is on the left or right of its parent is trivial, simply check the last bit.
 
 Some things are not easy:
- - It is impossible, based on the path alone, to know whether a node is a branch or a leaf. (We could sacrifice the
-   highest bit for this purpose, which may be a really good idea... (it means a negative long is a leaf, and a positive
-   long is a branch)).
+- It is impossible, based on the path alone, to know whether a node is a branch or a leaf. (We could sacrifice the
+highest bit for this purpose, which may be a really good idea... (it means a negative long is a leaf, and a positive
+long is a branch)).
 
 The VirtualTreePath class cannot be instantiated, it only contains helper methods, and a ROOT_PATH constant.
 
@@ -217,7 +217,7 @@ and move the other child, Leaf B, to its slot.
 
 ![Virtual Merkel Delete 8](./virtual-merkle-delete-8.svg)
 
-Let's consider a final use case, where we delete the node that is the `firstLeafPath`. Let's delete leaf D. 
+Let's consider a final use case, where we delete the node that is the `firstLeafPath`. Let's delete leaf D.
 
 ![Virtual Merkel Delete 9](./virtual-merkle-delete-9.svg)
 

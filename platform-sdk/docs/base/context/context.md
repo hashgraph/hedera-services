@@ -30,6 +30,7 @@ globalContext.add("key","value");
 Context threadLocalContext = Context.getThreadLocalContext();
 threadLocalContext.add("key","value");
 ```
+
 [@formatter:on]: # (enable the code formatter for this section)
 
 ### AutoCloseable support
@@ -49,6 +50,7 @@ try (AutoCloseable closeable = threadLocalContext.addWithRemovalOnClose("key", "
     // In this code the context contains the key "key" with the value "value"
 }
 ```
+
 [@formatter:on]: # (enable the code formatter for this section)
 
 ### Creating a new context type
@@ -75,7 +77,8 @@ public class MyTest {
     void testMethod() {
         // The global and thread local contexts are empty und will be cleared after the test
     }
-    
+
 }
 ```
+
 [@formatter:on]: # (enable the code formatter for this section)

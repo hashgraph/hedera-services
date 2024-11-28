@@ -1,16 +1,17 @@
 # E2E Testing
+
 ## Getting Started
 
-This document describes the steps that need to be taken to run a e2e test from your machine that points to a 
+This document describes the steps that need to be taken to run a e2e test from your machine that points to a
 pre-configured network with a mirror-node.
-
 
 ## Setup
 
-Create a configuration file `application.yaml` that has the node configuration, publisher configuration and 
+Create a configuration file `application.yaml` that has the node configuration, publisher configuration and
 subscriber configuration along with an operator id and its key.
 
 Example :
+
 ```
 hedera:
   mirror:
@@ -47,6 +48,7 @@ hedera:
 > transactions.
 
 #### Follow Up:
+
 Explore the possible transaction types [here](https://github.com/hashgraph/hedera-mirror-node/tree/master/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier)
 and publish/subscribe configuration [here](https://github.com/hashgraph/hedera-mirror-node/tree/master/hedera-mirror-monitor/src/main/java/com/hedera/mirror/monitor)
 
@@ -57,27 +59,30 @@ docker run -it --rm -p 8082:8082 -v $(pwd)/application.yaml:/usr/etc/hedera-mirr
 ```
 
 Once the monitor starts sending traffic, we see logs like this
-``` 
-2021-05-27T13:54:59.906-0600 INFO scheduling-1 c.h.m.m.p.PublishMetrics Published 1297 transactions in 22.51 s at 73.6/s. Errors: {} 
-2021-05-27T13:55:02.135-0600 INFO pool-18-thread-1 c.h.m.m.s.r.RestSubscriber CryptoTransfer: 54 transactions in 20.00 s at 2.7/s. Errors: {} 
+
+```
+2021-05-27T13:54:59.906-0600 INFO scheduling-1 c.h.m.m.p.PublishMetrics Published 1297 transactions in 22.51 s at 73.6/s. Errors: {}
+2021-05-27T13:55:02.135-0600 INFO pool-18-thread-1 c.h.m.m.s.r.RestSubscriber CryptoTransfer: 54 transactions in 20.00 s at 2.7/s. Errors: {}
 ```
 
 The metrics can be scraped at `http://localhost:8082/actuator/prometheus`.
 We can start using these metrics that the monitor collects to display them through Grafana.
 
-Easiest way I found was to use `dockprom`. 
+Easiest way I found was to use `dockprom`.
+
 ```
 git clone https://github.com/stefanprodan/dockprom
 cd dockprom
 ```
 
 Edit the file `prometheus/prometheus.yml` to add a job that collects the data from the scraper mentioned above.
+
 ```
-  - job_name: 'hedera-services-monitor'
-    metrics_path: '/actuator/prometheus'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['<hostIP>:8082']
+- job_name: 'hedera-services-monitor'
+  metrics_path: '/actuator/prometheus'
+  scrape_interval: 5s
+  static_configs:
+    - targets: ['<hostIP>:8082']
 ```
 
 > I had to use my host ip instead of localhost or docker.host.internal to get it working.

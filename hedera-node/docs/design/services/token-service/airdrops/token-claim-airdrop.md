@@ -1,4 +1,5 @@
 # Introduce TokenClaimAirdrop transaction
+
 ## Purpose
 
 We need to add a new functionality that would make it possible for an airdrop receiver to accept a pending airdrop transfer. This would be the only way for a receiver, which hasn't been associated to a given token to accept an airdropped token that has been in pending airdrops state.
@@ -23,13 +24,13 @@ Create new transaction type as defined in the HIP:
 ```protobuf
 /**
  * Token claim airdrop<br/>
- * Complete one or more pending transfers on behalf of the recipient(s) for each airdrop.<br/> 
+ * Complete one or more pending transfers on behalf of the recipient(s) for each airdrop.<br/>
  * The sender MUST have sufficient balance to fulfill the airdrop at the time of claim. If the
  * sender does not have sufficient balance, the claim SHALL fail.
- * 
+ *
  * Each pending airdrop successfully claimed SHALL be removed from state and SHALL NOT be available
  * to claim again.
- * 
+ *
  * Each claim SHALL be represented in the transaction body and SHALL NOT be restated
  * in the record file.<br/>
  * All claims MUST succeed for this transaction to succeed.
@@ -113,30 +114,30 @@ An update into the `feeSchedule` file would be needed to specify that.
 
 ### Services updates
 
-- Update `ApiPermissionConfig` class to include a `0-* PermissionedAccountsRange` for the new `TokenClaimAirdrop` transaction type 
+- Update `ApiPermissionConfig` class to include a `0-* PermissionedAccountsRange` for the new `TokenClaimAirdrop` transaction type
 - Update `TokenServiceDefinition` class to include the new RPC method definition for claiming airdrops
 - Implement new `TokenClaimAirdropHandler` class which should be invoked when the gRPC server handles `TokenClaimAirdrop` transactions. The class should be responsible for:
-    - Pure checks: validation logic based only on the transaction body itself in order to verify if the transaction is valid one
-        - Verify that the pending airdrops list contains between 1 and 10 entries, inclusive
-        - Verify that the pending airdrops list does not have any duplicate entries
-    - Pre-handle:
-        - The transaction must be signed by the account referenced by a `receiver_id` for each entry in the pending airdrops list
-    - Handle:
-        - Confirm that for the given pending airdrops ids in the transaction there are corresponding pending transfers existing in state
-        - Check if the sender has sufficient amount or has enough approved allowance of the tokens being claimed to fulfill the airdrop
-        - Check if the token is not frozen, paused, or deleted
-          - If the token is frozen or paused the claim transaction should fail
-          - For deleted tokens, the claim transaction should fail, but also we should remove the pending airdrop from state
-        - Any additional validation depending on config or state i.e. semantics checks
-        - The business logic for claiming pending airdrops
-            - If token association between each `receiver_id` and `token_reference` does not exist, we need to create it; future rents for token association slot should be paid by `receiver_id`
-              - Since we would have the signature of the receiver, even if it's an account with `receiver_sig_required=true`, the claim would implicitly work properly
-              - The token association is free at this point because the sender already paid for it when submitting the `TokenAirdrop` transaction
-            - Then we should transfer the claimed tokens to each `receiver_id`
-              - Reuse any existing logic from `CryptoTransferHandler`, extracting common code into a separate class
-              - We must skip the assessment of custom fees
-        - Token transfers should be externalized using the `tokenTransferLists` field in the transaction record
-    - Fees calculation
+  - Pure checks: validation logic based only on the transaction body itself in order to verify if the transaction is valid one
+    - Verify that the pending airdrops list contains between 1 and 10 entries, inclusive
+    - Verify that the pending airdrops list does not have any duplicate entries
+  - Pre-handle:
+    - The transaction must be signed by the account referenced by a `receiver_id` for each entry in the pending airdrops list
+  - Handle:
+    - Confirm that for the given pending airdrops ids in the transaction there are corresponding pending transfers existing in state
+    - Check if the sender has sufficient amount or has enough approved allowance of the tokens being claimed to fulfill the airdrop
+    - Check if the token is not frozen, paused, or deleted
+      - If the token is frozen or paused the claim transaction should fail
+      - For deleted tokens, the claim transaction should fail, but also we should remove the pending airdrop from state
+    - Any additional validation depending on config or state i.e. semantics checks
+    - The business logic for claiming pending airdrops
+      - If token association between each `receiver_id` and `token_reference` does not exist, we need to create it; future rents for token association slot should be paid by `receiver_id`
+        - Since we would have the signature of the receiver, even if it's an account with `receiver_sig_required=true`, the claim would implicitly work properly
+        - The token association is free at this point because the sender already paid for it when submitting the `TokenAirdrop` transaction
+      - Then we should transfer the claimed tokens to each `receiver_id`
+        - Reuse any existing logic from `CryptoTransferHandler`, extracting common code into a separate class
+        - We must skip the assessment of custom fees
+    - Token transfers should be externalized using the `tokenTransferLists` field in the transaction record
+  - Fees calculation
 - Update throttle definitions to include the new `TokenClaimAirdrop` transaction type
   - Throttle definitions are specified in `throttles.json` files
   - There are different configurations containing throttle definitions under `hedera-node/configuration/` for the different environments e.g. testnet, previewnet, mainnet
@@ -157,10 +158,10 @@ Performing `TokenClaimAirdrop` for such hollow account will also complete the ac
 All of the expected behaviour described below should be present only if the new `TokenClaimAirdrop` feature flag is enabled.
 
 - Given existing pending airdrop in state when valid `TokenClaimAirdrop` transaction containing entry for the same pending airdrop is performed then the `TokenClaimAirdrop` should succeed resulting in:
-    - the tokens being claimed should be automatically associated with the `receiver_id` account
-    - the tokens being claimed should be transferred to the `receiver_id` account
-    - the pending airdrop should be removed from state
-    - the transaction record should contain the transferred tokens in `tokenTransferLists` field
+  - the tokens being claimed should be automatically associated with the `receiver_id` account
+  - the tokens being claimed should be transferred to the `receiver_id` account
+  - the pending airdrop should be removed from state
+  - the transaction record should contain the transferred tokens in `tokenTransferLists` field
 - Given existing pending airdrop in state when valid `TokenClaimAirdrop` transaction containing entry for the same pending airdrop is performed and the token in the pending airdrop is frozen or paused then the `TokenClaimAirdrop` should fail without modifying the pending airdrop state
 - Given existing pending airdrop in state when valid `TokenClaimAirdrop` transaction containing entry for the same pending airdrop is performed and the token in the pending airdrop is deleted then the `TokenClaimAirdrop` should fail and the pending airdrop should be removed from state
 - Given a successful `TokenClaimAirdrop` transaction having a hollow account as `receiver_id` should also complete the account without modifying its `maxAutoAssociations` value

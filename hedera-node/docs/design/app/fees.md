@@ -9,19 +9,19 @@ A new design is proposed that will simplify the implementation, based on a far s
 That design is out of scope of this document.
 
 In both the current and new design, fees are a function of:
- - the transaction itself
-   - The protobuf encoded number of bytes making up the signature map
-   - The number of UTF-8 characters in the memo
-   - The number of signatures that were verified
-   - The number of cryptographic keys on the payer account
-   - Other details intrinsic to the specific transaction type
- - the current state
-   - The percentage of entity space remaining (i.e. 900M accounts with a max of 1B accounts would be 90% full)
-   - Determining the cost if extending expiry
-   - Other state intrinsic to the specific transaction type
- - The backend usage throttles
-   - These are deterministic throttles updated only during `handle` with the full network throttles (i.e. 10K TPS)
- - The current exchange rate
+- the transaction itself
+- The protobuf encoded number of bytes making up the signature map
+- The number of UTF-8 characters in the memo
+- The number of signatures that were verified
+- The number of cryptographic keys on the payer account
+- Other details intrinsic to the specific transaction type
+- the current state
+- The percentage of entity space remaining (i.e. 900M accounts with a max of 1B accounts would be 90% full)
+- Determining the cost if extending expiry
+- Other state intrinsic to the specific transaction type
+- The backend usage throttles
+- These are deterministic throttles updated only during `handle` with the full network throttles (i.e. 10K TPS)
+- The current exchange rate
 
 It can be seen that some of the fee calculation is based on generic transaction or state information, and some is based
 on transaction or entity specific information. Our design must account for both common fee inputs and per-transaction

@@ -3,16 +3,16 @@
 The first implementation can be summed up as follows:
 
 - Send side
-    - send events and event hashes
-    - when creating an event, add it to everyone's queue for sending
-    - events are sent in topological order
-    - if there are any hashes to send, send all hashes first
-    - only send events if the queue of hashes is empty
-    - before sending an event, check if the peer already knows this event
+  - send events and event hashes
+  - when creating an event, add it to everyone's queue for sending
+  - events are sent in topological order
+  - if there are any hashes to send, send all hashes first
+  - only send events if the queue of hashes is empty
+  - before sending an event, check if the peer already knows this event
 - Receive side
-    - when receiving a hash, remember that this peer knows this event
-    - when receiving an event, assume it was received in order and proceed with de-duplicating and validation.
-      if the event is valid add its hash to everyone's queue and add the event to everyone's queue
+  - when receiving a hash, remember that this peer knows this event
+  - when receiving an event, assume it was received in order and proceed with de-duplicating and validation.
+    if the event is valid add its hash to everyone's queue and add the event to everyone's queue
 
 This implementation ended up sending a lot of duplicate events unnecessarily. This created a buildup in the intake
 queue and well as a lot of garbage objects that resulted in allocation stalls.

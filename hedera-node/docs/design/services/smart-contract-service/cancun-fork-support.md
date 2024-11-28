@@ -3,14 +3,14 @@
 ## Purpose
 
 The Ethereum "Cancun" hardfork introduces a number of changes to the EVM that will need to be implemented to maintain EVM
-Equivalence. There are four different HIPs covering this feature (tracked in  
-  epic [#11697](https://github.com/hashgraph/hedera-services/issues/11697):
+Equivalence. There are four different HIPs covering this feature (tracked in
+epic [#11697](https://github.com/hashgraph/hedera-services/issues/11697):
 
-* [HIP-865](https://hips.hedera.com/hip/hip-865): Add EVM Support for transient storage and memory 
+* [HIP-865](https://hips.hedera.com/hip/hip-865): Add EVM Support for transient storage and memory
   copy Cancun opcodes (issue [#11699](https://github.com/hashgraph/hedera-services/issues/11699))
 * [HIP-866](https://hips.hedera.com/hip/hip-866): Add EVM compatibility for non-supported Cancun blob features
   (issue [#11700](https://github.com/hashgraph/hedera-services/issues/11700))
-* [HIP-867](https://hips.hedera.com/hip/hip-867): Add Smart Contract Services Support for KZG Point 
+* [HIP-867](https://hips.hedera.com/hip/hip-867): Add Smart Contract Services Support for KZG Point
   Evaluation Precompiled Function (issue [#11701](https://github.com/hashgraph/hedera-services/issues/11701))
 * [HIP-868](https://hips.hedera.com/hip/hip-868): Support Cancun Self-Destruct  Semantics in Smart
   Contract Services (issue [#11702](https://github.com/hashgraph/hedera-services/issues/11702))
@@ -27,7 +27,6 @@ Generally speaking there are four strategies that will be used:
 ### Example User Story
 
 <!-- **TODO(Nana): more specific user stories highlighting the capabilities to users** -->
-
 * As a smart contract developer, I want to use current versions of solidity that may generate opcodes that are only
   available in the Cancun fork.
   * These opcodes will enable me to write safer contracts at less gas cost (e.g., transient storage opcodes)
@@ -64,12 +63,12 @@ Cancun support in mono-services.
 ### New Cancun EVM
 
 A new EVM version will be created that will be based off of the Cancun EVM - which is from a Besu
-release `>24.1.2`.  A new enum value, `HederaEvmVersion.VERSION_050` will have the value `v0.50`.  
+release `>24.1.2`.  A new enum value, `HederaEvmVersion.VERSION_050` will have the value `v0.50`.
 
-Setting the `@ConfigProperty` `ContractsConfig.evmVersion` (string value `contracts.evm.version`) 
+Setting the `@ConfigProperty` `ContractsConfig.evmVersion` (string value `contracts.evm.version`)
 to `v0.50` (from `v0.46`) will activate the Cancun EVM.
 
-Simply activating the Cancun EVM - with no changes or overrides - will immediately provide the 
+Simply activating the Cancun EVM - with no changes or overrides - will immediately provide the
 following features:
 
 * `MCOPY` operation
@@ -81,7 +80,7 @@ following features:
 Update `CustomGasCalculator` to inherit from Besu's `CancunGasCalculator`.
 
 * (This needs to be part of the regular EVM module upgrade - it was last updated for the London
-release, wasn't done for Shanghai.)
+  release, wasn't done for Shanghai.)
 
 ### KZG precompile initialization
 
@@ -111,10 +110,9 @@ sufficient.
 
 <!-- **TODO(Nana): Set them in the EVM versions how? Is there a specific class that needs to be updated or a method that needs to be overridden?** -->
 
-
 ### Update Hedera's CustomSelfDestructOperation behavior
 
-The current Hedera override class, `CustomSelfDestructOperation`, will be updated so that it registers, 
+The current Hedera override class, `CustomSelfDestructOperation`, will be updated so that it registers,
 with the frame, the executing contract for deletion if either:
 
 * pre-Cancun semantics, or
@@ -122,7 +120,7 @@ with the frame, the executing contract for deletion if either:
   * the latter information is available in the frame itself
 
 A constructor parameter will choose which semantics to implement (which matches the way BESU does it,
-    though it isn't _necessary_ to match it).
+though it isn't _necessary_ to match it).
 
 ## Acceptance Tests
 
@@ -152,4 +150,3 @@ Verify that the new behavior of the `SELFDESTRUCT` operation is correct:
 * For both of the above, verify that the hbar balance is correctly sent to their beneficiary
   * But only where allowed by Hedera semantics (e.g., w.r.t. beneficiary account existence and type,
     and required signatures)
-

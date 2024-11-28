@@ -45,7 +45,7 @@ in parallel with this
 //////////////// PHASE 3 ////////////////
 
 // add to knownSet all the ancestors of each known event
-todoStack = stack containing all elements in knownSet (in an arbitrary order)  
+todoStack = stack containing all elements in knownSet (in an arbitrary order)
 while todoStack is not empty
     pop x from todoStack
     push each parent of x onto todoStack (in an arbitrary order)
@@ -55,7 +55,7 @@ while todoStack is not empty
 // tips might have changed since the beginning of the sync, get the latest
 tipList = get latest tips
 // set sendList to all ancestors of tips that are not known
-todoStack = stack containing all elements in tipList (in an arbitrary order)  
+todoStack = stack containing all elements in tipList (in an arbitrary order)
 while todoStack is not empty
     pop x from todoStack
     push each parent of x onto todoStack (in an arbitrary order)
@@ -66,9 +66,9 @@ while todoStack is not empty
 sort sendList ascending by generation   // this will be in topological order
 do this
     send sendList
-in parallel with this    
+in parallel with this
     receive otherSendList
-    
+
 add all of otherSendList to the queue of events to verify and add to the hashgraph
 ```
 
@@ -147,7 +147,7 @@ in parallel with this
         receive boolean b
         if b
             add y to knownSet
-            
+
 ```
 
 <img src="sync-protocol-fig5.png" width="75%" />
@@ -157,13 +157,13 @@ in parallel with this
 //////////////// PHASE 3 ////////////////
 
 // add to knownSet all the ancestors of each known event
-todoStack = stack containing all elements in knownSet (in an arbitrary order)  
+todoStack = stack containing all elements in knownSet (in an arbitrary order)
 while todoStack is not empty
     pop x from todoStack
     push each parent of x onto todoStack (in an arbitrary order)
     if (x.generation >= otherMinGenNonAncient) AND (x not in knownSet)
         add x to knownSet
-        
+
 ```
 
 <img src="sync-protocol-fig6.png" width="75%" />
@@ -173,7 +173,7 @@ while todoStack is not empty
 // tips might have changed since the beginning of the sync, get the latest
 tipList = get latest tips
 // set sendList to all ancestors of tips that are not known
-todoStack = stack containing all elements in tipList (in an arbitrary order)  
+todoStack = stack containing all elements in tipList (in an arbitrary order)
 while todoStack is not empty
     pop x from todoStack
     push each parent of x onto todoStack (in an arbitrary order)
@@ -190,9 +190,9 @@ while todoStack is not empty
 sort sendList ascending by generation   // this will be in topological order
 do this
     send sendList
-in parallel with this    
+in parallel with this
     receive otherSendList
-    
+
 add all of otherSendList to the queue of events to verify and add to the hashgraph
 
 ```

@@ -62,7 +62,7 @@ After completing a reconnect, the platform will resume gossiping, but won't crea
 determines that it is still behind the rest of the network, it will transition back to `BEHIND`. Otherwise, it will
 remain in `RECONNECT_COMPLETE` until the state received during the reconnect has been saved to disk.
 
-The reconnect state must be saved to disk for the node to be able to replay events from the preconsensus event stream 
+The reconnect state must be saved to disk for the node to be able to replay events from the preconsensus event stream
 with a valid starting point. Refraining from creating events prior to saving the reconnect state ensures that any node
 creating events has a valid state to replay from, and that the network can't get itself into a situation where no node
 has this ability.
