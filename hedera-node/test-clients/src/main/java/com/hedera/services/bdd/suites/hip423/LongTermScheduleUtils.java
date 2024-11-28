@@ -44,16 +44,17 @@ import java.util.List;
 
 public final class LongTermScheduleUtils {
 
+    public static final String SENDER = "sender";
+    public static final String SENDER_KEY = "senderKey";
     public static final String SENDER_TXN = "senderTxn";
+    public static final String NEW_SENDER_KEY = "newSenderKey";
+    public static final String RECEIVER = "receiver";
     public static final String CREATE_TXN = "createTxn";
-    static final String SENDER = "sender";
     static final String PAYER = "payer";
     static final String ADMIN = "admin";
     static final String EXTRA_KEY = "extraKey";
     static final String SHARED_KEY = "sharedKey";
-    static final String NEW_SENDER_KEY = "newSenderKey";
     static final String TRIGGERING_TXN = "triggeringTxn";
-    static final String RECEIVER = "receiver";
     static final String BASIC_XFER = "basicXfer";
     static final String TWO_SIG_XFER = "twoSigXfer";
     static final String DEFERRED_XFER = "deferredXfer";

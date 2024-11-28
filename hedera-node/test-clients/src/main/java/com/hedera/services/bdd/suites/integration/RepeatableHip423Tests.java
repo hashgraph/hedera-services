@@ -57,6 +57,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeSpecSecondTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromMutation;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -74,6 +75,10 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.CREATE_TXN;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.NEW_SENDER_KEY;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.RECEIVER;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_TXN;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.triggerSchedule;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -111,7 +116,9 @@ import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
+import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -551,29 +558,26 @@ public class RepeatableHip423Tests {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
-        String sender = "X";
-        String receiver = "Y";
         String schedule = "Z";
-        String senderKey = "sKey";
 
         return hapiTest(flattened(
-                newKeyNamed(senderKey).shape(senderShape),
-                cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
-                cryptoCreate(receiver).balance(0L),
-                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
+                newKeyNamed(SENDER_KEY).shape(senderShape),
+                cryptoCreate(SENDER).key(SENDER_KEY).via(SENDER_TXN),
+                cryptoCreate(RECEIVER).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
                         .payingWith(DEFAULT_PAYER)
                         .waitForExpiry()
                         .expiringIn(FORTY_MINUTES)
                         .recordingScheduledTxn()
-                        .alsoSigningWith(sender)
-                        .sigControl(forKey(senderKey, sigOne))
+                        .alsoSigningWith(SENDER)
+                        .sigControl(forKey(SENDER_KEY, sigOne))
                         .via(CREATE_TXN),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                cryptoUpdate(receiver).receiverSigRequired(true),
-                scheduleSign(schedule).alsoSigningWith(senderKey).sigControl(forKey(senderKey, sigTwo)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                scheduleSign(schedule).alsoSigningWith(receiver),
-                getAccountBalance(receiver).hasTinyBars(0),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                cryptoUpdate(RECEIVER).receiverSigRequired(true),
+                scheduleSign(schedule).alsoSigningWith(SENDER_KEY).sigControl(forKey(SENDER_KEY, sigTwo)),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                scheduleSign(schedule).alsoSigningWith(RECEIVER),
+                getAccountBalance(RECEIVER).hasTinyBars(0),
                 getScheduleInfo(schedule)
                         .hasScheduleId(schedule)
                         .hasWaitForExpiry()
@@ -582,12 +586,54 @@ public class RepeatableHip423Tests {
                         .hasRelativeExpiry(CREATE_TXN, FORTY_MINUTES - 1)
                         .hasRecordedScheduledTxn(),
                 triggerSchedule(schedule, FORTY_MINUTES),
-                getAccountBalance(receiver).hasTinyBars(1),
+                getAccountBalance(RECEIVER).hasTinyBars(1),
                 scheduleSign(schedule)
-                        .alsoSigningWith(senderKey)
-                        .sigControl(forKey(senderKey, sigTwo))
+                        .alsoSigningWith(SENDER_KEY)
+                        .sigControl(forKey(SENDER_KEY, sigTwo))
                         .hasKnownStatus(INVALID_SCHEDULE_ID),
-                getAccountBalance(receiver).hasTinyBars(1)));
+                getAccountBalance(RECEIVER).hasTinyBars(1)));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> changeInNestedSigningReqsRespected() {
+        var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
+        var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
+        var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
+        var secondSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, ON, OFF)));
+        String schedule = "Z";
+
+        return hapiTest(flattened(
+                newKeyNamed(SENDER_KEY).shape(senderShape),
+                keyFromMutation(NEW_SENDER_KEY, SENDER_KEY).changing(this::bumpThirdNestedThresholdSigningReq),
+                cryptoCreate(SENDER).key(SENDER_KEY),
+                cryptoCreate(RECEIVER).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                        .payingWith(DEFAULT_PAYER)
+                        .waitForExpiry()
+                        .expiringIn(FORTY_MINUTES)
+                        .recordingScheduledTxn()
+                        .alsoSigningWith(SENDER)
+                        .sigControl(ControlForKey.forKey(SENDER_KEY, sigOne))
+                        .via(CREATE_TXN),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                cryptoUpdate(SENDER).key(NEW_SENDER_KEY),
+                scheduleSign(schedule)
+                        .alsoSigningWith(NEW_SENDER_KEY)
+                        .sigControl(forKey(NEW_SENDER_KEY, firstSigThree)),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                scheduleSign(schedule)
+                        .alsoSigningWith(NEW_SENDER_KEY)
+                        .sigControl(forKey(NEW_SENDER_KEY, secondSigThree)),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                getScheduleInfo(schedule)
+                        .hasScheduleId(schedule)
+                        .hasWaitForExpiry()
+                        .isNotExecuted()
+                        .isNotDeleted()
+                        .hasRelativeExpiry(CREATE_TXN, FORTY_MINUTES - 1)
+                        .hasRecordedScheduledTxn(),
+                triggerSchedule(schedule, FORTY_MINUTES),
+                getAccountBalance(RECEIVER).hasTinyBars(1L)));
     }
 
     private static BiConsumer<TransactionBody, TransactionResult> withStatus(@NonNull final ResponseCodeEnum status) {
@@ -735,5 +781,14 @@ public class RepeatableHip423Tests {
                 .get(SCHEDULES_BY_ID_KEY);
         return requireNonNull(schedules.get(protoToPbj(spec.registry().getScheduleId(schedule), ScheduleID.class)))
                 .calculatedExpirationSecond();
+    }
+
+    private Key bumpThirdNestedThresholdSigningReq(Key source) {
+        var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
+        newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(2));
+        var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
+        return source.toBuilder()
+                .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
+                .build();
     }
 }

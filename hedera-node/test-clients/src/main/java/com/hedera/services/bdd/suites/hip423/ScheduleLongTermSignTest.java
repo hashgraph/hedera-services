@@ -105,51 +105,6 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(1)
-    final Stream<DynamicTest> changeInNestedSigningReqsRespected() {
-        var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
-        var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
-        var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
-        var secondSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, ON, OFF)));
-        String sender = "X";
-        String receiver = "Y";
-        String schedule = "Z";
-        String senderKey = "sKey";
-
-        return hapiTest(flattened(
-                newKeyNamed(senderKey).shape(senderShape),
-                keyFromMutation(NEW_SENDER_KEY, senderKey).changing(this::bumpThirdNestedThresholdSigningReq),
-                cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
-                cryptoCreate(receiver).balance(0L),
-                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-                        .payingWith(DEFAULT_PAYER)
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .recordingScheduledTxn()
-                        .alsoSigningWith(sender)
-                        .sigControl(ControlForKey.forKey(senderKey, sigOne)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                cryptoUpdate(sender).key(NEW_SENDER_KEY),
-                scheduleSign(schedule)
-                        .alsoSigningWith(NEW_SENDER_KEY)
-                        .sigControl(forKey(NEW_SENDER_KEY, firstSigThree)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                scheduleSign(schedule)
-                        .alsoSigningWith(NEW_SENDER_KEY)
-                        .sigControl(forKey(NEW_SENDER_KEY, secondSigThree)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                getScheduleInfo(schedule)
-                        .hasScheduleId(schedule)
-                        .hasWaitForExpiry()
-                        .isNotExecuted()
-                        .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 4)
-                        .hasRecordedScheduledTxn(),
-                triggerSchedule(schedule),
-                getAccountBalance(receiver).hasTinyBars(1L)));
-    }
-
-    @HapiTest
     @Order(2)
     final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
@@ -674,15 +629,6 @@ public class ScheduleLongTermSignTest {
     private Key lowerThirdNestedThresholdSigningReq(Key source) {
         var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
         newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(1));
-        var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
-        return source.toBuilder()
-                .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
-                .build();
-    }
-
-    private Key bumpThirdNestedThresholdSigningReq(Key source) {
-        var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
-        newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(2));
         var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
         return source.toBuilder()
                 .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
