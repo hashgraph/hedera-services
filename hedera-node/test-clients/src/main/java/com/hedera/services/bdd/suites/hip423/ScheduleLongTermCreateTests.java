@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -42,20 +41,24 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ScheduleLongTermCreateTests {
 
+    private static final long MAX_SCHEDULE_EXPIRY_TIME = TimeUnit.DAYS.toSeconds(60);
+
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-        testLifecycle.overrideInClass(Map.of("scheduling.longTermEnabled", "true"));
+        testLifecycle.overrideInClass(Map.of(
+                "scheduling.longTermEnabled",
+                "true",
+                "scheduling.maxExpirationFutureSeconds",
+                Long.toString(MAX_SCHEDULE_EXPIRY_TIME)));
     }
 
-    // TODO: is this the expected behavior?
-    @Disabled
     @HapiTest
-    final Stream<DynamicTest> scheduleCreateDefaultsTo30min() {
+    final Stream<DynamicTest> scheduleCreateDefaultsToMaxValueFromConfig() {
         return hapiTest(
                 cryptoCreate(RECEIVER).balance(0L),
                 scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, RECEIVER, 1L)))
                         .via("createTxn"),
-                getScheduleInfo("one").hasRelativeExpiry("createTxn", TimeUnit.MINUTES.toSeconds(30)));
+                getScheduleInfo("one").hasRelativeExpiry("createTxn", MAX_SCHEDULE_EXPIRY_TIME));
     }
 
     @HapiTest
@@ -64,8 +67,8 @@ public class ScheduleLongTermCreateTests {
                 cryptoCreate(RECEIVER).balance(0L),
                 scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, RECEIVER, 1L)))
                         .waitForExpiry(false)
-                        .expiringIn(2)
+                        .expiringIn(1)
                         .via("createTxn"),
-                getScheduleInfo("one").isExecuted().hasRelativeExpiry("createTxn", 2));
+                getScheduleInfo("one").isExecuted().hasRelativeExpiry("createTxn", 1));
     }
 }
