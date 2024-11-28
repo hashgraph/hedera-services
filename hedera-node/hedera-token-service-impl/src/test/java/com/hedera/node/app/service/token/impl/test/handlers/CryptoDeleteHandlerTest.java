@@ -393,7 +393,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    @DisplayName("check that fees are 1 for delete node trx")
+    @DisplayName("check that fees are 1 for delete account trx")
     void testCalculateFeesInvocations() {
         final var feeCtx = mock(FeeContext.class);
         final var feeCalcFact = mock(FeeCalculatorFactory.class);
