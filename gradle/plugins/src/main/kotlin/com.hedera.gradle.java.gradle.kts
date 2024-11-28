@@ -46,7 +46,7 @@ val expectedJavaVersion = "$javaVersionMajor.$javaVersionPatch"
 
 if (currentJavaVersion != expectedJavaVersion) {
     val message =
-        "Gradle runs with Java $currentJavaVersion. This project works best running with Java $expectedJavaVersion. " +
+        "Gradle is running with Java $currentJavaVersion. This project requires Java $expectedJavaVersion. " +
             "\n - From commandline: change JAVA_HOME and/or PATH to point at Java $expectedJavaVersion installation." +
             "\n - From IntelliJ: change 'Gradle JVM' in 'Gradle Settings' to point at Java $expectedJavaVersion installation."
 
