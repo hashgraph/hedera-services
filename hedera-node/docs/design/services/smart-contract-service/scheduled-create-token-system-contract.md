@@ -23,40 +23,49 @@ The architecture for the scheduled creations follows the existing framework defi
 
 ### New Solidity Functions
 
-| Function Selector Hash |                                                                                                                                                    Function Signature                                                                                                                                                    |
-|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `0xe780c5d3`           | `function getScheduledFungibleTokenCreateTransaction(address scheduleAddress) returns (int64 responseCode, FungibleTokenInfo memory tokenInfo)`                                                                                                                                                                          |
-| `0x14749042`           | `function getScheduledNonFungibleTokenCreateTransaction(address scheduleAddress) returns (int64 responseCode, NonFungibleTokenInfo memory tokenInfo)`                                                                                                                                                                    |
-| `0xf616ec93`           | `function getScheduledTokenAddress(address scheduleAddress) returns (int64 responseCode, address tokenAddress)`                                                                                                                                                                                                          |
-| `0x4742876e`           | `function scheduleCreateFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32) returns (int64 responseCode, address scheduleAddress)`                                                                                            |
-| `0xa001e7d2`           | `function scheduleCreateFungibleTokenWithCustomFees((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[]) returns (int64 responseCode, address scheduleAddress)` |
-| `0xbbaa57c2`           | `function scheduleCreateNonFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64))) returns (int64 responseCode, address scheduleAddress)`                                                                                                     |
-| `0x228fa74a`           | `function scheduleCreateNonFungibleTokenWithCustomFees((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),(int64,address,bool,bool,address)[],(int64,int64,int64,address,bool,address)[]) returns (int64 responseCode, address scheduleAddress)`        |
-| `0xc42a9a17`           | `function scheduleUpdateTokenInfo(address,(string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64))) returns (int64 responseCode, address scheduleAddress)`                                                                                                    |
+| Function Selector Hash |                                                                                   Short Selector                                                                                    |                                                                                                                                                    Function Signature                                                                                                                                                    | HAPI operation  |                              Description                              |
+|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|-----------------------------------------------------------------------|
+| `0xe780c5d3`           | `getScheduledFungibleTokenCreateTransaction(address scheduleAddress)`                                                                                                               | `function getScheduledFungibleTokenCreateTransaction(address scheduleAddress) returns (int64 responseCode, FungibleTokenInfo memory tokenInfo)`                                                                                                                                                                          | ScheduleGetInfo | Retrieve information for the scheduled token create                   |
+| `0x14749042`           | `getScheduledNonFungibleTokenCreateTransaction(address scheduleAddress)`                                                                                                            | `function getScheduledNonFungibleTokenCreateTransaction(address scheduleAddress) returns (int64 responseCode, NonFungibleTokenInfo memory tokenInfo)`                                                                                                                                                                    | ScheduleGetInfo | Retrieve information for the scheduled nft create                     |
+| `0xf616ec93`           | `getScheduledTokenAddress(address scheduleAddress)`                                                                                                                                 | `function getScheduledTokenAddress(address scheduleAddress) returns (int64 responseCode, address tokenAddress)`                                                                                                                                                                                                          | ScheduleGetInfo | Retrieve the token address for an executed scheduled token/nft create |
+| `0x4742876e`           | `scheduleCreateFungibleToken(HederaToken memory token,int64 initialTotalSupply, int32 decimals)`                                                                                    | `function scheduleCreateFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32) returns (int64 responseCode, address scheduleAddress)`                                                                                            | ScheduleCreate  | Schedule a token creation                                             |
+| `0xa001e7d2`           | `scheduleCreateFungibleTokenWithCustomFees(HederaToken memory token, int64 initialTotalSupply, int32 decimals, FixedFee[] memory fixedFees, FractionalFee[] memory fractionalFees)` | `function scheduleCreateFungibleTokenWithCustomFees((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[]) returns (int64 responseCode, address scheduleAddress)` | ScheduleCreate  | Schedule a token creation with custom fees                            |
+| `0xbbaa57c2`           | `scheduleCreateNonFungibleToken(HederaToken memory token)`                                                                                                                          | `function scheduleCreateNonFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64))) returns (int64 responseCode, address scheduleAddress)`                                                                                                     | ScheduleCreate  | Schedule a nft creation                                               |
+| `0x228fa74a`           | `scheduleCreateNonFungibleTokenWithCustomFees(HederaToken memory token, FixedFee[] memory fixedFees, RoyaltyFee[] memory royaltyFees)`                                              | `function scheduleCreateNonFungibleTokenWithCustomFees((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),(int64,address,bool,bool,address)[],(int64,int64,int64,address,bool,address)[]) returns (int64 responseCode, address scheduleAddress)`        | ScheduleCreate  | Schedule a nft creation with custom fees                              |
+| `0xc42a9a17`           | `scheduleUpdateTokenInfo(address token, HederaToken memory tokenInfo)`                                                                                                              | `function scheduleUpdateTokenInfo(address,(string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64))) returns (int64 responseCode, address scheduleAddress)`                                                                                                    | ScheduleCreate  | Schedule token update                                                 |
 
 ### System Contract Module
 
 - `ScheduledTokenCreateTranslator` - This class will be responsible for handling the `scheduleCreateFungibleToken`, `scheduleCreateFungibleTokenWithCustomFees`, `scheduleCreateNonFungibleToken`, `scheduleCreateNonFungibleTokenWithCustomFees` and selectors and dispatching them to the Schedule Service.
 - `ScheduledTokenCreateDecoder` - This class provides methods and constants for decoding the given `HssCallAttempt` into a `ScheduleCreateTransactionBody`.
-- `GetScheduledTokenInfoTranslator` - This class will be responsible for handling the `getScheduledFungibleTokenCreateTransaction` and `getScheduledNonFungibleTokenCreateTransaction` selectors and dispatching them to the Schedule Service.
+- `GetScheduledInfoTranslator` - This class will be responsible for handling the `getScheduledFungibleTokenCreateTransaction`, `getScheduledNonFungibleTokenCreateTransaction` and `getScheduledTokenAddress` selectors and dispatching them to the Schedule Service.
 - `GetScheduledTokenInfoCall` - This class provides methods and constants for decoding the `ScheduleGetInfoResponse` into a `PricedResult`.
-- `GetScheduledTokenAddressTranslator` - This class will be responsible for handling the `getScheduledTokenAddress` selector and dispatching it to the Schedule Service.
+- `GetScheduledNonFungibleTokenInfoCall` - This class provides methods and constants for decoding the `ScheduleGetInfoResponse` into a `PricedResult`.
 - `GetScheduledTokenAddressCall` - This class provides methods and constants for decoding the `ScheduleGetInfoResponse` into a `PricedResult`.
 - `ScheduledUpdateTokenInfoTranslator` - This class will be responsible for handling the `scheduleUpdateTokenInfo` selector and dispatching it to the Schedule Service.
 - `ScheduledUpdateTokenInfoDecoder` - This class provides methods and constants for decoding the given `HssCallAttempt` into a `ScheduleCreateTransactionBody`.
 
+### Gas Costs
+
+The gas costs will consist of the price for the call to the Schedule Service plus the pricing for the transaction that would be executed (for creation transactions this would include sending value with the call to cover the fees) and the intrinsic gas cost plus mark-up.
+
 ### Feature Flags
 
 In order to gate the newly introduced system contract calls, we will introduce the following feature flags:
-- `systemContract.scheduleService.getScheduledTokenInfo.enabled` - to enable the `getScheduledFungibleTokenCreateTransaction` and `getScheduledNonFungibleTokenCreateTransaction` functions.
-- `systemContract.scheduleService.getScheduledTokenAddress.enabled` - to enable the `getScheduledTokenAddress` function.
-- `systemContract.scheduleService.scheduledCreate.enabled` - to enable the `scheduleCreateFungibleToken`, `scheduleCreateFungibleTokenWithCustomFees`, `scheduleCreateNonFungibleToken` and `scheduleCreateNonFungibleTokenWithCustomFees` functions.
-- `systemContract.scheduleService.scheduledUpdate.enabled` - to enable the `scheduleUpdateTokenInfo` function.
+- `systemContract.scheduleService.systemContracts.enabled` - to enable the `scheduleCreateFungibleToken`, `scheduleCreateFungibleTokenWithCustomFees`, `scheduleCreateNonFungibleToken`, `scheduleCreateNonFungibleTokenWithCustomFees` and `scheduleUpdateTokenInfo` functions.
 
 ## Security Implications
 
 The newly added flows will adopt the HAPI authorization logic and the security V2 model.
 The throttles for `ScheduledCreate` and `ScheduledGetInfo` will be applied to the newly added functions.
+
+## Phased Implementation
+
+1. Implement the `shceduleCreateFungibleToken`, `scheduleCreateNonFungibleToken` system contract functions.
+2. Implement the `getScheduledFungibleTokenCreateTransaction`, `getScheduledNonFungibleTokenCreateTransaction` system contract functions.
+3. Implement the `getScheduledTokenAddress` system contract function.
+4. Implement the `scheduleUpdateTokenInfo` system contract function.
+5. Implement the `scheduleCreateFungibleTokenWithCustomFees`, `scheduleCreateNonFungibleTokenWithCustomFees` system contract functions.
 
 ## Acceptance Tests
 
@@ -72,6 +81,7 @@ The throttles for `ScheduledCreate` and `ScheduledGetInfo` will be applied to th
 - validate that `scheduleCreateNonFungibleToken` successfully creates a schedule for create nft and returns the schedule address.
 - validate that `scheduleCreateNonFungibleTokenWithCustomFees` successfully creates a schedule for create nft with custom fees and returns the schedule address.
 - validate that `scheduleUpdateTokenInfo` successfully creates a schedule for token update and returns the schedule address.
+- validate that the gas cost is correctly calculated for the newly added functions.
 
 #### Negative Tests
 
