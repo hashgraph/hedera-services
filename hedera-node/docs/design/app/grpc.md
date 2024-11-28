@@ -16,8 +16,8 @@ framework built on top of an HTTP/2 server (like Netty) and get everything we wa
 
 The gRPC package in Hedera App defines `GrpcServerManager` interface with a number of lifecycle methods such as
 `start()`, `stop()` and `isRunning()`, and an implementation of this interface based on Netty. Hedera App runs at least
-one gRPC server on the port specified in the config, and optionally it will also attempt to run a gRPC servers on the
-TLS or node operator ports specified in the same config.
+one gRPC server on the port specified in the config, and optionally it will also attempt to run additional gRPC servers
+on the TLS or node operator ports specified in the same config.
 
 ### NettyGrpcServerManager
 
@@ -28,16 +28,16 @@ server.
 
 ### GrpcServiceBuilder
 
-As stated above `GrpcServiceBuilder` produces gRPC `ServerServiceDefinition`s, those definitions are wired in with the
+As stated above `GrpcServiceBuilder` produces gRPC `ServerServiceDefinition`s. Those definitions are wired in with the
 proper Services handlers and gRPC `ServerCall.Listener` methods. During runtime the Netty server will be calling those
 listener methods e.g. `onMessage()` is where we integrate Service logic for handling transactions or queries by using
 the abstract `MethodBase` type.
 
 ### MethodBase
 
-In this abstract class we check the size of the request and we fail if it's too large. Additionally, we track metrics
-for number of calls and calls per second that were receive, failed or successfully handled. There are two concrete types
-(`QueryMethod` and `TransactionMethod`) that extend `MethodBase` and implement the `handle()` method, which when called
-will invoke the `QueryWorkflow` or `IngestWorkflow` respectively.
+In this abstract class, the size of incoming requests is validated, and requests that exceed the allowed size are
+rejected. Additionally, we track metrics for number of calls and calls per second that were received, failed or
+successfully handled. There are two concrete types(`QueryMethod` and `TransactionMethod`) that extend `MethodBase`
+and implement the `handle()` method, which when called will invoke the `QueryWorkflow` or `IngestWorkflow` respectively.
 
 **NEXT: [Records](records.md)**
