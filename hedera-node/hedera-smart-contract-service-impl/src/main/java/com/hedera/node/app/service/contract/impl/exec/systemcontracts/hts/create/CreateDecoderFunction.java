@@ -22,7 +22,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 
 /**
- *
+ * A decoder function used for decoding create calls to HTS system contract.
  */
 @FunctionalInterface
 public interface CreateDecoderFunction {
