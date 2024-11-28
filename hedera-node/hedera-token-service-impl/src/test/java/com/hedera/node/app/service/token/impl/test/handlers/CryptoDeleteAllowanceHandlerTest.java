@@ -316,11 +316,10 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(feeCtx.body()).willReturn(txnBody);
         given(feeCalcFact.feeCalculator(any())).willReturn(feeCalc);
         final var cryptoDeleteAllowanceTransactionBody = txnBody.cryptoDeleteAllowanceOrThrow();
-        final var LONG_SIZE = 8L;
-        final var NFT_DELETE_ALLOWANCE_SIZE = 6 * LONG_SIZE;
+        final var longSize = 8L;
+        final var nftDeleteAllowanceSize = 6 * longSize;
         final var bytesPerTransaction =
-                cryptoDeleteAllowanceTransactionBody.nftAllowances().size() * NFT_DELETE_ALLOWANCE_SIZE
-                        + (2 * LONG_SIZE);
+                cryptoDeleteAllowanceTransactionBody.nftAllowances().size() * nftDeleteAllowanceSize + (2 * longSize);
         given(feeCalc.addBytesPerTransaction(bytesPerTransaction)).willReturn(feeCalc);
         given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
 
