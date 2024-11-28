@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -126,6 +127,32 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    void testNoOpDeleteAllowancesWhenListIsEmpty() {
+        writableNftStore.put(nftSl1.copyBuilder().spenderId(spenderId).build());
+        writableNftStore.put(nftSl2.copyBuilder().spenderId(spenderId).build());
+
+        final var txn = allowancesTxn(payerId, List.of());
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(payerId);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(nftIdSl2).spenderId()).isEqualTo(spenderId);
+
+        subject.handle(handleContext);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
+        // we expect the allowances to not be removed because of no op when list is empty
+        assertThat(writableNftStore.get(nftIdSl1).spenderId()).isNotNull();
+        assertThat(writableNftStore.get(nftIdSl2).spenderId()).isNotNull();
+    }
+
+    @Test
     void canDeleteAllowancesOnTreasury() {
         writableNftStore.put(nftSl1.copyBuilder().spenderId(spenderId).build());
         writableNftStore.put(nftSl2.copyBuilder().spenderId(spenderId).build());
@@ -161,6 +188,17 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(EMPTY_ALLOWANCES));
+    }
+
+    @Test
+    void validateIfPureChecksDoesNotThrow() {
+        final var nftAllowance = NftRemoveAllowance.newBuilder()
+                .owner(payerId)
+                .tokenId(nonFungibleTokenId)
+                .serialNumbers(List.of(1L, 2L))
+                .build();
+        final var txn = allowancesTxn(payerId, List.of(nftAllowance));
+        assertDoesNotThrow(() -> subject.pureChecks(txn));
     }
 
     @Test
