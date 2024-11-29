@@ -64,6 +64,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
@@ -500,6 +501,36 @@ public class RepeatableHip423Tests {
                 sleepForSeconds(ONE_MINUTE),
                 // Trigger the executions
                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)));
+    }
+
+    /**
+     * Tests that system accounts are exempt from throttles.
+     */
+    @LeakyRepeatableHapiTest(
+            value = NEEDS_LAST_ASSIGNED_CONSENSUS_TIME,
+            overrides = {"scheduling.maxTxnPerSec"})
+    final Stream<DynamicTest> systemAccountsExemptFromThrottles() {
+        final AtomicLong expiry = new AtomicLong();
+        final var oddLifetime = 123 * ONE_MINUTE;
+        return hapiTest(
+                overriding("scheduling.maxTxnPerSec", "2"),
+                cryptoCreate(CIVILIAN_PAYER).balance(10 * ONE_HUNDRED_HBARS),
+                scheduleCreate("first", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 123L)))
+                        .payingWith(CIVILIAN_PAYER)
+                        .fee(ONE_HBAR)
+                        .expiringIn(oddLifetime),
+                // Consensus time advances exactly one second per transaction in repeatable mode
+                exposeSpecSecondTo(now -> expiry.set(now + oddLifetime - 1)),
+                sourcing(() -> scheduleCreate("second", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 456L)))
+                        .payingWith(CIVILIAN_PAYER)
+                        .fee(ONE_HBAR)
+                        .expiringAt(expiry.get())),
+                // When scheduling with the system account, the throttle should not apply
+                sourcing(() -> scheduleCreate("third", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 789)))
+                        .payingWith(SYSTEM_ADMIN)
+                        .fee(ONE_HBAR)
+                        .expiringAt(expiry.get())),
+                purgeExpiringWithin(oddLifetime));
     }
 
     private static BiConsumer<TransactionBody, TransactionResult> withStatus(@NonNull final ResponseCodeEnum status) {
