@@ -34,6 +34,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.Hedera.TssBaseServiceFactory;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
@@ -114,6 +115,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final ServicesSoftwareVersion version;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
+    /**
+     * Non-final because the compiler can't tell that the {@link TssBaseServiceFactory} lambda we give the
+     * {@link Hedera} constructor will always set this (the fake's {@link com.hedera.node.app.tss.TssBaseServiceImpl}
+     * delegate needs to be constructed from the Hedera instance's {@link com.hedera.node.app.spi.AppContext}).
+     */
     protected FakeTssBaseService tssBaseService;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
@@ -133,7 +139,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 this::now,
                 appContext -> {
                     this.tssBaseService = new FakeTssBaseService(appContext);
-                    return tssBaseService;
+                    return this.tssBaseService;
                 },
                 DiskStartupNetworks::new,
                 NodeId.of(0L));

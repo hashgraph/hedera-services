@@ -71,6 +71,11 @@ public interface TssBaseService extends Service {
         return NAME;
     }
 
+    @Override
+    default int migrationOrder() {
+        return MIGRATION_ORDER;
+    }
+
     /**
      * Returns the status of the TSS service relative to the given roster, ledger id, and given TSS base state.
      *

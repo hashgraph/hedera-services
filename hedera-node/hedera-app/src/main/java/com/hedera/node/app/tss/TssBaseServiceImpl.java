@@ -68,6 +68,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -91,7 +92,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final Executor signingExecutor;
     private final TssKeysAccessor tssKeysAccessor;
     private final TssDirectoryAccessor tssDirectoryAccessor;
-    private final AppContext appContext;
+    private final Supplier<Configuration> configSupplier;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
@@ -104,7 +105,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
-        this.appContext = requireNonNull(appContext);
+        this.configSupplier = appContext.configSupplier();
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
                         tssLibrary,
@@ -164,8 +165,6 @@ public class TssBaseServiceImpl implements TssBaseService {
 
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
-        final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
-
         final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode);
         final var activeRoster = requireNonNull(
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster());
@@ -204,11 +203,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
                 () -> {
-                    if (appContext
-                            .configSupplier()
-                            .get()
-                            .getConfigData(TssConfig.class)
-                            .signWithLedgerId()) {
+                    if (configSupplier.get().getConfigData(TssConfig.class).signWithLedgerId()) {
                         submitShareSignatures(messageHash, lastUsedConsensusTime);
                     } else {
                         // This is only for testing purposes when the candidate roster is
