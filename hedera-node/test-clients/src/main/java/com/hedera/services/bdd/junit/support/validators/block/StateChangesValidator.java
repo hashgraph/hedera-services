@@ -647,7 +647,6 @@ public class StateChangesValidator implements BlockStreamValidator {
             case NODE_VALUE -> mapChangeValue.nodeValueOrThrow();
             case ACCOUNT_PENDING_AIRDROP_VALUE -> mapChangeValue.accountPendingAirdropValueOrThrow();
             case ROSTER_VALUE -> mapChangeValue.rosterValueOrThrow();
-            case TSS_ENCRYPTION_KEY_VALUE -> mapChangeValue.tssEncryptionKeyValueOrThrow();
             case SCHEDULED_COUNTS_VALUE -> mapChangeValue.scheduledCountsValueOrThrow();
             case THROTTLE_USAGE_SNAPSHOTS_VALUE -> mapChangeValue.throttleUsageSnapshotsValue();
             case TSS_ENCRYPTION_KEY_VALUE -> mapChangeValue.tssEncryptionKeyValueOrThrow();
