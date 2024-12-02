@@ -295,6 +295,9 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
             delta = ByteUtils.byteArrayToInt(
                     transaction.getApplicationTransaction().toByteArray(), 0);
         } else {
+            // TODO: Currently all type of transactions will update this state. Once platform registers callbacks on the
+            // services.app for getting back system transactions, application transactions will be filtered, so that
+            // only they will update the state.
             delta = ByteUtils.byteArrayToInt(transaction.getTransactionsBytes().toByteArray(), 0);
         }
 
