@@ -282,4 +282,9 @@ public class FakeTssBaseService implements TssBaseService {
     public TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory) {
         return delegate.getTssMessageFromBytes(wrap, directory);
     }
+
+    @Override
+    public void manageTssStatus(final State state) {
+        delegate.manageTssStatus(state);
+    }
 }

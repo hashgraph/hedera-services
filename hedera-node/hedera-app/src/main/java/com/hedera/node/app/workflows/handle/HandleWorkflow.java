@@ -34,6 +34,7 @@ import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.ORDINARY_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
+import static com.hedera.node.app.workflows.handle.steps.StakePeriodChanges.isNextSecond;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.BOTH;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
@@ -563,6 +564,10 @@ public class HandleWorkflow {
                 // WARNING: this relies on the BlockStreamManager's last-handled time not being updated yet to
                 // correctly detect stake period boundary, so the order of the following two lines is important
                 processStakePeriodChanges(userTxn, dispatch);
+                if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
+                    // Check if the tss encryption keys are present in the state and reached threshold
+                    tssBaseService.manageTssStatus(userTxn.stack());
+                }
                 blockStreamManager.setLastHandleTime(userTxn.consensusNow());
                 if (streamMode != BLOCKS) {
                     // This updates consTimeOfLastHandledTxn as a side effect
