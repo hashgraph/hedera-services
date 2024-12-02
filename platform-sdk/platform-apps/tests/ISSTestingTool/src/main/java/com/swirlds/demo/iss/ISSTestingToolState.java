@@ -35,6 +35,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -284,11 +285,19 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      * @param transaction the transaction to apply
      */
     private void handleTransaction(final ConsensusTransaction transaction) {
-        if (transaction.isSystem()) {
-            return;
+        int delta;
+
+        if (!transaction.getTransaction().equals(EventTransaction.DEFAULT)) {
+            if (transaction.isSystem()) {
+                return;
+            }
+
+            delta = ByteUtils.byteArrayToInt(
+                    transaction.getApplicationTransaction().toByteArray(), 0);
+        } else {
+            delta = ByteUtils.byteArrayToInt(transaction.getTransactionsBytes().toByteArray(), 0);
         }
-        final int delta =
-                ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
+
         runningSum += delta;
         setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
     }

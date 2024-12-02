@@ -133,13 +133,9 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
         return payload;
     }
 
-    /**
-     * Returns the payload bytes as a PBJ record
-     *
-     * @return the payload
-     */
+    @Override
     @NonNull
-    public Bytes getTransactionBytes() {
+    public Bytes getTransactionsBytes() {
         return payloadBytes;
     }
 

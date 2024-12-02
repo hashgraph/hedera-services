@@ -40,6 +40,13 @@ public sealed interface Transaction permits ConsensusTransaction {
     EventTransaction getTransaction();
 
     /**
+     * Returns the transaction bytes as a PBJ record
+     * @return the transaction
+     */
+    @NonNull
+    Bytes getTransactionsBytes();
+
+    /**
      * A convenience method for retrieving the application transaction {@link Bytes} object. Before calling this method,
      * ensure that the transaction is not a system transaction by calling {@link #isSystem()}.
      *

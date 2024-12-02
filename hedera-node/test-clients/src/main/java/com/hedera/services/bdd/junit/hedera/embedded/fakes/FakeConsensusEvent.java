@@ -49,7 +49,7 @@ public class FakeConsensusEvent extends FakeEvent implements ConsensusEvent {
 
     @Override
     public @NonNull Iterator<Bytes> transactionBytesIterator() {
-        return Collections.singleton(transaction.getTransactionBytes()).iterator();
+        return Collections.singleton(transaction.getTransactionsBytes()).iterator();
     }
 
     @Override
