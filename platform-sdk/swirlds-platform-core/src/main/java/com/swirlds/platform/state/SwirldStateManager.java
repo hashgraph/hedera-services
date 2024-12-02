@@ -24,7 +24,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
-import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -126,9 +125,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
     public void handleConsensusRound(final ConsensusRound round) {
         final MerkleRoot state = stateRef.get();
 
-        uptimeTracker.handleRound(
-                round,
-                RosterRetriever.buildRoster(state.getReadablePlatformState().getAddressBook()));
+        uptimeTracker.handleRound(round);
         transactionHandler.handleRound(round, state);
     }
 

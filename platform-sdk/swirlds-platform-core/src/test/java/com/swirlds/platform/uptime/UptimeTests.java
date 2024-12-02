@@ -93,10 +93,11 @@ class UptimeTests {
         return events;
     }
 
-    private static ConsensusRound mockRound(@NonNull final List<PlatformEvent> events, final long roundNum) {
+    private static ConsensusRound mockRound(
+            @NonNull final List<PlatformEvent> events, @NonNull final Roster roster, final long roundNum) {
         final ConsensusSnapshot snapshot = mock(ConsensusSnapshot.class);
         final ConsensusRound round = new ConsensusRound(
-                mock(Roster.class),
+                roster,
                 events,
                 mock(PlatformEvent.class),
                 mock(GraphGenerations.class),
@@ -138,8 +139,8 @@ class UptimeTests {
         final List<PlatformEvent> firstRoundEvents = generateEvents(
                 random, time, Duration.ofSeconds(1), roster, eventCount, noFirstRoundEvents, noFirstRoundJudges);
 
-        final ConsensusRound roundOne = mockRound(firstRoundEvents, 1);
-        uptimeTracker.handleRound(roundOne, roster);
+        final ConsensusRound roundOne = mockRound(firstRoundEvents, roster, 1);
+        uptimeTracker.handleRound(roundOne);
 
         roster.rosterEntries().forEach(entry -> {
             final NodeId nodeId = NodeId.of(entry.nodeId());
@@ -185,8 +186,8 @@ class UptimeTests {
         final List<PlatformEvent> secondRoundEvents = generateEvents(
                 random, time, Duration.ofSeconds(1), roster, eventCount, noSecondRoundEvents, noSecondRoundJudges);
 
-        final ConsensusRound roundTwo = mockRound(secondRoundEvents, 2);
-        uptimeTracker.handleRound(roundTwo, roster);
+        final ConsensusRound roundTwo = mockRound(secondRoundEvents, roster, 2);
+        uptimeTracker.handleRound(roundTwo);
 
         roster.rosterEntries().forEach(entry -> {
             final NodeId nodeId = NodeId.of(entry.nodeId());
@@ -260,8 +261,8 @@ class UptimeTests {
             assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(nodeId));
         });
 
-        final ConsensusRound roundOne = mockRound(firstRoundEvents, 1);
-        uptimeTracker.handleRound(roundOne, roster);
+        final ConsensusRound roundOne = mockRound(firstRoundEvents, roster, 1);
+        uptimeTracker.handleRound(roundOne);
 
         roster.rosterEntries().forEach(entry -> {
             final NodeId nodeId = NodeId.of(entry.nodeId());
@@ -306,9 +307,9 @@ class UptimeTests {
         final List<PlatformEvent> secondRoundEvents = generateEvents(
                 random, time, Duration.ofSeconds(1), newRoster, eventCount, noSecondRoundEvents, noSecondRoundJudges);
 
-        final ConsensusRound roundTwo = mockRound(secondRoundEvents, 2);
+        final ConsensusRound roundTwo = mockRound(secondRoundEvents, newRoster, 2);
 
-        uptimeTracker.handleRound(roundTwo, newRoster);
+        uptimeTracker.handleRound(roundTwo);
 
         newRoster.rosterEntries().forEach(entry -> {
             final NodeId nodeId = NodeId.of(entry.nodeId());
@@ -376,8 +377,8 @@ class UptimeTests {
             assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(nodeId));
         });
 
-        final ConsensusRound roundOne = mockRound(firstRoundEvents, 1);
-        uptimeTracker.handleRound(roundOne, roster);
+        final ConsensusRound roundOne = mockRound(firstRoundEvents, roster, 1);
+        uptimeTracker.handleRound(roundOne);
 
         // Simulate a following round, but allow a long time to pass
         time.tick(Duration.ofSeconds(30));
@@ -387,8 +388,8 @@ class UptimeTests {
         final List<PlatformEvent> secondRoundEvents =
                 generateEvents(random, time, Duration.ofSeconds(1), roster, eventCount, noSecondRoundEvents, Set.of());
 
-        final ConsensusRound roundTwo = mockRound(secondRoundEvents, 2);
-        uptimeTracker.handleRound(roundTwo, roster);
+        final ConsensusRound roundTwo = mockRound(secondRoundEvents, roster, 2);
+        uptimeTracker.handleRound(roundTwo);
 
         assertTrue(uptimeTracker.isSelfDegraded());
 
@@ -397,8 +398,8 @@ class UptimeTests {
         final List<PlatformEvent> thirdRoundEvents =
                 generateEvents(random, time, Duration.ofSeconds(1), roster, eventCount, Set.of(), Set.of());
 
-        final ConsensusRound roundThree = mockRound(thirdRoundEvents, 3);
-        uptimeTracker.handleRound(roundThree, roster);
+        final ConsensusRound roundThree = mockRound(thirdRoundEvents, roster, 3);
+        uptimeTracker.handleRound(roundThree);
 
         assertFalse(uptimeTracker.isSelfDegraded());
     }

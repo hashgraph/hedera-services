@@ -33,7 +33,6 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.SelfEventReachedConsensusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -50,8 +49,6 @@ public class UptimeTracker {
 
     private final NodeId selfId;
     private final Time time;
-    private final Roster roster;
-
     private final UptimeMetrics uptimeMetrics;
     private final Duration degradationThreshold;
 
@@ -88,7 +85,6 @@ public class UptimeTracker {
 
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
         this.time = Objects.requireNonNull(time);
-        this.roster = Objects.requireNonNull(roster);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.degradationThreshold = platformContext
                 .getConfiguration()
@@ -102,26 +98,26 @@ public class UptimeTracker {
      * Look at the events in a round to determine which nodes are up and which nodes are down.
      *
      * @param round       the round to analyze
-     * @param roster      the roster for this round
      */
-    public void handleRound(@NonNull final ConsensusRound round, @Nullable final Roster roster) {
+    public void handleRound(@NonNull final ConsensusRound round) {
 
         if (round.isEmpty()) {
             return;
         }
 
-        if (roster == null) {
-            return;
-        }
-
         final Instant start = time.now();
 
-        addAndRemoveNodes(uptimeData, roster);
+        addAndRemoveNodes(uptimeData, round.getConsensusRoster());
         final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator = new HashMap<>();
         final Map<NodeId, ConsensusEvent> judgesByCreator = new HashMap<>();
         scanRound(round, lastEventsInRoundByCreator, judgesByCreator);
-        updateUptimeData(roster, uptimeData, lastEventsInRoundByCreator, judgesByCreator, round.getRoundNum());
-        reportUptime(uptimeData, round.getConsensusTimestamp(), round.getRoundNum());
+        updateUptimeData(
+                round.getConsensusRoster(),
+                uptimeData,
+                lastEventsInRoundByCreator,
+                judgesByCreator,
+                round.getRoundNum());
+        reportUptime(round.getConsensusRoster(), uptimeData, round.getConsensusTimestamp(), round.getRoundNum());
 
         final Instant end = time.now();
         final Duration elapsed = Duration.between(start, end);
@@ -247,7 +243,10 @@ public class UptimeTracker {
      * @param uptimeData the uptime data
      */
     private void reportUptime(
-            @NonNull final UptimeData uptimeData, @NonNull final Instant lastRoundEndTime, final long currentRound) {
+            @NonNull final Roster roster,
+            @NonNull final UptimeData uptimeData,
+            @NonNull final Instant lastRoundEndTime,
+            final long currentRound) {
 
         long nonDegradedConsensusWeight = 0;
         for (final RosterEntry entry : roster.rosterEntries()) {
