@@ -64,6 +64,14 @@ public class LongListDisk extends AbstractLongList<Long> {
      */
     private Path tempFile;
 
+    /**
+     * Path to the temp directory where tempFile above is located. Temp directories
+     * are deleted automatically when the process exits. However, in case of long lists
+     * on disk it makes sense to delete them explicitly when lists are closed, otherwise
+     * there may be too many temp directories piled up.
+     */
+    private Path tempDir;
+
     /** A temp byte buffer for transferring data between file channels */
     private static final ThreadLocal<ByteBuffer> TRANSFER_BUFFER_THREAD_LOCAL;
 
@@ -221,17 +229,16 @@ public class LongListDisk extends AbstractLongList<Long> {
         return buffer;
     }
 
-    static Path createTempFile(final String sourceFileName, final @NonNull Configuration configuration)
-            throws IOException {
+    Path createTempFile(final String sourceFileName, final @NonNull Configuration configuration) throws IOException {
         requireNonNull(configuration);
         // FileSystemManager.create() deletes the temp directory created previously. It means,
         // every new LongListDisk instance erases the folder used by the previous LongListDisk, if any!
         // final Path directory = FileSystemManager.create(configuration).resolveNewTemp(STORE_POSTFIX);
-        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(STORE_POSTFIX, configuration);
-        if (!exists(directory)) {
-            Files.createDirectories(directory);
+        tempDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(STORE_POSTFIX, configuration);
+        if (!exists(tempDir)) {
+            Files.createDirectories(tempDir);
         }
-        return directory.resolve(sourceFileName);
+        return tempDir.resolve(sourceFileName);
     }
 
     /** {@inheritDoc} */
@@ -371,6 +378,8 @@ public class LongListDisk extends AbstractLongList<Long> {
             currentFileChannel.close();
             freeChunks.clear();
             Files.delete(tempFile);
+            // The directory must be empty at this point
+            Files.delete(tempDir);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
