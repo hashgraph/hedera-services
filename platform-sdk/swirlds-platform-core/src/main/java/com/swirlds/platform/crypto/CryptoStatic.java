@@ -97,6 +97,8 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
  * A collection of various static crypto methods
  */
 public final class CryptoStatic {
+    public static final SignatureSchema SIGNATURE_SCHEMA =
+            SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
     private static final Logger logger = LogManager.getLogger(CryptoStatic.class);
     private static final int SERIAL_NUMBER_BITS = 64;
     private static final int MASTER_KEY_MULTIPLIER = 157;
@@ -637,11 +639,11 @@ public final class CryptoStatic {
      */
     public static BlsKeyPair generateBlsKeyPair(@Nullable final SecureRandom secureRandom)
             throws NoSuchAlgorithmException {
-        final SignatureSchema SIGNATURE_SCHEMA =
-                SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
         if (secureRandom == null) {
+            logger.debug("Generating a new BLS key pair using a default secure random number generator");
             return BlsKeyPair.generate(SIGNATURE_SCHEMA);
         }
+        logger.debug("Generating a new BLS key pair using a custom secure random number generator");
         return BlsKeyPair.generate(SIGNATURE_SCHEMA, secureRandom);
     }
 

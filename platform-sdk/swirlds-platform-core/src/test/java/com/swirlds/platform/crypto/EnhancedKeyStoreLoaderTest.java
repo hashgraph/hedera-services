@@ -227,7 +227,11 @@ class EnhancedKeyStoreLoaderTest {
 
         assertThat(loader).isNotNull();
         assertThatCode(loader::migrate).doesNotThrowAnyException();
-        assertThatCode(loader::scan).isInstanceOf(KeyLoadingException.class);
+        assertThatCode(loader::scan)
+                .as(
+                        "Scan operation should throw KeyLoadingException when processing a corrupt TSS key in '%s'",
+                        keyDirectory)
+                .isInstanceOf(KeyLoadingException.class);
     }
 
     /**
