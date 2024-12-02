@@ -1110,7 +1110,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      *
      * @throws MutabilityException if called on a non-sealed cache instance.
      */
-    public void garbageCollect(final long firstLeafPath, final long lastLeafPath) {
+    public void garbageCollect() {
         if (!hashesAreImmutable.get() || !leafIndexesAreImmutable.get()) {
             throw new MutabilityException("Cannot run garbage collection for a non-sealed cache");
         }

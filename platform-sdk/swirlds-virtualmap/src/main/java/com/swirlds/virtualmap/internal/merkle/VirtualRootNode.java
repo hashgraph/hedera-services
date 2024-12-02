@@ -1221,7 +1221,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             return true;
         } else {
             logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To GC {}", cache.getFastCopyVersion());
-            cache.garbageCollect(state.getFirstLeafPath(), state.getLastLeafPath());
+            cache.garbageCollect();
             return false;
         }
     }

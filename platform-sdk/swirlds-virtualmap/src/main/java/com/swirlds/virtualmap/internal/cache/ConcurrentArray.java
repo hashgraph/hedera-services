@@ -148,7 +148,16 @@ final class ConcurrentArray<T> {
      */
     ConcurrentArray(final Stream<T> from) {
         this();
-        from.parallel().forEach(this::add);
+        // addImpl() is safe to call from a constructor
+        from.forEach(this::addImpl);
+        // Now update the size, since addImpl() doesn't take care of it
+        SubArray<T> t = head;
+        int size = 0;
+        while (t != tail) {
+            size += subarrayCapacity;
+            t = t.next;
+        }
+        elementCount.addAndGet(size + tail.size.get());
         seal();
     }
 
@@ -254,32 +263,50 @@ final class ConcurrentArray<T> {
         // also full, then add a new sub-array. We want to avoid locking for normal operations, and only
         // do so if the sub-array is full. So we will get the last sub-array, try to add to it, and if we fail
         // to do so, then we will acquire the lock to create a new sub-array.
-        boolean success = tail.add(element);
+        final boolean success = tail.add(element);
         if (!success) {
+            // Optimistic adding to the last sub-array failed. Now take a lock and try again. It may
+            // happen that a different thread has created a new sub-array between the call to tail.add()
+            // above and the call to addImpl() below, it's handled fine by addImpl()
             synchronized (this) {
-                // Within this lock we need to create a new sub-array. Unless in a race another thread has already
-                // entered this critical section and created the sub array. So we will once again get the last
-                // sub-array from the list, try to add to it, and determine if we need to add a new sub-array.
-                success = tail.add(element);
-                if (!success) {
-                    // Create the sub-array
-                    final SubArray<T> newArray = new SubArray<>(subarrayCapacity);
-                    // Add the element
-                    success = newArray.add(element);
-                    // This must always be true! Capacity is always strictly greater than zero, and
-                    // we hold the lock, so the above add operation should always succeed.
-                    assert success;
-                    // Now, and only now, can we add the sub-array to the list. As soon as we add it,
-                    // other threads can come along and add items to the array. If we were to put this
-                    // into the list too soon, then the array could be filled up before our thread
-                    // has a chance, causing the above assertion to fail.
-                    tail = tail.next = newArray;
-                }
+                // Now with the lock it's safe to call addImpl(). If another thread has created a new
+                // sub-array, it will be used, otherwise a new sub-array will be created.
+                addImpl(element);
             }
         }
 
         // we succeeded in adding so increment count
         elementCount.incrementAndGet();
+    }
+
+    /**
+     * Adds the element to this concurrent array, creating a new sub-array if needed. If a new
+     * sub-array is created, {@link #tail} will be updated to point to this sub-array after
+     * this method is returned.
+     *
+     * <p>This method does NOT update the size of the array stored in {@link #elementCount}.
+     *
+     * <p>This method is NOT thread safe! It can be called from a constructor, while this
+     * object is still being created, or from {@link #add(Object)} with proper synchronization.
+     *
+     * @param element The element to add.
+     */
+    private void addImpl(final T element) {
+        boolean success = tail.add(element);
+        if (!success) {
+            // Create a new sub-array
+            final SubArray<T> newArray = new SubArray<>(subarrayCapacity);
+            // Add the element
+            success = newArray.add(element);
+            // This must always be true! Capacity is always strictly greater than zero, and
+            // we hold the lock, so the above add operation should always succeed.
+            assert success;
+            // Now, and only now, can we add the sub-array to the list. As soon as we add it,
+            // other threads can come along and add items to the array. If we were to put this
+            // into the list too soon, then the array could be filled up before our thread
+            // has a chance, causing the above assertion to fail.
+            tail = tail.next = newArray;
+        }
     }
 
     /**
