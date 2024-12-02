@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.addressbook.impl;
 
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
-import static com.swirlds.platform.system.address.AddressBookUtils.endpointPairFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.addressbook.Node;
@@ -98,19 +97,10 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
             if (!node.deleted()) {
                 // If we're retrieving from state, the endpoint order SHOULD match the address book, which always has
                 // the internal endpoint at index 0
-                final var serviceEndpoints = node.serviceEndpoint();
-                final var internalEndpoint = endpointPairFor(serviceEndpoints.get(0));
-                final var externalEndpoint = endpointPairFor(serviceEndpoints.get(1));
-
-                final var rosterEntry = RosterRetriever.buildRosterEntry(
-                        NodeId.of(node.nodeId()),
-                        node.weight(),
-                        node.gossipCaCertificate(),
-                        // The roster entry orders the EXTERNAL endpoint first intentionally
-                        externalEndpoint,
-                        internalEndpoint);
-
-                rosterEntries.add(rosterEntry);
+                final var nodeEndpoints = node.gossipEndpoint();
+                final var entry = RosterRetriever.buildRosterEntry(
+                        NodeId.of(node.nodeId()), node.weight(), node.gossipCaCertificate(), nodeEndpoints);
+                rosterEntries.add(entry);
             }
         }
 

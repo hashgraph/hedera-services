@@ -17,7 +17,6 @@
 package com.hedera.node.app.fixtures;
 
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
-import static com.swirlds.platform.system.address.AddressBookUtils.endpointPairFor;
 import static com.swirlds.state.test.fixtures.merkle.TestSchema.CURRENT_VERSION;
 import static java.util.Objects.requireNonNull;
 
@@ -408,10 +407,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     private static RosterEntry toRosterEntry(@NonNull final NodeInfo nodeInfo, @NonNull final Address address) {
         final var nodeId = NodeId.of(nodeInfo.nodeId());
 
-        // Since we're retrieving endpoints from the address book, the internal endpoint should be first
+        // Since we're retrieving endpoints from an address, the internal endpoint should be first
         final var serviceEndpoints = AddressBookUtils.endpointsFor(address);
-        final var internal = endpointPairFor(serviceEndpoints.get(0));
-        final var external = serviceEndpoints.size() > 1 ? endpointPairFor(serviceEndpoints.get(1)) : null;
-        return RosterRetriever.buildRosterEntry(nodeId, nodeInfo.stake(), nodeInfo.sigCertBytes(), external, internal);
+        return RosterRetriever.buildRosterEntry(nodeId, nodeInfo.stake(), nodeInfo.sigCertBytes(), serviceEndpoints);
     }
 }

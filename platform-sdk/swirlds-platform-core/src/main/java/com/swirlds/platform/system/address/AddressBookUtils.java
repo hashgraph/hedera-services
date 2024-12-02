@@ -25,7 +25,6 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
@@ -283,13 +282,15 @@ public class AddressBookUtils {
 
     /**
      * Extracts the internal and external service endpoints from the given address. If the internal or external
-     * service endpoint is null, it is not added to the list of service endpoints.
+     * service endpoint is null, it is not added to the list of service endpoints. Since the {@link Address} object
+     * does not differentiate between IP addresses and domain names, the corresponding conversion of a hostname to
+     * its appropriate IP or domain name is also handled.
      * <p>
      * NOTE: this method assumes that the internal service endpoint is at index 0 and the external service endpoint
-     * is at index 1 per address book semantics.
+     * is at index 1 per address book semantics. This order is maintained in the returned data.
      * @param address the address to extract the service endpoints from
-     * @return a list of (non-null) service endpoints, with the internal service endpoint at index 0 and the
-     * external service endpoint at index 1.
+     * @return a list of (non-null) service endpoints, with the internal service endpoint remaining at index 0 and the
+     * external service endpoint remaining at index 1.
      */
     public static List<ServiceEndpoint> endpointsFor(@NonNull final Address address) {
         requireNonNull(address);
@@ -408,17 +409,6 @@ public class AddressBookUtils {
     }
 
     /**
-     * Convenience method for converting a {@link ServiceEndpoint} to a pair of domain name and port.
-     *
-     * @param endpoint the service endpoint to convert
-     * @return a pair of domain name and port
-     */
-    public static Pair<String, Integer> endpointPairFor(@NonNull final ServiceEndpoint endpoint) {
-        requireNonNull(endpoint);
-        return Pair.of(endpoint.domainName(), endpoint.port());
-    }
-
-    /**
      * Maps a {@link Network} object to its equivalent {@link Roster}.
      *
      * @param network the network to represent as a roster
@@ -426,25 +416,6 @@ public class AddressBookUtils {
      */
     public static Roster fromNetwork(@NonNull final Network network) {
         return fromMetadata(network.nodeMetadata());
-    }
-
-    /**
-     * Much like {@link #endpointPairFor(ServiceEndpoint)}, this method maps a _list_ of {@link ServiceEndpoint}
-     * objects to a corresponding list of domain names and ports. This method does _not_ order the endpoints–it
-     * only maps them in the order they are provided.
-     *
-     * @param endpoints the list of service endpoints to convert
-     * @return a list of domain name and port pairs
-     */
-    public static List<Pair<String, Integer>> endpointsFromMetadata(@NonNull final List<ServiceEndpoint> endpoints) {
-        final List<Pair<String, Integer>> domainAndPortPairs = new ArrayList<>();
-        for (int i = 0; i < endpoints.size(); i++) {
-            final ServiceEndpoint endpoint = endpoints.get(i);
-            if (endpoint != null) {
-                domainAndPortPairs.add(endpointPairFor(endpoint));
-            }
-        }
-        return domainAndPortPairs;
     }
 
     /**
@@ -465,17 +436,13 @@ public class AddressBookUtils {
             return metadata.rosterEntryOrThrow();
         }
 
-        // If we're reading metadata, the endpoint order SHOULD match the address book, which always has the internal
-        // endpoint at index 0
         final var node = metadata.nodeOrThrow();
-        final var endpoints = endpointsFromMetadata(node.serviceEndpoint());
-        var internalEndpoint = endpoints.get(0);
-        var externalEndpoint = endpoints.get(1);
         return RosterRetriever.buildRosterEntry(
                 NodeId.of(node.nodeId()),
                 node.weight(),
                 node.gossipCaCertificate(),
-                externalEndpoint,
-                internalEndpoint);
+                // If we're reading metadata, the endpoint order SHOULD match the address book, which always has the
+                // internal endpoint at index 0
+                node.serviceEndpoint());
     }
 }

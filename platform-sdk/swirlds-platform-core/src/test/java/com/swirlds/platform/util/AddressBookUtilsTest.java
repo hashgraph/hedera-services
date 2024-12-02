@@ -31,7 +31,6 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.base.utility.Pair;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import java.security.cert.CertificateEncodingException;
@@ -126,23 +125,6 @@ class AddressBookUtilsTest {
     }
 
     @Test
-    @DisplayName("Valid endpoint pair is created as expected")
-    void endpointPairForValidEndpoint() {
-        final ServiceEndpoint endpoint = new ServiceEndpoint(null, PORT_1234, LOCALHOST);
-        final Pair<String, Integer> result = AddressBookUtils.endpointPairFor(endpoint);
-
-        assertEquals(LOCALHOST, result.left());
-        assertEquals(PORT_1234, result.right());
-    }
-
-    @Test
-    @DisplayName("Endpoint pair throws NPE for null endpoint")
-    void endpointPairForNullEndpoint() {
-        //noinspection DataFlowIssue
-        assertThrows(NullPointerException.class, () -> AddressBookUtils.endpointPairFor(null));
-    }
-
-    @Test
     @DisplayName("Network node information converts to a correct address book")
     void fromNetwork() {
         final NodeMetadata nodeOneMetadata =
@@ -197,13 +179,6 @@ class AddressBookUtilsTest {
     void emptyRosterFromMetadata() {
         final Roster result = AddressBookUtils.fromMetadata(List.of());
         assertTrue(result.rosterEntries().isEmpty());
-    }
-
-    @Test
-    @DisplayName("Throws an NPE for null metadata input")
-    void endpointsFromMetadataThrowsOnNull() {
-        //noinspection DataFlowIssue
-        assertThrows(NullPointerException.class, () -> AddressBookUtils.endpointsFromMetadata(null));
     }
 
     // The following test data is placed here due to its length

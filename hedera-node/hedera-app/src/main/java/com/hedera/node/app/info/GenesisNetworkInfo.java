@@ -127,6 +127,7 @@ public class GenesisNetworkInfo implements NetworkInfo {
     }
 
     private NodeInfo toNodeInfo(@NonNull final NodeId nodeId, @NonNull final Address address) {
+        // Note: maintains the same endpoint order as the address book (internal endpoint first)
         final var endpoints = endpointsFor(address);
         final var sigCertBytes = AddressBookUtils.extractSigCertBytes(address.getSigCert());
         return new NodeInfoImpl(nodeId.id(), asAccount(nodeId.id() + 3), address.getWeight(), endpoints, sigCertBytes);

@@ -26,12 +26,12 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -40,8 +40,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.CertificateEncodingException;
 import java.util.Comparator;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * A utility class to help retrieve a Roster instance from the state.
@@ -50,9 +48,6 @@ public final class RosterRetriever {
     private RosterRetriever() {}
 
     private static final String ROSTER_SERVICE = "RosterService";
-    private static final String IP_ADDRESS_COMPONENT_REGEX = "(\\d{1,2}|(?:0|1)\\d{2}|2[0-4]\\d|25[0-5])";
-    private static final Pattern IP_ADDRESS_PATTERN =
-            Pattern.compile("^%N\\.%N\\.%N\\.%N$".replace("%N", IP_ADDRESS_COMPONENT_REGEX));
 
     /**
      * Retrieve the current active Roster from the state.
@@ -147,6 +142,32 @@ public final class RosterRetriever {
     }
 
     /**
+     * Builds a RosterEntry out of various components. Note that this method swaps the given endpoints,
+     * which MUST be given in address book order (i.e. internal endpoint set at index 0), to match the
+     * expected roster order, which orders external endpoints first.
+     *
+     * @param nodeId the node's ID
+     * @param weight the weight of the node
+     * @param cert the signature certificate of the node
+     * @param endpoints the node's internal and external endpoints; <b>these must be given in address book order, i.e.
+     *                  internal endpoint set first</b>
+     */
+    @NonNull
+    public static RosterEntry buildRosterEntry(
+            @NonNull final NodeId nodeId,
+            final long weight,
+            @NonNull final Bytes cert,
+            @NonNull final List<ServiceEndpoint> endpoints) {
+        final List<ServiceEndpoint> rosterOrdered = endpoints.size() > 1 ? endpoints.reversed() : endpoints;
+        return RosterEntry.newBuilder()
+                .nodeId(nodeId.id())
+                .weight(weight)
+                .gossipCaCertificate(cert)
+                .gossipEndpoint(rosterOrdered)
+                .build();
+    }
+
+    /**
      * Builds a RosterEntry out of a given Address.
      * @param address an Address from AddressBook
      * @return a RosterEntry
@@ -165,64 +186,8 @@ public final class RosterRetriever {
             throw new InvalidAddressBookException(e);
         }
 
-        return buildRosterEntry(
-                address.getNodeId(),
-                address.getWeight(),
-                cert,
-                Pair.of(address.getHostnameExternal(), address.getPortExternal()),
-                Pair.of(address.getHostnameInternal(), address.getPortInternal()));
-    }
-
-    /**
-     * Builds a RosterEntry out of various components.
-     *
-     * @param nodeId the node's ID
-     * @param weight the weight of the node
-     * @param cert the signature certificate of the node
-     * @param external the external endpoint of the node, intentionally ordered first
-     * @param internal the internal endpoint of the node
-     */
-    public static RosterEntry buildRosterEntry(
-            @NonNull final NodeId nodeId,
-            final long weight,
-            @NonNull final Bytes cert,
-            @Nullable Pair<String, Integer> external,
-            @Nullable Pair<String, Integer> internal) {
-        return RosterEntry.newBuilder()
-                .nodeId(nodeId.id())
-                .weight(weight)
-                .gossipCaCertificate(cert)
-                // Rosters intentionally order external endpoints before internal, which is opposite of
-                // how they are stored in the address book
-                .gossipEndpoint(List.of(external, internal).stream()
-                        .filter(pair -> pair.left() != null && !pair.left().isBlank() && pair.right() != 0)
-                        .distinct()
-                        .map(pair -> {
-                            final Matcher matcher = IP_ADDRESS_PATTERN.matcher(pair.left());
-
-                            if (!matcher.matches()) {
-                                return ServiceEndpoint.newBuilder()
-                                        .domainName(pair.left())
-                                        .port(pair.right())
-                                        .build();
-                            }
-
-                            try {
-                                return ServiceEndpoint.newBuilder()
-                                        .ipAddressV4(Bytes.wrap(new byte[] {
-                                            (byte) Integer.parseInt(matcher.group(1)),
-                                            (byte) Integer.parseInt(matcher.group(2)),
-                                            (byte) Integer.parseInt(matcher.group(3)),
-                                            (byte) Integer.parseInt(matcher.group(4)),
-                                        }))
-                                        .port(pair.right())
-                                        .build();
-                            } catch (NumberFormatException e) {
-                                throw new InvalidAddressBookException(e);
-                            }
-                        })
-                        .toList())
-                .build();
+        final List<ServiceEndpoint> endpoints = AddressBookUtils.endpointsFor(address);
+        return buildRosterEntry(address.getNodeId(), address.getWeight(), cert, endpoints);
     }
 
     /**
