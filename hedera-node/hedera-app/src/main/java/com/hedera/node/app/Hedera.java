@@ -624,6 +624,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param state                 current state
      * @param deserializedVersion   version deserialized
      * @param trigger               trigger that is calling migration
+     * @param genesisAddressBook the genesis address book, if applicable
      * @param platformConfiguration platform configuration
      */
     private void migrateSchemas(
@@ -643,7 +644,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         .orElse(null)),
                 () -> HapiUtils.toString(version.getPbjSemanticVersion()),
                 () -> trigger);
-        startupNetworks = startupNetworksFactory.apply(selfNodeId.id(), configProvider, tssBaseService);
         // This is set only when the trigger is genesis. Because, only in those cases
         // the migration code is using the network info values.
         NetworkInfo genesisNetworkInfo = null;
@@ -654,6 +654,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
         blockStreamService.resetMigratedLastBlockHash();
+        startupNetworks = startupNetworksFactory.apply(selfNodeId.id(), configProvider, tssBaseService);
         PLATFORM_STATE_SERVICE.setAppVersionFn(() -> version);
         PLATFORM_STATE_SERVICE.setActiveRosterFn(
                 () -> new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME)).getActiveRoster());

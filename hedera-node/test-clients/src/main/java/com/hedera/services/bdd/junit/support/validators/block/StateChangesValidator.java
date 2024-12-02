@@ -19,10 +19,7 @@ package com.hedera.services.bdd.junit.support.validators.block;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
-import static com.hedera.node.app.info.DiskStartupNetworks.ARCHIVE;
-import static com.hedera.node.app.info.DiskStartupNetworks.GENESIS_NETWORK_JSON;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
@@ -187,23 +184,6 @@ public class StateChangesValidator implements BlockStreamValidator {
             final var node0 = subProcessNetwork.getRequiredNode(byNodeId(0));
             final var genesisConfigTxt = node0.metadata().workingDirOrThrow().resolve("genesis-config.txt");
             Files.writeString(genesisConfigTxt, subProcessNetwork.genesisConfigTxt());
-
-            // restore archived genesis-network.json
-            final var archivedGenesisNetwork =
-                    node0.getExternalPath(DATA_CONFIG_DIR).resolve(ARCHIVE).resolve(GENESIS_NETWORK_JSON);
-            try {
-                if (Files.exists(archivedGenesisNetwork)) {
-                    final var dest = node0.getExternalPath(DATA_CONFIG_DIR).resolve(GENESIS_NETWORK_JSON);
-                    Files.move(archivedGenesisNetwork, dest);
-                }
-            } catch (IOException e) {
-                logger.warn("Failed to restore {} from archive", GENESIS_NETWORK_JSON, e);
-            }
-
-            System.setProperty(
-                    "networkAdmin.upgradeSysFilesLoc",
-                    node0.getExternalPath(DATA_CONFIG_DIR).toAbsolutePath().toString());
-
             return new StateChangesValidator(
                     rootHash,
                     node0.getExternalPath(SWIRLDS_LOG),
