@@ -16,9 +16,14 @@
 
 package com.hedera.node.app.tss.api;
 
-import com.hedera.node.app.tss.pairings.PairingPrivateKey;
-import com.hedera.node.app.tss.pairings.PairingPublicKey;
-import com.hedera.node.app.tss.pairings.PairingSignature;
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.bls.BlsSignature;
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.cryptography.tss.api.TssPrivateShare;
+import com.hedera.cryptography.tss.api.TssPublicShare;
+import com.hedera.cryptography.tss.api.TssShareSignature;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -37,6 +42,7 @@ import java.util.List;
  *     <li>Aggregate Signatures</li>
  * </ul>
  */
+// Future: This intermediate interface can be deleted and use `TssService` directly in all the places needed.
 public interface TssLibrary {
 
     /**
@@ -69,7 +75,7 @@ public interface TssLibrary {
      * @param tssMessage the {@link TssMessage} to validate
      * @return true if the message is valid, false otherwise
      */
-    boolean verifyTssMessage(@NonNull TssParticipantDirectory participantDirectory, @NonNull TssMessage tssMessage);
+    boolean verifyTssMessage(@NonNull TssParticipantDirectory participantDirectory, @NonNull Bytes tssMessage);
 
     /**
      * Compute all private shares that belongs to this participant from a threshold minimum number of {@link
@@ -86,16 +92,6 @@ public interface TssLibrary {
     @NonNull
     List<TssPrivateShare> decryptPrivateShares(
             @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> validTssMessages);
-
-    /**
-     * Aggregate a threshold number of {@link TssPrivateShare}s.
-     *
-     * @param privateShares the private shares to aggregate
-     * @return the aggregate private key
-     * @throws IllegalStateException the list of private shares does not meet the required threshold.
-     */
-    @NonNull
-    PairingPrivateKey aggregatePrivateShares(@NonNull List<TssPrivateShare> privateShares);
 
     /**
      * Compute all public shares for all the participants in the scheme.
@@ -126,7 +122,7 @@ public interface TssLibrary {
      * @return the interpolated public key
      */
     @NonNull
-    PairingPublicKey aggregatePublicShares(@NonNull List<TssPublicShare> publicShares);
+    BlsPublicKey aggregatePublicShares(@NonNull List<TssPublicShare> publicShares);
 
     /**
      * Sign a message using the private share's key.
@@ -158,5 +154,7 @@ public interface TssLibrary {
      * @return the interpolated signature
      */
     @NonNull
-    PairingSignature aggregateSignatures(@NonNull List<TssShareSignature> partialSignatures);
+    BlsSignature aggregateSignatures(@NonNull List<TssShareSignature> partialSignatures);
+
+    TssMessage getTssMessageFromBytes(Bytes tssMessage, TssParticipantDirectory participantDirectory);
 }

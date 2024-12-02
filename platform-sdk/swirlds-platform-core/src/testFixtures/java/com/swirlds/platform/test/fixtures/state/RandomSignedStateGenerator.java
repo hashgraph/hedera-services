@@ -36,8 +36,8 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -45,6 +45,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -131,7 +132,7 @@ public class RandomSignedStateGenerator {
             if (useBlockingState) {
                 stateInstance = new BlockingSwirldState();
             } else {
-                stateInstance = new MerkleStateRoot(
+                stateInstance = new PlatformMerkleStateRoot(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
             }
             ((MerkleStateRoot) stateInstance).setTime(Time.getCurrent());
@@ -288,7 +289,7 @@ public class RandomSignedStateGenerator {
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setState(final MerkleStateRoot state) {
+    public RandomSignedStateGenerator setState(final PlatformMerkleStateRoot state) {
         this.state = state;
         return this;
     }

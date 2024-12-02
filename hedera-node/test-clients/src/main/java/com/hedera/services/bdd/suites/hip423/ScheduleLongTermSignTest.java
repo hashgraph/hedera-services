@@ -82,12 +82,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 
-// Enable when long term scheduling is enabled
-@Disabled
 @HapiTestLifecycle
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ScheduleLongTermSignTest {
 
     @BeforeAll
@@ -103,6 +104,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(1)
     final Stream<DynamicTest> changeInNestedSigningReqsRespected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -149,6 +151,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(2)
     final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -196,10 +199,10 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
+    @Order(3)
+    final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithWaitForExpiry() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
-        var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
         var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
         String sender = "X";
         String receiver = "Y";
@@ -213,7 +216,8 @@ public class ScheduleLongTermSignTest {
                 cryptoCreate(receiver).balance(0L),
                 scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
                         .payingWith(DEFAULT_PAYER)
-                        .withRelativeExpiry(SENDER_TXN, 8)
+                        .waitForExpiry()
+                        .withRelativeExpiry(SENDER_TXN, 5)
                         .recordingScheduledTxn()
                         .alsoSigningWith(sender)
                         .sigControl(ControlForKey.forKey(senderKey, sigOne)),
@@ -226,18 +230,19 @@ public class ScheduleLongTermSignTest {
                 getAccountBalance(receiver).hasTinyBars(0L),
                 getScheduleInfo(schedule)
                         .hasScheduleId(schedule)
-                        .hasWaitForExpiry(false)
+                        .hasWaitForExpiry(true)
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 8)
+                        .hasRelativeExpiry(SENDER_TXN, 5)
                         .hasRecordedScheduledTxn(),
                 sleepFor(TimeUnit.SECONDS.toMillis(6)),
                 cryptoCreate("foo"),
-                scheduleSign(schedule).alsoSigningWith(NEW_SENDER_KEY).sigControl(forKey(NEW_SENDER_KEY, sigTwo)),
+                sleepFor(500),
                 getAccountBalance(receiver).hasTinyBars(1L));
     }
 
     @HapiTest
+    @Order(4)
     final Stream<DynamicTest> nestedSigningReqsWorkAsExpected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -275,6 +280,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(5)
     final Stream<DynamicTest> receiverSigRequiredNotConfusedByOrder() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -310,6 +316,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(6)
     final Stream<DynamicTest> extraSigsDontMatterAtExpiry() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -328,7 +335,7 @@ public class ScheduleLongTermSignTest {
                 cryptoCreate(receiver).balance(0L).receiverSigRequired(true),
                 scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 20)
+                        .withRelativeExpiry(SENDER_TXN, 10)
                         .recordingScheduledTxn()
                         .payingWith(PAYER),
                 scheduleSign(schedule).payingWith(PAYER).fee(THOUSAND_HBAR).alsoSigningWith(receiver),
@@ -389,15 +396,16 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 20)
+                        .hasRelativeExpiry(SENDER_TXN, 10)
                         .hasRecordedScheduledTxn(),
-                sleepFor(21000),
+                sleepFor(TimeUnit.SECONDS.toMillis(11)),
                 cryptoCreate("foo"),
                 getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                 getAccountBalance(receiver).hasTinyBars(1L));
     }
 
     @HapiTest
+    @Order(7)
     final Stream<DynamicTest> receiverSigRequiredNotConfusedByMultiSigSender() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -437,6 +445,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(8)
     final Stream<DynamicTest> receiverSigRequiredUpdateIsRecognized() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -481,6 +490,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(9)
     final Stream<DynamicTest> basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
@@ -492,10 +502,16 @@ public class ScheduleLongTermSignTest {
                         .withRelativeExpiry(SENDER_TXN, 5)
                         .payingWith(SENDER),
                 scheduleSign(BASIC_XFER).alsoSigningWith(RECEIVER),
-                getScheduleInfo(BASIC_XFER).hasSignatories(RECEIVER, SENDER));
+                getScheduleInfo(BASIC_XFER).hasSignatories(RECEIVER, SENDER),
+                // note: the sleepFor and cryptoCreate operations are added only to clear the schedule before
+                // the next state. This was needed because an edge case in the BaseTranslator occur.
+                // When scheduleCreate trigger the schedules execution scheduleRef field is not the correct one.
+                sleepFor(6000),
+                cryptoCreate("foo"));
     }
 
     @HapiTest
+    @Order(10)
     final Stream<DynamicTest> signalsIrrelevantSig() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
@@ -506,10 +522,17 @@ public class ScheduleLongTermSignTest {
                 scheduleCreate(BASIC_XFER, txnBody).waitForExpiry().withRelativeExpiry(SENDER_TXN, 5),
                 scheduleSign(BASIC_XFER)
                         .alsoSigningWith("somebodyelse")
-                        .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID));
+                        .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID),
+
+                // note: the sleepFor and cryptoCreate operations are added only to clear the schedule before
+                // the next state. This was needed because an edge case in the BaseTranslator occur.
+                // When scheduleCreate trigger the schedules execution scheduleRef field is not the correct one.
+                sleepFor(6000),
+                cryptoCreate("foo"));
     }
 
     @HapiTest
+    @Order(11)
     final Stream<DynamicTest> signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
         var txnBody = mintToken(TOKEN_A, 50000000L);
 
@@ -529,10 +552,17 @@ public class ScheduleLongTermSignTest {
                          * So we need this to stabilize CI. But if just testing locally, you may
                          * only use .hasKnownStatus(NO_NEW_VALID_SIGNATURES) and it will pass
                          * >99.99% of the time. */
-                        .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID));
+                        .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID),
+
+                // note: the sleepFor and cryptoCreate operations are added only to clear the schedule before
+                // the next state. This was needed because an edge case in the BaseTranslator occur.
+                // When scheduleCreate trigger the schedules execution scheduleRef field is not the correct one.
+                sleepFor(6000),
+                cryptoCreate("foo"));
     }
 
     @HapiTest
+    @Order(12)
     public Stream<DynamicTest> triggersUponFinishingPayerSig() {
         return hapiTest(
                 cryptoCreate(PAYER).balance(ONE_HBAR),
@@ -564,6 +594,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(13)
     public Stream<DynamicTest> triggersUponAdditionalNeededSig() {
         return hapiTest(
                 cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
@@ -593,6 +624,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(14)
     public Stream<DynamicTest> sharedKeyWorksAsExpected() {
         return hapiTest(
                 newKeyNamed(SHARED_KEY),
@@ -625,6 +657,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(15)
     public Stream<DynamicTest> overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 
@@ -673,6 +706,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
+    @Order(15)
     public Stream<DynamicTest> retestsActivationOnSignWithEmptySigMap() {
         return hapiTest(
                 newKeyNamed("a"),

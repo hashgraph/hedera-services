@@ -32,18 +32,15 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.OwningEntity;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
-import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
 import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
-import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AirdropOperation;
@@ -86,17 +83,6 @@ public class AirdropSigReqsTest {
         lifecycle.overrideInClass(Map.of(
                 "tokens.airdrops.enabled", "true",
                 "entities.unlimitedAutoAssociationsEnabled", "true"));
-    }
-
-    @HapiTest
-    @DisplayName("require a receiver contract to have a cryptographic admin key")
-    final Stream<DynamicTest> contractMustHaveCryptoAdminKey(
-            @Contract(contract = "Multipurpose", isImmutable = true) SpecContract immutableContract,
-            @Contract(contract = "PayReceivable") SpecContract mutableContract) {
-        return hapiTest(
-                airdropTo(mutableContract).with(txn -> txn.via("successAirdrop")),
-                getTxnRecord("successAirdrop").hasPriority(recordWith().pendingAirdropsCount(2)),
-                airdropTo(immutableContract).andAssert(txn -> txn.hasKnownStatus(NOT_SUPPORTED)));
     }
 
     @HapiTest

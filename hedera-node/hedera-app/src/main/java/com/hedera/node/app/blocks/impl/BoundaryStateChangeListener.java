@@ -65,6 +65,9 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     private final SortedMap<Integer, List<StateChange>> queueUpdates = new TreeMap<>();
 
     @Nullable
+    private Instant lastConsensusTime;
+
+    @Nullable
     private Timestamp boundaryTimestamp;
 
     /**
@@ -76,10 +79,18 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     }
 
     /**
+     * Returns the last consensus time used for a transaction.
+     */
+    public @NonNull Instant lastConsensusTimeOrThrow() {
+        return requireNonNull(lastConsensusTime);
+    }
+
+    /**
      * Resets the state of the listener.
      */
     public void reset() {
         boundaryTimestamp = null;
+        lastConsensusTime = null;
         singletonUpdates.clear();
         queueUpdates.clear();
     }
@@ -116,7 +127,8 @@ public class BoundaryStateChangeListener implements StateChangeListener {
      * @param lastUsedConsensusTime the last used consensus time
      */
     public void setBoundaryTimestamp(@NonNull final Instant lastUsedConsensusTime) {
-        boundaryTimestamp = asTimestamp(requireNonNull(lastUsedConsensusTime).plusNanos(1));
+        this.lastConsensusTime = requireNonNull(lastUsedConsensusTime);
+        boundaryTimestamp = asTimestamp(lastUsedConsensusTime.plusNanos(1));
     }
 
     @Override
