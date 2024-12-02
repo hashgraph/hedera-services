@@ -163,7 +163,7 @@ class V057PlatformStateSchemaTest {
             case NEW -> given(appVersionSupplier.get()).willReturn(new BasicSoftwareVersion(42));
         }
 
-        given(migrationContext.configuration()).willReturn(configuration);
+        given(migrationContext.appConfig()).willReturn(configuration);
         given(configuration.getConfigData(AddressBookConfig.class))
                 .willReturn(new AddressBookConfig(
                         true,

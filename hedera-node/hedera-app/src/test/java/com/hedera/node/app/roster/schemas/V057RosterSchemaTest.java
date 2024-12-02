@@ -211,7 +211,7 @@ class V057RosterSchemaTest {
             case OLD -> configBuilder.withValue("hedera.services.version", "0.7.0");
             case NEW -> configBuilder.withValue("hedera.services.version", "0.42.0");
         }
-        given(context.configuration()).willReturn(configBuilder.getOrCreateConfig());
+        given(context.appConfig()).willReturn(configBuilder.getOrCreateConfig());
         if (rosterLifecycle == RosterLifecycle.ON) {
             given(context.newStates()).willReturn(writableStates);
             given(context.startupNetworks()).willReturn(startupNetworks);

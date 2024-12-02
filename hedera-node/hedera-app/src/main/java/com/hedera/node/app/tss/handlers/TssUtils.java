@@ -17,6 +17,7 @@
 package com.hedera.node.app.tss.handlers;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.bls.GroupAssignment;
@@ -29,40 +30,62 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.internal.network.Network;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.LongFunction;
 
 public class TssUtils {
     public static final SignatureSchema SIGNATURE_SCHEMA =
             SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
+
+    /**
+     * Given a network, return a function that maps node IDs to their TSS encryption keys in the network (if
+     * this information is available).
+     * @param network the network
+     * @return a function that maps node IDs to their TSS encryption keys
+     */
+    public static LongFunction<BlsPublicKey> encryptionKeysFnFor(@NonNull final Network network) {
+        return network.nodeMetadata().stream()
+                .filter(metadata -> metadata.tssEncryptionKey().length() > 0)
+                .collect(toMap(
+                        metadata -> metadata.nodeOrThrow().nodeId(),
+                        // TODO - compute the real public key
+                        metadata -> new BlsPublicKey(
+                                new FakeGroupElement(new BigInteger(
+                                        metadata.tssEncryptionKey().toByteArray())),
+                                SIGNATURE_SCHEMA)))::get;
+    }
     /**
      * Compute the TSS participant directory from the roster.
      *
-     * @param roster           the roster
+     * @param roster the roster
      * @param maxSharesPerNode the maximum number of shares per node
+     * @param tssEncryptionKeyFn the function to get the TSS encryption keys
      * @return the TSS participant directory
      */
     public static TssParticipantDirectory computeParticipantDirectory(
-            @NonNull final Roster roster, final long maxSharesPerNode) {
+            @NonNull final Roster roster,
+            final long maxSharesPerNode,
+            @NonNull final LongFunction<BlsPublicKey> tssEncryptionKeyFn) {
         final var computedShares = computeNodeShares(roster.rosterEntries(), maxSharesPerNode);
         final var totalShares =
                 computedShares.values().stream().mapToLong(Long::longValue).sum();
         final var threshold = getThresholdForTssMessages(totalShares);
 
         final var builder = TssParticipantDirectory.createBuilder().withThreshold(threshold);
-        for (var rosterEntry : roster.rosterEntries()) {
+        for (final var rosterEntry : roster.rosterEntries()) {
             final int numSharesPerThisNode =
                     computedShares.get(rosterEntry.nodeId()).intValue();
-            // FUTURE: Use the actual public key from the node
-            final var pairingPublicKey =
-                    new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(10L)), SIGNATURE_SCHEMA);
-            builder.withParticipant(rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
+            final long nodeId = rosterEntry.nodeId();
+            final var encryptionKey =
+                    requireNonNull(tssEncryptionKeyFn.apply(nodeId), "No encryption key for node" + nodeId);
+            builder.withParticipant(nodeId, numSharesPerThisNode, encryptionKey);
         }
-        // FUTURE: Use the actual signature schema
         return builder.build();
     }
 

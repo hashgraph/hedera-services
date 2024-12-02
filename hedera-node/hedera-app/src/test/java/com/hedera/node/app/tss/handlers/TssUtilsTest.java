@@ -17,6 +17,7 @@
 package com.hedera.node.app.tss.handlers;
 
 import static com.hedera.node.app.tss.handlers.TssMessageHandlerTest.getTssBody;
+import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,25 +27,30 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.math.BigInteger;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class TssUtilsTest {
+    private static final BlsPublicKey FAKE_ENCRYPTION_KEY =
+            new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(123L)), SIGNATURE_SCHEMA);
+
     @Test
     public void testComputeParticipantDirectory() {
         RosterEntry rosterEntry1 = new RosterEntry(1L, 100L, null, null);
         RosterEntry rosterEntry2 = new RosterEntry(2L, 50L, null, null);
         long maxSharesPerNode = 10L;
-        int selfNodeId = 1;
 
-        TssParticipantDirectory directory =
-                TssUtils.computeParticipantDirectory(new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode);
+        TssParticipantDirectory directory = TssUtils.computeParticipantDirectory(
+                new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode, nodeId -> FAKE_ENCRYPTION_KEY);
 
         assertNotNull(directory);
         assertEquals((15 + 2) / 2, directory.getThreshold());
@@ -90,8 +96,8 @@ public class TssUtilsTest {
         given(library.getTssMessageFromBytes(any(), any())).willReturn(tssMessage);
         given(tssMessage.toBytes())
                 .willReturn(Bytes.wrap("tssMessage".getBytes()).toByteArray());
-        TssParticipantDirectory directory =
-                TssUtils.computeParticipantDirectory(new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode);
+        TssParticipantDirectory directory = TssUtils.computeParticipantDirectory(
+                new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode, nodeId -> FAKE_ENCRYPTION_KEY);
 
         final var body = getTssBody();
         final var validTssOps = List.of(body.tssMessageOrThrow());

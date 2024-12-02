@@ -17,19 +17,24 @@
 package com.hedera.services.bdd.junit.restart;
 
 /**
- * The types of saved states that may be on disk for a {@link RestartHapiTest}.
+ * The types of startup assets available for a {@link RestartHapiTest}.
  */
-public enum SavedState {
+public enum StartupAssets {
     /**
-     * No saved state is present.
+     * No network override is present.
      */
     NONE,
     /**
-     * A saved state from the previous software version is present.
+     * A network override with only the network roster is present.
      */
-    PREVIOUS_VERSION,
+    ROSTER_ONLY,
     /**
-     * A saved state from the current software version is present.
+     * A network override with both the roster and the encryption keys are present.
      */
-    CURRENT_VERSION,
+    ROSTER_AND_ENCRYPTION_KEYS,
+    /**
+     * A network override with both the network roster and all TSS key material,
+     * including the ledger id, is present.
+     */
+    ROSTER_AND_FULL_TSS_KEY_MATERIAL,
 }

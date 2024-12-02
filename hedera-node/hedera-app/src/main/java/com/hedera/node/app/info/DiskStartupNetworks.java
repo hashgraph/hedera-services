@@ -218,7 +218,9 @@ public class DiskStartupNetworks implements StartupNetworks {
     }
 
     /**
-     * If the given network has a ledger id, then it asserts that the TSS keys in the network are valid.
+     * If the given network has a ledger id, then it asserts that the TSS keys in the network are valid. This includes
+     * the encryption keys within the {@link NodeMetadata} messages, since without these specified the TSS messages
+     * would be unusable.
      * @param network the network to assert the TSS keys of
      * @throws IllegalArgumentException if the TSS keys are invalid
      */
@@ -236,7 +238,8 @@ public class DiskStartupNetworks implements StartupNetworks {
                     .getConfiguration()
                     .getConfigData(TssConfig.class)
                     .maxSharesPerNode();
-            final var directory = TssUtils.computeParticipantDirectory(roster, maxSharesPerNode);
+            final var encryptionKeysFn = TssUtils.encryptionKeysFnFor(network);
+            final var directory = TssUtils.computeParticipantDirectory(roster, maxSharesPerNode, encryptionKeysFn);
             final var tssMessages = network.tssMessages().stream()
                     .map(TssMessageTransactionBody::tssMessage)
                     .map(Bytes::toByteArray)

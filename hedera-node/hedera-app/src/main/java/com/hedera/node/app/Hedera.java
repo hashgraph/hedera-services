@@ -539,9 +539,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final Metrics metrics,
             @NonNull final InitTrigger trigger,
             @Nullable final AddressBook genesisAddressBook,
-            @NonNull final Configuration platformConfiguration) {
+            @NonNull final Configuration platformConfig) {
         requireNonNull(state);
-        requireNonNull(platformConfiguration);
+        requireNonNull(platformConfig);
         this.metrics = requireNonNull(metrics);
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
@@ -567,7 +567,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             throw new IllegalStateException("Cannot downgrade from " + savedStateVersion + " to " + version);
         }
         try {
-            migrateSchemas(state, savedStateVersion, trigger, metrics, genesisAddressBook, platformConfiguration);
+            migrateSchemas(state, savedStateVersion, trigger, metrics, genesisAddressBook, platformConfig);
             logConfiguration();
         } catch (final Throwable t) {
             logger.fatal("Critical failure during schema migration", t);
@@ -620,7 +620,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param deserializedVersion   version deserialized
      * @param trigger               trigger that is calling migration
      * @param genesisAddressBook    the genesis address book, if applicable
-     * @param platformConfiguration platform configuration
+     * @param platformConfig platform configuration
      */
     private void migrateSchemas(
             @NonNull final State state,
@@ -628,7 +628,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final InitTrigger trigger,
             @NonNull final Metrics metrics,
             @Nullable final AddressBook genesisAddressBook,
-            @NonNull final Configuration platformConfiguration) {
+            @NonNull final Configuration platformConfig) {
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getPbjSemanticVersion();
         final var isUpgrade = version.compareTo(deserializedVersion) > 0;
         logger.info(
@@ -661,7 +661,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 // (FUTURE) In principle, the FileService could change the active configuration during a
                 // migration, implying we should pass a config provider; but we don't need this yet
                 configProvider.getConfiguration(),
-                platformConfiguration,
+                platformConfig,
                 genesisNetworkInfo,
                 metrics,
                 startupNetworks);

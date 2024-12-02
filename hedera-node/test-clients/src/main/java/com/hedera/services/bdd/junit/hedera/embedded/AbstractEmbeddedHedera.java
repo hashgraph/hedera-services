@@ -36,6 +36,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.Hedera.TssBaseServiceFactory;
+import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
@@ -55,7 +56,6 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -145,8 +145,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                     this.tssBaseService = new FakeTssBaseService(appContext);
                     return this.tssBaseService;
                 },
-                (configProvider, tssBaseService1, tssBaseService2) ->
-                        new DiskStartupNetworks(tssBaseService1, tssBaseService2),
+                (nodeId, configProvider, tssBaseService) -> new DiskStartupNetworks(configProvider, tssBaseService),
                 NodeId.of(0L));
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
@@ -168,9 +167,9 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         } else {
             trigger = RESTART;
         }
-        final var config =
-                ConfigurationBuilder.create().autoDiscoverExtensions().build();
-        hedera.initializeStatesApi(state, fakePlatform().getContext().getMetrics(), trigger, addressBook, config);
+        final var platformConfig = ServicesMain.buildPlatformConfiguration();
+        hedera.initializeStatesApi(
+                state, fakePlatform().getContext().getMetrics(), trigger, addressBook, platformConfig);
 
         // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done
         // and we are running all CI tests with the Roster lifecycle enabled

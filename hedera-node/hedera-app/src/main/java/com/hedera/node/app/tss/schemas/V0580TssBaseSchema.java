@@ -17,18 +17,25 @@
 package com.hedera.node.app.tss.schemas;
 
 import static com.hedera.hapi.node.state.tss.RosterToKey.ACTIVE_ROSTER;
+import static com.hedera.hapi.node.state.tss.RosterToKey.NONE;
+import static com.hedera.hapi.node.state.tss.TssKeyingStatus.KEYING_COMPLETE;
 import static com.hedera.hapi.node.state.tss.TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS;
+import static com.hedera.hapi.node.state.tss.TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssStatus;
+import com.hedera.node.app.tss.handlers.TssUtils;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Schema for the TSS service.
@@ -36,6 +43,10 @@ import java.util.Set;
 public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchema {
     private static final TssStatus BOOTSTRAP_TSS_STATUS =
             new TssStatus(WAITING_FOR_ENCRYPTION_KEYS, ACTIVE_ROSTER, Bytes.EMPTY);
+    private static final TssStatus PRESET_ENCRYPTION_KEYS_STATUS =
+            new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, ACTIVE_ROSTER, Bytes.EMPTY);
+    private static final Function<Bytes, TssStatus> PRESET_LEDGER_ID_STATUS_FN =
+            ledgerId -> new TssStatus(KEYING_COMPLETE, NONE, ledgerId);
 
     public static final String TSS_STATUS_KEY = "TSS_STATUS";
     public static final String TSS_ENCRYPTION_KEYS_KEY = "TSS_ENCRYPTION_KEYS";
@@ -48,11 +59,8 @@ public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchem
      * The version of the schema.
      */
     private static final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(57).patch(0).build();
+            SemanticVersion.newBuilder().major(0).minor(58).patch(0).build();
 
-    /**
-     * Create a new instance
-     */
     public V0580TssBaseSchema() {
         super(VERSION);
     }
@@ -61,6 +69,23 @@ public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchem
     public void migrate(@NonNull final MigrationContext ctx) {
         final var state = ctx.newStates().getSingleton(TSS_STATUS_KEY);
         if (state.get() == null) {
+            if (ctx.isGenesis()
+                    && ctx.appConfig().getConfigData(TssConfig.class).keyCandidateRoster()) {
+                final var network = ctx.startupNetworks().genesisNetworkOrThrow();
+                final var encryptionKeysFn = TssUtils.encryptionKeysFnFor(network);
+                final boolean encryptionKeysPresent = network.nodeMetadata().stream()
+                        .allMatch(meta -> Objects.nonNull(
+                                encryptionKeysFn.apply(meta.rosterEntryOrThrow().nodeId())));
+                if (encryptionKeysPresent) {
+                    final var ledgerId = network.ledgerId();
+                    if (ledgerId.length() > 0) {
+                        state.put(PRESET_LEDGER_ID_STATUS_FN.apply(ledgerId));
+                    } else {
+                        state.put(PRESET_ENCRYPTION_KEYS_STATUS);
+                    }
+                    return;
+                }
+            }
             state.put(BOOTSTRAP_TSS_STATUS);
         }
     }

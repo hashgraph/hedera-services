@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -99,9 +100,7 @@ public interface HederaNode {
     HederaNode initWorkingDir(
             @NonNull String configTxt,
             @NonNull LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull
-                    Function<List<com.hedera.node.internal.network.NodeMetadata>, Optional<TssKeyMaterial>>
-                            tssKeyMaterialFn);
+            @NonNull Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn);
 
     /**
      * Starts the node software.

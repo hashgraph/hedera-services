@@ -166,7 +166,7 @@ public interface TssBaseService extends Service {
      * Generates the participant directory for the active roster.
      * @param state the network state
      */
-    void generateParticipantDirectory(@NonNull State state);
+    void ensureParticipantDirectoryKnown(@NonNull State state);
 
     /**
      * Returns the ledger id from the given TSS participant directory and TSS messages.

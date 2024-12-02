@@ -22,7 +22,8 @@ import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_STATUS_KEY;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary.FAKE_LEDGER_ID;
-import static com.hedera.services.bdd.junit.restart.NetworkOverride.WITH_FULL_TSS_KEY_MATERIAL;
+import static com.hedera.services.bdd.junit.restart.RestartType.GENESIS;
+import static com.hedera.services.bdd.junit.restart.StartupAssets.ROSTER_AND_FULL_TSS_KEY_MATERIAL;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewSingleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,11 +44,12 @@ import org.junit.jupiter.api.Tag;
 @TargetEmbeddedMode(REPEATABLE)
 public class RepeatableRestartTests {
     @RestartHapiTest(
+            restartType = GENESIS,
             bootstrapOverrides = {
                 @ConfigOverride(key = "tss.keyCandidateRoster", value = "true"),
                 @ConfigOverride(key = "addressBook.useRosterLifecycle", value = "true")
             },
-            networkOverride = WITH_FULL_TSS_KEY_MATERIAL)
+            startupAssets = ROSTER_AND_FULL_TSS_KEY_MATERIAL)
     Stream<DynamicTest> genesisTransactionDetectsAvailableLedgerIdAndUpdatesStatus() {
         // If all TSS key material is available at genesis, this is the expected status
         final var expectedStatus = new TssStatus(KEYING_COMPLETE, NONE, Bytes.wrap(FAKE_LEDGER_ID.toBytes()));

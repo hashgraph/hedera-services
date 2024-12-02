@@ -174,8 +174,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion The current version. Never null. Must be newer than {@code
      * previousVersion}.
-     * @param nodeConfiguration The system configuration to use at the time of migration
-     * @param platformConfiguration The platform configuration to use for subsequent object initializations
+     * @param appConfig The system configuration to use at the time of migration
+     * @param platformConfig The platform configuration to use for subsequent object initializations
      * @param genesisNetworkInfo The network information to use at the time of migration
      * @param sharedValues A map of shared values for cross-service migration patterns
      * @param migrationStateChanges Tracker for state changes during migration
@@ -189,8 +189,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final State state,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final SemanticVersion currentVersion,
-            @NonNull final Configuration nodeConfiguration,
-            @NonNull final Configuration platformConfiguration,
+            @NonNull final Configuration appConfig,
+            @NonNull final Configuration platformConfig,
             @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore,
@@ -199,8 +199,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final StartupNetworks startupNetworks) {
         requireNonNull(state);
         requireNonNull(currentVersion);
-        requireNonNull(nodeConfiguration);
-        requireNonNull(platformConfiguration);
+        requireNonNull(appConfig);
+        requireNonNull(platformConfig);
         requireNonNull(metrics);
         requireNonNull(sharedValues);
         requireNonNull(migrationStateChanges);
@@ -226,7 +226,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 () -> HapiUtils.toString(latestVersion));
         for (final var schema : schemas) {
             final var applications =
-                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, nodeConfiguration);
+                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, appConfig);
             logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), applications);
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
@@ -251,7 +251,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                 && alreadyIncludesStateDefs(previousVersion, s.getVersion()))
                         .toList();
                 final var redefinedWritableStates = applyStateDefinitions(
-                        schema, schemasAlreadyInState, nodeConfiguration, platformConfiguration, metrics, stateRoot);
+                        schema, schemasAlreadyInState, appConfig, platformConfig, metrics, stateRoot);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
@@ -261,7 +261,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final var migrationContext = new MigrationContextImpl(
                     previousStates,
                     newStates,
-                    nodeConfiguration,
+                    appConfig,
+                    platformConfig,
                     genesisNetworkInfo,
                     entityIdStore,
                     previousVersion,

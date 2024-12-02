@@ -129,13 +129,13 @@ public class V0490TokenSchema extends Schema {
         }
 
         // We will use these various configs for creating accounts. It would be nice to consolidate them somehow
-        final var ledgerConfig = ctx.configuration().getConfigData(LedgerConfig.class);
-        final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
-        final var accountsConfig = ctx.configuration().getConfigData(AccountsConfig.class);
+        final var ledgerConfig = ctx.appConfig().getConfigData(LedgerConfig.class);
+        final var hederaConfig = ctx.appConfig().getConfigData(HederaConfig.class);
+        final var accountsConfig = ctx.appConfig().getConfigData(AccountsConfig.class);
 
         // Generate synthetic accounts based on the genesis configuration
         final Consumer<SortedSet<Account>> noOpCb = ignore -> {};
-        syntheticAccountCreator.generateSyntheticAccounts(ctx.configuration(), noOpCb, noOpCb, noOpCb, noOpCb, noOpCb);
+        syntheticAccountCreator.generateSyntheticAccounts(ctx.appConfig(), noOpCb, noOpCb, noOpCb, noOpCb, noOpCb);
         // ---------- Create system accounts -------------------------
         for (final Account acct : syntheticAccountCreator.systemAccounts()) {
             accounts.put(acct.accountIdOrThrow(), acct);
@@ -237,7 +237,7 @@ public class V0490TokenSchema extends Schema {
     }
 
     private void initializeStakingNodeInfo(@NonNull final MigrationContext ctx) {
-        final var config = ctx.configuration();
+        final var config = ctx.appConfig();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var stakingConfig = config.getConfigData(StakingConfig.class);
         final var addressBook = ctx.genesisNetworkInfo().addressBook();

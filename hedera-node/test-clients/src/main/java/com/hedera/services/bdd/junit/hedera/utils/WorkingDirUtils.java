@@ -123,7 +123,7 @@ public class WorkingDirUtils {
             @NonNull final Path workingDir,
             @NonNull final String configTxt,
             @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull final Function<List<NodeMetadata>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
         requireNonNull(workingDir);
         requireNonNull(configTxt);
         requireNonNull(tssEncryptionKeyFn);
@@ -402,7 +402,7 @@ public class WorkingDirUtils {
     private static Network networkFrom(
             @NonNull final String configTxt,
             @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull final Function<List<NodeMetadata>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
         final var nodeMetadata = Arrays.stream(configTxt.split("\n"))
                 .filter(line -> line.contains("address, "))
                 .map(line -> {
@@ -412,7 +412,7 @@ public class WorkingDirUtils {
                     final var gossipEndpoints =
                             List.of(endpointFrom(parts[5], parts[6]), endpointFrom(parts[7], parts[8]));
                     // TODO - Use the real gossip certificate
-                    final var gossipCaCertificate = Bytes.EMPTY;
+                    final var gossipCaCertificate = Bytes.fromHex("abcdef");
                     return NodeMetadata.newBuilder()
                             .rosterEntry(new RosterEntry(nodeId, weight, gossipCaCertificate, gossipEndpoints))
                             .node(new Node(
@@ -433,7 +433,8 @@ public class WorkingDirUtils {
                             .build();
                 })
                 .toList();
-        final var tssKeyMaterial = tssKeyMaterialFn.apply(nodeMetadata);
+        final var tssKeyMaterial = tssKeyMaterialFn.apply(
+                nodeMetadata.stream().map(NodeMetadata::rosterEntry).toList());
         return Network.newBuilder()
                 .ledgerId(tssKeyMaterial.map(TssKeyMaterial::ledgerId).orElse(Bytes.EMPTY))
                 .tssMessages(tssKeyMaterial.map(TssKeyMaterial::tssMessages).orElse(List.of()))

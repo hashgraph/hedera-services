@@ -36,7 +36,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class V0570TssBaseSchemaTest {
+class V0580TssBaseSchemaTest {
     @Mock
     private WritableStates writableStates;
 

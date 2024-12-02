@@ -18,7 +18,7 @@ package com.hedera.services.bdd.junit.hedera;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.internal.network.NodeMetadata;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -170,7 +170,7 @@ public interface HederaNetwork {
     default void startWith(
             @NonNull final Map<String, String> bootstrapOverrides,
             @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull final Function<List<NodeMetadata>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
         throw new UnsupportedOperationException();
     }
 

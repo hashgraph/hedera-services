@@ -68,7 +68,7 @@ public class V0490EntityIdSchema extends Schema {
     public void migrate(@NonNull MigrationContext ctx) {
         final var entityIdState = ctx.newStates().getSingleton(ENTITY_ID_STATE_KEY);
         if (entityIdState.get() == null) {
-            final var config = ctx.configuration().getConfigData(HederaConfig.class);
+            final var config = ctx.appConfig().getConfigData(HederaConfig.class);
             final var entityNum = config.firstUserEntity() - 1;
             log.info("Setting initial entity id to {}", entityNum);
             entityIdState.put(new EntityNumber(entityNum));

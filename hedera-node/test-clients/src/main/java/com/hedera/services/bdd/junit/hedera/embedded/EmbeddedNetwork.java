@@ -28,8 +28,8 @@ import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.AbstractNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
@@ -125,9 +125,7 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public void startWith(
             @NonNull final Map<String, String> bootstrapOverrides,
             @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull
-                    final Function<List<com.hedera.node.internal.network.NodeMetadata>, Optional<TssKeyMaterial>>
-                            tssKeyMaterialFn) {
+            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
         requireNonNull(bootstrapOverrides);
         requireNonNull(tssEncryptionKeyFn);
         requireNonNull(tssKeyMaterialFn);
@@ -211,7 +209,7 @@ public class EmbeddedNetwork extends AbstractNetwork {
             @NonNull final Consumer<EmbeddedHedera> start,
             @NonNull final Map<String, String> bootstrapOverrides,
             @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull final Function<List<NodeMetadata>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
         // Initialize the working directory
         embeddedNode.initWorkingDir(configTxt, tssEncryptionKeyFn, tssKeyMaterialFn);
         if (!bootstrapOverrides.isEmpty()) {

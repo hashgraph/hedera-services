@@ -205,7 +205,7 @@ public class ServicesMain implements SwirldMain {
 
         final NodeId selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
 
-        final var configuration = buildConfiguration();
+        final var configuration = buildPlatformConfiguration();
 
         // Register with the ConstructableRegistry classes which need configuration.
         BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
@@ -344,12 +344,12 @@ public class ServicesMain implements SwirldMain {
     }
 
     /**
-     * Build the configuration for this node.
+     * Build's the platform configuration for this node.
      *
      * @return the configuration
      */
     @NonNull
-    private static Configuration buildConfiguration() {
+    public static Configuration buildPlatformConfiguration() {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
                 .withSource(SystemPropertiesConfigSource.getInstance());

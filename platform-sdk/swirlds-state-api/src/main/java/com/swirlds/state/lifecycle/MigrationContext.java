@@ -55,14 +55,22 @@ public interface MigrationContext {
     WritableStates newStates();
 
     /**
-     * The {@link Configuration} for this migration. Any portion of this configuration which was based on state (such
-     * as, in our case, file 121) will be current as of the previous state. This configuration is read-only. Having this
-     * configuration is useful for migrations that should behavior differently based on configuration.
+     * The app {@link Configuration} for this migration. Any portion of this configuration which was based on state
+     * (such as, in our case, file 121) will be current as of the previous state. This configuration is read-only.
+     * Having this configuration is useful for migrations that should behavior differently based on configuration.
      *
-     * @return The configuration to use.
+     * @return The application configuration to use.
      */
     @NonNull
-    Configuration configuration();
+    Configuration appConfig();
+
+    /**
+     * The platform {@link Configuration} for this migration.
+     *
+     * @return The platform configuration to use
+     */
+    @NonNull
+    Configuration platformConfig();
 
     /**
      * Information about the network itself. Generally, this is not useful information for migrations, but is used at

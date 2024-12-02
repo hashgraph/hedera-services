@@ -17,24 +17,19 @@
 package com.hedera.services.bdd.junit.restart;
 
 /**
- * The types of network overrides that may be on disk for a {@link RestartHapiTest}.
+ * The types of restarts to be covered by a {@link RestartHapiTest}.
  */
-public enum NetworkOverride {
+public enum RestartType {
     /**
-     * No network override is present.
+     * The "restart" is from genesis.
      */
-    NONE,
+    GENESIS,
     /**
-     * A network override with only the network roster is present.
+     * The restart uses the same software version as the saved state.
      */
-    ROSTER_ONLY,
+    SAME_VERSION,
     /**
-     * A network override with both the roster and the encryption keys are present.
+     * The restart uses a later software version than the saved state.
      */
-    WITH_ENCRYPTION_KEYS,
-    /**
-     * A network override with both the network roster and all TSS key material,
-     * including the ledger id, is present.
-     */
-    WITH_FULL_TSS_KEY_MATERIAL,
+    UPGRADE_BOUNDARY,
 }

@@ -64,18 +64,18 @@ public @interface RestartHapiTest {
     ConfigOverride[] bootstrapOverrides() default {};
 
     /**
-     * The type of saved state that should be present on disk for the test.
+     * The type of restart being tested.
      */
-    SavedState savedState() default SavedState.NONE;
+    RestartType restartType() default RestartType.GENESIS;
 
     /**
-     * The type of network override that should be present on disk for the test.
+     * The type of startup assets that should be present on disk for the test.
      */
-    NetworkOverride networkOverride() default NetworkOverride.NONE;
+    StartupAssets startupAssets() default StartupAssets.NONE;
 
     /**
      * The type of saved state spec that should be used to customize the state of the {@link FakeState} when
-     * using {@link SavedState#PREVIOUS_VERSION} or {@link SavedState#CURRENT_VERSION}.
+     * using {@link RestartType#SAME_VERSION} or {@link RestartType#UPGRADE_BOUNDARY}.
      */
     Class<? extends SavedStateSpec> savedStateSpec() default NoopSavedStateSpec.class;
 }

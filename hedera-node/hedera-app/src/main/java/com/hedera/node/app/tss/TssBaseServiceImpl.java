@@ -18,6 +18,7 @@ package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
+import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static com.hedera.node.app.tss.handlers.TssUtils.hasMetThreshold;
 import static com.swirlds.platform.roster.RosterRetriever.getCandidateRosterHash;
@@ -26,6 +27,7 @@ import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -39,6 +41,7 @@ import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
@@ -59,6 +62,7 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -69,6 +73,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.LongFunction;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -167,7 +172,11 @@ public class TssBaseServiceImpl implements TssBaseService {
 
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
-        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode);
+
+        // TODO - use the real encryption keys from state
+        final LongFunction<BlsPublicKey> encryptionKeyFn =
+                nodeId -> new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(nodeId)), SIGNATURE_SCHEMA);
+        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, encryptionKeyFn);
         final var activeRoster = requireNonNull(
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster());
         final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
@@ -299,7 +308,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void generateParticipantDirectory(@NonNull final State state) {
+    public void ensureParticipantDirectoryKnown(@NonNull final State state) {
         tssDirectoryAccessor.generateTssParticipantDirectory(state);
     }
 

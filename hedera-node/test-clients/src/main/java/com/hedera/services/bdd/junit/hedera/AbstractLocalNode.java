@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.condi
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.recreateWorkingDir;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Files;
@@ -51,9 +52,7 @@ public abstract class AbstractLocalNode<T extends AbstractLocalNode<T>> extends 
     public @NonNull T initWorkingDir(
             @NonNull final String configTxt,
             @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull
-                    final Function<List<com.hedera.node.internal.network.NodeMetadata>, Optional<TssKeyMaterial>>
-                            tssKeyMaterialFn) {
+            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
         requireNonNull(configTxt);
         requireNonNull(tssEncryptionKeyFn);
         requireNonNull(tssKeyMaterialFn);

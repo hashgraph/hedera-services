@@ -148,6 +148,6 @@ class TssBaseTransplantSchemaTest {
 
     private void givenConfig(final boolean tssEnabled) {
         final var configBuilder = HederaTestConfigBuilder.create().withValue("tss.keyCandidateRoster", tssEnabled);
-        given(ctx.configuration()).willReturn(configBuilder.getOrCreateConfig());
+        given(ctx.appConfig()).willReturn(configBuilder.getOrCreateConfig());
     }
 }

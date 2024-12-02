@@ -71,7 +71,7 @@ public class V057RosterSchema extends Schema {
     @Override
     public void restart(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
-        if (!ctx.configuration().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+        if (!ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             return;
         }
         final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
@@ -149,7 +149,7 @@ public class V057RosterSchema extends Schema {
     }
 
     private boolean isUpgrade(@NonNull final MigrationContext ctx) {
-        return ServicesSoftwareVersion.from(ctx.configuration())
+        return ServicesSoftwareVersion.from(ctx.appConfig())
                         .compareTo(new ServicesSoftwareVersion(requireNonNull(ctx.previousVersion())))
                 > 0;
     }

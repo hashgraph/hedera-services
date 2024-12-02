@@ -64,7 +64,7 @@ public class V057PlatformStateSchema extends Schema {
     @Override
     public void restart(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
-        if (!ctx.configuration().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+        if (!ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             return;
         }
 
@@ -83,9 +83,7 @@ public class V057PlatformStateSchema extends Schema {
                 v.setRound(0);
                 v.setLegacyRunningEventHash(null);
                 v.setConsensusTimestamp(Instant.ofEpochSecond(0L));
-
-                final BasicConfig basicConfig = ctx.configuration().getConfigData(BasicConfig.class);
-
+                final var basicConfig = ctx.platformConfig().getConfigData(BasicConfig.class);
                 final long genesisFreezeTime = basicConfig.genesisFreezeTime();
                 if (genesisFreezeTime > 0) {
                     v.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
