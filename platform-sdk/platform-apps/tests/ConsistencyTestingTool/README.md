@@ -35,7 +35,7 @@ comment out the current app
 # app,		StatsDemo.jar,		   1, 3000, 0, 100, -1, 200
 ```
 
-uncomment the AddressBookTestingTool.jar
+uncomment the ConsistencyTestingTool.jar
 
 ```
 app,    ConsistencyTestingTool.jar,
