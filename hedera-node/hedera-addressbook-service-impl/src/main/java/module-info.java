@@ -12,6 +12,8 @@ module com.hedera.node.app.service.addressbook.impl {
     requires transitive javax.inject;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.platform.core;
+    requires com.swirlds.base;
+    requires com.swirlds.common;
     requires org.apache.logging.log4j;
     requires static transitive java.compiler;
     requires static com.github.spotbugs.annotations;
