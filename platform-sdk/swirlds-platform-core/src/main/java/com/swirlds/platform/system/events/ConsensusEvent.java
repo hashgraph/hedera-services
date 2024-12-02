@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system.events;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.ReachedConsensus;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,5 +38,15 @@ public interface ConsensusEvent extends Event, ReachedConsensus {
      * @return a consensus transaction iterator
      */
     @NonNull
+    @Deprecated
     Iterator<ConsensusTransaction> consensusTransactionIterator();
+
+    /**
+     * Returns an iterator over the application events in this transaction, which have all reached consensus in {@link Bytes} format. Each
+     * invocation returns a new iterator over the same transactions. This method is thread safe.
+     *
+     * @return a consensus transaction iterator
+     */
+    @NonNull
+    Iterator<Bytes> transactionBytesIterator();
 }

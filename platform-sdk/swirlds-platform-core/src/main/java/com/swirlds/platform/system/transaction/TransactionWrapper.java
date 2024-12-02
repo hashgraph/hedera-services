@@ -39,6 +39,8 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     private Object metadata;
     /** The protobuf data stored */
     private final EventTransaction payload;
+    /** The protobuf transaction data stored as bytes */
+    private final Bytes payloadBytes;
     /** The hash of the transaction */
     private Bytes hash;
 
@@ -52,6 +54,7 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     public TransactionWrapper(@NonNull final OneOf<TransactionOneOfType> transaction) {
         Objects.requireNonNull(transaction, "transaction should not be null");
         this.payload = new EventTransaction(transaction);
+        this.payloadBytes = Bytes.EMPTY;
     }
 
     /**
@@ -63,6 +66,19 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     public TransactionWrapper(@NonNull final EventTransaction transaction) {
         this.payload = Objects.requireNonNull(transaction, "transaction should not be null");
+        this.payloadBytes = Bytes.EMPTY;
+    }
+
+    /**
+     * Constructs a new transaction wrapper
+     *
+     * @param payloadBytes the serialized bytes of the transaction
+     *
+     * @throws NullPointerException if payloadBytes is null
+     */
+    public TransactionWrapper(@NonNull final Bytes payloadBytes) {
+        this.payload = EventTransaction.DEFAULT;
+        this.payloadBytes = Objects.requireNonNull(payloadBytes, "payloadBytes should not be null");
     }
 
     /**
@@ -115,6 +131,16 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     @Override
     public EventTransaction getTransaction() {
         return payload;
+    }
+
+    /**
+     * Returns the payload bytes as a PBJ record
+     *
+     * @return the payload
+     */
+    @NonNull
+    public Bytes getTransactionBytes() {
+        return payloadBytes;
     }
 
     /**

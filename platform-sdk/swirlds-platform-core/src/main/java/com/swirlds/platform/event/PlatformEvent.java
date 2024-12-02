@@ -206,6 +206,11 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     }
 
     @Override
+    public Iterator<Bytes> transactionBytesIterator() {
+        return new TypedIterator<>(metadata.getTransactionsBytes().iterator());
+    }
+
+    @Override
     public Instant getTimeCreated() {
         return metadata.getTimeCreated();
     }

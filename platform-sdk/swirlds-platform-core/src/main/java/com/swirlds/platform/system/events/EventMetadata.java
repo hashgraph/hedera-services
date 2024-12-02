@@ -20,6 +20,7 @@ import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.util.HapiUtils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -27,6 +28,7 @@ import com.swirlds.platform.system.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -65,6 +67,10 @@ public class EventMetadata extends AbstractHashable {
      */
     private final List<TransactionWrapper> transactions;
     /**
+     * The bytes of the transactions
+     */
+    private final List<Bytes> transactionsBytes;
+    /**
      * The event descriptor for this event. Is not itself hashed.
      */
     private EventDescriptorWrapper descriptor;
@@ -97,6 +103,7 @@ public class EventMetadata extends AbstractHashable {
         this.transactions = Objects.requireNonNull(transactions, "transactions must not be null").stream()
                 .map(TransactionWrapper::new)
                 .toList();
+        this.transactionsBytes = new ArrayList<>();
     }
 
     /**
@@ -126,6 +133,8 @@ public class EventMetadata extends AbstractHashable {
                 Objects.requireNonNull(gossipEvent.eventTransaction(), "transactions must not be null").stream()
                         .map(TransactionWrapper::new)
                         .toList();
+        //Once GossipEvent protobuf changes are merged, we should populate either transactions or transactionsBytes depending on the data loaded in the protobuf
+        this.transactionsBytes = new ArrayList<>();
     }
 
     private static long calculateGeneration(@NonNull final List<EventDescriptorWrapper> allParents) {
@@ -205,6 +214,14 @@ public class EventMetadata extends AbstractHashable {
     @NonNull
     public List<TransactionWrapper> getTransactions() {
         return transactions;
+    }
+
+    /**
+     * @return list of transactions bytes
+     */
+    @NonNull
+    public List<Bytes> getTransactionsBytes() {
+        return transactionsBytes;
     }
 
     public long getGeneration() {

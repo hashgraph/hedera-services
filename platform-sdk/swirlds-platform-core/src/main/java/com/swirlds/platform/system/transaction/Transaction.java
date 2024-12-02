@@ -36,6 +36,7 @@ public sealed interface Transaction permits ConsensusTransaction {
      * @return the transaction
      */
     @NonNull
+    @Deprecated
     EventTransaction getTransaction();
 
     /**
@@ -44,6 +45,7 @@ public sealed interface Transaction permits ConsensusTransaction {
      *
      * @return the application transaction Bytes or {@code Bytes.EMPTY} if the transaction is a system transaction
      */
+    @Deprecated
     default @NonNull Bytes getApplicationTransaction() {
         return !isSystem() ? getTransaction().transaction().as() : Bytes.EMPTY;
     }
@@ -61,6 +63,7 @@ public sealed interface Transaction permits ConsensusTransaction {
      * @return {@code true} if this is a system transaction; otherwise {@code false} if this is an application
      * 		transaction
      */
+    @Deprecated
     default boolean isSystem() {
         return TransactionUtils.isSystemTransaction(getTransaction());
     }
