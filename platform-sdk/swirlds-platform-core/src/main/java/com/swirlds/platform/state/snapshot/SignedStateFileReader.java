@@ -105,7 +105,7 @@ public final class SignedStateFileReader {
                     (final MerkleDataInputStream in) -> {
                         readAndCheckSigSetFileVersion(in);
                         final SigSet sigSet = in.readSerializable();
-                        return new MerkleTreeSnapshotReader.StateFileData(data.state(), data.hash(), sigSet);
+                        return new MerkleTreeSnapshotReader.StateFileData(data.stateRoot(), data.hash(), sigSet);
                     });
         } else {
             normalizedData = data;
@@ -114,7 +114,7 @@ public final class SignedStateFileReader {
         final SignedState newSignedState = new SignedState(
                 configuration,
                 CryptoStatic::verifySignature,
-                (MerkleRoot) normalizedData.state(),
+                (MerkleRoot) normalizedData.stateRoot(),
                 "SignedStateFileReader.readStateFile()",
                 false,
                 false,

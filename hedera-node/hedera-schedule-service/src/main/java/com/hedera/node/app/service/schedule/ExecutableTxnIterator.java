@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss.api;
+package com.hedera.node.app.service.schedule;
 
-import static java.util.Objects.requireNonNull;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import java.util.Iterator;
 
 /**
- * A message sent as part of either genesis keying, or rekeying.
- * @param bytes the byte representation of the opaque underlying structure used by the library
+ * An iterator over executable transactions that can also purge state up to the next known executable transaction.
  */
-public record TssMessage(@NonNull byte[] bytes) {
-
+public interface ExecutableTxnIterator extends Iterator<ExecutableTxn<? extends StreamBuilder>> {
     /**
-     * Constructor
-     * @param bytes bytes the byte representation of the opaque underlying structure used by the library
+     * Purges any expired state up to the point of the next known executable transaction.
+     * @return whether any state was purged
+     * @throws IllegalStateException if {@link Iterator#hasNext()} was never called
      */
-    public TssMessage {
-        requireNonNull(bytes, "bytes must not be null");
-    }
+    boolean purgeUntilNext();
 }

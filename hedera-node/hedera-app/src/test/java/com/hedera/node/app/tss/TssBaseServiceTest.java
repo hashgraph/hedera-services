@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.tss;
 
+import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PRIVATE_KEY;
+import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PUBLIC_KEY;
 import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.TSS_KEYS;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ACTIVE_ROSTER;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.CURRENT_CANDIDATE_ROSTER;
@@ -32,6 +34,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.cryptography.tss.api.TssPrivateShare;
+import com.hedera.cryptography.tss.api.TssPublicShare;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.info.NodeInfoImpl;
@@ -39,7 +44,6 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -87,9 +91,21 @@ public class TssBaseServiceTest {
     private NetworkInfo networkInfo;
 
     @Mock
+    private com.hedera.cryptography.tss.api.TssMessage tssMessage;
+
+    @Mock
     private Executor executor;
 
     private TssBaseServiceImpl subject;
+
+    private static final TssKeysAccessor.TssKeys TSS_KEYS = new TssKeysAccessor.TssKeys(
+            List.of(new TssPrivateShare(0, PRIVATE_KEY)),
+            List.of(new TssPublicShare(0, PUBLIC_KEY)),
+            Bytes.EMPTY,
+            TssParticipantDirectory.createBuilder()
+                    .withParticipant(0, 1, PUBLIC_KEY)
+                    .build(),
+            1);
 
     @BeforeEach
     void setUp() {
@@ -145,8 +161,7 @@ public class TssBaseServiceTest {
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
         given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
-        given(tssLibrary.generateTssMessage(any(), any()))
-                .willReturn(new TssMessage(Bytes.wrap("test").toByteArray()));
+        given(tssLibrary.generateTssMessage(any(), any())).willReturn(tssMessage);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
 
         subject.setCandidateRoster(ACTIVE_ROSTER, handleContext);
@@ -165,8 +180,7 @@ public class TssBaseServiceTest {
         // Simulate the _current_ candidate roster and active roster
         final var rosterStore = mockWritableRosterStore();
         given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
-        given(tssLibrary.generateTssMessage(any(), any()))
-                .willReturn(new TssMessage(Bytes.wrap("test").toByteArray()));
+        given(tssLibrary.generateTssMessage(any(), any())).willReturn(tssMessage);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         final var inputRoster = Roster.newBuilder()
                 .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3))

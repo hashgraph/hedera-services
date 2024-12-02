@@ -939,6 +939,7 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
      */
     @Override
     public MerkleStateRoot<?> loadSnapshot(@NonNull Path targetPath) throws IOException {
-        return MerkleTreeSnapshotReader.readStateFileData(targetPath).state();
+        return (MerkleStateRoot<?>)
+                MerkleTreeSnapshotReader.readStateFileData(targetPath).stateRoot();
     }
 }

@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBo
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.FAKE_NETWORK_INFO;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.NO_OP_METRICS;
 import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_KEY;
@@ -43,7 +44,9 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -59,6 +62,7 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -369,6 +373,19 @@ class DiskStartupNetworksTest {
                     sourceRosterHash, targetRosterHash, EXPECTED_LEDGER_ID, Bytes.EMPTY, tssVote);
             tssVotes.put(key, vote);
         }
+
+        final var tssEncryptionKey =
+                writableStates.<EntityNumber, TssEncryptionKeyTransactionBody>get(TSS_ENCRYPTION_KEY_MAP_KEY);
+        for (int i = 0; i < FAKE_NETWORK_SIZE; i++) {
+            final var key = new EntityNumber(i);
+            final var value = TssEncryptionKeyTransactionBody.newBuilder()
+                    .publicTssEncryptionKey(Bytes.EMPTY)
+                    .build();
+            tssEncryptionKey.put(key, value);
+        }
+
+        final var tssStatus = writableStates.<TssStatus>getSingleton(V0570TssBaseSchema.TSS_STATUS_KEY);
+        tssStatus.put(TssStatus.DEFAULT);
         ((CommittableWritableStates) writableStates).commit();
     }
 

@@ -85,6 +85,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE_NFTS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECEIPT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECORD;
+import static com.hedera.hapi.node.base.HederaFunctionality.TSS_ENCRYPTION_KEY;
 import static com.hedera.hapi.node.base.HederaFunctionality.TSS_MESSAGE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TSS_SHARE_SIGNATURE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TSS_VOTE;
@@ -265,7 +266,8 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange deleteNode,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssMessage,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssVote,
-        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssShareSignature) {
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssShareSignature,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssEncryptionKey) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -346,6 +348,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(TSS_MESSAGE, c -> c.tssMessage);
         permissionKeys.put(TSS_VOTE, c -> c.tssVote);
         permissionKeys.put(TSS_SHARE_SIGNATURE, c -> c.tssShareSignature);
+        permissionKeys.put(TSS_ENCRYPTION_KEY, c -> c.tssEncryptionKey);
     }
 
     /**

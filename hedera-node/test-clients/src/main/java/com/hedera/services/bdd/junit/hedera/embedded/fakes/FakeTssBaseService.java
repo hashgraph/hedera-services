@@ -19,14 +19,14 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.api.TssMessage;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -263,5 +263,15 @@ public class FakeTssBaseService implements TssBaseService {
         requireNonNull(directory);
         requireNonNull(tssMessages);
         return delegate.ledgerIdFrom(directory, tssMessages);
+    }
+
+    @Override
+    public TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory) {
+        return delegate.getTssMessageFromBytes(wrap, directory);
+    }
+
+    @Override
+    public void manageTssStatus(final State state) {
+        delegate.manageTssStatus(state);
     }
 }
