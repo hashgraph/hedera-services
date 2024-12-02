@@ -18,9 +18,11 @@ package com.hedera.node.app.service.schedule;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduledCounts;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -59,29 +61,12 @@ public interface ReadableScheduleStore {
     ScheduleID getByEquality(@NonNull Schedule scheduleToMatch);
 
     /**
-     * Given a time as seconds since the epoch, find all ScheduleID currently in state that expire at that time.
-     * The {@code List<ScheduleID>} returned will contain all {@link ScheduleID} entries in the system that have a
-     * calculated expiration time that matches the requested value.  The check is no more precise than one second,
-     * so the list may be quite large (significantly larger than the "schedules created" throttle).
-     *
-     * @param expirationTime the number of seconds since the epoch that describes the expiration time of schedules
-     *     to be returned.
-     * @return a {@code List<Schedule>} of entries that have expiration times within the requested second
+     * Gets the id of the transaction scheduled to happen at the given order, if it exists.
+     * @param scheduledOrder the order of the transaction
+     * @return the id of the transaction scheduled to happen at the given order
      */
     @Nullable
-    List<ScheduleID> getByExpirationSecond(long expirationTime);
-
-    /**
-     * Given an interval of time as seconds since the epoch, find all ScheduleID currently in state that expire.
-     * between the start and end times. The {@code List<ScheduleID>} returned will contain all {@link ScheduleID}
-     * entries in the system that have a calculated expiration time that falls between the requested start and end.
-     *
-     * @param start The start time
-     * @param end The end time
-     *
-     * @return a {@code List<Schedule>} of entries that have expiration times between the requested times
-     */
-    List<Schedule> getByExpirationBetween(long start, long end);
+    ScheduleID getByOrder(@NonNull ScheduledOrder scheduledOrder);
 
     /**
      * Returns the number of schedules in state, for use in enforcing creation limits.
@@ -89,4 +74,30 @@ public interface ReadableScheduleStore {
      * @return the number of schedules in state
      */
     long numSchedulesInState();
+
+    /**
+     * Returns the number of schedules that are scheduled to execute at the given consensus second.
+     * @param consensusSecond the consensus second to check for scheduled transactions
+     * @return the number of schedules that are scheduled to execute at the given consensus second
+     */
+    int numTransactionsScheduledAt(long consensusSecond);
+
+    /**
+     * Returns the scheduled transaction counts at the given consensus second, if any exist.
+     * @param consensusSecond the consensus second to check for scheduled transactions
+     * @return the scheduled transaction counts at the given consensus second
+     */
+    @Nullable
+    ScheduledCounts scheduledCountsAt(long consensusSecond);
+
+    /**
+     * If the given consensus second has any scheduled transactions, returns a snapshot of the throttle
+     * usage for those transactions within that second. The throttles are implicit in the combination of
+     * the network throttle definitions and the fraction of network capacity that is allowed to be
+     * scheduled to execute in a single second.
+     * @param consensusSecond the consensus second to check for scheduling usage
+     * @return null or a usage snapshot for the transactions scheduled at the given consensus second
+     */
+    @Nullable
+    ThrottleUsageSnapshots usageSnapshotsForScheduled(long consensusSecond);
 }
