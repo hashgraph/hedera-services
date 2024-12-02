@@ -21,6 +21,7 @@ import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.services.ServiceMigrator;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
@@ -181,7 +182,9 @@ public interface TssBaseService extends Service {
 
     /**
      * Manages and does work based on the TSS status.
-     * @param state the network state
+     *
+     * @param state               the network state
+     * @param storeMetricsService
      */
-    void manageTssStatus(State state);
+    void manageTssStatus(State state, final StoreMetricsService storeMetricsService);
 }

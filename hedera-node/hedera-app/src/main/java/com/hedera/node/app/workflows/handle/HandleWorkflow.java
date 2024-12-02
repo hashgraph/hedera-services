@@ -564,7 +564,7 @@ public class HandleWorkflow {
                 processStakePeriodChanges(userTxn, dispatch);
                 if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
                     // Check the tss status and manage it if necessary
-                    tssBaseService.manageTssStatus(userTxn.stack());
+                    tssBaseService.manageTssStatus(userTxn.stack(), storeMetricsService);
                 }
                 blockStreamManager.setLastHandleTime(userTxn.consensusNow());
                 if (streamMode != BLOCKS) {

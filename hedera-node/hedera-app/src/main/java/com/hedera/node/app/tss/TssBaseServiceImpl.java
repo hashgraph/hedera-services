@@ -30,6 +30,8 @@ import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.tss.RosterToKey;
+import com.hedera.hapi.node.state.tss.TssKeyingStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
@@ -37,14 +39,17 @@ import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -58,6 +63,7 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -68,6 +74,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -378,10 +385,66 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void manageTssStatus(final State state) {
-        final var storeFactory = new ReadableStoreFactory(state);
-        final var tssStore = storeFactory.getStore(ReadableTssStore.class);
+    public void manageTssStatus(final State state, final StoreMetricsService storeMetricsService) {
+        final var storeFactory = new WritableStoreFactory(state,
+                TssBaseService.NAME,
+                appContext.configSupplier().get(),
+                storeMetricsService);
+        final var tssStore = storeFactory.getStore(WritableTssStore.class);
+        final var tssStatus = tssStore.getTssStatus();
+        // And key to roster is ACTIVE_ROSTER
+        if (tssStatus.ledgerId().equals(Bytes.EMPTY)) {
+            tssStore.put(tssStatus.copyBuilder()
+                    .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS)
+                    .rosterToKey(RosterToKey.ACTIVE_ROSTER)
+                    .build());
+        } else {
+            final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
+            switch (tssStatus.tssKeyingStatus()) {
+                case WAITING_FOR_ENCRYPTION_KEYS -> {
+                    final var thresholdReached = validateThresholdEncryptionKeysReached(tssStore,
+                            rosterStore);
+                    if (thresholdReached) {
+                        tssStore.put(tssStatus.copyBuilder()
+                                .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES)
+                                .build());
+                    } else {
+                        generateEncryptionKey(state);
+                    }
+                }
+                case WAITING_FOR_THRESHOLD_TSS_MESSAGES -> {
+                    validateThresholdTssMessages(tssStore);
+                }
+                case WAITING_FOR_THRESHOLD_TSS_VOTES -> tssDirectoryAccessor.generateTssParticipantDirectory(state);
+                case KEYING_COMPLETE -> {
+                    // Do nothing
+                }
+            }
+        }
 
+    }
+
+    private void validateThresholdTssMessages(final WritableTssStore tssStore,
+                                              final ReadableRosterStore rosterStore) {
+        final var tssMessages = tssStore.getMessage();
+        if (tssMessages.size() >= 2 * tssStore.getTssParticipants().size() / 3) {
+            tssStore.put(tssStore.getTssStatus().copyBuilder()
+                    .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES)
+                    .build());
+        }
+
+    }
+
+    private boolean validateThresholdEncryptionKeysReached(final WritableTssStore tssStore,
+                                                           final ReadableRosterStore rosterStore) {
+        var numTssEncryptionKeys = 0;
+        for (final var node : requireNonNull(rosterStore.getActiveRoster()).rosterEntries()) {
+            final var tssEncryptionKey = tssStore.getTssEncryptionKey(node.nodeId());
+            if (tssEncryptionKey != null) {
+                numTssEncryptionKeys++;
+            }
+        }
+        return numTssEncryptionKeys >= (2 * requireNonNull(rosterStore.getActiveRoster()).rosterEntries().size()) / 3;
     }
 
     @VisibleForTesting

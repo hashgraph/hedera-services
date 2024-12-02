@@ -24,6 +24,7 @@ import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
@@ -271,7 +272,7 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void manageTssStatus(final State state) {
-        delegate.manageTssStatus(state);
+    public void manageTssStatus(final State state, final StoreMetricsService storeMetricsService) {
+        delegate.manageTssStatus(state, storeMetricsService);
     }
 }
