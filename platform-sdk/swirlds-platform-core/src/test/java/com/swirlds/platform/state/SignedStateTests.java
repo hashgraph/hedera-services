@@ -50,7 +50,7 @@ class SignedStateTests {
     /**
      * Generate a signed state.
      */
-    private SignedState generateSignedState(final Random random, final MerkleStateRoot state) {
+    private SignedState generateSignedState(final Random random, final PlatformMerkleStateRoot state) {
         return new RandomSignedStateGenerator(random).setState(state).build();
     }
 
@@ -60,11 +60,11 @@ class SignedStateTests {
      * @param reserveCallback this method is called when the State is reserved
      * @param releaseCallback this method is called when the State is released
      */
-    private MerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
-        final var real =
-                new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+    private PlatformMerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
+        final var real = new PlatformMerkleStateRoot(
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(real);
-        final MerkleStateRoot state = spy(real);
+        final PlatformMerkleStateRoot state = spy(real);
 
         final PlatformStateModifier platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
@@ -98,7 +98,7 @@ class SignedStateTests {
         final AtomicBoolean reserved = new AtomicBoolean(false);
         final AtomicBoolean released = new AtomicBoolean(false);
 
-        final MerkleStateRoot state = buildMockState(
+        final PlatformMerkleStateRoot state = buildMockState(
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -159,7 +159,7 @@ class SignedStateTests {
 
         final Thread mainThread = Thread.currentThread();
 
-        final MerkleStateRoot state = buildMockState(
+        final PlatformMerkleStateRoot state = buildMockState(
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -208,7 +208,7 @@ class SignedStateTests {
     @Test
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
-        final MerkleStateRoot state = spy(new MerkleStateRoot(
+        final PlatformMerkleStateRoot state = spy(new PlatformMerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);

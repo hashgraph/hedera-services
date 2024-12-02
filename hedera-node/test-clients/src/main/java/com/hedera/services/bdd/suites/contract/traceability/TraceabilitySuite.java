@@ -4193,34 +4193,31 @@ public class TraceabilitySuite {
     @HapiTest
     @Order(17)
     final Stream<DynamicTest> traceabilityE2EScenario17() {
-        return defaultHapiSpec("traceabilityE2EScenario17")
-                .given(
-                        uploadInitCode(REVERTING_CONTRACT),
-                        contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
-                                .via(FIRST_CREATE_TXN),
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                expectContractActionSidecarFor(
-                                        FIRST_CREATE_TXN,
-                                        List.of(ContractAction.newBuilder()
-                                                .setCallType(CREATE)
-                                                .setCallOperationType(CallOperationType.OP_CREATE)
-                                                .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(185276)
-                                                .setRecipientContract(
-                                                        spec.registry().getContractId(REVERTING_CONTRACT))
-                                                .setGasUsed(345)
-                                                .setOutput(EMPTY)
-                                                .build())))),
-                        expectContractBytecodeSidecarFor(
-                                FIRST_CREATE_TXN, REVERTING_CONTRACT, REVERTING_CONTRACT, BigInteger.valueOf(6)))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                uploadInitCode(REVERTING_CONTRACT),
+                contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6)).via(FIRST_CREATE_TXN),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        expectContractActionSidecarFor(
+                                FIRST_CREATE_TXN,
+                                List.of(ContractAction.newBuilder()
+                                        .setCallType(CREATE)
+                                        .setCallOperationType(CallOperationType.OP_CREATE)
+                                        .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                        .setGas(185276)
+                                        .setRecipientContract(spec.registry().getContractId(REVERTING_CONTRACT))
+                                        .setGasUsed(345)
+                                        .setOutput(EMPTY)
+                                        .build())))),
+                expectContractBytecodeSidecarFor(
+                        FIRST_CREATE_TXN, REVERTING_CONTRACT, REVERTING_CONTRACT, BigInteger.valueOf(6)),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(REVERTING_CONTRACT, "createContract", BigInteger.valueOf(4))
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                .via(TRACEABILITY_TXN))))
-                .then(withOpContext((spec, opLog) -> allRunFor(
+                                .via(TRACEABILITY_TXN))),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         expectContractActionSidecarFor(
                                 TRACEABILITY_TXN,
@@ -4252,26 +4249,24 @@ public class TraceabilitySuite {
     @HapiTest
     @Order(18)
     final Stream<DynamicTest> traceabilityE2EScenario18() {
-        return defaultHapiSpec("traceabilityE2EScenario18")
-                .given(uploadInitCode(REVERTING_CONTRACT))
-                .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(4))
+        return hapiTest(
+                uploadInitCode(REVERTING_CONTRACT),
+                contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(4))
                         .via(FIRST_CREATE_TXN)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                expectContractActionSidecarFor(
-                                        FIRST_CREATE_TXN,
-                                        List.of(ContractAction.newBuilder()
-                                                .setCallType(CREATE)
-                                                .setCallOperationType(CallOperationType.OP_CREATE)
-                                                .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(185276)
-                                                .setGasUsed(201)
-                                                .setRevertReason(EMPTY)
-                                                .build())))),
-                        expectFailedContractBytecodeSidecarFor(
-                                FIRST_CREATE_TXN, REVERTING_CONTRACT, BigInteger.valueOf(4)));
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        expectContractActionSidecarFor(
+                                FIRST_CREATE_TXN,
+                                List.of(ContractAction.newBuilder()
+                                        .setCallType(CREATE)
+                                        .setCallOperationType(CallOperationType.OP_CREATE)
+                                        .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                        .setGas(185276)
+                                        .setGasUsed(201)
+                                        .setRevertReason(EMPTY)
+                                        .build())))),
+                expectFailedContractBytecodeSidecarFor(FIRST_CREATE_TXN, REVERTING_CONTRACT, BigInteger.valueOf(4)));
     }
 
     @HapiTest
@@ -4454,7 +4449,6 @@ public class TraceabilitySuite {
     @Order(23)
     final Stream<DynamicTest> vanillaBytecodeSidecar2() {
         final var contract = "CreateTrivial";
-        final String trivialCreate = "vanillaBytecodeSidecar2";
         final var firstTxn = "firstTxn";
         return hapiTest(
                 uploadInitCode(contract),

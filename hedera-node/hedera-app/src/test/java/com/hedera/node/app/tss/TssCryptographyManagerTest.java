@@ -26,6 +26,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.cryptography.tss.api.TssPublicShare;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
@@ -35,16 +38,10 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.api.TssPublicShare;
-import com.hedera.node.app.tss.api.TssShareId;
-import com.hedera.node.app.tss.pairings.FakeGroupElement;
-import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
-import java.math.BigInteger;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
@@ -121,26 +118,25 @@ public class TssCryptographyManagerTest {
 
     @Test
     void testWhenVoteNoVoteSubmittedAndThresholdMet() {
-        final var ledgerId = mock(PairingPublicKey.class);
-        final var mockPublicShares = List.of(new TssPublicShare(new TssShareId(10), mock(PairingPublicKey.class)));
+        final var ledgerId = mock(BlsPublicKey.class);
+        final var mockPublicShares = List.of(new TssPublicShare(10, mock(BlsPublicKey.class)));
         final var mockSignature = mock(Signature.class);
 
         final var body = getTssBody();
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
-        when(tssStore.getTssMessageBodies(any())).thenReturn(List.of(body));
+        when(tssStore.getMessagesForTarget(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
 
         when(tssLibrary.computePublicShares(any(), any())).thenReturn(mockPublicShares);
         when(tssLibrary.aggregatePublicShares(any())).thenReturn(ledgerId);
         when(gossip.sign(any())).thenReturn(mockSignature);
-        when(ledgerId.publicKey()).thenReturn(new FakeGroupElement(BigInteger.valueOf(5L)));
 
         final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, handleContext);
 
         assertNotNull(result.join());
-        verify(gossip).sign(ledgerId.publicKey().toBytes());
+        verify(gossip).sign(ledgerId.toBytes());
     }
 
     @Test
@@ -149,7 +145,7 @@ public class TssCryptographyManagerTest {
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
-        when(tssStore.getTssMessageBodies(any())).thenReturn(List.of(body));
+        when(tssStore.getMessagesForTarget(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
 
         when(tssLibrary.computePublicShares(any(), any())).thenThrow(new RuntimeException());

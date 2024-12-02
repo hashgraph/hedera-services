@@ -213,8 +213,9 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
         });
 
         expectedExpirationTimeRelativeTo.ifPresent(stringLongPair -> assertEquals(
-                getRelativeExpiry(spec, stringLongPair.getKey(), stringLongPair.getValue()),
-                actualInfo.getExpirationTime(),
+                getRelativeExpiry(spec, stringLongPair.getKey(), stringLongPair.getValue())
+                        .getSeconds(),
+                actualInfo.getExpirationTime().getSeconds(),
                 "Wrong Expiration Time!"));
 
         expectedWaitForExpiry.ifPresent(

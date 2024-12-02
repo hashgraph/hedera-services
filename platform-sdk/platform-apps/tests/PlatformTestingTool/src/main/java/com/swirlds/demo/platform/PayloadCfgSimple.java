@@ -23,8 +23,15 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import java.io.IOException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 
 public class PayloadCfgSimple extends PartialMerkleLeaf implements MerkleLeaf {
+
+    private static final Logger logger = LogManager.getLogger(PayloadCfgSimple.class);
+    private static final Marker LOGM_DEMO_INFO = MarkerManager.getMarker("DEMO_INFO");
 
     /**
      * The version history of this class.
@@ -160,7 +167,9 @@ public class PayloadCfgSimple extends PartialMerkleLeaf implements MerkleLeaf {
      */
     private float ratioOfFCMTransaction;
 
-    public PayloadCfgSimple() {}
+    public PayloadCfgSimple() {
+        // empty
+    }
 
     private PayloadCfgSimple(final PayloadCfgSimple sourcePayload) {
         super(sourcePayload);
