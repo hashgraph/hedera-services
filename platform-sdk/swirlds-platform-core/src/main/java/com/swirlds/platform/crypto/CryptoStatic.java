@@ -634,6 +634,7 @@ public final class CryptoStatic {
 
     /**
      * Generate a {@link BlsKeyPair} using a {@link SignatureSchema} and a {@link SecureRandom} instance
+     * @param secureRandom the secure random number generator to use
      * @return a new {@link BlsKeyPair}
      * @throws NoSuchAlgorithmException the algorithm is not supported
      */

@@ -394,9 +394,9 @@ public class EnhancedKeyStoreLoader {
                 agrCertificates.put(node, agrCert);
             }
 
-            if (!tssPrivateKeys.containsKey(node)) {
+            if (!tssPrivateKeys.containsKey(node) || tssPrivateKeys.get(node) == null) {
                 // Create a new public/private key pair for the TSS encryption key
-                BlsKeyPair tssKeyPair = CryptoStatic.generateBlsKeyPair(null);
+                BlsKeyPair tssKeyPair = CryptoStatic.generateBlsKeyPair(SecureRandom.getInstanceStrong());
                 tssPrivateKeys.put(node, tssKeyPair.privateKey());
                 tssPublicKeys.put(node, tssKeyPair.publicKey());
                 // Write the private key to disk
@@ -967,11 +967,6 @@ public class EnhancedKeyStoreLoader {
         Objects.requireNonNull(nodeAlias, MSG_NODE_ALIAS_NON_NULL);
         Objects.requireNonNull(purpose, MSG_PURPOSE_NON_NULL);
         return keyStoreDirectory.resolve(String.format("%s-private-%s.pem", purpose.prefix(), nodeAlias));
-    }
-
-    private Path tssPrivateKeyPath(@NonNull String nodeAlias) {
-        Objects.requireNonNull(nodeAlias, MSG_NODE_ALIAS_NON_NULL);
-        return keyStoreDirectory.resolve(String.format("t-private-%s.tss", nodeAlias));
     }
 
     /**
