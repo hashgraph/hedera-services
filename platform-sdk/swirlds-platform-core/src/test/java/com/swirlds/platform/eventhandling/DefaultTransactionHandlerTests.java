@@ -121,7 +121,7 @@ class DefaultTransactionHandlerTests {
                 "state should be returned with a reservation");
 
         // only the self event reaching consensus should be reported, no freeze action.
-        assertEquals(1, tester.getSubmittedActions().size(), "the freeze status should have been submitted");
+        assertEquals(1, tester.getSubmittedActions().size(), "the freeze status should not have been submitted");
         assertEquals(
                 SelfEventReachedConsensusAction.class,
                 tester.getSubmittedActions().getFirst().getClass());
