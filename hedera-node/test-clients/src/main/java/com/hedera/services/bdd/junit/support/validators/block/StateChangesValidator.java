@@ -263,7 +263,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .withConfigDataType(TemporaryFileConfig.class)
                 .withConfigDataType(StateCommonConfig.class)
                 .build();
-        hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, platformConfig);
+        hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, addressBook, platformConfig);
         initGenesisPlatformState(platformConfig, this.state.getWritablePlatformState(), addressBook, currentVersion);
         final var stateToBeCopied = state;
         state = state.copy();

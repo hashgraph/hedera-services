@@ -117,7 +117,6 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.StreamMode;
-import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -136,6 +135,8 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.roster.RosterHistory;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -146,6 +147,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -352,6 +354,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @Nullable
     private StartupNetworks startupNetworks;
 
+    private RosterHistory rosterHistory;
+
     @FunctionalInterface
     public interface TssBaseServiceFactory {
         @NonNull
@@ -539,6 +543,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final State state,
             @NonNull final Metrics metrics,
             @NonNull final InitTrigger trigger,
+            @Nullable final AddressBook genesisAddressBook,
             @NonNull final Configuration platformConfiguration) {
         requireNonNull(state);
         requireNonNull(platformConfiguration);
@@ -567,7 +572,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             throw new IllegalStateException("Cannot downgrade from " + savedStateVersion + " to " + version);
         }
         try {
-            migrateSchemas(state, savedStateVersion, trigger, metrics, platformConfiguration);
+            migrateSchemas(state, savedStateVersion, trigger, metrics, genesisAddressBook, platformConfiguration);
             logConfiguration();
         } catch (final Throwable t) {
             logger.fatal("Critical failure during schema migration", t);
@@ -596,7 +601,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         }
         this.platform = requireNonNull(platform);
         if (state.getReadableStates(PlatformStateService.NAME).isEmpty()) {
-            initializeStatesApi(state, metrics, trigger, platform.getContext().getConfiguration());
+            initializeStatesApi(
+                    state,
+                    metrics,
+                    trigger,
+                    RosterUtils.buildAddressBook(this.rosterHistory.getCurrentRoster()),
+                    platform.getContext().getConfiguration());
         }
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
@@ -621,6 +631,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @Nullable final ServicesSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
             @NonNull final Metrics metrics,
+            @Nullable final AddressBook genesisAddressBook,
             @NonNull final Configuration platformConfiguration) {
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getPbjSemanticVersion();
         final var isUpgrade = version.compareTo(deserializedVersion) > 0;
@@ -639,9 +650,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (trigger == GENESIS) {
             final var config = configProvider.getConfiguration();
             final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-            final var genesisRoster = new Roster(startupNetworks.genesisNetworkOrThrow().nodeMetadata().stream()
-                    .map(NodeMetadata::rosterEntryOrThrow)
-                    .toList());
+            final var genesisRoster = buildRoster(requireNonNull(genesisAddressBook));
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
         blockStreamService.resetMigratedLastBlockHash();
@@ -904,6 +913,15 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     public void setInitialStateHash(@NonNull final Hash stateHash) {
         requireNonNull(stateHash);
         initialStateHashFuture = completedFuture(stateHash.getBytes());
+    }
+
+    /**
+     * Called to set the roster history used when building the platform.
+     *
+     * @param rosterHistory the roster history used when building the platform
+     */
+    public void setRosterHistory(@NonNull final RosterHistory rosterHistory) {
+        this.rosterHistory = rosterHistory;
     }
 
     /*==================================================================================================================
