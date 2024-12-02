@@ -21,9 +21,14 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.condi
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.recreateWorkingDir;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Files;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 
 /**
  * Implementation support for a node that uses a local working directory.
@@ -43,9 +48,16 @@ public abstract class AbstractLocalNode<T extends AbstractLocalNode<T>> extends 
     }
 
     @Override
-    public T initWorkingDir(@NonNull final String configTxt) {
+    public @NonNull T initWorkingDir(
+            @NonNull final String configTxt,
+            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
+            @NonNull
+                    final Function<List<com.hedera.node.internal.network.NodeMetadata>, Optional<TssKeyMaterial>>
+                            tssKeyMaterialFn) {
         requireNonNull(configTxt);
-        recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt);
+        requireNonNull(tssEncryptionKeyFn);
+        requireNonNull(tssKeyMaterialFn);
+        recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt, tssEncryptionKeyFn, tssKeyMaterialFn);
         workingDirInitialized = true;
         return self();
     }

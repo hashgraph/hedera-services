@@ -21,7 +21,11 @@ import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDE
 import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMethodOf;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.CONCURRENT;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
+import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary.FAKE_ENCRYPTION_KEY;
+import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary.FAKE_LEDGER_ID;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirVersion;
+import static com.hedera.services.bdd.junit.restart.NetworkOverride.WITH_ENCRYPTION_KEYS;
+import static com.hedera.services.bdd.junit.restart.NetworkOverride.WITH_FULL_TSS_KEY_MATERIAL;
 import static com.hedera.services.bdd.spec.HapiSpec.doTargetSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static java.util.Objects.requireNonNull;
@@ -30,6 +34,8 @@ import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.internal.network.NodeMetadata;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.ConfigOverride;
 import com.hedera.services.bdd.junit.ContextRequirement;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
@@ -40,8 +46,10 @@ import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.junit.hedera.TssKeyMaterial;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
+import com.hedera.services.bdd.junit.restart.NetworkOverride;
 import com.hedera.services.bdd.junit.restart.RestartHapiTest;
 import com.hedera.services.bdd.junit.restart.SavedStateSpec;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -50,11 +58,15 @@ import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -69,6 +81,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  */
 public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachCallback {
     private static final String SPEC_NAME = "<RESTART>";
+    private static final Set<NetworkOverride> OVERRIDES_WITH_ENCRYPTION_KEYS =
+            EnumSet.of(WITH_ENCRYPTION_KEYS, WITH_FULL_TSS_KEY_MATERIAL);
+
     public static final AtomicReference<HederaNetwork> SHARED_NETWORK = new AtomicReference<>();
     public static final AtomicReference<RepeatableKeyGenerator> REPEATABLE_KEY_GENERATOR = new AtomicReference<>();
 
@@ -81,7 +96,7 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                 final var a = method.getAnnotation(GenesisHapiTest.class);
                 final var bootstrapOverrides = Arrays.stream(a.bootstrapOverrides())
                         .collect(toMap(ConfigOverride::key, ConfigOverride::value));
-                targetNetwork.startWithOverrides(bootstrapOverrides);
+                targetNetwork.startWith(bootstrapOverrides, nodeId -> Bytes.EMPTY, nodes -> Optional.empty());
                 HapiSpec.TARGET_NETWORK.set(targetNetwork);
             } else if (isAnnotated(method, RestartHapiTest.class)) {
                 final var targetNetwork =
@@ -89,8 +104,17 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                 final var a = method.getAnnotation(RestartHapiTest.class);
                 final var overrides = Arrays.stream(a.bootstrapOverrides())
                         .collect(toMap(ConfigOverride::key, ConfigOverride::value));
+                final LongFunction<Bytes> tssEncryptionKeyFn =
+                        OVERRIDES_WITH_ENCRYPTION_KEYS.contains(a.networkOverride())
+                                ? nodeId -> FAKE_ENCRYPTION_KEY
+                                : nodeId -> Bytes.EMPTY;
+                final Function<List<NodeMetadata>, Optional<TssKeyMaterial>> tssKeyMaterialFn = a.networkOverride()
+                                == WITH_FULL_TSS_KEY_MATERIAL
+                        ? nodes -> Optional.of(new TssKeyMaterial(Bytes.wrap(FAKE_LEDGER_ID.toBytes()), List.of()))
+                        : nodes -> Optional.empty();
                 switch (a.savedState()) {
-                    case NONE, CURRENT_VERSION -> targetNetwork.startWithOverrides(overrides);
+                    case NONE, CURRENT_VERSION -> targetNetwork.startWith(
+                            overrides, tssEncryptionKeyFn, tssKeyMaterialFn);
                     case PREVIOUS_VERSION -> startFromPreviousVersion(targetNetwork, overrides);
                 }
                 switch (a.savedState()) {
@@ -203,7 +227,7 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                 .build("")
                 .build();
         overrides.put("hedera.services.version", HapiUtils.toString(previousVersion));
-        targetNetwork.startWithOverrides(overrides);
+        targetNetwork.startWith(overrides, nodeId -> Bytes.EMPTY, nodes -> Optional.empty());
     }
 
     private FakeState postGenesisStateOf(

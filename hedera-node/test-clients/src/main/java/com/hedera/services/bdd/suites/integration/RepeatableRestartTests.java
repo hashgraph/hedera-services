@@ -49,7 +49,7 @@ public class RepeatableRestartTests {
             },
             networkOverride = WITH_FULL_TSS_KEY_MATERIAL)
     Stream<DynamicTest> genesisTransactionDetectsAvailableLedgerIdAndUpdatesStatus() {
-        // If all TSS key material is available at genesis, this is th expected status
+        // If all TSS key material is available at genesis, this is the expected status
         final var expectedStatus = new TssStatus(KEYING_COMPLETE, NONE, Bytes.wrap(FAKE_LEDGER_ID.toBytes()));
         return hapiTest(viewSingleton(
                 TssBaseService.NAME,

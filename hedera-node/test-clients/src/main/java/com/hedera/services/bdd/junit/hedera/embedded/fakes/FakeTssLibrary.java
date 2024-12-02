@@ -48,6 +48,7 @@ public class FakeTssLibrary implements TssLibrary {
             new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
     public static final BlsSignature FAKE_SIGNATURE =
             new BlsSignature(new FakeGroupElement(BigInteger.valueOf(1L)), SIGNATURE_SCHEMA);
+    public static final Bytes FAKE_ENCRYPTION_KEY = Bytes.fromHex("0123");
 
     public interface DirectoryAssertion {
         void assertExpected(@NonNull TssParticipantDirectory directory) throws AssertionError;

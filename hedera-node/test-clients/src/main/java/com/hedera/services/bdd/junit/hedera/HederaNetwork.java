@@ -18,6 +18,8 @@ package com.hedera.services.bdd.junit.hedera;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.internal.network.NodeMetadata;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -32,6 +34,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 
 /**
  * A network of Hedera nodes.
@@ -156,10 +161,16 @@ public interface HederaNetwork {
     void start();
 
     /**
-     * Starts all nodes in the network with the given overrides.
+     * Starts all nodes in the network with the given customizations.
+     *
      * @param bootstrapOverrides the overrides
+     * @param tssEncryptionKeyFn the encryption key function
+     * @param tssKeyMaterialFn the key material function
      */
-    default void startWithOverrides(@NonNull Map<String, String> bootstrapOverrides) {
+    default void startWith(
+            @NonNull final Map<String, String> bootstrapOverrides,
+            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
+            @NonNull final Function<List<NodeMetadata>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
         throw new UnsupportedOperationException();
     }
 

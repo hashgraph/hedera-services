@@ -145,7 +145,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                     this.tssBaseService = new FakeTssBaseService(appContext);
                     return this.tssBaseService;
                 },
-                DiskStartupNetworks::new,
+                (configProvider, tssBaseService1, tssBaseService2) ->
+                        new DiskStartupNetworks(tssBaseService1, tssBaseService2),
                 NodeId.of(0L));
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();

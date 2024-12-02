@@ -32,7 +32,6 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.start
 import static com.hedera.services.bdd.junit.hedera.subprocess.StatusLookupAttempt.newLogAttempt;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ERROR_REDIRECT_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.recreateWorkingDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
@@ -104,13 +103,6 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         this.prometheusClient = requireNonNull(prometheusClient);
         // Just something to keep checkModuleInfo from claiming we don't require com.hedera.node.app
         requireNonNull(Hedera.class);
-    }
-
-    @Override
-    public SubProcessNode initWorkingDir(@NonNull final String configTxt) {
-        recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt);
-        workingDirInitialized = true;
-        return this;
     }
 
     @Override

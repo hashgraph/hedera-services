@@ -16,12 +16,22 @@
 
 package com.hedera.services.bdd.junit.hedera.utils;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.config.converter.SemanticVersionConverter;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.hedera.TssKeyMaterial;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
@@ -38,11 +48,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
@@ -69,6 +83,7 @@ public class WorkingDirUtils {
     public static final String UPGRADE_DIR = "upgrade";
     public static final String CURRENT_DIR = "current";
     public static final String CONFIG_TXT = "config.txt";
+    public static final String GENESIS_NETWORK_JSON = "genesis-network.json";
     public static final String GENESIS_PROPERTIES = "genesis.properties";
     public static final String ERROR_REDIRECT_FILE = "test-clients.log";
     public static final String STATE_METADATA_FILE = "stateMetadata.txt";
@@ -101,8 +116,19 @@ public class WorkingDirUtils {
      *
      * @param workingDir the path to the working directory
      * @param configTxt the contents of the <i>config.txt</i> file
+     * @param tssEncryptionKeyFn a function that returns the TSS encryption key for a given node ID
+     * @param tssKeyMaterialFn a function that returns the TSS key material for the network, if available
      */
-    public static void recreateWorkingDir(@NonNull final Path workingDir, @NonNull final String configTxt) {
+    public static void recreateWorkingDir(
+            @NonNull final Path workingDir,
+            @NonNull final String configTxt,
+            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
+            @NonNull final Function<List<NodeMetadata>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+        requireNonNull(workingDir);
+        requireNonNull(configTxt);
+        requireNonNull(tssEncryptionKeyFn);
+        requireNonNull(tssKeyMaterialFn);
+
         // Clean up any existing directory structure
         rm(workingDir);
         // Initialize the data folders
@@ -111,8 +137,12 @@ public class WorkingDirUtils {
         // Initialize the current upgrade folder
         createDirectoriesUnchecked(
                 workingDir.resolve(DATA_DIR).resolve(UPGRADE_DIR).resolve(CURRENT_DIR));
-        // Write the address book (config.txt)
+        // Write the address book (config.txt) and genesis network (genesis-network.json) files
         writeStringUnchecked(workingDir.resolve(CONFIG_TXT), configTxt);
+        final var network = networkFrom(configTxt, tssEncryptionKeyFn, tssKeyMaterialFn);
+        final var networkJson = Network.JSON.toJSON(network);
+        writeStringUnchecked(
+                workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(GENESIS_NETWORK_JSON), networkJson);
         // Copy the bootstrap assets into the working directory
         copyBootstrapAssets(bootstrapAssetsLoc(), workingDir);
         // Update the log4j2.xml file with the correct output directory
@@ -133,6 +163,7 @@ public class WorkingDirUtils {
 
     /**
      * Updates the given key/value property override at the given location
+     *
      * @param propertiesPath the path to the properties file
      * @param overrides the key/value property overrides
      */
@@ -163,6 +194,7 @@ public class WorkingDirUtils {
 
     /**
      * Returns the version in the project's {@code version.txt} file.
+     *
      * @return the version
      */
     public @NonNull static SemanticVersion workingDirVersion() {
@@ -365,5 +397,51 @@ public class WorkingDirUtils {
         } catch (Exception e) {
             throw new RuntimeException("Error generating keys and certs", e);
         }
+    }
+
+    private static Network networkFrom(
+            @NonNull final String configTxt,
+            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
+            @NonNull final Function<List<NodeMetadata>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+        final var nodeMetadata = Arrays.stream(configTxt.split("\n"))
+                .filter(line -> line.contains("address, "))
+                .map(line -> {
+                    final var parts = line.split(", ");
+                    final long nodeId = Long.parseLong(parts[1]);
+                    final long weight = Long.parseLong(parts[4]);
+                    final var gossipEndpoints =
+                            List.of(endpointFrom(parts[5], parts[6]), endpointFrom(parts[7], parts[8]));
+                    // TODO - Use the real gossip certificate
+                    final var gossipCaCertificate = Bytes.EMPTY;
+                    return NodeMetadata.newBuilder()
+                            .rosterEntry(new RosterEntry(nodeId, weight, gossipCaCertificate, gossipEndpoints))
+                            .node(new Node(
+                                    nodeId,
+                                    toPbj(HapiPropertySource.asAccount(parts[9])),
+                                    "node" + (nodeId + 1),
+                                    gossipEndpoints,
+                                    // TODO - Use the real service endpoint
+                                    List.of(),
+                                    gossipCaCertificate,
+                                    // The gRPC certificate hash is irrelevant for PR checks
+                                    Bytes.EMPTY,
+                                    weight,
+                                    false,
+                                    // TODO - Use the real admin key
+                                    Key.DEFAULT))
+                            .tssEncryptionKey(tssEncryptionKeyFn.apply(nodeId))
+                            .build();
+                })
+                .toList();
+        final var tssKeyMaterial = tssKeyMaterialFn.apply(nodeMetadata);
+        return Network.newBuilder()
+                .ledgerId(tssKeyMaterial.map(TssKeyMaterial::ledgerId).orElse(Bytes.EMPTY))
+                .tssMessages(tssKeyMaterial.map(TssKeyMaterial::tssMessages).orElse(List.of()))
+                .nodeMetadata(nodeMetadata)
+                .build();
+    }
+
+    private static ServiceEndpoint endpointFrom(@NonNull final String hostLiteral, @NonNull final String portLiteral) {
+        return HapiPropertySource.asServiceEndpoint(hostLiteral + ":" + portLiteral);
     }
 }

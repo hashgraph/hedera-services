@@ -68,17 +68,13 @@ public class DiskStartupNetworks implements StartupNetworks {
     public static final String GENESIS_NETWORK_JSON = "genesis-network.json";
     public static final String OVERRIDE_NETWORK_JSON = "override-network.json";
 
-    private final long selfNodeId;
     private final ConfigProvider configProvider;
     private final TssBaseService tssBaseService;
 
     private boolean isArchived = false;
 
     public DiskStartupNetworks(
-            final long selfNodeId,
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final TssBaseService tssBaseService) {
-        this.selfNodeId = selfNodeId;
+            @NonNull final ConfigProvider configProvider, @NonNull final TssBaseService tssBaseService) {
         this.configProvider = requireNonNull(configProvider);
         this.tssBaseService = tssBaseService;
     }

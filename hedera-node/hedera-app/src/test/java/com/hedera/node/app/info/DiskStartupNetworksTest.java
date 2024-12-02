@@ -152,7 +152,7 @@ class DiskStartupNetworksTest {
 
     @BeforeEach
     void setUp() {
-        subject = new DiskStartupNetworks(NODE_ID, configProvider, tssBaseService);
+        subject = new DiskStartupNetworks(configProvider, tssBaseService);
     }
 
     @Test

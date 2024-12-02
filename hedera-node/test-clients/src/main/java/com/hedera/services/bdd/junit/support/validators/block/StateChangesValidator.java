@@ -230,7 +230,8 @@ public class StateChangesValidator implements BlockStreamValidator {
                         new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
                         metrics),
-                DiskStartupNetworks::new,
+                (configProvider, tssBaseService, tssBaseService2) ->
+                        new DiskStartupNetworks(tssBaseService, tssBaseService2),
                 NodeId.of(0L));
         this.state = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
         final Configuration platformConfig = ConfigurationBuilder.create()
