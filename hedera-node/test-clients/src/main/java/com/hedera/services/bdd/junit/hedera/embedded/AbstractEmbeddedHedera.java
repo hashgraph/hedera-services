@@ -23,6 +23,7 @@ import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
+import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static java.util.Objects.requireNonNull;
@@ -54,12 +55,12 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -105,7 +106,6 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     protected final Map<AccountID, NodeId> nodeIds;
     protected final Map<NodeId, com.hedera.hapi.node.base.AccountID> accountIds;
-    protected final FakeState state = new FakeState();
     protected final AccountID defaultNodeAccountId;
     protected final AddressBook addressBook;
     protected final Roster roster;
@@ -115,6 +115,10 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final ServicesSoftwareVersion version;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
+    /**
+     * Non-final because a "saved state" may be provided via {@link EmbeddedHedera#restart(FakeState)}.
+     */
+    protected FakeState state;
     /**
      * Non-final because the compiler can't tell that the {@link TssBaseServiceFactory} lambda we give the
      * {@link Hedera} constructor will always set this (the fake's {@link com.hedera.node.app.tss.TssBaseServiceImpl}
@@ -149,12 +153,23 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     @Override
-    public void start() {
-        final Configuration configuration =
-                ConfigurationBuilder.create().autoDiscoverExtensions().build();
+    public void restart(@NonNull final FakeState state) {
+        this.state = requireNonNull(state);
+        start();
+    }
 
-        hedera.initializeStatesApi(
-                state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
+    @Override
+    public void start() {
+        final InitTrigger trigger;
+        if (state == null) {
+            trigger = GENESIS;
+            state = new FakeState();
+        } else {
+            trigger = RESTART;
+        }
+        final var config =
+                ConfigurationBuilder.create().autoDiscoverExtensions().build();
+        hedera.initializeStatesApi(state, fakePlatform().getContext().getMetrics(), trigger, addressBook, config);
 
         // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done
         // and we are running all CI tests with the Roster lifecycle enabled

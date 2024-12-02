@@ -29,7 +29,12 @@ public enum NetworkOverride {
      */
     ROSTER_ONLY,
     /**
-     * A network override with both the network roster and the ledger id is present.
+     * A network override with both the roster and the encryption keys are present.
      */
-    ROSTER_AND_LEDGER_ID,
+    WITH_ENCRYPTION_KEYS,
+    /**
+     * A network override with both the network roster and all TSS key material,
+     * including the ledger id, is present.
+     */
+    WITH_FULL_TSS_KEY_MATERIAL,
 }

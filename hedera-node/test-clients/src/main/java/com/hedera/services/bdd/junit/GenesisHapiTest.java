@@ -42,5 +42,5 @@ import org.junit.jupiter.api.parallel.Isolated;
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
 @Isolated
 public @interface GenesisHapiTest {
-    BootstrapOverride[] bootstrapOverrides() default {};
+    ConfigOverride[] bootstrapOverrides() default {};
 }

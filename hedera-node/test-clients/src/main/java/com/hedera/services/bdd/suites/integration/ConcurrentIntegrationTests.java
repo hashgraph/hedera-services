@@ -76,7 +76,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.node.app.roster.RosterService;
-import com.hedera.services.bdd.junit.BootstrapOverride;
+import com.hedera.services.bdd.junit.ConfigOverride;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -208,7 +208,7 @@ public class ConcurrentIntegrationTests {
                                 Optional.ofNullable(amount == ONE_HUNDRED_HBARS ? "Fee was not recharged" : null)));
     }
 
-    @GenesisHapiTest(bootstrapOverrides = {@BootstrapOverride(key = "addressBook.useRosterLifecycle", value = "true")})
+    @GenesisHapiTest(bootstrapOverrides = {@ConfigOverride(key = "addressBook.useRosterLifecycle", value = "true")})
     @DisplayName("freeze upgrade with roster lifecycle sets candidate roster")
     final Stream<DynamicTest> freezeUpgradeWithRosterLifecycleSetsCandidateRoster()
             throws CertificateEncodingException {

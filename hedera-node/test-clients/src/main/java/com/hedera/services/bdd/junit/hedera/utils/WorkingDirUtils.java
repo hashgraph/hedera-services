@@ -20,6 +20,8 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
@@ -157,6 +159,18 @@ public class WorkingDirUtils {
      */
     public static JutilPropertySource hapiTestStartupProperties() {
         return new JutilPropertySource(bootstrapAssetsLoc().resolve(APPLICATION_PROPERTIES));
+    }
+
+    /**
+     * Returns the version in the project's {@code version.txt} file.
+     * @return the version
+     */
+    public @NonNull static SemanticVersion workingDirVersion() {
+        final var loc = Paths.get(System.getProperty("user.dir")).endsWith("hedera-services")
+                ? "version.txt"
+                : "../version.txt";
+        final var versionLiteral = readStringUnchecked(Paths.get(loc)).trim();
+        return requireNonNull(new SemanticVersionConverter().convert(versionLiteral));
     }
 
     private static Path bootstrapAssetsLoc() {

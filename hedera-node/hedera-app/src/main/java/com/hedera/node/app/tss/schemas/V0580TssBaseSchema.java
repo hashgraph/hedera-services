@@ -16,12 +16,13 @@
 
 package com.hedera.node.app.tss.schemas;
 
+import static com.hedera.hapi.node.state.tss.RosterToKey.ACTIVE_ROSTER;
+import static com.hedera.hapi.node.state.tss.TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.tss.RosterToKey;
-import com.hedera.hapi.node.state.tss.TssKeyingStatus;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssStatus;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
@@ -32,9 +33,12 @@ import java.util.Set;
 /**
  * Schema for the TSS service.
  */
-public class V0570TssBaseSchema extends Schema {
+public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchema {
+    private static final TssStatus BOOTSTRAP_TSS_STATUS =
+            new TssStatus(WAITING_FOR_ENCRYPTION_KEYS, ACTIVE_ROSTER, Bytes.EMPTY);
+
     public static final String TSS_STATUS_KEY = "TSS_STATUS";
-    public static final String TSS_ENCRYPTION_KEY_MAP_KEY = "TSS_ENCRYPTION_KEY";
+    public static final String TSS_ENCRYPTION_KEYS_KEY = "TSS_ENCRYPTION_KEYS";
     /**
      * This will at most be equal to the number of nodes in the network.
      */
@@ -49,19 +53,15 @@ public class V0570TssBaseSchema extends Schema {
     /**
      * Create a new instance
      */
-    public V0570TssBaseSchema() {
+    public V0580TssBaseSchema() {
         super(VERSION);
     }
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        if (ctx.isGenesis()) {
-            final var tssStatusState = ctx.newStates().getSingleton(TSS_STATUS_KEY);
-            tssStatusState.put(TssStatus.newBuilder()
-                    .ledgerId(Bytes.EMPTY)
-                    .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS)
-                    .rosterToKey(RosterToKey.ACTIVE_ROSTER)
-                    .build());
+        final var state = ctx.newStates().getSingleton(TSS_STATUS_KEY);
+        if (state.get() == null) {
+            state.put(BOOTSTRAP_TSS_STATUS);
         }
     }
 
@@ -71,9 +71,14 @@ public class V0570TssBaseSchema extends Schema {
         return Set.of(
                 StateDefinition.singleton(TSS_STATUS_KEY, TssStatus.PROTOBUF),
                 StateDefinition.onDisk(
-                        TSS_ENCRYPTION_KEY_MAP_KEY,
+                        TSS_ENCRYPTION_KEYS_KEY,
                         EntityNumber.PROTOBUF,
-                        TssEncryptionKeyTransactionBody.PROTOBUF,
+                        TssEncryptionKeys.PROTOBUF,
                         MAX_TSS_ENCRYPTION_KEYS));
+    }
+
+    @Override
+    public void restart(@NonNull final MigrationContext ctx) {
+        TssBaseTransplantSchema.super.restart(ctx);
     }
 }

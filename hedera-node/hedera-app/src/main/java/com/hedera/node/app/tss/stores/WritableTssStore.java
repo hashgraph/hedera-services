@@ -18,8 +18,8 @@ package com.hedera.node.app.tss.stores;
 
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_STATUS_KEY;
+import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
+import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_STATUS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -53,7 +53,7 @@ public class WritableTssStore extends ReadableTssStoreImpl {
         super(states);
         this.tssMessageState = states.get(TSS_MESSAGE_MAP_KEY);
         this.tssVoteState = states.get(TSS_VOTE_MAP_KEY);
-        this.tssEncryptionKeyState = states.get(TSS_ENCRYPTION_KEY_MAP_KEY);
+        this.tssEncryptionKeyState = states.get(TSS_ENCRYPTION_KEYS_KEY);
         this.tssStatusState = states.getSingleton(TSS_STATUS_KEY);
     }
 

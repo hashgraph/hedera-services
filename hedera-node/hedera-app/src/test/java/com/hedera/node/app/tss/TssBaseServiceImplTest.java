@@ -17,15 +17,19 @@
 package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.tss.schemas.TssBaseTransplantSchema;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
+import com.hedera.node.app.tss.schemas.V0580TssBaseSchema;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -39,6 +43,7 @@ import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -109,7 +114,14 @@ class TssBaseServiceImplTest {
 
     @Test
     void placeholderRegistersSchemas() {
+        final var captor = ArgumentCaptor.forClass(Schema.class);
+
         subject.registerSchemas(registry);
-        verify(registry).register(argThat(s -> s instanceof V0560TssBaseSchema));
+
+        verify(registry, times(2)).register(captor.capture());
+        final var schemas = captor.getAllValues();
+        assertThat(schemas.getFirst()).isInstanceOf(V0560TssBaseSchema.class);
+        assertThat(schemas.getLast()).isInstanceOf(V0580TssBaseSchema.class);
+        assertThat(schemas.getLast()).isInstanceOf(TssBaseTransplantSchema.class);
     }
 }

@@ -17,9 +17,9 @@
 package com.hedera.services.bdd.junit;
 
 /**
- * An override for a bootstrap property.
+ * A network configuration override.
  */
-public @interface BootstrapOverride {
+public @interface ConfigOverride {
     String key();
 
     String value();

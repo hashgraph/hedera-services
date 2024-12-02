@@ -38,6 +38,13 @@ public interface EmbeddedHedera {
     void start();
 
     /**
+     * Starts the embedded Hedera node from a saved state customized by the given specs.
+     *
+     * @param state the state to customize
+     */
+    void restart(@NonNull FakeState state);
+
+    /**
      * Stops the embedded Hedera node.
      */
     void stop();
