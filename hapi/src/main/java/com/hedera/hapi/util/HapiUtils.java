@@ -237,6 +237,7 @@ public class HapiUtils {
             case TSS_MESSAGE -> HederaFunctionality.TSS_MESSAGE;
             case TSS_VOTE -> HederaFunctionality.TSS_VOTE;
             case TSS_SHARE_SIGNATURE -> HederaFunctionality.TSS_SHARE_SIGNATURE;
+            case TSS_ENCRYPTION_KEY -> HederaFunctionality.TSS_ENCRYPTION_KEY;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
