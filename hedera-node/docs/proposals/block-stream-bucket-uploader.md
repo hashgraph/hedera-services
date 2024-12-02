@@ -21,16 +21,15 @@ In order for consensus nodes to upload block files to public cloud buckets, this
 4. [Dependencies](#dependencies)
    - [Rationale for Using MinIO](#rationale-for-using-minio) 
 5. [Core Components](#core-components)
+   - [Directory Structure](#directory-structure)
    - [Extended BlockStreamWriterMode](#extended-blockstreamwritermode)
    - [Configuration Classes](#configuration-classes)
       - [Network Properties](#network-properties)
       - [Credentials Configuration](#credentials-configuration)
-   - [BlockMetadata](#blockMetadata)
-   - [BlockMetadataManager](#BlockMetadataManager)
-   - [BlockReuploadManager](#BlockReuploadManager)
    - [Cloud Storage Interface and Implementations](#cloud-storage-interface-and-implementations)
    - [BucketUploadListener Interface](#BucketUploadListener-Interface)
    - [BucketUploadManager](#BucketUploadManager)
+   - [BlockReuploadManager](#BlockReuploadManager)
    - [BlockRetentionManager](#BlockRetentionManager)
    - [Metrics](#metrics)
 6. [Flow Sequences](#flow-sequences)
@@ -42,7 +41,7 @@ In order for consensus nodes to upload block files to public cloud buckets, this
 
 ### Context
 
-The following image depicts how multiple consensus nodes will be attempting to upload to the same bucket. Only the first node to upload the block will succeed, and the others will check if the block is already available. If the block is available, the node will check if the block is the same by comparing the MD5 hash. If the hashes are different, the block will be kept on the local disk, and an alert will be triggered. If the upload fails, the block will be kept on the local disk, and an alert will be triggered.
+The following image depicts how multiple consensus nodes will be attempting to upload to the same bucket. Only the first node to upload the block will succeed, and the others will check if the block is already available. If the block is available, the node will check if the block is the same by comparing the MD5 hash. If the hashes are different, the block will be moved to a hash mismatch directory, and an alert will be triggered. If the upload fails, the block will remain in the original directory for retry, and an alert will be triggered.
 
 <img src="./Phase1.png" alt="Phase1"></img>
 
@@ -51,11 +50,11 @@ The following requirements have been identified for this proposal:
 - We need a third BlockStreamWriterMode, which sends the blocks to one or more buckets.
 - The buckets must be configurable.
 - Both the writer mode and the addresses of the buckets must be configurable during runtime (i.e., the node must not be restarted to take the changes into effect).
-- If an error occurs, we want to keep a copy of the block on the local disk. It probably makes sense to write the block to a local file initially and upload it once done (instead of writing directly to the bucket).
+- Blocks will be written to a local file initially and uploaded once done.
 - We want to upload only one instance of a block. All consensus nodes will try to upload the same block to a bucket, and therefore only the first one can succeed.
-- If a consensus node notices the block is already available, it should check if the blocks are the same (via MD5 hash). If they are different, the block should be kept on the local disk, and an alert must be triggered.
-- If uploading a block fails, it should be kept on the local disk, and an alert needs to be triggered.
-- If the upload was successful, the local copy can be removed after a few hours.
+- If a consensus node notices the block is already available, it should check if the blocks are the same (via MD5 hash). If they are different, the block should be moved to a hash mismatch directory, and an alert must be triggered.
+- If uploading a block fails, it should remain in the original directory for retry, and an alert needs to be triggered.
+- If the upload was successful, the block file will be moved to an uploaded directory.
 
 ### Dependencies
 
@@ -75,13 +74,26 @@ This proposal uses the MinIO Java SDK to provide a unified interface for cloud s
 
 - **Unified API**: MinIO provides a single S3-compatible API that works with multiple cloud storage providers, simplifying the integration process.
 - **Flexibility**: Supports both AWS S3 and GCP Cloud Storage, allowing for easy configuration and management of multiple cloud providers.
-- **Security**: Credentials are managed locally, reducing the risk of exposure through network properties.
 - **Scalability**: MinIO's client is designed to handle large-scale storage operations efficiently, making it suitable for high-throughput environments.
 - **Community and Support**: MinIO is a widely used open-source project with a strong community and commercial support options.
 
 By leveraging the MinIO SDK, we can streamline the process of uploading block files to cloud storage, ensuring compatibility and performance across different providers.
 
 ## Core Components
+
+### Directory Structure
+
+Current directory in which blocks are written:
+
+`@ConfigProperty(defaultValue = "/opt/hgcapp/blockStreams") @NodeProperty String blockFileDir`
+
+Directory structure:
+```
+<blockFileDir>
+├── ./             # Current blocks being processed/uploaded
+├── /uploaded/     # Successfully uploaded blocks
+└── /hashmismatch/ # Blocks with hash validation failures
+```
 
 ### Extended BlockStreamWriterMode
 
@@ -217,72 +229,6 @@ The configuration system needs to handle both network properties and local crede
 - Include validation to ensure all required fields are present
 - Provide a clean interface for the MinioClientFactory to create new clients
 
-#### MinIO Client Factory
-```java
-public class MinioClientFactory {
-    public static MinioClient createClient(CompleteBucketConfig config) {
-        return MinioClient.builder()
-                .endpoint(config.endpoint())
-                .credentials(
-                    config.credentials().accessKey(),
-                    config.credentials().secretKey())
-                .region(config.region())  // Optional, only used for AWS
-                .build();
-    }
-}
-```
-
-### BlockMetadata
-
-The `BlockMetadata` class read/updated on disk tracks both block information and upload statuses, enabling recovery/re-upload scenarios after node restarts.
-
-#### BlockMetadata class/file written to disk
-
-##### Required Fields
-- `blockNumber` (long) - Unique identifier for the block
-- `md5Hash` (String) - MD5 hash of block contents 
-- `creationTimestamp` (Instant) - When the block was created
-- `uploadStatusByProvider` (Map<String, Boolean>) - Upload status per provider
-- `hashMismatchByProvider` (Map<String, Boolean>) - Hash mismatch status per provider
-
-##### Required Methods
-- `create(Path blockPath)` - Create new metadata from block file path
-- `markUploaded(String provider)` - Mark upload complete for provider
-- `isUploaded(String provider)` - Check upload status for provider
-- `isFullyUploaded()` - Check if uploaded to all providers
-- `markHashMismatch(String provider)` - Mark hash mismatch for provider
-- `hasHashMismatch(String provider)` - Check for hash mismatch by provider
-- `validateMd5Hash()` - Calculate and validate MD5 hash
-
-
-#### BlockMetadataManager
-
-##### File Management
-- Read metadata files from disk
-- Write metadata files atomically
-
-### BlockReuploadManager
-The BlockReuploadManager is responsible for initiating re-uploads of failed block uploads after node restarts or re-uploading blocks that were attempted to be uploaded more than the configured retry limit.
-
-This ensures blocks are eventually attempted to be uploaded even in the face of node restarts or temporary failures.
-
-##### Key Responsibilities
-- Managing retry attempts for failed uploads while respecting configured retry limits
-- Coordinating with the BucketUploadManager to re-attempt uploads that were not successful
-- Handling error scenarios gracefully with appropriate logging and failure reporting
-
-##### Startup Operations
-- Scan block directory on node startup
-- Identify incomplete uploads
-- Verify metadata file integrity
-- Build recovery queue
-
-##### Recovery Processing
-- Initiate recovery of incomplete uploads
-- Skip blocks with hash mismatches
-- Track recovery progress
-- Report recovery metrics
-
 ### Cloud Storage Interface and Implementations
 
 #### CloudBucketUploader Interface
@@ -341,14 +287,16 @@ Required Changes:
 
 ### BucketUploadManager
 
-The BucketUploadManager is responsible for coordinating block uploads to multiple cloud storage providers. It listens for block closure events and manages the asynchronous upload process, including metadata tracking and metrics collection.
+The BucketUploadManager is responsible for coordinating block uploads to multiple cloud storage providers. It listens for block closure events and manages the asynchronous upload process, including directory management and metrics collection.
 
 Key Implementation Details:
 - Implements BucketUploadListener interface to receive block closure notifications
 - Manages concurrent uploads to multiple cloud providers using an ExecutorService
-- Tracks upload status and metadata for each block
+- Manages block files by moving them to appropriate directories based on upload status:
+  - Successful uploads: moved to `/uploaded` directory
+  - Hash mismatches: moved to `/hashmismatch` directory
+  - Failed uploads: remain in original directory for retry
 - Performs hash validation to detect corrupted or incomplete uploads
-- Updates block metadata files to record upload status
 - Collects detailed metrics on upload operations including:
   - Success/failure counts per provider
   - Upload latency measurements
@@ -358,24 +306,36 @@ Key Implementation Details:
 - Uses CompletableFuture for non-blocking asynchronous operations
 
 
+### BlockReuploadManager
+The BlockReuploadManager is responsible for initiating re-uploads of failed block uploads after node restarts or re-uploading blocks that were attempted to be uploaded more than the configured retry limit.
+
+##### Key Responsibilities
+- Managing retry attempts for failed uploads while respecting configured retry limits
+- Coordinating with the BucketUploadManager to re-attempt uploads
+- Handling error scenarios gracefully with appropriate logging and failure reporting
+
+##### Startup Operations
+- Scan block directory on node startup
+- Identify blocks that need to be uploaded (files in the current directory)
+- Build recovery queue
+
+##### Recovery Processing
+- Initiate recovery of incomplete uploads
+- Track recovery progress
+- Report recovery metrics
+
 ### BlockRetentionManager
 
-The BlockRetentionManager is responsible for managing the lifecycle of block files on disk after they have been successfully uploaded to cloud storage. It implements a retention policy to clean up local block files that are no longer needed while ensuring data integrity and proper metrics collection.
-
-This cleanup process needs to be scheduled to run periodically (e.g., hourly or daily) on a background thread separate from the main handler thread to avoid impacting normal operations.
+The BlockRetentionManager is responsible for managing the lifecycle of block files in the `/uploaded` directory after a configurable retention period.
 
 Key Implementation Details:
 - Manages block file retention based on configurable retention period
-- Performs asynchronous cleanup of expired block files
-- Validates block metadata before deletion
-  - Checks upload status and hash validation results
-  - Preserves files with hash mismatches for investigation
+- Performs asynchronous cleanup of expired block files from the `/uploaded` directory
 - Uses non-blocking CompletableFuture operations for cleanup tasks
 - Leverages shared executor service for background operations
 - Maintains metrics for deleted blocks and cleanup operations
 - Implements proper error handling and logging
 - Supports both raw (.blk) and compressed (.blk.gz) block files
-- Preserves blocks without metadata files as a safety measure
 
 Required Configuration:
 - Block retention period duration
@@ -390,8 +350,6 @@ The following metrics will be tracked with prefix `hedera.blocks.bucket.<provide
 - `uploads.success` (Counter) - Number of successful block uploads per provider per node
 - `uploads.failure` (Counter) - Number of failed block uploads per provider per node
 - `hash.mismatch` (Counter) - Number of hash validation failures per provider per node
-- `uploads.skipped` (Counter) - Number of skipped block uploads per provider per node
-- `upload.latency` (Timer) - Time taken to upload blocks per provider per node
 - `blocks.retained` (Gauge) - Current number of blocks retained on disk per node
 
 ## Flow Sequences
@@ -403,14 +361,12 @@ The following metrics will be tracked with prefix `hedera.blocks.bucket.<provide
    - FileBlockItemWriter notifies registered BucketUploadListeners
    - BucketUploadManager receives notification and:
      - Validates block file exists and is readable
-     - Calculates block file hash
-     - Creates block metadata file with hash and timestamp
      - Launches parallel uploads to each configured bucket provider
      - Each provider:
        - Uploads block file
        - Validates uploaded file hash matches local hash
-       - Updates metadata with upload statuses
    - After all uploads complete successfully:
+     - Block file is moved to the `/uploaded` directory
      - BlockRetentionManager will eventually delete the block file based on retention policy
      - Metrics are updated to reflect successful upload
 
@@ -418,8 +374,7 @@ The following metrics will be tracked with prefix `hedera.blocks.bucket.<provide
 
 - Upload Failure:
   - Retry with exponential backoff up to configured max attempts
-  - Keep local copy until successful upload or manual intervention
-  - Update metadata file with failure details (provider upload status)
+  - Keep file in current directory until successful upload or manual intervention
   - Emit upload failure metrics per provider
   - Log error details including:
     - Provider name
@@ -429,8 +384,7 @@ The following metrics will be tracked with prefix `hedera.blocks.bucket.<provide
 
 ### Hash Mismatch
 - When hash validation fails:
-  - Keep local copy until manual intervention
-  - Update metadata file with hash mismatch details
+  - Move file to `/hashmismatch` directory
   - Emit hash mismatch metric per provider
   - Log error details including:
     - Provider name
