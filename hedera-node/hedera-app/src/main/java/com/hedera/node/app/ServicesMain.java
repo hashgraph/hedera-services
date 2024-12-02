@@ -22,6 +22,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
@@ -54,6 +55,7 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
@@ -225,8 +227,19 @@ public class ServicesMain implements SwirldMain {
         final var recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
 
+        final var cryptography = CryptographyFactory.create();
+        CryptographyHolder.set(cryptography);
+        // the AddressBook is not changed after this point, so we calculate the hash now
+        cryptography.digestSync(diskAddressBook);
+
+        // Initialize the Merkle cryptography
+        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
+        MerkleCryptoFactory.set(merkleCryptography);
+
         // Create initial state for the platform
         final var isGenesis = new AtomicBoolean(false);
+        // We want to be able to see the schema migration logs, so init logging here
+        initLogging();
         final var reservedState = getInitialState(
                 configuration,
                 recycleBin,
@@ -255,15 +268,6 @@ public class ServicesMain implements SwirldMain {
                     null,
                     configuration);
         }
-
-        final var cryptography = CryptographyFactory.create();
-        CryptographyHolder.set(cryptography);
-        // the AddressBook is not changed after this point, so we calculate the hash now
-        cryptography.digestSync(diskAddressBook);
-
-        // Initialize the Merkle cryptography
-        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
-        MerkleCryptoFactory.set(merkleCryptography);
 
         // Create the platform context
         final var platformContext = PlatformContext.create(
@@ -341,6 +345,18 @@ public class ServicesMain implements SwirldMain {
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
+    }
+
+    private static void initLogging() {
+        final var log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
+        try {
+            Log4jSetup.startLoggingFramework(log4jPath).await();
+        } catch (final InterruptedException e) {
+            // since the logging framework has not been instantiated, also log to stderr
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while waiting for log4j to initialize", e);
+        }
     }
 
     /**

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.config.internal;
 
+import static com.swirlds.logging.legacy.LogMarker.CONFIG;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
@@ -62,7 +63,9 @@ public class PlatformConfigUtils {
     }
 
     /**
-     * Logs all configuration properties that are not known by any configuration data type.
+     * Logs all configuration properties that are not known by any configuration data type as
+     * {@code DEBUG} events; it is harmless to provide extra properties but could be useful to
+     * see these messages during development.
      */
     private static void logNotKnownConfigProperties(
             @NonNull final Configuration configuration, @NonNull final Set<String> configNames) {
@@ -73,7 +76,7 @@ public class PlatformConfigUtils {
                 .forEach(name -> {
                     final String message =
                             "Configuration property '%s' is not used by any configuration data type".formatted(name);
-                    logger.error(EXCEPTION.getMarker(), message);
+                    logger.debug(CONFIG.getMarker(), message);
                 });
     }
 
