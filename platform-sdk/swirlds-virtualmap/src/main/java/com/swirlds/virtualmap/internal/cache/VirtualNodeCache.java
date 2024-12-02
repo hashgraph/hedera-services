@@ -1056,7 +1056,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * as filtered, which affects the estimated size. After that this method is called
      * again, it takes filtered mutations into consideration. If the updated estimated
      * size is lower than flush threshold, the copy is not flushed to disk, but rather
-     * its {@link #garbageCollect(long, long)} is called.
+     * its {@link #garbageCollect()} is called.
      *
      * @return
      *        Estimated number of dirty hashes
@@ -1071,7 +1071,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * flush, this method is used to mark redundant mutations as "filtered", so they aren't
      * included to the streams for the data source. It may happen that after filtering the
      * cache copy is no longer needed to flush. In this case, all filtered mutations are
-     * removed using {@link #garbageCollect(long, long)} method.
+     * removed using {@link #garbageCollect()} method.
      *
      * <p>This method can only be called on sealed caches.
      *
