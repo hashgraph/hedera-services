@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -179,7 +180,10 @@ public class DiskStartupNetworks implements StartupNetworks {
             final List<NodeMetadata> nodeMetadata = new ArrayList<>();
             rosterStore.getActiveRoster().rosterEntries().forEach(entry -> {
                 final var node = requireNonNull(nodeStore.get(entry.nodeId()));
-                nodeMetadata.add(new NodeMetadata(entry, node, Bytes.EMPTY));
+                final var encryptionKey = Optional.ofNullable(tssStore.getTssEncryptionKeys(node.nodeId()))
+                        .map(TssEncryptionKeys::currentEncryptionKey)
+                        .orElse(Bytes.EMPTY);
+                nodeMetadata.add(new NodeMetadata(entry, node, encryptionKey));
             });
             network.nodeMetadata(nodeMetadata);
             final var sourceRosterHash =

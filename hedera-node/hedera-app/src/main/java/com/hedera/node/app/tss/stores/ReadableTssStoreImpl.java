@@ -29,10 +29,10 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -56,7 +56,7 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
 
     private final ReadableKVState<TssVoteMapKey, TssVoteTransactionBody> readableTssVoteState;
 
-    private final ReadableKVState<EntityNumber, TssEncryptionKeyTransactionBody> readableTssEncryptionKeyState;
+    private final ReadableKVState<EntityNumber, TssEncryptionKeys> readableTssEncryptionKeyState;
     private final ReadableSingletonState<TssStatus> readableTssStatusState;
 
     /**
@@ -153,7 +153,7 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
      * {@inheritDoc}
      */
     @Override
-    public TssEncryptionKeyTransactionBody getTssEncryptionKey(long nodeID) {
+    public TssEncryptionKeys getTssEncryptionKeys(final long nodeID) {
         return readableTssEncryptionKeyState.get(
                 EntityNumber.newBuilder().number(nodeID).build());
     }

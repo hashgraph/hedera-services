@@ -43,10 +43,10 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -103,11 +103,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DiskStartupNetworksTest {
     private static final int FAKE_NETWORK_SIZE = 4;
-    private static final long NODE_ID = 0L;
     private static final long ROUND_NO = 666L;
     private static final Bytes EXPECTED_LEDGER_ID = Bytes.fromBase64("Lw==");
     private static final Comparator<TssMessageTransactionBody> TSS_MESSAGE_COMPARATOR =
             Comparator.comparingLong(TssMessageTransactionBody::shareIndex);
+    private static final Bytes FAKE_ENCRYPTION_KEY = Bytes.fromBase64("ASM=");
 
     private static Network networkWithTssKeys;
     private static Network networkWithoutTssKeys;
@@ -374,13 +374,10 @@ class DiskStartupNetworksTest {
             tssVotes.put(key, vote);
         }
 
-        final var tssEncryptionKey =
-                writableStates.<EntityNumber, TssEncryptionKeyTransactionBody>get(TSS_ENCRYPTION_KEYS_KEY);
+        final var tssEncryptionKey = writableStates.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY);
         for (int i = 0; i < FAKE_NETWORK_SIZE; i++) {
             final var key = new EntityNumber(i);
-            final var value = TssEncryptionKeyTransactionBody.newBuilder()
-                    .publicTssEncryptionKey(Bytes.EMPTY)
-                    .build();
+            final var value = new TssEncryptionKeys(FAKE_ENCRYPTION_KEY, Bytes.EMPTY);
             tssEncryptionKey.put(key, value);
         }
 

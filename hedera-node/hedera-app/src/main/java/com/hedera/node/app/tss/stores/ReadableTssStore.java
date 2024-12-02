@@ -20,10 +20,10 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -166,11 +166,12 @@ public interface ReadableTssStore {
 
     /**
      * Get the Tss encryption key transaction body for the given node ID.
+     *
      * @param nodeID The node ID to look up.
      * @return The Tss encryption key transaction body, or null if not found.
      */
     @Nullable
-    TssEncryptionKeyTransactionBody getTssEncryptionKey(final long nodeID);
+    TssEncryptionKeys getTssEncryptionKeys(final long nodeID);
 
     /**
      * Get the Tss status.
