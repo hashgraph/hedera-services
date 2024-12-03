@@ -19,7 +19,6 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,11 +44,6 @@ public class FakeConsensusEvent extends FakeEvent implements ConsensusEvent {
     @Override
     public @NonNull Iterator<ConsensusTransaction> consensusTransactionIterator() {
         return Collections.singleton((ConsensusTransaction) transaction).iterator();
-    }
-
-    @Override
-    public @NonNull Iterator<Bytes> transactionBytesIterator() {
-        return Collections.singleton(transaction.getTransactionsBytes()).iterator();
     }
 
     @Override

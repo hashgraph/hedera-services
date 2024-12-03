@@ -36,6 +36,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -294,15 +295,28 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
 
             delta = ByteUtils.byteArrayToInt(
                     transaction.getApplicationTransaction().toByteArray(), 0);
+
         } else {
-            // TODO: Currently all type of transactions will update this state. Once platform registers callbacks on the
-            // services.app for getting back system transactions, application transactions will be filtered, so that
-            // only they will update the state.
+            if (isSystemTransaction(transaction.getTransactionsBytes())) {
+                return;
+            }
+
             delta = ByteUtils.byteArrayToInt(transaction.getTransactionsBytes().toByteArray(), 0);
         }
 
         runningSum += delta;
         setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
+    }
+
+    // TODO Temporary method to filter out system transactions, so that platform is tested with application and system
+    // transactions. Once callbacks are introduced this method won't be needed.
+    private boolean isSystemTransaction(final Bytes transactionBytes) {
+        if (transactionBytes == null || transactionBytes.length() == 0) {
+            return false;
+        }
+
+        final var transaction = transactionBytes.toByteArray();
+        return transaction[0] != 0;
     }
 
     /**
