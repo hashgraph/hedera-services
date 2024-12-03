@@ -133,7 +133,8 @@ public class EventMetadata extends AbstractHashable {
                 Objects.requireNonNull(gossipEvent.eventTransaction(), "transactions must not be null").stream()
                         .map(TransactionWrapper::new)
                         .toList();
-        // TODO: Once GossipEvent protobuf changes are merged, we should populate either transactions or transactionsBytes
+        // TODO: Once GossipEvent protobuf changes are merged, we should populate either transactions or
+        // transactionsBytes
         // depending on the data loaded in the protobuf
         this.transactionsBytes = new ArrayList<>();
     }
