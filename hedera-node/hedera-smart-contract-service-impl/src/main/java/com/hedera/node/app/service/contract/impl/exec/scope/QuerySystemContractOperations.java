@@ -34,6 +34,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
+import java.util.Set;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
@@ -62,7 +63,8 @@ public class QuerySystemContractOperations implements SystemContractOperations {
             @NonNull final TransactionBody syntheticTransaction,
             @NonNull final VerificationStrategy strategy,
             @NonNull final AccountID syntheticPayerId,
-            @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final Class<T> streamBuilderType,
+            @NonNull final Set<Key> authorizingKeys) {
         throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
     }
 
@@ -104,5 +106,11 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     @NonNull
     public ExchangeRate currentExchangeRate() {
         return context.exchangeRateInfo().activeRate(instantSource.instant());
+    }
+
+    @Override
+    @Nullable
+    public Key maybeEthSenderKey() {
+        return null;
     }
 }

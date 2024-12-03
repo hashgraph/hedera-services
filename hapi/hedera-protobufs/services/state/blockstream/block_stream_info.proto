@@ -88,7 +88,7 @@ message BlockStreamInfo {
      * The latest available hash SHALL be for block N-1.<br/>
      * This is REQUIRED to implement the EVM `BLOCKHASH` opcode.
      * <p>
-     * <div style="display: block;font-size: .83em;margin-top: 1.67em;margin-bottom: 1.67em;margin-left: 0;margin-right: 0;font-weight: bold;">Field Length</div>
+     * ### Field Length
      * Each hash value SHALL be the trailing 265 bits of a SHA2-384 hash.<br/>
      * The length of this field SHALL be an integer multiple of 32 bytes.<br/>
      * This field SHALL be at least 32 bytes.<br/>
@@ -143,9 +143,9 @@ message BlockStreamInfo {
 
     /**
      * A version describing the version of application software.
-    * <p>
-    * This SHALL be the software version that created this block.
-    */
+     * <p>
+     * This SHALL be the software version that created this block.
+     */
     proto.SemanticVersion creation_software_version = 11;
 
     /**
@@ -155,4 +155,12 @@ message BlockStreamInfo {
      * at which an interval of time-dependent events were processed.
      */
     proto.Timestamp last_interval_process_time = 12;
+
+    /**
+     * The time stamp at which the last user transaction was handled.
+     * <p>
+     * This field SHALL hold the consensus time for the last time
+     * at which a user transaction was handled.
+     */
+    proto.Timestamp last_handle_time = 13;
 }

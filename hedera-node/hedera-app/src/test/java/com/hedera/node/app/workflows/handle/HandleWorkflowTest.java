@@ -34,24 +34,21 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
-import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
-import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
-import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
-import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
-import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
+import com.hedera.node.app.workflows.handle.steps.StakePeriodChanges;
+import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -61,8 +58,8 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -80,28 +77,10 @@ class HandleWorkflowTest {
     private NetworkInfo networkInfo;
 
     @Mock
-    private NodeStakeUpdates nodeStakeUpdates;
-
-    @Mock
-    private Authorizer authorizer;
-
-    @Mock
-    private FeeManager feeManager;
+    private StakePeriodChanges stakePeriodChanges;
 
     @Mock
     private DispatchProcessor dispatchProcessor;
-
-    @Mock
-    private ServiceScopeLookup serviceScopeLookup;
-
-    @Mock
-    private ChildDispatchFactory childDispatchFactory;
-
-    @Mock
-    private TransactionDispatcher dispatcher;
-
-    @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
 
     @Mock
     private StakePeriodManager stakePeriodManager;
@@ -120,6 +99,15 @@ class HandleWorkflowTest {
 
     @Mock
     private CacheWarmer cacheWarmer;
+
+    @Mock
+    private ScheduleService scheduleService;
+
+    @Mock
+    private KVStateChangeListener kvStateChangeListener;
+
+    @Mock
+    private BoundaryStateChangeListener boundaryStateChangeListener;
 
     @Mock
     private OpWorkflowMetrics opWorkflowMetrics;
@@ -146,22 +134,19 @@ class HandleWorkflowTest {
     private ExchangeRateManager exchangeRateManager;
 
     @Mock
-    private PreHandleWorkflow preHandleWorkflow;
-
-    @Mock
     private State state;
 
     @Mock
     private Round round;
 
     @Mock
-    private KVStateChangeListener kvStateChangeListener;
-
-    @Mock
     private StakeInfoHelper stakeInfoHelper;
 
     @Mock
-    private BoundaryStateChangeListener boundaryStateChangeListener;
+    private UserTxnFactory userTxnFactory;
+
+    @Mock
+    private TssBaseService tssBaseService;
 
     private HandleWorkflow subject;
 
@@ -219,14 +204,8 @@ class HandleWorkflowTest {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
         subject = new HandleWorkflow(
                 networkInfo,
-                nodeStakeUpdates,
-                authorizer,
-                feeManager,
+                stakePeriodChanges,
                 dispatchProcessor,
-                serviceScopeLookup,
-                childDispatchFactory,
-                dispatcher,
-                networkUtilizationManager,
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
@@ -241,10 +220,13 @@ class HandleWorkflowTest {
                 stakeInfoHelper,
                 recordCache,
                 exchangeRateManager,
-                preHandleWorkflow,
                 stakePeriodManager,
+                migrationStateChanges,
+                userTxnFactory,
+                new AddressBookHelper(),
+                tssBaseService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                migrationStateChanges);
+                scheduleService);
     }
 }

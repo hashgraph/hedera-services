@@ -66,8 +66,7 @@ public interface LifecycleTest {
     int MIXED_OPS_BURST_TPS = 50;
     Duration FREEZE_TIMEOUT = Duration.ofSeconds(90);
     Duration RESTART_TIMEOUT = Duration.ofSeconds(180);
-    //    Duration RESTART_TIMEOUT = Duration.ofSeconds(300);
-    Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(60);
+    Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
     Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
     Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
     Duration RESTART_TO_ACTIVE_TIMEOUT = Duration.ofSeconds(210);
@@ -145,6 +144,22 @@ public interface LifecycleTest {
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
                 confirmFreezeAndShutdown(),
                 sourcing(() -> FakeNmt.restartNetwork(CURRENT_CONFIG_VERSION.incrementAndGet())),
+                waitForActiveNetwork(RESTART_TIMEOUT));
+    }
+
+    /**
+     * Returns an operation that upgrades the network with disabled node operator port to the next configuration version using a fake upgrade ZIP.
+     * @return the operation
+     */
+    default SpecOperation restartWithDisabledNodeOperatorGrpcPort() {
+        return blockingOrder(
+                freezeOnly().startingIn(5).seconds().payingWith(GENESIS).deferStatusResolution(),
+                // Immediately submit a transaction in the same round to ensure freeze time is only
+                // reset when last frozen time matches it (i.e., in a post-upgrade transaction)
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
+                confirmFreezeAndShutdown(),
+                sourcing(() ->
+                        FakeNmt.restartNetworkWithDisabledNodeOperatorPort(CURRENT_CONFIG_VERSION.incrementAndGet())),
                 waitForActiveNetwork(RESTART_TIMEOUT));
     }
 

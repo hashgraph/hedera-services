@@ -23,10 +23,15 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_EXPIRY_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_EXPIRY_MUST_BE_FUTURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_EXPIRY_TOO_LONG;
 import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.hapi.node.base.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.createProvisionalSchedule;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.functionalityForType;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.transactionIdForScheduled;
@@ -41,6 +46,8 @@ import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
@@ -50,6 +57,7 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -61,23 +69,31 @@ import com.hedera.node.config.data.SchedulingConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_CREATE}.
  */
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
+    private static final Logger log = LogManager.getLogger(ScheduleCreateHandler.class);
+
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
     private final InstantSource instantSource;
+    private final Throttle.Factory throttleFactory;
 
     @Inject
-    public ScheduleCreateHandler(@NonNull final InstantSource instantSource) {
-        this.instantSource = instantSource;
+    public ScheduleCreateHandler(
+            @NonNull final InstantSource instantSource, @NonNull final Throttle.Factory throttleFactory) {
+        this.instantSource = requireNonNull(instantSource);
+        this.throttleFactory = requireNonNull(throttleFactory);
     }
 
     @Override
@@ -87,7 +103,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var op = body.scheduleCreateOrThrow();
         validateTruePreCheck(op.hasScheduledTransactionBody(), INVALID_TRANSACTION);
         // (FUTURE) Add a dedicated response code for an op waiting for an unspecified expiration time
-        validateFalsePreCheck(op.waitForExpiry() && !op.hasExpirationTime(), INVALID_TRANSACTION);
+        validateFalsePreCheck(op.waitForExpiry() && !op.hasExpirationTime(), MISSING_EXPIRY_TIME);
     }
 
     @Override
@@ -117,7 +133,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final long maxLifetime = schedulingConfig.longTermEnabled()
                 ? schedulingConfig.maxExpirationFutureSeconds()
                 : ledgerConfig.scheduleTxExpiryTimeSecs();
-        final var schedule = createProvisionalSchedule(body, instantSource.instant(), maxLifetime);
+        final var schedule = createProvisionalSchedule(
+                body, instantSource.instant(), maxLifetime, schedulingConfig.longTermEnabled());
         final var transactionKeys = getRequiredKeys(schedule, context::allKeysForTransaction);
         // If the schedule payer inherits from the ScheduleCreate, it is already in the required keys
         if (op.hasPayerAccountID()) {
@@ -134,11 +151,16 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-        final var expirationSeconds = isLongTermEnabled
+        final var maxLifetime = isLongTermEnabled
                 ? schedulingConfig.maxExpirationFutureSeconds()
                 : ledgerConfig.scheduleTxExpiryTimeSecs();
         final var consensusNow = context.consensusNow();
-        final var provisionalSchedule = createProvisionalSchedule(context.body(), consensusNow, expirationSeconds);
+        final var provisionalSchedule =
+                createProvisionalSchedule(context.body(), consensusNow, maxLifetime, isLongTermEnabled);
+        final var now = consensusNow.getEpochSecond();
+        final var then = provisionalSchedule.calculatedExpirationSecond();
+        validateTrue(then > now, SCHEDULE_EXPIRY_MUST_BE_FUTURE);
+        validateTrue(then <= now + maxLifetime, SCHEDULE_EXPIRY_TOO_LONG);
         validateTrue(
                 isAllowedFunction(provisionalSchedule.scheduledTransactionOrThrow(), schedulingConfig),
                 SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
@@ -178,12 +200,24 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         validateTrue(
                 scheduleStore.numSchedulesInState() + 1 <= schedulingConfig.maxNumber(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        final var capacityFraction = schedulingConfig.schedulableCapacityFraction();
+        final var usageSnapshots = scheduleStore.usageSnapshotsForScheduled(then);
+        final var throttle =
+                upToDateThrottle(then, capacityFraction.asApproxCapacitySplit(), usageSnapshots, scheduleStore);
+        validateTrue(
+                throttle.allow(
+                        provisionalSchedule.payerAccountIdOrThrow(),
+                        childAsOrdinary(provisionalSchedule),
+                        functionOf(provisionalSchedule),
+                        Instant.ofEpochSecond(then)),
+                SCHEDULE_EXPIRY_IS_BUSY);
+        scheduleStore.trackUsage(then, throttle.usageSnapshots());
 
         // With all validations done, we check if the new schedule is already executable
         final var transactionKeys = getTransactionKeysOrThrow(provisionalSchedule, context::allKeysForTransaction);
         final var requiredKeys = allRequiredKeys(transactionKeys);
         final var signatories =
-                newSignatories(context.keyVerifier().signingCryptoKeys(), Collections.emptyList(), requiredKeys);
+                newSignatories(context.keyVerifier().authorizingSimpleKeys(), Collections.emptyList(), requiredKeys);
         final var schedulingTxnId =
                 provisionalSchedule.originalCreateTransactionOrThrow().transactionIDOrThrow();
         final var schedulerId = schedulingTxnId.accountIDOrThrow();
@@ -273,5 +307,52 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             @NonNull final SchedulableTransactionBody body, @NonNull final SchedulingConfig config) {
         final var scheduledFunctionality = functionalityForType(body.data().kind());
         return config.whitelist().functionalitySet().contains(scheduledFunctionality);
+    }
+
+    private HederaFunctionality functionOf(@NonNull final Schedule schedule) {
+        return functionalityForType(
+                schedule.scheduledTransactionOrThrow().data().kind());
+    }
+
+    /**
+     * Attempts to recover a throttle from the given usage snapshots, or creates a new throttle if the recovery fails.
+     * (This edge case can occur if the network throttle definitions changed since a transaction was last scheduled
+     * in the given second and snapshots were taken.)
+     * @param then the second for which the throttle is being recovered
+     * @param capacitySplit the capacity split for the throttle
+     * @param usageSnapshots the usage snapshots to recover from
+     * @return the throttle
+     */
+    private Throttle upToDateThrottle(
+            final long then,
+            final int capacitySplit,
+            @Nullable final ThrottleUsageSnapshots usageSnapshots,
+            @NonNull final WritableScheduleStore scheduleStore) {
+        requireNonNull(scheduleStore);
+        try {
+            return throttleFactory.newThrottle(capacitySplit, usageSnapshots);
+        } catch (Exception e) {
+            final var instantThen = Instant.ofEpochSecond(then);
+            log.info(
+                    "Could not recreate throttle at {} from {} ({}), rebuilding with up-to-date throttle",
+                    instantThen,
+                    usageSnapshots,
+                    e.getMessage());
+            final var throttle = throttleFactory.newThrottle(capacitySplit, null);
+            final var counts = requireNonNull(scheduleStore.scheduledCountsAt(then));
+            final int n = counts.numberScheduled();
+            for (int i = 0; i < n; i++) {
+                final var scheduleId = requireNonNull(scheduleStore.getByOrder(new ScheduledOrder(then, i)));
+                final var schedule = requireNonNull(scheduleStore.get(scheduleId));
+                // Consume capacity from every already-scheduled transaction in the new throttle
+                throttle.allow(
+                        schedule.payerAccountIdOrThrow(),
+                        childAsOrdinary(schedule),
+                        functionOf(schedule),
+                        Instant.ofEpochSecond(then));
+            }
+            log.info("Rebuilt throttle at {} from {} scheduled transactions", instantThen, n);
+            return throttle;
+        }
     }
 }

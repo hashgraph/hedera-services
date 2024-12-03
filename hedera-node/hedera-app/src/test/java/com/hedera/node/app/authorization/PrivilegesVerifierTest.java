@@ -46,7 +46,6 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -365,14 +364,6 @@ class PrivilegesVerifierTest {
     void addressBookAdminCanCreate() throws InvalidProtocolBufferException {
         // given:
         var txn = addressBookAdminTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
-        // expect:
-        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
-    }
-
-    @Test
-    void addressBookAdminCanUpdate() throws InvalidProtocolBufferException {
-        // given:
-        var txn = addressBookAdminTxn().setNodeUpdate(NodeUpdateTransactionBody.getDefaultInstance());
         // expect:
         assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }

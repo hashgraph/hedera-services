@@ -20,6 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -46,7 +47,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * An embedded Hedera node that handles transactions synchronously on ingest and thus
  * cannot be used in concurrent tests.
  */
-class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
+public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Instant FIXED_POINT = Instant.parse("2024-06-24T12:05:41.487328Z");
     private static final Duration SIMULATED_ROUND_DURATION = Duration.ofSeconds(1);
     private final FakeTime time = new FakeTime(FIXED_POINT, Duration.ZERO);
@@ -93,13 +94,13 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                     new FakeEvent(nodeId, time.now(), semanticVersion, createAppPayloadWrapper(payload));
         }
         if (response.getNodeTransactionPrecheckCode() == OK) {
-            handleNextRound();
+            handleNextRound(false);
             // If handling this transaction scheduled TSS work, do it synchronously as well
             while (tssBaseService.hasTssSubmission()) {
                 platform.lastCreatedEvent = null;
                 tssBaseService.executeNextTssSubmission();
                 if (platform.lastCreatedEvent != null) {
-                    handleNextRound();
+                    handleNextRound(true);
                 }
             }
         }
@@ -113,8 +114,18 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         return 0L;
     }
 
-    private void handleNextRound() {
+    /**
+     * Returns the last consensus round number.
+     */
+    public long lastRoundNo() {
+        return platform.lastRoundNo();
+    }
+
+    private void handleNextRound(boolean skipsSignatureTxn) {
         hedera.onPreHandle(platform.lastCreatedEvent, state);
+        if (skipsSignatureTxn && platform.lastCreatedEvent.function() == HederaFunctionality.TSS_SHARE_SIGNATURE) {
+            return;
+        }
         final var round = platform.nextConsensusRound();
         // Handle each transaction in own round
         hedera.handleWorkflow().handleRound(state, round);
@@ -152,7 +163,7 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                     consensusOrder.getAndIncrement(),
                     firstRoundTime,
                     lastCreatedEvent.getSoftwareVersion()));
-            return new FakeRound(roundNo.getAndIncrement(), roster, consensusEvents);
+            return new FakeRound(roundNo.getAndIncrement(), requireNonNull(roster), consensusEvents);
         }
     }
 }

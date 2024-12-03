@@ -23,10 +23,19 @@ on:
     inputs:
       ref:
         required: true
-        description: "The github ref that triggered the workflow"
-#      event:
-#        required: true
-#        description: "The github event of the triggering workflow"
+        description: "The github branch or tag that triggered the workflow"
+      author:
+        required: false
+        description: "The author of the commit"
+        default: ""
+      msg:
+        required: false
+        description: "The message on the head commit"
+        default: ""
+      sha:
+        required: false
+        description: "The commit ID of the commit that triggered the workflow"
+        default: ""
 
 defaults:
   run:
@@ -42,7 +51,7 @@ jobs:
       prerelease: ${{ steps.tag.outputs.prerelease }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -133,7 +142,7 @@ jobs:
       - release-branch
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -154,12 +163,76 @@ jobs:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{ "ref": "${{ inputs.ref }}" }'
 
-#      - name: Trigger ZXF Deploy Integration
-#        if: ${{ needs.release-branch.result == 'success' }}
-#        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
-#        with:
-#          workflow: .github/workflows/node-zxf-deploy-integration.yaml
-#          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
-#          ref: develop # ensure we are always using the workflow definition from the develop branch
-#          token: ${{ secrets.GH_ACCESS_TOKEN }}
-#          inputs: '{ "event": "${{ inputs.event }}" }'
+      - name: Trigger ZXF Deploy Integration
+        if: ${{ needs.release-branch.result == 'success' &&
+          (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
+          !cancelled() }}
+        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
+        with:
+          workflow: .github/workflows/node-zxf-deploy-integration.yaml
+          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
+          ref: develop # ensure we are always using the workflow definition from the develop branch
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          inputs: '{
+              "ref": "${{ inputs.ref }}",
+              "author": "${{ inputs.author }}",
+              "msg": "${{ inputs.msg }}",
+              "sha": "${{ inputs.sha }}"
+            }'
+
+  update-hedera-protobufs:
+    name: Update Hedera Protobufs
+    runs-on: network-node-linux-medium
+    needs:
+      - prepare-tag-release
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout Hedera Services Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: develop
+          fetch-depth: '0'
+
+      - name: Checkout Hedera Protobufs Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          fetch-depth: '0'
+          repository: hashgraph/hedera-protobufs
+          path: hedera-protobufs
+
+      - name: Install rsync
+        run: sudo apt update && sudo apt -y install rsync
+
+      - name: Update the folders owned by Services
+        working-directory: hedera-protobufs
+        run: |
+          git push --delete origin v${{ needs.prepare-tag-release.outputs.version }} || true
+          git tag --delete v${{ needs.prepare-tag-release.outputs.version }} || true
+          rsync -a --delete ../hapi/hedera-protobufs/services/ services/
+
+      - name: Import GPG key for commit signoff
+        id: gpg_import
+        uses: step-security/ghaction-import-gpg@6c8fe4d0126a59d57c21f87c9ae5dd3451fa3cca # v6.1.0
+        with:
+          gpg_private_key: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+          passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+
+      - name: Add & Commit
+        uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
+        with:
+          cwd: 'hedera-protobufs'
+          author_name: swirlds-eng-automation
+          author_email: ${{ secrets.SVCS_GIT_USER_EMAIL }}
+          commit: --signoff
+          message: "ci: Copied recent protobuf changes from hedera-services"
+          new_branch: "update-recent-protobuf-changes-${{ github.run_number }}"
+          tag: 'v${{ needs.prepare-tag-release.outputs.version }} -s -m "Hedera Protobufs v${{ needs.prepare-tag-release.outputs.version }}" -u "${{ steps.gpg_import.outputs.keyid }}"'

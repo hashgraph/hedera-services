@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.subDispatch;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
@@ -35,10 +35,12 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Set;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
@@ -81,18 +83,19 @@ public class HandleSystemContractOperations implements SystemContractOperations 
             @NonNull final TransactionBody syntheticBody,
             @NonNull final VerificationStrategy strategy,
             @NonNull final AccountID syntheticPayerId,
-            @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final Class<T> streamBuilderType,
+            @NonNull final Set<Key> authorizingKeys) {
         requireNonNull(syntheticBody);
         requireNonNull(strategy);
         requireNonNull(syntheticPayerId);
-        requireNonNull(recordBuilderClass);
-        return context.dispatchChildTransaction(
-                syntheticBody,
-                recordBuilderClass,
-                primitiveSignatureTestWith(strategy),
+        requireNonNull(streamBuilderType);
+        return context.dispatch(subDispatch(
                 syntheticPayerId,
-                CHILD,
-                HandleContext.ConsensusThrottling.ON);
+                syntheticBody,
+                primitiveSignatureTestWith(strategy),
+                authorizingKeys,
+                streamBuilderType,
+                StakingRewards.OFF));
     }
 
     @Override
@@ -145,5 +148,11 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     @NonNull
     public ExchangeRate currentExchangeRate() {
         return context.exchangeRateInfo().activeRate(context.consensusNow());
+    }
+
+    @Override
+    @Nullable
+    public Key maybeEthSenderKey() {
+        return maybeEthSenderKey;
     }
 }

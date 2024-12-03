@@ -128,6 +128,7 @@ public class StreamValidationOp extends UtilOp {
                                     .filter(factory -> factory.appliesTo(spec))
                                     .map(factory -> factory.create(spec))
                                     .flatMap(v -> v.validationErrorsIn(blocks, data))
+                                    .peek(t -> log.error("Block stream validation error", t))
                                     .map(Throwable::getMessage)
                                     .collect(joining(ERROR_PREFIX));
                             if (!maybeErrors.isBlank()) {

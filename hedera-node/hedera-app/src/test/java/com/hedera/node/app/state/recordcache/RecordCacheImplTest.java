@@ -34,7 +34,6 @@ import static org.mockito.Mockito.lenient;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
 import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntry;
@@ -46,15 +45,15 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
-import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.swirlds.state.lifecycle.StartupNetworks;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.WritableQueueState;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
 import com.swirlds.state.test.fixtures.ListWritableQueueState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -87,7 +86,6 @@ final class RecordCacheImplTest extends AppTestBase {
             AccountID.newBuilder().accountNum(3).build();
     private static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1001).build();
-    private static final TransactionOutputs SIMPLE_OUTPUT = new TransactionOutputs(TokenType.FUNGIBLE_COMMON);
 
     private DeduplicationCache dedupeCache;
 
@@ -103,6 +101,9 @@ final class RecordCacheImplTest extends AppTestBase {
     private NetworkInfo networkInfo;
 
     @Mock
+    private StartupNetworks startupNetworks;
+
+    @Mock
     private NodeInfo nodeInfo;
 
     @BeforeEach
@@ -116,7 +117,7 @@ final class RecordCacheImplTest extends AppTestBase {
         final var state = new FakeState();
         final var svc = new RecordCacheService();
         svc.registerSchemas(registry);
-        registry.migrate(svc.getServiceName(), state, networkInfo);
+        registry.migrate(svc.getServiceName(), state, networkInfo, startupNetworks);
         lenient().when(wsa.getState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);

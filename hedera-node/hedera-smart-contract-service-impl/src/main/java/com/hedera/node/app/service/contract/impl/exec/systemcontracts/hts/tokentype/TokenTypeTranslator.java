@@ -26,9 +26,16 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
+/**
+ * Translates {@code getTokenType()} calls to the HTS system contract.
+ */
 public class TokenTypeTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for getTokenType(address) method. */
     public static final Function TOKEN_TYPE = new Function("getTokenType(address)", ReturnTypes.RESPONSE_CODE_INT32);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenTypeTranslator() {
         // Dagger2

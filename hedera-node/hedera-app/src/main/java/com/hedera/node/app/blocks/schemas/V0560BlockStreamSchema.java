@@ -26,9 +26,9 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -116,6 +116,7 @@ public class V0560BlockStreamSchema extends Schema {
                         .postUpgradeWorkDone(false)
                         .creationSoftwareVersion(ctx.previousVersion())
                         .lastIntervalProcessTime(blockInfo.consTimeOfLastHandledTxn())
+                        .lastHandleTime(blockInfo.consTimeOfLastHandledTxn())
                         .build());
             }
         }

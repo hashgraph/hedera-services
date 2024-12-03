@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.namedHapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.unchangedFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -62,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
@@ -121,6 +123,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -147,6 +150,7 @@ public class EthereumSuite {
     public static final String ERC20_CONTRACT = "ERC20Contract";
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
     private static final long DEPOSIT_AMOUNT = 20_000L;
+    private static final long ETH_TXN_FAILURE_FEE = 83_333L;
     private static final String PARTY = "party";
     private static final String LAZY_MEMO = "";
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
@@ -160,9 +164,11 @@ public class EthereumSuite {
     private static final String TOTAL_SUPPLY_TX = "totalSupplyTx";
     private static final String ERC20_ABI = "ERC20ABI";
 
+    // This test must be run first to ensure the record file is as expected.
     @HapiTest
     final Stream<DynamicTest> sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
+        final AtomicReference<ContractID> tokenCreateContractID = new AtomicReference<>();
 
         return hapiTest(
                 newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -181,7 +187,9 @@ public class EthereumSuite {
                         .hasKnownStatusFrom(SUCCESS)
                         .via("deployTokenCreateContract"),
                 getContractInfo(TOKEN_CREATE_CONTRACT)
-                        .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))),
+                        .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb)))
+                        .exposingContractId(tokenCreateContractID::set)
+                        .has(contractWith().defaultAdminKey()),
                 withOpContext((spec, opLog) -> {
                     var call = ethereumCall(
                                     TOKEN_CREATE_CONTRACT,
@@ -212,6 +220,7 @@ public class EthereumSuite {
                 cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                 uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                 contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                overriding("contracts.evm.ethTransaction.zeroHapiFees.enabled", "true"),
                 ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -222,9 +231,8 @@ public class EthereumSuite {
                         .maxPriorityGas(2_000_000L)
                         .gasLimit(1_000_000L)
                         .sending(depositAmount),
-                // The relayer's cost to transmit a simple call with sufficient gas allowance is ≈ $0.0001
-                getAccountInfo(RELAYER)
-                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5)));
+                // The relayer's cost is no longer applicable for successful transactions.
+                getAccountInfo(RELAYER).has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0.1)));
     }
 
     @HapiTest
@@ -379,6 +387,7 @@ public class EthereumSuite {
                 getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                 uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                 contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                overriding("contracts.evm.ethTransaction.zeroHapiFees.enabled", "true"),
                 withOpContext((spec, ignore) -> {
                     final String senderBalance = "senderBalance";
                     final String payerBalance = "payerBalance";
@@ -407,10 +416,11 @@ public class EthereumSuite {
                     final var subop4 = getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY)
                             .hasTinyBars(
                                     changeFromSnapshot(senderBalance, success ? (-DEPOSIT_AMOUNT - senderCharged) : 0));
+                    // The relayer is not charged with Hapi fee unless the relayed transaction failed
                     final var subop5 = getAccountBalance(RELAYER)
                             .hasTinyBars(changeFromSnapshot(
                                     payerBalance,
-                                    success ? -(wholeTransactionFee - senderCharged) : -wholeTransactionFee));
+                                    success ? -(wholeTransactionFee - senderCharged) : -ETH_TXN_FAILURE_FEE));
                     allRunFor(spec, subop4, subop5);
                 })));
     }
@@ -471,6 +481,7 @@ public class EthereumSuite {
                         .exposingNumTo(num -> contractID.set(asHexedSolidityAddress(0, 0, num)))
                         .gasLimit(1_000_000L)
                         .hasKnownStatus(SUCCESS),
+                getContractInfo(PAY_RECEIVABLE_CONTRACT).has(contractWith().defaultAdminKey()),
                 ethereumCall(PAY_RECEIVABLE_CONTRACT, "getBalance")
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -502,6 +513,7 @@ public class EthereumSuite {
                 contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
                 balanceSnapshot(relayerSnapshot, RELAYER),
                 balanceSnapshot(senderSnapshot, SECP_256K1_SOURCE_KEY).accountIsAlias(),
+                overriding("contracts.evm.ethTransaction.zeroHapiFees.enabled", "true"),
                 ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", BigInteger.valueOf(DEPOSIT_AMOUNT))
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -516,11 +528,12 @@ public class EthereumSuite {
                                     .ethereumHash(
                                             ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))));
                     allRunFor(spec, payTxn);
-                    final var fee = payTxn.getResponseRecord().getTransactionFee();
-                    final var relayerBalance =
-                            getAccountBalance(RELAYER).hasTinyBars(changeFromSnapshot(relayerSnapshot, -fee));
+                    // The relayer account is charged on error for 0.0001$ - 83_333 tinybars with the testing exchange
+                    // rate conversion
+                    final var relayerBalance = getAccountBalance(RELAYER)
+                            .hasTinyBars(changeFromSnapshot(relayerSnapshot, -ETH_TXN_FAILURE_FEE));
                     final var senderBalance = getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY)
-                            .hasTinyBars(changeFromSnapshot(senderSnapshot, 0));
+                            .hasTinyBars(unchangedFromSnapshot(senderSnapshot));
                     allRunFor(spec, relayerBalance, senderBalance);
                 }),
                 getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(0L)));
@@ -675,6 +688,7 @@ public class EthereumSuite {
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .gasLimit(GAS_LIMIT)
                         .via(txn),
+                getContractInfo(contract).has(contractWith().defaultAdminKey()),
                 withOpContext((spec, opLog) -> {
                     final var op = getTxnRecord(txn);
                     allRunFor(spec, op);
@@ -743,6 +757,7 @@ public class EthereumSuite {
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .gasLimit(GAS_LIMIT)
                         .via(txn),
+                getContractInfo(contract).has(contractWith().defaultAdminKey()),
                 withOpContext((spec, opLog) -> {
                     final var getBytecode = getContractBytecode(contract).saveResultTo("contractByteCode");
                     allRunFor(spec, getBytecode);

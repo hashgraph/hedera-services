@@ -52,10 +52,11 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
+import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
+import com.hedera.node.app.tss.TssLibraryImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.data.HederaConfig;
@@ -65,22 +66,28 @@ import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.TransactionConfig;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.CommittableWritableStates;
-import com.swirlds.state.spi.Service;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -119,7 +126,7 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final Set<String> servicesWritten = new HashSet<>();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
-    private MerkleStateRoot state;
+    private PlatformMerkleStateRoot state;
     private Hash genesisStateHash;
 
     public static void main(String[] args) {
@@ -129,13 +136,13 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "0340d546d0bfeb6e2f12af275347f584231fa41928a700543c9595affa817da5423bc4aac0689a388f6a8b972de30028"),
+                        "65374e72c2572aaaca17fe3a0e879841c0f5ae919348fc18231f8167bd28e326438c6f93a07a45eda7888b69e9812c4d"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("config.txt"),
                 node0Dir.resolve("data/config/application.properties"),
                 Bytes.fromHex("03"));
         final var blocks =
-                BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/block-streams/block-0.0.3"));
+                BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/blockStreams/block-0.0.3"));
         validator.validateBlocks(blocks);
     }
 
@@ -220,16 +227,23 @@ public class StateChangesValidator implements BlockStreamValidator {
                         appContext,
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
-                        new PlaceholderTssLibrary(),
-                        ForkJoinPool.commonPool()));
-        this.state = (MerkleStateRoot) hedera.newMerkleStateRoot();
-        hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, addressBook);
+                        new TssLibraryImpl(appContext),
+                        ForkJoinPool.commonPool(),
+                        metrics),
+                DiskStartupNetworks::new,
+                NodeId.of(0L));
+        this.state = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
         final Configuration platformConfig = ConfigurationBuilder.create()
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(TransactionConfig.class)
                 .withConfigDataType(CryptoConfig.class)
                 .withConfigDataType(BasicConfig.class)
+                .withConfigDataType(VirtualMapConfig.class)
+                .withConfigDataType(MerkleDbConfig.class)
+                .withConfigDataType(TemporaryFileConfig.class)
+                .withConfigDataType(StateCommonConfig.class)
                 .build();
+        hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, addressBook, platformConfig);
         initGenesisPlatformState(platformConfig, this.state.getWritablePlatformState(), addressBook, currentVersion);
         final var stateToBeCopied = state;
         state = state.copy();
@@ -577,6 +591,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case BLOCK_STREAM_INFO_VALUE -> singletonUpdateChange.blockStreamInfoValueOrThrow();
             case PLATFORM_STATE_VALUE -> singletonUpdateChange.platformStateValueOrThrow();
             case ROSTER_STATE_VALUE -> singletonUpdateChange.rosterStateValueOrThrow();
+            case TSS_STATUS_STATE_VALUE -> singletonUpdateChange.tssStatusStateValueOrThrow();
         };
     }
 
@@ -605,6 +620,10 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TOPIC_ID_KEY -> mapChangeKey.topicIdKeyOrThrow();
             case CONTRACT_ID_KEY -> mapChangeKey.contractIdKeyOrThrow();
             case PENDING_AIRDROP_ID_KEY -> mapChangeKey.pendingAirdropIdKeyOrThrow();
+            case TIMESTAMP_SECONDS_KEY -> mapChangeKey.timestampSecondsKeyOrThrow();
+            case SCHEDULED_ORDER_KEY -> mapChangeKey.scheduledOrderKeyOrThrow();
+            case TSS_MESSAGE_MAP_KEY -> mapChangeKey.tssMessageMapKeyOrThrow();
+            case TSS_VOTE_MAP_KEY -> mapChangeKey.tssVoteMapKeyOrThrow();
         };
     }
 
@@ -620,7 +639,6 @@ public class StateChangesValidator implements BlockStreamValidator {
             case SCHEDULE_VALUE -> mapChangeValue.scheduleValueOrThrow();
             case SCHEDULE_ID_VALUE -> mapChangeValue.scheduleIdValueOrThrow();
             case SCHEDULE_LIST_VALUE -> mapChangeValue.scheduleListValueOrThrow();
-            case SCHEDULE_ID_LIST_VALUE -> mapChangeValue.scheduleIdListValueOrThrow();
             case SLOT_VALUE_VALUE -> mapChangeValue.slotValueValueOrThrow();
             case STAKING_NODE_INFO_VALUE -> mapChangeValue.stakingNodeInfoValueOrThrow();
             case TOKEN_VALUE -> mapChangeValue.tokenValueOrThrow();
@@ -629,6 +647,11 @@ public class StateChangesValidator implements BlockStreamValidator {
             case NODE_VALUE -> mapChangeValue.nodeValueOrThrow();
             case ACCOUNT_PENDING_AIRDROP_VALUE -> mapChangeValue.accountPendingAirdropValueOrThrow();
             case ROSTER_VALUE -> mapChangeValue.rosterValueOrThrow();
+            case SCHEDULED_COUNTS_VALUE -> mapChangeValue.scheduledCountsValueOrThrow();
+            case THROTTLE_USAGE_SNAPSHOTS_VALUE -> mapChangeValue.throttleUsageSnapshotsValue();
+            case TSS_ENCRYPTION_KEY_VALUE -> mapChangeValue.tssEncryptionKeyValueOrThrow();
+            case TSS_MESSAGE_VALUE -> mapChangeValue.tssMessageValueOrThrow();
+            case TSS_VOTE_VALUE -> mapChangeValue.tssVoteValueOrThrow();
         };
     }
 

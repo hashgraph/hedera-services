@@ -30,7 +30,7 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import java.util.List;
@@ -127,6 +127,7 @@ public class V0560BlockStreamSchemaTest {
                 blockInfo.consTimeOfLastHandledTxn(),
                 false,
                 SemanticVersion.DEFAULT,
+                blockInfo.consTimeOfLastHandledTxn(),
                 blockInfo.consTimeOfLastHandledTxn());
         verify(state).put(expectedInfo);
     }

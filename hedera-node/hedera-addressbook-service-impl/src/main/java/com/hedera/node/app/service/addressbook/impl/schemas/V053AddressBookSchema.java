@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.swirlds.platform.roster.RosterUtils.formatNodeName;
 import static java.util.Objects.requireNonNull;
 
@@ -36,10 +35,10 @@ import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
@@ -64,6 +63,7 @@ public class V053AddressBookSchema extends Schema {
             SemanticVersion.newBuilder().major(0).minor(53).patch(0).build();
     public static final String ACCOUNTS_KEY = "ACCOUNTS";
     public static final String FILES_KEY = "FILES";
+    public static final String NODES_KEY = "NODES";
 
     public V053AddressBookSchema() {
         super(VERSION);
@@ -108,9 +108,9 @@ public class V053AddressBookSchema extends Schema {
             if (nodeDetailMap != null) {
                 nodeDetail = nodeDetailMap.get(nodeInfo.nodeId());
                 if (nodeDetail != null) {
-                    nodeBuilder
-                            .serviceEndpoint(nodeDetail.serviceEndpoint())
-                            .grpcCertificateHash(nodeDetail.nodeCertHash());
+                    final Bytes hashBytes =
+                            Bytes.fromHex(nodeDetail.nodeCertHash().asUtf8String());
+                    nodeBuilder.serviceEndpoint(nodeDetail.serviceEndpoint()).grpcCertificateHash(hashBytes);
                 }
             }
             writableNodes.put(

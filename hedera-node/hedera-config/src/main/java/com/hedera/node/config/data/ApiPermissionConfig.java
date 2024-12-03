@@ -56,6 +56,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_GET_INFO;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
+import static com.hedera.hapi.node.base.HederaFunctionality.STATE_SIGNATURE_TRANSACTION;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ACCOUNT_WIPE;
@@ -85,7 +86,9 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE_NFTS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECEIPT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECORD;
+import static com.hedera.hapi.node.base.HederaFunctionality.TSS_ENCRYPTION_KEY;
 import static com.hedera.hapi.node.base.HederaFunctionality.TSS_MESSAGE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TSS_SHARE_SIGNATURE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TSS_VOTE;
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 
@@ -260,10 +263,13 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenCancelAirdrop,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenClaimAirdrop,
         @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange createNode,
-        @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange updateNode,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange deleteNode,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssMessage,
-        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssVote) {
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssVote,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssShareSignature,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssEncryptionKey,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange stateSignature) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -343,6 +349,9 @@ public record ApiPermissionConfig(
         permissionKeys.put(NODE_DELETE, c -> c.deleteNode);
         permissionKeys.put(TSS_MESSAGE, c -> c.tssMessage);
         permissionKeys.put(TSS_VOTE, c -> c.tssVote);
+        permissionKeys.put(TSS_SHARE_SIGNATURE, c -> c.tssShareSignature);
+        permissionKeys.put(TSS_ENCRYPTION_KEY, c -> c.tssEncryptionKey);
+        permissionKeys.put(STATE_SIGNATURE_TRANSACTION, c -> c.stateSignature);
     }
 
     /**

@@ -35,8 +35,10 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.security.cert.X509Certificate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -49,6 +51,15 @@ public class WorkingDirUtils {
     private static final String LOG4J2_XML = "log4j2.xml";
     private static final String PROJECT_BOOTSTRAP_ASSETS_LOC = "hedera-node/configuration/dev";
     private static final String TEST_CLIENTS_BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
+    private static final X509Certificate SIG_CERT;
+
+    static {
+        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
+                .withSize(1)
+                .withRealKeysEnabled(true)
+                .build();
+        SIG_CERT = requireNonNull(randomAddressBook.iterator().next().getSigCert());
+    }
 
     public static final String DATA_DIR = "data";
     public static final String CONFIG_DIR = "config";
@@ -114,12 +125,23 @@ public class WorkingDirUtils {
      */
     public static void updateUpgradeArtifactsProperty(
             @NonNull final Path propertiesPath, @NonNull final Path upgradeArtifactsPath) {
+        updateBootstrapProperties(
+                propertiesPath, Map.of("networkAdmin.upgradeArtifactsPath", upgradeArtifactsPath.toString()));
+    }
+
+    /**
+     * Updates the given key/value property override at the given location
+     * @param propertiesPath the path to the properties file
+     * @param overrides the key/value property overrides
+     */
+    public static void updateBootstrapProperties(
+            @NonNull final Path propertiesPath, @NonNull final Map<String, String> overrides) {
         final var properties = new Properties();
         try {
             try (final var in = Files.newInputStream(propertiesPath)) {
                 properties.load(in);
             }
-            properties.setProperty("networkAdmin.upgradeArtifactsPath", upgradeArtifactsPath.toString());
+            overrides.forEach(properties::setProperty);
             try (final var out = Files.newOutputStream(propertiesPath)) {
                 properties.store(out, null);
             }
@@ -258,7 +280,8 @@ public class WorkingDirUtils {
     private static void copyBootstrapAssets(@NonNull final Path assetDir, @NonNull final Path workingDir) {
         try (final var files = Files.walk(assetDir)) {
             files.filter(file -> !file.equals(assetDir)).forEach(file -> {
-                if (file.getFileName().toString().endsWith(".properties")) {
+                final var fileName = file.getFileName().toString();
+                if (fileName.endsWith(".properties") || fileName.endsWith(".json")) {
                     copyUnchecked(
                             file,
                             workingDir
@@ -312,14 +335,9 @@ public class WorkingDirUtils {
     public static AddressBook loadAddressBook(@NonNull final Path path) {
         requireNonNull(path);
         final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
-        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
-                .withSize(1)
-                .withRealKeysEnabled(true)
-                .build();
-        final var sigCert = requireNonNull(randomAddressBook.iterator().next().getSigCert());
         final var addressBook = configFile.getAddressBook();
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
-                .map(address -> address.copySetSigCert(sigCert))
+                .map(address -> address.copySetSigCert(SIG_CERT))
                 .toList());
     }
 

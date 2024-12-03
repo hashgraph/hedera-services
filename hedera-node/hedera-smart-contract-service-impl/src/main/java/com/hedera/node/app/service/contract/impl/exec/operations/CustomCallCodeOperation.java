@@ -36,6 +36,12 @@ public class CustomCallCodeOperation extends CallCodeOperation implements BasicC
     private final AddressChecks addressChecks;
     private final FeatureFlags featureFlags;
 
+    /**
+     * Constructor for custom call code operations.
+     * @param gasCalculator the gas calculator to use
+     * @param addressChecks checks against addresses reserved for Hedera
+     * @param featureFlags current evm module feature flags
+     */
     public CustomCallCodeOperation(
             @NonNull final GasCalculator gasCalculator,
             @NonNull final AddressChecks addressChecks,

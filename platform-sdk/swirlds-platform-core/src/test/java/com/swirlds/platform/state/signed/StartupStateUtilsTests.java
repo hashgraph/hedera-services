@@ -46,9 +46,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.internal.SignedStateLoadingException;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.snapshot.SignedStateFilePath;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
@@ -103,8 +102,8 @@ public class StartupStateUtilsTests {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(
-                        MerkleStateRoot.class,
-                        () -> new MerkleStateRoot(
+                        PlatformMerkleStateRoot.class,
+                        () -> new PlatformMerkleStateRoot(
                                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
     }
 
@@ -172,8 +171,7 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        SignedStateFileUtils::readState)
+                        new BasicSoftwareVersion(1))
                 .getNullable();
 
         assertNull(loadedState);
@@ -201,8 +199,7 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        SignedStateFileUtils::readState)
+                        new BasicSoftwareVersion(1))
                 .get();
 
         loadedState.getState().throwIfImmutable();
@@ -234,8 +231,7 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        SignedStateFileUtils::readState)
+                        new BasicSoftwareVersion(1))
                 .get());
     }
 
@@ -278,8 +274,7 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        SignedStateFileUtils::readState)
+                        new BasicSoftwareVersion(1))
                 .getNullable();
 
         if (latestUncorruptedState != null) {

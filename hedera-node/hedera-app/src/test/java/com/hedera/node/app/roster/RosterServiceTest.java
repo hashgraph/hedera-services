@@ -21,29 +21,30 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.common.RosterStateId;
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.hedera.node.app.roster.schemas.V057RosterSchema;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import java.util.function.Predicate;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * Unit tests for {@link RosterService}.
- */
+@ExtendWith(MockitoExtension.class)
 class RosterServiceTest {
+    @Mock
+    private Predicate<Roster> canAdopt;
+
     private RosterService rosterService;
 
     @BeforeEach
     void setUp() {
-        rosterService = new RosterService();
-    }
-
-    @Test
-    void defaultConstructor() {
-        assertThat(new RosterService()).isNotNull();
+        rosterService = new RosterService(canAdopt);
     }
 
     @Test
@@ -53,19 +54,20 @@ class RosterServiceTest {
     }
 
     @Test
-    void registerSchemasRegistersTokenSchema() {
+    void registerExpectedSchemas() {
         final var schemaRegistry = mock(SchemaRegistry.class);
 
         rosterService.registerSchemas(schemaRegistry);
         final var captor = ArgumentCaptor.forClass(Schema.class);
-        verify(schemaRegistry, times(1)).register(captor.capture());
+        verify(schemaRegistry, times(2)).register(captor.capture());
         final var schemas = captor.getAllValues();
-        assertThat(schemas).hasSize(1);
+        assertThat(schemas).hasSize(2);
         assertThat(schemas.getFirst()).isInstanceOf(V0540RosterSchema.class);
+        assertThat(schemas.getLast()).isInstanceOf(V057RosterSchema.class);
     }
 
     @Test
     void testServiceNameReturnsCorrectName() {
-        assertThat(rosterService.getServiceName()).isEqualTo(RosterStateId.NAME);
+        assertThat(rosterService.getServiceName()).isEqualTo(RosterService.NAME);
     }
 }

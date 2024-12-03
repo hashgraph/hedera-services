@@ -43,7 +43,7 @@ jobs:
       build-candidate-commit: ${{ steps.find-build-candidates.outputs.build-candidate-commit }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -82,7 +82,7 @@ jobs:
               echo "build-candidate-commit=${CANDIDATE_COMMIT}" >> "${GITHUB_OUTPUT}"
               echo "### Build Candidate Found" >>  "${GITHUB_STEP_SUMMARY}"
               echo "build-candidate-commit=${CANDIDATE_COMMIT}" >> "${GITHUB_STEP_SUMMARY}"
-              echo "build_candidate_tag=${CANDIDATE_TAG}" >> "${GITHUB_STEP_SUMMARY}"
+              echo "build-candidate-tag=${CANDIDATE_TAG}" >> "${GITHUB_STEP_SUMMARY}"
             else
               gh run cancel "${{ github.run_id }}"
             fi
@@ -94,10 +94,12 @@ jobs:
     name: Promote Build Candidate
     runs-on: network-node-linux-medium
     needs: determine-build-candidate
+    outputs:
+      build-candidate-tag: ${{ steps.tag-build-candidate.outputs.build-candidate-tag }}
     if: ${{ needs.determine-build-candidate.result == 'success' && needs.determine-build-candidate.outputs.build-candidate-exists == 'true' }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -121,17 +123,19 @@ jobs:
           passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
 
       - name: Tag Build Candidate
+        id: tag-build-candidate
         env:
           BUILD_INDEX: ${{ vars.XTS_BUILD_PROMOTION_INDEX }}
         run: |
           BUILD_TAG="$(printf "build-%05d" "${BUILD_INDEX}")"
           git tag --annotate ${BUILD_TAG} --message "chore: tagging commit for build promotion"
           git push --set-upstream origin --tags
+          echo "build-candidate-tag=${BUILD_TAG}" >> "${GITHUB_OUTPUT}"
           echo "### Build Promotion Tag Information" >> "${GITHUB_STEP_SUMMARY}"
           echo "build-tag=${BUILD_TAG}" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Increment Build Promotion Index
-        uses: action-pack/increment@14c9f7fbbf560e7518ccaeab781aeca7bff15069 # v2.12
+        uses: step-security/increment@f806ba7e868d0298aa216a18049c42690f0e4736 # v2.0.0
         id: increment
         with:
           name: 'XTS_BUILD_PROMOTION_INDEX'
@@ -145,6 +149,74 @@ jobs:
           echo "### Preview Next Build Tag" >> "${GITHUB_STEP_SUMMARY}"
           echo "Next build tag is: ${NEXT_BUILD_TAG}" >> "${GITHUB_STEP_SUMMARY}"
 
+  report-promotion:
+    name: Report Build Promotion
+    runs-on: network-node-linux-medium
+    needs:
+      - determine-build-candidate
+      - promote-build-candidate
+    if: ${{ needs.promote-build-candidate.result == 'success' &&
+            needs.determine-build-candidate.result == 'success' &&
+            needs.determine-build-candidate.outputs.build-candidate-exists == 'true' }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        with:
+          egress-policy: audit
+
+      - name: Report Promoted Build
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_OPERATIONS_WEBHOOK }}
+        with:
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "#00FF00",
+                  "blocks": [
+                    {
+                      "type": "header",
+                      "text": {
+                        "type": "plain_text",
+                        "text": ":grey_exclamation: Hedera Services - XTS Candidate Promoted for Single Day Performance/Longevity Tests",
+                        "emoji": true
+                      }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Build Candidate Promotion Succeeded. See details below.*"
+                      },
+                      "fields": [
+                        {
+                          "type": "plain_text",
+                          "text": "Build Candidate Commit"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.determine-build-candidate.outputs.build-candidate-commit }}"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "Promoted Build Tag"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.promote-build-candidate.outputs.build-candidate-tag }}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+
   report-failure:
     name: Report XTS execution failure
     runs-on: network-node-linux-medium
@@ -154,7 +226,7 @@ jobs:
     if: ${{ (needs.determine-build-candidate.result != 'success' || needs.promote-build-candidate.result != 'success') && !cancelled() && always() }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -162,13 +234,13 @@ jobs:
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_FAILURES_WEBHOOK }}
         with:
           payload: |
             {
               "attachments": [
                 {
-                  "color": "#7647cd",
+                  "color": "#FF0000",
                   "blocks": [
                     {
                       "type": "header",
