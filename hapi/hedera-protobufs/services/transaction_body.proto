@@ -449,6 +449,6 @@ message TransactionBody {
         /**
          * A transaction body for signature of a state snapshot gossiped to other nodes
          */
-        com.hedera.hapi.platform.event.StateSignatureTransaction state_signature_transaction = 64;
+        com.hedera.hapi.platform.event.StateSignatureTransaction state_signature_transaction = 65;
     }
 }
