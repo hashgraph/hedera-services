@@ -185,13 +185,27 @@ class ChildDispatchFactoryTest {
     }
 
     @Test
-    void keyVerifierOnlySupportsKeyVerification() {
-        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG, emptySet());
-        assertThatThrownBy(() -> derivedVerifier.verificationFor(Key.DEFAULT, assistant))
-                .isInstanceOf(UnsupportedOperationException.class);
+    void keyVerifierWithCallbackAndAuthorizingKeysAsExpected() {
+        final var derivedVerifier =
+                ChildDispatchFactory.getKeyVerifier(a -> true, DEFAULT_CONFIG, Set.of(A_CONTRACT_ID_KEY));
+        assertThat(derivedVerifier.verificationFor(Key.DEFAULT).passed()).isTrue();
+        assertThat(derivedVerifier.verificationFor(Key.DEFAULT, (k, v) -> true).passed())
+                .isTrue();
         assertThatThrownBy(() -> derivedVerifier.verificationFor(Bytes.EMPTY))
                 .isInstanceOf(UnsupportedOperationException.class);
-        assertThat(derivedVerifier.numSignaturesVerified()).isEqualTo(0L);
+        assertThat(derivedVerifier.numSignaturesVerified()).isZero();
+        assertThat(derivedVerifier.authorizingSimpleKeys()).containsExactly(A_CONTRACT_ID_KEY);
+        assertThat(derivedVerifier.authorizingSimpleKeys()).isNotEmpty();
+    }
+
+    @Test
+    void noOpVerifierFailsVerification() {
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG, emptySet());
+        assertThat(derivedVerifier.verificationFor(Key.DEFAULT, assistant).passed())
+                .isFalse();
+        assertThatThrownBy(() -> derivedVerifier.verificationFor(Bytes.EMPTY))
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThat(derivedVerifier.numSignaturesVerified()).isZero();
     }
 
     @Test

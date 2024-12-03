@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractNativeSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.EntityType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,7 +45,7 @@ public class HssSystemContract extends AbstractNativeSystemContract implements H
     public static final ContractID HSS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HSS_EVM_ADDRESS));
 
     @Inject
-    public HssSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final HasCallFactory callFactory) {
+    public HssSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final HssCallFactory callFactory) {
         super(HSS_SYSTEM_CONTRACT_NAME, callFactory, HSS_CONTRACT_ID, gasCalculator);
     }
 
