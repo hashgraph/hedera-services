@@ -424,8 +424,9 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
      * we unregister the PlatformStateService and RosterService after the validation is performed.
      *
      * Note that unlike the MerkleStateRoot.removeServiceState() method below in this class,
-     * the unregisterService() method will NOT remove the nodes that store the states of
-     * the services being unregistered by design.
+     * the unregisterService() method will NOT remove the merkle nodes that store the states of
+     * the services being unregistered. This is by design because these nodes will be used
+     * by the actual service states once the app initializes the States API in full.
      *
      * @param serviceName a service to unregister
      */

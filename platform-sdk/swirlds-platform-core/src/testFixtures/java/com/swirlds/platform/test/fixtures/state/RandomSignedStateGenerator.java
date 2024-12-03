@@ -478,7 +478,7 @@ public class RandomSignedStateGenerator {
 
     /**
      * Clear the list of states built on the current thread w/o releasing them.
-     * There are tests that actually release the states on purpose verifying the reserve/release behavior.
+     * There are tests that actually release the states on purpose, verifying the reserve/release behavior.
      * Some of these tests use mocks which fail if the state is released more than what the test expects.
      * For these few special cases, this method allows the test to "forget" about any states that it built
      * using this generator on the current thread. As long as the number of such special cases is low enough,

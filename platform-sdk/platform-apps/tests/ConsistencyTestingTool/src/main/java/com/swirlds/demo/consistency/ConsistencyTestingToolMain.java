@@ -57,9 +57,9 @@ public class ConsistencyTestingToolMain implements SwirldMain {
                     new ClassConstructorPair(ConsistencyTestingToolState.class, () -> {
                         ConsistencyTestingToolState consistencyTestingToolState = new ConsistencyTestingToolState(
                                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        // TODO: remove: The SignedStateFileReader and ReconnectLearner initialize the state stubs
-                        // already
-                        // FAKE_MERKLE_STATE_LIFECYCLES.initStates(consistencyTestingToolState);
+                        // Don't call FAKE_MERKLE_STATE_LIFECYCLES.initStates(consistencyTestingToolState) here.
+                        // The stub states are automatically initialized upon loading the state from disk,
+                        // or after finishing a reconnect.
                         return consistencyTestingToolState;
                     }));
             registerMerkleStateRootClassIds();

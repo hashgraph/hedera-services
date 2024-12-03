@@ -171,12 +171,10 @@ public final class SignedStateFileReader {
      * the complete initialization of services and all the schemas. However, only the PlatformState and RosterState/RosterMap
      * are really required to support reading the Roster (or AddressBook.) So we only initialize the schemas for these two.
      * <p>
-     * If/when this SignedState object needs to become a real state to support the node operation, the services/app
-     * code will be responsible for initializing all the supported services. Note that the {@code merkleStateRoot.putServiceStateIfAbsent}
-     * operation that we use to actually perform the registration is assumed to be idempotent. When the app re-initializes
-     * the PlatformStateService and the RosterService, the information about the registration will simply be overwritten
-     * and/or amended as necessary with the complete registration logic, and the "double-registration" per se
-     * shouldn't cause any issues.
+     * If this SignedState object needs to become a real state to support the node operations later, the services/app
+     * code will be responsible for initializing all the supported services. Note that the app skips registering
+     * service states if it finds the PlatformState is already registered. For this reason, a call to
+     * {@code SignedStateFileReader.unregisterServiceStates(SignedState)} below needs to be made to remove the stubs.
      *
      * @param signedState a signed state to register schemas in
      */
