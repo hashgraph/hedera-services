@@ -702,6 +702,7 @@ public class ScheduleLongTermSignTest {
     @Order(15)
     public Stream<DynamicTest> overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
+        final long scheduleLifetime = 6;
 
         return defaultHapiSpec("OverlappingKeysTreatedAsExpectedAtExpiry")
                 .given(
@@ -717,7 +718,7 @@ public class ScheduleLongTermSignTest {
                                         tinyBarsFromTo("aSender", ADDRESS_BOOK_CONTROL, 1),
                                         tinyBarsFromTo("cSender", ADDRESS_BOOK_CONTROL, 1)))
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, scheduleLifetime)
                         .recordingScheduledTxn())
                 .then(
                         scheduleSign(DEFERRED_XFER).alsoSigningWith("aKey"),
@@ -743,9 +744,9 @@ public class ScheduleLongTermSignTest {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 5)
+                                .hasRelativeExpiry(SENDER_TXN, scheduleLifetime)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(TimeUnit.SECONDS.toMillis(6)),
+                        sleepFor(TimeUnit.SECONDS.toMillis(scheduleLifetime)),
                         cryptoCreate("foo"),
                         getScheduleInfo(DEFERRED_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(ADDRESS_BOOK_CONTROL).hasTinyBars(changeFromSnapshot(BEFORE, +2)));
