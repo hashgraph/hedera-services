@@ -53,6 +53,9 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -910,6 +913,36 @@ public final class MerkleTestUtils {
     }
 
     /**
+     * For every virtual map in the trees and for every virtual key in the given key set, make
+     * sure either the map in both trees contains the key, or the map in both trees doesn't
+     * contain the key.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static boolean checkVirtualMapKeys(
+            final MerkleNode rootA, final MerkleNode rootB, final Set<VirtualKey> virtualKeys) {
+        final Iterator<MerkleNode> iteratorA = new MerkleIterator<>(rootA);
+        final Iterator<MerkleNode> iteratorB = new MerkleIterator<>(rootB);
+        while (iteratorA.hasNext()) {
+            if (!iteratorB.hasNext()) {
+                return false;
+            }
+            final MerkleNode a = iteratorA.next();
+            final MerkleNode b = iteratorB.next();
+            if (a instanceof VirtualMap vmA) {
+                if (!(b instanceof VirtualMap vmB)) {
+                    return false;
+                }
+                for (final VirtualKey key : virtualKeys) {
+                    if (vmA.containsKey(key) != vmB.containsKey(key)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
      * Check if a tree has had initialize() called on each internal node.
      */
     public static boolean isFullyInitialized(final DummyMerkleNode root) {
@@ -1148,6 +1181,18 @@ public final class MerkleTestUtils {
         return node != null && (node.getClassId() == 0xaf2482557cfdb6bfL || node.getClassId() == 0x499677a326fb04caL);
     }
 
+    private static Set<VirtualKey> getVirtualKeys(final MerkleNode node) {
+        final Set<VirtualKey> keys = new HashSet<>();
+        final Iterator<MerkleNode> it = new MerkleIterator<>(node);
+        while (it.hasNext()) {
+            final MerkleNode n = it.next();
+            if (n instanceof VirtualLeafNode<?, ?> leaf) {
+                keys.add(leaf.getKey());
+            }
+        }
+        return keys;
+    }
+
     /**
      * Make sure the reconnect was valid.
      *
@@ -1161,7 +1206,14 @@ public final class MerkleTestUtils {
     private static void assertReconnectValidity(
             final MerkleNode startingTree, final MerkleNode desiredTree, final MerkleNode generatedTree) {
 
+        // Checks that the trees are equal as merkle structures
         assertTrue(areTreesEqual(generatedTree, desiredTree), "reconnect should produce identical tree");
+
+        final Set<VirtualKey> allKeys = new HashSet<>();
+        allKeys.addAll(getVirtualKeys(startingTree));
+        allKeys.addAll(getVirtualKeys(desiredTree));
+        // A deeper check at VirtualMap level
+        assertTrue(checkVirtualMapKeys(generatedTree, desiredTree, allKeys));
 
         if (desiredTree != null) {
             assertNotSame(startingTree, desiredTree, "trees should be distinct objects");

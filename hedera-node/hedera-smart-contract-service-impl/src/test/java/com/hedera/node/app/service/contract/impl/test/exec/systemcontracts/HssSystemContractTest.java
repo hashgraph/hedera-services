@@ -23,7 +23,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertS
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HssSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.config.data.ContractsConfig;
 import org.apache.tuweni.bytes.Bytes;
@@ -47,7 +47,7 @@ class HssSystemContractTest {
     private ContractsConfig contractsConfig;
 
     @Mock
-    private HasCallFactory attemptFactory;
+    private HssCallFactory attemptFactory;
 
     @Mock
     private GasCalculator gasCalculator;

@@ -78,8 +78,14 @@ public record ContractsConfig(
                 boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractAccountServiceEnabled,
-        @ConfigProperty(value = "systemContract.scheduleService.enabled", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "systemContract.scheduleService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractScheduleServiceEnabled,
+        @ConfigProperty(value = "systemContract.scheduleService.signSchedule.enabled", defaultValue = "true")
+                @NetworkProperty
+                boolean systemContractSignScheduleEnabled,
+        @ConfigProperty(value = "systemContract.scheduleService.authorizeSchedule.enabled", defaultValue = "false")
+                @NetworkProperty
+                boolean systemContractAuthorizeScheduleEnabled,
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractAccountServiceIsAuthorizedRawEnabled,
