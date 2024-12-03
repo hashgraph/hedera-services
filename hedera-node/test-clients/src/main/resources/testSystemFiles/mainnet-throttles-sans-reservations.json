@@ -2,17 +2,19 @@
   "buckets": [
     {
       "burstPeriod": 0,
-      "burstPeriodMs": 15000,
+      "burstPeriodMs": 1000,
       "name": "ThroughputLimits",
       "throttleGroups": [
         {
           "opsPerSec": 0,
           "milliOpsPerSec": 10500000,
           "operations": [
+            "NodeCreate",
+            "NodeDelete",
+            "NodeUpdate",
             "ScheduleCreate",
             "CryptoCreate",
             "CryptoTransfer",
-            "TokenAirdrop",
             "CryptoUpdate",
             "CryptoDelete",
             "CryptoGetInfo",
@@ -40,10 +42,7 @@
             "TokenGetNftInfos",
             "CryptoApproveAllowance",
             "CryptoDeleteAllowance",
-            "UtilPrng",
-            "NodeCreate",
-            "NodeUpdate",
-            "NodeDelete"
+            "UtilPrng"
           ]
         },
         {
@@ -98,8 +97,9 @@
             "TokenPause",
             "TokenUnpause",
             "TokenUpdateNfts",
-            "TokenClaimAirdrop",
             "TokenReject",
+            "TokenAirdrop",
+            "TokenClaimAirdrop",
             "TokenCancelAirdrop"
           ]
         }
@@ -125,32 +125,14 @@
     },
     {
       "burstPeriod": 0,
-      "burstPeriodMs": 3000,
-      "name": "PriorityReservations",
-      "throttleGroups": [
-        {
-          "opsPerSec": 0,
-          "milliOpsPerSec": 10000,
-          "operations": [
-            "FileCreate",
-            "FileUpdate",
-            "FileAppend",
-            "FileDelete"
-          ]
-        }
-      ]
-    },
-    {
-      "burstPeriod": 0,
-      "burstPeriodMs": 15000,
+      "burstPeriodMs": 1000,
       "name": "CreationLimits",
       "throttleGroups": [
         {
           "opsPerSec": 0,
           "milliOpsPerSec": 2000,
           "operations": [
-            "CryptoCreate",
-            "NodeCreate"
+            "CryptoCreate"
           ]
         },
         {
@@ -181,21 +163,8 @@
           "opsPerSec": 0,
           "milliOpsPerSec": 1000000000,
           "operations": [
+            "CryptoGetAccountBalance",
             "TransactionGetReceipt"
-          ]
-        }
-      ]
-    },
-    {
-      "burstPeriod": 0,
-      "burstPeriodMs": 1000,
-      "name": "BalanceQueryLimits",
-      "throttleGroups": [
-        {
-          "opsPerSec": 0,
-          "milliOpsPerSec": 10000000,
-          "operations": [
-            "CryptoGetAccountBalance"
           ]
         }
       ]
