@@ -30,7 +30,9 @@ import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -135,38 +137,20 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
     /**
      * @return the node ids from the roster entries of both active and candidate rosters combined
      */
-    public List<EntityNumber> getCombinedRosterEntriesNodeIds() {
+    public Set<EntityNumber> getCombinedRosterEntriesNodeIds() {
         final var activeRoster = getActiveRoster();
         final var candidateRoster = getCandidateRoster();
-        List<EntityNumber> nodeEntriesInRosters = List.of();
 
-        if (activeRoster != null && candidateRoster != null) {
-            final Stream<Long> activeRosterEntries =
-                    activeRoster.rosterEntries().stream().map(RosterEntry::nodeId);
-            final Stream<Long> candidateRosterEntries =
-                    candidateRoster.rosterEntries().stream().map(RosterEntry::nodeId);
-            nodeEntriesInRosters = Stream.concat(activeRosterEntries, candidateRosterEntries)
-                    .distinct()
-                    .map(EntityNumber::new)
-                    .toList();
-        }
-        // If we are here, at least one of the rosters is null
-        // if activeRoster is not null, then candidateRoster is null
-        // so we return only the entries from activeRoster.
-        if (activeRoster != null) {
-            nodeEntriesInRosters = activeRoster.rosterEntries().stream()
-                    .map(RosterEntry::nodeId)
-                    .map(EntityNumber::new)
-                    .toList();
-        }
-        // If we are here, then activeRoster is null
-        // so we check whether to return the candidateRoster's entries.
-        if (candidateRoster != null) {
-            nodeEntriesInRosters = candidateRoster.rosterEntries().stream()
-                    .map(RosterEntry::nodeId)
-                    .map(EntityNumber::new)
-                    .toList();
-        }
-        return nodeEntriesInRosters;
+        final Stream<Long> activeRosterEntries = activeRoster == null
+                ? Stream.empty()
+                : activeRoster.rosterEntries().stream().map(RosterEntry::nodeId);
+        final Stream<Long> candidateRosterEntries = candidateRoster == null
+                ? Stream.empty()
+                : candidateRoster.rosterEntries().stream().map(RosterEntry::nodeId);
+
+        return new HashSet<>(Stream.concat(activeRosterEntries, candidateRosterEntries)
+                .distinct()
+                .map(EntityNumber::new)
+                .toList());
     }
 }

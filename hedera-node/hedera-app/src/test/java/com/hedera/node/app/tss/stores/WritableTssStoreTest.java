@@ -33,6 +33,7 @@ import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -131,7 +132,7 @@ class WritableTssStoreTest {
         tssEncryptionKeyState.put(entityNumber, TssEncryptionKeyTransactionBody.DEFAULT);
         given(tssEncryptionKeyState.keys()).willReturn(List.of(entityNumber).iterator());
 
-        final var rosterEntries = List.of(new EntityNumber(1), new EntityNumber(3));
+        final var rosterEntries = new HashSet<>(List.of(new EntityNumber(1), new EntityNumber(3)));
         tssStore.removeIfNotPresent(rosterEntries);
 
         verify(tssEncryptionKeyState, times(0)).remove(entityNumber);
@@ -143,7 +144,7 @@ class WritableTssStoreTest {
         tssEncryptionKeyState.put(entityNumber, TssEncryptionKeyTransactionBody.DEFAULT);
         given(tssEncryptionKeyState.keys()).willReturn(List.of(entityNumber).iterator());
 
-        final var rosterEntries = List.of(new EntityNumber(2), new EntityNumber(3));
+        final var rosterEntries = new HashSet<>(List.of(new EntityNumber(2), new EntityNumber(3)));
         tssStore.removeIfNotPresent(rosterEntries);
         verify(tssEncryptionKeyState).remove(entityNumber);
     }

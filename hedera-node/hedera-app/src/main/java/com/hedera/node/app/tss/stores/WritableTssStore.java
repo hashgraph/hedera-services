@@ -34,7 +34,7 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
+import java.util.Set;
 
 /**
  * Extends the {@link ReadableTssStoreImpl} with write access to the TSS base store.
@@ -153,7 +153,7 @@ public class WritableTssStore extends ReadableTssStoreImpl {
      *
      * @param rostersEntriesNodeIds contains the non-duplicate Node IDs of current active and candidate rosters entries
      */
-    public void removeIfNotPresent(@NonNull final List<EntityNumber> rostersEntriesNodeIds) {
+    public void removeIfNotPresent(@NonNull final Set<EntityNumber> rostersEntriesNodeIds) {
         requireNonNull(rostersEntriesNodeIds);
         tssEncryptionKeyState.keys().forEachRemaining(entityNumber -> {
             if (!rostersEntriesNodeIds.contains(entityNumber)) {

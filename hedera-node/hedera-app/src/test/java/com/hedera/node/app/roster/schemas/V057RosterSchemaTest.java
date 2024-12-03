@@ -37,6 +37,7 @@ import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -112,7 +113,8 @@ class V057RosterSchemaTest {
     @Test
     void setsActiveFromStartupNetworksAtGenesis() {
         givenContextWith(CurrentVersion.NA, RosterLifecycle.ON, AvailableNetwork.GENESIS);
-        final var rosterEntries = List.of(EntityNumber.newBuilder().number(1L).build());
+        final var rosterEntries =
+                new HashSet<>(List.of(EntityNumber.newBuilder().number(1L).build()));
         given(context.isGenesis()).willReturn(true);
         given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
         given(rosterStore.getCombinedRosterEntriesNodeIds()).willReturn(rosterEntries);
@@ -163,7 +165,8 @@ class V057RosterSchemaTest {
     @Test
     void adoptsCandidateAtUpgradeBoundaryIfTestPasses() {
         givenContextWith(CurrentVersion.NEW, RosterLifecycle.ON, AvailableNetwork.NONE);
-        final var rosterEntries = List.of(EntityNumber.newBuilder().number(1L).build());
+        final var rosterEntries =
+                new HashSet<>(List.of(EntityNumber.newBuilder().number(1L).build()));
         given(context.previousVersion()).willReturn(THEN);
         given(rosterStore.getActiveRoster()).willReturn(ROSTER);
         given(rosterStore.getCandidateRoster()).willReturn(ROSTER);
@@ -191,7 +194,7 @@ class V057RosterSchemaTest {
 
         verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO + 1);
         verify(startupNetworks).setOverrideRound(ROUND_NO);
-        verify(tssStore, times(2)).removeIfNotPresent(List.of());
+        verify(tssStore, times(2)).removeIfNotPresent(new HashSet<>());
     }
 
     private enum CurrentVersion {
