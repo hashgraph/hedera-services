@@ -1271,7 +1271,7 @@ enum HederaFunctionality {
     TssEncryptionKey = 99;
 
     /**
-     * Submit a signature of a state snapshot gossiped to other nodes
+     * Submit a signature of a state root hash gossiped to other nodes
      */
     StateSignatureTransaction = 100;
 }

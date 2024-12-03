@@ -447,7 +447,7 @@ message TransactionBody {
         com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody tssEncryptionKey = 64;
 
         /**
-         * A transaction body for signature of a state snapshot gossiped to other nodes
+         * A transaction body for signature of a state root hash gossiped to other nodes
          */
         com.hedera.hapi.platform.event.StateSignatureTransaction state_signature_transaction = 65;
     }
