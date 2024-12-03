@@ -39,6 +39,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -111,6 +112,7 @@ public enum TransactionExecutors {
                 UNAVAILABLE_GOSSIP,
                 bootstrapConfigProvider::getConfiguration,
                 () -> DEFAULT_NODE_INFO,
+                () -> NO_OP_METRICS,
                 new AppThrottleFactory(
                         configProvider::getConfiguration,
                         () -> state,
@@ -159,4 +161,6 @@ public enum TransactionExecutors {
             return OPERATION_TRACERS.get();
         }
     }
+
+    private static final Metrics NO_OP_METRICS = new NoOpMetrics();
 }

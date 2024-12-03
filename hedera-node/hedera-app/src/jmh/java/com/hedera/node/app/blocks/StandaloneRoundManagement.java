@@ -55,6 +55,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
@@ -83,6 +84,7 @@ public class StandaloneRoundManagement {
     private static final String SAMPLE_BLOCK = "sample.blk.gz";
     private static final Instant FAKE_CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final Timestamp FAKE_CONSENSUS_TIME = new Timestamp(1_234_567L, 890);
+    private static final Metrics NO_OP_METRICS = new NoOpMetrics();
     private static final SemanticVersion VERSION = new SemanticVersion(0, 56, 0, "", "");
 
     private static final int NUM_ROUNDS = 10000;
@@ -100,6 +102,7 @@ public class StandaloneRoundManagement {
                     UNAVAILABLE_GOSSIP,
                     configProvider::getConfiguration,
                     () -> DEFAULT_NODE_INFO,
+                    () -> NO_OP_METRICS,
                     (split, snapshots) -> {
                         throw new UnsupportedOperationException();
                     }),
