@@ -61,6 +61,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.roster.RosterService;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -418,8 +420,8 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             final var hedera = spec.repeatableEmbeddedHederaOrThrow();
             final var roundNo = hedera.lastRoundNo();
 
-            final var writableStates = state.getWritableStates(RosterService.NAME);
-            final var rosterStore = new WritableRosterStore(writableStates);
+            final var writableRosterStates = state.getWritableStates(RosterService.NAME);
+            final var rosterStore = new WritableRosterStore(writableRosterStates);
             final var activeEntries =
                     new ArrayList<>(rosterStore.getActiveRoster().rosterEntries());
             activeEntries.set(
@@ -428,7 +430,16 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             activeEntries.set(
                     0, activeEntries.getFirst().copyBuilder().weight(10).build());
             rosterStore.putActiveRoster(new Roster(activeEntries), roundNo + 1);
-            ((CommittableWritableStates) writableStates).commit();
+
+            final var writableTssStates = state.getWritableStates(TssBaseService.NAME);
+            final WritableTssStore writableTssStore = new WritableTssStore(writableTssStates);
+
+            // remove TssEncryptionKeys from state if node ids are not present
+            // in both active and candidate roster's entries
+            writableTssStore.removeIfNotPresent(rosterStore.getCombinedRosterEntriesNodeIds());
+
+            ((CommittableWritableStates) writableRosterStates).commit();
+            ((CommittableWritableStates) writableTssStates).commit();
 
             // Extract all the roster metadata for the active roster
             currentRoster = requireNonNull(retrieveActive(state, roundNo));

@@ -29,6 +29,8 @@ import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.data.TssConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
@@ -89,8 +91,13 @@ public class PlatformStateUpdates {
                         final var nodeStore =
                                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
                         final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
+                        final var tssStore = new WritableTssStore(state.getWritableStates(TssBaseService.NAME));
                         final var candidateRoster = nodeStore.snapshotOfFutureRoster();
                         rosterStore.putCandidateRoster(candidateRoster);
+
+                        // remove TssEncryptionKeys from state if not present in both active and candidate roster's
+                        // entries
+                        tssStore.removeIfNotPresent(rosterStore.getCombinedRosterEntriesNodeIds());
                     }
                 }
                 // copy freeze state to platform state

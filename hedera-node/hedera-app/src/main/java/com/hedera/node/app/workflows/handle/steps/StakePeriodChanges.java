@@ -34,6 +34,7 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
@@ -138,7 +139,7 @@ public class StakePeriodChanges {
             }
             if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
                 tssBaseService.regenerateKeyMaterial(stack);
-                startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
+                startKeyingCandidateRoster(dispatch.handleContext(), stack, config);
             }
         }
     }
@@ -185,7 +186,10 @@ public class StakePeriodChanges {
     }
 
     private void startKeyingCandidateRoster(
-            @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
+            @NonNull final HandleContext handleContext,
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final Configuration config) {
+        final var rosterStore = newWritableRosterStore(stack, config);
         final var storeFactory = handleContext.storeFactory();
         final var nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
         final var roster = nodeStore.snapshotOfFutureRoster();
@@ -193,6 +197,10 @@ public class StakePeriodChanges {
                 && !Objects.equals(roster, rosterStore.getActiveRoster())) {
             rosterStore.putCandidateRoster(roster);
             tssBaseService.setCandidateRoster(roster, handleContext);
+
+            // remove TssEncryptionKeys from state if node ids are not present
+            // in both active and candidate roster's entries
+            newWritableTssStore(stack, config).removeIfNotPresent(rosterStore.getCombinedRosterEntriesNodeIds());
         }
     }
 
@@ -200,6 +208,12 @@ public class StakePeriodChanges {
             @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
         final var writableFactory = new WritableStoreFactory(stack, RosterService.NAME, config, storeMetricsService);
         return writableFactory.getStore(WritableRosterStore.class);
+    }
+
+    private WritableTssStore newWritableTssStore(
+            @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
+        final var writableFactory = new WritableStoreFactory(stack, TssBaseService.NAME, config, storeMetricsService);
+        return writableFactory.getStore(WritableTssStore.class);
     }
 
     private WritableNodeStore newWritableNodeStore(
