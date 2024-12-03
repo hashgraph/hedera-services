@@ -236,10 +236,10 @@ public class StateChangesValidator implements BlockStreamValidator {
             final var lastBlockItem = block.items().getLast();
             assertTrue(lastBlockItem.hasBlockProof());
             final var blockProof = lastBlockItem.blockProofOrThrow();
-            //            assertEquals(
-            //                    previousBlockHash,
-            //                    blockProof.previousBlockRootHash(),
-            //                    "Previous block hash mismatch for block " + blockProof.block());
+            assertEquals(
+                    previousBlockHash,
+                    blockProof.previousBlockRootHash(),
+                    "Previous block hash mismatch for block " + blockProof.block());
 
             final var expectedBlockHash =
                     computeBlockHash(startOfStateHash, previousBlockHash, inputTreeHasher, outputTreeHasher);
