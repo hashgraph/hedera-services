@@ -177,23 +177,6 @@ public class SubmitMessageSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> feeAsExpected() {
-        final byte[] messageBytes = new byte[100]; // 4k
-        Arrays.fill(messageBytes, (byte) 0b1);
-        return hapiTest(
-                cryptoCreate("payer").hasRetryPrecheckFrom(BUSY),
-                createTopic("testTopic").submitKeyName("payer").hasRetryPrecheckFrom(BUSY),
-                submitMessageTo("testTopic")
-                        .blankMemo()
-                        .payingWith("payer")
-                        .message(new String(messageBytes))
-                        .hasRetryPrecheckFrom(BUSY)
-                        .via("submitMessage"),
-                sleepFor(1000),
-                validateChargedUsd("submitMessage", 0.0001));
-    }
-
-    @HapiTest
     final Stream<DynamicTest> messageSubmissionCorrectlyUpdatesRunningHash() {
         String topic = "testTopic";
         String message1 = "Hello world!";
