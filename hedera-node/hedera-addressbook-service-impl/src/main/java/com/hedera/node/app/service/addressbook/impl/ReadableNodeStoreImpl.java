@@ -29,9 +29,9 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -93,11 +93,11 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
         for (final var it = nodesState.keys(); it.hasNext(); ) {
             final var nodeNumber = it.next();
             final var node = requireNonNull(nodesState.get(nodeNumber));
-            final var nodeEndpoints = node.gossipEndpoint();
+            var nodeEndpoints = node.gossipEndpoint();
             // we want to swap the internal and external node endpoints
             // so that the external one is at index 0
             if (nodeEndpoints.size() > 1) {
-                Collections.swap(nodeEndpoints, 0, 1);
+                nodeEndpoints = List.of(nodeEndpoints.getLast(), nodeEndpoints.getFirst());
             }
             if (!node.deleted()) {
                 final var entry = RosterEntry.newBuilder()

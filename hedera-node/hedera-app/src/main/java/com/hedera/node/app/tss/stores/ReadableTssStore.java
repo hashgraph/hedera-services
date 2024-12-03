@@ -171,7 +171,7 @@ public interface ReadableTssStore {
      * @return The Tss encryption key transaction body, or null if not found.
      */
     @Nullable
-    TssEncryptionKeys getTssEncryptionKeys(final long nodeID);
+    TssEncryptionKeys getTssEncryptionKeys(long nodeID);
 
     /**
      * Get the Tss status.
