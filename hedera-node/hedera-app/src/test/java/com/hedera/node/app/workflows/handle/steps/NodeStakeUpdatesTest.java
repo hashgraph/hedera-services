@@ -19,6 +19,10 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_STATUS_KEY;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static org.mockito.ArgumentMatchers.any;
@@ -41,7 +45,13 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.node.state.tss.TssStatus;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
@@ -123,6 +133,18 @@ public class NodeStakeUpdatesTest {
 
     @Mock
     private WritableKVState<EntityNumber, Node> nodesState;
+
+    @Mock
+    private WritableKVState<TssMessageMapKey, TssMessageTransactionBody> tssMessageState;
+
+    @Mock
+    private WritableKVState<TssVoteMapKey, TssVoteTransactionBody> tssVoteState;
+
+    @Mock
+    private WritableKVState<EntityNumber, TssEncryptionKeyTransactionBody> tssEncryptionKeyState;
+
+    @Mock
+    private WritableSingletonState<TssStatus> tssStatusState;
 
     private StakePeriodChanges subject;
 
@@ -401,6 +423,15 @@ public class NodeStakeUpdatesTest {
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
         given(stack.getWritableStates(notNull())).willReturn(writableStates);
+        given(writableStates.<TssMessageMapKey, TssMessageTransactionBody>get(TSS_MESSAGE_MAP_KEY))
+                .willReturn(tssMessageState);
+        given(writableStates.<TssVoteMapKey, TssVoteTransactionBody>get(TSS_VOTE_MAP_KEY))
+                .willReturn(tssVoteState);
+        given(writableStates.<EntityNumber, TssEncryptionKeyTransactionBody>get(TSS_ENCRYPTION_KEY_MAP_KEY))
+                .willReturn(tssEncryptionKeyState);
+        given(writableStates.<TssStatus>getSingleton(TSS_STATUS_KEY)).willReturn(tssStatusState);
+        given(tssEncryptionKeyState.keys())
+                .willReturn(List.of(new EntityNumber(0)).iterator());
         simulateCandidateAndActiveRosters();
 
         subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);

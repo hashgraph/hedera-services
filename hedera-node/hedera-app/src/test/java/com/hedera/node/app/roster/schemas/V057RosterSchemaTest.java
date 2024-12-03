@@ -112,15 +112,14 @@ class V057RosterSchemaTest {
     @Test
     void setsActiveFromStartupNetworksAtGenesis() {
         givenContextWith(CurrentVersion.NA, RosterLifecycle.ON, AvailableNetwork.GENESIS);
+        final var rosterEntries = List.of(EntityNumber.newBuilder().number(1L).build());
         given(context.isGenesis()).willReturn(true);
-        given(rosterStore.getActiveRoster()).willReturn(ROSTER);
-        given(rosterStore.getCandidateRoster()).willReturn(ROSTER);
         given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
+        given(rosterStore.getCombinedRosterEntriesNodeIds()).willReturn(rosterEntries);
         subject.restart(context);
 
         verify(rosterStore).putActiveRoster(ROSTER, 0L);
-        verify(tssStore)
-                .removeIfNotPresent(List.of(EntityNumber.newBuilder().number(1L).build()));
+        verify(tssStore).removeIfNotPresent(rosterEntries);
     }
 
     @Test
@@ -154,7 +153,6 @@ class V057RosterSchemaTest {
         given(context.roundNumber()).willReturn(ROUND_NO);
         given(platformStateStoreFactory.apply(writableStates)).willReturn(platformStateStore);
         given(platformStateStore.getAddressBook()).willReturn(ADDRESS_BOOK);
-        given(rosterStore.getCandidateRoster()).willReturn(ROSTER);
         given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
 
         subject.restart(context);
@@ -165,18 +163,19 @@ class V057RosterSchemaTest {
     @Test
     void adoptsCandidateAtUpgradeBoundaryIfTestPasses() {
         givenContextWith(CurrentVersion.NEW, RosterLifecycle.ON, AvailableNetwork.NONE);
+        final var rosterEntries = List.of(EntityNumber.newBuilder().number(1L).build());
         given(context.previousVersion()).willReturn(THEN);
         given(rosterStore.getActiveRoster()).willReturn(ROSTER);
         given(rosterStore.getCandidateRoster()).willReturn(ROSTER);
         given(canAdopt.test(ROSTER)).willReturn(true);
         given(context.roundNumber()).willReturn(ROUND_NO);
         given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
+        given(rosterStore.getCombinedRosterEntriesNodeIds()).willReturn(rosterEntries);
 
         subject.restart(context);
 
         verify(rosterStore).adoptCandidateRoster(ROUND_NO + 1);
-        verify(tssStore)
-                .removeIfNotPresent(List.of(EntityNumber.newBuilder().number(1L).build()));
+        verify(tssStore).removeIfNotPresent(rosterEntries);
     }
 
     @Test
