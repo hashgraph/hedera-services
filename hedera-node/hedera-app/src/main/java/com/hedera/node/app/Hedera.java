@@ -92,10 +92,12 @@ import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.services.ServicesRegistry.Registration;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.StateLifecyclesImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
@@ -674,7 +676,16 @@ public final class Hedera
         }
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
-        contractServiceImpl.registerMetrics();
+
+        // Tell each service it can do its final initialization (if needed) before the system starts
+        // processing transactions.
+        if (trigger == GENESIS) {
+            servicesRegistry.registrations().stream()
+                    .map(Registration::service)
+                    .filter(RpcService.class::isInstance)
+                    .map(RpcService.class::cast)
+                    .forEach(RpcService::onStateInitializedForGenesis);
+        }
     }
 
     /**

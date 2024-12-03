@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,4 +33,14 @@ public interface RpcService extends Service {
      */
     @NonNull
     Set<RpcServiceDefinition> rpcDefinitions();
+
+    /**
+     * Services may have initialization to be done which can't be done in the constructor (too soon)
+     * but should/must be done before the system starts processing transactions. This is the hook
+     * for that.
+     *
+     * Called on each Service when `Hedera.onStateInitialized() is called for `InitTrigger.GENESIS`.
+     * Services module is still single-threaded when this happens.
+     */
+    default void onStateInitializedForGenesis() {}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent.Factory;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -65,6 +66,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
     private final Provider<QueryComponent.Factory> provider;
     private final GasCalculator gasCalculator;
     private final InstantSource instantSource;
+    private final ContractServiceComponent contractServiceComponent;
 
     /**
      *  Constructs a {@link ContractCreateHandler} with the given {@link Provider}, {@link GasCalculator} and {@link InstantSource}.
@@ -77,10 +79,12 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
     public ContractCallLocalHandler(
             @NonNull final Provider<Factory> provider,
             @NonNull final GasCalculator gasCalculator,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final ContractServiceComponent contractServiceComponent) {
         this.provider = requireNonNull(provider);
         this.gasCalculator = requireNonNull(gasCalculator);
         this.instantSource = requireNonNull(instantSource);
+        this.contractServiceComponent = requireNonNull(contractServiceComponent);
     }
 
     @Override
@@ -142,6 +146,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         requireNonNull(header);
 
         final var component = provider.get().create(context, instantSource.instant(), CONTRACT_CALL_LOCAL);
+
         final var outcome = component.contextQueryProcessor().call();
 
         final var responseHeader = outcome.isSuccess()

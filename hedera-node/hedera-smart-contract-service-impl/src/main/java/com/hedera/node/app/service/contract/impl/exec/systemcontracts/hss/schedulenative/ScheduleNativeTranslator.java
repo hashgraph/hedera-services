@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,28 +17,31 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.schedulenative;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.createSelectorsMap;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.updateSelectorsMap;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.createMethodsMap;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.updateMethodsMap;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.datatypes.Address.fromHexString;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
@@ -46,8 +49,8 @@ import org.apache.tuweni.bytes.Bytes;
 @Singleton
 public class ScheduleNativeTranslator extends AbstractCallTranslator<HssCallAttempt> {
 
-    public static final Function SCHEDULED_NATIVE_CALL =
-            new Function("scheduleNative(address,bytes,address)", ReturnTypes.RESPONSE_CODE_ADDRESS);
+    public static final SystemContractMethod SCHEDULED_NATIVE_CALL =
+            SystemContractMethod.declare("scheduleNative(address,bytes,address)", ReturnTypes.RESPONSE_CODE_ADDRESS);
     private static final int SCHEDULE_CONTRACT_ADDRESS = 0;
     private static final int SCHEDULE_CALL_DATA = 1;
     private static final int SCHEDULE_PAYER = 2;
@@ -55,17 +58,27 @@ public class ScheduleNativeTranslator extends AbstractCallTranslator<HssCallAtte
     private final HtsCallFactory htsCallFactory;
 
     @Inject
-    public ScheduleNativeTranslator(@NonNull final HtsCallFactory htsCallFactory) {
+    public ScheduleNativeTranslator(
+            @NonNull final HtsCallFactory htsCallFactory,
+            @NonNull final SystemContractMethodRegistry systemContractMethodRegistry,
+            @NonNull final ContractMetrics contractMetrics) {
+        // Dagger
+        super(SystemContractMethod.SystemContract.HAS, systemContractMethodRegistry, contractMetrics);
+        registerMethods(SCHEDULED_NATIVE_CALL);
+
         requireNonNull(htsCallFactory);
         this.htsCallFactory = htsCallFactory;
     }
 
     @Override
-    public boolean matches(@NonNull final HssCallAttempt attempt) {
+    @NonNull
+    public Optional<SystemContractMethod> identifyMethod(@NonNull final HssCallAttempt attempt) {
         final var scheduleNativeEnabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractScheduleNativeEnabled();
-        return attempt.isSelectorIfConfigEnabled(scheduleNativeEnabled, SCHEDULED_NATIVE_CALL)
-                && innerCallValidation(attempt);
+
+        if (!attempt.isSelectorIfConfigEnabled(scheduleNativeEnabled, SCHEDULED_NATIVE_CALL)) return Optional.empty();
+        if (!innerCallValidation(attempt)) return Optional.empty();
+        return Optional.of(SCHEDULED_NATIVE_CALL);
     }
 
     @Override
@@ -116,9 +129,9 @@ public class ScheduleNativeTranslator extends AbstractCallTranslator<HssCallAtte
         final var innerCallSelector =
                 Bytes.wrap((byte[]) call.get(SCHEDULE_CALL_DATA)).slice(0, 4).toArray();
         final var canBeCreateToken =
-                createSelectorsMap.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), innerCallSelector));
+                createMethodsMap.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), innerCallSelector));
         final var canBeUpdateToken =
-                updateSelectorsMap.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), innerCallSelector));
+                updateMethodsMap.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), innerCallSelector));
 
         return canBeCreateToken || canBeUpdateToken;
     }
