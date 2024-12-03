@@ -246,7 +246,7 @@ public class ServicesMain implements SwirldMain {
         final var initialState = reservedState.state();
         if (!isGenesis.get()) {
             hedera.initializeStatesApi(
-                    (MerkleStateRoot) initialState.get().getState().getSwirldState(),
+                    (PlatformMerkleStateRoot) initialState.get().getState().getSwirldState(),
                     metrics,
                     InitTrigger.RESTART,
                     null,
@@ -271,18 +271,14 @@ public class ServicesMain implements SwirldMain {
                 FileSystemManager.create(platformConfig),
                 recycleBin,
                 merkleCryptography);
-
-        final var stateHash = reservedState.hash();
+        hedera.setInitialStateHash(reservedState.hash());
 
         // Initialize the address book and set on platform builder
         final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
-
         final RosterHistory rosterHistory;
-        final boolean shouldUseRosterLifecycle =
-                platformConfig.getConfigData(AddressBookConfig.class).useRosterLifecycle();
-        if (shouldUseRosterLifecycle) {
+        if (platformConfig.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             final SignedState loadedSignedState = initialState.get();
-            final var state = ((MerkleStateRoot) loadedSignedState.getState());
+            final var state = ((PlatformMerkleStateRoot) loadedSignedState.getState());
             final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
             rosterHistory = RosterUtils.createRosterHistory(rosterStore);
         } else {
@@ -291,7 +287,6 @@ public class ServicesMain implements SwirldMain {
         }
 
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
-        final var roster = buildRoster(addressBook);
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME,
                         Hedera.SWIRLD_NAME,
@@ -310,7 +305,6 @@ public class ServicesMain implements SwirldMain {
                 .withConfiguration(platformConfig)
                 .withKeysAndCerts(keysAndCerts);
 
-        hedera.setInitialStateHash(stateHash);
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
         // and runtime phases of the application.
