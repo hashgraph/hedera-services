@@ -83,7 +83,7 @@ message LedgerId {
   /**
    * A signature from the prior ledger key.<br/>
    * This signature is the _previous_ ledger ID signing _this_ ledger ID.<br/>
-   * This value MAY be unset, if there is no prior ledger ID.</br>
+   * This value MAY be unset, if there is no prior ledger ID.<br/>
    * This value SHOULD be set if a prior ledger ID exists
    * to generate the signature.
    */

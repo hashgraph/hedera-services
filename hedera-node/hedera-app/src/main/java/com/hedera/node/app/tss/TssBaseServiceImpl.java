@@ -19,41 +19,40 @@ package com.hedera.node.app.tss;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
-import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
-import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
-import static com.hedera.node.app.tss.handlers.TssVoteHandler.hasMetThreshold;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
+import static com.hedera.node.app.tss.handlers.TssUtils.hasMetThreshold;
 import static com.swirlds.platform.roster.RosterRetriever.getCandidateRosterHash;
 import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
+import com.hedera.node.app.roster.RosterService;
+import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.api.TssPrivateShare;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
+import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
@@ -67,7 +66,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -91,11 +89,14 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssHandlers tssHandlers;
     private final TssSubmissions tssSubmissions;
     private final Executor tssLibraryExecutor;
-    private final ExecutorService signingExecutor;
+    private final Executor signingExecutor;
+    private final TssKeysAccessor tssKeysAccessor;
+    private final TssDirectoryAccessor tssDirectoryAccessor;
+    private final AppContext appContext;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
-            @NonNull final ExecutorService signingExecutor,
+            @NonNull final Executor signingExecutor,
             @NonNull final Executor submissionExecutor,
             @NonNull final TssLibrary tssLibrary,
             @NonNull final Executor tssLibraryExecutor,
@@ -104,14 +105,18 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
+        this.appContext = requireNonNull(appContext);
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
                         tssLibrary,
                         appContext.instantSource(),
-                        appContext.gossip(),
+                        appContext,
                         submissionExecutor,
                         tssLibraryExecutor,
-                        metrics);
+                        metrics,
+                        this);
+        this.tssKeysAccessor = component.tssKeysAccessor();
+        this.tssDirectoryAccessor = component.tssDirectoryAccessor();
         this.tssMetrics = component.tssMetrics();
         this.tssHandlers = new TssHandlers(
                 component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
@@ -122,6 +127,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0560TssBaseSchema());
+        registry.register(new V0570TssBaseSchema());
     }
 
     @Override
@@ -157,21 +163,18 @@ public class TssBaseServiceImpl implements TssBaseService {
         tssMetrics.trackCandidateRosterLifecycleStart(candidateRosterLifecycleStart);
         // (TSS-FUTURE) Implement `keyActiveRoster`
         // https://github.com/hashgraph/hedera-services/issues/16166
-        final var storeFactory = context.storeFactory();
-        // generate TSS messages based on the active roster and the candidate roster
-        final var tssStore = storeFactory.readableStore(ReadableTssStore.class);
+
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
 
+        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode);
         final var activeRoster = requireNonNull(
-                storeFactory.readableStore(ReadableRosterStore.class).getActiveRoster());
-
-        final var activeDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, selfId);
-        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, selfId);
-
+                context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster());
         final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
-        final var tssPrivateShares = getTssPrivateShares(activeDirectory, tssStore, activeRosterHash);
+
+        final var tssPrivateShares = tssKeysAccessor.accessTssKeys().activeRosterShares();
+
         final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
         // FUTURE - instead of an arbitrary counter here, use the share index from the private share
         final var shareIndex = new AtomicInteger(0);
@@ -183,7 +186,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                                         .sourceRosterHash(activeRosterHash)
                                         .targetRosterHash(candidateRosterHash)
                                         .shareIndex(shareIndex.getAndAdd(1))
-                                        .tssMessage(Bytes.wrap(msg.bytes()))
+                                        .tssMessage(Bytes.wrap(msg.toBytes()))
                                         .build();
                                 tssSubmissions.submitTssMessage(tssMessage, context);
                             },
@@ -195,39 +198,55 @@ public class TssBaseServiceImpl implements TssBaseService {
         }
     }
 
-    // FUTURE - add a singleton PrivateSharesAccessor to the TSS component that can be used to
-    // access a cached copy of the private shares; this will also be useful for BaseServiceImpl
-    // to access the private shares for signing block hashes
-    @NonNull
-    private List<TssPrivateShare> getTssPrivateShares(
-            @NonNull final TssParticipantDirectory activeRosterParticipantDirectory,
-            @NonNull final ReadableTssStore tssStore,
-            @NonNull final Bytes activeRosterHash) {
-        final var validTssOps = validateTssMessages(
-                tssStore.getTssMessageBodies(activeRosterHash), activeRosterParticipantDirectory, tssLibrary);
-        final var validTssMessages = getTssMessages(validTssOps);
-        return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
-    }
-
     @Override
-    public void requestLedgerSignature(@NonNull final byte[] messageHash) {
+    public void requestLedgerSignature(
+            @NonNull final byte[] messageHash, @NonNull final Instant lastUsedConsensusTime) {
         requireNonNull(messageHash);
-        // (TSS-FUTURE) Initiate asynchronous process of creating a ledger signature
+        requireNonNull(lastUsedConsensusTime);
         final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
-                () -> consumers.forEach(consumer -> {
-                    try {
-                        consumer.accept(messageHash, mockSignature);
-                    } catch (Exception e) {
-                        log.error(
-                                "Failed to provide signature {} on message {} to consumer {}",
-                                CommonUtils.hex(mockSignature),
-                                CommonUtils.hex(messageHash),
-                                consumer,
-                                e);
+                () -> {
+                    if (appContext
+                            .configSupplier()
+                            .get()
+                            .getConfigData(TssConfig.class)
+                            .signWithLedgerId()) {
+                        submitShareSignatures(messageHash, lastUsedConsensusTime);
+                    } else {
+                        // This is only for testing purposes when the candidate roster is
+                        // not enabled
+                        consumers.forEach(consumer -> {
+                            try {
+                                consumer.accept(messageHash, mockSignature);
+                            } catch (Exception e) {
+                                log.error(
+                                        "Failed to provide signature {} on message {} to consumer {}",
+                                        CommonUtils.hex(mockSignature),
+                                        CommonUtils.hex(messageHash),
+                                        consumer,
+                                        e);
+                            }
+                        });
                     }
-                }),
+                },
                 signingExecutor);
+    }
+
+    private void submitShareSignatures(final byte[] messageHash, final Instant lastUsedConsensusTime) {
+        final var tssPrivateShares = tssKeysAccessor.accessTssKeys().activeRosterShares();
+        final var activeRoster = tssKeysAccessor.accessTssKeys().activeRosterHash();
+        long nanosOffset = 1;
+        for (final var privateShare : tssPrivateShares) {
+            final var signature = tssLibrary.sign(privateShare, messageHash);
+            final var tssShareSignatureBody = TssShareSignatureTransactionBody.newBuilder()
+                    .messageHash(Bytes.wrap(messageHash))
+                    .shareSignature(Bytes.wrap(signature.signature().toBytes()))
+                    .shareIndex(privateShare.shareId())
+                    .rosterHash(activeRoster)
+                    .build();
+            tssSubmissions.submitTssShareSignature(
+                    tssShareSignatureBody, lastUsedConsensusTime.plusNanos(nanosOffset++));
+        }
     }
 
     @Override
@@ -254,13 +273,10 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
             @NonNull ServicesSoftwareVersion version,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            @NonNull final Roster overrideRoster) {
         if (!configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
-            final var readablePlatformStateStore =
-                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-            // FUTURE: Once TSS Roster is implemented in the future, this will be removed and use roster state
-            // instead of the address book
-            return buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
+            return overrideRoster;
         }
         final var activeRoster = retrieveActiveOrGenesisRoster(state);
         if (trigger != GENESIS) {
@@ -273,7 +289,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                 final var tssStore = new ReadableStoreFactory(state).getStore(ReadableTssStore.class);
                 if (hasEnoughWeight(activeRoster, candidateRosterHash, tssStore)) {
                     final ReadableKVState<ProtoBytes, Roster> rosters = requireNonNull(
-                            state.getReadableStates(RosterStateId.NAME).get(RosterStateId.ROSTER_KEY));
+                            state.getReadableStates(RosterService.NAME).get(V0540RosterSchema.ROSTER_KEY));
                     // It should be impossible to set a candidate roster hash that doesn't exist
                     return requireNonNull(rosters.get(new ProtoBytes(candidateRosterHash)));
                 }
@@ -282,11 +298,55 @@ public class TssBaseServiceImpl implements TssBaseService {
         return activeRoster;
     }
 
+    @Override
+    public void regenerateKeyMaterial(@NonNull final State state) {
+        tssKeysAccessor.generateKeyMaterialForActiveRoster(state);
+    }
+
+    @Override
+    public void generateParticipantDirectory(@NonNull final State state) {
+        tssDirectoryAccessor.generateTssParticipantDirectory(state);
+    }
+
+    @Override
+    public Bytes ledgerIdFrom(
+            @NonNull final TssParticipantDirectory directory, @NonNull final List<TssMessage> tssMessages) {
+        requireNonNull(directory);
+        requireNonNull(tssMessages);
+        final var publicShares = tssLibrary.computePublicShares(directory, tssMessages);
+        final var publicKey = tssLibrary.aggregatePublicShares(publicShares);
+        return Bytes.wrap(publicKey.toBytes());
+    }
+
+    /**
+     * Notifies the consumers that a signature has been received for the message hash.
+     *
+     * @param messageHash the message hash
+     * @param signature   the signature
+     */
+    public void notifySignature(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
+        requireNonNull(messageHash);
+        requireNonNull(signature);
+        consumers.forEach(consumer -> {
+            try {
+                consumer.accept(messageHash, signature);
+            } catch (Exception e) {
+                log.error(
+                        "Failed to provide signature {} on message {} to consumer {}",
+                        CommonUtils.hex(signature),
+                        CommonUtils.hex(messageHash),
+                        consumer,
+                        e);
+            }
+        });
+    }
+
     /**
      * Returns true if there exists a vote bitset for the given candidate roster hash whose received weight
      * is at least 1/3 of the total weight of the active roster.
+     *
      * @param activeRoster the active roster
-     * @param rosterHash the candidate roster hash
+     * @param rosterHash   the candidate roster hash
      * @param tssBaseStore the TSS store
      * @return true if the threshold has been reached, false otherwise
      */
@@ -312,5 +372,20 @@ public class TssBaseServiceImpl implements TssBaseService {
             }
         }
         return false;
+    }
+
+    @Override
+    public TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory) {
+        return tssLibrary.getTssMessageFromBytes(wrap, directory);
+    }
+
+    @Override
+    public void manageTssStatus(final State state) {
+        // TODO: Implement this method
+    }
+
+    @VisibleForTesting
+    public TssKeysAccessor getTssKeysAccessor() {
+        return tssKeysAccessor;
     }
 }

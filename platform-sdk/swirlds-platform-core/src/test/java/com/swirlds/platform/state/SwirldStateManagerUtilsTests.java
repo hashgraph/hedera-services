@@ -34,8 +34,8 @@ public class SwirldStateManagerUtilsTests {
     @Test
     void testFastCopyIsMutable() {
 
-        final MerkleStateRoot state =
-                new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        final PlatformMerkleStateRoot state = new PlatformMerkleStateRoot(
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         state.reserve();
         final SwirldStateMetrics stats = mock(SwirldStateMetrics.class);

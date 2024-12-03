@@ -27,6 +27,7 @@ import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.utils.KeyValueWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FixedFeeWrapper;
@@ -44,6 +45,10 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Provides help in decoding an {@link HtsCallAttempt} representing a create call into
+ * a synthetic {@link TransactionBody}.
+ */
 @Singleton
 public class CreateDecoder {
 
@@ -57,6 +62,9 @@ public class CreateDecoder {
     private static final int NFT_ROYALTY_FEE = 2;
     private static final int METADATA = 9;
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public CreateDecoder() {
         // Dagger2
@@ -66,6 +74,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public @Nullable TransactionBody decodeCreateFungibleTokenV1(
@@ -86,6 +97,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateFungibleTokenV2(
@@ -106,6 +120,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateFungibleTokenV3(
@@ -155,6 +172,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateFungibleTokenWithCustomFeesV1(
@@ -184,6 +204,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateFungibleTokenWithCustomFeesV2(
@@ -213,6 +236,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateFungibleTokenWithCustomFeesV3(
@@ -264,6 +290,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V1} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateNonFungibleV1(
@@ -281,6 +310,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V2} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateNonFungibleV2(
@@ -298,6 +330,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V3} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateNonFungibleV3(
@@ -335,6 +370,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateNonFungibleWithCustomFeesV1(
@@ -357,6 +395,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateNonFungibleWithCustomFeesV2(
@@ -379,6 +420,9 @@ public class CreateDecoder {
      * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param senderId the id of the sender account
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateNonFungibleWithCustomFeesV3(
@@ -472,6 +516,16 @@ public class CreateDecoder {
         return tokenCreateWrapper;
     }
 
+    /**
+     * @param tokenCreateStruct the token struct to use
+     * @param isFungible whether the token is fungible
+     * @param initSupply the initial supply of the token
+     * @param decimals decimals of the token
+     * @param senderId the sender account id
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
+     * @return a token create wrapper object
+     */
     public TokenCreateWrapper getTokenCreateWrapperWithMetadata(
             @NonNull final Tuple tokenCreateStruct,
             final boolean isFungible,
@@ -635,6 +689,11 @@ public class CreateDecoder {
                 second, autoRenewAccount.accountNum() == 0 ? null : autoRenewAccount, autoRenewPeriod);
     }
 
+    /**
+     * @param fixedFeesTuples the fixed fee tuple
+     * @param addressIdConverter the address ID converter for this call
+     * @return list of {@link FixedFeeWrapper}
+     */
     public List<FixedFeeWrapper> decodeFixedFees(
             @NonNull final Tuple[] fixedFeesTuples, @NonNull final AddressIdConverter addressIdConverter) {
 
@@ -662,6 +721,11 @@ public class CreateDecoder {
         return fixedFees;
     }
 
+    /**
+     * @param fractionalFeesTuples the fixed fee tuple
+     * @param addressIdConverter the address ID converter for this call
+     * @return list of {@link FractionalFeeWrapper}
+     */
     public List<FractionalFeeWrapper> decodeFractionalFees(
             @NonNull final Tuple[] fractionalFeesTuples, @NonNull final AddressIdConverter addressIdConverter) {
 
@@ -692,6 +756,11 @@ public class CreateDecoder {
         return fractionalFees;
     }
 
+    /**
+     * @param royaltyFeesTuples the fixed fee tuple
+     * @param addressIdConverter the address ID converter for this call
+     * @return list of {@link RoyaltyFeeWrapper}
+     */
     public List<RoyaltyFeeWrapper> decodeRoyaltyFees(
             @NonNull final Tuple[] royaltyFeesTuples, @NonNull final AddressIdConverter addressIdConverter) {
 

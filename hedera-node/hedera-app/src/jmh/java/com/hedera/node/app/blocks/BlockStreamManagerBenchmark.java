@@ -22,6 +22,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATF
 import static com.hedera.node.app.blocks.BlockStreamManager.ZERO_BLOCK_HASH;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
+import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -43,9 +44,10 @@ import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.services.AppContextImpl;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
-import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
+import com.hedera.node.app.tss.TssLibraryImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.ParseException;
@@ -116,11 +118,20 @@ public class BlockStreamManagerBenchmark {
                     "blockStream.hashCombineBatchSize", "64",
                     "blockStream.serializationBatchSize", "32"));
     private final List<BlockItem> roundItems = new ArrayList<>();
+    final AppContext appContext = new AppContextImpl(
+            Instant::now,
+            fakeSignatureVerifier(),
+            UNAVAILABLE_GOSSIP,
+            configProvider::getConfiguration,
+            () -> DEFAULT_NODE_INFO,
+            (split, snapshots) -> {
+                throw new UnsupportedOperationException();
+            });
     private final TssBaseServiceImpl tssBaseService = new TssBaseServiceImpl(
-            new AppContextImpl(Instant::now, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP),
+            appContext,
             ForkJoinPool.commonPool(),
             ForkJoinPool.commonPool(),
-            new PlaceholderTssLibrary(),
+            new TssLibraryImpl(appContext),
             ForkJoinPool.commonPool(),
             new NoOpMetrics());
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(

@@ -31,9 +31,11 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.utility.Labeled;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import com.swirlds.state.merkle.singleton.ValueLeaf;
@@ -76,6 +78,8 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
 
     private static final Logger logger = LogManager.getLogger(QueueNode.class);
 
+    private final Configuration config;
+
     /** Codec for queue elements */
     private final Codec<E> codec;
 
@@ -99,13 +103,14 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
      * @param codec element codec
      */
     public QueueNode(
+            @NonNull Configuration config,
             @NonNull String serviceName,
             @NonNull String stateKey,
             final long queueNodeClassId,
             final long elementSerializerClassId,
             final long elementClassId,
             @NonNull final Codec<E> codec) {
-        this(serviceName, stateKey, queueNodeClassId, elementSerializerClassId, elementClassId, codec, true);
+        this(config, serviceName, stateKey, queueNodeClassId, elementSerializerClassId, elementClassId, codec, true);
     }
 
     /**
@@ -123,6 +128,7 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
      * @param codec element codec
      */
     public QueueNode(
+            @NonNull Configuration config,
             @NonNull String serviceName,
             @NonNull String stateKey,
             final long queueNodeClassId,
@@ -130,6 +136,7 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
             final long elementClassId,
             @NonNull final Codec<E> codec,
             final boolean init) {
+        this.config = requireNonNull(config);
         this.codec = requireNonNull(codec);
         this.queueNodeClassId = queueNodeClassId;
         this.elementSerializerClassId = elementSerializerClassId;
@@ -144,6 +151,7 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
 
     /** Copy constructor */
     private QueueNode(@NonNull final QueueNode<E> other) {
+        this.config = other.config;
         this.setLeft(other.getLeft().copy());
         this.setRight(other.getRight().copy());
         this.codec = other.codec;
@@ -281,10 +289,12 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
         final KeySerializer<SingleLongKey> keySerializer = new SingleLongKeySerializer();
         final ValueSerializer<OnDiskValue<E>> valueSerializer =
                 new OnDiskValueSerializer<>(elementSerializerClassId, elementClassId, codec);
-        final MerkleDbTableConfig merkleDbTableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
+        final MerkleDbConfig merkleDbConfig = config.getConfigData(MerkleDbConfig.class);
+        final MerkleDbTableConfig merkleDbTableConfig = new MerkleDbTableConfig(
+                (short) 1, DigestType.SHA_384, QUEUE_MAX_KEYS_HINT, merkleDbConfig.hashesRamToDiskThreshold());
         merkleDbTableConfig.maxNumberOfKeys(QUEUE_MAX_KEYS_HINT);
-        final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(merkleDbTableConfig);
-        return new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder);
+        final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(merkleDbTableConfig, config);
+        return new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder, config);
     }
 
     /**

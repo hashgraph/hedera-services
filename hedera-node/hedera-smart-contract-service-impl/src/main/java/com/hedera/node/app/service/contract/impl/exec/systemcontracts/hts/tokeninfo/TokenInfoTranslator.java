@@ -28,14 +28,20 @@ import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
+/**
+ * Translates {@code getTokenInfo()} calls to the HTS system contract.
+ */
 public class TokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> {
-
+    /** Selector for getTokenInfo(address) method. */
     public static final Function TOKEN_INFO =
             new Function("getTokenInfo(address)", ReturnTypes.RESPONSE_CODE_TOKEN_INFO);
-
+    /** Selector for getTokenInfoV2(address) method. */
     public static final Function TOKEN_INFO_V2 =
             new Function("getTokenInfoV2(address)", ReturnTypes.RESPONSE_CODE_TOKEN_INFO_V2);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenInfoTranslator() {
         // Dagger2
@@ -49,7 +55,7 @@ public class TokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> 
         requireNonNull(attempt);
         final var v2Enabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractTokenInfoV2Enabled();
-        return attempt.isSelector(TOKEN_INFO) || attempt.isSelectorIfConfigEnabled(TOKEN_INFO_V2, v2Enabled);
+        return attempt.isSelector(TOKEN_INFO) || attempt.isSelectorIfConfigEnabled(v2Enabled, TOKEN_INFO_V2);
     }
 
     /**

@@ -75,6 +75,7 @@ message CreateScheduleOutput {
      * other status, this value SHALL NOT be set.
      */
     proto.ScheduleID schedule_id = 1;
+
     /**
      * A scheduled transaction identifier.
      * <p>

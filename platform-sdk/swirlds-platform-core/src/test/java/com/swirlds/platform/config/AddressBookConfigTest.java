@@ -30,4 +30,15 @@ class AddressBookConfigTest {
         // then
         Assertions.assertDoesNotThrow(() -> configurationBuilder.build(), "All default values should be valid");
     }
+
+    @Test
+    public void testUseRosterLifecycleDefaultValue() {
+        // given
+        final ConfigurationBuilder configurationBuilder =
+                ConfigurationBuilder.create().withConfigDataTypes(AddressBookConfig.class);
+        // when
+        AddressBookConfig config = configurationBuilder.build().getConfigData(AddressBookConfig.class);
+        // then
+        Assertions.assertFalse(config.useRosterLifecycle(), "The default value of useRosterLifecycle should be false");
+    }
 }

@@ -41,7 +41,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.selectedItems;
@@ -65,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static com.swirlds.common.utility.CommonUtils.unhex;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,6 +92,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.text.Normalizer;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -174,19 +176,12 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overridingTwo(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString(),
-                        "scheduling.whitelist",
-                        "ContractCall")),
+                sourcingContextual(spec -> overriding("scheduling.whitelist", "ContractCall")),
                 // Write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradeFeeSchedulesFile",
-                        feeSchedulesFile -> writeToNodeWorkingDirs(feeSchedulesJson, feeSchedulesFile)),
+                        feeSchedulesFile ->
+                                writeToNodeWorkingDirs(feeSchedulesJson, "data", "config", feeSchedulesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Verify the new fee schedules (which include a subtype for scheduled contract fees) are in effect
@@ -219,19 +214,11 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overridingTwo(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString(),
-                        "tokens.nfts.mintThrottleScaleFactor",
-                        "1:1")),
+                sourcingContextual(spec -> overriding("tokens.nfts.mintThrottleScaleFactor", "1:1")),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradeThrottlesFile",
-                        throttleDefsFile -> writeToNodeWorkingDirs(throttlesJson, throttleDefsFile)),
+                        throttleDefsFile -> writeToNodeWorkingDirs(throttlesJson, "data", "config", throttleDefsFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the new throttles are in effect
@@ -260,17 +247,12 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overriding(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString())),
+                cryptoCreate("genesisAccount"),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradePropertyOverridesFile",
-                        propOverridesFile -> writeToNodeWorkingDirs(overrideProperties, propOverridesFile)),
+                        propOverridesFile ->
+                                writeToNodeWorkingDirs(overrideProperties, "data", "config", propOverridesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the new properties are in effect
@@ -295,19 +277,11 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overridingTwo(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString(),
-                        "tokens.nfts.maxBatchSizeMint",
-                        "2")),
+                sourcingContextual(spec -> overriding("tokens.nfts.maxBatchSizeMint", "2")),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradePropertyOverridesFile",
-                        propOverridesFile -> writeToNodeWorkingDirs("", propOverridesFile)),
+                        propOverridesFile -> writeToNodeWorkingDirs("", "data", "config", propOverridesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the previous override properties are cleared
@@ -336,18 +310,12 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overriding(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString())),
+                cryptoCreate("genesisAccount"),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradePermissionOverridesFile",
                         permissionOverridesFile ->
-                                writeToNodeWorkingDirs(overridePermissions, permissionOverridesFile)),
+                                writeToNodeWorkingDirs(overridePermissions, "data", "config", permissionOverridesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the new permissions are in effect
@@ -447,7 +415,7 @@ public class SystemFileExportsTest {
 
                     final var actualCertHash = address.nodeCertHash().toByteArray();
                     assertArrayEquals(
-                            grpcCertHashes[(int) address.nodeId()],
+                            getHexStringBytesFromBytes(grpcCertHashes[(int) address.nodeId()]),
                             actualCertHash,
                             "node" + address.nodeId() + " has wrong cert hash");
 
@@ -461,6 +429,11 @@ public class SystemFileExportsTest {
                 Assertions.fail("Update contents was not protobuf " + e.getMessage());
             }
         };
+    }
+
+    private static byte[] getHexStringBytesFromBytes(final byte[] rawBytes) {
+        final String hexString = HexFormat.of().formatHex(rawBytes);
+        return Normalizer.normalize(hexString, Normalizer.Form.NFD).getBytes(UTF_8);
     }
 
     private static VisibleItemsValidator addressBookExportValidator(
@@ -487,7 +460,7 @@ public class SystemFileExportsTest {
                 for (final var address : updatedAddressBook.nodeAddress()) {
                     final var actualCertHash = address.nodeCertHash().toByteArray();
                     assertArrayEquals(
-                            grpcCertHashes[(int) address.nodeId()],
+                            getHexStringBytesFromBytes(grpcCertHashes[(int) address.nodeId()]),
                             actualCertHash,
                             "node" + address.nodeId() + " has wrong cert hash");
 

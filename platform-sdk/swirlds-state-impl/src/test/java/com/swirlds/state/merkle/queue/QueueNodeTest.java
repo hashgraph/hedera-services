@@ -37,6 +37,7 @@ class QueueNodeTest extends MerkleTestBase {
     @BeforeEach
     void setupTest() {
         queueNode = new QueueNode<>(
+                CONFIGURATION,
                 FIRST_SERVICE,
                 FRUIT_STATE_KEY,
                 queueNodeClassId(FRUIT_STATE_KEY),

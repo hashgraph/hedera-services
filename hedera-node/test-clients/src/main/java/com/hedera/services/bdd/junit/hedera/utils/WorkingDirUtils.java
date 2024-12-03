@@ -38,6 +38,7 @@ import java.nio.file.StandardOpenOption;
 import java.security.cert.X509Certificate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -124,12 +125,23 @@ public class WorkingDirUtils {
      */
     public static void updateUpgradeArtifactsProperty(
             @NonNull final Path propertiesPath, @NonNull final Path upgradeArtifactsPath) {
+        updateBootstrapProperties(
+                propertiesPath, Map.of("networkAdmin.upgradeArtifactsPath", upgradeArtifactsPath.toString()));
+    }
+
+    /**
+     * Updates the given key/value property override at the given location
+     * @param propertiesPath the path to the properties file
+     * @param overrides the key/value property overrides
+     */
+    public static void updateBootstrapProperties(
+            @NonNull final Path propertiesPath, @NonNull final Map<String, String> overrides) {
         final var properties = new Properties();
         try {
             try (final var in = Files.newInputStream(propertiesPath)) {
                 properties.load(in);
             }
-            properties.setProperty("networkAdmin.upgradeArtifactsPath", upgradeArtifactsPath.toString());
+            overrides.forEach(properties::setProperty);
             try (final var out = Files.newOutputStream(propertiesPath)) {
                 properties.store(out, null);
             }
@@ -268,7 +280,8 @@ public class WorkingDirUtils {
     private static void copyBootstrapAssets(@NonNull final Path assetDir, @NonNull final Path workingDir) {
         try (final var files = Files.walk(assetDir)) {
             files.filter(file -> !file.equals(assetDir)).forEach(file -> {
-                if (file.getFileName().toString().endsWith(".properties")) {
+                final var fileName = file.getFileName().toString();
+                if (fileName.endsWith(".properties") || fileName.endsWith(".json")) {
                     copyUnchecked(
                             file,
                             workingDir

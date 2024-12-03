@@ -37,10 +37,16 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class MintTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for mintToken(address,uint64,bytes[]) method. */
     public static final Function MINT = new Function("mintToken(address,uint64,bytes[])", "(int64,int64,int64[])");
+    /** Selector for mintToken(address,int64,bytes[]) method. */
     public static final Function MINT_V2 = new Function("mintToken(address,int64,bytes[])", "(int64,int64,int64[])");
+
     private final MintDecoder decoder;
 
+    /**
+     * @param decoder the decoder to use for mint calls
+     */
     @Inject
     public MintTranslator(@NonNull final MintDecoder decoder) {
         this.decoder = decoder;

@@ -19,10 +19,14 @@ package com.hedera.node.app.spi;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
+import java.util.function.Supplier;
 
 /**
  * Gives context to {@link Service} implementations on how the application workflows will do
@@ -88,4 +92,22 @@ public interface AppContext {
      * @return the gossip interface
      */
     Gossip gossip();
+
+    /**
+     * The active configuration of the application.
+     * @return the configuration
+     */
+    Supplier<Configuration> configSupplier();
+
+    /**
+     * The supplier of the self node info.
+     * @return the supplier
+     */
+    Supplier<NodeInfo> selfNodeInfoSupplier();
+
+    /**
+     * The application's strategy for creating {@link Throttle} instances.
+     * @return the throttle factory
+     */
+    Throttle.Factory throttleFactory();
 }

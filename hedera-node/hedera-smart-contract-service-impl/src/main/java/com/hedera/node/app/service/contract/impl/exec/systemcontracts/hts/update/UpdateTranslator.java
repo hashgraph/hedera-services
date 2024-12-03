@@ -47,17 +47,24 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     private static final String HEDERA_TOKEN_STRUCT_V3 =
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_STRUCT) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V1 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT + ")", ReturnTypes.INT);
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_STRUCT_V2) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V2 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V2 + ")", ReturnTypes.INT);
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_STRUCT_V3) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V3 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V3 + ")", ReturnTypes.INT);
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_WITH_METADATA) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_WITH_METADATA + ")", ReturnTypes.INT);
 
     private static final Map<Function, UpdateDecoderFunction> updateSelectorsMap = new HashMap<>();
 
+    /**
+     * @param decoder the decoder to use for token update info calls
+     */
     @Inject
     public UpdateTranslator(final UpdateDecoder decoder) {
         updateSelectorsMap.put(TOKEN_UPDATE_INFO_FUNCTION_V1, decoder::decodeTokenUpdateV1);
@@ -73,7 +80,7 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
         return updateSelectorsMap.keySet().stream()
                 .anyMatch(selector -> selector.equals(TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA)
-                        ? attempt.isSelectorIfConfigEnabled(selector, metadataSupport)
+                        ? attempt.isSelectorIfConfigEnabled(metadataSupport, selector)
                         : attempt.isSelector(selector));
     }
 
@@ -83,6 +90,13 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                 attempt, nominalBodyFor(attempt), UpdateTranslator::gasRequirement, UpdateDecoder.FAILURE_CUSTOMIZER);
     }
 
+    /**
+     * @param body                          the transaction body to be dispatched
+     * @param systemContractGasCalculator   the gas calculator for the system contract
+     * @param enhancement                   the enhancement to use
+     * @param payerId                       the payer of the transaction
+     * @return the required gas
+     */
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,

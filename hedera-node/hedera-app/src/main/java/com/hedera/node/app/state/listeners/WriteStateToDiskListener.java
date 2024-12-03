@@ -29,6 +29,7 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -39,8 +40,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Listener that will be notified with {@link
- * StateWriteToDiskCompleteNotification} when state is
+ * Listener that will be notified with {@link StateWriteToDiskCompleteNotification} when state is
  * written to disk. This writes {@code NOW_FROZEN_MARKER} to disk when upgrade is pending
  */
 @Singleton
@@ -50,18 +50,18 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
     private final Supplier<AutoCloseableWrapper<State>> stateAccessor;
     private final Executor executor;
     private final ConfigProvider configProvider;
+    private final StartupNetworks startupNetworks;
 
     @Inject
     public WriteStateToDiskListener(
             @NonNull final Supplier<AutoCloseableWrapper<State>> stateAccessor,
             @NonNull @Named("FreezeService") final Executor executor,
-            @NonNull final ConfigProvider configProvider) {
-        requireNonNull(stateAccessor);
-        requireNonNull(executor);
-        requireNonNull(configProvider);
-        this.stateAccessor = stateAccessor;
-        this.executor = executor;
-        this.configProvider = configProvider;
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final StartupNetworks startupNetworks) {
+        this.stateAccessor = requireNonNull(stateAccessor);
+        this.executor = requireNonNull(executor);
+        this.configProvider = requireNonNull(configProvider);
+        this.startupNetworks = requireNonNull(startupNetworks);
     }
 
     @Override
@@ -93,5 +93,6 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                 log.error("Error while responding to freeze state notification", e);
             }
         }
+        startupNetworks.archiveStartupNetworks();
     }
 }

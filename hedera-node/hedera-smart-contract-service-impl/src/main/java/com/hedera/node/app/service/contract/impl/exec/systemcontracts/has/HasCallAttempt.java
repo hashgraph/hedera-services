@@ -46,6 +46,7 @@ import org.hyperledger.besu.datatypes.Address;
  * everything it will need to execute.
  */
 public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
+    /** Selector for redirectForAccount(address,bytes) method. */
     public static final Function REDIRECT_FOR_ACCOUNT = new Function("redirectForAccount(address,bytes)");
 
     @Nullable
@@ -59,7 +60,6 @@ public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
     public HasCallAttempt(
             @NonNull final Bytes input,
             @NonNull final Address senderAddress,
-            @NonNull final Address authorizingAddress,
             final boolean onlyDelegatableContractKeysActive,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final Configuration configuration,
@@ -72,7 +72,7 @@ public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
         super(
                 input,
                 senderAddress,
-                authorizingAddress,
+                senderAddress,
                 onlyDelegatableContractKeysActive,
                 enhancement,
                 configuration,

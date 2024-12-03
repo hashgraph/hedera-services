@@ -23,12 +23,6 @@ plugins {
 
 description = "Hedera Application - Implementation"
 
-// Remove the following line to enable all 'javac' lint checks that we have turned on by default
-// and then fix the reported issues.
-tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.add("-Xlint:-exports,-lossy-conversions,-cast")
-}
-
 mainModuleInfo {
     annotationProcessor("dagger.compiler")
     annotationProcessor("com.google.auto.service.processor")
@@ -39,6 +33,7 @@ mainModuleInfo {
     runtimeOnly("io.helidon.grpc.core")
     runtimeOnly("io.helidon.webclient")
     runtimeOnly("io.helidon.webclient.grpc")
+    runtimeOnly("com.hedera.cryptography.altbn128")
 }
 
 testModuleInfo {
@@ -56,7 +51,6 @@ testModuleInfo {
     requires("headlong")
     requires("org.assertj.core")
     requires("org.bouncycastle.provider")
-    requires("org.hamcrest")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")

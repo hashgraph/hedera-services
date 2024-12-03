@@ -19,4 +19,6 @@ plugins {
     id("com.hedera.gradle.services-publish")
 }
 
+mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
+
 description = "Default Event Creator Implementation"

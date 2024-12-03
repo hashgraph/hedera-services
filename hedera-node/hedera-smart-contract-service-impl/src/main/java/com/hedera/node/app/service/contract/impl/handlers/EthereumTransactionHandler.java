@@ -36,6 +36,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
@@ -49,6 +50,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -73,6 +75,12 @@ public class EthereumTransactionHandler implements TransactionHandler {
     private final GasCalculator gasCalculator;
     private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
 
+    /**
+     * @param ethereumSignatures the ethereum signatures
+     * @param callDataHydration the ethereum call data hydratino utility to be used for EthTxData
+     * @param provider the provider to be used
+     * @param gasCalculator the gas calculator to be used
+     */
     @Inject
     public EthereumTransactionHandler(
             @NonNull final EthTxSigsCache ethereumSignatures,
@@ -169,10 +177,24 @@ public class EthereumTransactionHandler implements TransactionHandler {
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
     }
 
+    /**
+     * Calculates the fees for the given {@link FeeContext}.
+     * Even though the actual fees are not charged if the evmEthTransactionZeroHapiFeesEnabled feature flag is enabled
+     * if the transaction fails, there is a fee charged to the relayer account
+     * (see {@link com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor#chargeOnFailedEthTxn(HederaEvmTransaction) chargeOnFailedEthTxn})
+     * @param feeContext the {@link FeeContext} with all information needed for the calculation
+     * @return
+     */
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
+        final var zeroHapiFeeEnabled =
+                feeContext.configuration().getConfigData(ContractsConfig.class).evmEthTransactionZeroHapiFeesEnabled();
+        return zeroHapiFeeEnabled ? Fees.FREE : getLegacyCalculateFees(feeContext);
+    }
+
+    private Fees getLegacyCalculateFees(@NonNull final FeeContext feeContext) {
         final var body = feeContext.body();
         return feeContext
                 .feeCalculatorFactory()

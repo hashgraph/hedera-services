@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
@@ -35,11 +38,17 @@ import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.internal.merkle.VirtualInternalNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
@@ -75,6 +84,13 @@ class VirtualMapSerializationTests {
         registry.registerConstructables("com.swirlds.merkledb");
         registry.registerConstructables("com.swirlds.virtualmap");
         registry.registerConstructables("com.swirlds.common");
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(
+                        MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
+        registry.registerConstructable(new ClassConstructorPair(
+                VirtualNodeCache.class,
+                () -> new VirtualNodeCache(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
     }
 
     /**
@@ -83,13 +99,19 @@ class VirtualMapSerializationTests {
     public static MerkleDbDataSourceBuilder constructBuilder() throws IOException {
         // The tests below create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new database location for every map
-        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source");
+        final Path defaultVirtualMapPath =
+                LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source", CONFIGURATION);
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                        (short) 1,
+                        DigestType.SHA_384,
+                        merkleDbConfig.maxNumOfKeys(),
+                        merkleDbConfig.hashesRamToDiskThreshold())
                 .preferDiskIndices(false)
                 .hashesRamToDiskThreshold(Long.MAX_VALUE)
                 .maxNumberOfKeys(1234);
-        return new MerkleDbDataSourceBuilder(tableConfig);
+        return new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
     }
 
     /**
@@ -171,7 +193,7 @@ class VirtualMapSerializationTests {
     private VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> generateRandomMap(
             final long seed, final int count, final String name) throws IOException {
         final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map =
-                new VirtualMap<>(name, KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder());
+                new VirtualMap<>(name, KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), CONFIGURATION);
         addRandomEntries(map, count, 0, seed);
         return map;
     }
@@ -242,7 +264,8 @@ class VirtualMapSerializationTests {
     private void testMapSerialization(final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map)
             throws IOException {
 
-        final Path savedStateDirectory = LegacyTemporaryFileBuilder.buildTemporaryDirectory("saved-state");
+        final Path savedStateDirectory =
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("saved-state", CONFIGURATION);
 
         final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         final MerkleDataOutputStream out = new MerkleDataOutputStream(byteOut);
@@ -258,7 +281,8 @@ class VirtualMapSerializationTests {
         assertTrue(filesInDirectory.size() > 0, "there should be a non-zero number of files created");
 
         // Change default MerkleDb path, so data sources are restored into a different DB instance
-        final Path restoredDbDirectory = LegacyTemporaryFileBuilder.buildTemporaryDirectory("merkledb-restored");
+        final Path restoredDbDirectory =
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("merkledb-restored", CONFIGURATION);
         MerkleDb.setDefaultPath(restoredDbDirectory);
 
         final MerkleDataInputStream in = new MerkleDataInputStream(new ByteArrayInputStream(byteOut.toByteArray()));
@@ -356,5 +380,86 @@ class VirtualMapSerializationTests {
         copy1.release();
 
         MILLISECONDS.sleep(100); // Hack. Release methods may not have finished their work yet.
+    }
+
+    @Test
+    void inMemoryModeSerde() throws IOException {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .getOrCreateConfig();
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
+
+        VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map = new VirtualMap<>(
+                "inMemoryModeSerde", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), configuration);
+
+        // Copy 0
+        for (int i = 0; i < 100; i++) {
+            final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(i);
+            final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(1000000 + i);
+            map.put(key, value);
+        }
+
+        // Copy 1
+        final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copy1 = map.copy();
+        map.release();
+        map = copy1;
+        for (int i = 100; i < 200; i++) {
+            final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(i);
+            final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(1000000 + i);
+            map.put(key, value);
+        }
+        // Add more entries to copy 1 to force it to flush
+        for (int i = 100000; i < 120000; i++) {
+            final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(i);
+            final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(1000000 + i);
+            map.put(key, value);
+        }
+
+        final int nCopies = 100;
+        for (int copyNo = 2; copyNo < nCopies; copyNo++) {
+            final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copy = map.copy();
+            map.release();
+            map = copy;
+            for (int i = 0; i < 100; i++) {
+                final int toAdd = copyNo * 100 + i;
+                final ExampleLongKeyFixedSize keyToAdd = new ExampleLongKeyFixedSize(toAdd);
+                final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(1000000 + toAdd);
+                map.put(keyToAdd, value);
+                final int toRemove = (copyNo - 2) * 100 + i + 75;
+                final ExampleLongKeyFixedSize keytoRemove = new ExampleLongKeyFixedSize(toRemove);
+                final ExampleFixedSizeVirtualValue removed = map.remove(keytoRemove);
+                assertNotNull(removed);
+            }
+        }
+
+        // Final copy
+        final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copyF = map.copy();
+        map.release();
+        map = copyF;
+
+        // And one more to make sure copyF is immutable and can be serialized
+        final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copyOneMore = map.copy();
+
+        final Hash originalHash = MerkleCryptoFactory.getInstance().digestTreeSync(copyF);
+
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        final Path tmp = LegacyTemporaryFileBuilder.buildTemporaryDirectory("inMemoryModeSerde", configuration);
+        try (final SerializableDataOutputStream out = new SerializableDataOutputStream(bout)) {
+            copyF.serialize(out, tmp);
+        }
+
+        final ByteArrayInputStream bin = new ByteArrayInputStream(bout.toByteArray());
+        map = new VirtualMap<>(configuration);
+        try (final SerializableDataInputStream in = new SerializableDataInputStream(bin)) {
+            map.deserialize(in, tmp, 3);
+        }
+
+        final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copyAfter = map.copy();
+
+        final Hash restoredHash = MerkleCryptoFactory.getInstance().digestTreeSync(map);
+        assertEquals(originalHash, restoredHash);
+
+        copyOneMore.release();
+        copyAfter.release();
     }
 }

@@ -31,6 +31,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.scratchpad.ScratchpadType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -82,6 +83,7 @@ public class StandardScratchpad<K extends Enum<K> & ScratchpadType> implements S
 
     private final Set<K> fields;
     private final String id;
+    private final Configuration configuration;
 
     private final Map<K, SelfSerializable> data = new HashMap<>();
     private final AutoClosableLock lock = Locks.createAutoLock();
@@ -106,7 +108,7 @@ public class StandardScratchpad<K extends Enum<K> & ScratchpadType> implements S
             @NonNull final NodeId selfId,
             @NonNull final Class<K> clazz,
             @NonNull final String id) {
-
+        this.configuration = platformContext.getConfiguration();
         final StateCommonConfig stateConfig = platformContext.getConfiguration().getConfigData(StateCommonConfig.class);
         scratchpadDirectory = stateConfig
                 .savedStateDirectory()
@@ -281,7 +283,7 @@ public class StandardScratchpad<K extends Enum<K> & ScratchpadType> implements S
      */
     @NonNull
     private Path flushToTemporaryFile() throws IOException {
-        final Path temporaryFile = buildTemporaryFile();
+        final Path temporaryFile = buildTemporaryFile(configuration);
         try (final SerializableDataOutputStream out = new SerializableDataOutputStream(
                 new BufferedOutputStream(new FileOutputStream(temporaryFile.toFile(), false)))) {
 

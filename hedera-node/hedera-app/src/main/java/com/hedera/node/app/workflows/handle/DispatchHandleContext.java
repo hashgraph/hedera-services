@@ -53,17 +53,16 @@ import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
@@ -76,7 +75,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Predicate;
 
 /**
  * The {@link HandleContext} implementation.
@@ -349,100 +347,32 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return txBody;
     }
 
-    @NonNull
     @Override
-    public <T> T dispatchPrecedingTransaction(
-            @NonNull final TransactionBody childTxnBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> childCallback,
-            @NonNull final AccountID childSyntheticPayerId) {
-        requireNonNull(childTxnBody, "childTxnBody must not be null");
-        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
-
-        return dispatchForRecord(
-                childTxnBody,
-                recordBuilderClass,
-                childCallback,
-                childSyntheticPayerId,
-                ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
-                TransactionCategory.PRECEDING,
-                StreamBuilder.ReversingBehavior.IRREVERSIBLE,
-                true,
-                ConsensusThrottling.ON);
-    }
-
-    @NonNull
-    @Override
-    public <T> T dispatchRemovablePrecedingTransaction(
-            @NonNull final TransactionBody childTxBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> childCallback,
-            final AccountID childSyntheticPayer,
-            @NonNull final ConsensusThrottling consensusThrottling) {
-        return dispatchForRecord(
-                childTxBody,
-                recordBuilderClass,
-                childCallback,
-                childSyntheticPayer,
-                ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
-                TransactionCategory.PRECEDING,
-                StreamBuilder.ReversingBehavior.REMOVABLE,
-                false,
-                consensusThrottling);
-    }
-
-    @NonNull
-    @Override
-    public <T> T dispatchChildTransaction(
-            @NonNull final TransactionBody childTxBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> childCallback,
-            @NonNull final AccountID childSyntheticPayerId,
-            @NonNull final TransactionCategory childCategory,
-            @NonNull final ConsensusThrottling consensusThrottling) {
-        requireNonNull(childTxBody, "childTxBody must not be null");
-        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
-        requireNonNull(childCategory, "childCategory must not be null");
-
-        return dispatchForRecord(
-                childTxBody,
-                recordBuilderClass,
-                childCallback,
-                childSyntheticPayerId,
-                ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
-                childCategory,
-                StreamBuilder.ReversingBehavior.REVERSIBLE,
-                false,
-                consensusThrottling);
-    }
-
-    @NonNull
-    @Override
-    public <T> T dispatchRemovableChildTransaction(
-            @NonNull final TransactionBody childTxBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> childCallback,
-            @NonNull final AccountID childSyntheticPayerId,
-            @NonNull final ExternalizedRecordCustomizer customizer,
-            @NonNull final ConsensusThrottling throttleStrategy) {
-        requireNonNull(childTxBody, "childTxBody must not be null");
-        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
-        requireNonNull(customizer, "customizer must not be null");
-        requireNonNull(throttleStrategy, "throttleStrategy must not be null");
-
-        return dispatchForRecord(
-                childTxBody,
-                recordBuilderClass,
-                childCallback,
-                childSyntheticPayerId,
-                customizer,
-                TransactionCategory.CHILD,
-                StreamBuilder.ReversingBehavior.REMOVABLE,
-                false,
-                throttleStrategy);
+    public <T extends StreamBuilder> T dispatch(@NonNull final DispatchOptions<T> options) {
+        requireNonNull(options);
+        final var childDispatch = childDispatchFactory.createChildDispatch(
+                config,
+                stack,
+                storeFactory.asReadOnly(),
+                creatorInfo,
+                topLevelFunction,
+                throttleAdviser,
+                consensusNow,
+                blockRecordInfo,
+                options);
+        dispatchProcessor.processDispatch(childDispatch);
+        if (options.commitImmediately()) {
+            stack.commitTransaction(childDispatch.recordBuilder());
+        }
+        // This can be non-empty for SCHEDULED dispatches, if rewards are paid for the triggered transaction
+        final var paidStakingRewards = childDispatch.recordBuilder().getPaidStakingRewards();
+        if (!paidStakingRewards.isEmpty()) {
+            if (dispatchPaidRewards == null) {
+                dispatchPaidRewards = new LinkedHashMap<>();
+            }
+            paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
+        }
+        return castBuilder(childDispatch.recordBuilder(), options.streamBuilderType());
     }
 
     @NonNull
@@ -466,46 +396,5 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public NodeInfo creatorInfo() {
         return creatorInfo;
-    }
-
-    private <T> T dispatchForRecord(
-            @NonNull final TransactionBody childTxBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> childVerifier,
-            @NonNull final AccountID syntheticPayer,
-            @NonNull final ExternalizedRecordCustomizer customizer,
-            @NonNull final TransactionCategory category,
-            @NonNull final RecordStreamBuilder.ReversingBehavior reversingBehavior,
-            final boolean commitStack,
-            @NonNull final ConsensusThrottling throttleStrategy) {
-        final var childDispatch = childDispatchFactory.createChildDispatch(
-                childTxBody,
-                childVerifier,
-                syntheticPayer,
-                category,
-                customizer,
-                reversingBehavior,
-                config,
-                stack,
-                storeFactory.asReadOnly(),
-                creatorInfo,
-                topLevelFunction,
-                throttleAdviser,
-                consensusNow,
-                blockRecordInfo,
-                throttleStrategy);
-        dispatchProcessor.processDispatch(childDispatch);
-        if (commitStack) {
-            stack.commitTransaction(childDispatch.recordBuilder());
-        }
-        // This can be non-empty for SCHEDULED dispatches, if rewards are paid for the triggered transaction
-        final var paidStakingRewards = childDispatch.recordBuilder().getPaidStakingRewards();
-        if (!paidStakingRewards.isEmpty()) {
-            if (dispatchPaidRewards == null) {
-                dispatchPaidRewards = new LinkedHashMap<>();
-            }
-            paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
-        }
-        return castBuilder(childDispatch.recordBuilder(), recordBuilderClass);
     }
 }

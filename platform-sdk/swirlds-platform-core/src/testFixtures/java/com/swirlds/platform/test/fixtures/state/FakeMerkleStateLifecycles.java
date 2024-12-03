@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.fixtures.state;
 
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
+import static com.swirlds.state.merkle.StateUtils.registerWithSystem;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -25,7 +27,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -38,10 +40,9 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.singleton.SingletonNode;
-import com.swirlds.state.merkle.singleton.StringLeaf;
-import com.swirlds.state.merkle.singleton.ValueLeaf;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -57,32 +58,16 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
      */
     public static void registerMerkleStateRootClassIds() {
         try {
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(
-                            MerkleStateRoot.class,
-                            () -> new MerkleStateRoot(
-                                    FAKE_MERKLE_STATE_LIFECYCLES,
-                                    version -> new BasicSoftwareVersion(version.major()))));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
+            ConstructableRegistry registry = ConstructableRegistry.getInstance();
+            registry.registerConstructable(new ClassConstructorPair(
+                    PlatformMerkleStateRoot.class,
+                    () -> new PlatformMerkleStateRoot(
+                            FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
             final var schema = new V0540PlatformStateSchema();
             schema.statesToCreate().stream()
                     .sorted(Comparator.comparing(StateDefinition::stateKey))
-                    .forEach(def -> {
-                        final var md = new StateMetadata<>(PlatformStateService.NAME, schema, def);
-                        try {
-                            ConstructableRegistry.getInstance()
-                                    .registerConstructable(new ClassConstructorPair(
-                                            ValueLeaf.class,
-                                            () -> new ValueLeaf<>(
-                                                    md.singletonClassId(),
-                                                    md.stateDefinition().valueCodec())));
-                        } catch (ConstructableRegistryException e) {
-                            throw new IllegalStateException(e);
-                        }
-                    });
+                    .forEach(def -> registerWithSystem(
+                            new StateMetadata<>(PlatformStateService.NAME, schema, def), registry, CONFIGURATION));
         } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }

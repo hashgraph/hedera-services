@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.records;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -27,6 +28,18 @@ import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBu
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
+/**
+ * A {@code StreamBuilder} specialization for tracking the side effects of any transaction related to contracts.
+ * These include:
+ * <ol>
+ *     <li>{@link HederaFunctionality#CRYPTO_DELETE}</li>
+ *     <li>{@link HederaFunctionality#CONTRACT_DELETE}</li>
+ *     <li>{@link HederaFunctionality#CONTRACT_CREATE}</li>
+ *     <li>{@link HederaFunctionality#CONTRACT_CALL}</li>
+ *     <li>{@link HederaFunctionality#ETHEREUM_TRANSACTION}</li>
+ * </ol>
+ * transaction.
+ */
 public interface ContractOperationStreamBuilder extends DeleteCapableTransactionStreamBuilder {
     /**
      * Sets the transaction fee.

@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -58,6 +59,10 @@ import org.apache.logging.log4j.Logger;
 public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiScheduleCreate<T>> {
     private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
 
+    private static long NA = -1;
+
+    private long longTermExpiry = NA;
+    private long longTermLifetime = NA;
     private boolean advertiseCreation = false;
     private boolean recordScheduledTxn = false;
     private boolean skipRegistryUpdate = false;
@@ -76,6 +81,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
     private Optional<Boolean> waitForExpiry = Optional.empty();
     private Optional<Pair<String, Long>> expirationTimeRelativeTo = Optional.empty();
     private Optional<BiConsumer<String, byte[]>> successCb = Optional.empty();
+    private Optional<Consumer<ScheduleID>> newScheduleIdObserver = Optional.empty();
     private AtomicReference<SchedulableTransactionBody> scheduledTxn = new AtomicReference<>();
 
     private final String scheduleEntity;
@@ -129,6 +135,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
         return this;
     }
 
+    public HapiScheduleCreate<T> exposingCreatedIdTo(final Consumer<ScheduleID> newScheduleIdObserver) {
+        this.newScheduleIdObserver = Optional.of(newScheduleIdObserver);
+        return this;
+    }
+
     public HapiScheduleCreate<T> designatingPayer(String s) {
         payerAccountID = Optional.of(s);
         return this;
@@ -157,6 +168,16 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
     public HapiScheduleCreate<T> waitForExpiry(boolean value) {
         this.waitForExpiry = Optional.of(value);
         return this;
+    }
+
+    public HapiScheduleCreate<T> expiringAt(final long expiry) {
+        this.longTermExpiry = expiry;
+        return waitForExpiry();
+    }
+
+    public HapiScheduleCreate<T> expiringIn(final long lifetime) {
+        this.longTermLifetime = lifetime;
+        return waitForExpiry();
     }
 
     public HapiScheduleCreate<T> withRelativeExpiry(String txnId, long offsetSeconds) {
@@ -202,7 +223,16 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
                             waitForExpiry.ifPresent(b::setWaitForExpiry);
 
-                            if (expirationTimeRelativeTo.isPresent()) {
+                            if (longTermExpiry != NA) {
+                                b.setExpirationTime(Timestamp.newBuilder()
+                                        .setSeconds(longTermExpiry)
+                                        .build());
+                            } else if (longTermLifetime != NA) {
+                                final var approxNow = spec.consensusTime();
+                                b.setExpirationTime(Timestamp.newBuilder()
+                                        .setSeconds(approxNow.getEpochSecond() + longTermLifetime)
+                                        .build());
+                            } else if (expirationTimeRelativeTo.isPresent()) {
                                 var expiry = getRelativeExpiry(
                                         spec,
                                         expirationTimeRelativeTo.get().getKey(),
@@ -271,6 +301,9 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
         }
         var registry = spec.registry();
         registry.saveScheduleId(scheduleEntity, lastReceipt.getScheduleID());
+
+        newScheduleIdObserver.ifPresent(obs -> obs.accept(lastReceipt.getScheduleID()));
+
         adminKey.ifPresent(
                 k -> registry.saveAdminKey(scheduleEntity, spec.registry().getKey(k)));
         if (saveExpectedScheduledTxnId) {
