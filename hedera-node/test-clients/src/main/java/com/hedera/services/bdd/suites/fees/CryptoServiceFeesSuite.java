@@ -19,10 +19,13 @@ package com.hedera.services.bdd.suites.fees;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -57,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -552,5 +556,48 @@ public class CryptoServiceFeesSuite {
                 validateChargedUsdWithin(nftXferTxn, expectedNftXferPriceUsd, 0.01),
                 validateChargedUsdWithin(htsXferTxnWithCustomFee, expectedHtsXferWithCustomFeePriceUsd, 0.1),
                 validateChargedUsdWithin(nftXferTxnWithCustomFee, expectedNftXferWithCustomFeePriceUsd, 0.3));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> cryptoCryptoGetAccountRecordsBaseUSDFee() {
+        final var expectedGetAccountRecordPriceUsd = 0.0001;
+
+        return hapiTest(
+                cryptoCreate("FEES_ACCOUNT").balance(5 * ONE_HUNDRED_HBARS),
+                cryptoCreate(CIVILIAN).balance(5 * ONE_HUNDRED_HBARS).key("FEES_ACCOUNT"),
+                getAccountRecords(CIVILIAN).via("baseGetAccountRecord").signedBy("FEES_ACCOUNT").payingWith("FEES_ACCOUNT"),
+                validateChargedUsd("baseGetAccountRecord", expectedGetAccountRecordPriceUsd));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> cryptoGetAccountBalanceBaseUSDFee() {
+
+        return hapiTest(
+                cryptoCreate("FEES_ACCOUNT").balance(5 * ONE_HUNDRED_HBARS),
+                cryptoCreate(CIVILIAN).balance(5 * ONE_HUNDRED_HBARS).key("FEES_ACCOUNT"),
+                getAccountBalance(CIVILIAN).hasTinyBars(5 * ONE_HUNDRED_HBARS).signedBy("FEES_ACCOUNT").payingWith("FEES_ACCOUNT"),
+                getAccountBalance("FEES_ACCOUNT").hasTinyBars(5 * ONE_HUNDRED_HBARS));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> cryptoGetInfoBaseUSDFee() {
+        final var expectedGetInfoPriceUsd = 0.0001;
+
+        long balance = 1_234_567L;
+        return hapiTest(
+                cryptoCreate(CIVILIAN).balance(5 * ONE_HUNDRED_HBARS),
+                cryptoCreate("noStakingTarget").key(CIVILIAN).balance(balance),
+                getAccountInfo("noStakingTarget")
+                        .has(accountWith()
+                                .accountId("noStakingTarget")
+                                .stakedNodeId(0L)
+                                .noStakedAccountId()
+                                .key(CIVILIAN)
+                                .balance(balance))
+                        .via("basicGetInfo")
+                        .payingWith(CIVILIAN)
+                        .signedBy(CIVILIAN)
+                        .logged(),
+                validateChargedUsd("basicGetInfo", expectedGetInfoPriceUsd));
     }
 }
