@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CURRENT_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.GENESIS_PROPERTIES;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.NODE_ADMIN_KEYS_JSON;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.UPGRADE_DIR;
 import static java.util.Objects.requireNonNull;
@@ -87,6 +88,10 @@ public abstract class AbstractNode implements HederaNode {
                     .resolve(DATA_DIR)
                     .resolve(CONFIG_DIR)
                     .resolve(GENESIS_PROPERTIES);
+            case NODE_ADMIN_KEYS_JSON -> workingDir
+                    .resolve(DATA_DIR)
+                    .resolve(CONFIG_DIR)
+                    .resolve(NODE_ADMIN_KEYS_JSON);
             case APPLICATION_PROPERTIES -> workingDir
                     .resolve(DATA_DIR)
                     .resolve(CONFIG_DIR)

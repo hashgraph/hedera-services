@@ -753,7 +753,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(15)
+    @Order(16)
     public Stream<DynamicTest> retestsActivationOnSignWithEmptySigMap() {
         return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMapAtExpiry")
                 .given(newKeyNamed("a"), newKeyNamed("b"), newKeyListNamed("ab", List.of("a", "b")), newKeyNamed(ADMIN))

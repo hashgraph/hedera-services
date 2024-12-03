@@ -113,7 +113,7 @@ public class StreamValidationOp extends UtilOp {
         // Freeze the network
         allRunFor(
                 spec,
-                freezeOnly().payingWith(GENESIS).startingIn(2).seconds(),
+                freezeOnly().payingWith(GENESIS).startingIn(1).seconds(),
                 // Wait for the final stream files to be created
                 sleepFor(10 * BUFFER_MS));
         readMaybeBlockStreamsFor(spec)
