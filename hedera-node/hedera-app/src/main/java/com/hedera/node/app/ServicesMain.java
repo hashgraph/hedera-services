@@ -438,8 +438,7 @@ public class ServicesMain implements SwirldMain {
                         new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
                         metrics),
-                (configProvider, tssBaseService, tssBaseService2) ->
-                        new DiskStartupNetworks(tssBaseService, tssBaseService2),
+                DiskStartupNetworks::new,
                 selfNodeId);
     }
 

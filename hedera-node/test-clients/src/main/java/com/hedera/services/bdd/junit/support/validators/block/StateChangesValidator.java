@@ -59,7 +59,6 @@ import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.TssLibraryImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.converter.BytesConverter;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
@@ -214,9 +213,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
         final var servicesVersion = versionConfig.servicesVersion();
         final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
-        final var configVersion =
-                bootstrapConfig.getConfigData(HederaConfig.class).configVersion();
-        final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
+        final var currentVersion = ServicesSoftwareVersion.from(bootstrapConfig);
         final var metrics = new NoOpMetrics();
         final var hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
@@ -230,8 +227,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                         new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
                         metrics),
-                (configProvider, tssBaseService, tssBaseService2) ->
-                        new DiskStartupNetworks(tssBaseService, tssBaseService2),
+                DiskStartupNetworks::new,
                 NodeId.of(0L));
         this.state = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
         final Configuration platformConfig = ConfigurationBuilder.create()
@@ -342,6 +338,10 @@ public class StateChangesValidator implements BlockStreamValidator {
 
         final var leftHash = combine(previousBlockHash, inputTreeHash);
         final var rightHash = combine(outputTreeHash, startOfBlockStateHash);
+        System.out.println("previousBlockHash: " + previousBlockHash);
+        System.out.println("inputTreeHash: " + inputTreeHash);
+        System.out.println("outputTreeHash: " + outputTreeHash);
+        System.out.println("startOfBlockStateHash: " + startOfBlockStateHash);
         return combine(leftHash, rightHash);
     }
 
