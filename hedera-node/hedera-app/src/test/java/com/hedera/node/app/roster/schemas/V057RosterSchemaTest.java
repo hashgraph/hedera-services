@@ -18,12 +18,15 @@ package com.hedera.node.app.roster.schemas;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
@@ -84,11 +87,17 @@ class V057RosterSchemaTest {
     @Mock
     private ReadablePlatformStateStore platformStateStore;
 
+    @Mock
+    private Function<WritableStates, WritableTssStore> tssStoreFactory;
+
+    @Mock
+    private WritableTssStore tssStore;
+
     private V057RosterSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new V057RosterSchema(canAdopt, rosterStoreFactory, platformStateStoreFactory);
+        subject = new V057RosterSchema(canAdopt, rosterStoreFactory, platformStateStoreFactory, tssStoreFactory);
     }
 
     @Test
@@ -104,10 +113,14 @@ class V057RosterSchemaTest {
     void setsActiveFromStartupNetworksAtGenesis() {
         givenContextWith(CurrentVersion.NA, RosterLifecycle.ON, AvailableNetwork.GENESIS);
         given(context.isGenesis()).willReturn(true);
-
+        given(rosterStore.getActiveRoster()).willReturn(ROSTER);
+        given(rosterStore.getCandidateRoster()).willReturn(ROSTER);
+        given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
         subject.restart(context);
 
         verify(rosterStore).putActiveRoster(ROSTER, 0L);
+        verify(tssStore)
+                .removeIfNotPresent(List.of(EntityNumber.newBuilder().number(1L).build()));
     }
 
     @Test
@@ -141,6 +154,8 @@ class V057RosterSchemaTest {
         given(context.roundNumber()).willReturn(ROUND_NO);
         given(platformStateStoreFactory.apply(writableStates)).willReturn(platformStateStore);
         given(platformStateStore.getAddressBook()).willReturn(ADDRESS_BOOK);
+        given(rosterStore.getCandidateRoster()).willReturn(ROSTER);
+        given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
 
         subject.restart(context);
 
@@ -155,10 +170,13 @@ class V057RosterSchemaTest {
         given(rosterStore.getCandidateRoster()).willReturn(ROSTER);
         given(canAdopt.test(ROSTER)).willReturn(true);
         given(context.roundNumber()).willReturn(ROUND_NO);
+        given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
 
         subject.restart(context);
 
         verify(rosterStore).adoptCandidateRoster(ROUND_NO + 1);
+        verify(tssStore)
+                .removeIfNotPresent(List.of(EntityNumber.newBuilder().number(1L).build()));
     }
 
     @Test
@@ -168,11 +186,13 @@ class V057RosterSchemaTest {
         given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));
         given(platformStateStoreFactory.apply(writableStates)).willReturn(platformStateStore);
         given(platformStateStore.getAddressBook()).willReturn(ADDRESS_BOOK);
+        given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
 
         subject.restart(context);
 
         verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO + 1);
         verify(startupNetworks).setOverrideRound(ROUND_NO);
+        verify(tssStore, times(2)).removeIfNotPresent(List.of());
     }
 
     private enum CurrentVersion {

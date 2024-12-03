@@ -20,7 +20,10 @@ import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
@@ -31,8 +34,10 @@ import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,16 +60,24 @@ public class V057RosterSchema extends Schema {
      * The factory to use to create the writable roster store.
      */
     private final Function<WritableStates, WritableRosterStore> rosterStoreFactory;
-
+    /**
+     * The factory to use to create the readable platform store.
+     */
     private final Function<WritableStates, ReadablePlatformStateStore> platformStateStoreFactory;
+    /**
+     * The factory to use to create the writable tss store.
+     */
+    private final Function<WritableStates, WritableTssStore> tssStoreFactory;
 
     public V057RosterSchema(
             @NonNull final Predicate<Roster> canAdopt,
             @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory,
-            @NonNull final Function<WritableStates, ReadablePlatformStateStore> platformStateStoreFactory) {
+            @NonNull final Function<WritableStates, ReadablePlatformStateStore> platformStateStoreFactory,
+            @NonNull final Function<WritableStates, WritableTssStore> tssStoreFactory) {
         super(VERSION);
         this.canAdopt = requireNonNull(canAdopt);
         this.rosterStoreFactory = requireNonNull(rosterStoreFactory);
+        this.tssStoreFactory = requireNonNull(tssStoreFactory);
         this.platformStateStoreFactory = requireNonNull(platformStateStoreFactory);
     }
 
@@ -74,10 +87,13 @@ public class V057RosterSchema extends Schema {
         if (!ctx.configuration().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             return;
         }
-        final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
+        final var states = ctx.newStates();
+        final var rosterStore = rosterStoreFactory.apply(states);
+        final var rostersEntriesNodeIds = combinedEntriesNodeIds(rosterStore);
         final var startupNetworks = ctx.startupNetworks();
         if (ctx.isGenesis()) {
             setActiveRoster(GENESIS_ROUND_NO, rosterStore, startupNetworks.genesisNetworkOrThrow());
+            cleanUpTssEncryptionKeysFromState(states, rostersEntriesNodeIds);
         } else {
             final long roundNumber = ctx.roundNumber();
             final var overrideNetwork = startupNetworks.overrideNetworkFor(roundNumber);
@@ -95,10 +111,12 @@ public class V057RosterSchema extends Schema {
                     //   (previousRoster, previousRound) := (previousRoster, 0)
                     //   set (previousRoster, 0) as the active roster in the roster state.
                     rosterStore.putActiveRoster(previousRoster, 0L);
+                    cleanUpTssEncryptionKeysFromState(states, rostersEntriesNodeIds);
                 }
 
                 // set (overrideRoster, currentRound) as the active roster in the roster state.
                 setActiveRoster(currentRound, rosterStore, overrideNetwork.get());
+                cleanUpTssEncryptionKeysFromState(states, rostersEntriesNodeIds);
                 startupNetworks.setOverrideRound(roundNumber);
             } else if (isUpgrade(ctx)) {
                 if (rosterStore.getActiveRoster() == null) {
@@ -112,6 +130,7 @@ public class V057RosterSchema extends Schema {
                     final var platformState = platformStateStoreFactory.apply(ctx.newStates());
                     final var previousRoster = buildRoster(platformState.getAddressBook());
                     rosterStore.putActiveRoster(previousRoster, 0L);
+                    cleanUpTssEncryptionKeysFromState(states, rostersEntriesNodeIds);
 
                     // If there is no active roster at a migration boundary, we
                     // must have a migration network in the startup assets
@@ -121,6 +140,7 @@ public class V057RosterSchema extends Schema {
                     // currentRoster := translateToRoster(configAddressBook)
                     // set (currentRoster, currentRound) as the active roster in the roster state.
                     rosterStore.putActiveRoster(rosterFrom(network), currentRound);
+                    cleanUpTssEncryptionKeysFromState(states, rostersEntriesNodeIds);
                 } else {
                     // candidateRoster := read the candidate roster from the roster state.
                     final var candidateRoster = rosterStore.getCandidateRoster();
@@ -131,6 +151,7 @@ public class V057RosterSchema extends Schema {
 
                         // set (candidateRoster, currentRound) as the new active roster in the roster state.
                         rosterStore.adoptCandidateRoster(currentRound);
+                        cleanUpTssEncryptionKeysFromState(states, rostersEntriesNodeIds);
                     }
                 }
             }
@@ -140,6 +161,49 @@ public class V057RosterSchema extends Schema {
     private void setActiveRoster(
             final long roundNumber, @NonNull final WritableRosterStore rosterStore, @NonNull final Network network) {
         rosterStore.putActiveRoster(rosterFrom(network), roundNumber);
+    }
+
+    private List<EntityNumber> combinedEntriesNodeIds(@NonNull final WritableRosterStore rosterStore) {
+        requireNonNull(rosterStore);
+        final var activeRoster = rosterStore.getActiveRoster();
+        final var candidateRoster = rosterStore.getCandidateRoster();
+
+        if (activeRoster != null && candidateRoster != null) {
+            Stream<Long> activeRosterEntries =
+                    activeRoster.rosterEntries().stream().map(RosterEntry::nodeId);
+            Stream<Long> candidateRosterEntries =
+                    candidateRoster.rosterEntries().stream().map(RosterEntry::nodeId);
+            return Stream.concat(activeRosterEntries, candidateRosterEntries)
+                    .distinct()
+                    .map(EntityNumber::new)
+                    .toList();
+        }
+        // If we are here, at least one of the rosters is null
+        // if activeRoster is not null, then candidateRoster is null
+        // so we return only the entries from activeRoster.
+        if (activeRoster != null) {
+            return activeRoster.rosterEntries().stream()
+                    .map(RosterEntry::nodeId)
+                    .map(EntityNumber::new)
+                    .toList();
+        }
+        // If we are here, then activeRoster is null
+        // so we check whether to return the candidateRoster's entries.
+        if (candidateRoster != null) {
+            return candidateRoster.rosterEntries().stream()
+                    .map(RosterEntry::nodeId)
+                    .map(EntityNumber::new)
+                    .toList();
+        }
+        // Empty list if both rosters are null.
+        return List.of();
+    }
+
+    private void cleanUpTssEncryptionKeysFromState(
+            @NonNull final WritableStates states, @NonNull final List<EntityNumber> rostersEntriesNodeIds) {
+        requireNonNull(states);
+        requireNonNull(rostersEntriesNodeIds);
+        tssStoreFactory.apply(states).removeIfNotPresent(rostersEntriesNodeIds);
     }
 
     private Roster rosterFrom(@NonNull final Network network) {
