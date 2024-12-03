@@ -175,6 +175,7 @@ public class TssMetrics {
             tssSharesAggregationTime.set(aggregationTime);
         }
     }
+
     /**
      * Track the number of consecutive failures to generate a ledger signatures.
      */
@@ -237,6 +238,9 @@ public class TssMetrics {
         return tssLedgerSignatureTime.get();
     }
 
+    /**
+     * @return the counter of consecutive failures to generate a ledger signatures
+     */
     @VisibleForTesting
     public Counter getLedgerSignatureFailuresCounter() {
         return ledgerSignatureFailuresCounter;
