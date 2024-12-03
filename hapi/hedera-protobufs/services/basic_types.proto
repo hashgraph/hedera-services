@@ -1264,6 +1264,16 @@ enum HederaFunctionality {
      * Submit a node signature as part of the Threshold Signature Scheme (TSS) processing.
      */
     TssShareSignature = 98;
+
+    /**
+     * Submit a node public tss encryption key as part of the Threshold Signature Scheme (TSS).
+     */
+    TssEncryptionKey = 99;
+
+    /**
+     * Submit a signature of a state root hash gossiped to other nodes
+     */
+    StateSignatureTransaction = 100;
 }
 
 /**

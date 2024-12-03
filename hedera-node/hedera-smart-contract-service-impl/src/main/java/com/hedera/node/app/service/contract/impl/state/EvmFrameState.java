@@ -96,6 +96,8 @@ public interface EvmFrameState {
     /**
      * Returns whether the account with the given address is a "hollow account"; that is, an account
      * created by a value transfer to a 20-byte alias, without an explicit cryptographic key given.
+     * @param address the address of the account which should be checked if it is a hollow account
+     * @return true if the account is hollow
      */
     boolean isHollowAccount(@NonNull Address address);
 
@@ -197,6 +199,10 @@ public interface EvmFrameState {
     @NonNull
     Bytes getTokenRedirectCode(@NonNull Address address);
 
+    /**
+     * @param contractID the contract to extract its code hash
+     * @return the code hash of the contract
+     */
     @NonNull
     Hash getCodeHash(ContractID contractID);
 

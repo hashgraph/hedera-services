@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gossip;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -55,14 +55,12 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
     /**
      * Constructor
      *
-     * @param addressBook the address book
+     * @param roster the roster
      */
-    public DefaultIntakeEventCounter(@NonNull final AddressBook addressBook) {
+    public DefaultIntakeEventCounter(@NonNull final Roster roster) {
         this.unprocessedEventCounts = new HashMap<>();
-
-        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
-            unprocessedEventCounts.put(nodeId, new AtomicInteger(0));
-        }
+        roster.rosterEntries()
+                .forEach(entry -> unprocessedEventCounts.put(NodeId.of(entry.nodeId()), new AtomicInteger(0)));
     }
 
     /**

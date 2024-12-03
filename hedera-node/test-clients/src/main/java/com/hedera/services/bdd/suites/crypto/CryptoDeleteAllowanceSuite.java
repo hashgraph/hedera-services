@@ -289,6 +289,85 @@ public class CryptoDeleteAllowanceSuite {
     }
 
     @HapiTest
+    final Stream<DynamicTest> feesAsExpected() {
+        final String owner = "owner";
+        final String spender = "spender";
+        final String token = "token";
+        final String nft = "nft";
+        final String payer = "payer";
+        return hapiTest(
+                newKeyNamed("supplyKey"),
+                cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(payer).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate("spender1").balance(ONE_HUNDRED_HBARS),
+                cryptoCreate("spender2").balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(token)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .supplyKey("supplyKey")
+                        .maxSupply(1000L)
+                        .initialSupply(10L)
+                        .treasury(TOKEN_TREASURY),
+                tokenCreate(nft)
+                        .maxSupply(10L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey("supplyKey")
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(owner, token),
+                tokenAssociate(owner, nft),
+                mintToken(
+                                nft,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
+                        .via("nftTokenMint"),
+                mintToken(token, 500L).via("tokenMint"),
+                cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)),
+                cryptoApproveAllowance()
+                        .payingWith(owner)
+                        .addCryptoAllowance(owner, "spender2", 100L)
+                        .addTokenAllowance(owner, token, "spender2", 100L)
+                        .addNftAllowance(owner, nft, "spender2", false, List.of(1L, 2L, 3L)),
+                /* without specifying owner */
+                cryptoDeleteAllowance()
+                        .payingWith(owner)
+                        .blankMemo()
+                        .addNftDeleteAllowance(MISSING_OWNER, nft, List.of(1L))
+                        .via("baseDeleteNft"),
+                validateChargedUsdWithin("baseDeleteNft", 0.05, 0.02),
+                cryptoApproveAllowance().payingWith(owner).addNftAllowance(owner, nft, "spender2", false, List.of(1L)),
+                /* with specifying owner */
+                cryptoDeleteAllowance()
+                        .payingWith(owner)
+                        .blankMemo()
+                        .addNftDeleteAllowance(owner, nft, List.of(1L))
+                        .via("baseDeleteNft"),
+                validateChargedUsdWithin("baseDeleteNft", 0.05, 0.02),
+
+                /* with 2 serials */
+                cryptoDeleteAllowance()
+                        .payingWith(owner)
+                        .blankMemo()
+                        .addNftDeleteAllowance(owner, nft, List.of(2L, 3L))
+                        .via("twoDeleteNft"),
+                validateChargedUsdWithin("twoDeleteNft", 0.050101, 0.01),
+                /* with 2 sigs */
+                cryptoApproveAllowance().payingWith(owner).addNftAllowance(owner, nft, "spender2", false, List.of(1L)),
+                cryptoDeleteAllowance()
+                        .payingWith(payer)
+                        .blankMemo()
+                        .addNftDeleteAllowance(owner, nft, List.of(1L))
+                        .signedBy(payer, owner)
+                        .via("twoDeleteNft"),
+                validateChargedUsdWithin("twoDeleteNft", 0.08124, 0.02));
+    }
+
+    @HapiTest
     final Stream<DynamicTest> succeedsWhenTokenPausedFrozenKycRevoked() {
         final String owner = "owner";
         final String spender = "spender";

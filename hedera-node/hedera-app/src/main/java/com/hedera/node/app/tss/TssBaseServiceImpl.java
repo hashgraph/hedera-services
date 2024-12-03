@@ -43,6 +43,7 @@ import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
+import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -126,6 +127,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0560TssBaseSchema());
+        registry.register(new V0570TssBaseSchema());
     }
 
     @Override
@@ -375,6 +377,11 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory) {
         return tssLibrary.getTssMessageFromBytes(wrap, directory);
+    }
+
+    @Override
+    public void manageTssStatus(final State state) {
+        // TODO: Implement this method
     }
 
     @VisibleForTesting
