@@ -31,15 +31,34 @@ import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_
 import static com.hedera.services.bdd.junit.RepeatableReason.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.PREDEFINED_SHAPE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.exposeMaxSchedulable;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
@@ -56,16 +75,23 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepForSeconds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_MUST_BE_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_TOO_LONG;
@@ -98,10 +124,17 @@ import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
+import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -112,7 +145,10 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
@@ -500,6 +536,361 @@ public class RepeatableHip423Tests {
                 sleepForSeconds(ONE_MINUTE),
                 // Trigger the executions
                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)));
+    }
+
+    @LeakyRepeatableHapiTest(
+            value = NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
+            overrides = {"scheduling.whitelist"})
+    @DisplayName("Schedule contract call")
+    final Stream<DynamicTest> scheduleCreateContractCalls() {
+        final var contract = "TestContract";
+        final var zeroAddress =
+                idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(0L).build());
+        return hapiTest(flattened(
+                uploadTestContract(),
+                contractCreate(
+                                contract,
+                                idAsHeadlongAddress(
+                                        AccountID.newBuilder().setAccountNum(2).build()),
+                                BigInteger.ONE)
+                        .balance(ONE_HBAR),
+                // contract call
+                scheduleCreate("contractCall", contractCall(contract, "callSpecific", zeroAddress))
+                        .expiringIn(ONE_MINUTE)
+                        .via("contractCall"),
+                // contract call with amount
+                scheduleCreate("callWithAmount", contractCall(contract, "callSpecificWithValue", zeroAddress))
+                        .expiringIn(ONE_MINUTE)
+                        .via("callWithAmount"),
+                triggerAndValidateSuccessfulExecution(ONE_MINUTE, "contractCall", "callWithAmount")));
+    }
+
+    @LeakyRepeatableHapiTest(
+            value = NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
+            overrides = {"scheduling.whitelist"})
+    @DisplayName("Schedule contract create")
+    final Stream<DynamicTest> scheduleCreateContractCreate() {
+        final var contract = "TestContract";
+        final var addressTwo =
+                idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(2).build());
+        return hapiTest(flattened(
+                cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
+                uploadTestContract(),
+                // contract create
+                scheduleCreate(
+                                "contractCreate",
+                                contractCreate(contract, addressTwo, BigInteger.ONE)
+                                        .omitAdminKey())
+                        .expiringIn(ONE_MINUTE)
+                        .via("contractCreate"),
+                triggerAndValidateSuccessfulExecution(ONE_MINUTE, "contractCreate")));
+    }
+
+    @LeakyRepeatableHapiTest(
+            value = NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
+            overrides = {"scheduling.whitelist"})
+    @DisplayName("Schedule contract update and delete")
+    final Stream<DynamicTest> scheduleCreateContractUpdate() {
+        final var contract = "TestContract";
+        final var addressTwo =
+                idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(2).build());
+        return hapiTest(flattened(
+                uploadTestContract(),
+                newKeyNamed("admin"),
+                contractCreate(contract, addressTwo, BigInteger.ONE)
+                        .adminKey("admin")
+                        .balance(ONE_HBAR),
+                // contract update
+                scheduleCreate("update", contractUpdate(contract).newMemo("tess update"))
+                        .alsoSigningWith("admin")
+                        .expiringIn(ONE_MINUTE)
+                        .via("update"),
+                // contract delete
+                scheduleCreate("delete", contractDelete(contract))
+                        .alsoSigningWith("admin")
+                        .expiringIn(ONE_MINUTE)
+                        .via("delete"),
+                triggerAndValidateSuccessfulExecution(ONE_MINUTE, "update", "delete")));
+    }
+
+    @LeakyRepeatableHapiTest(
+            value = NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
+            overrides = {"scheduling.whitelist"})
+    @DisplayName("Schedules far in the future are more expensive")
+    final Stream<DynamicTest> longerScheduleShouldCostMore() {
+        final var firstFee = new AtomicLong();
+        final var secondFee = new AtomicLong();
+        final var thirdFee = new AtomicLong();
+        return hapiTest(
+                cryptoCreate("payer").balance(ONE_HBAR),
+                cryptoCreate("account"),
+                scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "account", 1L)))
+                        .expiringIn(ONE_MINUTE)
+                        .payingWith("payer")
+                        .via("first"),
+                scheduleCreate("receiverSigRequired", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "account", 2L)))
+                        .expiringIn(ONE_MINUTE)
+                        .payingWith("payer")
+                        .via("second"),
+                scheduleCreate("receiverSigRequired", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "account", 3L)))
+                        .expiringIn(ONE_MINUTE * 10)
+                        .payingWith("payer")
+                        .via("third"),
+                getTxnRecord("first").exposingTo(record -> firstFee.set(record.getTransactionFee())),
+                getTxnRecord("second").exposingTo(record -> secondFee.set(record.getTransactionFee())),
+                getTxnRecord("third").exposingTo(record -> thirdFee.set(record.getTransactionFee())),
+                withOpContext((spec, log) -> {
+                    Assertions.assertEquals(firstFee.get(), secondFee.get());
+                    Assertions.assertTrue(secondFee.get() < thirdFee.get());
+                }));
+    }
+
+    @LeakyRepeatableHapiTest(
+            value = NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
+            overrides = {"scheduling.whitelist"})
+    @DisplayName("Schedule precompile call without ContractID key will fail")
+    final Stream<DynamicTest> noContractIdKeyWillFail() {
+        return hapiTest(
+                cryptoCreate("account"),
+                tokenCreate("FungibleToken").tokenType(TokenType.FUNGIBLE_COMMON),
+                uploadScheduledContractPrices(GENESIS),
+                overriding("scheduling.whitelist", "ContractCall"),
+                uploadInitCode("AssociateDissociate"),
+                contractCreate("AssociateDissociate"),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        scheduleCreate(
+                                        "fungibleTokenAssociate",
+                                        contractCall(
+                                                        "AssociateDissociate",
+                                                        "tokenAssociate",
+                                                        asHeadlongAddress(asAddress(
+                                                                spec.registry().getAccountID("account"))),
+                                                        asHeadlongAddress(asAddress(
+                                                                spec.registry().getTokenID("FungibleToken"))))
+                                                .gas(4_000_000L))
+                                .expiringIn(ONE_MINUTE)
+                                .via("fungibleTokenAssociate"),
+                        sleepForSeconds(ONE_MINUTE),
+                        cryptoCreate("foo"),
+                        getTxnRecord("fungibleTokenAssociate")
+                                .scheduled()
+                                .andAllChildRecords()
+                                .hasPriority(recordWith().status(CONTRACT_REVERT_EXECUTED))
+                                .hasChildRecords(recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
+    }
+
+    @LeakyRepeatableHapiTest(
+            value = NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
+            overrides = {"scheduling.whitelist"})
+    @DisplayName("Schedule transaction, than delete the payer")
+    final Stream<DynamicTest> deletedPayer() {
+        return hapiTest(
+                cryptoCreate("payer"),
+                cryptoCreate("account").receiverSigRequired(true),
+                scheduleCreate("transfer", cryptoTransfer(tinyBarsFromTo("payer", "account", 1L)))
+                        .expiringIn(ONE_MINUTE)
+                        .waitForExpiry(false)
+                        .alsoSigningWith("payer")
+                        .via("transfer"),
+                cryptoDelete("payer"),
+                scheduleSign("transfer").alsoSigningWith("account"),
+                getTxnRecord("transfer").scheduled().hasPriority(recordWith().status(ACCOUNT_DELETED)));
+    }
+
+    @LeakyRepeatableHapiTest(
+            value = NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
+            overrides = {"scheduling.whitelist", "contracts.maxGasPerSec"})
+    @DisplayName("Gas throttle works as expected")
+    final Stream<DynamicTest> gasThrottleWorksAsExpected() {
+        final var contract = "TestContract";
+        final var addressTwo =
+                idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(2).build());
+        final var zeroAddress =
+                idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(0L).build());
+        final var gasToOffer = 2_000_000L;
+        return hapiTest(flattened(
+                overriding("contracts.maxGasPerSec", "4000000"),
+                cryptoCreate("PAYING_ACCOUNT"),
+                uploadTestContract(),
+                contractCreate(contract, addressTwo, BigInteger.ONE)
+                        .balance(ONE_HBAR)
+                        .via("contractCreate"),
+                // schedule at another second, should not affect the throttle
+                scheduleCreate(
+                                "1",
+                                contractCall(contract, "callSpecificWithValue", zeroAddress)
+                                        .sending(1L)
+                                        .gas(gasToOffer))
+                        .withRelativeExpiry("contractCreate", 20)
+                        .payingWith("PAYING_ACCOUNT"),
+                scheduleCreate(
+                                "2",
+                                contractCall(contract, "callSpecificWithValue", zeroAddress)
+                                        .sending(2L)
+                                        .gas(gasToOffer))
+                        .withRelativeExpiry("contractCreate", 10)
+                        .payingWith("PAYING_ACCOUNT"),
+                scheduleCreate(
+                                "3",
+                                contractCall(contract, "callSpecificWithValue", zeroAddress)
+                                        .sending(3L)
+                                        .gas(gasToOffer))
+                        .withRelativeExpiry("contractCreate", 10)
+                        .payingWith("PAYING_ACCOUNT"),
+                scheduleCreate(
+                                "4",
+                                contractCall(contract, "callSpecificWithValue", zeroAddress)
+                                        .sending(4L)
+                                        .gas(gasToOffer))
+                        .withRelativeExpiry("contractCreate", 10)
+                        .payingWith("PAYING_ACCOUNT")
+                        .hasKnownStatus(SCHEDULE_EXPIRY_IS_BUSY),
+                purgeExpiringWithin(20)));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    @DisplayName("Sign with part of the required signatures will fail")
+    final Stream<DynamicTest> scheduleSingWithPartOfTheRequiredSigs() {
+        return hapiTest(flattened(
+                cryptoCreate("sender1").balance(ONE_HUNDRED_HBARS),
+                cryptoCreate("sender2").balance(ONE_HUNDRED_HBARS),
+                cryptoCreate("receiver"),
+                // require two signatures
+                scheduleCreate(
+                                "transfer",
+                                cryptoTransfer(
+                                        tinyBarsFromTo("sender1", "receiver", 1L),
+                                        tinyBarsFromTo("sender2", "receiver", 1L)))
+                        .expiringIn(ONE_MINUTE)
+                        .via("transfer"),
+                // provide one signature
+                scheduleSign("transfer").alsoSigningWith("sender1"),
+                // fail with invalid signature
+                triggerAndValidateStatus(
+                        ONE_MINUTE,
+                        com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE,
+                        "transfer")));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    @DisplayName("Freeze token before schedule execute")
+    final Stream<DynamicTest> scheduleTokenTransferThenFreezeTheToken() {
+        return hapiTest(flattened(
+                cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
+                cryptoCreate("receiver"),
+                tokenCreate("token")
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .freezeKey("sender")
+                        .treasury("sender")
+                        .initialSupply(5L),
+                tokenAssociate("receiver", "token"),
+                scheduleCreate("transfer", cryptoTransfer(moving(1, "token").between("sender", "receiver")))
+                        .payingWith("sender")
+                        .expiringIn(ONE_MINUTE)
+                        .via("transfer"),
+                // freeze
+                tokenFreeze("token", "receiver").payingWith("sender"),
+                triggerAndValidateStatus(
+                        ONE_MINUTE,
+                        com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN,
+                        "transfer")));
+    }
+
+    @LeakyRepeatableHapiTest(
+            value = NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
+            overrides = {"scheduling.whitelist"})
+    @DisplayName("Schedule contract call then delete the contract")
+    final Stream<DynamicTest> scheduleCreateContractCallsThenChangeKeysOrDeleteContract() {
+        final var contract = "TestContract";
+        final var zeroAddress =
+                idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(0L).build());
+        return hapiTest(flattened(
+                uploadTestContract(),
+                cryptoCreate("contractAdmin").balance(ONE_HUNDRED_HBARS),
+                contractCreate(
+                                contract,
+                                idAsHeadlongAddress(
+                                        AccountID.newBuilder().setAccountNum(2).build()),
+                                BigInteger.ONE)
+                        .balance(ONE_HBAR)
+                        .adminKey("contractAdmin"),
+                // contract call
+                scheduleCreate("contractCall", contractCall(contract, "callSpecific", zeroAddress))
+                        .expiringIn(ONE_MINUTE)
+                        .via("contractCall"),
+                contractDelete(contract).payingWith("contractAdmin"),
+                getContractInfo(contract).has(contractWith().isDeleted()),
+                // Trigger the executions
+                sleepForSeconds(ONE_MINUTE),
+                cryptoCreate("foo"),
+                getTxnRecord("contractCall")
+                        .scheduled()
+                        .hasPriority(
+                                recordWith().contractCallResult(resultWith().contractCallResult(() -> Bytes.EMPTY)))));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    @DisplayName("Schedule sign then delete the signer")
+    final Stream<DynamicTest> deleteAccountAfterSign() {
+        final KeyShape threshKeyShape = KeyShape.threshOf(2, PREDEFINED_SHAPE, PREDEFINED_SHAPE);
+        return hapiTest(flattened(
+                cryptoCreate("Alice"),
+                cryptoCreate("Bob"),
+                cryptoCreate("Receiver"),
+                newKeyNamed("THRESHOLD_KEY").shape(threshKeyShape.signedWith(sigs("Alice", "Bob"))),
+                cryptoCreate("sender").key("THRESHOLD_KEY").balance(ONE_HUNDRED_HBARS),
+                scheduleCreate("transfer", cryptoTransfer(tinyBarsFromTo("sender", "Receiver", 4L)))
+                        .expiringIn(ONE_MINUTE)
+                        .via("transfer"),
+                scheduleSign("transfer").alsoSigningWith("Alice", "Bob"),
+                cryptoDelete("Alice").payingWith("Alice"),
+                cryptoDelete("Bob").payingWith("Bob"),
+
+                // Even we deleted the signers, we have their signatures in the state and this will satisfy the
+                // threshold
+                // key of the "sender". In this case the transfer will be successful.
+                triggerAndValidateSuccessfulExecution(ONE_MINUTE, "transfer")));
+    }
+
+    private SpecOperation[] uploadTestContract() {
+        final var testContract = "TestContract";
+        return new SpecOperation[] {
+            // upload fees for SCHEDULE_CREATE_CONTRACT_CALL
+            uploadScheduledContractPrices(GENESIS),
+            overriding("scheduling.whitelist", "ContractCall,ContractCreate,ContractUpdate,ContractDelete"),
+            uploadInitCode(testContract),
+        };
+    }
+
+    private SpecOperation[] triggerAndValidateSuccessfulExecution(long sleepDuration, String... scheduledTransactions) {
+        return triggerAndValidateStatus(
+                sleepDuration, com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS, scheduledTransactions);
+    }
+
+    private SpecOperation[] triggerAndValidateStatus(
+            long sleepDuration,
+            com.hederahashgraph.api.proto.java.ResponseCodeEnum status,
+            String... scheduledTransactions) {
+        return new SpecOperation[] {
+            sleepForSeconds(sleepDuration),
+            // Trigger the executions
+            cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
+            sleepFor(2),
+            // validate records
+            withOpContext((spec, opLog) -> {
+                final var ops = new ArrayList<HapiGetTxnRecord>();
+                List.of(scheduledTransactions).forEach(scheule -> {
+                    ops.add(getTxnRecord(scheule).scheduled());
+                });
+                allRunFor(spec, ops.toArray(SpecOperation[]::new));
+                ops.forEach(op -> {
+                    // assert success
+                    Assertions.assertEquals(
+                            status, op.getResponseRecord().getReceipt().getStatus());
+                });
+            }),
+        };
     }
 
     private static BiConsumer<TransactionBody, TransactionResult> withStatus(@NonNull final ResponseCodeEnum status) {
