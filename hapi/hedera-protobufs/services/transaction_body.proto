@@ -92,6 +92,7 @@ import "node_delete.proto";
 import "auxiliary/tss/tss_message.proto";
 import "auxiliary/tss/tss_vote.proto";
 import "auxiliary/tss/tss_share_signature.proto";
+import "auxiliary/tss/tss_encryption_key.proto";
 
 import "event/state_signature_transaction.proto";
 
@@ -439,6 +440,11 @@ message TransactionBody {
          * A transaction body for node signature as part of the Threshold Signature Scheme (TSS) processing.
          */
         com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody tssShareSignature = 63;
+
+        /**
+         * A transaction body for a 'tssEncryptionKey` request
+         */
+        com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody tssEncryptionKey = 64;
 
         /**
          * A transaction body for signature of a state snapshot gossiped to other nodes
