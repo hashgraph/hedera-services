@@ -117,7 +117,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "7e1c290863ea92561157982a87b13383eef5ed0b30ae7d84bda142a66c38c948a03dfa0fa072246d4d1484c997a3294d"),
+                        "5712c5a4da678923b1982dd0da85d2e346f940f06546508289bd31fe8006c40101994ea2c9ce085324909016487c35eb"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("config.txt"),
                 node0Dir.resolve("data/config/application.properties"),
@@ -298,10 +298,6 @@ public class StateChangesValidator implements BlockStreamValidator {
 
         final var leftHash = combine(previousBlockHash, inputTreeHash);
         final var rightHash = combine(outputTreeHash, startOfBlockStateHash);
-        System.out.println("previousBlockHash: " + previousBlockHash);
-        System.out.println("inputTreeHash: " + inputTreeHash);
-        System.out.println("outputTreeHash: " + outputTreeHash);
-        System.out.println("startOfBlockStateHash: " + startOfBlockStateHash);
         return combine(leftHash, rightHash);
     }
 
