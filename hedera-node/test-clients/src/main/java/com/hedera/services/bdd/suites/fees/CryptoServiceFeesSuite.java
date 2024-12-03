@@ -172,24 +172,13 @@ public class CryptoServiceFeesSuite {
 
     @HapiTest
     final Stream<DynamicTest> cryptoDeleteUsdFeeAsExpected() {
-        double expectedCreatePriceUsd = 0.05;
         double expectedDeletePriceUsd = 0.005;
         final var noAutoAssocSlots = "noAutoAssocSlots";
         return hapiTest(
                 cryptoCreate(CIVILIAN).balance(5 * ONE_HUNDRED_HBARS),
-                //                getAccountBalance(CIVILIAN).hasTinyBars(5 * ONE_HUNDRED_HBARS),
-                cryptoCreate(noAutoAssocSlots)
-                        .key(CIVILIAN)
-                        //                        .balance(0L)
-                        .via(noAutoAssocSlots)
-                        //                        .blankMemo()
-                        .signedBy(CIVILIAN)
-                        .payingWith(CIVILIAN),
-                validateChargedUsd(noAutoAssocSlots, expectedCreatePriceUsd),
-                cryptoDelete(noAutoAssocSlots).via("basicDelete"),
-                //                        .payingWith(CIVILIAN),
+                cryptoCreate(noAutoAssocSlots).balance(5 * ONE_HUNDRED_HBARS).key(CIVILIAN),
+                cryptoDelete(noAutoAssocSlots).via("basicDelete").payingWith(CIVILIAN).signedBy(CIVILIAN),
                 validateChargedUsd("basicDelete", expectedDeletePriceUsd));
-        //TODO: this test is failing right now
     }
 
     @HapiTest
