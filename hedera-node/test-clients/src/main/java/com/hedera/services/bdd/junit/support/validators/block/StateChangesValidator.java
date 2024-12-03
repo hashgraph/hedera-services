@@ -20,6 +20,7 @@ import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
@@ -52,8 +53,8 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
+import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
-import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
@@ -102,13 +103,13 @@ public class StateChangesValidator implements BlockStreamValidator {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
     private static final Pattern CHILD_STATE_PATTERN = Pattern.compile("\\s+\\d+ \\w+\\s+(\\S+)\\s+.+\\s+(.+)");
 
+    private final Hash genesisStateHash;
     private final Path pathToNode0SwirldsLog;
     private final Bytes expectedRootHash;
     private final Set<String> servicesWritten = new HashSet<>();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
     private PlatformMerkleStateRoot state;
-    private Hash genesisStateHash;
 
     public static void main(String[] args) {
         final var node0Dir = Paths.get("hedera-node/test-clients")
@@ -117,11 +118,11 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "5712c5a4da678923b1982dd0da85d2e346f940f06546508289bd31fe8006c40101994ea2c9ce085324909016487c35eb"),
+                        "f19d5a88e689ef0c0b039f498d219dd29afa809d04f907df75a071ef07eba4be33cabb714c083e69e57e4fda63f903e6"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("config.txt"),
                 node0Dir.resolve("data/config/application.properties"),
-                Bytes.fromHex("03"));
+                node0Dir.resolve("data/config"));
         final var blocks =
                 BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/blockStreams/block-0.0.3"));
         validator.validateBlocks(blocks);
@@ -170,8 +171,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                     node0.getExternalPath(SWIRLDS_LOG),
                     genesisConfigTxt,
                     node0.getExternalPath(APPLICATION_PROPERTIES),
-                    requireNonNull(new BytesConverter()
-                            .convert(spec.startupProperties().get("ledger.id"))));
+                    node0.getExternalPath(DATA_CONFIG_DIR));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -182,15 +182,17 @@ public class StateChangesValidator implements BlockStreamValidator {
             @NonNull final Path pathToNode0SwirldsLog,
             @NonNull final Path pathToAddressBook,
             @NonNull final Path pathToOverrideProperties,
-            @NonNull final Bytes ledgerId) {
+            @NonNull final Path pathToUpgradeSysFilesLoc) {
         this.expectedRootHash = requireNonNull(expectedRootHash);
         this.pathToNode0SwirldsLog = requireNonNull(pathToNode0SwirldsLog);
 
-        // Ensure the bootstrap config sees our blockStream.streamMode=BOTH override
-        // and registers the BlockStreamService schemas
         System.setProperty(
                 "hedera.app.properties.path",
                 pathToOverrideProperties.toAbsolutePath().toString());
+        System.setProperty(
+                "networkAdmin.upgradeSysFilesLoc",
+                pathToUpgradeSysFilesLoc.toAbsolutePath().toString());
+        unarchiveGenesisNetworkJson(pathToUpgradeSysFilesLoc);
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
         final var servicesVersion = versionConfig.servicesVersion();
@@ -364,6 +366,28 @@ public class StateChangesValidator implements BlockStreamValidator {
                     queueState.poll();
                     stateChangesSummary.countQueuePop(serviceName, stateKey);
                 }
+            }
+        }
+    }
+
+    /**
+     * If the given path does not contain the genesis network JSON, recovers it from the archive directory.
+     * @param path the path to the network directory
+     * @throws IllegalStateException if the genesis network JSON cannot be found
+     * @throws UncheckedIOException if an I/O error occurs
+     */
+    private void unarchiveGenesisNetworkJson(@NonNull final Path path) {
+        final var desiredPath = path.resolve(DiskStartupNetworks.GENESIS_NETWORK_JSON);
+        if (!desiredPath.toFile().exists()) {
+            final var archivedPath =
+                    path.resolve(DiskStartupNetworks.ARCHIVE).resolve(DiskStartupNetworks.GENESIS_NETWORK_JSON);
+            if (!archivedPath.toFile().exists()) {
+                throw new IllegalStateException("No archived genesis network JSON found at " + archivedPath);
+            }
+            try {
+                Files.move(archivedPath, desiredPath);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
     }

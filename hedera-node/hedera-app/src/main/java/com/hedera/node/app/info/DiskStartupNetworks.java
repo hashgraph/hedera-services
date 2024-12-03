@@ -82,18 +82,18 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     @Override
     public Network genesisNetworkOrThrow() {
-        return loadNetwork(configProvider.getConfiguration(), GENESIS_NETWORK_JSON)
+        return loadNetwork("genesis", configProvider.getConfiguration(), GENESIS_NETWORK_JSON)
                 .orElseThrow(() -> new IllegalStateException("Genesis network not found"));
     }
 
     @Override
     public Optional<Network> overrideNetworkFor(final long roundNumber) {
         final var config = configProvider.getConfiguration();
-        final var unscopedNetwork = loadNetwork(config, OVERRIDE_NETWORK_JSON);
+        final var unscopedNetwork = loadNetwork("override", config, OVERRIDE_NETWORK_JSON);
         if (unscopedNetwork.isPresent()) {
             return unscopedNetwork;
         }
-        return loadNetwork(config, "" + roundNumber, OVERRIDE_NETWORK_JSON);
+        return loadNetwork("override", config, "" + roundNumber, OVERRIDE_NETWORK_JSON);
     }
 
     @Override
@@ -144,7 +144,7 @@ public class DiskStartupNetworks implements StartupNetworks {
     @Override
     public Network migrationNetworkOrThrow() {
         // FUTURE - look into sourcing this from a config.txt and public.pfx to ease migration
-        return loadNetwork(configProvider.getConfiguration(), OVERRIDE_NETWORK_JSON)
+        return loadNetwork("migration", configProvider.getConfiguration(), OVERRIDE_NETWORK_JSON)
                 .orElseThrow(() -> new IllegalStateException("Transplant network not found"));
     }
 
@@ -203,19 +203,28 @@ public class DiskStartupNetworks implements StartupNetworks {
     /**
      * Attempts to load a {@link Network} from a given file in the directory whose relative path is given
      * by the provided {@link Configuration}.
+     *
+     * @param type the type of network to load
      * @param config the configuration to use to determine the location of the network file
      * @param segments the path segments of the file to load the network from
      * @return the loaded network, if it was found and successfully loaded
      */
-    private Optional<Network> loadNetwork(@NonNull final Configuration config, @NonNull final String... segments) {
+    private Optional<Network> loadNetwork(
+            @NonNull final String type, @NonNull final Configuration config, @NonNull final String... segments) {
         final var path = networksPath(config, segments);
+        log.info("Loading {} network info from {}", type, path.toAbsolutePath());
         if (Files.exists(path)) {
             try (final var fin = Files.newInputStream(path)) {
                 final var network = Network.JSON.parse(new ReadableStreamingData(fin));
+                log.info(
+                        "Parsed {} network info for N={} nodes from {}",
+                        type,
+                        network.nodeMetadata().size(),
+                        path.toAbsolutePath());
                 assertValidTssKeys(network);
                 return Optional.of(network);
             } catch (Exception e) {
-                log.warn("Failed to load network info from {}", path.toAbsolutePath(), e);
+                log.warn("Failed to load {} network info from {}", path.toAbsolutePath(), e);
             }
         }
         return Optional.empty();
