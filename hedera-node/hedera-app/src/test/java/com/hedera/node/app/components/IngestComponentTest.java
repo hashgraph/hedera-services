@@ -101,6 +101,8 @@ class IngestComponentTest {
 
     private HederaInjectionComponent app;
 
+    private static final Metrics NO_OP_METRICS = new NoOpMetrics();
+
     @BeforeEach
     void setUp() {
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
@@ -125,6 +127,7 @@ class IngestComponentTest {
                 UNAVAILABLE_GOSSIP,
                 () -> configuration,
                 () -> DEFAULT_NODE_INFO,
+                () -> NO_OP_METRICS,
                 throttleFactory);
         given(tssBaseService.tssHandlers())
                 .willReturn(new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler));
