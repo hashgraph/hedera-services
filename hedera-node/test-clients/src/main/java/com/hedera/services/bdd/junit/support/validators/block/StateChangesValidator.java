@@ -47,16 +47,11 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
-import com.hedera.node.app.Hedera;
+import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
-import com.hedera.node.app.info.DiskStartupNetworks;
-import com.hedera.node.app.services.OrderedServiceMigrator;
-import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.TssLibraryImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.data.VersionConfig;
@@ -65,28 +60,17 @@ import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
-import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.CommittableWritableStates;
-import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -95,13 +79,11 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ForkJoinPool;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -215,31 +197,9 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
         final var currentVersion = ServicesSoftwareVersion.from(bootstrapConfig);
         final var metrics = new NoOpMetrics();
-        final var hedera = new Hedera(
-                ConstructableRegistry.getInstance(),
-                ServicesRegistryImpl::new,
-                new OrderedServiceMigrator(),
-                InstantSource.system(),
-                appContext -> new TssBaseServiceImpl(
-                        appContext,
-                        ForkJoinPool.commonPool(),
-                        ForkJoinPool.commonPool(),
-                        new TssLibraryImpl(appContext),
-                        ForkJoinPool.commonPool(),
-                        metrics),
-                DiskStartupNetworks::new,
-                NodeId.of(0L));
+        final var hedera = ServicesMain.newHedera(NodeId.of(0L), metrics);
         this.state = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
-        final Configuration platformConfig = ConfigurationBuilder.create()
-                .withConfigDataType(MetricsConfig.class)
-                .withConfigDataType(TransactionConfig.class)
-                .withConfigDataType(CryptoConfig.class)
-                .withConfigDataType(BasicConfig.class)
-                .withConfigDataType(VirtualMapConfig.class)
-                .withConfigDataType(MerkleDbConfig.class)
-                .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
-                .build();
+        final var platformConfig = ServicesMain.buildPlatformConfig();
         hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, addressBook, platformConfig);
         initGenesisPlatformState(platformConfig, this.state.getWritablePlatformState(), addressBook, currentVersion);
         final var stateToBeCopied = state;

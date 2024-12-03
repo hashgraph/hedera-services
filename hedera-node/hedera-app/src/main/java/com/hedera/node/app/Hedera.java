@@ -360,8 +360,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @FunctionalInterface
     public interface StartupNetworksFactory {
         @NonNull
-        StartupNetworks apply(
-                @NonNull ConfigProvider configProvider, @NonNull TssBaseService tssBaseService);
+        StartupNetworks apply(@NonNull ConfigProvider configProvider, @NonNull TssBaseService tssBaseService);
     }
 
     /*==================================================================================================================

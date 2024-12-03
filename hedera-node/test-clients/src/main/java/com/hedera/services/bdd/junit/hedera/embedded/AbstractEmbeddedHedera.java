@@ -167,7 +167,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         } else {
             trigger = RESTART;
         }
-        final var platformConfig = ServicesMain.buildPlatformConfiguration();
+        final var platformConfig = ServicesMain.buildPlatformConfig();
         hedera.initializeStatesApi(
                 state, fakePlatform().getContext().getMetrics(), trigger, addressBook, platformConfig);
 

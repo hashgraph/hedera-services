@@ -70,6 +70,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
@@ -205,41 +206,37 @@ public class ServicesMain implements SwirldMain {
 
         final NodeId selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
 
-        final var configuration = buildPlatformConfiguration();
+        final var platformConfig = buildPlatformConfig();
 
         // Register with the ConstructableRegistry classes which need configuration.
-        BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
+        BootstrapUtils.setupConstructableRegistryWithConfiguration(platformConfig);
 
         final var keysAndCerts =
-                initNodeSecurity(diskAddressBook, configuration).get(selfId);
+                initNodeSecurity(diskAddressBook, platformConfig).get(selfId);
 
-        setupGlobalMetrics(configuration);
+        setupGlobalMetrics(platformConfig);
         metrics = getMetricsProvider().createPlatformMetrics(selfId);
 
-        hedera = newHedera(selfId);
+        hedera = newHedera(selfId, metrics);
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
         final var time = Time.getCurrent();
-        final var fileSystemManager = FileSystemManager.create(configuration);
+        final var fileSystemManager = FileSystemManager.create(platformConfig);
         final var recycleBin =
-                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+                RecycleBin.create(metrics, platformConfig, getStaticThreadManager(), time, fileSystemManager, selfId);
 
         // Create initial state for the platform
         final var isGenesis = new AtomicBoolean(false);
         final var reservedState = getInitialState(
-                configuration,
+                platformConfig,
                 recycleBin,
                 version,
                 () -> {
                     isGenesis.set(true);
-                    final var genesisState = hedera.newMerkleStateRoot();
+                    final var genesisState = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
                     hedera.initializeStatesApi(
-                            (MerkleStateRoot) genesisState,
-                            metrics,
-                            InitTrigger.GENESIS,
-                            diskAddressBook,
-                            configuration);
+                            genesisState, metrics, InitTrigger.GENESIS, diskAddressBook, platformConfig);
                     return genesisState;
                 },
                 Hedera.APP_NAME,
@@ -253,7 +250,7 @@ public class ServicesMain implements SwirldMain {
                     metrics,
                     InitTrigger.RESTART,
                     null,
-                    configuration);
+                    platformConfig);
         }
 
         final var cryptography = CryptographyFactory.create();
@@ -262,16 +259,16 @@ public class ServicesMain implements SwirldMain {
         cryptography.digestSync(diskAddressBook);
 
         // Initialize the Merkle cryptography
-        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
+        final var merkleCryptography = MerkleCryptographyFactory.create(platformConfig, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
 
         // Create the platform context
         final var platformContext = PlatformContext.create(
-                configuration,
+                platformConfig,
                 Time.getCurrent(),
                 metrics,
                 cryptography,
-                FileSystemManager.create(configuration),
+                FileSystemManager.create(platformConfig),
                 recycleBin,
                 merkleCryptography);
 
@@ -282,7 +279,7 @@ public class ServicesMain implements SwirldMain {
 
         final RosterHistory rosterHistory;
         final boolean shouldUseRosterLifecycle =
-                configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle();
+                platformConfig.getConfigData(AddressBookConfig.class).useRosterLifecycle();
         if (shouldUseRosterLifecycle) {
             final SignedState loadedSignedState = initialState.get();
             final var state = ((MerkleStateRoot) loadedSignedState.getState());
@@ -310,7 +307,7 @@ public class ServicesMain implements SwirldMain {
                         //    that state satisfies conditions (e.g. the roster has been keyed)
                         rosterHistory)
                 .withPlatformContext(platformContext)
-                .withConfiguration(configuration)
+                .withConfiguration(platformConfig)
                 .withKeysAndCerts(keysAndCerts);
 
         hedera.setInitialStateHash(stateHash);
@@ -344,12 +341,38 @@ public class ServicesMain implements SwirldMain {
     }
 
     /**
+     * Creates a canonical {@link Hedera} instance for the given node id and metrics.
+     *
+     * @param selfNodeId the node id
+     * @param metrics  the metrics
+     * @return the {@link Hedera} instance
+     */
+    public static Hedera newHedera(@NonNull final NodeId selfNodeId, @NonNull final Metrics metrics) {
+        requireNonNull(selfNodeId);
+        requireNonNull(metrics);
+        return new Hedera(
+                ConstructableRegistry.getInstance(),
+                ServicesRegistryImpl::new,
+                new OrderedServiceMigrator(),
+                InstantSource.system(),
+                appContext -> new TssBaseServiceImpl(
+                        appContext,
+                        ForkJoinPool.commonPool(),
+                        ForkJoinPool.commonPool(),
+                        new TssLibraryImpl(appContext),
+                        ForkJoinPool.commonPool(),
+                        metrics),
+                DiskStartupNetworks::new,
+                selfNodeId);
+    }
+
+    /**
      * Build's the platform configuration for this node.
      *
      * @return the configuration
      */
     @NonNull
-    public static Configuration buildPlatformConfiguration() {
+    public static Configuration buildPlatformConfig() {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
                 .withSource(SystemPropertiesConfigSource.getInstance());
@@ -423,23 +446,6 @@ public class ServicesMain implements SwirldMain {
 
     private static @NonNull Hedera hederaOrThrow() {
         return requireNonNull(hedera);
-    }
-
-    private static Hedera newHedera(@NonNull final NodeId selfNodeId) {
-        return new Hedera(
-                ConstructableRegistry.getInstance(),
-                ServicesRegistryImpl::new,
-                new OrderedServiceMigrator(),
-                InstantSource.system(),
-                appContext -> new TssBaseServiceImpl(
-                        appContext,
-                        ForkJoinPool.commonPool(),
-                        ForkJoinPool.commonPool(),
-                        new TssLibraryImpl(appContext),
-                        ForkJoinPool.commonPool(),
-                        metrics),
-                DiskStartupNetworks::new,
-                selfNodeId);
     }
 
     @VisibleForTesting
