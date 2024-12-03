@@ -149,4 +149,10 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     public ExchangeRate currentExchangeRate() {
         return context.exchangeRateInfo().activeRate(context.consensusNow());
     }
+
+    @Override
+    @Nullable
+    public Key maybeEthSenderKey() {
+        return maybeEthSenderKey;
+    }
 }
