@@ -24,11 +24,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signschedule.SignScheduleTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import java.util.List;
@@ -45,9 +47,14 @@ class HssCallAttemptTest extends CallTestBase {
 
     private List<CallTranslator<HssCallAttempt>> callTranslators;
 
+    @Mock
+    private ContractMetrics contractMetrics;
+
+    private final SystemContractMethodRegistry systemContractMethodRegistry = new SystemContractMethodRegistry();
+
     @BeforeEach
     void setUp() {
-        callTranslators = List.of(new SignScheduleTranslator());
+        callTranslators = List.of(new SignScheduleTranslator(systemContractMethodRegistry, contractMetrics));
     }
 
     @Test
@@ -65,6 +72,7 @@ class HssCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertNull(subject.redirectScheduleTxn());
     }
@@ -82,6 +90,7 @@ class HssCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertNull(subject.asExecutableCall());
     }
@@ -99,6 +108,7 @@ class HssCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertTrue(subject.isOnlyDelegatableContractKeysActive());
     }

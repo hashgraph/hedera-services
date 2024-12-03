@@ -26,7 +26,6 @@ import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
@@ -35,14 +34,20 @@ import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.DispatchForResponseCodeHssCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.CallVia;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.Category;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -52,24 +57,40 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttempt> {
-    public static final Function SIGN_SCHEDULE = new Function("signSchedule(address,bytes)", ReturnTypes.INT_64);
-    public static final Function SIGN_SCHEDULE_PROXY = new Function("signSchedule()", ReturnTypes.INT_64);
-    public static final Function AUTHORIZE_SCHEDULE = new Function("authorizeSchedule(address)", ReturnTypes.INT_64);
+    public static final SystemContractMethod SIGN_SCHEDULE = SystemContractMethod.declare(
+                    "signSchedule(address,bytes)", ReturnTypes.INT_64)
+            .withCategories(Category.SCHEDULE);
+    public static final SystemContractMethod SIGN_SCHEDULE_PROXY = SystemContractMethod.declare(
+                    "signSchedule()", ReturnTypes.INT_64)
+            .withVia(CallVia.PROXY)
+            .withCategories(Category.SCHEDULE);
+    public static final SystemContractMethod AUTHORIZE_SCHEDULE = SystemContractMethod.declare(
+                    "authorizeSchedule(address)", ReturnTypes.INT_64)
+            .withCategories(Category.SCHEDULE);
 
     @Inject
-    public SignScheduleTranslator() {
+    public SignScheduleTranslator(
+            @NonNull final SystemContractMethodRegistry systemContractMethodRegistry,
+            @NonNull final ContractMetrics contractMetrics) {
         // Dagger2
+        super(SystemContractMethod.SystemContract.HSS, systemContractMethodRegistry, contractMetrics);
+
+        registerMethods(SIGN_SCHEDULE, AUTHORIZE_SCHEDULE, SIGN_SCHEDULE_PROXY);
     }
 
     @Override
-    public boolean matches(@NonNull final HssCallAttempt attempt) {
+    public @NonNull Optional<SystemContractMethod> identifyMethod(@NonNull final HssCallAttempt attempt) {
         requireNonNull(attempt);
         final var signScheduleEnabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractSignScheduleEnabled();
         final var authorizeScheduleEnabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractAuthorizeScheduleEnabled();
-        return attempt.isSelectorIfConfigEnabled(signScheduleEnabled, SIGN_SCHEDULE_PROXY)
-                || attempt.isSelectorIfConfigEnabled(authorizeScheduleEnabled, AUTHORIZE_SCHEDULE);
+
+        if (attempt.isSelectorIfConfigEnabled(signScheduleEnabled, SIGN_SCHEDULE_PROXY))
+            return Optional.of(SIGN_SCHEDULE_PROXY);
+        if (attempt.isSelectorIfConfigEnabled(authorizeScheduleEnabled, AUTHORIZE_SCHEDULE))
+            return Optional.of(AUTHORIZE_SCHEDULE);
+        return Optional.empty();
     }
 
     @Override

@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSamePrecompileResult;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HssSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
@@ -52,6 +53,9 @@ class HssSystemContractTest {
     @Mock
     private GasCalculator gasCalculator;
 
+    @Mock
+    private ContractMetrics contractMetrics;
+
     private MockedStatic<FrameUtils> frameUtils;
 
     private HssSystemContract subject;
@@ -60,7 +64,7 @@ class HssSystemContractTest {
     @BeforeEach
     void setUp() {
         frameUtils = Mockito.mockStatic(FrameUtils.class);
-        subject = new HssSystemContract(gasCalculator, attemptFactory);
+        subject = new HssSystemContract(gasCalculator, attemptFactory, contractMetrics);
     }
 
     @AfterEach

@@ -63,7 +63,12 @@ class FungibleTokenInfoCallTest extends CallTestBase {
         when(ledgerConfig.id()).thenReturn(expectedLedgerId);
 
         final var subject = new FungibleTokenInfoCall(
-                gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, config, FUNGIBLE_TOKEN_INFO);
+                gasCalculator,
+                mockEnhancement(),
+                false,
+                FUNGIBLE_EVERYTHING_TOKEN,
+                config,
+                FUNGIBLE_TOKEN_INFO.function());
 
         final var result = subject.execute().fullResult().result();
 
@@ -106,7 +111,12 @@ class FungibleTokenInfoCallTest extends CallTestBase {
         when(ledgerConfig.id()).thenReturn(expectedLedgerId);
 
         final var subject = new FungibleTokenInfoCall(
-                gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN_V2, config, FUNGIBLE_TOKEN_INFO_V2);
+                gasCalculator,
+                mockEnhancement(),
+                false,
+                FUNGIBLE_EVERYTHING_TOKEN_V2,
+                config,
+                FUNGIBLE_TOKEN_INFO_V2.function());
 
         final var result = subject.execute().fullResult().result();
 
@@ -150,8 +160,8 @@ class FungibleTokenInfoCallTest extends CallTestBase {
         final var expectedLedgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01");
         when(ledgerConfig.id()).thenReturn(expectedLedgerId);
 
-        final var subject =
-                new FungibleTokenInfoCall(gasCalculator, mockEnhancement(), false, null, config, FUNGIBLE_TOKEN_INFO);
+        final var subject = new FungibleTokenInfoCall(
+                gasCalculator, mockEnhancement(), false, null, config, FUNGIBLE_TOKEN_INFO.function());
 
         final var result = subject.execute().fullResult().result();
 
@@ -192,8 +202,8 @@ class FungibleTokenInfoCallTest extends CallTestBase {
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
         when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01"));
 
-        final var subject =
-                new FungibleTokenInfoCall(gasCalculator, mockEnhancement(), true, null, config, FUNGIBLE_TOKEN_INFO);
+        final var subject = new FungibleTokenInfoCall(
+                gasCalculator, mockEnhancement(), true, null, config, FUNGIBLE_TOKEN_INFO.function());
 
         final var result = subject.execute().fullResult().result();
 
@@ -206,8 +216,8 @@ class FungibleTokenInfoCallTest extends CallTestBase {
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
         when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01"));
 
-        final var subject =
-                new FungibleTokenInfoCall(gasCalculator, mockEnhancement(), true, null, config, FUNGIBLE_TOKEN_INFO_V2);
+        final var subject = new FungibleTokenInfoCall(
+                gasCalculator, mockEnhancement(), true, null, config, FUNGIBLE_TOKEN_INFO_V2.function());
 
         final var result = subject.execute().fullResult().result();
 

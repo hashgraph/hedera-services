@@ -65,7 +65,7 @@ public class ContractCallHandler extends AbstractContractTransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         // Create the transaction-scoped component
-        final var component = provider.get().create(context, CONTRACT_CALL);
+        final var component = getTransactionComponent(context, CONTRACT_CALL);
 
         // Run its in-scope transaction and get the outcome
         final var outcome = component.contextTransactionProcessor().call();

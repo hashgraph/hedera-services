@@ -31,6 +31,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.SystemContract;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,6 +66,7 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final List<CallTranslator<HssCallAttempt>> callTranslators,
+            @NonNull final SystemContractMethodRegistry systemContractMethodRegistry,
             final boolean isStaticCall) {
         super(
                 input,
@@ -76,12 +80,18 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
                 gasCalculator,
                 callTranslators,
                 isStaticCall,
+                systemContractMethodRegistry,
                 REDIRECT_FOR_SCHEDULE_TXN);
         if (isRedirect()) {
             this.redirectScheduleTxn = linkedSchedule(requireNonNull(redirectAddress));
         } else {
             this.redirectScheduleTxn = null;
         }
+    }
+
+    @Override
+    protected SystemContract systemContractKind() {
+        return SystemContractMethod.SystemContract.HSS;
     }
 
     @Override

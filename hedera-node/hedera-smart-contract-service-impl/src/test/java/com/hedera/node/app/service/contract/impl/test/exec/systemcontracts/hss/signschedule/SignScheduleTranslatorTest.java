@@ -27,9 +27,7 @@ import static com.hedera.node.app.service.contract.impl.test.exec.systemcontract
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithSelectorAndCustomConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
@@ -42,6 +40,7 @@ import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
@@ -51,6 +50,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signschedule.SignScheduleTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
@@ -107,18 +107,22 @@ class SignScheduleTranslatorTest {
     private ScheduleID scheduleID;
 
     @Mock
+    ContractMetrics contractMetrics;
+
+    private final SystemContractMethodRegistry systemContractMethodRegistry = new SystemContractMethodRegistry();
+
+    @Mock
     private Key key;
 
     private SignScheduleTranslator subject;
 
     @BeforeEach
     void setUp() {
-        subject = new SignScheduleTranslator();
+        subject = new SignScheduleTranslator(systemContractMethodRegistry, contractMetrics);
     }
 
     @Test
     void testMatchesWhenSignScheduleEnabled() {
-        // given:
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractSignScheduleEnabled()).willReturn(true);
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
@@ -128,18 +132,13 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
-
-        // when:
-        boolean matches = subject.matches(attempt);
-
-        // then:
-        assertTrue(matches);
+        assertThat(subject.identifyMethod(attempt)).isPresent();
     }
 
     @Test
     void testFailsMatchesWhenSignScheduleEnabled() {
-        // given:
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractSignScheduleEnabled()).willReturn(false);
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
@@ -149,18 +148,13 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
-
-        // when:
-        boolean matches = subject.matches(attempt);
-
-        // then:
-        assertFalse(matches);
+        assertThat(subject.identifyMethod(attempt)).isEmpty();
     }
 
     @Test
     void testMatchesWhenAuthorizeScheduleEnabled() {
-        // given:
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractAuthorizeScheduleEnabled()).willReturn(true);
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
@@ -170,18 +164,13 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
-
-        // when:
-        boolean matches = subject.matches(attempt);
-
-        // then:
-        assertTrue(matches);
+        assertThat(subject.identifyMethod(attempt)).isPresent();
     }
 
     @Test
     void testFailsMatchesWhenAuthorizeScheduleEnabled() {
-        // given:
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractAuthorizeScheduleEnabled()).willReturn(false);
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
@@ -191,18 +180,13 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
-
-        // when:
-        boolean matches = subject.matches(attempt);
-
-        // then:
-        assertFalse(matches);
+        assertThat(subject.identifyMethod(attempt)).isEmpty();
     }
 
     @Test
     void testMatchesFailsOnRandomSelector() {
-        // given:
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractSignScheduleEnabled()).willReturn(true);
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
@@ -212,13 +196,9 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
-
-        // when:
-        boolean matches = subject.matches(attempt);
-
-        // then:
-        assertFalse(matches);
+        assertThat(subject.identifyMethod(attempt)).isEmpty();
     }
 
     @Test
@@ -241,6 +221,7 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
 
         // then:
@@ -270,6 +251,7 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
 
         // then:
@@ -292,6 +274,7 @@ class SignScheduleTranslatorTest {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
 
         // then:
@@ -312,7 +295,14 @@ class SignScheduleTranslatorTest {
         final var input = Bytes.wrapByteBuffer(
                 SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
         attempt = prepareHssAttemptWithBytesAndCustomConfig(
-                input, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator, configuration);
+                input,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                systemContractMethodRegistry,
+                configuration);
 
         // then:
         final var call = subject.callFrom(attempt);
@@ -334,7 +324,14 @@ class SignScheduleTranslatorTest {
         final var input = Bytes.wrapByteBuffer(
                 SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
         attempt = prepareHssAttemptWithBytesAndCustomConfigAndDelegatableContractKeys(
-                input, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator, configuration);
+                input,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                systemContractMethodRegistry,
+                configuration);
 
         // then:
         final var call = subject.callFrom(attempt);
