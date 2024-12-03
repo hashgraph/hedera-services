@@ -167,13 +167,14 @@ public class V057RosterSchema extends Schema {
         requireNonNull(rosterStore);
         final var activeRoster = rosterStore.getActiveRoster();
         final var candidateRoster = rosterStore.getCandidateRoster();
+        List<EntityNumber> nodeEntriesInRosters = List.of();
 
         if (activeRoster != null && candidateRoster != null) {
-            Stream<Long> activeRosterEntries =
+            final Stream<Long> activeRosterEntries =
                     activeRoster.rosterEntries().stream().map(RosterEntry::nodeId);
-            Stream<Long> candidateRosterEntries =
+            final Stream<Long> candidateRosterEntries =
                     candidateRoster.rosterEntries().stream().map(RosterEntry::nodeId);
-            return Stream.concat(activeRosterEntries, candidateRosterEntries)
+            nodeEntriesInRosters = Stream.concat(activeRosterEntries, candidateRosterEntries)
                     .distinct()
                     .map(EntityNumber::new)
                     .toList();
@@ -182,7 +183,7 @@ public class V057RosterSchema extends Schema {
         // if activeRoster is not null, then candidateRoster is null
         // so we return only the entries from activeRoster.
         if (activeRoster != null) {
-            return activeRoster.rosterEntries().stream()
+            nodeEntriesInRosters = activeRoster.rosterEntries().stream()
                     .map(RosterEntry::nodeId)
                     .map(EntityNumber::new)
                     .toList();
@@ -190,13 +191,12 @@ public class V057RosterSchema extends Schema {
         // If we are here, then activeRoster is null
         // so we check whether to return the candidateRoster's entries.
         if (candidateRoster != null) {
-            return candidateRoster.rosterEntries().stream()
+            nodeEntriesInRosters = candidateRoster.rosterEntries().stream()
                     .map(RosterEntry::nodeId)
                     .map(EntityNumber::new)
                     .toList();
         }
-        // Empty list if both rosters are null.
-        return List.of();
+        return nodeEntriesInRosters;
     }
 
     private void cleanUpTssEncryptionKeysFromState(
