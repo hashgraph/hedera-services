@@ -20,6 +20,7 @@ import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_STATUS_KEY;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -33,6 +34,7 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import java.util.Iterator;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -120,6 +122,29 @@ class WritableTssStoreTest {
     void testRemoveEncryptionKey() {
         EntityNumber entityNumber = new EntityNumber(1);
         tssStore.remove(entityNumber);
+        verify(tssEncryptionKeyState).remove(entityNumber);
+    }
+
+    @Test
+    void testRemoveEncryptionKeyIfPresent() {
+        EntityNumber entityNumber = new EntityNumber(1);
+        tssEncryptionKeyState.put(entityNumber, TssEncryptionKeyTransactionBody.DEFAULT);
+        given(tssEncryptionKeyState.keys()).willReturn(List.of(entityNumber).iterator());
+
+        final var rosterEntries = List.of(new EntityNumber(1), new EntityNumber(3));
+        tssStore.removeIfNotPresent(rosterEntries);
+
+        verify(tssEncryptionKeyState, times(0)).remove(entityNumber);
+    }
+
+    @Test
+    void testRemoveEncryptionKeyIfNotPresent() {
+        EntityNumber entityNumber = new EntityNumber(1);
+        tssEncryptionKeyState.put(entityNumber, TssEncryptionKeyTransactionBody.DEFAULT);
+        given(tssEncryptionKeyState.keys()).willReturn(List.of(entityNumber).iterator());
+
+        final var rosterEntries = List.of(new EntityNumber(2), new EntityNumber(3));
+        tssStore.removeIfNotPresent(rosterEntries);
         verify(tssEncryptionKeyState).remove(entityNumber);
     }
 
