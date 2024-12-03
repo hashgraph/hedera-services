@@ -38,9 +38,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
-import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -83,7 +81,6 @@ public class MapValueFCQTests {
         when(platform.getSelfId()).thenReturn(NodeId.of(0L));
         final Roster roster = RandomRosterBuilder.create(RANDOM).withSize(4).build();
         when(platform.getRoster()).thenReturn(roster);
-        state.init(platform, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
         state.initChildren();
     }
 

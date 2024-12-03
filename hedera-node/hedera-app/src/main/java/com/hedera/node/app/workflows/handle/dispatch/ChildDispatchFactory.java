@@ -23,7 +23,6 @@ import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
 import static java.util.Collections.emptySortedSet;
 import static java.util.Collections.unmodifiableSortedSet;
 import static java.util.Objects.requireNonNull;
@@ -169,7 +168,7 @@ public class ChildDispatchFactory {
         requireNonNull(options);
 
         final var preHandleResult = preHandleChild(options.body(), options.payerId(), config, readableStoreFactory);
-        final var childVerifier = getKeyVerifier(options.effectiveKeyVerifier(), config, emptySet());
+        final var childVerifier = getKeyVerifier(options.effectiveKeyVerifier(), config, options.authorizingKeys());
         final var childTxnInfo = getTxnInfoFrom(options.payerId(), options.body());
         final var streamMode = config.getConfigData(BlockStreamConfig.class).streamMode();
         final var childStack = SavepointStackImpl.newChildStack(
@@ -438,8 +437,7 @@ public class ChildDispatchFactory {
                     @Override
                     public SignatureVerification verificationFor(
                             @NonNull final Key key, @NonNull final VerificationAssistant callback) {
-                        // We do not yet support signing scheduled transactions from within the EVM
-                        throw new UnsupportedOperationException();
+                        return verifier.verificationFor(key, callback);
                     }
 
                     @NonNull
