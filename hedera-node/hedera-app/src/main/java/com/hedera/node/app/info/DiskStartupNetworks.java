@@ -37,9 +37,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
-import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -229,7 +229,7 @@ public class DiskStartupNetworks implements StartupNetworks {
     private void assertValidTssKeys(@NonNull final Network network) {
         final var expectedLedgerId = network.ledgerId();
         if (!Bytes.EMPTY.equals(expectedLedgerId)) {
-            final var roster = AddressBookUtils.fromMetadata(network.nodeMetadata());
+            final var roster = RosterUtils.fromMetadata(network.nodeMetadata());
             final var maxSharesPerNode = configProvider
                     .getConfiguration()
                     .getConfigData(TssConfig.class)
