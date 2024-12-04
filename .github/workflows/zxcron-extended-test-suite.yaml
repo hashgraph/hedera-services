@@ -167,7 +167,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
         with:
-          name: "Unit Test Report"
+          # name: "Unit Test Report"
           run-id: ${{ steps.find-build-application-workflow-id.outputs.latest-build-application-run-id }}
           path: ${{ github.workspace }}/unit-test-report-from-build-application-workflow
 
