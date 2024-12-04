@@ -32,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -137,7 +137,7 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
     /**
      * @return the node ids from the roster entries of both active and candidate rosters combined
      */
-    public Set<EntityNumber> getCombinedRosterEntriesNodeIds() {
+    public HashSet<EntityNumber> getCombinedRosterEntriesNodeIds() {
         final var activeRoster = getActiveRoster();
         final var candidateRoster = getCandidateRoster();
 
@@ -148,9 +148,8 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
                 ? Stream.empty()
                 : candidateRoster.rosterEntries().stream().map(RosterEntry::nodeId);
 
-        return new HashSet<>(Stream.concat(activeRosterEntries, candidateRosterEntries)
-                .distinct()
+        return Stream.concat(activeRosterEntries, candidateRosterEntries)
                 .map(EntityNumber::new)
-                .toList());
+                .collect(Collectors.toCollection(HashSet::new));
     }
 }
