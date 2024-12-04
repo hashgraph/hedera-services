@@ -192,7 +192,7 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase implement
         return hapiTest(flattened(
                 nodeOperatorAccount(),
                 getAccountInfo(NODE_OPERATOR).payingWith(NODE_OPERATOR).via("accountInfoQueryTxn"),
-                sleepFor(1000),
+                sleepFor(2000),
                 getAccountBalance(NODE_OPERATOR).hasTinyBars(lessThan(ONE_HUNDRED_HBARS))));
     }
 

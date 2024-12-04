@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -93,37 +92,36 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 public class ScheduleCreateTest {
+
     @HapiTest
     final Stream<DynamicTest> aliasNotAllowedAsPayer() {
-        return defaultHapiSpec("BodyAndPayerCreation")
-                .given(
-                        newKeyNamed(ALIAS),
-                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR),
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, 2 * ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)))
-                .when(
-                        scheduleCreate(
-                                        ONLY_BODY_AND_PAYER,
-                                        cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1))
-                                                .memo("SURPRISE!!!"))
-                                .recordingScheduledTxn()
-                                // prevent multiple runs of this test causing duplicates
-                                .withEntityMemo("" + new SecureRandom().nextLong())
-                                .designatingPayer(PAYER)
-                                .payingWithAliased(PAYER)
-                                .hasPrecheck(PAYER_ACCOUNT_NOT_FOUND),
-                        scheduleCreate(
-                                        ONLY_BODY_AND_PAYER,
-                                        cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1))
-                                                .memo("SURPRISE!!!"))
-                                .recordingScheduledTxn()
-                                // prevent multiple runs of this test causing duplicates
-                                .withEntityMemo("" + new SecureRandom().nextLong())
-                                .designatingPayer(PAYER)
-                                .payingWith(PAYER))
-                .then(getScheduleInfo(ONLY_BODY_AND_PAYER)
+        return hapiTest(
+                newKeyNamed(ALIAS),
+                cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, 2 * ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
+                getAliasedAccountInfo(ALIAS)
+                        .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)),
+                scheduleCreate(
+                                ONLY_BODY_AND_PAYER,
+                                cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1))
+                                        .memo("SURPRISE!!!"))
+                        .recordingScheduledTxn()
+                        // prevent multiple runs of this test causing duplicates
+                        .withEntityMemo("" + new SecureRandom().nextLong())
+                        .designatingPayer(PAYER)
+                        .payingWithAliased(PAYER)
+                        .hasPrecheck(PAYER_ACCOUNT_NOT_FOUND),
+                scheduleCreate(
+                                ONLY_BODY_AND_PAYER,
+                                cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1))
+                                        .memo("SURPRISE!!!"))
+                        .recordingScheduledTxn()
+                        // prevent multiple runs of this test causing duplicates
+                        .withEntityMemo("" + new SecureRandom().nextLong())
+                        .designatingPayer(PAYER)
+                        .payingWith(PAYER),
+                getScheduleInfo(ONLY_BODY_AND_PAYER)
                         .hasScheduleId(ONLY_BODY_AND_PAYER)
                         .hasPayerAccountID(PAYER)
                         .hasRecordedScheduledTxn());
@@ -131,10 +129,7 @@ public class ScheduleCreateTest {
 
     @HapiTest
     final Stream<DynamicTest> worksAsExpectedWithDefaultScheduleId() {
-        return defaultHapiSpec("WorksAsExpectedWithDefaultScheduleId")
-                .given()
-                .when()
-                .then(getScheduleInfo("0.0.0").hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
+        return hapiTest(getScheduleInfo("0.0.0").hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 
     @HapiTest
@@ -169,12 +164,13 @@ public class ScheduleCreateTest {
 
     @HapiTest
     final Stream<DynamicTest> onlyBodyAndAdminCreation() {
-        return defaultHapiSpec("OnlyBodyAndAdminCreation")
-                .given(newKeyNamed(ADMIN), cryptoCreate(SENDER))
-                .when(scheduleCreate(ONLY_BODY_AND_ADMIN_KEY, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
+        return hapiTest(
+                newKeyNamed(ADMIN),
+                cryptoCreate(SENDER),
+                scheduleCreate(ONLY_BODY_AND_ADMIN_KEY, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
                         .adminKey(ADMIN)
-                        .recordingScheduledTxn())
-                .then(getScheduleInfo(ONLY_BODY_AND_ADMIN_KEY)
+                        .recordingScheduledTxn(),
+                getScheduleInfo(ONLY_BODY_AND_ADMIN_KEY)
                         .hasScheduleId(ONLY_BODY_AND_ADMIN_KEY)
                         .hasAdminKey(ADMIN)
                         .hasRecordedScheduledTxn());
@@ -182,12 +178,12 @@ public class ScheduleCreateTest {
 
     @HapiTest
     final Stream<DynamicTest> onlyBodyAndMemoCreation() {
-        return defaultHapiSpec("OnlyBodyAndMemoCreation")
-                .given(cryptoCreate(SENDER))
-                .when(scheduleCreate(ONLY_BODY_AND_MEMO, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
+        return hapiTest(
+                cryptoCreate(SENDER),
+                scheduleCreate(ONLY_BODY_AND_MEMO, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
                         .recordingScheduledTxn()
-                        .withEntityMemo("sample memo"))
-                .then(getScheduleInfo(ONLY_BODY_AND_MEMO)
+                        .withEntityMemo("sample memo"),
+                getScheduleInfo(ONLY_BODY_AND_MEMO)
                         .hasScheduleId(ONLY_BODY_AND_MEMO)
                         .hasEntityMemo("sample memo")
                         .hasRecordedScheduledTxn());
@@ -195,28 +191,25 @@ public class ScheduleCreateTest {
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(cryptoCreate(PAYER))
-                .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> scheduleCreate(
-                                ONLY_BODY_AND_PAYER, cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1)))
-                        .withEntityMemo("" + new SecureRandom().nextLong())
-                        .designatingPayer(PAYER)));
+        return hapiTest(cryptoCreate(PAYER), submitModified(withSuccessivelyVariedBodyIds(), () -> scheduleCreate(
+                        ONLY_BODY_AND_PAYER, cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1)))
+                .withEntityMemo("" + new SecureRandom().nextLong())
+                .designatingPayer(PAYER)));
     }
 
     @HapiTest
     final Stream<DynamicTest> bodyAndPayerCreation() {
-        return defaultHapiSpec("BodyAndPayerCreation")
-                .given(cryptoCreate(PAYER))
-                .when(scheduleCreate(
+        return hapiTest(
+                cryptoCreate(PAYER),
+                scheduleCreate(
                                 ONLY_BODY_AND_PAYER,
                                 cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1))
                                         .memo("SURPRISE!!!"))
                         .recordingScheduledTxn()
                         // prevent multiple runs of this test causing duplicates
                         .withEntityMemo("" + new SecureRandom().nextLong())
-                        .designatingPayer(PAYER))
-                .then(getScheduleInfo(ONLY_BODY_AND_PAYER)
+                        .designatingPayer(PAYER),
+                getScheduleInfo(ONLY_BODY_AND_PAYER)
                         .hasScheduleId(ONLY_BODY_AND_PAYER)
                         .hasPayerAccountID(PAYER)
                         .hasRecordedScheduledTxn());
@@ -227,18 +220,17 @@ public class ScheduleCreateTest {
         var scheduleName = "onlyBodyAndSignatories";
         var scheduledTxn = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
-        return defaultHapiSpec("BodyAndSignatoriesCreation")
-                .given(
-                        cryptoCreate("payingAccount"),
-                        newKeyNamed("adminKey"),
-                        cryptoCreate(SENDER),
-                        cryptoCreate(RECEIVER).receiverSigRequired(true))
-                .when(scheduleCreate(scheduleName, scheduledTxn)
+        return hapiTest(
+                cryptoCreate("payingAccount"),
+                newKeyNamed("adminKey"),
+                cryptoCreate(SENDER),
+                cryptoCreate(RECEIVER).receiverSigRequired(true),
+                scheduleCreate(scheduleName, scheduledTxn)
                         .adminKey("adminKey")
                         .recordingScheduledTxn()
                         .designatingPayer("payingAccount")
-                        .alsoSigningWith(RECEIVER))
-                .then(getScheduleInfo(scheduleName)
+                        .alsoSigningWith(RECEIVER),
+                getScheduleInfo(scheduleName)
                         .hasScheduleId(scheduleName)
                         .hasSignatories(RECEIVER)
                         .hasRecordedScheduledTxn());
@@ -246,38 +238,30 @@ public class ScheduleCreateTest {
 
     @HapiTest
     final Stream<DynamicTest> failsWithNonExistingPayerAccountId() {
-        return defaultHapiSpec("FailsWithNonExistingPayerAccountId")
-                .given()
-                .when(scheduleCreate("invalidPayer", cryptoCreate("secondary"))
-                        .designatingPayer(DESIGNATING_PAYER)
-                        .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST))
-                .then();
+        return hapiTest(scheduleCreate("invalidPayer", cryptoCreate("secondary"))
+                .designatingPayer(DESIGNATING_PAYER)
+                .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST));
     }
 
     @HapiTest
     final Stream<DynamicTest> failsWithTooLongMemo() {
-        return defaultHapiSpec("FailsWithTooLongMemo")
-                .given()
-                .when(scheduleCreate("invalidMemo", cryptoCreate("secondary"))
-                        .withEntityMemo(nAscii(101))
-                        .hasPrecheck(MEMO_TOO_LONG))
-                .then();
+        return hapiTest(scheduleCreate("invalidMemo", cryptoCreate("secondary"))
+                .withEntityMemo(nAscii(101))
+                .hasPrecheck(MEMO_TOO_LONG));
     }
 
     @HapiTest
     final Stream<DynamicTest> notIdenticalScheduleIfScheduledTxnChanges() {
-        return defaultHapiSpec("NotIdenticalScheduleIfScheduledTxnChanges")
-                .given(
-                        cryptoCreate(SENDER).balance(1L),
-                        cryptoCreate(FIRST_PAYER),
-                        scheduleCreate(
-                                        ORIGINAL,
-                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                                .memo("A")
-                                                .fee(ONE_HBAR))
-                                .payingWith(FIRST_PAYER))
-                .when()
-                .then(scheduleCreate(
+        return hapiTest(
+                cryptoCreate(SENDER).balance(1L),
+                cryptoCreate(FIRST_PAYER),
+                scheduleCreate(
+                                ORIGINAL,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        .memo("A")
+                                        .fee(ONE_HBAR))
+                        .payingWith(FIRST_PAYER),
+                scheduleCreate(
                                 CONTINUE,
                                 cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
                                         .memo("B")
@@ -287,16 +271,14 @@ public class ScheduleCreateTest {
 
     @HapiTest
     final Stream<DynamicTest> notIdenticalScheduleIfMemoChanges() {
-        return defaultHapiSpec("NotIdenticalScheduleIfMemoChanges")
-                .given(
-                        cryptoCreate(SENDER).balance(1L),
-                        scheduleCreate(
-                                        ORIGINAL,
-                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                                .fee(ONE_HBAR))
-                                .withEntityMemo(ENTITY_MEMO))
-                .when()
-                .then(scheduleCreate(
+        return hapiTest(
+                cryptoCreate(SENDER).balance(1L),
+                scheduleCreate(
+                                ORIGINAL,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        .fee(ONE_HBAR))
+                        .withEntityMemo(ENTITY_MEMO),
+                scheduleCreate(
                                 CONTINUE,
                                 cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
                                         .fee(ONE_HBAR))
@@ -305,22 +287,20 @@ public class ScheduleCreateTest {
 
     @HapiTest
     final Stream<DynamicTest> notIdenticalScheduleIfAdminKeyChanges() {
-        return defaultHapiSpec("notIdenticalScheduleIfAdminKeyChanges")
-                .given(
-                        newKeyNamed("adminA"),
-                        newKeyNamed("adminB"),
-                        cryptoCreate(SENDER).balance(1L),
-                        cryptoCreate(FIRST_PAYER),
-                        scheduleCreate(
-                                        ORIGINAL,
-                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                                .fee(ONE_HBAR))
-                                .adminKey("adminA")
-                                .withEntityMemo(ENTITY_MEMO)
-                                .designatingPayer(FIRST_PAYER)
-                                .payingWith(FIRST_PAYER))
-                .when()
-                .then(scheduleCreate(
+        return hapiTest(
+                newKeyNamed("adminA"),
+                newKeyNamed("adminB"),
+                cryptoCreate(SENDER).balance(1L),
+                cryptoCreate(FIRST_PAYER),
+                scheduleCreate(
+                                ORIGINAL,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        .fee(ONE_HBAR))
+                        .adminKey("adminA")
+                        .withEntityMemo(ENTITY_MEMO)
+                        .designatingPayer(FIRST_PAYER)
+                        .payingWith(FIRST_PAYER),
+                scheduleCreate(
                                 CONTINUE,
                                 cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
                                         .fee(ONE_HBAR))
@@ -332,70 +312,60 @@ public class ScheduleCreateTest {
 
     @HapiTest
     final Stream<DynamicTest> recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
-        return defaultHapiSpec("recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer")
-                .given(
-                        cryptoCreate(SENDER).balance(1L),
-                        cryptoCreate(FIRST_PAYER),
-                        scheduleCreate(
-                                        ORIGINAL,
-                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                                .fee(ONE_HBAR))
-                                .designatingPayer(FIRST_PAYER)
-                                .payingWith(FIRST_PAYER)
-                                .savingExpectedScheduledTxnId())
-                .when(cryptoCreate(SECOND_PAYER))
-                .then(
-                        scheduleCreate(
-                                        "duplicate",
-                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                                .fee(ONE_HBAR))
-                                .payingWith(SECOND_PAYER)
-                                .designatingPayer(SECOND_PAYER)
-                                .via(COPYCAT)
-                                .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED),
-                        getTxnRecord(COPYCAT).logged(),
-                        getReceipt(COPYCAT).hasSchedule(ORIGINAL).hasScheduledTxnId(ORIGINAL));
+        return hapiTest(
+                cryptoCreate(SENDER).balance(1L),
+                cryptoCreate(FIRST_PAYER),
+                scheduleCreate(
+                                ORIGINAL,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        .fee(ONE_HBAR))
+                        .designatingPayer(FIRST_PAYER)
+                        .payingWith(FIRST_PAYER)
+                        .savingExpectedScheduledTxnId(),
+                cryptoCreate(SECOND_PAYER),
+                scheduleCreate(
+                                "duplicate",
+                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        .fee(ONE_HBAR))
+                        .payingWith(SECOND_PAYER)
+                        .designatingPayer(SECOND_PAYER)
+                        .via(COPYCAT)
+                        .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED),
+                getTxnRecord(COPYCAT).logged(),
+                getReceipt(COPYCAT).hasSchedule(ORIGINAL).hasScheduledTxnId(ORIGINAL));
     }
 
     @HapiTest
     final Stream<DynamicTest> rejectsSentinelKeyListAsAdminKey() {
-        return defaultHapiSpec("RejectsSentinelKeyListAsAdminKey")
-                .given()
-                .when()
-                .then(scheduleCreate(CREATION, cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)))
-                        .usingSentinelKeyListForAdminKey()
-                        .hasPrecheck(INVALID_ADMIN_KEY));
+        return hapiTest(scheduleCreate(CREATION, cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)))
+                .usingSentinelKeyListForAdminKey()
+                .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
     @HapiTest
     final Stream<DynamicTest> rejectsMalformedScheduledTxnMemo() {
-        return defaultHapiSpec("RejectsMalformedScheduledTxnMemo")
-                .given(
-                        cryptoCreate("ntb").memo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        cryptoCreate(SENDER))
-                .when()
-                .then(
-                        scheduleCreate(
-                                        CREATION,
-                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                                .memo(nAscii(101)))
-                                .hasPrecheck(MEMO_TOO_LONG),
-                        scheduleCreate(
-                                        "creationPartDeux",
-                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                                .memo("Here's s\u0000 to chew on!"))
-                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
+        return hapiTest(
+                cryptoCreate("ntb").memo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                cryptoCreate(SENDER),
+                scheduleCreate(
+                                CREATION,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        .memo(nAscii(101)))
+                        .hasPrecheck(MEMO_TOO_LONG),
+                scheduleCreate(
+                                "creationPartDeux",
+                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        .memo("Here's s\u0000 to chew on!"))
+                        .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
     @HapiTest
     final Stream<DynamicTest> infoIncludesTxnIdFromCreationReceipt() {
-        return defaultHapiSpec("InfoIncludesTxnIdFromCreationReceipt")
-                .given(
-                        cryptoCreate(SENDER),
-                        scheduleCreate(CREATION, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
-                                .savingExpectedScheduledTxnId())
-                .when()
-                .then(getScheduleInfo(CREATION)
+        return hapiTest(
+                cryptoCreate(SENDER),
+                scheduleCreate(CREATION, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
+                        .savingExpectedScheduledTxnId(),
+                getScheduleInfo(CREATION)
                         .hasScheduleId(CREATION)
                         .hasScheduledTxnIdSavedBy(CREATION)
                         .logged());
@@ -407,75 +377,70 @@ public class ScheduleCreateTest {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
         String aKey = "a", bKey = "b";
 
-        return defaultHapiSpec("DetectsKeysChangedBetweenExpandSigsAndHandleTxn")
-                .given(newKeyNamed(aKey).generator(keyGen), newKeyNamed(bKey).generator(keyGen))
-                .when(cryptoCreate(SENDER), cryptoCreate(RECEIVER).key(aKey).receiverSigRequired(true))
-                .then(
-                        cryptoUpdate(RECEIVER).key(bKey).deferStatusResolution(),
-                        scheduleCreate(
-                                        "outdatedXferSigs",
-                                        cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-                                                .fee(ONE_HBAR))
-                                .alsoSigningWith(aKey)
-                                /* In the rare, but possible, case that the overlapping byte shared by aKey
-                                 * and bKey is _also_ shared by the DEFAULT_PAYER, the bKey prefix in the sig
-                                 * map will probably not collide with aKey any more, and we will get
-                                 * SUCCESS instead of SOME_SIGNATURES_WERE_INVALID.
-                                 *
-                                 * So we need this to stabilize CI. But if just testing locally, you may
-                                 * only use .hasKnownStatus(SOME_SIGNATURES_WERE_INVALID) and it will pass
-                                 * >99.99% of the time. */
-                                .hasKnownStatusFrom(SOME_SIGNATURES_WERE_INVALID, SUCCESS));
+        return hapiTest(
+                newKeyNamed(aKey).generator(keyGen),
+                newKeyNamed(bKey).generator(keyGen),
+                cryptoCreate(SENDER),
+                cryptoCreate(RECEIVER).key(aKey).receiverSigRequired(true),
+                cryptoUpdate(RECEIVER).key(bKey).deferStatusResolution(),
+                scheduleCreate(
+                                "outdatedXferSigs",
+                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                        .fee(ONE_HBAR))
+                        .alsoSigningWith(aKey)
+                        /* In the rare, but possible, case that the overlapping byte shared by aKey
+                         * and bKey is _also_ shared by the DEFAULT_PAYER, the bKey prefix in the sig
+                         * map will probably not collide with aKey any more, and we will get
+                         * SUCCESS instead of SOME_SIGNATURES_WERE_INVALID.
+                         *
+                         * So we need this to stabilize CI. But if just testing locally, you may
+                         * only use .hasKnownStatus(SOME_SIGNATURES_WERE_INVALID) and it will pass
+                         * >99.99% of the time. */
+                        .hasKnownStatusFrom(SOME_SIGNATURES_WERE_INVALID, SUCCESS));
     }
 
     @HapiTest
     final Stream<DynamicTest> onlySchedulesWithMissingReqSimpleSigs() {
-        return defaultHapiSpec("OnlySchedulesWithMissingReqSimpleSigs")
-                .given(
-                        cryptoCreate(SENDER).balance(1L),
-                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-                .when(scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
-                        .alsoSigningWith(SENDER))
-                .then(getAccountBalance(SENDER).hasTinyBars(1L));
+        return hapiTest(
+                cryptoCreate(SENDER).balance(1L),
+                cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true),
+                scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                        .alsoSigningWith(SENDER),
+                getAccountBalance(SENDER).hasTinyBars(1L));
     }
 
     @HapiTest
     final Stream<DynamicTest> requiresExtantPayer() {
-        return defaultHapiSpec("RequiresExtantPayer")
-                .given()
-                .when()
-                .then(scheduleCreate(
-                                NEVER_TO_BE, cryptoCreate("nope").key(GENESIS).receiverSigRequired(true))
+        return hapiTest(
+                scheduleCreate(NEVER_TO_BE, cryptoCreate("nope").key(GENESIS).receiverSigRequired(true))
                         .designatingPayer(DESIGNATING_PAYER)
                         .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST));
     }
 
     @HapiTest
     final Stream<DynamicTest> doesntTriggerUntilPayerSigns() {
-        return defaultHapiSpec("DoesntTriggerUntilPayerSigns")
-                .given(
-                        cryptoCreate(PAYER).balance(ONE_HBAR * 5),
-                        cryptoCreate(SENDER).balance(1L),
-                        cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
-                .when(scheduleCreate(
+        return hapiTest(
+                cryptoCreate(PAYER).balance(ONE_HBAR * 5),
+                cryptoCreate(SENDER).balance(1L),
+                cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L),
+                scheduleCreate(
                                 BASIC_XFER,
                                 cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
                                         .fee(ONE_HBAR))
                         .designatingPayer(PAYER)
                         .alsoSigningWith(SENDER, RECEIVER)
                         .via(BASIC_XFER)
-                        .recordingScheduledTxn())
-                .then(
-                        getScheduleInfo(BASIC_XFER).isNotExecuted(),
-                        getAccountBalance(SENDER).hasTinyBars(1L),
-                        getAccountBalance(RECEIVER).hasTinyBars(0L),
-                        scheduleSign(BASIC_XFER).alsoSigningWith(PAYER).hasKnownStatus(SUCCESS),
-                        getTxnRecord(BASIC_XFER).scheduled(),
-                        getScheduleInfo(BASIC_XFER).isExecuted().hasRecordedScheduledTxn(),
-                        // Very strange. HapiTest fails because We have a
-                        // scheduled and executed record, but the balances did not change...
-                        getAccountBalance(RECEIVER).hasTinyBars(1L),
-                        getAccountBalance(SENDER).hasTinyBars(0L));
+                        .recordingScheduledTxn(),
+                getScheduleInfo(BASIC_XFER).isNotExecuted(),
+                getAccountBalance(SENDER).hasTinyBars(1L),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                scheduleSign(BASIC_XFER).alsoSigningWith(PAYER).hasKnownStatus(SUCCESS),
+                getTxnRecord(BASIC_XFER).scheduled(),
+                getScheduleInfo(BASIC_XFER).isExecuted().hasRecordedScheduledTxn(),
+                // Very strange. HapiTest fails because We have a
+                // scheduled and executed record, but the balances did not change...
+                getAccountBalance(RECEIVER).hasTinyBars(1L),
+                getAccountBalance(SENDER).hasTinyBars(0L));
     }
 
     @HapiTest
@@ -483,53 +448,44 @@ public class ScheduleCreateTest {
         long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
         long transferAmount = 1;
 
-        return defaultHapiSpec("TriggersImmediatelyWithBothReqSimpleSigs")
-                .given(cryptoCreate(SENDER), cryptoCreate(RECEIVER).receiverSigRequired(true))
-                .when(scheduleCreate(
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(RECEIVER).receiverSigRequired(true),
+                scheduleCreate(
                                 BASIC_XFER,
                                 cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount))
                                         .memo("Shocked, I tell you!"))
                         .alsoSigningWith(SENDER, RECEIVER)
                         .via(BASIC_XFER)
-                        .recordingScheduledTxn())
-                .then(
-                        getTxnRecord(BASIC_XFER).scheduled(),
-                        getScheduleInfo(BASIC_XFER).isExecuted().hasRecordedScheduledTxn(),
-                        getAccountBalance(SENDER).hasTinyBars(initialBalance - transferAmount),
-                        getAccountBalance(RECEIVER).hasTinyBars(initialBalance + transferAmount));
+                        .recordingScheduledTxn(),
+                getTxnRecord(BASIC_XFER).scheduled(),
+                getScheduleInfo(BASIC_XFER).isExecuted().hasRecordedScheduledTxn(),
+                getAccountBalance(SENDER).hasTinyBars(initialBalance - transferAmount),
+                getAccountBalance(RECEIVER).hasTinyBars(initialBalance + transferAmount));
     }
 
     @HapiTest
     final Stream<DynamicTest> rejectsUnresolvableReqSigners() {
-        return defaultHapiSpec("RejectsUnresolvableReqSigners")
-                .given()
-                .when()
-                .then(scheduleCreate(
-                                "xferWithImaginaryAccount",
-                                cryptoTransfer(
-                                        tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1),
-                                        tinyBarsFromTo(DESIGNATING_PAYER, FUNDING, 1)))
-                        .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS));
+        return hapiTest(scheduleCreate(
+                        "xferWithImaginaryAccount",
+                        cryptoTransfer(
+                                tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1),
+                                tinyBarsFromTo(DESIGNATING_PAYER, FUNDING, 1)))
+                .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS));
     }
 
     @HapiTest
     final Stream<DynamicTest> rejectsFunctionlessTxn() {
-        return defaultHapiSpec("RejectsFunctionlessTxn")
-                .given()
-                .when()
-                .then(scheduleCreateFunctionless("unknown")
-                        .hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST)
-                        .payingWith(GENESIS));
+        return hapiTest(scheduleCreateFunctionless("unknown")
+                .hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST)
+                .payingWith(GENESIS));
     }
 
     @HapiTest
     final Stream<DynamicTest> functionlessTxnBusyWithNonExemptPayer() {
-        return defaultHapiSpec("FunctionlessTxnBusyWithNonExemptPayer")
-                .given()
-                .when()
-                .then(
-                        cryptoCreate(SENDER),
-                        scheduleCreateFunctionless("unknown").hasPrecheck(BUSY).payingWith(SENDER));
+        return hapiTest(
+                cryptoCreate(SENDER),
+                scheduleCreateFunctionless("unknown").hasPrecheck(BUSY).payingWith(SENDER));
     }
 
     @LeakyHapiTest(overrides = {"scheduling.whitelist"})

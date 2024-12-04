@@ -21,12 +21,15 @@ import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Optional;
@@ -160,4 +163,19 @@ public interface ReadableTssStore {
      * @return The list of Tss messages, or an empty list if not found.
      */
     List<TssMessageTransactionBody> getMessagesForTarget(@NonNull Bytes rosterHash);
+
+    /**
+     * Get the Tss encryption key transaction body for the given node ID.
+     * @param nodeID The node ID to look up.
+     * @return The Tss encryption key transaction body, or null if not found.
+     */
+    @Nullable
+    TssEncryptionKeyTransactionBody getTssEncryptionKey(final long nodeID);
+
+    /**
+     * Get the Tss status.
+     * @return The Tss status.
+     */
+    @NonNull
+    TssStatus getTssStatus();
 }
