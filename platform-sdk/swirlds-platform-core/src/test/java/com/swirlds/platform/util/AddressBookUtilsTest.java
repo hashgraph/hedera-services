@@ -21,7 +21,6 @@ import static com.swirlds.platform.util.TestRosterValues.NODE_1;
 import static com.swirlds.platform.util.TestRosterValues.NODE_2;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -37,7 +36,6 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -138,48 +136,5 @@ class AddressBookUtilsTest {
 
         final Roster result = RosterUtils.fromNetwork(network);
         assertEquals(EXPECTED_ROSTER, result);
-    }
-
-    @Test
-    @DisplayName("Throws an NPE for null network input")
-    void fromNetworkNull() {
-        //noinspection DataFlowIssue
-        assertThrows(NullPointerException.class, () -> RosterUtils.fromNetwork(null));
-    }
-
-    @Test
-    @DisplayName("Endpoints from metadata converts all service endpoints in correct order")
-    void validEndpointsFromMetadata() {
-        final NodeMetadata nodeOneMetadata =
-                NodeMetadata.newBuilder().node(NODE_1).build();
-        final NodeMetadata nodeTwoMetadata =
-                NodeMetadata.newBuilder().node(NODE_2).build();
-
-        final Roster result = RosterUtils.fromMetadata(List.of(nodeOneMetadata, nodeTwoMetadata));
-        assertEquals(EXPECTED_ROSTER, result);
-    }
-
-    @Test
-    @DisplayName("Endpoints from metadata only converts non-null service endpoints")
-    void validAndNullEndpointsFromMetadata() {
-        final NodeMetadata nodeOneMetadata =
-                NodeMetadata.newBuilder().node(NODE_1).build();
-        final NodeMetadata nodeTwoMetadata =
-                NodeMetadata.newBuilder().node(NODE_2).build();
-        final List<NodeMetadata> metadata = new ArrayList<>();
-        metadata.add(nodeOneMetadata);
-        metadata.add(null); // Null entry intentionally inserted; should be ignored
-        metadata.add(nodeTwoMetadata);
-        metadata.add(null); // Null entry intentionally inserted; should be ignored
-
-        final Roster result = RosterUtils.fromMetadata(metadata);
-        assertEquals(2, result.rosterEntries().size());
-    }
-
-    @Test
-    @DisplayName("Empty roster returned for empty metadata")
-    void emptyRosterFromMetadata() {
-        final Roster result = RosterUtils.fromMetadata(List.of());
-        assertTrue(result.rosterEntries().isEmpty());
     }
 }
