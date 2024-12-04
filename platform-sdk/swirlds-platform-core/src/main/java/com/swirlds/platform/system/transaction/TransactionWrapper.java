@@ -136,7 +136,15 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     @Override
     @NonNull
     public Bytes getTransactionsBytes() {
-        return payloadBytes;
+        if (payloadBytes != null && payloadBytes.length() > 0) {
+            return payloadBytes;
+        }
+
+        if (payload != null && payload.applicationTransaction() != null) {
+            return payload.applicationTransaction();
+        }
+
+        return Bytes.EMPTY;
     }
 
     /**

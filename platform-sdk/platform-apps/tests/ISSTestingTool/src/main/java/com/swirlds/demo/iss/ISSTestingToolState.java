@@ -308,8 +308,6 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
     }
 
-    // TODO Temporary method to filter out system transactions, so that platform is tested with application and system
-    // transactions. Once callbacks are introduced this method won't be needed.
     private boolean isSystemTransaction(final Bytes transactionBytes) {
         if (transactionBytes == null || transactionBytes.length() == 0) {
             return false;
