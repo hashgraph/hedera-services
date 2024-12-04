@@ -234,12 +234,8 @@ public class RosterUtilsTest {
                 .gossipEndpoint(ServiceEndpoint.DEFAULT)
                 .build();
 
-        Roster roster1 = Roster.newBuilder()
-                .rosterEntries(node0, node1)
-                .build();
-        Roster roster2 = Roster.newBuilder()
-                .rosterEntries(node0)
-                .build();
+        Roster roster1 = Roster.newBuilder().rosterEntries(node0, node1).build();
+        Roster roster2 = Roster.newBuilder().rosterEntries(node0).build();
 
         assertThrows(IllegalStateException.class, () -> RosterUtils.verifyReconnectRosters(roster1, roster2));
     }
@@ -259,12 +255,8 @@ public class RosterUtilsTest {
                 .gossipEndpoint(ServiceEndpoint.DEFAULT)
                 .build();
 
-        Roster roster1 = Roster.newBuilder()
-                .rosterEntries(node0)
-                .build();
-        Roster roster2 = Roster.newBuilder()
-                .rosterEntries(node1)
-                .build();
+        Roster roster1 = Roster.newBuilder().rosterEntries(node0).build();
+        Roster roster2 = Roster.newBuilder().rosterEntries(node1).build();
 
         assertThrows(IllegalStateException.class, () -> RosterUtils.verifyReconnectRosters(roster1, roster2));
     }
@@ -284,12 +276,8 @@ public class RosterUtilsTest {
                 .gossipEndpoint(ServiceEndpoint.DEFAULT)
                 .build();
 
-        Roster roster1 = Roster.newBuilder()
-                .rosterEntries(node0, node1)
-                .build();
-        Roster roster2 = Roster.newBuilder()
-                .rosterEntries(node0, node1)
-                .build();
+        Roster roster1 = Roster.newBuilder().rosterEntries(node0, node1).build();
+        Roster roster2 = Roster.newBuilder().rosterEntries(node0, node1).build();
 
         assertDoesNotThrow(() -> RosterUtils.verifyReconnectRosters(roster1, roster2));
     }

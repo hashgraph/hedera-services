@@ -346,7 +346,8 @@ public final class RosterUtils {
      * @param roster2 the second roster to compare
      * @throws IllegalStateException if the rosters do not match
      */
-    public static void verifyReconnectRosters(@NonNull final Roster roster1, @NonNull final Roster roster2) throws IllegalStateException{
+    public static void verifyReconnectRosters(@NonNull final Roster roster1, @NonNull final Roster roster2)
+            throws IllegalStateException {
         final int numNodes = roster1.rosterEntries().size();
 
         if (numNodes != roster2.rosterEntries().size()) {

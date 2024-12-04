@@ -144,9 +144,7 @@ public class ReconnectStateLoader {
                     signedState.getState().getReadablePlatformState().getSnapshot()));
 
             final Roster previousRoster = RosterRetriever.retrievePreviousRoster(state);
-            platformWiring
-                    .getRosterUpdateInput()
-                    .inject(new RosterUpdate(previousRoster, roster));
+            platformWiring.getRosterUpdateInput().inject(new RosterUpdate(previousRoster, roster));
 
             final AncientMode ancientMode = platformContext
                     .getConfiguration()
