@@ -50,10 +50,10 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
-import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
-import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
 import com.swirlds.state.merkle.queue.QueueNode;
 import com.swirlds.state.merkle.singleton.SingletonNode;
+import com.swirlds.state.merkle.vmapsupport.OnDiskKeySerializer;
+import com.swirlds.state.merkle.vmapsupport.OnDiskValueSerializer;
 import com.swirlds.state.spi.FilteredReadableStates;
 import com.swirlds.state.spi.FilteredWritableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -146,7 +146,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         schema.statesToCreate(bootstrapConfig).forEach(def -> {
             //noinspection rawtypes,unchecked
             final var md = new StateMetadata<>(serviceName, schema, def);
-            registerWithSystem(md, constructableRegistry);
+            registerWithSystem(md, constructableRegistry, bootstrapConfig);
         });
 
         return this;
@@ -318,10 +318,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                         stateRoot.putServiceStateIfAbsent(
                                 md,
                                 () -> new QueueNode<>(
+                                        platformConfiguration,
                                         md.serviceName(),
                                         md.stateDefinition().stateKey(),
                                         md.queueNodeClassId(),
-                                        md.singletonClassId(),
+                                        md.onDiskValueSerializerClassId(),
+                                        md.onDiskValueClassId(),
                                         md.stateDefinition().valueCodec()));
 
                     } else if (!def.onDisk()) {

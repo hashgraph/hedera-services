@@ -27,17 +27,21 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.LogMarker;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
-import com.swirlds.state.merkle.disk.OnDiskValue;
-import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
 import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.merkle.memory.InMemoryWritableKVState;
 import com.swirlds.state.merkle.queue.QueueNode;
+import com.swirlds.state.merkle.queue.QueueNodeState;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import com.swirlds.state.merkle.singleton.ValueLeaf;
+import com.swirlds.state.merkle.vmapsupport.OnDiskKey;
+import com.swirlds.state.merkle.vmapsupport.OnDiskKeySerializer;
+import com.swirlds.state.merkle.vmapsupport.OnDiskValue;
+import com.swirlds.state.merkle.vmapsupport.OnDiskValueSerializer;
+import com.swirlds.state.merkle.vmapsupport.SingleLongKey;
+import com.swirlds.state.merkle.vmapsupport.SingleLongKeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -276,7 +280,9 @@ public final class StateUtils {
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public static void registerWithSystem(
-            @NonNull final StateMetadata md, @NonNull ConstructableRegistry constructableRegistry) {
+            @NonNull final StateMetadata md,
+            @NonNull ConstructableRegistry constructableRegistry,
+            @NonNull Configuration config) {
         // Register with the system the uniqueId as the "classId" of an InMemoryValue. There can be
         // multiple id's associated with InMemoryValue. The secret is that the supplier captures the
         // various delegate writers and parsers, and so can parse/write different types of data
@@ -316,14 +322,23 @@ public final class StateUtils {
                             md.singletonClassId(),
                             md.stateDefinition().valueCodec(),
                             null)));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(QueueNodeState.class, QueueNodeState::new));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(SingleLongKey.class, SingleLongKey::new));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(SingleLongKeySerializer.class, SingleLongKeySerializer::new));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     QueueNode.class,
                     () -> new QueueNode<>(
+                            config,
                             md.serviceName(),
                             md.stateDefinition().stateKey(),
                             md.queueNodeClassId(),
-                            md.singletonClassId(),
-                            md.stateDefinition().valueCodec())));
+                            md.onDiskValueSerializerClassId(),
+                            md.onDiskValueClassId(),
+                            md.stateDefinition().valueCodec(),
+                            false)));
             constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     ValueLeaf.class,

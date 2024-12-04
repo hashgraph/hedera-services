@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.state;
 
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static com.swirlds.state.merkle.StateUtils.registerWithSystem;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -65,8 +66,8 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
             final var schema = new V0540PlatformStateSchema();
             schema.statesToCreate().stream()
                     .sorted(Comparator.comparing(StateDefinition::stateKey))
-                    .forEach(def ->
-                            registerWithSystem(new StateMetadata<>(PlatformStateService.NAME, schema, def), registry));
+                    .forEach(def -> registerWithSystem(
+                            new StateMetadata<>(PlatformStateService.NAME, schema, def), registry, CONFIGURATION));
         } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }
