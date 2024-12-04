@@ -250,6 +250,7 @@ public class TransactionExecutorsTest {
                 UNAVAILABLE_GOSSIP,
                 () -> config,
                 () -> DEFAULT_NODE_INFO,
+                () -> NO_OP_METRICS,
                 new AppThrottleFactory(
                         () -> config, () -> state, () -> ThrottleDefinitions.DEFAULT, ThrottleAccumulator::new));
         registerServices(appContext, config, servicesRegistry);

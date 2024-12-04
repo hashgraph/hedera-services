@@ -56,6 +56,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_GET_INFO;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
+import static com.hedera.hapi.node.base.HederaFunctionality.STATE_SIGNATURE_TRANSACTION;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ACCOUNT_WIPE;
@@ -267,7 +268,8 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssMessage,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssVote,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssShareSignature,
-        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssEncryptionKey) {
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssEncryptionKey,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange stateSignature) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -349,6 +351,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(TSS_VOTE, c -> c.tssVote);
         permissionKeys.put(TSS_SHARE_SIGNATURE, c -> c.tssShareSignature);
         permissionKeys.put(TSS_ENCRYPTION_KEY, c -> c.tssEncryptionKey);
+        permissionKeys.put(STATE_SIGNATURE_TRANSACTION, c -> c.stateSignature);
     }
 
     /**
