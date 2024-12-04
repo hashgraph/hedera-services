@@ -247,8 +247,9 @@ public class ServicesMain implements SwirldMain {
                 () -> {
                     isGenesis.set(true);
                     final var genesisState = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
+                    final var genesisNetwork = DiskStartupNetworks.fromLegacyAddressBook(diskAddressBook);
                     hedera.initializeStatesApi(
-                            genesisState, metrics, InitTrigger.GENESIS, diskAddressBook, platformConfig);
+                            genesisState, metrics, InitTrigger.GENESIS, genesisNetwork, platformConfig);
                     return genesisState;
                 },
                 Hedera.APP_NAME,

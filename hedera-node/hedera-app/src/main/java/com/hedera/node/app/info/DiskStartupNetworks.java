@@ -16,8 +16,12 @@
 
 package com.hedera.node.app.info;
 
+import static com.hedera.hapi.util.HapiUtils.parseAccount;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
@@ -38,9 +42,11 @@ import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -149,6 +155,7 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     /**
      * Writes a JSON representation of the {@link Network} information in the given state to a given path.
+     *
      * @param state the state to write network information from.
      * @param path the path to write the JSON network information to.
      */
@@ -163,6 +170,7 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     /**
      * Writes a JSON representation of the {@link Network} information in the given state to a given path.
+     *
      * @param path the path to write the JSON network information to.
      */
     public static void writeNetworkInfo(
@@ -200,6 +208,42 @@ public class DiskStartupNetworks implements StartupNetworks {
     }
 
     /**
+     * Converts a {@link AddressBook} to a {@link Network}. The resulting network will have no TSS
+     * keys of any kind.
+     *
+     * @param addressBook the address book to convert
+     * @return the converted network
+     */
+    public static @NonNull Network fromLegacyAddressBook(@NonNull final AddressBook addressBook) {
+        final var roster = buildRoster(addressBook);
+        return Network.newBuilder()
+                .nodeMetadata(roster.rosterEntries().stream()
+                        .map(rosterEntry -> {
+                            final var nodeId = rosterEntry.nodeId();
+                            final var nodeAccountId = parseAccount(
+                                    addressBook.getAddress(NodeId.of(nodeId)).getMemo());
+                            return NodeMetadata.newBuilder()
+                                    .rosterEntry(rosterEntry)
+                                    .node(Node.newBuilder()
+                                            .nodeId(nodeId)
+                                            .accountId(nodeAccountId)
+                                            .description("node" + (nodeId + 1))
+                                            .gossipEndpoint(rosterEntry.gossipEndpoint())
+                                            .serviceEndpoint(List.of())
+                                            .gossipCaCertificate(rosterEntry.gossipCaCertificate())
+                                            .grpcCertificateHash(Bytes.EMPTY)
+                                            .weight(rosterEntry.weight())
+                                            .deleted(false)
+                                            .adminKey(Key.DEFAULT)
+                                            .build())
+                                    .tssEncryptionKey(Bytes.EMPTY)
+                                    .build();
+                        })
+                        .toList())
+                .build();
+    }
+
+    /**
      * Attempts to load a {@link Network} from a given file in the directory whose relative path is given
      * by the provided {@link Configuration}.
      *
@@ -233,6 +277,7 @@ public class DiskStartupNetworks implements StartupNetworks {
      * If the given network has a ledger id, then it asserts that the TSS keys in the network are valid. This includes
      * the encryption keys within the {@link NodeMetadata} messages, since without these specified the TSS messages
      * would be unusable.
+     *
      * @param network the network to assert the TSS keys of
      * @throws IllegalArgumentException if the TSS keys are invalid
      */
@@ -267,6 +312,7 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     /**
      * Attempts to archive the given segments in the given configuration.
+     *
      * @param segments the segments to archive
      */
     private static void archiveIfPresent(@NonNull final Configuration config, @NonNull final String... segments) {
@@ -286,6 +332,7 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     /**
      * Ensures that the archive directory exists in the given configuration.
+     *
      * @param config the configuration to ensure the archive directory exists in
      */
     private static void ensureArchiveDir(@NonNull final Configuration config) throws IOException {
@@ -294,6 +341,7 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     /**
      * Creates the given path as a directory if it does not already exist.
+     *
      * @param path the path to the directory create if it does not already exist
      */
     private static void createIfAbsent(@NonNull final Path path) throws IOException {
@@ -304,6 +352,7 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     /**
      * Gets the path to the directory containing network files.
+     *
      * @param config the configuration to use to determine the location of the network files
      * @return the path to the directory containing network files
      */

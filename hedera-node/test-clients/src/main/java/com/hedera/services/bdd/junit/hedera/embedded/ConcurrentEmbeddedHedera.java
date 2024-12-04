@@ -115,7 +115,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         private final ScheduledExecutorService executorService;
 
         public ConcurrentFakePlatform(@NonNull final ScheduledExecutorService executorService) {
-            super(defaultNodeId, addressBook, requireNonNull(executorService));
+            super(defaultNodeId, roster, requireNonNull(executorService));
             this.executorService = executorService;
         }
 
@@ -159,7 +159,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                                         event.getSoftwareVersion());
                             })
                             .toList();
-                    final var round = new FakeRound(roundNo.getAndIncrement(), roster, consensusEvents);
+                    final var round = new FakeRound(roundNo.getAndIncrement(), requireNonNull(roster), consensusEvents);
                     hedera.handleWorkflow().handleRound(state, round);
                     hedera.onSealConsensusRound(round, state);
                     notifyBlockStreamManagerIfEnabled(round.getRoundNum());
