@@ -296,15 +296,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // depends on the completion of this pending work)
             final var scheduledWork = new ScheduledWork(pendingItems);
             final var pendingOutput = CompletableFuture.supplyAsync(scheduledWork::computeOutput, executor);
-            hashFuture = hashFuture
-                    .thenCombine(pendingOutput, (fromHash, fromPending) -> {
-                        // Include remaining input/output hashes into the corresponding trees and running hash
-                        this.combineOutput(null, fromPending);
+            hashFuture = hashFuture.thenCombine(pendingOutput, (fromHash, fromPending) -> {
+                // Include remaining input/output hashes into the corresponding trees and running hash
+                this.combineOutput(null, fromPending);
 
-                        // Write the output items to the stream
-                        executor.submit(() -> writer.writeItems(fromPending.data()));
-                        return null;
-                    });
+                // Write the output items to the stream
+                executor.submit(() -> writer.writeItems(fromPending.data()));
+                return null;
+            });
             pendingItems = new ArrayList<>();
             // We can't go any further in our computations of the final hash until all pending work is completed
             hashFuture.join();
