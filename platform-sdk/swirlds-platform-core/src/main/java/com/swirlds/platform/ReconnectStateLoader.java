@@ -18,6 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.RunningEventHashOverride;
@@ -30,15 +31,16 @@ import com.swirlds.platform.event.validation.RosterUpdate;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.wiring.PlatformWiring;
+import com.swirlds.state.State;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -58,7 +60,7 @@ public class ReconnectStateLoader {
     private final SwirldStateManager swirldStateManager;
     private final SignedStateNexus latestImmutableStateNexus;
     private final SavedStateController savedStateController;
-    private final AddressBook addressBook;
+    private final Roster roster;
 
     /**
      * Constructor.
@@ -69,7 +71,7 @@ public class ReconnectStateLoader {
      * @param swirldStateManager        manages the mutable state
      * @param latestImmutableStateNexus holds the latest immutable state
      * @param savedStateController      manages how states are saved
-     * @param addressBook               the address book
+     * @param roster                    the current roster
      */
     public ReconnectStateLoader(
             @NonNull final Platform platform,
@@ -78,14 +80,14 @@ public class ReconnectStateLoader {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestImmutableStateNexus,
             @NonNull final SavedStateController savedStateController,
-            @NonNull final AddressBook addressBook) {
+            @NonNull final Roster roster) {
         this.platform = Objects.requireNonNull(platform);
         this.platformContext = Objects.requireNonNull(platformContext);
         this.platformWiring = Objects.requireNonNull(platformWiring);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
         this.latestImmutableStateNexus = Objects.requireNonNull(latestImmutableStateNexus);
         this.savedStateController = Objects.requireNonNull(savedStateController);
-        this.addressBook = Objects.requireNonNull(addressBook);
+        this.roster = Objects.requireNonNull(roster);
     }
 
     /**
@@ -116,8 +118,10 @@ public class ReconnectStateLoader {
                                 + signedState.getState().getHash());
             }
 
-            // Before attempting to load the state, verify that the platform AB matches the state AB.
-            AddressBookUtils.verifyReconnectAddressBooks(addressBook, signedState.getAddressBook());
+            // Before attempting to load the state, verify that the platform roster matches the state roster.
+            final State state = (MerkleStateRoot<?>) signedState.getState().getSwirldState();
+            final Roster stateRoster = RosterRetriever.retrieveActiveOrGenesisRoster(state);
+            RosterUtils.verifyReconnectRosters(roster, stateRoster);
 
             swirldStateManager.loadFromSignedState(signedState);
             // kick off transition to RECONNECT_COMPLETE before beginning to save the reconnect state to disk
@@ -139,17 +143,10 @@ public class ReconnectStateLoader {
             platformWiring.consensusSnapshotOverride(Objects.requireNonNull(
                     signedState.getState().getReadablePlatformState().getSnapshot()));
 
+            final Roster previousRoster = RosterRetriever.retrievePreviousRoster(state);
             platformWiring
                     .getRosterUpdateInput()
-                    .inject(new RosterUpdate(
-                            RosterRetriever.buildRoster(signedState
-                                    .getState()
-                                    .getReadablePlatformState()
-                                    .getPreviousAddressBook()),
-                            RosterRetriever.buildRoster(signedState
-                                    .getState()
-                                    .getReadablePlatformState()
-                                    .getAddressBook())));
+                    .inject(new RosterUpdate(previousRoster, roster));
 
             final AncientMode ancientMode = platformContext
                     .getConfiguration()

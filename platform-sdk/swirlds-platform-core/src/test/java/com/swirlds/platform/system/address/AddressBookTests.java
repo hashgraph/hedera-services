@@ -18,7 +18,6 @@ package com.swirlds.platform.system.address;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.system.address.AddressBookUtils.parseAddressBookText;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -467,37 +466,6 @@ class AddressBookTests {
         } catch (final ParseException e) {
             assertEquals(part, e.getErrorOffset(), "The part number is wrong in the exception: " + e.getMessage());
         }
-    }
-
-    @Test
-    @DisplayName("Reconnect Address Book Comparison Test")
-    public void reconnectAddressBookComparisonTest() {
-        final Randotron randotron = Randotron.create();
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(randotron).withSize(10).build();
-
-        assertDoesNotThrow(() -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook.copy()));
-        // test exception on size mismatch
-        assertThrows(
-                IllegalStateException.class,
-                () -> AddressBookUtils.verifyReconnectAddressBooks(
-                        addressBook, addressBook.copy().remove(addressBook.getNodeId(0))));
-
-        // test exception on node id mismatch
-        final AddressBook addressBook2 = addressBook.copy();
-        final Address address = addressBook2.getAddress(addressBook2.getNodeId(0));
-        addressBook2.remove(address.getNodeId());
-        addressBook2.add(address.copySetNodeId(addressBook.getNextAvailableNodeId()));
-        assertThrows(
-                IllegalStateException.class,
-                () -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook2));
-
-        // test exception on address mismatch
-        final AddressBook addressBook3 = addressBook.copy();
-        addressBook3.updateWeight(addressBook3.getNodeId(0), 100);
-        assertThrows(
-                IllegalStateException.class,
-                () -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook3));
     }
 
     @Test

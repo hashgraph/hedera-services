@@ -338,4 +338,28 @@ public final class RosterUtils {
 
         return addressBook;
     }
+
+    /**
+     * Verifies that all nodes are the same between the two specified rosters.
+     *
+     * @param roster1 the first roster to compare
+     * @param roster2 the second roster to compare
+     * @throws IllegalStateException if the rosters do not match
+     */
+    public static void verifyReconnectRosters(@NonNull final Roster roster1, @NonNull final Roster roster2) throws IllegalStateException{
+        final int numNodes = roster1.rosterEntries().size();
+
+        if (numNodes != roster2.rosterEntries().size()) {
+            throw new IllegalStateException("Rosters have different number of nodes");
+        }
+
+        for (int i = 0; i < numNodes; ++i) {
+            final RosterEntry roster1Entry = roster1.rosterEntries().get(i);
+            final RosterEntry roster2Entry = roster2.rosterEntries().get(i);
+
+            if (!roster1Entry.equals(roster2Entry)) {
+                throw new IllegalStateException("Rosters do not contain the nodes");
+            }
+        }
+    }
 }

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.roster;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -216,5 +217,80 @@ public class RosterUtilsTest {
                 .gossipCaCertificate(
                         Bytes.wrap(PreGeneratedX509Certs.createBadCertificate().getEncoded()))
                 .build()));
+    }
+
+    @Test
+    void testVerifyReconnectRostersWithMismatchNumberOfEntries() {
+        RosterEntry node0 = RosterEntry.newBuilder()
+                .nodeId(0)
+                .weight(1)
+                .gossipCaCertificate(Bytes.wrap(new byte[1]))
+                .gossipEndpoint(ServiceEndpoint.DEFAULT)
+                .build();
+        RosterEntry node1 = RosterEntry.newBuilder()
+                .nodeId(1)
+                .weight(1)
+                .gossipCaCertificate(Bytes.wrap(new byte[1]))
+                .gossipEndpoint(ServiceEndpoint.DEFAULT)
+                .build();
+
+        Roster roster1 = Roster.newBuilder()
+                .rosterEntries(node0, node1)
+                .build();
+        Roster roster2 = Roster.newBuilder()
+                .rosterEntries(node0)
+                .build();
+
+        assertThrows(IllegalStateException.class, () -> RosterUtils.verifyReconnectRosters(roster1, roster2));
+    }
+
+    @Test
+    void testVerifyReconnectRostersWithMismatchNodes() {
+        RosterEntry node0 = RosterEntry.newBuilder()
+                .nodeId(0)
+                .weight(1)
+                .gossipCaCertificate(Bytes.wrap(new byte[1]))
+                .gossipEndpoint(ServiceEndpoint.DEFAULT)
+                .build();
+        RosterEntry node1 = RosterEntry.newBuilder()
+                .nodeId(1)
+                .weight(1)
+                .gossipCaCertificate(Bytes.wrap(new byte[1]))
+                .gossipEndpoint(ServiceEndpoint.DEFAULT)
+                .build();
+
+        Roster roster1 = Roster.newBuilder()
+                .rosterEntries(node0)
+                .build();
+        Roster roster2 = Roster.newBuilder()
+                .rosterEntries(node1)
+                .build();
+
+        assertThrows(IllegalStateException.class, () -> RosterUtils.verifyReconnectRosters(roster1, roster2));
+    }
+
+    @Test
+    void testVerifyReconnectRostersWithMatchingNodes() {
+        RosterEntry node0 = RosterEntry.newBuilder()
+                .nodeId(0)
+                .weight(1)
+                .gossipCaCertificate(Bytes.wrap(new byte[1]))
+                .gossipEndpoint(ServiceEndpoint.DEFAULT)
+                .build();
+        RosterEntry node1 = RosterEntry.newBuilder()
+                .nodeId(1)
+                .weight(1)
+                .gossipCaCertificate(Bytes.wrap(new byte[1]))
+                .gossipEndpoint(ServiceEndpoint.DEFAULT)
+                .build();
+
+        Roster roster1 = Roster.newBuilder()
+                .rosterEntries(node0, node1)
+                .build();
+        Roster roster2 = Roster.newBuilder()
+                .rosterEntries(node0, node1)
+                .build();
+
+        assertDoesNotThrow(() -> RosterUtils.verifyReconnectRosters(roster1, roster2));
     }
 }

@@ -111,11 +111,6 @@ public class SwirldsPlatform implements Platform {
     private final Roster currentRoster;
 
     /**
-     * the current nodes in the network and their information
-     */
-    private final AddressBook currentAddressBook;
-
-    /**
      * the object that contains all key pairs and CSPRNG state for this member
      */
     private final KeysAndCerts keysAndCerts;
@@ -217,7 +212,6 @@ public class SwirldsPlatform implements Platform {
         initialPcesFiles = blocks.initialPcesFiles();
         notificationEngine = blocks.notificationEngine();
 
-        currentAddressBook = initialState.getAddressBook();
         currentRoster = blocks.rosterHistory().getCurrentRoster();
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
@@ -349,7 +343,7 @@ public class SwirldsPlatform implements Platform {
                 swirldStateManager,
                 latestImmutableStateNexus,
                 savedStateController,
-                currentAddressBook);
+                currentRoster);
 
         blocks.loadReconnectStateReference().set(reconnectStateLoader::loadReconnectState);
         blocks.clearAllPipelinesForReconnectReference().set(platformWiring::clear);
