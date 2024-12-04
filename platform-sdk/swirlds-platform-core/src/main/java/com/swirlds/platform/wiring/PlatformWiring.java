@@ -137,7 +137,8 @@ public class PlatformWiring {
     private final ComponentWiring<InlinePcesWriter, PlatformEvent> pcesInlineWriterWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final ComponentWiring<PcesSequencer, PlatformEvent> pcesSequencerWiring;
-    private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
+    private final ComponentWiring<TransactionPrehandler, List<ScopedSystemTransaction<StateSignatureTransaction>>>
+            applicationTransactionPrehandlerWiring;
     private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
     private final GossipWiring gossipWiring;
     private final ComponentWiring<EventWindowManager, EventWindow> eventWindowManagerWiring;
@@ -494,6 +495,11 @@ public class PlatformWiring {
         splitOrphanBufferOutput.solderTo(applicationTransactionPrehandlerWiring.getInputWire(
                 TransactionPrehandler::prehandleApplicationTransactions));
 
+        applicationTransactionPrehandlerWiring
+                .getOutputWire()
+                .solderTo(stateSignatureCollectorWiring.getInputWire(
+                        StateSignatureCollector::handlePreconsensusSignatures));
+
         // From the orphan buffer, extract signatures from preconsensus events for input to the StateSignatureCollector.
         final WireTransformer<PlatformEvent, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 preConsensusTransformer = new WireTransformer<>(
@@ -629,6 +635,13 @@ public class PlatformWiring {
         final OutputWire<ConsensusRound> hashedConsensusRoundOutput = stateHasherWiring
                 .getOutputWire()
                 .buildTransformer("postHasher_getConsensusRound", "stateAndRound", StateAndRound::round);
+
+        stateHasherWiring
+                .getOutputWire()
+                .buildTransformer(
+                        "postHasher_getSystemTransactions", "system transactions", StateAndRound::systemTransactions)
+                .solderTo(stateSignatureCollectorWiring.getInputWire(
+                        StateSignatureCollector::handlePostconsensusSignatures));
 
         hashedStateOutputWire.solderTo(hashLoggerWiring.getInputWire(HashLogger::logHashes));
         hashedStateOutputWire.solderTo(stateSignerWiring.getInputWire(StateSigner::signState));

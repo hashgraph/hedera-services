@@ -19,13 +19,17 @@ package com.swirlds.platform.eventhandling;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.stats.AverageTimeStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -74,7 +78,8 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
      * {@inheritDoc}
      */
     @Override
-    public void prehandleApplicationTransactions(@NonNull final PlatformEvent event) {
+    public List<ScopedSystemTransaction<StateSignatureTransaction>> prehandleApplicationTransactions(
+            @NonNull final PlatformEvent event) {
         final long startTime = time.nanoTime();
 
         ReservedSignedState latestImmutableState = null;
@@ -95,5 +100,8 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
 
             preHandleTime.update(startTime, time.nanoTime());
         }
+
+        // TODO temporarily return no transactions until SwirldState.preHandle() is updated with callback
+        return new ArrayList<>();
     }
 }

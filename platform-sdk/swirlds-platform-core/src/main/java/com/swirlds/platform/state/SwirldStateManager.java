@@ -19,9 +19,11 @@ package com.swirlds.platform.state;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
@@ -32,6 +34,8 @@ import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.uptime.UptimeTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -133,10 +137,13 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * Seals the platform's state changes for the given round.
      * @param round the round to seal
      */
-    public void sealConsensusRound(@NonNull final Round round) {
+    public List<ScopedSystemTransaction<StateSignatureTransaction>> sealConsensusRound(@NonNull final Round round) {
         Objects.requireNonNull(round);
         final MerkleRoot state = stateRef.get();
         state.getSwirldState().sealConsensusRound(round);
+
+        // TODO temporary return no transactions until the SwirldState interface is updated to register callbacks
+        return new ArrayList<>();
     }
 
     /**

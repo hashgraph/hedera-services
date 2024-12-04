@@ -26,6 +26,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -55,7 +56,9 @@ class StateGarbageCollectorTests {
                         .build();
                 unreleasedStates.add(signedState.reserve("hold local copy of state"));
                 garbageCollector.registerState(new StateAndRound(
-                        signedState.reserve("send state to garbage collector"), mock(ConsensusRound.class)));
+                        signedState.reserve("send state to garbage collector"),
+                        mock(ConsensusRound.class),
+                        mock(ArrayList.class)));
             }
 
             // Randomly release some of the states.

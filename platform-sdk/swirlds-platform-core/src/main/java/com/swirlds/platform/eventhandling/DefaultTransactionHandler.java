@@ -273,7 +273,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
             // Let the swirld state manager know we are about to write the saved state for the freeze period
             swirldStateManager.savedStateInFreezePeriod();
         }
-        swirldStateManager.sealConsensusRound(consensusRound);
+        final var systemTransactions = swirldStateManager.sealConsensusRound(consensusRound);
 
         handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
         final MerkleRoot immutableStateCons = swirldStateManager.getStateForSigning();
@@ -289,6 +289,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
                 consensusRound.isPcesRound());
 
         final ReservedSignedState reservedSignedState = signedState.reserve("transaction handler output");
-        return new StateAndRound(reservedSignedState, consensusRound);
+        return new StateAndRound(reservedSignedState, consensusRound, systemTransactions);
     }
 }

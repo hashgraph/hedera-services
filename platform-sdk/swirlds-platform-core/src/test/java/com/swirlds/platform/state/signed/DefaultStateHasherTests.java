@@ -26,6 +26,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.hasher.DefaultStateHasher;
 import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import java.util.ArrayList;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +48,8 @@ public class DefaultStateHasherTests {
         final ReservedSignedState reservedSignedState = mock(ReservedSignedState.class);
         when(reservedSignedState.get()).thenReturn(signedState);
 
-        final StateAndRound stateAndRound = new StateAndRound(reservedSignedState, mock(ConsensusRound.class));
+        final StateAndRound stateAndRound =
+                new StateAndRound(reservedSignedState, mock(ConsensusRound.class), mock(ArrayList.class));
 
         // do the test
         final StateAndRound result = hasher.hashState(stateAndRound);

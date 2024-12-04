@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.wiring;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.branching.BranchDetector;
 import com.swirlds.platform.event.branching.BranchReporter;
@@ -65,7 +67,8 @@ public class PlatformCoordinator {
     private final GossipWiring gossipWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<EventCreationManager, UnsignedEvent> eventCreationManagerWiring;
-    private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
+    private final ComponentWiring<TransactionPrehandler, List<ScopedSystemTransaction<StateSignatureTransaction>>>
+            applicationTransactionPrehandlerWiring;
     private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
     private final ComponentWiring<TransactionHandler, StateAndRound> transactionHandlerWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
@@ -110,7 +113,10 @@ public class PlatformCoordinator {
             @NonNull final GossipWiring gossipWiring,
             @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
             @NonNull final ComponentWiring<EventCreationManager, UnsignedEvent> eventCreationManagerWiring,
-            @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
+            @NonNull
+                    final ComponentWiring<
+                                    TransactionPrehandler, List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            applicationTransactionPrehandlerWiring,
             @NonNull
                     final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>>
                             stateSignatureCollectorWiring,
