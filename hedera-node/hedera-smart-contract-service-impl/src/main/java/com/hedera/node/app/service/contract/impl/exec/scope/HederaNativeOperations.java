@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static com.hedera.node.app.spi.key.KeyVerifier.NO_AUTHORIZING_KEYS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -40,6 +41,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.SortedSet;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -261,4 +263,12 @@ public interface HederaNativeOperations {
      * @return true if the given transaction body has custom fees, false otherwise
      */
     boolean checkForCustomFees(@NonNull CryptoTransferTransactionBody op);
+
+    /**
+     * Returns the {@link SortedSet} of authorizing simple keys for this transaction.
+     * @return the authorizing simple keys
+     */
+    default SortedSet<Key> authorizingSimpleKeys() {
+        return NO_AUTHORIZING_KEYS;
+    }
 }
