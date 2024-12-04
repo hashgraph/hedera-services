@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
@@ -90,6 +91,12 @@ public interface EmbeddedHedera {
      * @return the embedded Hedera
      */
     Hedera hedera();
+
+    /**
+     * Returns the roster of the embedded Hedera node.
+     * @return the roster of the embedded Hedera node
+     */
+    Roster roster();
 
     /**
      * Advances the synthetic time in the embedded Hedera node by a given duration.

@@ -203,6 +203,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     @Override
+    public Roster roster() {
+        return roster;
+    }
+
+    @Override
     public void stop() {
         fakePlatform().notifyListeners(FREEZE_COMPLETE_NOTIFICATION);
         executorService.shutdownNow();

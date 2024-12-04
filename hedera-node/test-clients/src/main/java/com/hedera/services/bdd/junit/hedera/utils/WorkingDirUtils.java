@@ -48,6 +48,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -404,6 +405,13 @@ public class WorkingDirUtils {
             @NonNull final String configTxt,
             @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
             @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+        // TODO - Use the "live" gossip certificates that subprocess nodes will adopt
+        final Bytes mockCert;
+        try {
+            mockCert = Bytes.wrap(SIG_CERT.getEncoded());
+        } catch (CertificateEncodingException e) {
+            throw new IllegalStateException(e);
+        }
         final var nodeMetadata = Arrays.stream(configTxt.split("\n"))
                 .filter(line -> line.contains("address, "))
                 .map(line -> {
@@ -412,10 +420,8 @@ public class WorkingDirUtils {
                     final long weight = Long.parseLong(parts[4]);
                     final var gossipEndpoints =
                             List.of(endpointFrom(parts[5], parts[6]), endpointFrom(parts[7], parts[8]));
-                    // TODO - Use the real gossip certificate
-                    final var gossipCaCertificate = Bytes.fromHex("abcdef");
                     return NodeMetadata.newBuilder()
-                            .rosterEntry(new RosterEntry(nodeId, weight, gossipCaCertificate, gossipEndpoints))
+                            .rosterEntry(new RosterEntry(nodeId, weight, mockCert, gossipEndpoints))
                             .node(new Node(
                                     nodeId,
                                     toPbj(HapiPropertySource.asAccount(parts[9])),
@@ -423,7 +429,7 @@ public class WorkingDirUtils {
                                     gossipEndpoints,
                                     // TODO - Use the real service endpoint
                                     List.of(),
-                                    gossipCaCertificate,
+                                    mockCert,
                                     // The gRPC certificate hash is irrelevant for PR checks
                                     Bytes.EMPTY,
                                     weight,

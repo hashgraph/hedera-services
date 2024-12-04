@@ -54,6 +54,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.node.transaction.SignedTransaction;
@@ -415,13 +416,19 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
     private SpecOperation extractRosterMetadata() {
         return doingContextual(spec -> {
             final var state = spec.embeddedStateOrThrow();
-            final var hedera = spec.repeatableEmbeddedHederaOrThrow();
-            final var roundNo = hedera.lastRoundNo();
-
+            final var embeddedHedera = spec.repeatableEmbeddedHederaOrThrow();
+            final var roundNo = embeddedHedera.lastRoundNo();
+            final var hedera = embeddedHedera.hedera();
             final var writableStates = state.getWritableStates(RosterService.NAME);
             final var rosterStore = new WritableRosterStore(writableStates);
-            final var activeEntries =
-                    new ArrayList<>(rosterStore.getActiveRoster().rosterEntries());
+
+            if (!hedera.isRosterLifecycleEnabled() && rosterStore.getActiveRoster() == null) {
+                rosterStore.putActiveRoster(embeddedHedera.roster(), 0);
+                ((CommittableWritableStates) writableStates).commit();
+            }
+
+            final List<RosterEntry> activeEntries = new ArrayList<>(
+                    requireNonNull(rosterStore.getActiveRoster()).rosterEntries());
             activeEntries.set(
                     activeEntries.size() - 1,
                     activeEntries.getLast().copyBuilder().weight(0).build());
@@ -439,7 +446,8 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
                     .forEach((nodeId, numShares) -> activeShares.put(nodeId, numShares.intValue()));
             expectedMessages = activeShares.get(0L);
             // Prepare the FakeTssLibrary to decrypt the private shares of the embedded node
-            hedera.tssBaseService()
+            embeddedHedera
+                    .tssBaseService()
                     .fakeTssLibrary()
                     .setupDecryption(
                             directory -> {},

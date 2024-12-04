@@ -29,8 +29,8 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.state.State;
@@ -75,7 +75,7 @@ public class StateNetworkInfo implements NetworkInfo {
             @NonNull final ConfigProvider configProvider) {
         this.selfId = selfId;
         this.activeRoster = requireNonNull(roster);
-        // We keep this for now to check the keyCandidateRoster feature flag in updateFrom()
+        // We keep this for now to check the roster lifecycle feature flag in updateFrom()
         this.configProvider = requireNonNull(configProvider);
         this.nodeInfos = buildNodeInfoMap(state);
         // Load the ledger ID from configuration
@@ -116,7 +116,7 @@ public class StateNetworkInfo implements NetworkInfo {
     @Override
     public void updateFrom(@NonNull final State state) {
         final var config = configProvider.getConfiguration();
-        if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
+        if (config.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             activeRoster = retrieveActiveOrGenesisRoster(state);
         } else {
             // When the feature flag is disabled, the rosters in RosterService state are not up-to-date
