@@ -43,13 +43,15 @@ public interface VirtualRoot<K extends VirtualKey, V extends VirtualValue> exten
     /**
      * Flush the contents of this data structure to disk. Will be called at most once.
      *
-     * This method is called only for the oldest released copy after it becomes immutable and before
-     * it's fully evicted from memory (when released). Copies with {@link #shouldBeFlushed()}
+     * <p>This method is called only for the oldest released copy after it becomes immutable and
+     * before it's fully evicted from memory (when released). Copies with {@link #shouldBeFlushed()}
      * returning true are guaranteed to be flushed, but other copies may be flushed, too.
      *
-     * This method can be expensive and may block for a long time before returning.
+     * <p>This method can be expensive and may block for a long time before returning.
+     *
+     * @return if the copy has been flushed
      */
-    void flush();
+    boolean flush();
 
     /**
      * Check if this copy has already been flushed.

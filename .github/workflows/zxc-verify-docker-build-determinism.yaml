@@ -91,7 +91,7 @@ jobs:
           service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
 
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+        uses: google-github-actions/setup-gcloud@6189d56e4096ee891640bb02ac264be376592d6a # v2.1.2
 
       - name: Retrieve Commit Hash
         id: commit
@@ -240,7 +240,7 @@ jobs:
           printf "VERSION=%s\nCOMMIT=%s\nDATE=%s" "$(./gradlew -q showVersion)" "$(git log -1 --format='%H' | cut -c1-8)" "$(date -u)" | tee "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/VERSION"
 
       - name: Build Docker Image
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         env:
           SOURCE_DATE_EPOCH: ${{ steps.commit.outputs.source-date }}
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
@@ -346,7 +346,7 @@ jobs:
           service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
 
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+        uses: google-github-actions/setup-gcloud@6189d56e4096ee891640bb02ac264be376592d6a # v2.1.2
         env:
           CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.pythonLocation, runner.os == 'Windows' && '\python.exe' || '/bin/python3') }}
 
@@ -444,7 +444,7 @@ jobs:
         run: docker info
 
       - name: Build Docker Image
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         env:
           SOURCE_DATE_EPOCH: ${{ needs.generate-baseline.outputs.source-date }}
         with:

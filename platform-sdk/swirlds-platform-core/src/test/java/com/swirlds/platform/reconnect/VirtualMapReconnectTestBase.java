@@ -270,7 +270,12 @@ public abstract class VirtualMapReconnectTestBase {
             }
 
             delegate.saveRecords(
-                    firstLeafPath, lastLeafPath, pathHashRecordsToUpdate, leaves.stream(), leafRecordsToDelete);
+                    firstLeafPath,
+                    lastLeafPath,
+                    pathHashRecordsToUpdate,
+                    leaves.stream(),
+                    leafRecordsToDelete,
+                    isReconnectContext);
         }
 
         @Override
