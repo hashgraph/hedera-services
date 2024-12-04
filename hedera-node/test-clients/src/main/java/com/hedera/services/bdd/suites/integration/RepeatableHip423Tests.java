@@ -71,6 +71,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeSpecSecondTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThrottles;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepForSeconds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -90,6 +91,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_EXPIRY_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
@@ -215,7 +217,10 @@ public class RepeatableHip423Tests {
                 exposeSpecSecondTo(lastSecond::set),
                 sourcing(() -> scheduleCreate("tooLate", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 34L)))
                         .expiringAt(lastSecond.get() + 1 + ONE_MINUTE + 1)
-                        .hasKnownStatus(SCHEDULE_EXPIRY_TOO_LONG)));
+                        .hasKnownStatus(SCHEDULE_EXPIRY_TOO_LONG)),
+                scheduleCreate("unspecified", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 56L)))
+                        .waitForExpiry()
+                        .hasPrecheck(MISSING_EXPIRY_TIME));
     }
 
     /**
@@ -257,6 +262,64 @@ public class RepeatableHip423Tests {
                                 .fee(ONE_HUNDRED_HBARS))
                         .toArray(SpecOperation[]::new))),
                 // And confirm the next is throttled
+                sourcing(() -> scheduleCreate(
+                                "throttledTopicCreation", createTopic("NTB").topicMemo("NOPE"))
+                        .expiringAt(expirySecond.get())
+                        .payingWith(CIVILIAN_PAYER)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasKnownStatus(SCHEDULE_EXPIRY_IS_BUSY)),
+                sourcingContextual(spec -> purgeExpiringWithin(maxLifetime.get())));
+    }
+
+    /**
+     * Tests that the consensus {@link com.hedera.hapi.node.base.HederaFunctionality#SCHEDULE_CREATE} throttle is
+     * enforced by overriding the dev throttles to the more restrictive mainnet throttles and scheduling one more
+     * {@link com.hedera.hapi.node.base.HederaFunctionality#CONSENSUS_CREATE_TOPIC} that is allowed.
+     */
+    @LeakyRepeatableHapiTest(
+            value = {
+                NEEDS_LAST_ASSIGNED_CONSENSUS_TIME,
+                NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
+                NEEDS_STATE_ACCESS,
+                THROTTLE_OVERRIDES
+            },
+            overrides = {
+                "scheduling.whitelist",
+            },
+            throttles = "testSystemFiles/mainnet-throttles-sans-reservations.json")
+    final Stream<DynamicTest> throttlingRebuiltForSecondWhenSnapshotsNoLongerMatch() {
+        final var expirySecond = new AtomicLong();
+        final var maxLifetime = new AtomicLong();
+        final var maxSchedulableTopicCreates = new AtomicInteger();
+        return hapiTest(
+                overriding("scheduling.whitelist", "ConsensusCreateTopic"),
+                doWithStartupConfigNow(
+                        "scheduling.maxExpirationFutureSeconds",
+                        (value, specTime) -> doAdhoc(() -> {
+                            maxLifetime.set(Long.parseLong(value));
+                            expirySecond.set(specTime.getEpochSecond() + maxLifetime.get());
+                        })),
+                cryptoCreate(CIVILIAN_PAYER).balance(ONE_MILLION_HBARS),
+                exposeMaxSchedulable(ConsensusCreateTopic, maxSchedulableTopicCreates::set),
+                // Schedule one fewer than the maximum number of topic creations allowed using
+                // the initial throttles without the PriorityReservations bucket
+                sourcing(() -> blockingOrder(IntStream.range(0, maxSchedulableTopicCreates.get() - 1)
+                        .mapToObj(i -> scheduleCreate(
+                                        "topic" + i, createTopic("t" + i).topicMemo("m" + i))
+                                .expiringAt(expirySecond.get())
+                                .payingWith(CIVILIAN_PAYER)
+                                .fee(ONE_HUNDRED_HBARS))
+                        .toArray(SpecOperation[]::new))),
+                // Now override the throttles to the mainnet throttles with the PriorityReservations bucket
+                // (so that the throttle snapshots in state for this second don't match the new throttles)
+                overridingThrottles("testSystemFiles/mainnet-throttles.json"),
+                // And confirm we can schedule one more
+                sourcing(() -> scheduleCreate(
+                                "lastTopicCreation", createTopic("oneMore").topicMemo("N-1"))
+                        .expiringAt(expirySecond.get())
+                        .payingWith(CIVILIAN_PAYER)
+                        .fee(ONE_HUNDRED_HBARS)),
+                // But then the next is throttled
                 sourcing(() -> scheduleCreate(
                                 "throttledTopicCreation", createTopic("NTB").topicMemo("NOPE"))
                         .expiringAt(expirySecond.get())
