@@ -40,11 +40,15 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.CertificateEncodingException;
 import java.util.Comparator;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A utility class to help retrieve a Roster instance from the state.
  */
 public final class RosterRetriever {
+    private static final Logger log = LogManager.getLogger(RosterRetriever.class);
+
     private RosterRetriever() {}
 
     private static final String ROSTER_SERVICE = "RosterService";
@@ -158,7 +162,21 @@ public final class RosterRetriever {
             final long weight,
             @NonNull final Bytes cert,
             @NonNull final List<ServiceEndpoint> endpoints) {
-        final List<ServiceEndpoint> rosterOrdered = endpoints.size() > 1 ? endpoints.reversed() : endpoints;
+        // Filter out any invalid endpoints
+        final List<ServiceEndpoint> filtered = endpoints.stream()
+                .filter(e -> {
+                    if (!isValidServiceEndpoint(e)) {
+                        log.warn("Filtering invalid service endpoint {}", e);
+                        return false;
+                    }
+                    return true;
+                })
+                .toList();
+
+        // Order the endpoints in the expected roster order
+        final List<ServiceEndpoint> rosterOrdered = filtered.size() > 1 ? filtered.reversed() : filtered;
+
+        // Build the entry
         return RosterEntry.newBuilder()
                 .nodeId(nodeId.id())
                 .weight(weight)
@@ -218,5 +236,10 @@ public final class RosterRetriever {
             return rosterMap.get(new ProtoBytes(activeRosterHash));
         }
         return null;
+    }
+
+    private static boolean isValidServiceEndpoint(@NonNull final ServiceEndpoint endpoint) {
+        return endpoint.ipAddressV4().length() > 0
+                || (endpoint.domainName() != null && !endpoint.domainName().isEmpty());
     }
 }
