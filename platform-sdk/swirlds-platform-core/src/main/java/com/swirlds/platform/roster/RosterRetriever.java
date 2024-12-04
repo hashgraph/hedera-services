@@ -25,6 +25,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -74,6 +75,35 @@ public final class RosterRetriever {
         final var readablePlatformStateStore =
                 new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
         return buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
+    }
+
+    /**
+     * Retrieve the previous Roster from the state, or null if the roster has never changed yet.
+     *
+     * The previous roster is the one that has been in use prior to the current active roster,
+     * i.e. prior to the one returned by the retrieveActiveOrGenesisRoster() method.
+     *
+     * @param state a state to fetch the previous roster from
+     * @return the previous roster, or null
+     */
+    @Nullable
+    public static Roster retrievePreviousRoster(@NonNull final State state) {
+        final ReadableSingletonState<RosterState> rosterState =
+                state.getReadableStates(ROSTER_SERVICE).getSingleton(ROSTER_STATES_KEY);
+        final List<RoundRosterPair> roundRosterPairs =
+                requireNonNull(rosterState.get()).roundRosterPairs();
+
+        if (roundRosterPairs.isEmpty()) {
+            final var readablePlatformStateStore =
+                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+            return buildRoster(readablePlatformStateStore.getPreviousAddressBook());
+        }
+
+        if (roundRosterPairs.size() < 2) {
+            return null;
+        }
+
+        return retrieveInternal(state, roundRosterPairs.get(1).activeRosterHash());
     }
 
     /**
