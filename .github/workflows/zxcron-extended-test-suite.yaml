@@ -172,6 +172,7 @@ jobs:
 
       - name: Extract build app workflow reports
         run: |
+          ls -la
           unzip "Unit Test Report"
           ls -la **/TEST-*.xml
         
