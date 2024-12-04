@@ -29,7 +29,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
@@ -55,11 +54,7 @@ class SwirldStateManagerTests {
                 TestPlatformContextBuilder.create().build();
 
         swirldStateManager = new SwirldStateManager(
-                platformContext,
-                RosterUtils.buildAddressBook(roster),
-                NodeId.of(0L),
-                mock(StatusActionSubmitter.class),
-                new BasicSoftwareVersion(1));
+                platformContext, roster, NodeId.of(0L), mock(StatusActionSubmitter.class), new BasicSoftwareVersion(1));
         swirldStateManager.setInitialState(initialState);
     }
 

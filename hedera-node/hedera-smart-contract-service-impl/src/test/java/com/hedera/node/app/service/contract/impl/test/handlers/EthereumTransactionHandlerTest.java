@@ -42,11 +42,13 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.tracers.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
@@ -71,7 +73,9 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import java.util.List;
 import java.util.function.Supplier;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -79,6 +83,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -150,15 +155,24 @@ class EthereumTransactionHandlerTest {
     @Mock
     private EthTxData ethTxDataReturned;
 
+    @Mock(strictness = Strictness.LENIENT)
+    private ContractServiceComponent contractServiceComponent;
+
     @Mock
     private Configuration configuration;
 
     @Mock
     private ContractsConfig contractsConfig;
 
+    private final Metrics metrics = new NoOpMetrics();
+    private final ContractMetrics contractMetrics = new ContractMetrics(() -> metrics, () -> contractsConfig);
+
     @BeforeEach
     void setUp() {
-        subject = new EthereumTransactionHandler(ethereumSignatures, callDataHydration, () -> factory, gasCalculator);
+        contractMetrics.createContractMetrics();
+        given(contractServiceComponent.contractMetrics()).willReturn(contractMetrics);
+        subject = new EthereumTransactionHandler(
+                ethereumSignatures, callDataHydration, () -> factory, gasCalculator, contractServiceComponent);
     }
 
     void setUpTransactionProcessing() {
