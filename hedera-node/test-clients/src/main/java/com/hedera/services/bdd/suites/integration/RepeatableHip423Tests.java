@@ -36,11 +36,16 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.PREDEFINED_SHAPE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
@@ -49,6 +54,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -88,6 +94,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -97,6 +105,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_EXPIRY
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_MUST_BE_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
 import static java.util.Spliterator.NONNULL;
@@ -610,7 +619,7 @@ public class RepeatableHip423Tests {
         final var zeroAddress =
                 idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(0L).build());
         return hapiTest(flattened(
-                uploadTestContract(),
+                uploadTestContracts(contract),
                 contractCreate(
                                 contract,
                                 idAsHeadlongAddress(
@@ -638,7 +647,7 @@ public class RepeatableHip423Tests {
                 idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(2).build());
         return hapiTest(flattened(
                 cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
-                uploadTestContract(),
+                uploadTestContracts(contract),
                 // contract create
                 scheduleCreate(
                                 "contractCreate",
@@ -658,7 +667,7 @@ public class RepeatableHip423Tests {
         final var addressTwo =
                 idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(2).build());
         return hapiTest(flattened(
-                uploadTestContract(),
+                uploadTestContracts(contract),
                 newKeyNamed("admin"),
                 contractCreate(contract, addressTwo, BigInteger.ONE)
                         .adminKey("admin")
@@ -775,7 +784,7 @@ public class RepeatableHip423Tests {
         return hapiTest(flattened(
                 overriding("contracts.maxGasPerSec", "4000000"),
                 cryptoCreate("PAYING_ACCOUNT"),
-                uploadTestContract(),
+                uploadTestContracts(contract),
                 contractCreate(contract, addressTwo, BigInteger.ONE)
                         .balance(ONE_HBAR)
                         .via("contractCreate"),
@@ -869,7 +878,7 @@ public class RepeatableHip423Tests {
         final var zeroAddress =
                 idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(0L).build());
         return hapiTest(flattened(
-                uploadTestContract(),
+                uploadTestContracts(contract),
                 cryptoCreate("contractAdmin").balance(ONE_HUNDRED_HBARS),
                 contractCreate(
                                 contract,
@@ -911,29 +920,92 @@ public class RepeatableHip423Tests {
                 cryptoDelete("Bob").payingWith("Bob"),
 
                 // Even we deleted the signers, we have their signatures in the state and this will satisfy the
-                // threshold
-                // key of the "sender". In this case the transfer will be successful.
+                // threshold key of the "sender". In this case the transfer will be successful.
                 triggerAndValidateSuccessfulExecution(ONE_MINUTE, "transfer")));
     }
 
-    private SpecOperation[] uploadTestContract() {
-        final var testContract = "TestContract";
-        return new SpecOperation[] {
-            // upload fees for SCHEDULE_CREATE_CONTRACT_CALL
-            uploadScheduledContractPrices(GENESIS),
-            overriding("scheduling.whitelist", "ContractCall,ContractCreate,ContractUpdate,ContractDelete"),
-            uploadInitCode(testContract),
-        };
+    @LeakyRepeatableHapiTest(
+            value = NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
+            overrides = {"scheduling.whitelist"})
+    @DisplayName("Schedule contract call with delegate call to system contract")
+    final Stream<DynamicTest> scheduleCreateContractCallsWithDelegateCall() {
+        final var account = "account";
+        final var treasury = "treasury";
+        final var token = "token";
+        final var associateContract = "AssociateDissociate";
+        final var nestedAssociatedContract = "NestedAssociateDissociate";
+        final var accountAddress = new AtomicReference<>();
+        final var tokenAddress = new AtomicReference<>();
+        final var associateContractAddress = new AtomicReference<>();
+        final var keyShape = KeyShape.threshOf(1, ED25519, DELEGATE_CONTRACT);
+        return hapiTest(flattened(
+                cryptoCreate(account).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(treasury),
+                tokenCreate(token).tokenType(FUNGIBLE_COMMON).treasury(treasury),
+                uploadTestContracts(associateContract, nestedAssociatedContract),
+                contractCreate(associateContract),
+                // set addresses
+                withOpContext((spec, opLog) -> {
+                    associateContractAddress.set(asHeadlongAddress(getNestedContractAddress(associateContract, spec)));
+                    accountAddress.set(
+                            asHeadlongAddress(asAddress(spec.registry().getAccountID(account))));
+                    tokenAddress.set(asHeadlongAddress(asAddress(spec.registry().getTokenID(token))));
+                }),
+                sourcing(() -> contractCreate(nestedAssociatedContract, associateContractAddress.get())),
+                // update account key to contain delegate contract id
+                newKeyNamed("contractKey").shape(keyShape.signedWith(sigs(ON, nestedAssociatedContract))),
+                cryptoUpdate(account).key("contractKey"),
+                // schedule contract call
+                sourcing(() -> scheduleCreate(
+                                "scheduleDelegateCall",
+                                // SIGNER → call → CONTRACT A → delegatecall → CONTRACT B → call → PRECOMPILE(HTS)
+                                contractCall(
+                                                nestedAssociatedContract,
+                                                "associateDelegateCall",
+                                                accountAddress.get(),
+                                                tokenAddress.get())
+                                        .payingWith(account)
+                                        .gas(4_000_000L))
+                        .expiringIn(ONE_MINUTE)
+                        .via("scheduleDelegateCall")),
+                // wait and execute
+                sleepForSeconds(ONE_MINUTE),
+                cryptoCreate("foo"),
+                // asserts
+                assertScheduleDelegateCallRecords("scheduleDelegateCall"),
+                getAccountInfo(account).hasToken(relationshipWith(token))));
     }
 
-    private SpecOperation[] triggerAndValidateSuccessfulExecution(long sleepDuration, String... scheduledTransactions) {
+    private SpecOperation[] uploadTestContracts(String... contracts) {
+        final var ops = new ArrayList<>(List.of(
+                uploadScheduledContractPrices(GENESIS),
+                overriding("scheduling.whitelist", "ContractCall,ContractCreate,ContractUpdate,ContractDelete")));
+        for (final var contract : contracts) {
+            ops.add(uploadInitCode(contract));
+        }
+        return ops.toArray(new SpecOperation[0]);
+    }
+
+    private SpecOperation assertScheduleDelegateCallRecords(@NonNull final String scheduleTxn) {
+        return getTxnRecord(scheduleTxn)
+                .scheduled()
+                .andAllChildRecords()
+                .hasChildRecords(recordWith()
+                        .status(com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS)
+                        .contractCallResult(resultWith()
+                                .contractCallResult(htsPrecompileResult()
+                                        .withStatus(com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS))));
+    }
+
+    private SpecOperation[] triggerAndValidateSuccessfulExecution(
+            final long sleepDuration, String... scheduledTransactions) {
         return triggerAndValidateStatus(
                 sleepDuration, com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS, scheduledTransactions);
     }
 
     private SpecOperation[] triggerAndValidateStatus(
-            long sleepDuration,
-            com.hederahashgraph.api.proto.java.ResponseCodeEnum status,
+            final long sleepDuration,
+            @NonNull final com.hederahashgraph.api.proto.java.ResponseCodeEnum status,
             String... scheduledTransactions) {
         return new SpecOperation[] {
             sleepForSeconds(sleepDuration),
