@@ -30,6 +30,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
@@ -154,4 +155,10 @@ public interface SystemContractOperations {
      */
     @NonNull
     ExchangeRate currentExchangeRate();
+
+    /**
+     * Returns the ecdsa eth key for the sender of current transaction if one exists.
+     */
+    @Nullable
+    Key maybeEthSenderKey();
 }

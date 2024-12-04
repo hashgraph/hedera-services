@@ -16,9 +16,15 @@
 
 package com.hedera.node.app.tss.schemas;
 
+import static com.hedera.hapi.node.state.tss.RosterToKey.ACTIVE_ROSTER;
+import static com.hedera.hapi.node.state.tss.TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,6 +34,7 @@ import java.util.Set;
  * Schema for the TSS service.
  */
 public class V0570TssBaseSchema extends Schema {
+    public static final String TSS_STATUS_KEY = "TSS_STATUS";
     public static final String TSS_ENCRYPTION_KEY_MAP_KEY = "TSS_ENCRYPTION_KEY";
     /**
      * This will at most be equal to the number of nodes in the network.
@@ -39,6 +46,7 @@ public class V0570TssBaseSchema extends Schema {
      */
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(57).patch(0).build();
+
     /**
      * Create a new instance
      */
@@ -46,13 +54,23 @@ public class V0570TssBaseSchema extends Schema {
         super(VERSION);
     }
 
+    @Override
+    public void migrate(@NonNull final MigrationContext ctx) {
+        final var tssStatusState = ctx.newStates().getSingleton(TSS_STATUS_KEY);
+        if (tssStatusState.get() == null) {
+            tssStatusState.put(new TssStatus(WAITING_FOR_ENCRYPTION_KEYS, ACTIVE_ROSTER, Bytes.EMPTY));
+        }
+    }
+
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(StateDefinition.onDisk(
-                TSS_ENCRYPTION_KEY_MAP_KEY,
-                EntityNumber.PROTOBUF,
-                TssEncryptionKeyTransactionBody.PROTOBUF,
-                MAX_TSS_ENCRYPTION_KEYS));
+        return Set.of(
+                StateDefinition.singleton(TSS_STATUS_KEY, TssStatus.PROTOBUF),
+                StateDefinition.onDisk(
+                        TSS_ENCRYPTION_KEY_MAP_KEY,
+                        EntityNumber.PROTOBUF,
+                        TssEncryptionKeyTransactionBody.PROTOBUF,
+                        MAX_TSS_ENCRYPTION_KEYS));
     }
 }

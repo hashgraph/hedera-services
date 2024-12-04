@@ -20,6 +20,7 @@ import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebug
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedInputStream;
@@ -61,11 +62,12 @@ public class MerkleTreeSnapshotReader {
 
     /**
      * This is a helper class to hold the data read from a state file.
-     * @param state the Merkle tree state
+     * @param stateRoot the root of Merkle tree state
      * @param hash the hash of the state
      * @param sigSet the signature set
      */
-    public record StateFileData(@NonNull MerkleStateRoot<?> state, @NonNull Hash hash, @Nullable SigSet sigSet) {}
+    public record StateFileData(
+            @NonNull PartialNaryMerkleInternal stateRoot, @NonNull Hash hash, @Nullable SigSet sigSet) {}
 
     /**
      * Reads a state file from disk
@@ -100,7 +102,7 @@ public class MerkleTreeSnapshotReader {
             @NonNull final Path stateFile, @NonNull final MerkleDataInputStream in, @NonNull final Path directory)
             throws IOException {
         try {
-            final MerkleStateRoot<?> state = in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
+            final PartialNaryMerkleInternal state = in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
             final Hash hash = in.readSerializable();
             final SigSet sigSet = in.readSerializable();
             return new StateFileData(state, hash, sigSet);

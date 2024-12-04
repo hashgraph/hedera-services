@@ -1614,4 +1614,15 @@ enum ResponseCodeEnum {
      * expire; its creation must be retried with a different expiry.
      */
     SCHEDULE_EXPIRY_IS_BUSY = 372;
+
+    /**
+     * The provided gRPC certificate hash is invalid.
+     */
+    INVALID_GRPC_CERTIFICATE_HASH = 373;
+
+    /**
+     * A scheduled transaction configured to wait for expiry to execute was not
+     * given an explicit expiration time.
+     */
+    MISSING_EXPIRY_TIME = 374;
 }
