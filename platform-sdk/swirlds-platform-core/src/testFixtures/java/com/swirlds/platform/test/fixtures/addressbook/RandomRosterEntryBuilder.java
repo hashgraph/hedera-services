@@ -21,7 +21,6 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomIp;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,7 +34,7 @@ import java.util.Random;
 public class RandomRosterEntryBuilder {
 
     private final Random random;
-    private NodeId nodeId;
+    private Long nodeId;
     private Long weight;
     private Integer port;
     private String hostname;
@@ -72,7 +71,7 @@ public class RandomRosterEntryBuilder {
     @NonNull
     public RosterEntry build() {
         if (nodeId == null) {
-            nodeId = NodeId.of(random.nextLong(0, Long.MAX_VALUE));
+            nodeId = random.nextLong(0, Long.MAX_VALUE);
         }
 
         if (weight == null) {
@@ -88,12 +87,12 @@ public class RandomRosterEntryBuilder {
         }
 
         if (sigCert == null) {
-            sigCert = PreGeneratedX509Certs.getSigCert(nodeId.id());
+            sigCert = PreGeneratedX509Certs.getSigCert(nodeId);
         }
 
         try {
             return RosterEntry.newBuilder()
-                    .nodeId(nodeId.id())
+                    .nodeId(nodeId)
                     .weight(weight)
                     .gossipCaCertificate(Bytes.wrap(sigCert.getCertificate().getEncoded()))
                     .gossipEndpoint(ServiceEndpoint.newBuilder()
@@ -107,14 +106,14 @@ public class RandomRosterEntryBuilder {
     }
 
     /**
-     * Sets the {@link NodeId} for the address.
+     * Sets the nodeId for the address.
      *
      * @param nodeId the node ID
      * @return this builder
      */
     @NonNull
-    public RandomRosterEntryBuilder withNodeId(@NonNull final NodeId nodeId) {
-        this.nodeId = Objects.requireNonNull(nodeId);
+    public RandomRosterEntryBuilder withNodeId(final long nodeId) {
+        this.nodeId = nodeId;
         return this;
     }
 
