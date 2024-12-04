@@ -28,6 +28,9 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Base class for tests to validate bulk operations fees
+ */
 public class BulkOperationsBase {
     protected static final String OWNER = "owner";
     protected static final String ASSOCIATE_ACCOUNT = "associateAccount";
