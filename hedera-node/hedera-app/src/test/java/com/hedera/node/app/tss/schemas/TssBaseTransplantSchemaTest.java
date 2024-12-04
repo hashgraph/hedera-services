@@ -17,9 +17,7 @@
 package com.hedera.node.app.tss.schemas;
 
 import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -82,39 +80,6 @@ class TssBaseTransplantSchemaTest {
         givenConfig(false);
         subject.restart(ctx);
         verifyNoMoreInteractions(ctx);
-    }
-
-    @Test
-    void withoutTssEncryptionKeysIsNoopAtGenesis() {
-        givenConfig(true);
-        given(ctx.isGenesis()).willReturn(true);
-        given(ctx.startupNetworks()).willReturn(startupNetworks);
-        given(startupNetworks.genesisNetworkOrThrow()).willReturn(NETWORK_WITHOUT_KEYS);
-        given(ctx.newStates()).willReturn(writableStates);
-        given(writableStates.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY))
-                .willReturn(writableEncryptionKeys);
-
-        subject.restart(ctx);
-
-        verify(writableEncryptionKeys, never()).put(any(), any());
-    }
-
-    @Test
-    void withTssEncryptionKeysSetsKeysAtGenesis() {
-        givenConfig(true);
-        given(ctx.isGenesis()).willReturn(true);
-        given(ctx.startupNetworks()).willReturn(startupNetworks);
-        given(startupNetworks.genesisNetworkOrThrow()).willReturn(NETWORK_WITH_KEYS);
-        given(ctx.newStates()).willReturn(writableStates);
-        given(writableStates.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY))
-                .willReturn(writableEncryptionKeys);
-
-        subject.restart(ctx);
-
-        verify(writableEncryptionKeys)
-                .put(new EntityNumber(1L), new TssEncryptionKeys(NODE1_ENCRYPTION_KEY, Bytes.EMPTY));
-        verify(writableEncryptionKeys)
-                .put(new EntityNumber(2L), new TssEncryptionKeys(NODE2_ENCRYPTION_KEY, Bytes.EMPTY));
     }
 
     @Test

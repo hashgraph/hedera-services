@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
-import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.internal.network.Network;
@@ -29,15 +28,12 @@ import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
-import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * The {@link Schema#restart(MigrationContext)} implementation whereby the {@link TssBaseService} ensures that any
- * {@link NodeMetadata#tssEncryptionKey()} overrides in the startup assets are copied into the state. (Note that
- * the {@link RosterService} will not have called {@link StartupNetworks#archiveStartupNetworks()} before this logic
- * runs, since {@link TssBaseService#MIGRATION_ORDER} is set to one less than {@link RosterService#MIGRATION_ORDER}.)
+ * {@link NodeMetadata#tssEncryptionKey()} overrides in the startup assets are copied into the state.
  * <p>
  * <b>Important:</b> The latest {@link TssBaseService} schema should always implement this interface.
  */
@@ -47,14 +43,9 @@ public interface TssBaseTransplantSchema {
         if (!ctx.appConfig().getConfigData(TssConfig.class).keyCandidateRoster()) {
             return;
         }
-        if (ctx.isGenesis()) {
-            final var network = ctx.startupNetworks().genesisNetworkOrThrow();
-            setEncryptionKeys(network, ctx.newStates().get(TSS_ENCRYPTION_KEYS_KEY));
-        } else {
-            final var maybeOverrideNetwork = ctx.startupNetworks().overrideNetworkFor(ctx.roundNumber());
-            maybeOverrideNetwork.ifPresent(
-                    network -> setEncryptionKeys(network, ctx.newStates().get(TSS_ENCRYPTION_KEYS_KEY)));
-        }
+        ctx.startupNetworks()
+                .overrideNetworkFor(ctx.roundNumber())
+                .ifPresent(network -> setEncryptionKeys(network, ctx.newStates().get(TSS_ENCRYPTION_KEYS_KEY)));
     }
 
     /**

@@ -94,6 +94,9 @@ public class AddressBookTestBase {
                                     A_COMPLEX_KEY)))
             .build();
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+    public static final Configuration WITH_ROSTER_LIFECYCLE = HederaTestConfigBuilder.create()
+            .withValue("addressBook.useRosterLifecycle", true)
+            .getOrCreateConfig();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
 

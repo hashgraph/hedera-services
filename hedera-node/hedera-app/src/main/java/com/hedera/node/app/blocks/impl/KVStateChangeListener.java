@@ -56,9 +56,9 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.StateChangeListener;
@@ -241,8 +241,8 @@ public class KVStateChangeListener implements StateChangeListener {
             case TssVoteTransactionBody tssVoteTransactionBody -> MapChangeValue.newBuilder()
                     .tssVoteValue(tssVoteTransactionBody)
                     .build();
-            case TssEncryptionKeyTransactionBody tssEncryptionKeyTransactionBody -> MapChangeValue.newBuilder()
-                    .tssEncryptionKeyValue(tssEncryptionKeyTransactionBody)
+            case TssEncryptionKeys tssEncryptionKeys -> MapChangeValue.newBuilder()
+                    .tssEncryptionKeysValue(tssEncryptionKeys)
                     .build();
             default -> throw new IllegalStateException(
                     "Unexpected value: " + value.getClass().getSimpleName());

@@ -100,6 +100,9 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     public static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+    public static final Configuration WITH_ROSTER_LIFECYCLE = HederaTestConfigBuilder.create()
+            .withValue("addressBook.useRosterLifecycle", true)
+            .getOrCreateConfig();
 
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";

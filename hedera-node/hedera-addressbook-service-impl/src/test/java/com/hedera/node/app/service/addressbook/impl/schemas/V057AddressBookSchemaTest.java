@@ -17,9 +17,11 @@
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase.WITH_ROSTER_LIFECYCLE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -63,25 +65,24 @@ class V057AddressBookSchemaTest {
     private final V057AddressBookSchema subject = new V057AddressBookSchema();
 
     @Test
-    void returnsIfGenesisNodeMetadataUnavailable() {
-        given(ctx.isGenesis()).willReturn(true);
-        given(ctx.startupNetworks()).willReturn(startupNetworks);
-        given(startupNetworks.genesisNetworkOrThrow()).willThrow(IllegalStateException.class);
+    void migrationIsNoOpIfRosterLifecycleNotEnabled() {
+        given(ctx.appConfig()).willReturn(DEFAULT_CONFIG);
 
         subject.restart(ctx);
 
-        verifyNoInteractions(writableStates);
+        verifyNoMoreInteractions(ctx);
     }
 
     @Test
     void usesGenesisNodeMetadataIfPresent() {
+        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.genesisNetworkOrThrow()).willReturn(NETWORK);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.isGenesis()).willReturn(true);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodes);
 
-        subject.restart(ctx);
+        subject.migrate(ctx);
 
         verify(nodes)
                 .put(new EntityNumber(1L), NETWORK.nodeMetadata().getFirst().nodeOrThrow());
@@ -90,6 +91,7 @@ class V057AddressBookSchemaTest {
 
     @Test
     void usesOverrideMetadataIfPresent() {
+        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.overrideNetworkFor(0L)).willReturn(Optional.of(NETWORK));
         given(ctx.newStates()).willReturn(writableStates);
