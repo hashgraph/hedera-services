@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -28,6 +29,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -93,9 +95,12 @@ public class ScheduleServiceFeesSuite {
                         .payingWith(OTHER_PAYER)
                         .via("canonicalContractCall")
                         .adminKey(OTHER_PAYER),
+                getScheduleInfo("canonical").payingWith(OTHER_PAYER).signedBy(OTHER_PAYER).via("getScheduleInfoBasic"),
                 validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
                 validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
                 validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0),
-                validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0));
+                validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0),
+                validateChargedUsd("getScheduleInfoBasic", 0.0001));
+
     }
 }
