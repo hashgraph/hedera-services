@@ -63,6 +63,13 @@ import java.util.stream.Stream;
  */
 public class RandomSignedStateGenerator {
 
+    /**
+     * Signed states now use virtual maps which are heavy RAM consumers. They need to be released
+     * in order to avoid producing OOMs when running tests. This list tracks all signed states
+     * built on a given thread.
+     */
+    private static final ThreadLocal<List<SignedState>> builtSignedStates = ThreadLocal.withInitial(ArrayList::new);
+
     final Random random;
 
     private MerkleRoot state;
@@ -200,6 +207,9 @@ public class RandomSignedStateGenerator {
             v.setConsensusTimestamp(consensusTimestampInstance);
         });
 
+        FAKE_MERKLE_STATE_LIFECYCLES.initRosterState((MerkleStateRoot) stateInstance);
+        // Future Work: populate roster history and stop setting AddressBook on platformState above.
+
         if (signatureVerifier == null) {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;
         }
@@ -253,6 +263,7 @@ public class RandomSignedStateGenerator {
             signedState.getSigSet().addSignature(nodeId, signaturesInstance.get(nodeId));
         }
 
+        builtSignedStates.get().add(signedState);
         return signedState;
     }
 
@@ -450,5 +461,30 @@ public class RandomSignedStateGenerator {
     public RandomSignedStateGenerator setUseBlockingState(boolean useBlockingState) {
         this.useBlockingState = useBlockingState;
         return this;
+    }
+
+    /**
+     * Release all the SignedState objects built by this generator on the current thread,
+     * and then clear the list of built states.
+     */
+    public static void releaseAllBuiltSignedStates() {
+        builtSignedStates.get().forEach(signedState -> {
+            while (signedState.getState().getReservationCount() >= 0) {
+                signedState.getState().release();
+            }
+        });
+        builtSignedStates.get().clear();
+    }
+
+    /**
+     * Clear the list of states built on the current thread w/o releasing them.
+     * There are tests that actually release the states on purpose, verifying the reserve/release behavior.
+     * Some of these tests use mocks which fail if the state is released more than what the test expects.
+     * For these few special cases, this method allows the test to "forget" about any states that it built
+     * using this generator on the current thread. As long as the number of such special cases is low enough,
+     * this shouldn't cause any serious resource leaks or OOMs in tests.
+     */
+    public static void forgetAllBuiltSignedStatesWithoutReleasing() {
+        builtSignedStates.get().clear();
     }
 }

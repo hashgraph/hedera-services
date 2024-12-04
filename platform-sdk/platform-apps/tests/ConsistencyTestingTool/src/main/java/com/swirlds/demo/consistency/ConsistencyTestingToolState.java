@@ -61,8 +61,9 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
         public static final int ORIGINAL = 1;
     }
 
-    private static final int STATE_LONG_INDEX = 1;
-    private static final int ROUND_HANDLED_INDEX = 2;
+    // Nodes at indices 0, 1, and 2 are used by the PlatformState, RosterMap, and RosterState.
+    private static final int STATE_LONG_INDEX = 3;
+    private static final int ROUND_HANDLED_INDEX = 4;
 
     /**
      * The history of transactions that have been handled by this app.
@@ -175,7 +176,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
         }
 
         transactionHandlingHistory.init(logFilePath);
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(this);
     }
 
     /**
