@@ -106,7 +106,7 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
      */
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
 
-    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
+    private static final long CLASS_ID = 0x8e300b0dfdafbb1bL;
     // Migrates from `PlatformState` to State API singleton
     public static final int CURRENT_VERSION = 31;
 
@@ -908,6 +908,7 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
      */
     @Override
     public MerkleStateRoot<?> loadSnapshot(@NonNull Path targetPath) throws IOException {
-        return MerkleTreeSnapshotReader.readStateFileData(targetPath).state();
+        return (MerkleStateRoot<?>)
+                MerkleTreeSnapshotReader.readStateFileData(targetPath).stateRoot();
     }
 }

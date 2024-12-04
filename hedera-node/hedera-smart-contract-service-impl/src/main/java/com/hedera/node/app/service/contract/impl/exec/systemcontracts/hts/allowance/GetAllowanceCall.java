@@ -41,6 +41,9 @@ import java.nio.ByteBuffer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Implements the token redirect {@code allowance()} call of the HTS system contract.
+ */
 @Singleton
 public class GetAllowanceCall extends AbstractCall {
 
@@ -53,6 +56,16 @@ public class GetAllowanceCall extends AbstractCall {
     @Nullable
     private final Token token;
 
+    /**
+     * @param addressIdConverter the address ID converter for this call
+     * @param gasCalculator the gas calculator to be used
+     * @param enhancement the enhancement to be used
+     * @param token the token id that the token allowance pertains to
+     * @param owner the account id of the token owner
+     * @param spender the account id of the token allowance spender
+     * @param isERCCall whether this is an ERC call
+     * @param isStaticCall whether this is a static call
+     */
     @Inject
     public GetAllowanceCall(
             @NonNull final AddressIdConverter addressIdConverter,

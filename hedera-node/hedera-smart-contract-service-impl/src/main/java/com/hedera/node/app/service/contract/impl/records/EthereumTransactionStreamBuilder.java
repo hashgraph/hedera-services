@@ -17,12 +17,16 @@
 package com.hedera.node.app.service.contract.impl.records;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * A {@code StreamBuilder} specialization for tracking the side effects of {@link HederaFunctionality#ETHEREUM_TRANSACTION} transaction.
+ */
 public interface EthereumTransactionStreamBuilder extends ContractOperationStreamBuilder {
     /**
      * Tracks the final status of a HAPI Ethereum transaction.
