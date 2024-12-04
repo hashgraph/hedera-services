@@ -60,11 +60,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeScheduleUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.exposeMaxSchedulable;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
@@ -92,6 +94,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
@@ -137,6 +140,7 @@ import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -608,6 +612,37 @@ public class RepeatableHip423Tests {
                 sleepForSeconds(ONE_MINUTE),
                 // Trigger the executions
                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> changeTokenFeeWhenScheduled() {
+        return hapiTest(
+                newKeyNamed("feeScheduleKey"),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate("feeCollector").balance(0L),
+                cryptoCreate("receiver"),
+                cryptoCreate("sender"),
+                tokenCreate("fungibleToken")
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(1000)
+                        .feeScheduleKey("feeScheduleKey"),
+                tokenAssociate("receiver", "fungibleToken"),
+                tokenAssociate("sender", "fungibleToken"),
+                cryptoTransfer(TokenMovement.moving(5, "fungibleToken").between(TOKEN_TREASURY, "sender")),
+                scheduleCreate(
+                                "schedule",
+                                cryptoTransfer(
+                                        TokenMovement.moving(5, "fungibleToken").between("sender", "receiver")))
+                        .expiringIn(ONE_MINUTE),
+                tokenFeeScheduleUpdate("fungibleToken")
+                        .payingWith(DEFAULT_PAYER)
+                        .signedBy(DEFAULT_PAYER, "feeScheduleKey")
+                        .withCustom(fixedHbarFee(1, "feeCollector")),
+                scheduleSign("schedule").payingWith("sender"),
+                sleepForSeconds(ONE_MINUTE),
+                cryptoCreate("trigger"),
+                getAccountBalance("receiver").hasTokenBalance("fungibleToken", 5),
+                getAccountBalance("feeCollector").hasTinyBars(1));
     }
 
     @LeakyRepeatableHapiTest(
