@@ -2,20 +2,21 @@
 
 ## Purpose
 
-[HIP-755](https://hips.hedera.com/hip/hip-755) defines a new system contract that allows accounts and contracts to interact with a new schedule service system contract enabling
+[HIP-755](https://hips.hedera.com/hip/hip-755) defines a new system contract that allows accounts and contracts to interact with the schedule service system contract enabling
 [HIP-756](https://hips.hedera.com/hip/hip-756) to define new system contract functions to schedule token creation in order for a smart contract to be able to designate another account for autoRenew and/or treasury.
 This document will define the architecture and implementation of this functionality.
 
 ## Goals
 
 - Provide the users with the ability to schedule token creation and updates.
-- Provide the ability to retrieve the information for the scheduled creation/update.
+- Provide the ability to retrieve the information about a scheduled creation/update.
 - Provide the ability to retrieve the newly created token address via scheduled transaction.
 
 ## Non Goals
 
 - The implementation of the Schedule Service logic as it is already done
-- The implementation of the HSSSystemContract infrastructure wiring as it is already done
+- The implementation of the HSSSystemContract infrastructure wiring as it is already done with HIP-755
+- The modification of existing Scheduled Transactions like updating or deleting is out of scope for this HIP.
 
 ## Architecture and Implementation
 
@@ -47,12 +48,13 @@ The architecture for the scheduled creations follows the existing framework defi
 
 ### Gas Costs
 
-The gas costs will consist of the price for the call to the Schedule Service plus the pricing for the transaction that would be executed (for creation transactions this would include sending value with the call to cover the fees) and the intrinsic gas cost plus mark-up.
+The gas costs will consist of the price for the call to the Schedule Service plus the pricing for the transaction that would be executed (for creation transactions this would include sending
+{msg.value} with the call to cover the fees) and the intrinsic gas cost plus mark-up.
 
 ### Feature Flags
 
 In order to gate the newly introduced system contract calls, we will introduce the following feature flags:
-- `systemContract.scheduleService.systemContracts.enabled` - to enable the `scheduleCreateFungibleToken`, `scheduleCreateFungibleTokenWithCustomFees`, `scheduleCreateNonFungibleToken`, `scheduleCreateNonFungibleTokenWithCustomFees` and `scheduleUpdateTokenInfo` functions.
+- `systemContract.scheduleService.tokenCreations.enabled` - to enable the `scheduleCreateFungibleToken`, `scheduleCreateFungibleTokenWithCustomFees`, `scheduleCreateNonFungibleToken`, `scheduleCreateNonFungibleTokenWithCustomFees` and `scheduleUpdateTokenInfo` functions.
 
 ## Security Implications
 
@@ -61,7 +63,7 @@ The throttles for `ScheduledCreate` and `ScheduledGetInfo` will be applied to th
 
 ## Phased Implementation
 
-1. Implement the `shceduleCreateFungibleToken`, `scheduleCreateNonFungibleToken` system contract functions.
+1. Implement the `scheduleCreateFungibleToken`, `scheduleCreateNonFungibleToken` system contract functions.
 2. Implement the `getScheduledFungibleTokenCreateTransaction`, `getScheduledNonFungibleTokenCreateTransaction` system contract functions.
 3. Implement the `getScheduledTokenAddress` system contract function.
 4. Implement the `scheduleUpdateTokenInfo` system contract function.
