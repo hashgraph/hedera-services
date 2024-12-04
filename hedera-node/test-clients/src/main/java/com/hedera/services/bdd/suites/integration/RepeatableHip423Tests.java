@@ -32,13 +32,28 @@ import static com.hedera.services.bdd.junit.RepeatableReason.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.exposeMaxSchedulable;
@@ -64,11 +79,17 @@ import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
 import static java.util.Spliterator.NONNULL;
@@ -77,6 +98,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.google.protobuf.ByteString;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
@@ -98,7 +120,11 @@ import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
+import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
+import com.hederahashgraph.api.proto.java.TokenType;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -125,12 +151,29 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TargetEmbeddedMode(REPEATABLE)
 @TestMethodOrder(OrderAnnotation.class)
 public class RepeatableHip423Tests {
+
     private static final long ONE_MINUTE = 60;
-    private static final long TWO_MOUTHS = 5356800;
+    private static final long THIRTY_MINUTES = 30 * ONE_MINUTE;
+    private static final String SIGNER = "anybody";
+    private static final String TOKEN_TREASURY = "treasury";
+    public static final String ASSOCIATE_CONTRACT = "AssociateDissociate";
+    private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
+    private static final String FUNGIBLE_TOKEN = "fungibleToken";
+    private static final String ACCOUNT = "anybody";
+    private static final String CONTRACT_KEY = "ContractKey";
+    private static final String PAYING_ACCOUNT = "payingAccount";
+    private static final String RECEIVER = "receiver";
+    private static final String SENDER = "sender";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-        testLifecycle.overrideInClass(Map.of("scheduling.longTermEnabled", "true"));
+        testLifecycle.overrideInClass(Map.of(
+                "scheduling.longTermEnabled",
+                "true",
+                "scheduling.whitelist",
+                "ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,"
+                        + "CryptoCreate,CryptoUpdate,FileUpdate,SystemDelete,SystemUndelete,"
+                        + "Freeze,ContractCall,ContractCreate,ContractUpdate,ContractDelete"));
     }
 
     /**
@@ -503,14 +546,234 @@ public class RepeatableHip423Tests {
                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)));
     }
 
-    // TODO: NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION not needed. Decide where to put it
     @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
-    final Stream<DynamicTest> scheduleCreateWithExpiringInMoreThenTwoMouths() {
+    final Stream<DynamicTest> scheduleCreateWithAllSignatures() {
         return hapiTest(
                 cryptoCreate("luckyYou").balance(0L),
                 scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
-                        .expiringIn(TWO_MOUTHS + 10)
-                        .hasKnownStatus(SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE));
+                        .expiringIn(THIRTY_MINUTES + 1),
+                getAccountBalance("luckyYou").hasTinyBars(0),
+                sleepForSeconds(THIRTY_MINUTES + 1),
+                cryptoCreate("TRIGGER"),
+                getAccountBalance("luckyYou").hasTinyBars(1L));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduleTransactionWithHandleAndPreHandleErrorsForTriggering() {
+        final var schedule = "s";
+
+        final var longZeroAddress = ByteString.copyFrom(CommonUtils.unhex("0000000000000000000000000000000fffffffff"));
+
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate(RECEIVER).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry(true)
+                        .expiringIn(THIRTY_MINUTES),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+
+                // sign with the other required key
+                scheduleSign(schedule).alsoSigningWith(SENDER),
+                sleepForSeconds(THIRTY_MINUTES * 2),
+
+                // try to trigger the scheduled transaction with failing crypto create(on pre-handle)
+                cryptoCreate("trigger").evmAddress(longZeroAddress).hasPrecheck(INVALID_ALIAS_KEY),
+
+                // the balance not is changed
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+
+                // try to trigger the scheduled transaction with failing crypto create(on handle)
+                cryptoCreate("trigger2")
+                        .maxAutomaticTokenAssociations(5001)
+                        .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+
+                // the balance is changed
+                getAccountBalance(RECEIVER).hasTinyBars(1L));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduleTransactionWithThrottleErrorForTriggering() {
+        final var schedule = "s";
+
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate(RECEIVER).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry(true)
+                        .expiringIn(THIRTY_MINUTES),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+
+                // sign with the other required key
+                scheduleSign(schedule).alsoSigningWith(SENDER),
+                sleepForSeconds(THIRTY_MINUTES * 2),
+
+                // try to trigger the scheduled transaction with failing throttle
+                submitMessageTo((String) null).hasRetryPrecheckFrom(BUSY).hasKnownStatus(INVALID_TOPIC_ID),
+
+                // the balance is changed
+                getAccountBalance(RECEIVER).hasTinyBars(1L));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduledTransactionNotTriggeredWhenKeyIsChanged() {
+        final var schedule = "s";
+
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry()
+                        .expiringIn(THIRTY_MINUTES * 2),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+
+                // sign with the first required key
+                scheduleSign(schedule).alsoSigningWith(SENDER),
+
+                // change the key
+                newKeyNamed("new_key"),
+                cryptoUpdate(SENDER).key("new_key"),
+
+                // sign with the other required key
+                scheduleSign(schedule).alsoSigningWith(RECEIVER),
+                sleepForSeconds(THIRTY_MINUTES * 3),
+                cryptoCreate("trigger"),
+
+                // the balance is not changed
+                getAccountBalance(RECEIVER).hasTinyBars(0L));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduledTransactionNotTriggeredWhenKeyIsChangedAndThenChangedBack() {
+        final var schedule = "s";
+
+        return hapiTest(
+                newKeyNamed("original_key"),
+                cryptoCreate(SENDER).key("original_key"),
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry()
+                        .expiringIn(THIRTY_MINUTES * 2),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+
+                // sign with the first required key
+                scheduleSign(schedule).alsoSigningWith(SENDER),
+
+                // change the key
+                newKeyNamed("new_key"),
+                cryptoUpdate(SENDER).key("new_key"),
+
+                // change the key back to the old one
+                cryptoUpdate(SENDER).key("original_key"),
+
+                // sign with the other required key
+                scheduleSign(schedule).alsoSigningWith(RECEIVER),
+                sleepForSeconds(THIRTY_MINUTES * 3),
+                cryptoCreate("trigger"),
+
+                // the balance is changed
+                getAccountBalance(RECEIVER).hasTinyBars(1L));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduleWithWaitForExpiryNotTriggeredWithoutSignatures() {
+        final var schedule = "s";
+
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry(true)
+                        .expiringIn(THIRTY_MINUTES),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                sleepForSeconds(THIRTY_MINUTES * 2),
+                cryptoCreate("trigger"),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduleWithWaitForExpiryFalseNotTriggeredWithoutSignatures() {
+        final var schedule = "s";
+
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry(false)
+                        .expiringIn(THIRTY_MINUTES),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                sleepForSeconds(THIRTY_MINUTES * 2),
+                cryptoCreate("trigger"),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduleV2SecurityAssociateSingleTokenWithDelegateContractKey() {
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
+                cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .supplyKey(TOKEN_TREASURY)
+                        .adminKey(TOKEN_TREASURY),
+                uploadInitCode(ASSOCIATE_CONTRACT),
+                contractCreate(ASSOCIATE_CONTRACT),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        newKeyNamed(CONTRACT_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_CONTRACT))),
+                        cryptoUpdate(SIGNER).key(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
+                        scheduleCreate(
+                                        "schedule",
+                                        contractCall(
+                                                        ASSOCIATE_CONTRACT,
+                                                        "tokenAssociate",
+                                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                                spec.registry().getAccountID(ACCOUNT))),
+                                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                                spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                                .signedBy(SIGNER)
+                                                .payingWith(SIGNER)
+                                                .hasRetryPrecheckFrom(BUSY)
+                                                .via("fungibleTokenAssociate")
+                                                .gas(4_000_000L)
+                                                .hasKnownStatus(
+                                                        com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS))
+                                .waitForExpiry(true)
+                                .expiringIn(THIRTY_MINUTES))),
+                sleepForSeconds(THIRTY_MINUTES * 2),
+                cryptoCreate("trigger"),
+                tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN).hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduleBurnSignAndChangeTheSupplyKey() {
+        final var schedule = "s";
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate(TOKEN_TREASURY),
+                newKeyNamed("supplyKey"),
+                tokenCreate("token")
+                        .adminKey("adminKey")
+                        .initialSupply(100)
+                        .treasury("treasury")
+                        .supplyKey("supplyKey"),
+                scheduleCreate(schedule, burnToken("token", 50).signedByPayerAnd("supplyKey"))
+                        .waitForExpiry()
+                        .expiringIn(THIRTY_MINUTES),
+                scheduleSign(schedule).alsoSigningWith("supplyKey"),
+                newKeyNamed("newSupplyKey"),
+                tokenUpdate("token").supplyKey("newSupplyKey"),
+                sleepForSeconds(THIRTY_MINUTES * 2),
+                cryptoCreate("trigger"),
+                getAccountBalance("treasury").hasTokenBalance("token", 100));
     }
 
     private static BiConsumer<TransactionBody, TransactionResult> withStatus(@NonNull final ResponseCodeEnum status) {

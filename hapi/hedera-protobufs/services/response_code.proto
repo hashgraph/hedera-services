@@ -1599,10 +1599,10 @@ enum ResponseCodeEnum {
      * an expiry time at which there is already too many transactions scheduled to
      * expire; its creation must be retried with a different expiry.
      */
-    SCHEDULE_EXPIRY_IS_BUSY = 370;
+    SCHEDULE_EXPIRY_IS_BUSY = 372;
 
     /**
      * The provided gRPC certificate hash is invalid.
      */
-    INVALID_GRPC_CERTIFICATE_HASH = 371;
+    INVALID_GRPC_CERTIFICATE_HASH = 373;
 }
