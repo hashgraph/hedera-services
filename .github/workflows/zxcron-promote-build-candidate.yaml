@@ -230,6 +230,27 @@ jobs:
         with:
           egress-policy: audit
 
+      - name: Report failure (PagerDuty)
+        run: |
+          curl --request 'POST' \
+          --url 'https://events.pagerduty.com/v2/enqueue' \
+          --header 'Content-Type: application/json' \
+          --data '{
+            "payload": {
+              "summary": "Hedera Services - eXtended Test Suite Failure",
+              "severity": "error",
+              "source": "GitHub Actions - Extended Test Suite",
+              "custom_details": {
+                "Fetch Latest Build Candidate": "${{ needs.determine-build-candidate.result }}",
+                "Promote Build Candidate": "${{ needs.promote-build-candidate.result }}",
+                "Source Commit": "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}>",
+                "Workflow Run": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
+              }
+            },
+            "routing_key": "${{ secrets.PAGERDUTY_CITR_INTEGRATION_KEY }}",
+            "event_action": "trigger",
+          }'
+
       - name: Report failure (slack)
         uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
