@@ -40,6 +40,10 @@ public enum DispatchType {
      */
     CRYPTO_UPDATE(HederaFunctionality.CRYPTO_UPDATE, DEFAULT),
     /**
+     * Dispatch for Hedera Ethereum transaction functionality with default resource prices.
+     */
+    ETHEREUM_TRANSACTION(HederaFunctionality.ETHEREUM_TRANSACTION, DEFAULT),
+    /**
      * Dispatch for Hedera crypto transfer functionality with default resource prices.
      */
     TRANSFER_HBAR(HederaFunctionality.CRYPTO_TRANSFER, DEFAULT),
@@ -166,7 +170,11 @@ public enum DispatchType {
     /**
      * Dispatch for Hedera token reject functionality with resource prices on a non-fungible token.
      */
-    TOKEN_REJECT_NFT(HederaFunctionality.TOKEN_REJECT, TOKEN_NON_FUNGIBLE_UNIQUE);
+    TOKEN_REJECT_NFT(HederaFunctionality.TOKEN_REJECT, TOKEN_NON_FUNGIBLE_UNIQUE),
+    /**
+     * Dispatch for Hedera schedule sign functionality with default resource prices.
+     */
+    SCHEDULE_SIGN(HederaFunctionality.SCHEDULE_SIGN, DEFAULT);
 
     private final HederaFunctionality functionality;
     private final SubType subtype;

@@ -18,14 +18,20 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -42,6 +48,25 @@ import org.apache.logging.log4j.Logger;
 public class MigrationTestingToolMain implements SwirldMain {
 
     private static final Logger logger = LogManager.getLogger(MigrationTestingToolMain.class);
+
+    static {
+        try {
+            logger.info(STARTUP.getMarker(), "Registering MigrationTestingToolState with ConstructableRegistry");
+            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MigrationTestingToolState.class, () -> {
+                        MigrationTestingToolState migrationTestingToolState = new MigrationTestingToolState(
+                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                        FAKE_MERKLE_STATE_LIFECYCLES.initStates(migrationTestingToolState);
+                        return migrationTestingToolState;
+                    }));
+            registerMerkleStateRootClassIds();
+            logger.info(STARTUP.getMarker(), "MigrationTestingToolState is registered with ConstructableRegistry");
+        } catch (ConstructableRegistryException e) {
+            logger.error(STARTUP.getMarker(), "Failed to register MigrationTestingToolState", e);
+            throw new RuntimeException(e);
+        }
+    }
 
     private long seed;
     private int maximumTransactionsPerNode;
@@ -91,8 +116,10 @@ public class MigrationTestingToolMain implements SwirldMain {
                     maximumTransactionsPerNode,
                     seed);
 
-            final boolean isZeroWeight =
-                    platform.getAddressBook().getAddress(platform.getSelfId()).isZeroWeight();
+            final RosterEntry selfEntry = RosterUtils.getRosterEntry(
+                    platform.getRoster(), platform.getSelfId().id());
+
+            final boolean isZeroWeight = selfEntry.weight() == 0L;
             if (!isZeroWeight) {
                 while (transactionsCreated < maximumTransactionsPerNode) {
                     try {
@@ -121,7 +148,7 @@ public class MigrationTestingToolMain implements SwirldMain {
     private void generateEvents() {
         final long now = System.nanoTime();
         final double tps = (double) transPerSecToCreate
-                / (double) platform.getAddressBook().getSize();
+                / (double) platform.getRoster().rosterEntries().size();
         int numCreated = 0;
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
@@ -166,9 +193,11 @@ public class MigrationTestingToolMain implements SwirldMain {
      */
     @NonNull
     @Override
-    public MerkleRoot newMerkleStateRoot() {
-        final State state = new State();
-        state.setSwirldState(new MigrationTestingToolState());
+    public PlatformMerkleStateRoot newMerkleStateRoot() {
+        final PlatformMerkleStateRoot state = new MigrationTestingToolState(
+                FAKE_MERKLE_STATE_LIFECYCLES,
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 

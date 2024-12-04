@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CURRENT_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.GENESIS_PROPERTIES;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.NODE_ADMIN_KEYS_JSON;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.UPGRADE_DIR;
 import static java.util.Objects.requireNonNull;
@@ -87,11 +88,16 @@ public abstract class AbstractNode implements HederaNode {
                     .resolve(DATA_DIR)
                     .resolve(CONFIG_DIR)
                     .resolve(GENESIS_PROPERTIES);
+            case NODE_ADMIN_KEYS_JSON -> workingDir
+                    .resolve(DATA_DIR)
+                    .resolve(CONFIG_DIR)
+                    .resolve(NODE_ADMIN_KEYS_JSON);
             case APPLICATION_PROPERTIES -> workingDir
                     .resolve(DATA_DIR)
                     .resolve(CONFIG_DIR)
                     .resolve(APPLICATION_PROPERTIES);
             case LOG4J2_XML -> workingDir.resolve(LOG4J2_XML);
+            case DATA_CONFIG_DIR -> workingDir.resolve(DATA_DIR).resolve(CONFIG_DIR);
             case RECORD_STREAMS_DIR -> workingDir
                     .resolve(DATA_DIR)
                     .resolve(RECORD_STREAMS_DIR)

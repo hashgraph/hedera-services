@@ -31,12 +31,13 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.merkle.SigSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
@@ -158,6 +159,7 @@ public class ReconnectLearner {
             reservedSignedState = reconnect();
             validator.validate(reservedSignedState.get(), addressBook, stateValidationData);
             ReconnectUtils.endReconnectHandshake(connection);
+            SignedStateFileReader.unregisterServiceStates(reservedSignedState.get());
             return reservedSignedState;
         } catch (final IOException | SignedStateInvalidException e) {
             if (reservedSignedState != null) {
@@ -211,6 +213,7 @@ public class ReconnectLearner {
                 false,
                 false,
                 false);
+        SignedStateFileReader.registerServiceStates(newSignedState);
         newSignedState.setSigSet(sigSet);
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();

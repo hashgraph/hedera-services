@@ -34,6 +34,7 @@ import com.swirlds.common.test.fixtures.merkle.util.PairedStreams;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.SocketConnection;
@@ -54,6 +55,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -88,6 +90,11 @@ final class ReconnectTest {
         FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
     }
 
+    @AfterAll
+    static void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
+    }
+
     @Test
     @DisplayName("Successfully reconnects multiple times and stats are updated")
     void statsTrackSuccessfulReconnect() throws IOException, InterruptedException {
@@ -96,6 +103,8 @@ final class ReconnectTest {
         final ReconnectMetrics reconnectMetrics = mock(ReconnectMetrics.class);
 
         for (int index = 1; index <= numberOfReconnects; index++) {
+            MerkleDb.resetDefaultInstancePath();
+
             executeReconnect(reconnectMetrics);
             verify(reconnectMetrics, times(index)).incrementReceiverStartTimes();
             verify(reconnectMetrics, times(index)).incrementSenderStartTimes();

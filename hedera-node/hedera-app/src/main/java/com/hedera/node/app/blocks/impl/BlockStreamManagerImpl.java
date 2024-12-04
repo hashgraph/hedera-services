@@ -52,13 +52,16 @@ import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.BlockStreamWriterMode;
+import com.hedera.node.config.types.DiskNetworkExport;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -73,6 +76,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.security.DigestException;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -103,6 +107,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final SemanticVersion version;
     private final SemanticVersion hapiVersion;
     private final ExecutorService executor;
+    private final String diskNetworkExportFile;
+    private final DiskNetworkExport diskNetworkExport;
     private final Supplier<BlockItemWriter> writerSupplier;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
 
@@ -113,6 +119,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private PendingWork pendingWork = NONE;
     // The last time at which interval-based processing was done
     private Instant lastIntervalProcessTime = Instant.EPOCH;
+    // The last time at which interval-based processing was done
+    private Instant lastHandleTime = Instant.EPOCH;
     // All this state is scoped to producing the current block
     private long blockNumber;
     // Set to the round number of the last round handled before entering a freeze period
@@ -179,6 +187,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.streamWriterType = blockStreamConfig.writerMode();
         this.hashCombineBatchSize = blockStreamConfig.hashCombineBatchSize();
         this.serializationBatchSize = blockStreamConfig.serializationBatchSize();
+        final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
+        this.diskNetworkExport = networkAdminConfig.diskNetworkExport();
+        this.diskNetworkExportFile = networkAdminConfig.diskNetworkExportFile();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
         this.lastNonEmptyRoundNumber = initialStateHash.roundNum();
@@ -218,6 +229,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
             final var blockStreamInfo = blockStreamInfoFrom(state);
             pendingWork = classifyPendingWork(blockStreamInfo, version);
+            lastHandleTime = asInstant(blockStreamInfo.lastHandleTimeOrElse(EPOCH));
             lastIntervalProcessTime = asInstant(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH));
             blockHashManager.startBlock(blockStreamInfo, lastBlockHash);
             runningHashManager.startBlock(blockStreamInfo);
@@ -262,6 +274,16 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     @Override
     public void setLastIntervalProcessTime(@NonNull final Instant lastIntervalProcessTime) {
         this.lastIntervalProcessTime = requireNonNull(lastIntervalProcessTime);
+    }
+
+    @Override
+    public @NonNull final Instant lastHandleTime() {
+        return lastHandleTime;
+    }
+
+    @Override
+    public void setLastHandleTime(@NonNull final Instant lastHandleTime) {
+        this.lastHandleTime = requireNonNull(lastHandleTime);
     }
 
     @Override
@@ -313,7 +335,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     boundaryTimestamp,
                     pendingWork != POST_UPGRADE_WORK,
                     version,
-                    asTimestamp(lastIntervalProcessTime)));
+                    asTimestamp(lastIntervalProcessTime),
+                    asTimestamp(lastHandleTime)));
             ((CommittableWritableStates) writableState).commit();
 
             // Serialize and hash the final block item
@@ -343,6 +366,16 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Request the ledger signature for the block hash.
             // The boundary timestamp plus nanos will be used for the TssShareSignature transaction's valid start
             tssBaseService.requestLedgerSignature(blockHash.toByteArray(), asInstant(boundaryTimestamp));
+
+            final var exportNetworkToDisk =
+                    switch (diskNetworkExport) {
+                        case NEVER -> false;
+                        case EVERY_BLOCK -> true;
+                        case ONLY_FREEZE_BLOCK -> roundNum == freezeRoundNumber;
+                    };
+            if (exportNetworkToDisk) {
+                DiskStartupNetworks.writeNetworkInfo(state, Paths.get(diskNetworkExportFile));
+            }
         }
     }
 

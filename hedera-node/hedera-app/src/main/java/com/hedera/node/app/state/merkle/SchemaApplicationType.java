@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.state.merkle;
 
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.merkle.MerkleStateRoot;
 
 /**
  * Enumerates the ways the {@link MerkleSchemaRegistry} may apply a {@link Schema}

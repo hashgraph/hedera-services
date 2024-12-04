@@ -311,7 +311,6 @@ public class Browser {
             // dependencies into the PlatformBuilder.
             final SwirldsPlatform platform = (SwirldsPlatform) builder.withConfiguration(configuration)
                     .withPlatformContext(platformContext)
-                    .withConfiguration(configuration)
                     .withKeysAndCerts(keysAndCerts)
                     .build();
             platforms.put(nodeId, platform);

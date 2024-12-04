@@ -118,6 +118,7 @@ jobs:
   validate:
     name: Validate
     runs-on: network-node-linux-large
+    if: ${{ !github.event.workflow_call.repository.fork }}
     outputs:
       branch-name: ${{ steps.parameters.outputs.branch-name }}
       branch-name-lower: ${{ steps.parameters.outputs.branch-name-lower }}
@@ -130,7 +131,7 @@ jobs:
       prerelease: ${{ steps.effective-version.outputs.prerelease }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -189,18 +190,12 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Gradle Update Version (As Specified)
-        uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
         if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
+        run: ./gradlew versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
 
       - name: Gradle Update Version (Branch Commit)
-        uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
         if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
+        run: ./gradlew versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
 
       - name: Compute Final Effective Version
         id: effective-version
@@ -230,7 +225,7 @@ jobs:
       - validate
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -285,7 +280,7 @@ jobs:
           service_account: "hedera-artifact-builds@devops-1-254919.iam.gserviceaccount.com"
 
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+        uses: google-github-actions/setup-gcloud@6189d56e4096ee891640bb02ac264be376592d6a # v2.1.2
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
 
       - name: Setup Java
@@ -314,16 +309,10 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
+        run: ./gradlew assemble --scan
 
       - name: Gradle Version Summary
-        uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: githubVersionSummary --scan
+        run: ./gradlew githubVersionSummary --scan
 
       - name: Stage Artifact Build Folder
         id: artifact-staging
@@ -393,10 +382,9 @@ jobs:
     needs:
       - validate
       - build-artifact
-
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -429,7 +417,7 @@ jobs:
          echo "docker-tag-base=${DOCKER_TAG_BASE}" >>"${GITHUB_OUTPUT}"
 
       - name: Setup QEmu Support
-        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+        uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
 
       - name: Setup Docker Buildx Support
         uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
@@ -465,7 +453,7 @@ jobs:
           cp -rvf ~/artifact-build/* hedera-node/infrastructure/docker/containers/local-node/main-network-node/sdk/
 
       - name: Build Haveged Image
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         with:
           push: true
           platforms: linux/amd64,linux/arm64
@@ -473,7 +461,7 @@ jobs:
           tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged:${{ needs.validate.outputs.version }}
 
       - name: Build Base Image
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         with:
           push: true
           platforms: linux/amd64,linux/arm64
@@ -481,7 +469,7 @@ jobs:
           tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base:${{ needs.validate.outputs.version }}
 
       - name: Build Network Node Image
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         with:
           push: true
           platforms: linux/amd64,linux/arm64
@@ -571,7 +559,7 @@ jobs:
     if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -587,7 +575,7 @@ jobs:
           service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
 
       - name: Setup JFrog CLI
-        uses: jfrog/setup-jfrog-cli@9fe0f98bd45b19e6e931d457f4e98f8f84461fb5 # v4.4.1
+        uses: jfrog/setup-jfrog-cli@e7cc33a01bc1b1df406bac8a1c4a409a34bdca0a # v4.4.3
         env:
           JF_URL: ${{ secrets.jf-url }}
           JF_ACCESS_TOKEN: ${{ secrets.jf-access-token }}
@@ -684,7 +672,7 @@ jobs:
     if: ${{ inputs.release-profile != 'none' }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -722,7 +710,7 @@ jobs:
           service_account: "artifact-deployer@swirlds-registry.iam.gserviceaccount.com"
 
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+        uses: google-github-actions/setup-gcloud@6189d56e4096ee891640bb02ac264be376592d6a # v2.1.2
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
 
       - name: Setup Java
@@ -744,16 +732,10 @@ jobs:
           key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
 
       - name: Gradle Assemble
-        uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
+        run: ./gradlew assemble --scan
 
       - name: Gradle Version Summary
-        uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: githubVersionSummary --scan
+        run: ./gradlew githubVersionSummary --scan
 
       - name: Stage SDK Release Archives
         working-directory: platform-sdk
@@ -828,24 +810,18 @@ jobs:
           echo "::endgroup::"
 
       - name: Gradle Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
-        uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
         if: ${{ inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
           NEXUS_USERNAME: ${{ secrets.sdk-ossrh-username }}
           NEXUS_PASSWORD: ${{ secrets.sdk-ossrh-password }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: "release${{ inputs.release-profile }} -PpublishingPackageGroup=com.swirlds -Ps01SonatypeHost=true -PpublishSigningEnabled=true --scan --no-configuration-cache"
+        run: ./gradlew release${{ inputs.release-profile }} -PpublishingPackageGroup=com.swirlds -Ps01SonatypeHost=true -PpublishSigningEnabled=true --scan --no-configuration-cache
 
       - name: Gradle Publish Services to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
-        uses: gradle/gradle-build-action@ac2d340dc04d9e1113182899e983b5400c17cda1 # v3.5.0
         if: ${{ inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
           NEXUS_USERNAME: ${{ secrets.svcs-ossrh-username }}
           NEXUS_PASSWORD: ${{ secrets.svcs-ossrh-password }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: "release${{ inputs.release-profile }} -PpublishingPackageGroup=com.hedera.hashgraph -PpublishSigningEnabled=true --scan --no-configuration-cache"
+        run: ./gradlew release${{ inputs.release-profile }} -PpublishingPackageGroup=com.hedera.hashgraph -PpublishSigningEnabled=true --scan --no-configuration-cache
 
       - name: Upload SDK Release Archives
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
@@ -866,7 +842,7 @@ jobs:
     if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -888,11 +864,11 @@ jobs:
           echo "artifact-registry=${ARTIFACT_REGISTRY}" >>"${GITHUB_OUTPUT}"
 
       - name: Send Slack Notification (Maven Central)
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
-        env:
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.slack-webhook-url }}
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
+          webhook: ${{ secrets.slack-webhook-url }}
+          webhook-type: incoming-webhook
+          payload-templated: true
           payload: |
             {
               "attachments": [

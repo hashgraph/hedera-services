@@ -79,7 +79,7 @@ class TssBaseServiceImplTest {
                 appContext,
                 ForkJoinPool.commonPool(),
                 ForkJoinPool.commonPool(),
-                new PlaceholderTssLibrary(),
+                new TssLibraryImpl(appContext),
                 ForkJoinPool.commonPool(),
                 metrics);
     }
