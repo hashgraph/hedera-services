@@ -20,10 +20,7 @@ import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.node.internal.network.Network;
-import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
@@ -406,43 +403,5 @@ public class AddressBookUtils {
         }
 
         return signingCertificateBytes;
-    }
-
-    /**
-     * Maps a {@link Network} object to its equivalent {@link Roster}.
-     *
-     * @param network the network to represent as a roster
-     * @return the converted roster
-     */
-    public static Roster fromNetwork(@NonNull final Network network) {
-        return fromMetadata(network.nodeMetadata());
-    }
-
-    /**
-     * Maps a list of {@link NodeMetadata} objects to the corresponding {@link Roster}.
-     *
-     * @param metadata the list of node metadata to represent as a roster
-     * @return the converted roster
-     */
-    public static Roster fromMetadata(@NonNull final List<NodeMetadata> metadata) {
-        return new Roster(metadata.stream()
-                .filter(Objects::nonNull)
-                .map(AddressBookUtils::entryFromMetadata)
-                .toList());
-    }
-
-    private static RosterEntry entryFromMetadata(@NonNull final NodeMetadata metadata) {
-        if (metadata.hasRosterEntry()) {
-            return metadata.rosterEntryOrThrow();
-        }
-
-        final var node = metadata.nodeOrThrow();
-        return RosterRetriever.buildRosterEntry(
-                NodeId.of(node.nodeId()),
-                node.weight(),
-                node.gossipCaCertificate(),
-                // If we're reading metadata, the endpoint order SHOULD match the address book, which always has the
-                // internal endpoint at index 0
-                node.serviceEndpoint());
     }
 }

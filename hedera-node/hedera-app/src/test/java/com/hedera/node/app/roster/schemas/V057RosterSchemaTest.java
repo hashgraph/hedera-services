@@ -27,10 +27,10 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.spi.WritableStates;
@@ -55,7 +55,7 @@ class V057RosterSchemaTest {
                     .rosterEntry(RosterEntry.newBuilder().nodeId(1L).build())
                     .build())
             .build();
-    private static final Roster ROSTER = AddressBookUtils.fromNetwork(NETWORK);
+    private static final Roster ROSTER = RosterUtils.fromNetwork(NETWORK);
     private static final AddressBook ADDRESS_BOOK = new AddressBook(List.of());
 
     @Mock

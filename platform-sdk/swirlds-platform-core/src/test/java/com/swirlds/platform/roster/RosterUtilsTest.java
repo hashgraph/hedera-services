@@ -16,9 +16,13 @@
 
 package com.swirlds.platform.roster;
 
+import static com.swirlds.platform.util.TestRosterValues.EXPECTED_ROSTER;
+import static com.swirlds.platform.util.TestRosterValues.NODE_1;
+import static com.swirlds.platform.util.TestRosterValues.NODE_2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -26,12 +30,16 @@ import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import java.security.cert.CertificateEncodingException;
+import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public class RosterUtilsTest {
@@ -216,5 +224,62 @@ public class RosterUtilsTest {
                 .gossipCaCertificate(
                         Bytes.wrap(PreGeneratedX509Certs.createBadCertificate().getEncoded()))
                 .build()));
+    }
+
+    @Test
+    @DisplayName("Network node information converts to a correct address book")
+    void fromNetwork() {
+        final NodeMetadata nodeOneMetadata =
+                NodeMetadata.newBuilder().node(NODE_1).build();
+        final NodeMetadata nodeTwoMetadata =
+                NodeMetadata.newBuilder().node(NODE_2).build();
+        final Network network = mock(Network.class);
+        when(network.nodeMetadata()).thenReturn(List.of(nodeOneMetadata, nodeTwoMetadata));
+
+        final Roster result = RosterUtils.fromNetwork(network);
+        assertEquals(EXPECTED_ROSTER, result);
+    }
+
+    @Test
+    @DisplayName("Throws an NPE for null network input")
+    void fromNetworkNull() {
+        //noinspection DataFlowIssue
+        assertThrows(NullPointerException.class, () -> RosterUtils.fromNetwork(null));
+    }
+
+    @Test
+    @DisplayName("Endpoints from metadata converts all service endpoints in correct order")
+    void validEndpointsFromMetadata() {
+        final NodeMetadata nodeOneMetadata =
+                NodeMetadata.newBuilder().node(NODE_1).build();
+        final NodeMetadata nodeTwoMetadata =
+                NodeMetadata.newBuilder().node(NODE_2).build();
+
+        final Roster result = RosterUtils.fromMetadata(List.of(nodeOneMetadata, nodeTwoMetadata));
+        assertEquals(EXPECTED_ROSTER, result);
+    }
+
+    @Test
+    @DisplayName("Endpoints from metadata only converts non-null service endpoints")
+    void validAndNullEndpointsFromMetadata() {
+        final NodeMetadata nodeOneMetadata =
+                NodeMetadata.newBuilder().node(NODE_1).build();
+        final NodeMetadata nodeTwoMetadata =
+                NodeMetadata.newBuilder().node(NODE_2).build();
+        final List<NodeMetadata> metadata = new ArrayList<>();
+        metadata.add(nodeOneMetadata);
+        metadata.add(null); // Null entry intentionally inserted; should be ignored
+        metadata.add(nodeTwoMetadata);
+        metadata.add(null); // Null entry intentionally inserted; should be ignored
+
+        final Roster result = RosterUtils.fromMetadata(metadata);
+        assertEquals(2, result.rosterEntries().size());
+    }
+
+    @Test
+    @DisplayName("Empty roster returned for empty metadata")
+    void emptyRosterFromMetadata() {
+        final Roster result = RosterUtils.fromMetadata(List.of());
+        assertTrue(result.rosterEntries().isEmpty());
     }
 }

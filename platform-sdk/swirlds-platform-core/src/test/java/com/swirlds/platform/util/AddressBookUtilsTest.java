@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.util;
 
+import static com.swirlds.platform.util.TestRosterValues.EXPECTED_ROSTER;
+import static com.swirlds.platform.util.TestRosterValues.NODE_1;
+import static com.swirlds.platform.util.TestRosterValues.NODE_2;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -25,12 +28,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
-import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import java.security.cert.CertificateEncodingException;
@@ -134,7 +136,7 @@ class AddressBookUtilsTest {
         final Network network = mock(Network.class);
         when(network.nodeMetadata()).thenReturn(List.of(nodeOneMetadata, nodeTwoMetadata));
 
-        final Roster result = AddressBookUtils.fromNetwork(network);
+        final Roster result = RosterUtils.fromNetwork(network);
         assertEquals(EXPECTED_ROSTER, result);
     }
 
@@ -142,7 +144,7 @@ class AddressBookUtilsTest {
     @DisplayName("Throws an NPE for null network input")
     void fromNetworkNull() {
         //noinspection DataFlowIssue
-        assertThrows(NullPointerException.class, () -> AddressBookUtils.fromNetwork(null));
+        assertThrows(NullPointerException.class, () -> RosterUtils.fromNetwork(null));
     }
 
     @Test
@@ -153,7 +155,7 @@ class AddressBookUtilsTest {
         final NodeMetadata nodeTwoMetadata =
                 NodeMetadata.newBuilder().node(NODE_2).build();
 
-        final Roster result = AddressBookUtils.fromMetadata(List.of(nodeOneMetadata, nodeTwoMetadata));
+        final Roster result = RosterUtils.fromMetadata(List.of(nodeOneMetadata, nodeTwoMetadata));
         assertEquals(EXPECTED_ROSTER, result);
     }
 
@@ -170,75 +172,14 @@ class AddressBookUtilsTest {
         metadata.add(nodeTwoMetadata);
         metadata.add(null); // Null entry intentionally inserted; should be ignored
 
-        final Roster result = AddressBookUtils.fromMetadata(metadata);
+        final Roster result = RosterUtils.fromMetadata(metadata);
         assertEquals(2, result.rosterEntries().size());
     }
 
     @Test
     @DisplayName("Empty roster returned for empty metadata")
     void emptyRosterFromMetadata() {
-        final Roster result = AddressBookUtils.fromMetadata(List.of());
+        final Roster result = RosterUtils.fromMetadata(List.of());
         assertTrue(result.rosterEntries().isEmpty());
     }
-
-    // The following test data is placed here due to its length
-    private static final Node.Builder NODE_1 = Node.newBuilder()
-            .nodeId(5)
-            .weight(15)
-            .gossipCaCertificate(Bytes.wrap(BYTES_1_2_3_4))
-            .serviceEndpoint(List.of(
-                    ServiceEndpoint.newBuilder()
-                            .domainName(LOCALHOST)
-                            .port(PORT_1234)
-                            .build(),
-                    ServiceEndpoint.newBuilder()
-                            .domainName(EXTERNAL_HOST)
-                            .port(PORT_5678)
-                            .build()));
-    private static final Node NODE_2 = Node.newBuilder()
-            .nodeId(6)
-            .weight(16)
-            .gossipCaCertificate(Bytes.wrap(BYTES_5_6_7_8))
-            .serviceEndpoint(List.of(
-                    ServiceEndpoint.newBuilder()
-                            .domainName(LOCALHOST + "2")
-                            .port(4321)
-                            .build(),
-                    ServiceEndpoint.newBuilder()
-                            .domainName(EXTERNAL_HOST + "2")
-                            .port(8765)
-                            .build()))
-            .build();
-    private static final Roster EXPECTED_ROSTER = Roster.newBuilder()
-            .rosterEntries(
-                    RosterEntry.newBuilder()
-                            .nodeId(5)
-                            .weight(15)
-                            .gossipCaCertificate(Bytes.wrap(BYTES_1_2_3_4))
-                            .gossipEndpoint(List.of(
-                                    // External endpoint should be ordered first
-                                    ServiceEndpoint.newBuilder()
-                                            .domainName(EXTERNAL_HOST)
-                                            .port(PORT_5678)
-                                            .build(),
-                                    ServiceEndpoint.newBuilder()
-                                            .domainName(LOCALHOST)
-                                            .port(PORT_1234)
-                                            .build()))
-                            .build(),
-                    RosterEntry.newBuilder()
-                            .nodeId(6)
-                            .weight(16)
-                            .gossipCaCertificate(Bytes.wrap(BYTES_5_6_7_8))
-                            .gossipEndpoint(List.of(
-                                    ServiceEndpoint.newBuilder()
-                                            .domainName(EXTERNAL_HOST + "2")
-                                            .port(8765)
-                                            .build(),
-                                    ServiceEndpoint.newBuilder()
-                                            .domainName(LOCALHOST + "2")
-                                            .port(4321)
-                                            .build()))
-                            .build())
-            .build();
 }
