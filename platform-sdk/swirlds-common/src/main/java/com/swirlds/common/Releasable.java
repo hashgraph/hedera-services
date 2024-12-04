@@ -32,7 +32,7 @@ public interface Releasable {
      */
     default boolean release() {
         // override if needed
-        return false;
+        return true;
     }
 
     /**
