@@ -174,6 +174,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                         dateLeaf1,
                         appleLeaf1,
                         eggplantLeaf1));
+        // prepareForFlush() removes version 0 mutations for paths 2 and 3
         cache1.prepareForFlush();
         validateDirtyInternals(
                 Set.of(rootInternal1, leftInternal1, rightInternal1, leftLeftInternal1), cache1.dirtyHashesForFlush(8));
@@ -246,6 +247,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                         figLeaf2,
                         bananaLeaf2,
                         grapeLeaf2));
+        // prepareForFlush() removes version 1 mutations for paths 4 and 5
         cache2.prepareForFlush();
         validateDirtyInternals(
                 Set.of(rootInternal2, leftInternal2, rightInternal2, leftRightInternal2, rightLeftInternal2),
@@ -286,10 +288,10 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
 
         validateLeaves(cache3, 5, asList(bananaLeaf3, dateLeaf1, grapeLeaf3, eggplantLeaf1, cherryLeaf2, figLeaf2));
 
-        // Add A back in at position 11 and move Banana to position 12.
-        appleLeaf3.setPath(11);
+        // Add A back. Banana is moved to position 11, Apple goes to position 12
+        appleLeaf3.setPath(12);
         cache3.putLeaf(appleLeaf3);
-        bananaLeaf3.setPath(12);
+        bananaLeaf3.setPath(11);
         cache3.putLeaf(bananaLeaf3);
         cache3.clearLeafPath(5);
         assertEquals(
@@ -300,21 +302,23 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         validateLeaves(
                 cache3,
                 6,
-                asList(dateLeaf1, grapeLeaf3, eggplantLeaf1, cherryLeaf2, figLeaf2, appleLeaf3, bananaLeaf3));
+                asList(dateLeaf1, grapeLeaf3, eggplantLeaf1, cherryLeaf2, figLeaf2, bananaLeaf3, appleLeaf3));
 
+        // Update D
         final VirtualLeafRecord<TestKey, TestValue> dogLeaf3 = dogLeaf(dateLeaf1.getPath());
         cache3.putLeaf(dogLeaf3);
 
+        // Update F
         final VirtualLeafRecord<TestKey, TestValue> foxLeaf3 = foxLeaf(figLeaf2.getPath());
         cache3.putLeaf(foxLeaf3);
 
         validateLeaves(
-                cache3, 6, asList(dogLeaf3, grapeLeaf3, eggplantLeaf1, cherryLeaf2, foxLeaf3, appleLeaf3, bananaLeaf3));
+                cache3, 6, asList(dogLeaf3, grapeLeaf3, eggplantLeaf1, cherryLeaf2, foxLeaf3, bananaLeaf3, appleLeaf3));
 
         // End the round and create the next round
         nextRound();
         validateDirtyLeaves(
-                asList(dogLeaf3, grapeLeaf3, foxLeaf3, appleLeaf3, bananaLeaf3), cache3.dirtyLeavesForHash(6, 12));
+                asList(dogLeaf3, grapeLeaf3, foxLeaf3, bananaLeaf3, appleLeaf3), cache3.dirtyLeavesForHash(6, 12));
 
         // We removed the internal node rightLeftInternal. We need to add it back in.
         final VirtualHashRecord rightLeftInternal3 = rightLeftInternal();
@@ -330,6 +334,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache3.putHash(leftInternal3);
         cache3.putHash(rootInternal3);
         cache3.seal();
+        // prepareForFlush() removes version 1 mutations for paths 6 and 7
         cache3.prepareForFlush();
         validateDirtyInternals(
                 Set.of(
@@ -344,7 +349,14 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         // At this point, we have built the tree successfully. Verify one more time that each version of
         // the cache still sees things the same way it did at the time the copy was made.
         final VirtualNodeCache<TestKey, TestValue> cache4 = cache;
-        validateTree(cache0, asList(rootInternal0, leftInternal0, bananaLeaf0, appleLeaf0, cherryLeaf0));
+        validateTree(
+                cache0,
+                asList(
+                        rootInternal0,
+                        leftInternal0,
+                        null, // became internal in version 1
+                        null, // became internal in version 1
+                        null)); // became internal in version 2
         validateTree(
                 cache1,
                 asList(
@@ -352,10 +364,10 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                         leftInternal1,
                         rightInternal1,
                         leftLeftInternal1,
-                        cherryLeaf0,
-                        bananaLeaf1,
-                        dateLeaf1,
-                        appleLeaf1,
+                        null, // became internal in version 1
+                        null, // became internal in version 1
+                        null, // became internal in version 2
+                        null, // became internal in version 2, then updated in version 3
                         eggplantLeaf1));
         validateTree(
                 cache2,
@@ -366,13 +378,13 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                         leftLeftInternal1,
                         leftRightInternal2,
                         rightLeftInternal2,
-                        dateLeaf1,
-                        appleLeaf1,
+                        null, // updated in version 3
+                        null, // updated in version 3
                         eggplantLeaf1,
                         cherryLeaf2,
-                        figLeaf2,
-                        bananaLeaf2,
-                        grapeLeaf2));
+                        null, // updated in version 3
+                        null, // updated in version 3
+                        null)); // updated in version 3
         validateTree(
                 cache3,
                 asList(
@@ -387,8 +399,8 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                         eggplantLeaf1,
                         cherryLeaf2,
                         foxLeaf3,
-                        appleLeaf3,
-                        bananaLeaf3));
+                        bananaLeaf3,
+                        appleLeaf3));
         validateTree(
                 cache4,
                 asList(
@@ -403,8 +415,8 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                         eggplantLeaf1,
                         cherryLeaf2,
                         foxLeaf3,
-                        appleLeaf3,
-                        bananaLeaf3));
+                        bananaLeaf3,
+                        appleLeaf3));
 
         // Now, we will release the oldest, cache0
         cache0.release();
@@ -418,10 +430,15 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                                     rightInternal1,
                                     leftLeftInternal1,
                                     null,
-                                    bananaLeaf1,
-                                    dateLeaf1,
-                                    appleLeaf1,
+                                    null,
+                                    null,
+                                    null,
                                     eggplantLeaf1));
+                },
+                Duration.ofSeconds(1),
+                "expected cache1 to eventually become clean");
+        assertEventuallyDoesNotThrow(
+                () -> {
                     validateTree(
                             cache2,
                             asList(
@@ -431,13 +448,18 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                                     leftLeftInternal1,
                                     leftRightInternal2,
                                     rightLeftInternal2,
-                                    dateLeaf1,
-                                    appleLeaf1,
+                                    null,
+                                    null,
                                     eggplantLeaf1,
                                     cherryLeaf2,
-                                    figLeaf2,
-                                    bananaLeaf2,
-                                    grapeLeaf2));
+                                    null,
+                                    null,
+                                    null));
+                },
+                Duration.ofSeconds(1),
+                "expected cache2 to eventually become clean");
+        assertEventuallyDoesNotThrow(
+                () -> {
                     validateTree(
                             cache3,
                             asList(
@@ -452,8 +474,13 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                                     eggplantLeaf1,
                                     cherryLeaf2,
                                     foxLeaf3,
-                                    appleLeaf3,
-                                    bananaLeaf3));
+                                    bananaLeaf3,
+                                    appleLeaf3));
+                },
+                Duration.ofSeconds(1),
+                "expected cache3 to eventually become clean");
+        assertEventuallyDoesNotThrow(
+                () -> {
                     validateTree(
                             cache4,
                             asList(
@@ -468,11 +495,11 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                                     eggplantLeaf1,
                                     cherryLeaf2,
                                     foxLeaf3,
-                                    appleLeaf3,
-                                    bananaLeaf3));
+                                    bananaLeaf3,
+                                    appleLeaf3));
                 },
                 Duration.ofSeconds(1),
-                "expected cache to eventually become clean");
+                "expected cache4 to eventually become clean");
 
         // Now we will release the next oldest, cache 1
         cache1.release();
@@ -491,9 +518,14 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                                     null,
                                     null,
                                     cherryLeaf2,
-                                    figLeaf2,
-                                    bananaLeaf2,
-                                    grapeLeaf2));
+                                    null,
+                                    null,
+                                    null));
+                },
+                Duration.ofSeconds(1),
+                "expected cache2 to eventually become clean");
+        assertEventuallyDoesNotThrow(
+                () -> {
                     validateTree(
                             cache3,
                             asList(
@@ -505,11 +537,16 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                                     rightLeftInternal3,
                                     dogLeaf3,
                                     grapeLeaf3,
-                                    null,
+                                    null, // E hasn't changed since version 1
                                     cherryLeaf2,
                                     foxLeaf3,
-                                    appleLeaf3,
-                                    bananaLeaf3));
+                                    bananaLeaf3,
+                                    appleLeaf3));
+                },
+                Duration.ofSeconds(1),
+                "expected cache3 to eventually become clean");
+        assertEventuallyDoesNotThrow(
+                () -> {
                     validateTree(
                             cache4,
                             asList(
@@ -524,8 +561,8 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                                     null,
                                     cherryLeaf2,
                                     foxLeaf3,
-                                    appleLeaf3,
-                                    bananaLeaf3));
+                                    bananaLeaf3,
+                                    appleLeaf3));
                 },
                 Duration.ofSeconds(1),
                 "expected cache to eventually become clean");
