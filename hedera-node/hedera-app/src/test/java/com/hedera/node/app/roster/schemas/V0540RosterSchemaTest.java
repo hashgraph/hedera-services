@@ -44,6 +44,7 @@ import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -248,12 +249,17 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void restartSetsActiveRosterFrom() {
+    void restartSetsActiveRosterFromOverrideIfPresent() {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
+        given(ctx.roundNumber()).willReturn(ROUND_NO);
+        given(ctx.newStates()).willReturn(writableStates);
+        given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
+        given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));
 
         subject.restart(ctx);
 
-        verifyNoInteractions(rosterStoreFactory);
+        verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO + 1L);
+        verify(startupNetworks).setOverrideRound(ROUND_NO);
     }
 }

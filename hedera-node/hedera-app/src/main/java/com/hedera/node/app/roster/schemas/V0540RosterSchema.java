@@ -25,6 +25,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.lifecycle.MigrationContext;
@@ -102,14 +103,14 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
             final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
             final var activeRoundNumber = ctx.roundNumber() + 1;
             if (ctx.isGenesis()) {
-                rosterStore.putActiveRoster(rosterFrom(startupNetworks.genesisNetworkOrThrow()), 0L);
+                rosterStore.putActiveRoster(RosterUtils.rosterFrom(startupNetworks.genesisNetworkOrThrow()), 0L);
             } else if (rosterStore.getActiveRoster() == null) {
                 // (FUTURE) Once the roster lifecycle is active by default, remove this code building an initial
                 // roster history  from the last address book and the first roster at the upgrade boundary
                 final var addressBook = platformStateStoreFactory.get().getAddressBook();
                 final var previousRoster = buildRoster(requireNonNull(addressBook));
                 rosterStore.putActiveRoster(previousRoster, 0);
-                final var currentRoster = rosterFrom(startupNetworks.migrationNetworkOrThrow());
+                final var currentRoster = RosterUtils.rosterFrom(startupNetworks.migrationNetworkOrThrow());
                 rosterStore.putActiveRoster(currentRoster, activeRoundNumber);
             } else if (ctx.isUpgrade(ServicesSoftwareVersion::from, ServicesSoftwareVersion::new)) {
                 final var candidateRoster = rosterStore.getCandidateRoster();

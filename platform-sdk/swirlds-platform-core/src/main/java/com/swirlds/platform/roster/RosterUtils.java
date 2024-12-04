@@ -20,6 +20,8 @@ import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.Hash;
@@ -337,5 +339,16 @@ public final class RosterUtils {
         }
 
         return addressBook;
+    }
+
+    /**
+     * Build a Roster object out of a given {@link Network} address book.
+     * @param network a network
+     * @return a Roster
+     */
+    public static @NonNull Roster rosterFrom(@NonNull final Network network) {
+        return new Roster(network.nodeMetadata().stream()
+                .map(NodeMetadata::rosterEntryOrThrow)
+                .toList());
     }
 }

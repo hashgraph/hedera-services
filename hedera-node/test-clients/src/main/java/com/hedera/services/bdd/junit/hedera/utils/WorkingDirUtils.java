@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.utils;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
+import static com.hedera.node.app.info.DiskStartupNetworks.GENESIS_NETWORK_JSON;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
@@ -83,7 +84,6 @@ public class WorkingDirUtils {
     public static final String UPGRADE_DIR = "upgrade";
     public static final String CURRENT_DIR = "current";
     public static final String CONFIG_TXT = "config.txt";
-    public static final String GENESIS_NETWORK_JSON = "genesis-network.json";
     public static final String GENESIS_PROPERTIES = "genesis.properties";
     public static final String ERROR_REDIRECT_FILE = "test-clients.log";
     public static final String STATE_METADATA_FILE = "stateMetadata.txt";
@@ -434,8 +434,8 @@ public class WorkingDirUtils {
                             .build();
                 })
                 .toList();
-        final var tssKeyMaterial = tssKeyMaterialFn.apply(
-                nodeMetadata.stream().map(NodeMetadata::rosterEntry).toList());
+        final var roster = nodeMetadata.stream().map(NodeMetadata::rosterEntry).toList();
+        final var tssKeyMaterial = tssKeyMaterialFn.apply(roster);
         return Network.newBuilder()
                 .ledgerId(tssKeyMaterial.map(TssKeyMaterial::ledgerId).orElse(Bytes.EMPTY))
                 .tssMessages(tssKeyMaterial.map(TssKeyMaterial::tssMessages).orElse(List.of()))

@@ -18,6 +18,7 @@ package com.hedera.node.app.tss.schemas;
 
 import static com.hedera.hapi.node.state.tss.RosterToKey.ACTIVE_ROSTER;
 import static com.hedera.hapi.node.state.tss.TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS;
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_STATUS_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,6 +53,7 @@ class V0580TssBaseSchemaTest {
     void missingStatusSingletonReceivesDefaultAtMigration() {
         given(ctx.newStates()).willReturn(writableStates);
         given(writableStates.<TssStatus>getSingleton(TSS_STATUS_KEY)).willReturn(tssStatusState);
+        given(ctx.appConfig()).willReturn(DEFAULT_CONFIG);
 
         subject.migrate(ctx);
 

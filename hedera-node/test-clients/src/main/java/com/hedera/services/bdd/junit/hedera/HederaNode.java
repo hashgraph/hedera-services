@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -162,5 +163,13 @@ public interface HederaNode {
      */
     default boolean dumpThreads() {
         return false;
+    }
+
+    /**
+     * If this node's startup assets included a genesis or override address book, returns it.
+     * @return the node's startup address book, if available
+     */
+    default Optional<Network> startupNetwork() {
+        return Optional.empty();
     }
 }

@@ -38,7 +38,7 @@ import java.time.Duration;
  */
 @ConfigData("tss")
 public record TssConfig(
-        @ConfigProperty(defaultValue = "3") @NetworkProperty long maxSharesPerNode,
+        @ConfigProperty(defaultValue = "3") @NetworkProperty int maxSharesPerNode,
         @ConfigProperty(defaultValue = "50") @NetworkProperty int timesToTrySubmission,
         @ConfigProperty(defaultValue = "5s") @NetworkProperty Duration retryDelay,
         @ConfigProperty(defaultValue = "10") @NetworkProperty int distinctTxnIdsToTry,

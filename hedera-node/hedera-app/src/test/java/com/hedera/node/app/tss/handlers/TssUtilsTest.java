@@ -47,7 +47,7 @@ public class TssUtilsTest {
     public void testComputeParticipantDirectory() {
         RosterEntry rosterEntry1 = new RosterEntry(1L, 100L, null, null);
         RosterEntry rosterEntry2 = new RosterEntry(2L, 50L, null, null);
-        long maxSharesPerNode = 10L;
+        int maxSharesPerNode = 10;
 
         TssParticipantDirectory directory = TssUtils.computeParticipantDirectory(
                 new Roster(List.of(rosterEntry1, rosterEntry2)), maxSharesPerNode, nodeId -> FAKE_ENCRYPTION_KEY);
@@ -90,8 +90,7 @@ public class TssUtilsTest {
         final var tssMessage = mock(TssMessage.class);
         RosterEntry rosterEntry1 = new RosterEntry(1L, 100L, null, null);
         RosterEntry rosterEntry2 = new RosterEntry(2L, 50L, null, null);
-        long maxSharesPerNode = 10L;
-        int selfNodeId = 1;
+        int maxSharesPerNode = 10;
 
         given(library.getTssMessageFromBytes(any(), any())).willReturn(tssMessage);
         given(tssMessage.toBytes())

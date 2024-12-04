@@ -70,7 +70,7 @@ public class TssUtils {
      */
     public static TssParticipantDirectory computeParticipantDirectory(
             @NonNull final Roster roster,
-            final long maxSharesPerNode,
+            final int maxSharesPerNode,
             @NonNull final LongFunction<BlsPublicKey> tssEncryptionKeyFn) {
         final var computedShares = computeNodeShares(roster.rosterEntries(), maxSharesPerNode);
         final var totalShares =

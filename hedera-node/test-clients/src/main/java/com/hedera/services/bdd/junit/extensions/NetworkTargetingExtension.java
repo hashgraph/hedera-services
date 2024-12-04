@@ -21,8 +21,8 @@ import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDE
 import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMethodOf;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.CONCURRENT;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
-import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary.FAKE_ENCRYPTION_KEY;
-import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary.FAKE_LEDGER_ID;
+import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_ENCRYPTION_KEYS;
+import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_KEY_MATERIAL_GENERATOR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirVersion;
 import static com.hedera.services.bdd.junit.restart.StartupAssets.ROSTER_AND_ENCRYPTION_KEYS;
 import static com.hedera.services.bdd.junit.restart.StartupAssets.ROSTER_AND_FULL_TSS_KEY_MATERIAL;
@@ -32,6 +32,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.fixtures.state.FakeState;
@@ -106,13 +107,12 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                         .collect(toMap(ConfigOverride::key, ConfigOverride::value));
                 final LongFunction<Bytes> tssEncryptionKeyFn =
                         OVERRIDES_WITH_ENCRYPTION_KEYS.contains(a.startupAssets())
-                                ? nodeId -> FAKE_ENCRYPTION_KEY
+                                ? CLASSIC_ENCRYPTION_KEYS::get
                                 : nodeId -> Bytes.EMPTY;
-                final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn =
-                        a.startupAssets() == ROSTER_AND_FULL_TSS_KEY_MATERIAL
-                                ? rosterEntries ->
-                                        Optional.of(new TssKeyMaterial(Bytes.wrap(FAKE_LEDGER_ID.toBytes()), List.of()))
-                                : rosterEntries -> Optional.empty();
+                final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn = a.startupAssets()
+                                == ROSTER_AND_FULL_TSS_KEY_MATERIAL
+                        ? rosterEntries -> Optional.of(CLASSIC_KEY_MATERIAL_GENERATOR.apply(new Roster(rosterEntries)))
+                        : rosterEntries -> Optional.empty();
                 switch (a.restartType()) {
                     case GENESIS, UPGRADE_BOUNDARY -> targetNetwork.startWith(
                             overrides, tssEncryptionKeyFn, tssKeyMaterialFn);

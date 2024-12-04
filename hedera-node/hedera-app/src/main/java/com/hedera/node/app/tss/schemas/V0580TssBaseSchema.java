@@ -21,19 +21,20 @@ import static com.hedera.hapi.node.state.tss.RosterToKey.NONE;
 import static com.hedera.hapi.node.state.tss.TssKeyingStatus.KEYING_COMPLETE;
 import static com.hedera.hapi.node.state.tss.TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS;
 import static com.hedera.hapi.node.state.tss.TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES;
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssStatus;
-import com.hedera.node.app.tss.handlers.TssUtils;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -66,33 +67,7 @@ public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchem
     }
 
     @Override
-    public void migrate(@NonNull final MigrationContext ctx) {
-        final var state = ctx.newStates().getSingleton(TSS_STATUS_KEY);
-        if (state.get() == null) {
-            if (ctx.isGenesis()
-                    && ctx.appConfig().getConfigData(TssConfig.class).keyCandidateRoster()) {
-                final var network = ctx.startupNetworks().genesisNetworkOrThrow();
-                final var encryptionKeysFn = TssUtils.encryptionKeysFnFor(network);
-                final boolean encryptionKeysPresent = network.nodeMetadata().stream()
-                        .allMatch(meta -> Objects.nonNull(
-                                encryptionKeysFn.apply(meta.rosterEntryOrThrow().nodeId())));
-                if (encryptionKeysPresent) {
-                    final var ledgerId = network.ledgerId();
-                    if (ledgerId.length() > 0) {
-                        state.put(PRESET_LEDGER_ID_STATUS_FN.apply(ledgerId));
-                    } else {
-                        state.put(PRESET_ENCRYPTION_KEYS_STATUS);
-                    }
-                    return;
-                }
-            }
-            state.put(BOOTSTRAP_TSS_STATUS);
-        }
-    }
-
-    @NonNull
-    @Override
-    public Set<StateDefinition> statesToCreate() {
+    public @NonNull Set<StateDefinition> statesToCreate() {
         return Set.of(
                 StateDefinition.singleton(TSS_STATUS_KEY, TssStatus.PROTOBUF),
                 StateDefinition.onDisk(
@@ -100,6 +75,41 @@ public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchem
                         EntityNumber.PROTOBUF,
                         TssEncryptionKeys.PROTOBUF,
                         MAX_TSS_ENCRYPTION_KEYS));
+    }
+
+    @Override
+    public void migrate(@NonNull final MigrationContext ctx) {
+        final var state = ctx.newStates().getSingleton(TSS_STATUS_KEY);
+        if (state.get() == null) {
+            final var tssEnabled =
+                    ctx.appConfig().getConfigData(TssConfig.class).keyCandidateRoster();
+            if (!tssEnabled || !ctx.isGenesis()) {
+                // If TSS is enabled after but there is no status yet, we are at the upgrade boundary and
+                // know for sure we have to bootstrap keys
+                state.put(BOOTSTRAP_TSS_STATUS);
+            } else {
+                // With TSS enabled at genesis the roster lifecycle must also be enabled so we can safely
+                // check for the presence of encryption keys and possibly ledger ID in the startup assets
+                final var network = ctx.startupNetworks().genesisNetworkOrThrow();
+                final WritableKVState<EntityNumber, TssEncryptionKeys> encryptionKeys =
+                        ctx.newStates().get(TSS_ENCRYPTION_KEYS_KEY);
+                setEncryptionKeys(network, encryptionKeys);
+                if (encryptionKeys.size() == network.nodeMetadata().size()) {
+                    final var ledgerId = network.ledgerId();
+                    if (ledgerId.length() > 0) {
+                        state.put(PRESET_LEDGER_ID_STATUS_FN.apply(ledgerId));
+                        setTssMessageOpsAndVotes(
+                                network,
+                                ctx.newStates().get(TSS_MESSAGE_MAP_KEY),
+                                ctx.newStates().get(TSS_VOTE_MAP_KEY));
+                    } else {
+                        state.put(PRESET_ENCRYPTION_KEYS_STATUS);
+                    }
+                } else {
+                    state.put(BOOTSTRAP_TSS_STATUS);
+                }
+            }
+        }
     }
 
     @Override

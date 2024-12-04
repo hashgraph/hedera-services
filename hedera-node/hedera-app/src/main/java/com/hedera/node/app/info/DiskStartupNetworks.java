@@ -63,11 +63,10 @@ import org.apache.logging.log4j.Logger;
 public class DiskStartupNetworks implements StartupNetworks {
     private static final Logger log = LogManager.getLogger(DiskStartupNetworks.class);
 
-    private static final Pattern ROUND_DIR_PATTERN = Pattern.compile("\\d+");
-
     public static final String ARCHIVE = ".archive";
     public static final String GENESIS_NETWORK_JSON = "genesis-network.json";
     public static final String OVERRIDE_NETWORK_JSON = "override-network.json";
+    public static final Pattern ROUND_DIR_PATTERN = Pattern.compile("\\d+");
 
     private final ConfigProvider configProvider;
     private final TssBaseService tssBaseService;

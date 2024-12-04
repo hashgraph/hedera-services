@@ -18,11 +18,9 @@ package com.hedera.node.app.roster.schemas;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.RosterService;
-import com.hedera.node.internal.network.Network;
-import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
@@ -57,20 +55,9 @@ public interface RosterTransplantSchema {
                 final long activeRoundNumber = roundNumber + 1;
                 log.info("Adopting roster from override network in round {}", activeRoundNumber);
                 final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
-                rosterStore.putActiveRoster(rosterFrom(network), activeRoundNumber);
+                rosterStore.putActiveRoster(RosterUtils.rosterFrom(network), activeRoundNumber);
                 startupNetworks.setOverrideRound(roundNumber);
             });
         }
-    }
-
-    /**
-     * Given a {@link Network}, return the implied {@link Roster} instance.
-     * @param network the network from which to derive the roster
-     * @return the roster
-     */
-    default Roster rosterFrom(@NonNull final Network network) {
-        return new Roster(network.nodeMetadata().stream()
-                .map(NodeMetadata::rosterEntryOrThrow)
-                .toList());
     }
 }
