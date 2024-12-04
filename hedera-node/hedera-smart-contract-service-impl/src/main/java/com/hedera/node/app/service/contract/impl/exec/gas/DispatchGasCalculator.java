@@ -21,6 +21,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A {@link DispatchGasCalculator} that calculates the gas requirement for the dispatch, given the transaction body,
+ * payer, {@link SystemContractGasCalculator} and the {@link Enhancement} in the dispatch context
+ */
 @FunctionalInterface
 public interface DispatchGasCalculator {
     /**
