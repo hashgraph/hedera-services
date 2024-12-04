@@ -760,7 +760,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
         @DisplayName("The onPreHandle handler is called when a pre-handle happens")
         void onPreHandleCalled() {
             assertThat(onPreHandleCalled).isFalse();
-            stateRoot.preHandle(Mockito.mock(Event.class));
+            stateRoot.preHandle(Mockito.mock(Event.class), systemTransactions -> {});
             assertThat(onPreHandleCalled).isTrue();
         }
     }
@@ -775,7 +775,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
             final var platformState = Mockito.mock(PlatformStateModifier.class);
             final var state = new PlatformMerkleStateRoot(lifecycles, softwareVersionSupplier);
 
-            state.handleConsensusRound(round, platformState);
+            state.handleConsensusRound(round, platformState, systemTransactions -> {});
             assertThat(onHandleCalled).isTrue();
         }
     }
@@ -791,10 +791,12 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
             final var platformState = Mockito.mock(PlatformStateModifier.class);
-            assertThrows(MutabilityException.class, () -> stateRoot.handleConsensusRound(round, platformState));
+            assertThrows(
+                    MutabilityException.class,
+                    () -> stateRoot.handleConsensusRound(round, platformState, systemTransactions -> {}));
 
             // But the copy does
-            copy.handleConsensusRound(round, platformState);
+            copy.handleConsensusRound(round, platformState, systemTransactions -> {});
             assertThat(onHandleCalled).isTrue();
         }
 

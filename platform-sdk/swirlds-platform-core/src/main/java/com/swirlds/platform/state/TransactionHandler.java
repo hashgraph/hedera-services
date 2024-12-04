@@ -56,7 +56,8 @@ public class TransactionHandler {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
 
-            state.getSwirldState().handleConsensusRound(round, state.getWritablePlatformState());
+            state.getSwirldState()
+                    .handleConsensusRound(round, state.getWritablePlatformState(), systemTransactions -> {});
 
             final double secondsElapsed = (System.nanoTime() - startTime) * NANOSECONDS_TO_SECONDS;
 

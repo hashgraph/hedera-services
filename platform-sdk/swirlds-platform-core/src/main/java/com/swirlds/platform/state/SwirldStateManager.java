@@ -19,9 +19,11 @@ package com.swirlds.platform.state;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
@@ -32,8 +34,10 @@ import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.uptime.UptimeTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * Manages all interactions with the state object required by {@link SwirldState}.
@@ -118,7 +122,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
-     * {@link SwirldState#handleConsensusRound(Round, PlatformStateModifier)}.
+     * {@link SwirldState#handleConsensusRound(Round, PlatformStateModifier, Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>)}.
      *
      * @param round the round to handle
      */

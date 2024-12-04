@@ -70,7 +70,7 @@ public class TransactionHandlerTester {
                     return null;
                 })
                 .when(swirldState)
-                .handleConsensusRound(any(), any());
+                .handleConsensusRound(any(), any(), any());
         final StatusActionSubmitter statusActionSubmitter = submittedActions::add;
         swirldStateManager = new SwirldStateManager(
                 platformContext,
