@@ -614,9 +614,10 @@ public class RepeatableHip423Tests {
         return hapiTest(
                 cryptoCreate("luckyYou").balance(0L),
                 scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .waitForExpiry(true)
                         .expiringIn(THIRTY_MINUTES + 1),
                 getAccountBalance("luckyYou").hasTinyBars(0),
-                sleepForSeconds(THIRTY_MINUTES + 1),
+                sleepForSeconds(THIRTY_MINUTES + 10),
                 cryptoCreate("TRIGGER"),
                 getAccountBalance("luckyYou").hasTinyBars(1L));
     }

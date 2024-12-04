@@ -884,7 +884,7 @@ public class ScheduleLongTermSignTest {
 
     @HapiTest
     @Order(21)
-    final Stream<DynamicTest> test() {
+    final Stream<DynamicTest> scheduleSignWithTwoSignatures() {
         final var schedule = "s";
 
         return hapiTest(
