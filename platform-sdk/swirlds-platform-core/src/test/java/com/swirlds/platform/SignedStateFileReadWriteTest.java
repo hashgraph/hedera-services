@@ -46,6 +46,7 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedState;
@@ -64,22 +65,17 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 @DisplayName("SignedState Read/Write Test")
 class SignedStateFileReadWriteTest {
-    /**
-     * Temporary directory provided by JUnit
-     */
-    @TempDir
     Path testDirectory;
 
     private static SemanticVersion platformVersion;
-    private SignedState signedState;
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
@@ -89,15 +85,23 @@ class SignedStateFileReadWriteTest {
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.platform");
         registry.registerConstructables("com.swirlds.state");
+        registry.registerConstructables("com.swirlds.virtualmap");
+        registry.registerConstructables("com.swirlds.merkledb");
         FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     @BeforeEach
     void beforeEach() throws IOException {
+        // Don't use JUnit @TempDir as it runs into a thread race with Merkle DB DataSource release...
+        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile(
+                "SignedStateFileReadWriteTest", FakeMerkleStateLifecycles.CONFIGURATION);
         LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory.resolve("tmp"));
-        signedState = new RandomSignedStateGenerator()
-                .setSoftwareVersion(new BasicSoftwareVersion(platformVersion.minor()))
-                .build();
+        MerkleDb.resetDefaultInstancePath();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
     }
 
     @Test
@@ -105,6 +109,9 @@ class SignedStateFileReadWriteTest {
     void writeHashInfoFileTest() throws IOException {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
+        final SignedState signedState = new RandomSignedStateGenerator()
+                .setSoftwareVersion(new BasicSoftwareVersion(platformVersion.minor()))
+                .build();
         MerkleRoot state = signedState.getState();
         writeHashInfoFile(platformContext, testDirectory, state);
         final StateConfig stateConfig =
@@ -209,6 +216,9 @@ class SignedStateFileReadWriteTest {
     @Test
     @DisplayName("writeSavedStateToDisk() Test")
     void writeSavedStateToDiskTest() throws IOException {
+        final SignedState signedState = new RandomSignedStateGenerator()
+                .setSoftwareVersion(new BasicSoftwareVersion(platformVersion.minor()))
+                .build();
         final Path directory = testDirectory.resolve("state");
 
         final Path stateFile = directory.resolve(SIGNED_STATE_FILE_NAME);
