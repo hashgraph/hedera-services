@@ -105,6 +105,7 @@ jobs:
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           coverage-reports: ${{ env.COVERAGE_REPORTS }}
+          language: Java
           # coverage-reports: '*/build/test-results/test/TEST-*.xml'
 
   # abbreviated-panel:
