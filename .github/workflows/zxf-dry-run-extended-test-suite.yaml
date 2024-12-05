@@ -96,7 +96,7 @@ jobs:
         id: coverage_paths
         run: |
           ls -la
-          echo "COVERAGE_REPORTS=$(find **/build/test-results/test -name 'TEST-*.xml'; \
+          echo "COVERAGE_REPORTS=$(find **/build/test-results/test -name 'TEST-*.xml' | tr '\n' ','; \
           find **/build/test-results/timingSensitive -name 'TEST-*.xml' | tr '\n' ',')" >> $GITHUB_ENV
 
       - name: Full test check env variable for files
