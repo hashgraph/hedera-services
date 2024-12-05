@@ -346,8 +346,11 @@ public class EnhancedKeyStoreLoader {
             try {
                 return AsciiArmoredFiles.readPrivateKey(keyLocation);
             } catch (final Exception e) {
-                logger.error(ERROR.getMarker(), "Failed to read TSS encryption private key from disk", e);
-                throw new KeyLoadingException("Failed to read TSS encryption private key from disk", e);
+                logger.warn(
+                        STARTUP.getMarker(),
+                        "Failed to read TSS encryption private key from disk, will generate a new key.",
+                        e);
+                return null;
             }
         }
         return null;
