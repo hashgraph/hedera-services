@@ -126,7 +126,7 @@ public class ScheduleLongTermExecutionTest {
     private static final String WEIRDLY_POPULAR_KEY_TXN = "weirdlyPopularKeyTxn";
     private static final String PAYER_TXN = "payerTxn";
     private static final long ONE_MINUTE = 60;
-    private static final long TWO_MOUTHS = 5356800;
+    private static final long TWO_MONTHS = 5356800;
     private static final long PAYER_INITIAL_BALANCE = 1000000000000L;
 
     @BeforeAll
@@ -1280,7 +1280,7 @@ public class ScheduleLongTermExecutionTest {
         return hapiTest(
                 cryptoCreate("luckyYou").balance(0L),
                 scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
-                        .expiringIn(TWO_MOUTHS + 10)
+                        .expiringIn(TWO_MONTHS + 10)
                         .hasKnownStatus(SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE));
     }
 
