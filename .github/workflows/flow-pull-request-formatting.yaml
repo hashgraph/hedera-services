@@ -52,6 +52,8 @@ jobs:
 
       - name: Check PR Title
         uses: step-security/conventional-pr-title-action@19fb561b33015fd2184055a05ce5a3bcf2ba3f54 # v3.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   milestone-check:
     name: Milestone Check
