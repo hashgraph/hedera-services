@@ -95,6 +95,7 @@ jobs:
       - name: Resolve coverage file paths
         id: coverage_paths
         run: |
+          ls -la
           echo "COVERAGE_REPORTS=$(find **/build/test-results/test -name 'TEST-*.xml'; \
           find **/build/test-results/timingSensitive -name 'TEST-*.xml' | tr '\n' ',')" >> $GITHUB_ENV
 
