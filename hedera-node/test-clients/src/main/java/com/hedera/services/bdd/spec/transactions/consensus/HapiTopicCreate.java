@@ -66,7 +66,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     private Optional<KeyShape> feeScheduleKeyShape = Optional.empty();
     private final List<Function<HapiSpec, ConsensusCustomFee>> feeScheduleSuppliers = new ArrayList<>();
     private Optional<List<Function<HapiSpec, Key>>> feeExemptKeyNamesList = Optional.empty();
-    private Optional<List<Key>> feeExemptKeyList = Optional.empty();
+    private Optional<List<Key>> freeMesssageKeyList = Optional.empty();
 
     /** For some test we need the capability to build transaction has no autoRenewPeiord */
     private boolean clearAutoRenewPeriod = false;
@@ -170,7 +170,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
                             autoRenewAccountId.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
                             autoRenewPeriod.ifPresent(secs -> b.setAutoRenewPeriod(asDuration(secs)));
                             feeScheduleKey.ifPresent(b::setFeeScheduleKey);
-                            feeExemptKeyList.ifPresent(keys -> keys.forEach(b::addFeeExemptKeyList));
+                            freeMesssageKeyList.ifPresent(keys -> keys.forEach(b::addFeeExemptKeyList));
                             if (!feeScheduleSuppliers.isEmpty()) {
                                 for (final var supplier : feeScheduleSuppliers) {
                                     b.addCustomFees(supplier.apply(spec));
@@ -196,7 +196,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
             feeScheduleKey = Optional.of(netOf(spec, feeScheduleKeyName, feeScheduleKeyShape));
         }
 
-        feeExemptKeyNamesList.ifPresent(functions -> feeExemptKeyList = Optional.of(functions.stream()
+        feeExemptKeyNamesList.ifPresent(functions -> freeMesssageKeyList = Optional.of(functions.stream()
                 .map(f -> f.apply(spec))
                 .filter(k -> k != null && k != Key.getDefaultInstance())
                 .collect(toList())));

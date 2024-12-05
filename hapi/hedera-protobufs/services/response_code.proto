@@ -1597,27 +1597,42 @@ enum ResponseCodeEnum {
     /**
     * The provided fee exempt key list size exceeded the limit.
     */
-    MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED = 370;
+    MAX_ENTRIES_FOR_FEKL_EXCEEDED = 370;
 
     /**
     * The provided fee exempt key list contains duplicated keys.
     */
-    FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS = 371;
+    FEKL_CONTAINS_DUPLICATED_KEYS = 371;
 
     /**
     * The provided fee exempt key list contains an invalid key.
     */
-    INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST = 372;
+    INVALID_KEY_IN_FEKL = 372;
 
     /**
-    * The provided fee schedule key contains an invalid key.
-    */
-    INVALID_FEE_SCHEDULE_KEY = 374;
+     * Custom fee list is missing.
+     * <p>
+     * Fee exempt key list MAY be set only if custom fee list is set.
+     */
+    MISSING_CUSTOM_FEES = 373;
 
     /**
-    * If a fee schedule key is not set when we create a topic
-    * we cannot add it on update.
-    */
-    FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED = 375;
+     * Allowance per message is higher than total allowance.
+     */
+    ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE = 374;
 
+    /**
+     * Repeated AccountId/TopicId pair in the transaction body.
+     */
+    REPEATED_ALLOWANCE_IN_TRANSACTION_BODY = 375;
+
+    /**
+     * The topic has been marked as deleted.
+     */
+    TOPIC_DELETED = 376;
+
+    /**
+     * The account receiving allowance is a smart contract.
+     */
+    ACCOUNT_IS_CONTRACT = 377;
 }

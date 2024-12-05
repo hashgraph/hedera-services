@@ -155,6 +155,7 @@ public class TransactionDispatcher {
             case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler();
             case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler();
             case CONSENSUS_SUBMIT_MESSAGE -> handlers.consensusSubmitMessageHandler();
+            case CONSENSUS_APPROVE_ALLOWANCE -> handlers.consensusApproveAllowanceHandler();
 
             case CONTRACT_CREATE_INSTANCE -> handlers.contractCreateHandler();
             case CONTRACT_UPDATE_INSTANCE -> handlers.contractUpdateHandler();

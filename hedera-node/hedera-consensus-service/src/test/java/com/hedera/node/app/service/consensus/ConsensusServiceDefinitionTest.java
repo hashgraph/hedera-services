@@ -40,6 +40,7 @@ class ConsensusServiceDefinitionTest {
                         new RpcMethodDefinition<>("updateTopic", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("deleteTopic", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("getTopicInfo", Query.class, Response.class),
-                        new RpcMethodDefinition<>("submitMessage", Transaction.class, TransactionResponse.class));
+                        new RpcMethodDefinition<>("submitMessage", Transaction.class, TransactionResponse.class),
+                        new RpcMethodDefinition<>("approveAllowance", Transaction.class, TransactionResponse.class));
     }
 }

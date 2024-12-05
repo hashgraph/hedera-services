@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
@@ -29,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
@@ -37,7 +35,6 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TopicID;
@@ -45,8 +42,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.transaction.ConsensusCustomFee;
-import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
@@ -54,8 +49,6 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
 import com.hedera.node.app.service.consensus.impl.validators.ConsensusCustomFeesValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -66,11 +59,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -84,12 +74,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Mock
     private ReadableAccountStore accountStore;
-
-    @Mock
-    private ReadableTokenStore tokenStore;
-
-    @Mock
-    private ReadableTokenRelationStore tokenRelationStore;
 
     @Mock
     private AttributeValidator validator;
@@ -114,15 +98,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     private ConsensusCreateTopicHandler subject;
 
     private TransactionBody newCreateTxn(Key adminKey, Key submitKey, boolean hasAutoRenewAccount) {
-        return newCreateTxn(adminKey, submitKey, hasAutoRenewAccount, null, null);
-    }
-
-    private TransactionBody newCreateTxn(
-            Key adminKey,
-            Key submitKey,
-            boolean hasAutoRenewAccount,
-            List<ConsensusCustomFee> customFees,
-            List<Key> feeExemptKeyList) {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
         final var createTopicBuilder = ConsensusCreateTopicTransactionBody.newBuilder();
         if (adminKey != null) {
@@ -135,12 +110,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         createTopicBuilder.memo(memo);
         if (hasAutoRenewAccount) {
             createTopicBuilder.autoRenewAccount(autoRenewId);
-        }
-        if (customFees != null) {
-            createTopicBuilder.customFees(customFees);
-        }
-        if (feeExemptKeyList != null) {
-            createTopicBuilder.feeExemptKeyList(feeExemptKeyList);
         }
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
@@ -156,17 +125,9 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                 .getOrCreateConfig();
         topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         given(handleContext.configuration()).willReturn(config);
-
         given(handleContext.storeFactory().readableStore(ReadableTopicStore.class))
                 .willReturn(topicStore);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
-        given(handleContext.storeFactory().readableStore(ReadableAccountStore.class))
-                .willReturn(accountStore);
-        given(handleContext.storeFactory().readableStore(ReadableTokenStore.class))
-                .willReturn(tokenStore);
-        given(handleContext.storeFactory().readableStore(ReadableTokenRelationStore.class))
-                .willReturn(tokenRelationStore);
-
         given(handleContext.savepointStack()).willReturn(stack);
         given(stack.getBaseBuilder(ConsensusCreateTopicStreamBuilder.class)).willReturn(recordBuilder);
         lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
@@ -372,6 +333,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
+
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, msg.getStatus());
     }
@@ -396,11 +358,12 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Memo Validation Failure will throw")
     void handleThrowsIfAttributeValidatorFails() {
-        final var txnBody = newCreateTxn(SIMPLE_KEY_A, SIMPLE_KEY_B, true);
+        final var adminKey = SIMPLE_KEY_A;
+        final var submitKey = SIMPLE_KEY_B;
+        final var txnBody = newCreateTxn(adminKey, submitKey, true);
         given(handleContext.body()).willReturn(txnBody);
 
         given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .when(validator)
@@ -478,113 +441,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(0, topicStore.modifiedTopics().size());
     }
 
-    @Test
-    @DisplayName("Handle works as expected wit custom fees and FEKL")
-    void validatedCustomFees() {
-        final var customFees = List.of(ConsensusCustomFee.newBuilder()
-                .fixedFee(FixedFee.newBuilder().amount(1).build())
-                .feeCollectorAccountId(AccountID.DEFAULT)
-                .build());
-        final var feeExemptKeyList = List.of(SIMPLE_KEY_A, SIMPLE_KEY_B);
-        final var txnBody = newCreateTxn(adminKey, null, true, customFees, feeExemptKeyList);
-        given(handleContext.body()).willReturn(txnBody);
-
-        given(accountStore.getAliasedAccountById(any())).willReturn(Account.DEFAULT);
-
-        // mock validators
-        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
-        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
-        final var op = txnBody.consensusCreateTopic();
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
-                .willReturn(new ExpiryMeta(
-                        1_234_567L + op.autoRenewPeriod().seconds(),
-                        op.autoRenewPeriod().seconds(),
-                        op.autoRenewAccount()));
-
-        subject.handle(handleContext);
-
-        final var createdTopic =
-                topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build());
-        assertNotNull(createdTopic);
-
-        final var actualTopic = createdTopic;
-        assertEquals(0L, actualTopic.sequenceNumber());
-        assertEquals(memo, actualTopic.memo());
-        assertEquals(adminKey, actualTopic.adminKey());
-        assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expirationSecond());
-        assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
-        assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
-        final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
-        verify(recordBuilder).topicID(topicID);
-        assertNotNull(topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build()));
-    }
-
-    @Test
-    @DisplayName("Handle fail with toо many fee exempt keys")
-    void failWithTooManyFeeExemptKeys() {
-        final var feeExemptKeyList = buildFEKL(100);
-        final var txnBody = newCreateTxn(adminKey, null, true, null, feeExemptKeyList);
-        given(handleContext.body()).willReturn(txnBody);
-
-        // mock validators
-        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED, msg.getStatus());
-        assertEquals(0, topicStore.modifiedTopics().size());
-    }
-
-    @Test
-    @DisplayName("Handle fail with invalid custom fee amount")
-    void failWithInvalidFeeAmount() {
-        final var customFees = List.of(ConsensusCustomFee.newBuilder()
-                .fixedFee(FixedFee.newBuilder().amount(-1).build())
-                .feeCollectorAccountId(AccountID.DEFAULT)
-                .build());
-        final var txnBody = newCreateTxn(adminKey, null, true, customFees, null);
-        given(handleContext.body()).willReturn(txnBody);
-
-        given(accountStore.getAliasedAccountById(any())).willReturn(Account.DEFAULT);
-
-        // mock validators
-        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE, msg.getStatus());
-        assertEquals(0, topicStore.modifiedTopics().size());
-    }
-
-    @Test
-    @DisplayName("Handle fail with invalid collector")
-    void failWithInvalidCollector() {
-        final var customFees = List.of(ConsensusCustomFee.newBuilder()
-                .fixedFee(FixedFee.newBuilder().amount(1).build())
-                .feeCollectorAccountId(AccountID.DEFAULT)
-                .build());
-        final var txnBody = newCreateTxn(adminKey, null, true, customFees, null);
-        given(handleContext.body()).willReturn(txnBody);
-
-        given(accountStore.getAliasedAccountById(any())).willReturn(null);
-
-        // mock
-        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-
-        given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR, msg.getStatus());
-        assertEquals(0, topicStore.modifiedTopics().size());
-    }
-
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java
 
     private Key mockPayerLookup(Key key) {
@@ -592,14 +448,5 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(account.key()).willReturn(key);
         given(accountStore.getAccountById(payerId)).willReturn(account);
         return key;
-    }
-
-    private List<Key> buildFEKL(int count) {
-        final var list = new ArrayList<Key>();
-        for (int i = 0; i < count; i++) {
-            final var value = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" + i;
-            list.add(Key.newBuilder().ed25519(Bytes.wrap(value.getBytes())).build());
-        }
-        return list;
     }
 }
