@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.consensus.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOPIC_DELETED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -55,7 +54,8 @@ public class ConsensusHandlerHelper {
 
         final var topic = topicStore.getTopic(topicId);
         validateTrue(topic != null, INVALID_TOPIC_ID);
-        validateFalse(topic.deleted(), TOPIC_DELETED);
+        // todo check if we need TOPIC_DELETED
+        validateFalse(topic.deleted(), INVALID_TOPIC_ID);
         return topic;
     }
 }

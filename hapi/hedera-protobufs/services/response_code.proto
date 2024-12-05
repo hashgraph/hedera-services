@@ -1598,25 +1598,20 @@ enum ResponseCodeEnum {
     * The provided fee exempt key list size exceeded the limit.
     */
     MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED = 370;
+
     /**
     * The provided fee exempt key list contains duplicated keys.
     */
     FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS = 371;
+
     /**
     * The provided fee exempt key list contains an invalid key.
     */
     INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST = 372;
 
     /**
-     * Custom fee list is missing.
-     * <p>
-     * Fee exempt key list MAY be set only if custom fee list is set.
-     */
-    MISSING_CUSTOM_FEES = 373;
-
-    /**
-   * The provided fee schedule key contains an invalid key.
-   */
+    * The provided fee schedule key contains an invalid key.
+    */
     INVALID_FEE_SCHEDULE_KEY = 374;
 
     /**
@@ -1625,8 +1620,4 @@ enum ResponseCodeEnum {
     */
     FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED = 375;
 
-    /**
-     * The topic has been marked as deleted.
-     */
-    TOPIC_DELETED = 376;
 }
