@@ -17,12 +17,18 @@
 package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_BILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -35,7 +41,7 @@ public class MiscellaneousFeesSuite {
     public static final String BOB = "bob";
 
     @HapiTest
-    final Stream<DynamicTest> usdFeeAsExpected() {
+    final Stream<DynamicTest> usdFeeAsExpectedForPrngTransaction() {
         double baseFee = 0.001;
         double plusRangeFee = 0.0010010316;
 
@@ -60,5 +66,31 @@ public class MiscellaneousFeesSuite {
                                 .logged(),
                         validateChargedUsdWithin(plusRangeTxn, plusRangeFee, 0.5))
                 .then();
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> usdFeeAsExpectedForGetVersionInfo() {
+        return hapiTest(
+        cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+        getVersionInfo().signedBy(BOB).payingWith(BOB).via("versionInfo").logged(),
+        sleepFor(1000),
+        validateChargedUsd("versionInfo", 0.0001));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> usdFeeAsExpectedForTransactionGetReciept() {
+        return hapiTest(
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).via("createTxn").logged(),
+                getReceipt("createTxn").signedBy(BOB).payingWith(BOB),
+                getAccountBalance(BOB).hasTinyBars(ONE_HUNDRED_HBARS));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> usdFeeAsExpectedForTransactionGetRecord() {
+        return hapiTest(
+                cryptoCreate("Alice").balance(ONE_BILLION_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).signedBy("Alice").payingWith("Alice").via("createTxn").logged(),
+                getTxnRecord("createTxn").signedBy(BOB).payingWith(BOB).via("transactionGetRecord"),
+                validateChargedUsd("transactionGetRecord", 0.0001));
     }
 }
