@@ -66,6 +66,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -162,6 +163,7 @@ class SystemSetupTest {
         given(handleContext.dispatch(any())).willReturn(streamBuilder);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
+        given(readableNodeStore.keys()).willReturn(Collections.emptyIterator());
 
         subject.doPostUpgradeSetup(dispatch);
 
@@ -185,6 +187,7 @@ class SystemSetupTest {
         given(dispatch.handleContext()).willReturn(handleContext);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
+        given(readableNodeStore.keys()).willReturn(Collections.emptyIterator());
 
         subject.doPostUpgradeSetup(dispatch);
 
@@ -216,6 +219,7 @@ class SystemSetupTest {
         given(dispatch.handleContext()).willReturn(handleContext);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
+        given(readableNodeStore.keys()).willReturn(Collections.emptyIterator());
 
         subject.doPostUpgradeSetup(dispatch);
 
