@@ -40,14 +40,22 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 
+/**
+ * Translates {@code createFungibleToken}, {@code createNonFungibleToken},
+ * {@code createFungibleTokenWithCustomFees} and {@code createNonFungibleTokenWithCustomFees} calls to the HTS system contract.
+ */
 public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    /** Selector for createFungibleToken(HEDERA_TOKEN_V1,uint,uint) method. */
     public static final Function CREATE_FUNGIBLE_TOKEN_V1 =
             new Function("createFungibleToken(" + HEDERA_TOKEN_V1 + ",uint,uint)", "(int64,address)");
+    /** Selector for createFungibleToken(HEDERA_TOKEN_V2,uint64,uint32) method. */
     public static final Function CREATE_FUNGIBLE_TOKEN_V2 =
             new Function("createFungibleToken(" + HEDERA_TOKEN_V2 + ",uint64,uint32)", "(int64,address)");
+    /** Selector for createFungibleToken(HEDERA_TOKEN_V3,int64,int32) method. */
     public static final Function CREATE_FUNGIBLE_TOKEN_V3 =
             new Function("createFungibleToken(" + HEDERA_TOKEN_V3 + ",int64,int32)", "(int64,address)");
+    /** Selector for createFungibleTokenWithCustomFees(HEDERA_TOKEN_V1,uint,uint,FIXED_FEE[],FRACTIONAL_FEE[]) method. */
     public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1 = new Function(
             "createFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_V1
@@ -59,6 +67,7 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                     + ARRAY_BRACKETS
                     + ")",
             "(int64,address)");
+    /** Selector for createFungibleTokenWithCustomFees(HEDERA_TOKEN_V2,uint64,uint32,FIXED_FEE[],FRACTIONAL_FEE[]) method. */
     public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2 = new Function(
             "createFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_V2
@@ -70,6 +79,7 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                     + ARRAY_BRACKETS
                     + ")",
             "(int64,address)");
+    /** Selector for createFungibleTokenWithCustomFees(HEDERA_TOKEN_V3,int64,int32,FIXED_FEE_V2[],FRACTIONAL_FEE_V2[]) method. */
     public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3 = new Function(
             "createFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_V3
@@ -82,13 +92,17 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                     + ")",
             "(int64,address)");
 
+    /** Selector for createNonFungibleToken(HEDERA_TOKEN_V1) method. */
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_V1 =
             new Function("createNonFungibleToken(" + HEDERA_TOKEN_V1 + ")", "(int64,address)");
+    /** Selector for createNonFungibleToken(HEDERA_TOKEN_V2) method. */
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_V2 =
             new Function("createNonFungibleToken(" + HEDERA_TOKEN_V2 + ")", "(int64,address)");
+    /** Selector for createNonFungibleToken(HEDERA_TOKEN_V3) method. */
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_V3 =
             new Function("createNonFungibleToken(" + HEDERA_TOKEN_V3 + ")", "(int64,address)");
 
+    /** Selector for createNonFungibleTokenWithCustomFees(HEDERA_TOKEN_V1,int64,int32,FIXED_FEE[],FRACTIONAL_FEE[]) method. */
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1 = new Function(
             "createNonFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_V1
@@ -100,6 +114,7 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                     + ARRAY_BRACKETS
                     + ")",
             "(int64,address)");
+    /** Selector for createNonFungibleTokenWithCustomFees(HEDERA_TOKEN_V2,int64,int32,FIXED_FEE[],FRACTIONAL_FEE[]) method. */
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2 = new Function(
             "createNonFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_V2
@@ -111,6 +126,7 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                     + ARRAY_BRACKETS
                     + ")",
             "(int64,address)");
+    /** Selector for createNonFungibleTokenWithCustomFees(HEDERA_TOKEN_V3,int64,int32,FIXED_FEE_2[],FRACTIONAL_FEE_2[]) method. */
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3 = new Function(
             "createNonFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_V3
@@ -122,9 +138,10 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                     + ARRAY_BRACKETS
                     + ")",
             "(int64,address)");
-
+    /** Selector for createFungibleTokenWithCustomFees(HEDERA_TOKEN_WITH_METADATA,int64,int32) method. */
     public static final Function CREATE_FUNGIBLE_TOKEN_WITH_METADATA =
             new Function("createFungibleToken(" + HEDERA_TOKEN_WITH_METADATA + ",int64,int32)", "(int64,address)");
+    /** Selector for createFungibleTokenWithCustomFees(HEDERA_TOKEN_WITH_METADATA,int64,int32,FIXED_FEE_2[],FRACTIONAL_FEE_2[]) method. */
     public static final Function CREATE_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES = new Function(
             "createFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_WITH_METADATA
@@ -136,8 +153,10 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                     + ARRAY_BRACKETS
                     + ")",
             "(int64,address)");
+    /** Selector for createNonFungibleToken(HEDERA_TOKEN_WITH_METADATA) method. */
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA =
             new Function("createNonFungibleToken(" + HEDERA_TOKEN_WITH_METADATA + ")", "(int64,address)");
+    /** Selector for createNonFungibleTokenWithCustomFees(HEDERA_TOKEN_WITH_METADATA,FIXED_FEE_2[],FRACTIONAL_FEE_2[]) method. */
     public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES = new Function(
             "createNonFungibleTokenWithCustomFees("
                     + HEDERA_TOKEN_WITH_METADATA
@@ -158,6 +177,10 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
      */
     public static final Map<Function, CreateDecoderFunction> createSelectorsMap = new HashMap<>();
 
+    /**
+     * Constructor for injection.
+     * @param decoder the decoder used to decode create calls
+     */
     @Inject
     public CreateTranslator(final CreateDecoder decoder) {
         createSelectorsMap.put(CREATE_FUNGIBLE_TOKEN_V1, decoder::decodeCreateFungibleTokenV1);
@@ -196,7 +219,7 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                 CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES);
         return createSelectorsMap.keySet().stream()
                 .anyMatch(selector -> metaSelectors.contains(selector)
-                        ? attempt.isSelectorIfConfigEnabled(selector, metaConfigEnabled)
+                        ? attempt.isSelectorIfConfigEnabled(metaConfigEnabled, selector)
                         : attempt.isSelector(selector));
     }
 

@@ -164,26 +164,36 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         if (processHandle == null) {
             return CompletableFuture.completedFuture(null);
         }
+        final var stopFuture = processHandle.onExit().thenAccept(handle -> {
+            log.info("Destroyed PID {}", handle.pid());
+            this.processHandle = null;
+        });
         log.info(
                 "Destroying node{} with PID '{}' (Alive? {})",
                 metadata.nodeId(),
                 processHandle.pid(),
                 processHandle.isAlive() ? "Yes" : "No");
-        if (!processHandle.destroy()) {
+        if (!processHandle.destroyForcibly()) {
             log.warn("May have failed to stop node{} with PID '{}'", metadata.nodeId(), processHandle.pid());
         }
-        return processHandle.onExit().thenAccept(handle -> {
-            log.info("Destroyed PID {}", handle.pid());
-            this.processHandle = null;
-        });
+        return stopFuture;
     }
 
     @Override
-    public void dumpThreads() {
+    public boolean dumpThreads() {
+        requireNonNull(processHandle);
         try {
             triggerThreadDump();
+            return true;
         } catch (Exception e) {
-            log.warn("Unable to dump threads for node{}", metadata.nodeId(), e);
+            log.warn(
+                    "Unable to dump threads for node{} with PID '{}' (Alive? {}), assuming it was stopped",
+                    metadata.nodeId(),
+                    processHandle.pid(),
+                    processHandle.isAlive() ? "Yes" : "No",
+                    e);
+            processHandle = null;
+            return false;
         }
     }
 
@@ -230,6 +240,13 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
      */
     public void reassignNodeAccountIdFrom(@NonNull final String memo) {
         metadata = metadata.withNewAccountId(toPbj(asAccount(memo)));
+    }
+
+    /**
+     * Reassigns node operator port to be disabled for this node.
+     */
+    public void reassignWithNodeOperatorPortDisabled() {
+        metadata = metadata.withNewNodeOperatorPortDisabled();
     }
 
     private boolean swirldsLogContains(@NonNull final String text) {

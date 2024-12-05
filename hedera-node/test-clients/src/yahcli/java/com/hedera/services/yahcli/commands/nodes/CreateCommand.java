@@ -30,6 +30,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
@@ -104,6 +109,8 @@ public class CreateCommand implements Callable<Integer> {
 
         final var gossipCert = validatedX509Cert(
                 gossipCaCertificatePath, gossipCaCertificatePfxPath, gossipCaCertificatePfxAlias, yahcli);
+        // Throws if the cert is not valid
+        validatedX509Cert(hapiCertificatePath, null, null, yahcli);
         final var delegate = new CreateNodeSuite(
                 config.asSpecConfig(),
                 accountId,
@@ -111,7 +118,7 @@ public class CreateCommand implements Callable<Integer> {
                 asCsServiceEndpoints(gossipEndpoints),
                 asCsServiceEndpoints(serviceEndpoints),
                 gossipCert,
-                noThrowSha384HashOf(validatedX509Cert(hapiCertificatePath, null, null, yahcli)),
+                noThrowSha384HashOf(allBytesAt(Paths.get(hapiCertificatePath))),
                 adminKeyPath,
                 maybeFeeAccountKeyPath);
         delegate.runSuiteSync();
@@ -124,6 +131,14 @@ public class CreateCommand implements Callable<Integer> {
         }
 
         return 0;
+    }
+
+    static byte[] allBytesAt(@NonNull final Path path) {
+        try {
+            return Files.readAllBytes(path);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private void validateAdminKeyLoc(@NonNull final String adminKeyPath) {

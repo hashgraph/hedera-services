@@ -91,7 +91,7 @@ public class PrivilegesVerifier {
                     txBody.fileDeleteOrThrow().fileIDOrThrow().fileNum());
             case CRYPTO_DELETE -> checkEntityDelete(
                     txBody.cryptoDeleteOrThrow().deleteAccountIDOrThrow().accountNumOrThrow());
-            case NODE_CREATE, NODE_UPDATE, NODE_DELETE -> checkNodeChange(payerId);
+            case NODE_CREATE, NODE_DELETE -> checkNodeChange(payerId);
             default -> SystemPrivilege.UNNECESSARY;
         };
     }

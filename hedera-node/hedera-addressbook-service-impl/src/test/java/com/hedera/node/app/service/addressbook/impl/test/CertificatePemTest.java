@@ -24,7 +24,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -73,8 +72,7 @@ class CertificatePemTest {
         final var cert = readCertificatePemFile(pemFilePath);
         final var test = Path.of(tmpDir.getPath() + "/test");
         Files.write(test, cert.getEncoded());
-        final var genCert = readCertificatePemFile(test);
-        assertNull(genCert);
+        assertThrows(CertificateException.class, () -> readCertificatePemFile(test));
     }
 
     @Test

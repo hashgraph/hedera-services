@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.file.impl.schemas;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.fromString;
-import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
@@ -25,7 +24,6 @@ import static java.util.Spliterator.DISTINCT;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.CurrentAndNextFeeSchedule;
 import com.hedera.hapi.node.base.FeeComponents;
 import com.hedera.hapi.node.base.FeeData;
@@ -42,7 +40,6 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -56,7 +53,6 @@ import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FilesConfig;
@@ -79,15 +75,16 @@ import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Spliterators;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -103,8 +100,6 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class V0490FileSchema extends Schema {
     private static final Logger logger = LogManager.getLogger(V0490FileSchema.class);
-
-    private static final AtomicInteger NEXT_DISPATCH_NONCE = new AtomicInteger(1);
 
     public static final String BLOBS_KEY = "FILES";
     public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
@@ -257,25 +252,11 @@ public class V0490FileSchema extends Schema {
      */
     public static void dispatchSynthFileUpdate(
             @NonNull final SystemContext systemContext, @NonNull final FileID fileId, @NonNull final Bytes contents) {
-        final var config = systemContext.configuration();
-        final var hederaConfig = config.getConfigData(HederaConfig.class);
-        final var sysAdminId = AccountID.newBuilder()
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .accountNum(config.getConfigData(AccountsConfig.class).systemAdmin())
-                .build();
-        systemContext.dispatchUpdate(TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder()
-                        .accountID(sysAdminId)
-                        .transactionValidStart(asTimestamp(systemContext.now()))
-                        .nonce(NEXT_DISPATCH_NONCE.getAndIncrement())
-                        .build())
-                .fileUpdate(FileUpdateTransactionBody.newBuilder()
-                        .fileID(fileId)
-                        .contents(contents)
-                        .expirationTime(maxLifetimeExpiry(systemContext))
-                        .build())
-                .build());
+        systemContext.dispatchAdmin(b -> b.fileUpdate(FileUpdateTransactionBody.newBuilder()
+                .fileID(fileId)
+                .contents(contents)
+                .expirationTime(maxLifetimeExpiry(systemContext))
+                .build()));
     }
 
     private Bytes nodeStoreNodeDetails(@NonNull final ReadableNodeStore nodeStore) {
@@ -287,7 +268,7 @@ public class V0490FileSchema extends Schema {
                 .forEach(node -> nodeDetails.add(NodeAddress.newBuilder()
                         .nodeId(node.nodeId())
                         .nodeAccountId(node.accountId())
-                        .nodeCertHash(node.grpcCertificateHash())
+                        .nodeCertHash(getHexStringBytesFromBytes(node.grpcCertificateHash()))
                         .description(node.description())
                         .stake(node.weight())
                         .rsaPubKey(readableKey(getPublicKeyFromCertBytes(
@@ -298,6 +279,11 @@ public class V0490FileSchema extends Schema {
                 NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
     }
 
+    private Bytes getHexStringBytesFromBytes(final Bytes rawBytes) {
+        final String hexString = HexFormat.of().formatHex(rawBytes.toByteArray());
+        return Bytes.wrap(Normalizer.normalize(hexString, Normalizer.Form.NFD).getBytes(UTF_8));
+    }
+
     private Bytes nodeStoreAddressBook(@NonNull final ReadableNodeStore nodeStore) {
         final var nodeAddresses = new ArrayList<NodeAddress>();
         StreamSupport.stream(Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
@@ -306,7 +292,7 @@ public class V0490FileSchema extends Schema {
                 .filter(node -> node != null && !node.deleted())
                 .forEach(node -> nodeAddresses.add(NodeAddress.newBuilder()
                         .nodeId(node.nodeId())
-                        .nodeCertHash(node.grpcCertificateHash())
+                        .nodeCertHash(getHexStringBytesFromBytes(node.grpcCertificateHash()))
                         .nodeAccountId(node.accountId())
                         .serviceEndpoint(node.serviceEndpoint())
                         .build()));

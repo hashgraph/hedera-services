@@ -46,6 +46,7 @@ class PlatformEventTest {
     public static void setup() throws FileNotFoundException, ConstructableRegistryException {
         new TestConfigBuilder().getOrCreateConfig();
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
     }
 
     @AfterAll
@@ -59,7 +60,6 @@ class PlatformEventTest {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformEvent platformEvent = new TestingEventBuilder(random).build();
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final PlatformEvent copy = EventSerializationUtils.serializeDeserializePlatformEvent(platformEvent);
         assertEquals(platformEvent, copy, "deserialized version should be the same");
     }
@@ -73,7 +73,6 @@ class PlatformEventTest {
                 .setSystemTransactionCount(0)
                 .setAppTransactionCount(0)
                 .build();
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final PlatformEvent copy = EventSerializationUtils.serializeDeserializePlatformEvent(platformEvent);
         assertEquals(platformEvent, copy, "deserialized version should be the same");
     }
@@ -87,7 +86,6 @@ class PlatformEventTest {
                 .setAppTransactionCount(0)
                 .setSystemTransactionCount(2)
                 .build();
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final PlatformEvent copy = EventSerializationUtils.serializeDeserializePlatformEvent(platformEvent);
         assertEquals(platformEvent, copy, "deserialized version should be the same");
     }
@@ -101,7 +99,6 @@ class PlatformEventTest {
                 .setAppTransactionCount(2)
                 .setSystemTransactionCount(2)
                 .build();
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final PlatformEvent copy = EventSerializationUtils.serializeDeserializePlatformEvent(platformEvent);
         assertEquals(platformEvent, copy, "deserialized version should be the same");
     }

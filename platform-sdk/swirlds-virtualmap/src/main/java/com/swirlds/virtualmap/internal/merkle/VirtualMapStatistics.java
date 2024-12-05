@@ -57,8 +57,6 @@ public class VirtualMapStatistics {
     private LongGauge nodeCacheSizeB;
     /** Number of virtual root copies in the pipeline */
     private IntegerGauge pipelineSize;
-    /** The number of virtual root node copies in virtual pipeline flush backlog */
-    private IntegerGauge flushBacklogSize;
     /** Flush backpressure duration, ms */
     private IntegerAccumulator flushBackpressureMs;
     /** Family size backpressure duration, ms */
@@ -140,9 +138,6 @@ public class VirtualMapStatistics {
         pipelineSize = metrics.getOrCreate(
                 new IntegerGauge.Config(STAT_CATEGORY, VMAP_PREFIX + LIFECYCLE_PREFIX + "pipelineSize_" + label)
                         .withDescription("Virtual pipeline size, " + label));
-        flushBacklogSize = metrics.getOrCreate(
-                new IntegerGauge.Config(STAT_CATEGORY, VMAP_PREFIX + LIFECYCLE_PREFIX + "flushBacklogSize_" + label)
-                        .withDescription("Virtual pipeline flush backlog size" + label));
         flushBackpressureMs = buildIntegerAccumulator(
                 metrics,
                 VMAP_PREFIX + LIFECYCLE_PREFIX + "flushBackpressureMs_" + label,
@@ -234,17 +229,6 @@ public class VirtualMapStatistics {
     public void setPipelineSize(final int value) {
         if (this.pipelineSize != null) {
             this.pipelineSize.set(value);
-        }
-    }
-
-    /**
-     * Updates {@link #flushBacklogSize} stat.
-     *
-     * @param size flush backlog size
-     */
-    public void recordFlushBacklogSize(final int size) {
-        if (flushBacklogSize != null) {
-            flushBacklogSize.set(size);
         }
     }
 

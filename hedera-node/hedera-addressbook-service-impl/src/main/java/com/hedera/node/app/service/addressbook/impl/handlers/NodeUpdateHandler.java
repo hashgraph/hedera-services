@@ -18,6 +18,7 @@ package com.hedera.node.app.service.addressbook.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GRPC_CERTIFICATE_HASH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
@@ -65,7 +66,7 @@ public class NodeUpdateHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
-        final var op = txn.nodeUpdateOrThrow();
+        final var op = txn.nodeUpdate();
         validateFalsePreCheck(op.nodeId() < 0, INVALID_NODE_ID);
         if (op.hasGossipCaCertificate()) {
             validateFalsePreCheck(op.gossipCaCertificate().equals(Bytes.EMPTY), INVALID_GOSSIP_CA_CERTIFICATE);
@@ -74,6 +75,9 @@ public class NodeUpdateHandler implements TransactionHandler {
         if (op.hasAdminKey()) {
             final var adminKey = op.adminKey();
             addressBookValidator.validateAdminKey(adminKey);
+        }
+        if (op.hasGrpcCertificateHash()) {
+            validateFalsePreCheck(op.grpcCertificateHash().equals(Bytes.EMPTY), INVALID_GRPC_CERTIFICATE_HASH);
         }
     }
 

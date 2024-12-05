@@ -142,13 +142,14 @@ module com.swirlds.platform.core {
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
     requires transitive org.hiero.consensus.gossip;
+    requires transitive org.hiero.event.creator;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
-    requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
+    requires com.github.spotbugs.annotations;
     requires java.desktop;
     requires java.management;
     requires java.scripting;
@@ -156,8 +157,7 @@ module com.swirlds.platform.core {
     requires jdk.net;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-    requires static transitive com.github.spotbugs.annotations;
-    requires static transitive com.google.auto.service;
+    requires org.hiero.event.creator.impl;
 
     provides ConfigurationExtension with
             PlatformConfigurationExtension;

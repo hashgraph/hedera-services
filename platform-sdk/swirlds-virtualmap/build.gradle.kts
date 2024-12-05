@@ -66,10 +66,9 @@ timingSensitiveModuleInfo {
 }
 
 hammerModuleInfo {
-    requires("com.swirlds.common")
-    requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.virtualmap")
     requires("com.swirlds.virtualmap.test.fixtures")
+    requires("com.swirlds.config.api")
     requires("org.junit.jupiter.api")
     runtimeOnly("com.swirlds.config.impl")
 }

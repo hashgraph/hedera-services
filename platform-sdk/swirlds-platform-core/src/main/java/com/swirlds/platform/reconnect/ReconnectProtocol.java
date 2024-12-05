@@ -244,7 +244,7 @@ public class ReconnectProtocol implements Protocol {
             teacherState.close();
             teacherState = null;
         }
-        reconnectMetrics.recordReconnectRejection(peerId);
+        reconnectMetrics.recordReconnectRejection(peerId.id());
     }
 
     /**

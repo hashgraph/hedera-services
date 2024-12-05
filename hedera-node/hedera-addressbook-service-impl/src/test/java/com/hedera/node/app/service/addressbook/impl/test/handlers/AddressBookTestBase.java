@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.asBytes;
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -97,7 +97,7 @@ public class AddressBookTestBase {
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
 
-    protected final Bytes defauleAdminKeyBytes =
+    protected final Bytes defaultAdminKeyBytes =
             Bytes.wrap("0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92");
 
     final Key invalidKey = Key.newBuilder()
@@ -143,8 +143,6 @@ public class AddressBookTestBase {
 
     private final byte[] invalidIPBytes = {49, 46, 48, 46, 48, 46, 48};
     protected final ServiceEndpoint endpoint10 = new ServiceEndpoint(Bytes.wrap(invalidIPBytes), 1234, null);
-
-    private static final Bytes TSS_KEY = Bytes.wrap(new byte[] {1, 2, 3});
 
     protected Node node;
 
@@ -249,8 +247,7 @@ public class AddressBookTestBase {
                 Bytes.wrap(grpcCertificateHash),
                 0,
                 deleted,
-                key,
-                TSS_KEY);
+                key);
     }
 
     protected void givenValidNodeWithAdminKey(Key adminKey) {
@@ -264,8 +261,7 @@ public class AddressBookTestBase {
                 Bytes.wrap(grpcCertificateHash),
                 0,
                 false,
-                adminKey,
-                TSS_KEY);
+                adminKey);
     }
 
     protected Node createNode() {
@@ -279,7 +275,6 @@ public class AddressBookTestBase {
                 .grpcCertificateHash(Bytes.wrap(grpcCertificateHash))
                 .weight(0)
                 .adminKey(key)
-                .tssEncryptionKey(TSS_KEY)
                 .build();
     }
 

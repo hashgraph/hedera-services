@@ -32,6 +32,9 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.inject.Singleton;
 
+/**
+ * A factory for creating a {@link TokenCreateTransactionBody.Builder}.
+ */
 @Singleton
 public class CreateSyntheticTxnFactory {
 
@@ -39,6 +42,10 @@ public class CreateSyntheticTxnFactory {
         // Singleton constructor
     }
 
+    /**
+     * @param tokenCreateWrapper the wrapper of token create transaction
+     * @return the body of the token create transaction
+     */
     @NonNull
     public static TokenCreateTransactionBody.Builder createToken(@NonNull final TokenCreateWrapper tokenCreateWrapper) {
         final var txnBodyBuilder = TokenCreateTransactionBody.newBuilder();

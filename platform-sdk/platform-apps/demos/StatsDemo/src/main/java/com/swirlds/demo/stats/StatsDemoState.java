@@ -26,13 +26,15 @@ package com.swirlds.demo.stats;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.SoftwareVersion;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Function;
 
 /**
  * This demo collects statistics on the running of the network and consensus systems. It writes them to the
@@ -41,7 +43,8 @@ import com.swirlds.platform.system.SwirldState;
  * is 100 random bytes. So StatsDemoState.handleTransaction doesn't actually do anything, other than the
  * optional sequence number check.
  */
-public class StatsDemoState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+@ConstructableIgnored
+public class StatsDemoState extends PlatformMerkleStateRoot {
 
     /**
      * The version history of this class.
@@ -62,7 +65,11 @@ public class StatsDemoState extends PartialMerkleLeaf implements SwirldState, Me
 
     private static final long CLASS_ID = 0xc550a1cd94e91ca3L;
 
-    public StatsDemoState() {}
+    public StatsDemoState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(lifecycles, versionFactory);
+    }
 
     private StatsDemoState(final StatsDemoState sourceState) {
         super(sourceState);
@@ -77,20 +84,9 @@ public class StatsDemoState extends PartialMerkleLeaf implements SwirldState, Me
     @Override
     public synchronized StatsDemoState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new StatsDemoState(this);
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) {}
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) {}
 
     /**
      * {@inheritDoc}

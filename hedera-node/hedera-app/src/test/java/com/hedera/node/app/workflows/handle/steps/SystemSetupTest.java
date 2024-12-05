@@ -69,7 +69,6 @@ import java.time.Instant;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,9 +79,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class SystemSetupTest {
-    private static final AccountID SYS_ADMIN_ID =
-            AccountID.newBuilder().accountNum(50L).build();
-
     private static final AccountID ACCOUNT_ID_1 =
             AccountID.newBuilder().accountNum(1).build();
     private static final AccountID ACCOUNT_ID_2 =
@@ -163,8 +159,7 @@ class SystemSetupTest {
         given(dispatch.config()).willReturn(config);
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.handleContext()).willReturn(handleContext);
-        given(handleContext.dispatchPrecedingTransaction(any(), any(), any(), any()))
-                .willReturn(streamBuilder);
+        given(handleContext.dispatch(any())).willReturn(streamBuilder);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
 
@@ -197,11 +192,12 @@ class SystemSetupTest {
         verify(stack, times(1)).commitFullStack();
 
         final var infoLogs = logCaptor.infoLogs();
-        assertThat(infoLogs.size()).isEqualTo(4);
+        assertThat(infoLogs.size()).isEqualTo(5);
         assertThat(infoLogs.getFirst()).startsWith("No post-upgrade file for feeSchedules.json");
         assertThat(infoLogs.get(1)).startsWith("No post-upgrade file for throttles.json");
         assertThat(infoLogs.get(2)).startsWith("No post-upgrade file for application-override.properties");
-        assertThat(infoLogs.getLast()).startsWith("No post-upgrade file for api-permission-override.properties");
+        assertThat(infoLogs.get(3)).startsWith("No post-upgrade file for api-permission-override.properties");
+        assertThat(infoLogs.getLast()).startsWith("No post-upgrade file for node-admin-keys.json");
     }
 
     @Test
@@ -228,11 +224,10 @@ class SystemSetupTest {
 
         final var errorLogs = logCaptor.errorLogs();
         assertThat(errorLogs.size()).isEqualTo(4);
-        assertThat(errorLogs.getFirst()).startsWith("Failed to parse upgrade file for feeSchedules.json");
-        assertThat(errorLogs.get(1)).startsWith("Failed to parse upgrade file for throttles.json");
-        assertThat(errorLogs.get(2)).startsWith("Failed to parse upgrade file for application-override.properties");
-        assertThat(errorLogs.getLast())
-                .startsWith("Failed to parse upgrade file for api-permission-override.properties");
+        assertThat(errorLogs.getFirst()).startsWith("Failed to parse update file at");
+        assertThat(errorLogs.get(1)).startsWith("Failed to parse update file at");
+        assertThat(errorLogs.get(2)).startsWith("Failed to parse update file at");
+        assertThat(errorLogs.getLast()).startsWith("Failed to parse update file at");
     }
 
     @Test
@@ -321,16 +316,11 @@ class SystemSetupTest {
 
     @SuppressWarnings("unchecked")
     private void verifyUpdateDispatch(final long fileNum, final Bytes contents) {
-        verify(handleContext)
-                .dispatchPrecedingTransaction(
-                        argThat(body -> {
-                            final var fileUpdate = body.fileUpdateOrThrow();
-                            return fileUpdate.fileIDOrThrow().fileNum() == fileNum
-                                    && fileUpdate.contents().equals(contents);
-                        }),
-                        eq(StreamBuilder.class),
-                        any(Predicate.class),
-                        eq(SYS_ADMIN_ID));
+        verify(handleContext).dispatch(argThat(options -> {
+            final var fileUpdate = options.body().fileUpdateOrThrow();
+            return fileUpdate.fileIDOrThrow().fileNum() == fileNum
+                    && fileUpdate.contents().equals(contents);
+        }));
     }
 
     private String validPropertyOverrides() {

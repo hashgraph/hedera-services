@@ -23,9 +23,8 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.signed.SignedState;
@@ -37,13 +36,24 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class BirthRoundStateMigrationTests {
 
+    @BeforeEach
+    void setUp() {
+        MerkleDb.resetDefaultInstancePath();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
+    }
+
     @NonNull
-    private SignedState generateSignedState(
-            @NonNull final Random random, @NonNull final PlatformContext platformContext) {
+    private SignedState generateSignedState(@NonNull final Random random) {
 
         final long round = random.nextLong(1, 1_000_000);
 
@@ -77,10 +87,7 @@ class BirthRoundStateMigrationTests {
     @Test
     void generationModeTest() {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-
-        final SignedState signedState = generateSignedState(random, platformContext);
+        final SignedState signedState = generateSignedState(random);
         final Hash originalHash = signedState.getState().getHash();
 
         final SoftwareVersion previousSoftwareVersion =
@@ -102,15 +109,12 @@ class BirthRoundStateMigrationTests {
     @Test
     void alreadyMigratedTest() {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
 
-        final SignedState signedState = generateSignedState(random, platformContext);
+        final SignedState signedState = generateSignedState(random);
 
         final SoftwareVersion previousSoftwareVersion =
                 signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
 
-        ;
         final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
         PlatformStateModifier writablePlatformState = signedState.getState().getWritablePlatformState();
@@ -139,10 +143,7 @@ class BirthRoundStateMigrationTests {
     @Test
     void migrationTest() {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-
-        final SignedState signedState = generateSignedState(random, platformContext);
+        final SignedState signedState = generateSignedState(random);
         final Hash originalHash = signedState.getState().getHash();
 
         final SoftwareVersion previousSoftwareVersion =

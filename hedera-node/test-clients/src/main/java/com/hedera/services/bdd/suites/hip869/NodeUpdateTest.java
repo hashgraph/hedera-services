@@ -60,8 +60,6 @@ import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.junit.support.TestLifecycle;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -76,7 +74,7 @@ public class NodeUpdateTest {
     private static List<X509Certificate> gossipCertificates;
 
     @BeforeAll
-    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+    static void beforeAll() {
         gossipCertificates = generateX509Certificates(2);
     }
 
@@ -375,14 +373,16 @@ public class NodeUpdateTest {
     }
 
     @HapiTest
-    final Stream<DynamicTest> signedByCouncilAndAdminKeySuccess() throws CertificateEncodingException {
+    final Stream<DynamicTest> signedByAdminKeySuccess() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
+                cryptoCreate("payer").balance(10_000_000_000L),
                 nodeCreate("testNode")
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode")
-                        .signedBy(ADDRESS_BOOK_CONTROL, "adminKey")
+                        .payingWith("payer")
+                        .signedBy("payer", "adminKey")
                         .description("updated description")
                         .via("successUpdate"),
                 getTxnRecord("successUpdate").logged());

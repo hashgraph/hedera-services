@@ -18,7 +18,7 @@ package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.PENDING_AIRDROP_ID_COMPARATOR;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
@@ -79,7 +79,6 @@ import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateStreamBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
@@ -203,14 +202,14 @@ public class RecordStreamBuilder
     // Used to customize the externalized form of a dispatched child transaction, right before
     // its record stream item is built; lets the contract service externalize certain dispatched
     // CryptoCreate transactions as ContractCreate synthetic transactions
-    private final ExternalizedRecordCustomizer customizer;
+    private final TransactionCustomizer customizer;
 
     private TokenID tokenID;
     private TokenType tokenType;
 
     public RecordStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
-            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final TransactionCustomizer customizer,
             @NonNull final TransactionCategory category) {
         this.consensusNow = Instant.EPOCH;
         this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
@@ -224,7 +223,7 @@ public class RecordStreamBuilder
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
-        if (customizer != NOOP_RECORD_CUSTOMIZER) {
+        if (customizer != NOOP_TRANSACTION_CUSTOMIZER) {
             transaction = customizer.apply(transaction);
             transactionBytes = transaction.signedTransactionBytes();
         }
@@ -325,7 +324,6 @@ public class RecordStreamBuilder
             transactionReceiptBuilder.scheduledTransactionID((TransactionID) null);
         }
         // Note that internal contract creations are removed instead of reversed
-        transactionRecordBuilder.scheduleRef((ScheduleID) null);
         transactionReceiptBuilder.topicRunningHash(Bytes.EMPTY);
         transactionReceiptBuilder.newTotalSupply(0L);
         transactionReceiptBuilder.topicRunningHashVersion(0L);
