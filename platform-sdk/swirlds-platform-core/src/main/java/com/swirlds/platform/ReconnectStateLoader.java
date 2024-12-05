@@ -31,7 +31,6 @@ import com.swirlds.platform.event.validation.RosterUpdate;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.roster.RosterRetriever;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedState;
@@ -121,7 +120,9 @@ public class ReconnectStateLoader {
             // Before attempting to load the state, verify that the platform roster matches the state roster.
             final State state = (MerkleStateRoot<?>) signedState.getState().getSwirldState();
             final Roster stateRoster = RosterRetriever.retrieveActiveOrGenesisRoster(state);
-            RosterUtils.verifyReconnectRosters(roster, stateRoster);
+            if (!roster.equals(stateRoster)) {
+                throw new IllegalStateException("Current roster and state-based roster do not contain the same nodes");
+            }
 
             swirldStateManager.loadFromSignedState(signedState);
             // kick off transition to RECONNECT_COMPLETE before beginning to save the reconnect state to disk
