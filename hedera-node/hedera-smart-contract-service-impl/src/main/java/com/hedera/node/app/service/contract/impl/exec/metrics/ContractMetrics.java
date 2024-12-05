@@ -68,7 +68,7 @@ public class ContractMetrics {
     //             %2$s - METRIC_SERVICE
     //             %3$s - short specific metric description
 
-    private static final String REJECTED_NAME_TEMPLATE = "%2$s:Rejected-%1$s_total";
+    private static final String REJECTED_NAME_TEMPLATE = "%2$s:Rejected_%1$s_total";
     private static final String REJECTED_DESCR_TEMPLATE = "submitted %1$s %3$s rejected by pureChecks";
 
     private static final String REJECTED_TXN_SHORT_DESCR = "txns";
