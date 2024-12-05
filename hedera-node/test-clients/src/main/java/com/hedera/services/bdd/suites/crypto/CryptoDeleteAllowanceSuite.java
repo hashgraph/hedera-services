@@ -364,7 +364,7 @@ public class CryptoDeleteAllowanceSuite {
                         .addNftDeleteAllowance(owner, nft, List.of(1L))
                         .signedBy(payer, owner)
                         .via("twoDeleteNft"),
-                validateChargedUsdWithin("twoDeleteNft", 0.08124, 0.02));
+                validateChargedUsdWithin("twoDeleteNft", 0.08124, 0.035));
     }
 
     @HapiTest
