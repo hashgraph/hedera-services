@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
@@ -65,8 +66,10 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     private AssociateTokenRecipientsStep subject;
     private AssociateTokenRecipientsStep subjectWithApproval;
+    private AssociateTokenRecipientsStep subjectNFTWithApproval;
     private CryptoTransferTransactionBody txn;
     private CryptoTransferTransactionBody txnWithApproval;
+    private CryptoTransferTransactionBody txnNFTWithApproval;
     private TransferContextImpl transferContext;
 
     @BeforeEach
@@ -77,6 +80,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         subject = new AssociateTokenRecipientsStep(txn);
         subjectWithApproval = new AssociateTokenRecipientsStep(txnWithApproval);
+        subjectNFTWithApproval = new AssociateTokenRecipientsStep(txnNFTWithApproval);
         transferContext = new TransferContextImpl(handleContext);
         writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));
         writableTokenStore.put(givenValidNonFungibleToken(false));
@@ -123,6 +127,45 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                 .isInstanceOf(HandleException.class);
     }
 
+    @Test
+    void validateNFTAllowancesAndOtherPrivateChecks() {
+        assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
+        assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
+        assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNull();
+
+        final var modifiedConfiguration = HederaTestConfigBuilder.create()
+                .withValue("entities.unlimitedAutoAssociationsEnabled", true)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(modifiedConfiguration);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(builder);
+        given(builder.isUserDispatch()).willReturn(true);
+
+        AssertionsForClassTypes.assertThatThrownBy(() -> subjectNFTWithApproval.doIn(transferContext))
+                .isInstanceOf(HandleException.class);
+    }
+
+    @Test
+    void validateNFTAllowancesAndForceToThrow() {
+        assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
+        assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
+        assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNull();
+        writableTokenRelStore.remove(TokenRelation.newBuilder()
+                .accountId(ownerId)
+                .tokenId(nonFungibleTokenId)
+                .build());
+        final var modifiedConfiguration = HederaTestConfigBuilder.create()
+                .withValue("entities.unlimitedAutoAssociationsEnabled", true)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(modifiedConfiguration);
+        given(handleContext.savepointStack()).willReturn(stack);
+
+        AssertionsForClassTypes.assertThatThrownBy(() -> subjectNFTWithApproval.doIn(transferContext))
+                .isInstanceOf(HandleException.class);
+    }
+
     void givenValidTxn() {
         txn = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
@@ -145,16 +188,20 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                         .accountAmounts(adjustFrom(ownerId, -1_000, true))
                         .accountAmounts(adjustFrom(spenderId, -1_000, true))
                         .build())
-                .tokenTransfers(
-                        TokenTransferList.newBuilder()
-                                .token(fungibleTokenId)
-                                .transfers(
-                                        List.of(adjustFrom(ownerId, -1_000, true), adjustFrom(spenderId, -1_000, true)))
-                                .build(),
-                        TokenTransferList.newBuilder()
-                                .token(nonFungibleTokenId)
-                                .nftTransfers(nftTransferWith(ownerId, spenderId, 1, true))
-                                .build())
+                .tokenTransfers(TokenTransferList.newBuilder()
+                        .token(fungibleTokenId)
+                        .transfers(List.of(adjustFrom(ownerId, -1_000, true), adjustFrom(spenderId, -1_000, true)))
+                        .build())
+                .build();
+        txnNFTWithApproval = CryptoTransferTransactionBody.newBuilder()
+                .transfers(TransferList.newBuilder()
+                        .accountAmounts(adjustFrom(ownerId, -1_000, true))
+                        .accountAmounts(adjustFrom(spenderId, -1_000, true))
+                        .build())
+                .tokenTransfers(TokenTransferList.newBuilder()
+                        .token(nonFungibleTokenId)
+                        .nftTransfers(nftTransferWith(ownerId, spenderId, 1, true))
+                        .build())
                 .build();
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
