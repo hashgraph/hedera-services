@@ -151,8 +151,6 @@ public class GrpcUtils {
                     .deleteTopic(transaction);
             case ConsensusSubmitMessage -> clients.getConsSvcStub(nodeAccountId, false)
                     .submitMessage(transaction);
-            case ConsensusApproveAllowance -> clients.getConsSvcStub(nodeAccountId, false)
-                    .approveAllowance(transaction);
             case UncheckedSubmit -> clients.getNetworkSvcStub(nodeAccountId, false)
                     .uncheckedSubmit(transaction);
             case TokenCreate -> clients.getTokenSvcStub(nodeAccountId, false).createToken(transaction);

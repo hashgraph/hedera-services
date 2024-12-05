@@ -21,7 +21,6 @@
             "ConsensusUpdateTopic",
             "ConsensusDeleteTopic",
             "ConsensusGetTopicInfo",
-            "ConsensusApproveAllowance",
             "TokenGetNftInfo",
             "TokenGetInfo",
             "ScheduleDelete",

@@ -24,8 +24,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hapi.node.state.consensus.TopicCryptoAllowance;
-import com.hedera.hapi.node.state.consensus.TopicFungibleTokenAllowance;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.ConsensusCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
@@ -36,7 +34,6 @@ import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,23 +59,6 @@ public class ConsensusCustomFeeAssessor {
         final var topicStore = context.storeFactory().writableStore(WritableTopicStore.class);
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-
-        // todo: allowance validation will be changed, when the storage situation is clear.
-
-        // lookup for  hbar allowance
-        TopicCryptoAllowance hbarAllowance = null;
-        for (final var allowance : topic.cryptoAllowances()) {
-            if (payer.equals(allowance.spenderId())) {
-                hbarAllowance = allowance;
-            }
-        }
-        // lookup for fungible token allowance
-        Map<TokenID, TopicFungibleTokenAllowance> tokenAllowanceMap = new HashMap<>();
-        for (final var allowance : topic.tokenAllowances()) {
-            if (payer.equals(allowance.spenderId())) {
-                tokenAllowanceMap.put(allowance.tokenId(), allowance);
-            }
-        }
 
         final var tokenTransfers = new ArrayList<TokenTransferList>();
         List<AccountAmount> hbarTransfers = new ArrayList<>();

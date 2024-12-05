@@ -48,7 +48,6 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
-import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicApproveAllowance;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicDelete;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
@@ -229,10 +228,6 @@ public class TxnVerbs {
 
     public static HapiMessageSubmit submitMessageTo(Function<HapiSpec, TopicID> topicFn) {
         return new HapiMessageSubmit(topicFn);
-    }
-
-    public static HapiTopicApproveAllowance approveTopicAllowance() {
-        return new HapiTopicApproveAllowance();
     }
 
     /* FILE */

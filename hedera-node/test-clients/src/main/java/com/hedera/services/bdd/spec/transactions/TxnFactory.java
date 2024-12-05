@@ -25,7 +25,6 @@ import com.google.protobuf.Message;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
-import com.hederahashgraph.api.proto.java.ConsensusApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -461,11 +460,6 @@ public class TxnFactory {
     }
 
     public Consumer<TokenAirdropTransactionBody.Builder> defaultDefTokenAirdropTransactionBody() {
-        return builder -> {};
-    }
-
-    public Consumer<ConsensusApproveAllowanceTransactionBody.Builder>
-            defaultDefConsensusApproveAllowanceTransactionBody() {
         return builder -> {};
     }
 }

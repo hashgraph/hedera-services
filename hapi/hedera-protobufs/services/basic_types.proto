@@ -1241,19 +1241,14 @@ enum HederaFunctionality {
     TokenAirdrop = 93;
 
     /**
-     * Remove one or more pending airdrops from state on behalf of the sender(s) for each airdrop.
-     */
+    * Remove one or more pending airdrops from state on behalf of the sender(s) for each airdrop.
+    */
     TokenCancelAirdrop = 94;
 
     /**
-     * Claim one or more pending airdrops
+      * Claim one or more pending airdrops
      */
     TokenClaimAirdrop = 95;
-
-    /**
-     * Approve allowance for a given topic
-     */
-    ConsensusApproveAllowance = 96;
 }
 
 /**
@@ -1777,63 +1772,4 @@ message PendingAirdropValue {
      * set, this field MUST be `0`.
      */
     uint64 amount = 1;
-}
-
-/**
- * An approved allowance of hbar transfers for a spender.<br/>
- * This message SHALL be used to record the allowance of hbars that an account has approved
- * for sending messages to a given topic.
- */
-message ConsensusCryptoFeeScheduleAllowance {
-    /**
-     * The account ID of the hbar owner (ie. the grantor of the allowance).
-     */
-    AccountID owner = 1;
-
-    /**
-     * The topic ID enabled to spend fees from the hbar allowance.
-     */
-    TopicID topicId = 2;
-
-    /**
-     * The maximum amount of the spender's allowance in tinybars.
-     */
-    uint64 amount = 3;
-
-    /**
-     * The maximum amount of the spender's token allowance per message.
-     */
-    uint64 amount_per_message = 4;
-}
-
-/**
- * An approved allowance of hbar transfers for a spender.<br/>
- * This message SHALL be used to record the allowance of fungible tokens
- * that an account has approved for sending messages to a given topic.
- */
-message ConsensusTokenFeeScheduleAllowance {
-    /**
-     * The token that the allowance pertains to.
-     */
-    TokenID tokenId = 1;
-
-    /**
-     * The account ID of the token owner (ie. the grantor of the allowance).
-     */
-    AccountID owner = 2;
-
-    /**
-     * The topic ID enabled to spend fees from the token allowance.
-     */
-    TopicID topicId = 3;
-
-    /**
-     * The maximum amount of the spender's token allowance.
-     */
-    uint64 amount = 4;
-
-    /**
-     * The maximum amount of the spender's token allowance per message.
-     */
-    uint64 amount_per_message = 5;
 }

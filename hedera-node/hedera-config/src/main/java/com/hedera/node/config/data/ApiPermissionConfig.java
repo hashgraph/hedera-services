@@ -16,7 +16,6 @@
 
 package com.hedera.node.config.data;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_APPROVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_DELETE_TOPIC;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_GET_TOPIC_INFO;
@@ -223,7 +222,6 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteTopic,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange submitMessage,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getTopicInfo,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange approveTopicAllowance,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange ethereumTransaction,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange scheduleCreate,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange scheduleSign,
@@ -287,7 +285,6 @@ public record ApiPermissionConfig(
         permissionKeys.put(CONSENSUS_UPDATE_TOPIC, c -> c.updateTopic);
         permissionKeys.put(CONSENSUS_DELETE_TOPIC, c -> c.deleteTopic);
         permissionKeys.put(CONSENSUS_SUBMIT_MESSAGE, c -> c.submitMessage);
-        permissionKeys.put(CONSENSUS_APPROVE_ALLOWANCE, c -> c.approveTopicAllowance);
         permissionKeys.put(TOKEN_CREATE, c -> c.tokenCreate);
         permissionKeys.put(TOKEN_FREEZE_ACCOUNT, c -> c.tokenFreezeAccount);
         permissionKeys.put(TOKEN_UNFREEZE_ACCOUNT, c -> c.tokenUnfreezeAccount);

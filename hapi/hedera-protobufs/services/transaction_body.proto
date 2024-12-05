@@ -54,7 +54,6 @@ import "consensus_create_topic.proto";
 import "consensus_update_topic.proto";
 import "consensus_delete_topic.proto";
 import "consensus_submit_message.proto";
-import "consensus_approve_topic_allowance.proto";
 
 import "unchecked_submit.proto";
 
@@ -411,18 +410,13 @@ message TransactionBody {
         TokenAirdropTransactionBody tokenAirdrop = 58;
 
         /**
-         * A transaction body for a `cancelAirdrop` request.
-         */
+        * A transaction body for a `cancelAirdrop` request.
+        */
         TokenCancelAirdropTransactionBody tokenCancelAirdrop = 59;
 
         /**
-         * A transaction body for a `claimAirdrop` request.
+        * A transaction body for a `claimAirdrop` request.
          */
         TokenClaimAirdropTransactionBody tokenClaimAirdrop = 60;
-
-        /**
-         * A transaction body for a `consensusApproveAllowance` request.
-         */
-        ConsensusApproveAllowanceTransactionBody consensusApproveAllowance = 61;
     }
 }

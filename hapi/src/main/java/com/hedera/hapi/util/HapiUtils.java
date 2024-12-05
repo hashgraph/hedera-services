@@ -185,7 +185,6 @@ public class HapiUtils {
             case CONSENSUS_UPDATE_TOPIC -> HederaFunctionality.CONSENSUS_UPDATE_TOPIC;
             case CONSENSUS_DELETE_TOPIC -> HederaFunctionality.CONSENSUS_DELETE_TOPIC;
             case CONSENSUS_SUBMIT_MESSAGE -> HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
-            case CONSENSUS_APPROVE_ALLOWANCE -> HederaFunctionality.CONSENSUS_APPROVE_ALLOWANCE;
             case CONTRACT_CALL -> HederaFunctionality.CONTRACT_CALL;
             case CONTRACT_CREATE_INSTANCE -> HederaFunctionality.CONTRACT_CREATE;
             case CONTRACT_UPDATE_INSTANCE -> HederaFunctionality.CONTRACT_UPDATE;
