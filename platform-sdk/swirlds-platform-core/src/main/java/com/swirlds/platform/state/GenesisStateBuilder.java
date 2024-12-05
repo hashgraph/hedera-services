@@ -17,6 +17,7 @@
 package com.swirlds.platform.state;
 
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -73,7 +74,9 @@ public final class GenesisStateBuilder {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final MerkleRoot stateRoot) {
 
-        initGenesisPlatformState(configuration, stateRoot.getWritablePlatformState(), addressBook, appVersion);
+        if (!configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+            initGenesisPlatformState(configuration, stateRoot.getWritablePlatformState(), addressBook, appVersion);
+        }
 
         final SignedState signedState = new SignedState(
                 configuration, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);

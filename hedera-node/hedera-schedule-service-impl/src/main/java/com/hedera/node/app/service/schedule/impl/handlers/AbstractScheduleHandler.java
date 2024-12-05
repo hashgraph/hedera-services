@@ -66,7 +66,7 @@ import java.util.function.Predicate;
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
-abstract class AbstractScheduleHandler {
+public abstract class AbstractScheduleHandler {
     static final Comparator<Key> KEY_COMPARATOR = new KeyComparator();
 
     @FunctionalInterface
@@ -295,7 +295,7 @@ abstract class AbstractScheduleHandler {
      * @param signatories the approving signatories
      * @return the key verifier
      */
-    static Predicate<Key> simpleKeyVerifierFrom(
+    public static Predicate<Key> simpleKeyVerifierFrom(
             @NonNull final ReadableAccountStore accountStore, @NonNull final List<Key> signatories) {
         final Set<Key> cryptoSigs = new HashSet<>();
         final Set<ContractID> contractIdSigs = new HashSet<>();

@@ -2135,19 +2135,6 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
-        @DisplayName("airdrop to contract without admin key")
-        final Stream<DynamicTest> airdropToContractWithoutAdminKey() {
-            final var testContract = "ToyMaker";
-            return hapiTest(
-                    uploadInitCode(testContract),
-                    contractCreate(testContract).omitAdminKey(),
-                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, testContract))
-                            .signedBy(OWNER)
-                            .payingWith(OWNER)
-                            .hasKnownStatus(NOT_SUPPORTED));
-        }
-
-        @HapiTest
         @DisplayName("self airdrop fails")
         final Stream<DynamicTest> selfAirdropFails() {
             return hapiTest(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, OWNER))

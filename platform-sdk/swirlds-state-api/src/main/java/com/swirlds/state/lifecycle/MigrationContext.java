@@ -30,6 +30,11 @@ import java.util.Map;
  */
 public interface MigrationContext {
     /**
+     * Returns the round number of the state being migrated, zero at genesis.
+     */
+    long roundNumber();
+
+    /**
      * Provides a reference to the previous {@link ReadableStates}. For example, if the previous state was version
      * 1.2.3, then this method will return a {@link ReadableStates} that can be used to read the state of version 1.2.3.
      * This state is strictly read-only. This is useful as it allows the migration code to refer to the previous state.
@@ -69,6 +74,12 @@ public interface MigrationContext {
     NetworkInfo genesisNetworkInfo();
 
     /**
+     * Returns the startup networks in use.
+     */
+    @NonNull
+    StartupNetworks startupNetworks();
+
+    /**
      * Consumes and returns the next entity number. For use by migrations that need to create entities.
      * @return the next entity number
      */
@@ -89,6 +100,13 @@ public interface MigrationContext {
      */
     @Nullable
     SemanticVersion previousVersion();
+
+    /**
+     * Returns whether this is a genesis migration.
+     */
+    default boolean isGenesis() {
+        return previousVersion() == null;
+    }
 
     /**
      * Returns a mutable "scratchpad" that can be used to share values between different services

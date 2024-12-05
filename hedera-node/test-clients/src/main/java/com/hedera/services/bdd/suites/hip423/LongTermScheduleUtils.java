@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.purgeUpgradeArtifacts;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.FAKE_UPGRADE_ZIP_LOC;
@@ -35,6 +34,7 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 public final class LongTermScheduleUtils {
@@ -106,7 +106,8 @@ public final class LongTermScheduleUtils {
         return amountHasBeenTransferred && payerHasPaid;
     }
 
-    static SpecOperation[] scheduleFakeUpgrade(String payer, String relativeTransaction, long offset, String via) {
+    static SpecOperation[] scheduleFakeUpgrade(
+            @NonNull final String payer, final long lifetime, @NonNull final String via) {
         final var operations = List.of(
                 buildUpgradeZipFrom(FAKE_ASSETS_LOC),
                 // Upload it to file 0.0.150; need sourcing() here because the operation reads contents eagerly
@@ -116,7 +117,6 @@ public final class LongTermScheduleUtils {
                         FAKE_UPGRADE_ZIP_LOC,
                         TxnUtils.BYTES_4K,
                         upgradeFileAppendsPerBurst())),
-                purgeUpgradeArtifacts(),
                 // Issue PREPARE_UPGRADE; need sourcing() here because we want to hash only after creating the ZIP
                 sourcing(() -> scheduleCreate(
                                 VALID_SCHEDULE,
@@ -126,9 +126,8 @@ public final class LongTermScheduleUtils {
                         .withEntityMemo(randomUppercase(100))
                         .designatingPayer(GENESIS)
                         .payingWith(payer)
-                        .waitForExpiry()
                         .recordingScheduledTxn()
-                        .withRelativeExpiry(relativeTransaction, offset)
+                        .expiringIn(lifetime)
                         .via(via)));
         return operations.toArray(SpecOperation[]::new);
     }

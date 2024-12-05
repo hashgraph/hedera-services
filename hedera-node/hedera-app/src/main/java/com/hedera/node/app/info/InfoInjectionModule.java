@@ -26,7 +26,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /** A Dagger module for facilities in the {@link com.hedera.node.app.info} package. */
 @Module
 public abstract class InfoInjectionModule {
-
     @Provides
     @NodeSelfId
     static AccountID selfAccountID(@NonNull final NodeInfo info) {

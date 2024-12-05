@@ -16,22 +16,28 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static com.hedera.node.app.service.schedule.impl.handlers.AbstractScheduleHandler.simpleKeyVerifierFrom;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.node.app.service.schedule.ExecutableTxn;
+import com.hedera.node.app.service.schedule.ExecutableTxnIterator;
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.RpcService;
-import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Iterator;
-import java.util.List;
+import java.util.Comparator;
 import java.util.NoSuchElementException;
-import java.util.function.Supplier;
 
 /**
  * Standard implementation of the {@link ScheduleService} {@link RpcService}.
@@ -44,77 +50,195 @@ public final class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
-    public Iterator<ExecutableTxn> iterTxnsForInterval(
-            final Instant start, final Instant end, final Supplier<StoreFactory> cleanupStoreFactory) {
-        final var store = cleanupStoreFactory.get().readableStore(ReadableScheduleStoreImpl.class);
+    public ExecutableTxnIterator executableTxns(
+            @NonNull final Instant start, @NonNull final Instant end, @NonNull final StoreFactory storeFactory) {
+        requireNonNull(start);
+        requireNonNull(end);
+        requireNonNull(storeFactory);
+        return new PurgingIterator(start.getEpochSecond(), end.getEpochSecond(), storeFactory);
+    }
 
-        // Get transactions from state that are not executed/deleted
-        final var executableTxns = store.getByExpirationBetween(start.getEpochSecond(), end.getEpochSecond()).stream()
-                .filter(schedule -> !schedule.executed() && !schedule.deleted())
-                .toList();
+    /**
+     * An {@link ExecutableTxnIterator} that traverses the executable transactions in the specified
+     * interval and purges <i>all</i> traversed scheduling metadata (not just for executable transactions)
+     * in response to calls to {@link ExecutableTxnIterator#remove()} and
+     * {@link ExecutableTxnIterator#purgeUntilNext()}.
+     */
+    private static class PurgingIterator implements ExecutableTxnIterator {
+        private static final Comparator<ScheduledOrder> ORDER_COMPARATOR =
+                Comparator.comparingLong(ScheduledOrder::expirySecond).thenComparingInt(ScheduledOrder::orderNumber);
 
-        // Return a custom iterator that supports the remove() method
-        return new Iterator<>() {
-            private int currentIndex = -1;
-            private ExecutableTxn lastReturned;
-            private boolean shouldCleanUp = true;
-            private final List<Schedule> transactions = executableTxns;
-            private final long startSecond = start.getEpochSecond();
-            private final long endSecond = end.getEpochSecond();
+        private final long startSecond;
+        private final long endSecond;
+        private final StoreFactory storeFactory;
+        private final WritableScheduleStore scheduleStore;
 
-            @Override
-            public boolean hasNext() {
-                var hasNext = currentIndex + 1 < transactions.size();
-                if (!hasNext && shouldCleanUp) {
-                    // After we finish iterating, clean up the expired schedules
-                    cleanUpExpiredSchedules();
-                }
-                return hasNext;
+        /**
+         * True if the next executable transaction to be processed is known; false otherwise.
+         */
+        private boolean nextKnown = false;
+
+        /**
+         * The order of the next executable transaction to be processed. Null in exactly two cases:
+         * <ol>
+         *     <li>When neither {@link #hasNext()} nor {@link #next()} has ever been called (so that
+         *     {@link #nextKnown} is false).</li>
+         *     <li>When the last call to {@link #hasNext()} or {@link #next()} discovered that
+         *     there are no more executable transactions in the scoped {@code [start, end]} interval (so
+         *     that {@link #nextKnown} is true).</li>
+         * </ol>
+         * If not null, then is the order of the last executable transaction to have been discovered.
+         * When {@link #nextKnown} is true, the executable transaction with this order will be returned
+         * from then next call to {@link #next()}; if {@link #nextKnown} is false, the executable
+         * transaction with this order was already returned from a call to {@link #next()}.
+         */
+        @Nullable
+        private ScheduledOrder nextOrder;
+
+        /**
+         * If not null, the schedule representing the next executable transaction to be processed.
+         */
+        @Nullable
+        private Schedule nextSchedule;
+
+        /**
+         * If not null, the earliest order before {@link #nextOrder} that is known to contain scheduled
+         * transaction metadata.
+         */
+        @Nullable
+        private ScheduledOrder previousOrder;
+
+        /**
+         * If not null, the earliest order after {@link #nextOrder} that may contain scheduled transaction metadata.
+         */
+        @Nullable
+        private ScheduledOrder candidateOrder;
+
+        public PurgingIterator(final long startSecond, final long endSecond, @NonNull final StoreFactory storeFactory) {
+            this.startSecond = startSecond;
+            this.endSecond = endSecond;
+            this.storeFactory = requireNonNull(storeFactory);
+            this.scheduleStore = storeFactory.writableStore(WritableScheduleStore.class);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return prepNext() != null;
+        }
+
+        @Override
+        public ExecutableTxn<ScheduleStreamBuilder> next() {
+            if (!nextKnown) {
+                prepNext();
             }
+            nextKnown = false;
+            if (nextSchedule == null) {
+                throw new NoSuchElementException();
+            }
+            return executableTxnFrom(storeFactory.readableStore(ReadableAccountStore.class), nextSchedule);
+        }
 
-            @Override
-            public ExecutableTxn next() {
-                if (!hasNext()) {
-                    if (shouldCleanUp) {
-                        // If excessive next() calls are made without calling hasNext(), clean up the expired schedules
-                        cleanUpExpiredSchedules();
+        @Override
+        public void remove() {
+            if (nextOrder == null) {
+                throw new IllegalStateException("remove() called before next()");
+            }
+            if (candidateOrder != null && ORDER_COMPARATOR.compare(candidateOrder, nextOrder) > 0) {
+                throw new IllegalStateException("remove() called twice");
+            }
+            // Pointer to the order whose executable transaction metadata should be purged
+            var order = requireNonNull(previousOrder);
+            while (ORDER_COMPARATOR.compare(order, nextOrder) <= 0) {
+                final var lastOfSecond = scheduleStore.purgeByOrder(order);
+                order = next(order, lastOfSecond);
+            }
+            candidateOrder = order;
+            previousOrder = null;
+        }
+
+        @Override
+        public boolean purgeUntilNext() {
+            if (!nextKnown) {
+                throw new IllegalStateException("purgeUntilNext() called before next()");
+            }
+            if (previousOrder != null) {
+                var order = previousOrder;
+                final var boundaryOrder = nextOrder != null ? nextOrder : new ScheduledOrder(endSecond + 1, 0);
+                while (ORDER_COMPARATOR.compare(order, boundaryOrder) < 0) {
+                    final var lastOfSecond = scheduleStore.purgeByOrder(order);
+                    order = next(order, lastOfSecond);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * When {@link #nextKnown} is not already true, resets the iterator to be agnostic about the next
+         * and previous orders, and then traverses orders starting from either {@link #candidateOrder} (if
+         * not null), or the first candidate order in the interval if {@link #candidateOrder} is null.
+         * <p>
+         * It sets {@link #previousOrder} to the first encountered order with scheduled transaction metadata;
+         * and sets {@link #nextOrder} and {@link #nextSchedule} to the first encountered order with an
+         * executable schedule.
+         * @return the next executable transaction to be processed, or null if there are no more
+         */
+        private @Nullable ScheduledOrder prepNext() {
+            if (nextKnown) {
+                return nextOrder;
+            }
+            nextOrder = null;
+            nextSchedule = null;
+            previousOrder = null;
+            // Pointer to the order of the next schedule that should possibly be executed
+            ScheduledOrder order;
+            if (candidateOrder != null) {
+                order = candidateOrder;
+            } else {
+                final var startCounts = scheduleStore.scheduledCountsAt(startSecond);
+                if (startCounts == null) {
+                    order = new ScheduledOrder(startSecond + 1, 0);
+                } else {
+                    order = new ScheduledOrder(startSecond, startCounts.numberProcessed());
+                }
+            }
+            while (order.expirySecond() <= endSecond) {
+                final var nextId = scheduleStore.getByOrder(order);
+                if (nextId != null) {
+                    if (previousOrder == null) {
+                        previousOrder = order;
                     }
-                    throw new NoSuchElementException();
-                }
-                lastReturned = toExecutableTxn(transactions.get(++currentIndex));
-                return lastReturned;
-            }
-
-            @Override
-            public void remove() {
-                if (lastReturned == null) {
-                    throw new IllegalStateException("No transaction to remove");
-                }
-
-                // Use the StoreFactory to mark a schedule as deleted
-                final var iteratorStore = cleanupStoreFactory.get().writableStore(WritableScheduleStoreImpl.class);
-                final var scheduleId = transactions.get(currentIndex).scheduleId();
-                iteratorStore.delete(scheduleId, Instant.now());
-            }
-
-            private void cleanUpExpiredSchedules() {
-                if (shouldCleanUp) {
-                    // After we finish iterating, clean up the expired schedules
-                    var cleanUpStore = cleanupStoreFactory.get().writableStore(WritableScheduleStoreImpl.class);
-                    cleanUpStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
-                    shouldCleanUp = false;
+                    final var schedule = requireNonNull(scheduleStore.get(nextId));
+                    if (!schedule.waitForExpiry() || schedule.deleted()) {
+                        order = next(order, false);
+                    } else {
+                        nextOrder = order;
+                        nextSchedule = schedule;
+                        break;
+                    }
+                } else {
+                    order = next(order, true);
                 }
             }
+            nextKnown = true;
+            return nextOrder;
+        }
 
-            private ExecutableTxn toExecutableTxn(final Schedule schedule) {
-                final var signatories = schedule.signatories();
-                final VerificationAssistant callback = (k, ignore) -> signatories.contains(k);
-                return new ExecutableTxn(
-                        childAsOrdinary(schedule),
-                        callback,
-                        schedule.payerAccountId(),
-                        Instant.ofEpochSecond(schedule.calculatedExpirationSecond()));
-            }
-        };
+        private ScheduledOrder next(@NonNull final ScheduledOrder order, final boolean lastInSecond) {
+            return lastInSecond
+                    ? new ScheduledOrder(order.expirySecond() + 1, 0)
+                    : order.copyBuilder().orderNumber(order.orderNumber() + 1).build();
+        }
+    }
+
+    private static ExecutableTxn<ScheduleStreamBuilder> executableTxnFrom(
+            @NonNull final ReadableAccountStore accountStore, @NonNull final Schedule schedule) {
+        return new ExecutableTxn<>(
+                childAsOrdinary(schedule),
+                schedule.payerAccountIdOrThrow(),
+                simpleKeyVerifierFrom(accountStore, schedule.signatories()),
+                Instant.ofEpochSecond(schedule.calculatedExpirationSecond()),
+                ScheduleStreamBuilder.class,
+                builder -> builder.scheduleRef(schedule.scheduleIdOrThrow()));
     }
 }

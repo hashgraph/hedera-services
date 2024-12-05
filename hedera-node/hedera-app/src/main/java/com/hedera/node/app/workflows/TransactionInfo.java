@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -91,5 +93,14 @@ public record TransactionInfo(
         }
         return new TransactionInfo(
                 transaction, txBody, transactionId, payerId, signatureMap, signedBytes, functionality, null);
+    }
+
+    /**
+     * Returns the {@link TransactionID} of the transaction.
+     * @return the transaction ID
+     * @throws NullPointerException if the transaction ID is null
+     */
+    public TransactionID txnIdOrThrow() {
+        return requireNonNull(transactionID);
     }
 }

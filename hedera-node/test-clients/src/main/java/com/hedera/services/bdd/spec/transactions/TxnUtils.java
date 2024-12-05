@@ -296,7 +296,7 @@ public class TxnUtils {
     }
 
     public static EntityNumber asNodeId(final String s, final HapiSpec lookupSpec) {
-        return isIdLiteral(s) ? asEntityNumber(s) : lookupSpec.registry().getNodeId(s);
+        return isNumericLiteral(s) ? asEntityNumber(s) : lookupSpec.registry().getNodeId(s);
     }
 
     public static long asNodeIdLong(final String s, final HapiSpec lookupSpec) {

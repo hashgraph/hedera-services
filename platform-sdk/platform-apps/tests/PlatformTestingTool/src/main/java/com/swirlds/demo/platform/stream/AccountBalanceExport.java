@@ -21,14 +21,11 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -42,7 +39,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,18 +52,11 @@ public class AccountBalanceExport {
     private static final String lineSperator = "line.separator";
 
     private final long exportPeriodSec;
-    private final HashMap<String, NodeId> nodeAccounts;
 
     private Instant previousTimestamp = null;
 
-    public AccountBalanceExport(final AddressBook addressBook, final long exportPeriodSec) {
+    public AccountBalanceExport(final long exportPeriodSec) {
         this.exportPeriodSec = exportPeriodSec;
-
-        this.nodeAccounts = new HashMap<>();
-        for (final Address address : addressBook) {
-            // memo contains the node accountID string
-            this.nodeAccounts.put(address.getMemo(), address.getNodeId());
-        }
     }
 
     /**

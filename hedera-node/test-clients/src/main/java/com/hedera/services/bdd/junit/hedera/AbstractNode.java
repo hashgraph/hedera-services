@@ -92,6 +92,7 @@ public abstract class AbstractNode implements HederaNode {
                     .resolve(CONFIG_DIR)
                     .resolve(APPLICATION_PROPERTIES);
             case LOG4J2_XML -> workingDir.resolve(LOG4J2_XML);
+            case DATA_CONFIG_DIR -> workingDir.resolve(DATA_DIR).resolve(CONFIG_DIR);
             case RECORD_STREAMS_DIR -> workingDir
                     .resolve(DATA_DIR)
                     .resolve(RECORD_STREAMS_DIR)

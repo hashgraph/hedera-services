@@ -257,10 +257,18 @@ public class TransactionProcessor {
         return parties;
     }
 
+    /**
+     * Returns whether the given account facade is required to exist.  This only applies to account and contract facade
+     * as tokens and schedule txn facades are not required to exist.
+     *
+     * @param to descendant of {@link HederaEvmAccount} that is the target of this call
+     * @param config the current node configuration
+     * @return whether the contract is not required to exist.
+     */
     private boolean contractNotRequired(@Nullable final HederaEvmAccount to, @NonNull final Configuration config) {
-        final var maybeGrandfatheredNumber =
-                (to == null) ? null : to.isTokenFacade() ? null : to.hederaId().accountNumOrThrow();
-
+        final var maybeGrandfatheredNumber = (to == null || to.isTokenFacade() || to.isScheduleTxnFacade())
+                ? null
+                : to.hederaId().accountNumOrThrow();
         return featureFlags.isAllowCallsToNonContractAccountsEnabled(
                 config.getConfigData(ContractsConfig.class), maybeGrandfatheredNumber);
     }

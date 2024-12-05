@@ -42,7 +42,7 @@ jobs:
     runs-on: network-node-linux-medium
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -131,13 +131,13 @@ jobs:
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_FAILURES_WEBHOOK }}
         with:
           payload: |
             {
               "attachments": [
                 {
-                  "color": "#7647cd",
+                  "color": "#FF0000",
                   "blocks": [
                     {
                       "type": "header",

@@ -106,11 +106,16 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         final var newSignatories =
                 newSignatories(context.keyVerifier().authorizingSimpleKeys(), signatories, requiredKeys);
         schedule = schedule.copyBuilder().signatories(newSignatories).build();
-        if (tryToExecuteSchedule(context, schedule, requiredKeys, validationResult, isLongTermEnabled)) {
-            scheduleStore.put(markedExecuted(schedule, consensusNow));
-        } else {
+        if (isLongTermEnabled && schedule.waitForExpiry()) {
             validateTrue(!newSignatories.equals(signatories), NO_NEW_VALID_SIGNATURES);
             scheduleStore.put(schedule);
+        } else {
+            if (tryToExecuteSchedule(context, schedule, requiredKeys, validationResult, isLongTermEnabled)) {
+                scheduleStore.put(markedExecuted(schedule, consensusNow));
+            } else {
+                validateTrue(!newSignatories.equals(signatories), NO_NEW_VALID_SIGNATURES);
+                scheduleStore.put(schedule);
+            }
         }
         context.savepointStack()
                 .getBaseBuilder(ScheduleStreamBuilder.class)

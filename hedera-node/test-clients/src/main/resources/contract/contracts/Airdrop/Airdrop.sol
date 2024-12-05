@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./HederaTokenService.sol";
 
 contract Airdrop is HederaTokenService {
-    function tokenAirdrop(address token, address sender, address receiver, int64 amount) public returns (int64 responseCode) {
+    function tokenAirdrop(address token, address sender, address receiver, int64 amount) public payable returns (int64 responseCode) {
         IHederaTokenService.TokenTransferList[] memory tokenTransfers = new IHederaTokenService.TokenTransferList[](1);
         IHederaTokenService.TokenTransferList memory airdrop;
 
@@ -19,7 +19,7 @@ contract Airdrop is HederaTokenService {
         return responseCode;
     }
 
-    function nftAirdrop(address token, address sender, address receiver, int64 serial)public returns (int64 responseCode) {
+    function nftAirdrop(address token, address sender, address receiver, int64 serial) public payable returns (int64 responseCode) {
         IHederaTokenService.TokenTransferList[] memory tokenTransfers = new IHederaTokenService.TokenTransferList[](1);
         IHederaTokenService.TokenTransferList memory airdrop;
 
@@ -36,7 +36,7 @@ contract Airdrop is HederaTokenService {
         return responseCode;
     }
 
-    function tokenNAmountAirdrops(address[] memory tokens, address[] memory senders, address[] memory receivers, int64 amount) public returns (int64 responseCode) {
+    function tokenNAmountAirdrops(address[] memory tokens, address[] memory senders, address[] memory receivers, int64 amount) public payable returns (int64 responseCode) {
         uint256 length = senders.length;
         IHederaTokenService.TokenTransferList[] memory tokenTransfers = new IHederaTokenService.TokenTransferList[](length);
         for (uint256 i = 0; i < length; i++)
@@ -72,7 +72,7 @@ contract Airdrop is HederaTokenService {
         return responseCode;
     }
 
-    function tokenAirdropDistribute(address token, address sender, address[] memory receivers, int64 amount) public returns (int64 responseCode) {
+    function tokenAirdropDistribute(address token, address sender, address[] memory receivers, int64 amount) public payable returns (int64 responseCode) {
         uint256 length = receivers.length + 1;
         IHederaTokenService.TokenTransferList[] memory tokenTransfers = new IHederaTokenService.TokenTransferList[](1);
         IHederaTokenService.TokenTransferList memory airdrop;
@@ -102,7 +102,7 @@ contract Airdrop is HederaTokenService {
         return responseCode;
     }
 
-    function nftAirdropDistribute(address token, address sender, address[] memory receivers) public returns (int64 responseCode) {
+    function nftAirdropDistribute(address token, address sender, address[] memory receivers) public payable returns (int64 responseCode) {
         uint256 length = receivers.length;
         IHederaTokenService.TokenTransferList[] memory tokenTransfers = new IHederaTokenService.TokenTransferList[](1);
         IHederaTokenService.TokenTransferList memory airdrop;
@@ -123,7 +123,7 @@ contract Airdrop is HederaTokenService {
         return responseCode;
     }
 
-    function mixedAirdrop(address[] memory token, address[] memory nft, address[] memory tokenSenders, address[] memory tokenReceivers, address[] memory nftSenders, address[] memory nftReceivers, int64 tokenAmount, int64[] memory serials) public returns (int64 responseCode) {
+    function mixedAirdrop(address[] memory token, address[] memory nft, address[] memory tokenSenders, address[] memory tokenReceivers, address[] memory nftSenders, address[] memory nftReceivers, int64 tokenAmount, int64[] memory serials) public payable returns (int64 responseCode) {
         uint256 length = tokenSenders.length + nftSenders.length;
         IHederaTokenService.TokenTransferList[] memory tokenTransfers = new IHederaTokenService.TokenTransferList[](length);
         for (uint i = 0; i < tokenSenders.length; i++)

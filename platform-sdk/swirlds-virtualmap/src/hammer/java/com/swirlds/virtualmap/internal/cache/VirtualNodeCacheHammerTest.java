@@ -112,6 +112,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         // hashes are calculated and put to the cache. Here the cache doesn't contain hashes for dirty leaves
         // (bananaLeaf0, appleLeaf0, cherryLeaf0). Should dirtyHashes() include these leaf nodes? Currently
         // it doesn't
+        cache0.prepareForFlush();
         validateDirtyInternals(Set.of(rootInternal0, leftInternal0), cache0.dirtyHashesForFlush(4));
 
         // ROUND 1: Add D and E.
@@ -173,6 +174,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                         dateLeaf1,
                         appleLeaf1,
                         eggplantLeaf1));
+        cache1.prepareForFlush();
         validateDirtyInternals(
                 Set.of(rootInternal1, leftInternal1, rightInternal1, leftLeftInternal1), cache1.dirtyHashesForFlush(8));
 
@@ -244,6 +246,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                         figLeaf2,
                         bananaLeaf2,
                         grapeLeaf2));
+        cache2.prepareForFlush();
         validateDirtyInternals(
                 Set.of(rootInternal2, leftInternal2, rightInternal2, leftRightInternal2, rightLeftInternal2),
                 cache2.dirtyHashesForFlush(12));
@@ -327,6 +330,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache3.putHash(leftInternal3);
         cache3.putHash(rootInternal3);
         cache3.seal();
+        cache3.prepareForFlush();
         validateDirtyInternals(
                 Set.of(
                         rootInternal3,
@@ -608,6 +612,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache.deleteLeaf(cherryLeaf(1));
         cache.seal();
 
+        cache.prepareForFlush();
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves =
                 cache.dirtyLeavesForFlush(-1, -1).toList();
         assertEquals(0, leaves.size(), "All leaves should be missing");
@@ -672,6 +677,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache0.merge();
         cache1.merge();
 
+        cache2.prepareForFlush();
         final Set<VirtualLeafRecord<TestKey, TestValue>> leaves =
                 cache2.dirtyLeavesForFlush(4, 8).collect(Collectors.toSet());
         assertEquals(5, leaves.size(), "All leaves should be dirty");
@@ -711,6 +717,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache0.merge();
         cache1.merge();
 
+        cache2.prepareForFlush();
         final Set<VirtualLeafRecord<TestKey, TestValue>> leaves =
                 cache2.dirtyLeavesForFlush(3, 6).collect(Collectors.toSet());
         assertEquals(4, leaves.size(), "Some leaves should be dirty");
@@ -751,6 +758,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache0.merge();
         cache1.merge();
 
+        cache2.prepareForFlush();
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves =
                 cache2.dirtyLeavesForFlush(-1, -1).toList();
         assertEquals(0, leaves.size(), "All leaves should be deleted");
@@ -771,6 +779,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache0.putHash(rightLeftInternal());
         cache0.seal();
 
+        cache0.prepareForFlush();
         final List<VirtualHashRecord> internals = cache0.dirtyHashesForFlush(12).toList();
         assertEquals(6, internals.size(), "All internals should be dirty");
         assertEquals(rootInternal(), internals.get(0), "Unexpected internal");
@@ -798,6 +807,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache1.seal();
         cache0.merge();
 
+        cache1.prepareForFlush();
         final List<VirtualHashRecord> internals = cache1.dirtyHashesForFlush(12).toList();
         assertEquals(6, internals.size(), "All internals should be dirty");
         assertEquals(
@@ -841,6 +851,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache0.merge();
         cache1.merge();
 
+        cache2.prepareForFlush();
         final List<VirtualHashRecord> internals = cache2.dirtyHashesForFlush(12).toList();
         assertEquals(6, internals.size(), "All internals should be dirty");
         assertEquals(
@@ -886,6 +897,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache0.merge();
         cache1.merge();
 
+        cache2.prepareForFlush();
         final List<VirtualHashRecord> internals = cache2.dirtyHashesForFlush(-1).toList();
         assertEquals(0, internals.size(), "No internals should be dirty");
     }
@@ -917,6 +929,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
                 cache1.dirtyLeavesForHash(2, 4).toList();
         assertEquals(List.of(appleLeaf(3), cherryLeaf(4)), dirtyLeaves1);
 
+        cache0.prepareForFlush();
         // Flush version 0
         final Set<VirtualLeafRecord<TestKey, TestValue>> dirtyLeaves0F =
                 cache0.dirtyLeavesForFlush(1, 2).collect(Collectors.toSet());

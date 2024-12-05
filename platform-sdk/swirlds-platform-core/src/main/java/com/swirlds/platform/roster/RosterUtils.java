@@ -21,10 +21,12 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.PbjRecordHasher;
@@ -61,13 +63,17 @@ public final class RosterUtils {
     }
 
     /**
-     * Fetch the gossip certificate from a given RosterEntry.
+     * Fetch the gossip certificate from a given RosterEntry.  If it cannot be parsed successfully, return null.
      *
      * @param entry a RosterEntry
      * @return a gossip certificate
      */
     public static X509Certificate fetchGossipCaCertificate(@NonNull final RosterEntry entry) {
-        return CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray());
+        try {
+            return CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray());
+        } catch (final CryptographyException e) {
+            return null;
+        }
     }
 
     /**
@@ -111,6 +117,7 @@ public final class RosterUtils {
         final ServiceEndpoint serviceEndpoint = entry.gossipEndpoint().get(index);
         return serviceEndpoint.port();
     }
+
     /**
      * Create a Hash object for a given Roster instance.
      *
@@ -199,6 +206,18 @@ public final class RosterUtils {
     }
 
     /**
+     * Count the number of RosterEntries with non-zero weight.
+     * @param roster a roster
+     * @return the number of RosterEntries with non-zero weight
+     */
+    public static int getNumberWithWeight(@NonNull final Roster roster) {
+        return (int) roster.rosterEntries().stream()
+                .map(RosterEntry::weight)
+                .filter(w -> w != 0)
+                .count();
+    }
+
+    /**
      * Build an instance of RosterHistory from the current/previous AddressBook found in the PlatformState.
      * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param readablePlatformState
@@ -230,6 +249,29 @@ public final class RosterUtils {
     }
 
     /**
+     * Creates the Roster History to be used by Platform.
+     *
+     * @param rosterStore the roster store containing the active rosters.
+     * @return the roster history if roster store contains active rosters, otherwise IllegalStateException is thrown.
+     */
+    @NonNull
+    public static RosterHistory createRosterHistory(@NonNull final ReadableRosterStore rosterStore) {
+        final var roundRosterPairs = rosterStore.getRosterHistory();
+        // If there exists active rosters in the roster state.
+        if (roundRosterPairs != null) {
+            final var rosterMap = roundRosterPairs.stream()
+                    .collect(Collectors.toMap(
+                            RoundRosterPair::activeRosterHash, pair -> rosterStore.get(pair.activeRosterHash())));
+
+            return new RosterHistory(roundRosterPairs, rosterMap);
+        } else {
+            // If there is no roster state content, this is a fatal error: The migration did not happen on software
+            // upgrade.
+            throw new IllegalStateException("No active rosters found in the roster state");
+        }
+    }
+
+    /**
      * Build an Address object out of a given RosterEntry object.
      * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param entry a RosterEntry
@@ -242,8 +284,16 @@ public final class RosterUtils {
 
         address = address.copySetNodeId(NodeId.of(entry.nodeId()));
         address = address.copySetWeight(entry.weight());
-        address = address.copySetSigCert(
-                CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray()));
+
+        X509Certificate sigCert;
+        try {
+            sigCert = CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray());
+        } catch (final CryptographyException e) {
+            // Malformed or missing gossip certificates are nullified.
+            // https://github.com/hashgraph/hedera-services/issues/16648
+            sigCert = null;
+        }
+        address = address.copySetSigCert(sigCert);
 
         if (entry.gossipEndpoint().size() > 0) {
             address = address.copySetHostnameExternal(RosterUtils.fetchHostname(entry, 0));

@@ -20,6 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -93,13 +94,13 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
                     new FakeEvent(nodeId, time.now(), semanticVersion, createAppPayloadWrapper(payload));
         }
         if (response.getNodeTransactionPrecheckCode() == OK) {
-            handleNextRound();
+            handleNextRound(false);
             // If handling this transaction scheduled TSS work, do it synchronously as well
             while (tssBaseService.hasTssSubmission()) {
                 platform.lastCreatedEvent = null;
                 tssBaseService.executeNextTssSubmission();
                 if (platform.lastCreatedEvent != null) {
-                    handleNextRound();
+                    handleNextRound(true);
                 }
             }
         }
@@ -120,8 +121,11 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
         return platform.lastRoundNo();
     }
 
-    private void handleNextRound() {
+    private void handleNextRound(boolean skipsSignatureTxn) {
         hedera.onPreHandle(platform.lastCreatedEvent, state);
+        if (skipsSignatureTxn && platform.lastCreatedEvent.function() == HederaFunctionality.TSS_SHARE_SIGNATURE) {
+            return;
+        }
         final var round = platform.nextConsensusRound();
         // Handle each transaction in own round
         hedera.handleWorkflow().handleRound(state, round);

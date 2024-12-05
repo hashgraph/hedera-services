@@ -107,4 +107,10 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     public ExchangeRate currentExchangeRate() {
         return context.exchangeRateInfo().activeRate(instantSource.instant());
     }
+
+    @Override
+    @Nullable
+    public Key maybeEthSenderKey() {
+        return null;
+    }
 }

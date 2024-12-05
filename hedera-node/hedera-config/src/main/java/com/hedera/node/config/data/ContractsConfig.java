@@ -78,8 +78,14 @@ public record ContractsConfig(
                 boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractAccountServiceEnabled,
-        @ConfigProperty(value = "systemContract.scheduleService.enabled", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "systemContract.scheduleService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractScheduleServiceEnabled,
+        @ConfigProperty(value = "systemContract.scheduleService.signSchedule.enabled", defaultValue = "true")
+                @NetworkProperty
+                boolean systemContractSignScheduleEnabled,
+        @ConfigProperty(value = "systemContract.scheduleService.authorizeSchedule.enabled", defaultValue = "false")
+                @NetworkProperty
+                boolean systemContractAuthorizeScheduleEnabled,
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractAccountServiceIsAuthorizedRawEnabled,
@@ -110,6 +116,8 @@ public record ContractsConfig(
         @ConfigProperty(value = "systemContract.setUnlimitedAutoAssociations.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractSetUnlimitedAutoAssociationsEnabled,
+        @ConfigProperty(value = "evm.ethTransaction.zeroHapiFees.enabled", defaultValue = "false") @NetworkProperty
+                boolean evmEthTransactionZeroHapiFeesEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
                 boolean evmVersionDynamic,
         @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "true") @NetworkProperty
@@ -118,4 +126,8 @@ public record ContractsConfig(
                 boolean chargeGasOnEvmHandleException,
         @ConfigProperty(value = "evm.nonExtantContractsFail", defaultValue = "0") @NetworkProperty
                 Set<Long> evmNonExtantContractsFail,
-        @ConfigProperty(value = "evm.version", defaultValue = "v0.51") @NetworkProperty String evmVersion) {}
+        @ConfigProperty(value = "evm.version", defaultValue = "v0.51") @NetworkProperty String evmVersion,
+        @ConfigProperty(value = "metrics.smartContract.primary.enabled", defaultValue = "true") @NetworkProperty
+                boolean metricsSmartContractPrimaryEnabled,
+        @ConfigProperty(value = "metrics.smartContract.secondary.enabled", defaultValue = "true") @NetworkProperty
+                boolean metricsSmartContractSecondaryEnabled) {}

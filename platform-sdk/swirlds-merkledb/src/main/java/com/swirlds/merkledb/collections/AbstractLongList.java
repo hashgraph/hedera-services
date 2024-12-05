@@ -420,7 +420,7 @@ public abstract class AbstractLongList<C> implements LongList {
      */
     @Override
     public void writeToFile(final Path file) throws IOException {
-        try (final FileChannel fc = FileChannel.open(file, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+        try (final FileChannel fc = FileChannel.open(file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
             // write header
             writeHeader(fc);
             if (size() > 0) {
@@ -447,7 +447,9 @@ public abstract class AbstractLongList<C> implements LongList {
         // maxValidIndex is not written. On loading, it will be set automatically based on the size
         headerBuffer.flip();
         // always write at start of file
-        MerkleDbFileUtils.completelyWrite(fc, headerBuffer, 0);
+        if (MerkleDbFileUtils.completelyWrite(fc, headerBuffer, 0) != currentFileHeaderSize) {
+            throw new IOException("Failed to write long list header to the file channel " + fc);
+        }
         fc.position(currentFileHeaderSize);
     }
 

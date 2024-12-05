@@ -62,7 +62,20 @@ message GossipEvent {
    * <p>
    * This field MAY contain zero transactions.<br/>
    * This field MUST NOT exceed `maxTransactionCountPerEvent` entries, initially `245760`.<br/>
-   * This total size of this field MUST NOT exceed `maxTransactionBytesPerEvent`, initially `245760` bytes.
+   * This total size of this field MUST NOT exceed `maxTransactionBytesPerEvent`, initially `245760` bytes.<br/>
+   * Deprecated in favor of the `transaction` field. The idea is to clean the design of event transactions.<br/>
+   * This is transitional state until 'transaction' field is fully adopted.
    */
-  repeated EventTransaction event_transaction = 3;
+  repeated EventTransaction event_transaction = 3 [deprecated = true];
+
+  /**
+   * A list of serialized transactions.
+   * <p>
+   * This field MAY contain zero transactions.<br/>
+   * Each transaction in this list SHALL be presented exactly as
+   * it was supplied to the consensus algorithm.<br/>
+   * This field MUST contain one entry for each transaction
+   * included in this gossip event.
+   */
+  repeated bytes transactions = 4;
 }

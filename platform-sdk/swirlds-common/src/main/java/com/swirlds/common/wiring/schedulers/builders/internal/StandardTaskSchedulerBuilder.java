@@ -157,7 +157,6 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
                             counters.offRamp(),
                             dataCounter,
                             busyFractionTimer,
-                            sleepDuration,
                             unhandledTaskCapacity,
                             flushingEnabled,
                             squelchingEnabled,

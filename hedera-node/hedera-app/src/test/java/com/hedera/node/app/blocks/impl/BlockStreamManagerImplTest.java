@@ -58,6 +58,7 @@ import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.InitialStateHash;
+import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -200,7 +201,7 @@ class BlockStreamManagerImplTest {
     }
 
     @Test
-    void canUpdateIntervalProcessTime() {
+    void canUpdateDistinguishedTimes() {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1L));
         subject = new BlockStreamManagerImpl(
                 () -> aWriter,
@@ -213,6 +214,10 @@ class BlockStreamManagerImplTest {
         assertSame(Instant.EPOCH, subject.lastIntervalProcessTime());
         subject.setLastIntervalProcessTime(CONSENSUS_NOW);
         assertEquals(CONSENSUS_NOW, subject.lastIntervalProcessTime());
+
+        assertSame(Instant.EPOCH, subject.lastHandleTime());
+        subject.setLastHandleTime(CONSENSUS_NOW);
+        assertEquals(CONSENSUS_NOW, subject.lastHandleTime());
     }
 
     @Test
@@ -288,7 +293,8 @@ class BlockStreamManagerImplTest {
                 Timestamp.DEFAULT,
                 true,
                 SemanticVersion.DEFAULT,
-                CONSENSUS_THEN);
+                CONSENSUS_THEN,
+                BlockRecordService.EPOCH);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture(), any());
@@ -392,7 +398,8 @@ class BlockStreamManagerImplTest {
                 Timestamp.DEFAULT,
                 false,
                 SemanticVersion.DEFAULT,
-                CONSENSUS_THEN);
+                CONSENSUS_THEN,
+                BlockRecordService.EPOCH);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture(), any());

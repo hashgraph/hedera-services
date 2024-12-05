@@ -37,7 +37,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 @DebugIterationEndpoint
 public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Labeled, MerkleInternal {
-    static final long CLASS_ID = 0x3832CC837AB77BFL;
+    public static final long CLASS_ID = 0x3832CC837AB77BFL;
     public static final int CLASS_VERSION = 1;
 
     /**

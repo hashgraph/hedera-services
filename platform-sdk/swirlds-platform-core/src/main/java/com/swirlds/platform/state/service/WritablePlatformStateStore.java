@@ -31,6 +31,7 @@ import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -49,7 +50,7 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
 
     /**
      * Constructor that supports getting full {@link SoftwareVersion} information from the platform state. Must
-     * be used from within {@link com.swirlds.platform.state.MerkleStateRoot}.
+     * be used from within {@link MerkleStateRoot}.
      * @param writableStates the writable states
      * @param versionFactory a factory to create the current {@link SoftwareVersion} from a {@link SemanticVersion}
      */

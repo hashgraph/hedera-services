@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,10 +35,12 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
+import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -495,5 +498,23 @@ class AddressBookTests {
         assertThrows(
                 IllegalStateException.class,
                 () -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook3));
+    }
+
+    @Test
+    void testMalformedAndMissingCertificate() {
+        final Address base = new Address();
+        // establish baseline behavior.
+        final X509Certificate goodCert = PreGeneratedX509Certs.getSigCert(0).getCertificate();
+        final Address withCert = base.copySetSigCert(goodCert);
+        assertEquals(goodCert, withCert.getSigCert());
+        assertEquals(goodCert.getPublicKey(), withCert.getSigCert().getPublicKey());
+
+        // test null certificate
+        final Address nullCert = base.copySetSigCert(null);
+        assertNull(nullCert.getSigCert());
+
+        // test malformed certificate
+        final Address badCert = base.copySetSigCert(PreGeneratedX509Certs.createBadCertificate());
+        assertNull(badCert.getSigCert());
     }
 }

@@ -131,3 +131,5 @@ if (publishSigningEnabled) {
         useGpgCmd()
     }
 }
+
+tasks.named("qualityGate") { dependsOn(tasks.validatePomFiles) }

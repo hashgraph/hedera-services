@@ -216,7 +216,7 @@ class DummyVirtualRoot<K extends VirtualKey, V extends VirtualValue> extends Par
      * {@inheritDoc}
      */
     @Override
-    public void flush() {
+    public boolean flush() {
         if (flushed) {
             throw new IllegalStateException("copy is already flushed");
         }
@@ -265,6 +265,8 @@ class DummyVirtualRoot<K extends VirtualKey, V extends VirtualValue> extends Par
         flushLatch.countDown();
 
         statistics.recordFlush(copyIndex); // Use copyIndex as flush duration
+
+        return true;
     }
 
     private static boolean shouldBeFlushed(DummyVirtualRoot<?, ?> copy) {

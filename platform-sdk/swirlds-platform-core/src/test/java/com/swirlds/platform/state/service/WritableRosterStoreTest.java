@@ -34,7 +34,6 @@ import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RosterState.Builder;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.state.merkle.singleton.SingletonNode;
@@ -65,16 +64,18 @@ class WritableRosterStoreTest {
     void setUp() {
         final SingletonNode<RosterState> rosterStateSingleton = new SingletonNode<>(
                 PlatformStateService.NAME,
-                RosterStateId.ROSTER_STATES_KEY,
+                WritableRosterStore.ROSTER_STATES_KEY,
                 0,
                 RosterState.PROTOBUF,
                 new RosterState(null, new LinkedList<>()));
         final WritableKVState<ProtoBytes, Roster> rosters = MapWritableKVState.<ProtoBytes, Roster>builder(
-                        RosterStateId.ROSTER_KEY)
+                        WritableRosterStore.ROSTER_KEY)
                 .build();
-        when(writableStates.<ProtoBytes, Roster>get(RosterStateId.ROSTER_KEY)).thenReturn(rosters);
-        when(writableStates.<RosterState>getSingleton(RosterStateId.ROSTER_STATES_KEY))
-                .thenReturn(new WritableSingletonStateImpl<>(RosterStateId.ROSTER_STATES_KEY, rosterStateSingleton));
+        when(writableStates.<ProtoBytes, Roster>get(WritableRosterStore.ROSTER_KEY))
+                .thenReturn(rosters);
+        when(writableStates.<RosterState>getSingleton(WritableRosterStore.ROSTER_STATES_KEY))
+                .thenReturn(
+                        new WritableSingletonStateImpl<>(WritableRosterStore.ROSTER_STATES_KEY, rosterStateSingleton));
 
         readableRosterStore = new ReadableRosterStoreImpl(writableStates);
         writableRosterStore = new WritableRosterStore(writableStates);

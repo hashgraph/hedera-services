@@ -195,7 +195,7 @@ public class DispatchProcessor {
                 .status(fileUpdateResult);
 
         // Notify if platform state was updated
-        platformStateUpdates.handleTxBody(dispatch.stack(), dispatch.txnInfo().txBody());
+        platformStateUpdates.handleTxBody(dispatch.stack(), dispatch.txnInfo().txBody(), dispatch.config());
 
         if (dispatch.txnInfo().functionality() == NODE_UPDATE) {
             networkInfo.updateFrom(dispatch.stack());

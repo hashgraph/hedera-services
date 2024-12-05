@@ -68,7 +68,9 @@ public final class NoOpVirtualRoot<K extends VirtualKey, V extends VirtualValue>
     }
 
     @Override
-    public void flush() {}
+    public boolean flush() {
+        return true;
+    }
 
     @Override
     public boolean isFlushed() {

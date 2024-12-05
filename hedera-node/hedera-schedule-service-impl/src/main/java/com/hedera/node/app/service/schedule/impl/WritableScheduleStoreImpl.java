@@ -16,14 +16,16 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
-import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.add;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.schedule.ScheduleIdList;
+import com.hedera.hapi.node.state.schedule.ScheduledCounts;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
@@ -36,7 +38,6 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,15 +46,13 @@ import org.apache.logging.log4j.Logger;
  * schedule objects as a result of ScheduleCreate, ScheduleSign, or ScheduleDelete transactions.
  */
 public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl implements WritableScheduleStore {
-
     private static final Logger logger = LogManager.getLogger(WritableScheduleStoreImpl.class);
-    private static final String SCHEDULE_NULL_FOR_DELETE_MESSAGE =
-            "Request to delete null schedule ID cannot be fulfilled.";
-    private static final String SCHEDULE_MISSING_FOR_DELETE_MESSAGE =
-            "Schedule to be deleted, %1$s, not found in state.";
+
     private final WritableKVState<ScheduleID, Schedule> schedulesByIdMutable;
     private final WritableKVState<ProtoBytes, ScheduleID> scheduleIdByEqualityMutable;
-    private final WritableKVState<ProtoLong, ScheduleIdList> scheduleIdsByExpirationMutable;
+    private final WritableKVState<TimestampSeconds, ScheduledCounts> scheduleCountsMutable;
+    private final WritableKVState<TimestampSeconds, ThrottleUsageSnapshots> scheduleUsagesMutable;
+    private final WritableKVState<ScheduledOrder, ScheduleID> scheduleOrdersMutable;
 
     /**
      * Create a new {@link WritableScheduleStoreImpl} instance.
@@ -67,9 +66,14 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
+        requireNonNull(configuration);
+        requireNonNull(storeMetricsService);
+
         schedulesByIdMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
+        scheduleCountsMutable = states.get(V0570ScheduleSchema.SCHEDULED_COUNTS_KEY);
+        scheduleOrdersMutable = states.get(V0570ScheduleSchema.SCHEDULED_ORDERS_KEY);
+        scheduleUsagesMutable = states.get(V0570ScheduleSchema.SCHEDULED_USAGES_KEY);
         scheduleIdByEqualityMutable = states.get(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
-        scheduleIdsByExpirationMutable = states.get(V0570ScheduleSchema.SCHEDULE_IDS_BY_EXPIRY_SEC_KEY);
 
         final long maxCapacity =
                 configuration.getConfigData(SchedulingConfig.class).maxNumber();
@@ -81,36 +85,29 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
      * Delete a given schedule from this state.
      * Given the ID of a schedule and a consensus time, delete that ID from this state as of the
      * consensus time {@link Instant} provided.
-     * @param scheduleToDelete The ID of a schedule to be deleted.
+     * @param scheduleId The ID of a schedule to be deleted.
      * @param consensusTime The current consensus time
      * @return the {@link Schedule} marked as deleted
-     * @throws IllegalStateException if the {@link ScheduleID} to be deleted is not present in this state,
-     *     or the ID value has a mismatched realm or shard for this node.
+     * @throws IllegalStateException if the {@link ScheduleID} to be deleted is not present in this state
      */
-    @SuppressWarnings("DataFlowIssue")
     @Override
-    @NonNull
-    public Schedule delete(@Nullable final ScheduleID scheduleToDelete, @NonNull final Instant consensusTime) {
-        Objects.requireNonNull(consensusTime, "Null consensusTime provided to schedule delete, cannot proceed.");
-        if (scheduleToDelete != null) {
-            final Schedule schedule = schedulesByIdMutable.getForModify(scheduleToDelete);
-            if (schedule != null) {
-                final Schedule deletedSchedule = markDeleted(schedule, consensusTime);
-                schedulesByIdMutable.put(scheduleToDelete, deletedSchedule);
-                return schedulesByIdMutable.get(scheduleToDelete);
-            } else {
-                throw new IllegalStateException(SCHEDULE_MISSING_FOR_DELETE_MESSAGE.formatted(scheduleToDelete));
-            }
-        } else {
-            throw new IllegalStateException(SCHEDULE_NULL_FOR_DELETE_MESSAGE);
+    public @NonNull Schedule delete(@Nullable final ScheduleID scheduleId, @NonNull final Instant consensusTime) {
+        requireNonNull(consensusTime);
+        requireNonNull(scheduleId);
+        final var schedule = schedulesByIdMutable.getForModify(scheduleId);
+        if (schedule == null) {
+            throw new IllegalStateException("Schedule to be deleted, %1$s, not found in state.".formatted(scheduleId));
         }
+        final var deletedSchedule = markDeleted(schedule, consensusTime);
+        schedulesByIdMutable.put(scheduleId, deletedSchedule);
+        return deletedSchedule;
     }
 
     @Override
-    public Schedule getForModify(@Nullable final ScheduleID idToFind) {
+    public Schedule getForModify(@Nullable final ScheduleID scheduleId) {
         final Schedule result;
-        if (idToFind != null) {
-            result = schedulesByIdMutable.getForModify(idToFind);
+        if (scheduleId != null) {
+            result = schedulesByIdMutable.getForModify(scheduleId);
         } else {
             result = null;
         }
@@ -118,31 +115,74 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     }
 
     @Override
-    public void put(@NonNull final Schedule scheduleToAdd) {
-        schedulesByIdMutable.put(scheduleToAdd.scheduleIdOrThrow(), scheduleToAdd);
-
-        final ProtoBytes newHash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(scheduleToAdd));
-        scheduleIdByEqualityMutable.put(newHash, scheduleToAdd.scheduleIdOrThrow());
-
-        // calculated expiration time is never null...
-        final ProtoLong expirationSecond = new ProtoLong(scheduleToAdd.calculatedExpirationSecond());
-        final ScheduleIdList inStateExpiration = scheduleIdsByExpirationMutable.get(expirationSecond);
-        // we should not be modifying the scheduleIds list directly. This could cause ISS
-        final var newExpiryScheduleIdList = add(scheduleToAdd.scheduleId(), inStateExpiration);
-        scheduleIdsByExpirationMutable.put(expirationSecond, newExpiryScheduleIdList);
+    public void put(@NonNull final Schedule schedule) {
+        requireNonNull(schedule);
+        final var scheduleId = schedule.scheduleIdOrThrow();
+        final var extant = schedulesByIdMutable.get(scheduleId);
+        schedulesByIdMutable.put(scheduleId, schedule);
+        // Updating a schedule that already exists in the store has no other side-effects
+        if (extant != null) {
+            return;
+        }
+        final var equalityKey = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
+        scheduleIdByEqualityMutable.put(equalityKey, scheduleId);
+        final var second = schedule.calculatedExpirationSecond();
+        final var countsKey = new TimestampSeconds(second);
+        final var oldCounts = scheduleCountsMutable.get(countsKey);
+        final var counts = oldCounts == null
+                ? new ScheduledCounts(1, 0)
+                : new ScheduledCounts(oldCounts.numberScheduled() + 1, oldCounts.numberProcessed());
+        scheduleCountsMutable.put(countsKey, counts);
+        final var orderKey = new ScheduledOrder(second, counts.numberScheduled() - 1);
+        scheduleOrdersMutable.put(orderKey, schedule.scheduleIdOrThrow());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void purgeExpiredSchedulesBetween(final long firstSecondToExpire, final long lastSecondToExpire) {
-        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
-            final var second = new ProtoLong(i);
-            final var scheduleIdList = scheduleIdsByExpirationMutable.get(second);
-            if (scheduleIdList != null) {
-                scheduleIdList.scheduleIds().forEach(this::purge);
-                scheduleIdsByExpirationMutable.remove(second);
+    public boolean purgeByOrder(@NonNull final ScheduledOrder order) {
+        requireNonNull(order);
+        final var scheduleId = getByOrder(order);
+        if (scheduleId != null) {
+            final var key = new TimestampSeconds(order.expirySecond());
+            final var counts = requireNonNull(scheduleCountsMutable.get(key));
+            if (order.orderNumber() != counts.numberProcessed()) {
+                throw new IllegalStateException("Order %s is not next in counts %s".formatted(order, counts));
+            }
+            purge(scheduleId);
+            scheduleOrdersMutable.remove(order);
+            final var newCounts = counts.copyBuilder()
+                    .numberProcessed(counts.numberProcessed() + 1)
+                    .build();
+            if (newCounts.numberProcessed() < newCounts.numberScheduled()) {
+                scheduleCountsMutable.put(key, newCounts);
+                return false;
+            } else {
+                scheduleCountsMutable.remove(key);
+                scheduleUsagesMutable.remove(key);
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void trackUsage(final long consensusSecond, @NonNull final ThrottleUsageSnapshots usageSnapshots) {
+        requireNonNull(usageSnapshots);
+        scheduleUsagesMutable.put(new TimestampSeconds(consensusSecond), usageSnapshots);
+    }
+
+    @Override
+    public void purgeExpiredRangeClosed(final long start, final long end) {
+        for (long i = start; i <= end; i++) {
+            final var countsAndUsagesKey = new TimestampSeconds(i);
+            final var counts = scheduleCountsMutable.get(countsAndUsagesKey);
+            if (counts != null) {
+                for (int j = 0, n = counts.numberScheduled(); j < n; j++) {
+                    final var orderKey = new ScheduledOrder(i, j);
+                    final var scheduleId = requireNonNull(scheduleOrdersMutable.get(orderKey));
+                    purge(scheduleId);
+                    scheduleOrdersMutable.remove(orderKey);
+                }
+                scheduleCountsMutable.remove(countsAndUsagesKey);
+                scheduleUsagesMutable.remove(countsAndUsagesKey);
             }
         }
     }
@@ -152,7 +192,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
      *
      * @param scheduleId The ID of the schedule to purge
      */
-    private void purge(final ScheduleID scheduleId) {
+    private void purge(@NonNull final ScheduleID scheduleId) {
         final var schedule = schedulesByIdMutable.get(scheduleId);
         if (schedule != null) {
             final ProtoBytes hash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
