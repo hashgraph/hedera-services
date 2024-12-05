@@ -133,6 +133,7 @@ public class GenericConstructorRegistry<T> implements ConstructorRegistry<T> {
         // instance of the class. this will be removed when all classes start using the annotation
         if (pair.constructor() instanceof NoArgsConstructor nac) {
             final RuntimeConstructable obj = nac.get();
+            System.out.println("obj: " + obj.getClass() + " classID: " + obj.getClassId());
             final long classId = obj.getClassId();
             if (obj instanceof Releasable) {
                 try {

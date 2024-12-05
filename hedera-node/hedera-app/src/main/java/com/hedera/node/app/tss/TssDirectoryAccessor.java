@@ -39,12 +39,10 @@ import javax.inject.Singleton;
 public class TssDirectoryAccessor {
     private TssParticipantDirectory tssParticipantDirectory;
     private final Supplier<Configuration> configurationSupplier;
-    private final Supplier<NodeInfo> nodeInfoSupplier;
 
     @Inject
     public TssDirectoryAccessor(@NonNull final AppContext appContext) {
         this.configurationSupplier = appContext.configSupplier();
-        this.nodeInfoSupplier = appContext.selfNodeInfoSupplier();
     }
 
     /**

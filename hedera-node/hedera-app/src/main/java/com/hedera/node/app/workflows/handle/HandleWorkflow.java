@@ -561,10 +561,10 @@ public class HandleWorkflow {
                 final var dispatch = userTxnFactory.createDispatch(userTxn, exchangeRateManager.exchangeRates());
                 // WARNING: this relies on the BlockStreamManager's last-handled time not being updated yet to
                 // correctly detect stake period boundary, so the order of the following two lines is important
-                processStakePeriodChanges(userTxn, dispatch);
+                final var isStakePeriodBoundary = processStakePeriodChanges(userTxn, dispatch);
                 if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
                     // Check the tss status and manage it if necessary
-                    tssBaseService.manageTssStatus(userTxn.stack(), storeMetricsService);
+                    tssBaseService.manageTssStatus(userTxn.stack(), storeMetricsService, isStakePeriodBoundary);
                 }
                 blockStreamManager.setLastHandleTime(userTxn.consensusNow());
                 if (streamMode != BLOCKS) {
@@ -707,9 +707,9 @@ public class HandleWorkflow {
      * @param userTxn the user transaction that crossed the boundary
      * @param dispatch the dispatch for the user transaction that crossed the boundary
      */
-    private void processStakePeriodChanges(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
+    private boolean processStakePeriodChanges(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
         try {
-            stakePeriodChanges.process(
+           return stakePeriodChanges.process(
                     dispatch,
                     userTxn.stack(),
                     userTxn.tokenContextImpl(),
@@ -722,6 +722,7 @@ public class HandleWorkflow {
             // get back to user transactions
             logger.error("Failed to process stake period changes", e);
         }
+        return false;
     }
 
     private static void logPreDispatch(@NonNull final UserTxn userTxn) {

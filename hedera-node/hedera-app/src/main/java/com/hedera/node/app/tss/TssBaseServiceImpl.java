@@ -18,8 +18,10 @@ package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
+import static com.hedera.node.app.tss.TssCryptographyManager.isThresholdMet;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static com.hedera.node.app.tss.handlers.TssUtils.hasMetThreshold;
+import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static com.swirlds.platform.roster.RosterRetriever.getCandidateRosterHash;
 import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
@@ -32,9 +34,11 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.tss.RosterToKey;
 import com.hedera.hapi.node.state.tss.TssKeyingStatus;
+import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.services.ServiceMigrator;
@@ -69,6 +73,7 @@ import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -76,6 +81,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -100,6 +106,8 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssKeysAccessor tssKeysAccessor;
     private final TssDirectoryAccessor tssDirectoryAccessor;
     private final AppContext appContext;
+    private boolean haveSentMessageForTargetRoster;
+    private boolean haveSentVoteForTargetRoster;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
@@ -173,8 +181,6 @@ public class TssBaseServiceImpl implements TssBaseService {
 
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
-        final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
-
         final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode);
         final var activeRoster = requireNonNull(
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster());
@@ -387,70 +393,188 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void manageTssStatus(final State state, final StoreMetricsService storeMetricsService) {
+    public void manageTssStatus(final State state,
+                                final StoreMetricsService storeMetricsService,
+                                final boolean isStakePeriodBoundary) {
         final var storeFactory = new WritableStoreFactory(state,
                 TssBaseService.NAME,
                 appContext.configSupplier().get(),
                 storeMetricsService);
         final var tssStore = storeFactory.getStore(WritableTssStore.class);
         final var tssStatus = tssStore.getTssStatus();
-        // And key to roster is ACTIVE_ROSTER
-        if (tssStatus.ledgerId().equals(Bytes.EMPTY)) {
-            tssStore.put(tssStatus.copyBuilder()
-                    .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS)
-                    .rosterToKey(RosterToKey.ACTIVE_ROSTER)
-                    .build());
-        } else {
-            final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
-            switch (tssStatus.tssKeyingStatus()) {
-                case WAITING_FOR_ENCRYPTION_KEYS -> {
-                    final var thresholdReached = validateThresholdEncryptionKeysReached(tssStore,
-                            rosterStore);
-                    if (thresholdReached) {
-                        tssStore.put(tssStatus.copyBuilder()
-                                .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES)
-                                .build());
-                    } else {
-                        generateEncryptionKey(state);
-                    }
-                }
-                case WAITING_FOR_THRESHOLD_TSS_MESSAGES -> {
-                    validateThresholdTssMessages(tssStore);
-                }
-                case WAITING_FOR_THRESHOLD_TSS_VOTES -> tssDirectoryAccessor.generateTssParticipantDirectory(state);
-                case KEYING_COMPLETE -> {
-                    // Do nothing
-                }
-            }
+        final var statusChange = new StatusChange(tssStatus, state, isStakePeriodBoundary);
+        final var newTssStatus = statusChange.computeNewStatus();
+        if (!newTssStatus.equals(tssStatus)) {
+            tssStore.put(newTssStatus);
         }
-
-    }
-
-    private void validateThresholdTssMessages(final WritableTssStore tssStore,
-                                              final ReadableRosterStore rosterStore) {
-        final var tssMessages = tssStore.getMessage();
-        if (tssMessages.size() >= 2 * tssStore.getTssParticipants().size() / 3) {
-            tssStore.put(tssStore.getTssStatus().copyBuilder()
-                    .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES)
-                    .build());
-        }
-
-    }
-
-    private boolean validateThresholdEncryptionKeysReached(final WritableTssStore tssStore,
-                                                           final ReadableRosterStore rosterStore) {
-        var numTssEncryptionKeys = 0;
-        for (final var node : requireNonNull(rosterStore.getActiveRoster()).rosterEntries()) {
-            final var tssEncryptionKey = tssStore.getTssEncryptionKey(node.nodeId());
-            if (tssEncryptionKey != null) {
-                numTssEncryptionKeys++;
-            }
-        }
-        return numTssEncryptionKeys >= (2 * requireNonNull(rosterStore.getActiveRoster()).rosterEntries().size()) / 3;
     }
 
     @VisibleForTesting
     public TssKeysAccessor getTssKeysAccessor() {
         return tssKeysAccessor;
+    }
+
+    private class StatusChange {
+        private TssKeyingStatus newKeyingStatus;
+        private RosterToKey newRosterToKey;
+        private Bytes newLedgerId;
+        private final TssStatus oldStatus;
+        private final boolean isStakePeriodBoundary;
+
+        private ReadableTssStore tssStore;
+        private ReadableRosterStore rosterStore;
+
+        public StatusChange(@NonNull final TssStatus oldStatus,
+                            @NonNull final State state,
+                            final boolean isStakePeriodBoundary) {
+            this.oldStatus = oldStatus;
+            this.isStakePeriodBoundary = isStakePeriodBoundary;
+            this.newKeyingStatus = oldStatus.tssKeyingStatus();
+            this.newRosterToKey = oldStatus.rosterToKey();
+            this.newLedgerId = oldStatus.ledgerId();
+
+            final var readableStoreFactory = new ReadableStoreFactory(state);
+            this.tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
+            this.rosterStore = readableStoreFactory.getStore(ReadableRosterStore.class);
+        }
+
+        public TssStatus computeNewStatus() {
+            switch (oldStatus.rosterToKey()) {
+                case NONE -> {
+                    if (isStakePeriodBoundary) {
+                        newRosterToKey = RosterToKey.CANDIDATE_ROSTER;
+                        newKeyingStatus = TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES;
+                    }
+                }
+                case CANDIDATE_ROSTER -> {
+                    final var activeRosterHash = requireNonNull(rosterStore.getCurrentRosterHash());
+                    final var candidateRosterHash = RosterUtils.hash(requireNonNull(rosterStore.getCandidateRoster())).getBytes();
+
+                    switch (oldStatus.tssKeyingStatus()) {
+                        case KEYING_COMPLETE -> {
+                            newRosterToKey = RosterToKey.NONE;
+                            haveSentMessageForTargetRoster = false;
+                            haveSentVoteForTargetRoster = false;
+                        }
+                        case WAITING_FOR_THRESHOLD_TSS_MESSAGES -> {
+                            validateThresholdTssMessages(oldStatus)
+                                    .thenAccept(thresholdReached -> {
+                                        if (thresholdReached) {
+                                            newKeyingStatus = TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES;
+                                        } else if (!haveSentMessageForTargetRoster) {
+                                            // Obtain the directory of participants for the target roster
+                                            // submit ours and set haveSentMessageForTargetRoster to true
+                                            final var tssPrivateShares = tssKeysAccessor
+                                                    .accessTssKeys()
+                                                    .activeRosterShares();
+                                            final var shareIndex = new AtomicInteger(0);
+                                            for (final var tssPrivateShare : tssPrivateShares) {
+                                                CompletableFuture.runAsync(
+                                                                () -> {
+                                                                    final var msg = tssLibrary.generateTssMessage(tssDirectoryAccessor.activeParticipantDirectory(),
+                                                                            tssPrivateShare);
+                                                                    final var tssMessage = TssMessageTransactionBody.newBuilder()
+                                                                            .sourceRosterHash(activeRosterHash)
+                                                                            .targetRosterHash(candidateRosterHash)
+                                                                            .shareIndex(shareIndex.getAndAdd(1))
+                                                                            .tssMessage(Bytes.wrap(msg.toBytes()))
+                                                                            .build();
+                                                                    // need to use consensusNow here
+                                                                    tssSubmissions.submitTssMessage(tssMessage, null);
+                                                                    haveSentMessageForTargetRoster = true;
+                                                                },
+                                                                tssLibraryExecutor)
+                                                        .exceptionally(e -> {
+                                                            log.error("Error generating tssMessage", e);
+                                                            return null;
+                                                        });
+                                            }
+                                        }
+                                    }).exceptionally(e -> {
+                                        log.error("Error validating threshold TSS messages", e);
+                                        return null;
+                                    });
+                        }
+                        case WAITING_FOR_THRESHOLD_TSS_VOTES -> {
+                            final var voteBodies = validateThresholdTssVotes(oldStatus);
+                            if (voteBodies.isPresent()) {
+                                newKeyingStatus = TssKeyingStatus.KEYING_COMPLETE;
+                                newLedgerId = voteBodies.get().ledgerId();
+                            } else if (!haveSentVoteForTargetRoster) {
+                                // Obtain the directory of participants for the target roster
+                                final var directory = tssDirectoryAccessor.activeParticipantDirectory();
+                                // Schedule work to potentially compute a signed vote for the new key material of the target
+                                // roster, if this message was valid and passed the threshold number of messages required
+                                tssCryptographyManager
+                                        .getVoteFuture(candidateRosterHash, directory, context)
+                                        .thenAccept(vote -> {
+                                            if (vote != null) {
+                                                // FUTURE: Validate the ledgerId computed is same as the current ledgerId
+                                                final var tssVote = TssVoteTransactionBody.newBuilder()
+                                                        .tssVote(vote.bitSet())
+                                                        .sourceRosterHash(activeRosterHash)
+                                                        .targetRosterHash(candidateRosterHash)
+                                                        .ledgerId(vote.ledgerId())
+                                                        .nodeSignature(vote.signature().getBytes())
+                                                        .build();
+                                                tssSubmissions.submitTssVote(tssVote, null);
+                                            }
+                                        });
+                                    haveSentVoteForTargetRoster = true;
+                            }
+                        }
+                    }
+                }
+
+            }
+            return TssStatus.newBuilder()
+                    .tssKeyingStatus(newKeyingStatus)
+                    .rosterToKey(newRosterToKey)
+                    .ledgerId(newLedgerId)
+                    .build();
+        }
+
+        private CompletableFuture<Boolean> validateThresholdTssMessages(final TssStatus tssStatus) {
+            final var participantDirectory = tssDirectoryAccessor.activeParticipantDirectory();
+            final var targetRosterHash = getTargetRoster(rosterStore, tssStatus);
+            final var tssMessageBodies = tssStore.getMessagesForTarget(targetRosterHash);
+            return CompletableFuture.supplyAsync(
+                    () -> {
+                        final var tssMessages = validateTssMessages(tssMessageBodies, participantDirectory, tssLibrary);
+                        return isThresholdMet(tssMessages, participantDirectory);
+                    });
+        }
+
+        private Optional<TssVoteTransactionBody> validateThresholdTssVotes(final TssStatus tssStatus) {
+            final var targetRosterHash = getTargetRoster(rosterStore, tssStatus);
+            final var voteBodies = tssStore.anyWinningVoteFrom(
+                    requireNonNull(rosterStore.getCurrentRosterHash()),
+                    targetRosterHash,
+                    rosterStore);
+            return voteBodies;
+        }
+
+        private boolean validateThresholdEncryptionKeysReached(final WritableTssStore tssStore,
+                                                               final ReadableRosterStore rosterStore) {
+            var numTssEncryptionKeys = 0;
+            for (final var node : requireNonNull(rosterStore.getActiveRoster()).rosterEntries()) {
+                final var tssEncryptionKey = tssStore.getTssEncryptionKey(node.nodeId());
+                if (tssEncryptionKey != null) {
+                    numTssEncryptionKeys++;
+                }
+            }
+            return numTssEncryptionKeys >= (2 * requireNonNull(rosterStore.getActiveRoster()).rosterEntries().size()) / 3;
+        }
+
+        @NonNull
+        private Bytes getTargetRoster(@NonNull final ReadableRosterStore rosterStore,
+                                      @NonNull final TssStatus tssStatus) {
+            final var rosterToKey = tssStatus.rosterToKey();
+            return switch (rosterToKey) {
+                case ACTIVE_ROSTER -> requireNonNull(rosterStore.getCurrentRosterHash());
+                case CANDIDATE_ROSTER -> RosterUtils.hash(requireNonNull(rosterStore.getCandidateRoster())).getBytes();
+                case NONE -> Bytes.EMPTY;
+            };
+        }
     }
 }

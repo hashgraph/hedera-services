@@ -183,8 +183,9 @@ public interface TssBaseService extends Service {
     /**
      * Manages and does work based on the TSS status.
      *
-     * @param state               the network state
+     * @param state                 the network state
      * @param storeMetricsService
+     * @param isStakePeriodBoundary
      */
-    void manageTssStatus(State state, final StoreMetricsService storeMetricsService);
+    void manageTssStatus(State state, final StoreMetricsService storeMetricsService, final boolean isStakePeriodBoundary);
 }
