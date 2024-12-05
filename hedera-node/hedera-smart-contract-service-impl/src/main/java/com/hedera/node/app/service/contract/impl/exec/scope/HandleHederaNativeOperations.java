@@ -41,6 +41,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.SortedSet;
 import javax.inject.Inject;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -176,5 +177,11 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         return tokenServiceApi.checkForCustomFees(op);
+    }
+
+    @Override
+    @NonNull
+    public SortedSet<Key> authorizingSimpleKeys() {
+        return context.keyVerifier().authorizingSimpleKeys();
     }
 }
