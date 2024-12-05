@@ -59,8 +59,6 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.DEFERR
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.EXTRA_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.NEW_SENDER_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.PAYER;
-import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.RECEIVER;
-import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_TXN;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SHARED_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.THREE_SIG_XFER;
