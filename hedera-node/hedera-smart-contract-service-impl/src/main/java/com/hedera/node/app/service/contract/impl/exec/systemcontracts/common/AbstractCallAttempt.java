@@ -287,7 +287,22 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
         return configEnabled && isSelector(functions);
     }
 
+    /**
+     * Returns whether this call attempt is a selector for any of the given functions.
+     * @param functionSelector bytes of the function selector
+     * @param input input bytes
+     * @return true if the function selector at the start of the input bytes
+     */
     private boolean isRedirectSelector(@NonNull final byte[] functionSelector, @NonNull final byte[] input) {
         return Arrays.equals(input, 0, functionSelector.length, functionSelector, 0, functionSelector.length);
+    }
+
+    /**
+     * Returns whether only delegate contract keys are active.
+     *
+     * @return true if only delegate contract keys are active
+     */
+    public boolean isOnlyDelegatableContractKeysActive() {
+        return onlyDelegatableContractKeysActive;
     }
 }

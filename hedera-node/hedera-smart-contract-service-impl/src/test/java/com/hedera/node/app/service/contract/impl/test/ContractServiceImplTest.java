@@ -55,6 +55,7 @@ class ContractServiceImplTest {
         // given
         when(appContext.instantSource()).thenReturn(instantSource);
         when(appContext.signatureVerifier()).thenReturn(signatureVerifier);
+        when(appContext.metricsSupplier()).thenReturn(() -> null);
 
         subject = new ContractServiceImpl(appContext);
     }

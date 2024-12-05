@@ -69,6 +69,7 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.TWO_SI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -702,6 +703,7 @@ public class ScheduleLongTermSignTest {
     @Order(15)
     public Stream<DynamicTest> overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
+        final long scheduleLifetime = 6;
 
         return defaultHapiSpec("OverlappingKeysTreatedAsExpectedAtExpiry")
                 .given(
@@ -717,7 +719,7 @@ public class ScheduleLongTermSignTest {
                                         tinyBarsFromTo("aSender", ADDRESS_BOOK_CONTROL, 1),
                                         tinyBarsFromTo("cSender", ADDRESS_BOOK_CONTROL, 1)))
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, scheduleLifetime)
                         .recordingScheduledTxn())
                 .then(
                         scheduleSign(DEFERRED_XFER).alsoSigningWith("aKey"),
@@ -743,16 +745,16 @@ public class ScheduleLongTermSignTest {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 5)
+                                .hasRelativeExpiry(SENDER_TXN, scheduleLifetime)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(TimeUnit.SECONDS.toMillis(6)),
+                        sleepFor(TimeUnit.SECONDS.toMillis(scheduleLifetime)),
                         cryptoCreate("foo"),
                         getScheduleInfo(DEFERRED_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(ADDRESS_BOOK_CONTROL).hasTinyBars(changeFromSnapshot(BEFORE, +2)));
     }
 
     @HapiTest
-    @Order(15)
+    @Order(16)
     public Stream<DynamicTest> retestsActivationOnSignWithEmptySigMap() {
         return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMapAtExpiry")
                 .given(newKeyNamed("a"), newKeyNamed("b"), newKeyListNamed("ab", List.of("a", "b")), newKeyNamed(ADMIN))
@@ -782,6 +784,30 @@ public class ScheduleLongTermSignTest {
                         cryptoCreate("foo"),
                         getScheduleInfo(DEFERRED_FALL).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(666L));
+    }
+
+    @HapiTest
+    @Order(16)
+    final Stream<DynamicTest> scheduleSignWhenAllSigPresent() {
+        return hapiTest(
+                cryptoCreate("receiver").balance(0L).receiverSigRequired(true),
+                scheduleCreate("schedule", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "receiver", 1L)))
+                        .waitForExpiry()
+                        .expiringIn(TimeUnit.SECONDS.toMillis(5))
+                        .via("one"),
+                scheduleSign("schedule").signedBy(DEFAULT_PAYER, "receiver"),
+                scheduleSign("schedule").hasKnownStatus(NO_NEW_VALID_SIGNATURES));
+    }
+
+    @HapiTest
+    @Order(17)
+    final Stream<DynamicTest> scheduleSignWhenAllSigPresentNoWaitForExpiry() {
+        return hapiTest(
+                cryptoCreate("receiver").balance(0L).receiverSigRequired(true),
+                scheduleCreate("schedule", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "receiver", 1L)))
+                        .via("one"),
+                scheduleSign("schedule").signedBy(DEFAULT_PAYER, "receiver"),
+                scheduleSign("schedule").hasKnownStatus(SCHEDULE_ALREADY_EXECUTED));
     }
 
     private Key lowerThirdNestedThresholdSigningReq(Key source) {
