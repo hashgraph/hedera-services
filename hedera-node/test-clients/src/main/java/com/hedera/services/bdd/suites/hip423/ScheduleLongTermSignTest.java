@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THOUSAND_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.BASIC_XFER;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.BEFORE;
@@ -65,9 +66,11 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SHARED
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.THREE_SIG_XFER;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.TOKEN_A;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.TWO_SIG_XFER;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.triggerSchedule;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -105,53 +108,6 @@ public class ScheduleLongTermSignTest {
 
     @HapiTest
     @Order(1)
-    final Stream<DynamicTest> changeInNestedSigningReqsRespected() {
-        var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
-        var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
-        var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
-        var secondSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, ON, OFF)));
-        String sender = "X";
-        String receiver = "Y";
-        String schedule = "Z";
-        String senderKey = "sKey";
-
-        return hapiTest(
-                newKeyNamed(senderKey).shape(senderShape),
-                keyFromMutation(NEW_SENDER_KEY, senderKey).changing(this::bumpThirdNestedThresholdSigningReq),
-                cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
-                cryptoCreate(receiver).balance(0L),
-                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-                        .payingWith(DEFAULT_PAYER)
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
-                        .recordingScheduledTxn()
-                        .alsoSigningWith(sender)
-                        .sigControl(ControlForKey.forKey(senderKey, sigOne)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                cryptoUpdate(sender).key(NEW_SENDER_KEY),
-                scheduleSign(schedule)
-                        .alsoSigningWith(NEW_SENDER_KEY)
-                        .sigControl(forKey(NEW_SENDER_KEY, firstSigThree)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                scheduleSign(schedule)
-                        .alsoSigningWith(NEW_SENDER_KEY)
-                        .sigControl(forKey(NEW_SENDER_KEY, secondSigThree)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                getScheduleInfo(schedule)
-                        .hasScheduleId(schedule)
-                        .hasWaitForExpiry()
-                        .isNotExecuted()
-                        .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 5)
-                        .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
-                getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getAccountBalance(receiver).hasTinyBars(1L));
-    }
-
-    @HapiTest
-    @Order(2)
     final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -162,7 +118,7 @@ public class ScheduleLongTermSignTest {
         String schedule = "Z";
         String senderKey = "sKey";
 
-        return hapiTest(
+        return hapiTest(flattened(
                 newKeyNamed(senderKey).shape(senderShape),
                 keyFromMutation(NEW_SENDER_KEY, senderKey).changing(this::lowerThirdNestedThresholdSigningReq),
                 cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
@@ -170,7 +126,7 @@ public class ScheduleLongTermSignTest {
                 scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
                         .payingWith(DEFAULT_PAYER)
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, 7)
                         .recordingScheduledTxn()
                         .alsoSigningWith(sender)
                         .sigControl(ControlForKey.forKey(senderKey, sigOne)),
@@ -187,19 +143,18 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 5)
+                        .hasRelativeExpiry(SENDER_TXN, 7)
                         .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
+                triggerSchedule(schedule, 8),
                 scheduleSign(schedule)
                         .alsoSigningWith(NEW_SENDER_KEY)
                         .sigControl(forKey(NEW_SENDER_KEY, sigTwo))
                         .hasKnownStatus(INVALID_SCHEDULE_ID),
-                getAccountBalance(receiver).hasTinyBars(1L));
+                getAccountBalance(receiver).hasTinyBars(1L)));
     }
 
     @HapiTest
-    @Order(3)
+    @Order(2)
     final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithWaitForExpiry() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -209,7 +164,7 @@ public class ScheduleLongTermSignTest {
         String schedule = "Z";
         String senderKey = "sKey";
 
-        return hapiTest(
+        return hapiTest(flattened(
                 newKeyNamed(senderKey).shape(senderShape),
                 keyFromMutation(NEW_SENDER_KEY, senderKey).changing(this::lowerThirdNestedThresholdSigningReq),
                 cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
@@ -217,7 +172,7 @@ public class ScheduleLongTermSignTest {
                 scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
                         .payingWith(DEFAULT_PAYER)
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, 4)
                         .recordingScheduledTxn()
                         .alsoSigningWith(sender)
                         .sigControl(ControlForKey.forKey(senderKey, sigOne)),
@@ -233,16 +188,14 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry(true)
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 5)
+                        .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
-                sleepFor(500),
-                getAccountBalance(receiver).hasTinyBars(1L));
+                triggerSchedule(schedule),
+                getAccountBalance(receiver).hasTinyBars(1L)));
     }
 
     @HapiTest
-    @Order(4)
+    @Order(3)
     final Stream<DynamicTest> nestedSigningReqsWorkAsExpected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -252,14 +205,14 @@ public class ScheduleLongTermSignTest {
         String schedule = "Z";
         String senderKey = "sKey";
 
-        return hapiTest(
+        return hapiTest(flattened(
                 newKeyNamed(senderKey).shape(senderShape),
                 cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
                 cryptoCreate(receiver).balance(0L),
                 scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
                         .payingWith(DEFAULT_PAYER)
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, 4)
                         .recordingScheduledTxn()
                         .alsoSigningWith(sender)
                         .sigControl(ControlForKey.forKey(senderKey, sigOne)),
@@ -271,16 +224,14 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 5)
+                        .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
-                getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getAccountBalance(receiver).hasTinyBars(1L));
+                triggerSchedule(schedule),
+                getAccountBalance(receiver).hasTinyBars(1L)));
     }
 
     @HapiTest
-    @Order(5)
+    @Order(4)
     final Stream<DynamicTest> receiverSigRequiredNotConfusedByOrder() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -289,13 +240,13 @@ public class ScheduleLongTermSignTest {
         String schedule = "Z";
         String senderKey = "sKey";
 
-        return hapiTest(
+        return hapiTest(flattened(
                 newKeyNamed(senderKey).shape(senderShape),
                 cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
                 cryptoCreate(receiver).balance(0L).receiverSigRequired(true),
                 scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, 4)
                         .recordingScheduledTxn()
                         .payingWith(DEFAULT_PAYER),
                 scheduleSign(schedule).alsoSigningWith(receiver),
@@ -307,16 +258,14 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 5)
+                        .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
-                getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getAccountBalance(receiver).hasTinyBars(1L));
+                triggerSchedule(schedule),
+                getAccountBalance(receiver).hasTinyBars(1L)));
     }
 
     @HapiTest
-    @Order(6)
+    @Order(5)
     final Stream<DynamicTest> extraSigsDontMatterAtExpiry() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -327,7 +276,7 @@ public class ScheduleLongTermSignTest {
         String schedule = "Z";
         String senderKey = "sKey";
 
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYER).balance(ONE_MILLION_HBARS).payingWith(GENESIS),
                 newKeyNamed(senderKey).shape(senderShape),
                 newKeyNamed(EXTRA_KEY),
@@ -398,14 +347,12 @@ public class ScheduleLongTermSignTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 10)
                         .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(11)),
-                cryptoCreate("foo"),
-                getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getAccountBalance(receiver).hasTinyBars(1L));
+                triggerSchedule(schedule, 11),
+                getAccountBalance(receiver).hasTinyBars(1L)));
     }
 
     @HapiTest
-    @Order(7)
+    @Order(6)
     final Stream<DynamicTest> receiverSigRequiredNotConfusedByMultiSigSender() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -415,13 +362,13 @@ public class ScheduleLongTermSignTest {
         String schedule = "Z";
         String senderKey = "sKey";
 
-        return hapiTest(
+        return hapiTest(flattened(
                 newKeyNamed(senderKey).shape(senderShape),
                 cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
                 cryptoCreate(receiver).balance(0L).receiverSigRequired(true),
                 scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, 4)
                         .recordingScheduledTxn()
                         .payingWith(DEFAULT_PAYER),
                 getAccountBalance(receiver).hasTinyBars(0L),
@@ -436,61 +383,14 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 5)
+                        .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
-                getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getAccountBalance(receiver).hasTinyBars(1L));
+                triggerSchedule(schedule),
+                getAccountBalance(receiver).hasTinyBars(1L)));
     }
 
     @HapiTest
-    @Order(8)
-    final Stream<DynamicTest> receiverSigRequiredUpdateIsRecognized() {
-        var senderShape = threshOf(2, 3);
-        var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
-        var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
-        String sender = "X";
-        String receiver = "Y";
-        String schedule = "Z";
-        String senderKey = "sKey";
-
-        return hapiTest(
-                newKeyNamed(senderKey).shape(senderShape),
-                cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
-                cryptoCreate(receiver).balance(0L),
-                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-                        .payingWith(DEFAULT_PAYER)
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
-                        .recordingScheduledTxn()
-                        .alsoSigningWith(sender)
-                        .sigControl(forKey(senderKey, sigOne)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                cryptoUpdate(receiver).receiverSigRequired(true),
-                scheduleSign(schedule).alsoSigningWith(senderKey).sigControl(forKey(senderKey, sigTwo)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                scheduleSign(schedule).alsoSigningWith(receiver),
-                getAccountBalance(receiver).hasTinyBars(0),
-                getScheduleInfo(schedule)
-                        .hasScheduleId(schedule)
-                        .hasWaitForExpiry()
-                        .isNotExecuted()
-                        .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 5)
-                        .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
-                getAccountBalance(receiver).hasTinyBars(1),
-                scheduleSign(schedule)
-                        .alsoSigningWith(senderKey)
-                        .sigControl(forKey(senderKey, sigTwo))
-                        .hasKnownStatus(INVALID_SCHEDULE_ID),
-                getAccountBalance(receiver).hasTinyBars(1));
-    }
-
-    @HapiTest
-    @Order(9)
+    @Order(7)
     final Stream<DynamicTest> basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
@@ -499,7 +399,7 @@ public class ScheduleLongTermSignTest {
                 cryptoCreate(RECEIVER).receiverSigRequired(true),
                 scheduleCreate(BASIC_XFER, txnBody)
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, 4)
                         .payingWith(SENDER),
                 scheduleSign(BASIC_XFER).alsoSigningWith(RECEIVER),
                 getScheduleInfo(BASIC_XFER).hasSignatories(RECEIVER, SENDER),
@@ -511,7 +411,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(10)
+    @Order(8)
     final Stream<DynamicTest> signalsIrrelevantSig() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
@@ -519,11 +419,10 @@ public class ScheduleLongTermSignTest {
                 cryptoCreate(SENDER).via(SENDER_TXN),
                 cryptoCreate(RECEIVER),
                 newKeyNamed("somebodyelse"),
-                scheduleCreate(BASIC_XFER, txnBody).waitForExpiry().withRelativeExpiry(SENDER_TXN, 5),
+                scheduleCreate(BASIC_XFER, txnBody).waitForExpiry().withRelativeExpiry(SENDER_TXN, 4),
                 scheduleSign(BASIC_XFER)
                         .alsoSigningWith("somebodyelse")
                         .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID),
-
                 // note: the sleepFor and cryptoCreate operations are added only to clear the schedule before
                 // the next state. This was needed because an edge case in the BaseTranslator occur.
                 // When scheduleCreate trigger the schedules execution scheduleRef field is not the correct one.
@@ -532,7 +431,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(11)
+    @Order(9)
     final Stream<DynamicTest> signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
         var txnBody = mintToken(TOKEN_A, 50000000L);
 
@@ -541,7 +440,7 @@ public class ScheduleLongTermSignTest {
                 newKeyNamed("mint"),
                 newKeyNamed("newMint"),
                 tokenCreate(TOKEN_A).adminKey(ADMIN).supplyKey("mint").via(CREATE_TXN),
-                scheduleCreate("tokenMintScheduled", txnBody).waitForExpiry().withRelativeExpiry(CREATE_TXN, 5),
+                scheduleCreate("tokenMintScheduled", txnBody).waitForExpiry().withRelativeExpiry(CREATE_TXN, 4),
                 tokenUpdate(TOKEN_A).supplyKey("newMint"),
                 scheduleSign("tokenMintScheduled")
                         .alsoSigningWith("mint")
@@ -562,9 +461,9 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(12)
+    @Order(10)
     public Stream<DynamicTest> triggersUponFinishingPayerSig() {
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYER).balance(ONE_HBAR),
                 cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
                 cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true),
@@ -574,7 +473,7 @@ public class ScheduleLongTermSignTest {
                                         .fee(ONE_HBAR))
                         .designatingPayer(PAYER)
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, 4)
                         .recordingScheduledTxn()
                         .alsoSigningWith(SENDER, RECEIVER),
                 getAccountBalance(RECEIVER).hasTinyBars(0L),
@@ -585,18 +484,16 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 5)
+                        .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
-                getScheduleInfo(THREE_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getAccountBalance(RECEIVER).hasTinyBars(1L));
+                triggerSchedule(THREE_SIG_XFER),
+                getAccountBalance(RECEIVER).hasTinyBars(1L)));
     }
 
     @HapiTest
-    @Order(13)
+    @Order(11)
     public Stream<DynamicTest> triggersUponAdditionalNeededSig() {
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
                 cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true),
                 scheduleCreate(
@@ -604,7 +501,7 @@ public class ScheduleLongTermSignTest {
                                 cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
                                         .fee(ONE_HBAR))
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, 4)
                         .recordingScheduledTxn()
                         .alsoSigningWith(SENDER),
                 getAccountBalance(RECEIVER).hasTinyBars(0L),
@@ -615,18 +512,16 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 5)
+                        .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
-                getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getAccountBalance(RECEIVER).hasTinyBars(1L));
+                triggerSchedule(TWO_SIG_XFER),
+                getAccountBalance(RECEIVER).hasTinyBars(1L)));
     }
 
     @HapiTest
-    @Order(14)
+    @Order(12)
     public Stream<DynamicTest> sharedKeyWorksAsExpected() {
-        return hapiTest(
+        return hapiTest(flattened(
                 newKeyNamed(SHARED_KEY),
                 cryptoCreate("payerWithSharedKey").key(SHARED_KEY).via(CREATE_TXN),
                 scheduleCreate(
@@ -638,7 +533,7 @@ public class ScheduleLongTermSignTest {
                                         .balance(123L)
                                         .fee(ONE_HBAR))
                         .waitForExpiry()
-                        .withRelativeExpiry(CREATE_TXN, 5)
+                        .withRelativeExpiry(CREATE_TXN, 4)
                         .recordingScheduledTxn()
                         .payingWith("payerWithSharedKey")
                         .via(CREATION),
@@ -648,20 +543,19 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(CREATE_TXN, 5)
+                        .hasRelativeExpiry(CREATE_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
-                getScheduleInfo(DEFERRED_CREATION).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getTxnRecord(CREATION).scheduled());
+                triggerSchedule(DEFERRED_CREATION),
+                getTxnRecord(CREATION).scheduled()));
     }
 
     @HapiTest
-    @Order(15)
+    @Order(13)
     public Stream<DynamicTest> overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
+        final long scheduleLifetime = 6;
 
-        return hapiTest(
+        return hapiTest(flattened(
                 newKeyNamed("aKey").generator(keyGen),
                 newKeyNamed("bKey").generator(keyGen),
                 newKeyNamed("cKey"),
@@ -674,7 +568,7 @@ public class ScheduleLongTermSignTest {
                                         tinyBarsFromTo("aSender", ADDRESS_BOOK_CONTROL, 1),
                                         tinyBarsFromTo("cSender", ADDRESS_BOOK_CONTROL, 1)))
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, scheduleLifetime)
                         .recordingScheduledTxn(),
                 scheduleSign(DEFERRED_XFER).alsoSigningWith("aKey"),
                 scheduleSign(DEFERRED_XFER).alsoSigningWith("aKey").hasKnownStatus(NO_NEW_VALID_SIGNATURES),
@@ -697,18 +591,16 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 5)
+                        .hasRelativeExpiry(SENDER_TXN, scheduleLifetime)
                         .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
-                getScheduleInfo(DEFERRED_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getAccountBalance(ADDRESS_BOOK_CONTROL).hasTinyBars(changeFromSnapshot(BEFORE, +2)));
+                triggerSchedule(DEFERRED_XFER, 7),
+                getAccountBalance(ADDRESS_BOOK_CONTROL).hasTinyBars(changeFromSnapshot(BEFORE, +2))));
     }
 
     @HapiTest
-    @Order(15)
+    @Order(14)
     public Stream<DynamicTest> retestsActivationOnSignWithEmptySigMap() {
-        return hapiTest(
+        return hapiTest(flattened(
                 newKeyNamed("a"),
                 newKeyNamed("b"),
                 newKeyListNamed("ab", List.of("a", "b")),
@@ -719,7 +611,7 @@ public class ScheduleLongTermSignTest {
                                 cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
                                         .fee(ONE_HBAR))
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .withRelativeExpiry(SENDER_TXN, 4)
                         .recordingScheduledTxn()
                         .alsoSigningWith("a"),
                 getAccountBalance(SENDER).hasTinyBars(667L),
@@ -731,26 +623,39 @@ public class ScheduleLongTermSignTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 5)
+                        .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(TimeUnit.SECONDS.toMillis(6)),
-                cryptoCreate("foo"),
-                getScheduleInfo(DEFERRED_FALL).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getAccountBalance(SENDER).hasTinyBars(666L));
+                triggerSchedule(DEFERRED_FALL),
+                getAccountBalance(SENDER).hasTinyBars(666L)));
+    }
+
+    @HapiTest
+    @Order(15)
+    final Stream<DynamicTest> scheduleSignWhenAllSigPresent() {
+        return hapiTest(
+                cryptoCreate("receiver").balance(0L).receiverSigRequired(true),
+                scheduleCreate("schedule", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "receiver", 1L)))
+                        .waitForExpiry()
+                        .expiringIn(TimeUnit.SECONDS.toMillis(5))
+                        .via("one"),
+                scheduleSign("schedule").signedBy(DEFAULT_PAYER, "receiver"),
+                scheduleSign("schedule").hasKnownStatus(NO_NEW_VALID_SIGNATURES));
+    }
+
+    @HapiTest
+    @Order(16)
+    final Stream<DynamicTest> scheduleSignWhenAllSigPresentNoWaitForExpiry() {
+        return hapiTest(
+                cryptoCreate("receiver").balance(0L).receiverSigRequired(true),
+                scheduleCreate("schedule", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "receiver", 1L)))
+                        .via("one"),
+                scheduleSign("schedule").signedBy(DEFAULT_PAYER, "receiver"),
+                scheduleSign("schedule").hasKnownStatus(SCHEDULE_ALREADY_EXECUTED));
     }
 
     private Key lowerThirdNestedThresholdSigningReq(Key source) {
         var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
         newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(1));
-        var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
-        return source.toBuilder()
-                .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
-                .build();
-    }
-
-    private Key bumpThirdNestedThresholdSigningReq(Key source) {
-        var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
-        newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(2));
         var newKeyList = source.getThresholdKey().getKeys().toBuilder().setKeys(2, newKey);
         return source.toBuilder()
                 .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))

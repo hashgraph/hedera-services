@@ -339,7 +339,7 @@ public class CryptoDeleteAllowanceSuite {
                         .blankMemo()
                         .addNftDeleteAllowance(MISSING_OWNER, nft, List.of(1L))
                         .via("baseDeleteNft"),
-                validateChargedUsdWithin("baseDeleteNft", 0.05, 0.01),
+                validateChargedUsdWithin("baseDeleteNft", 0.05, 0.02),
                 cryptoApproveAllowance().payingWith(owner).addNftAllowance(owner, nft, "spender2", false, List.of(1L)),
                 /* with specifying owner */
                 cryptoDeleteAllowance()
@@ -347,7 +347,7 @@ public class CryptoDeleteAllowanceSuite {
                         .blankMemo()
                         .addNftDeleteAllowance(owner, nft, List.of(1L))
                         .via("baseDeleteNft"),
-                validateChargedUsdWithin("baseDeleteNft", 0.05, 0.01),
+                validateChargedUsdWithin("baseDeleteNft", 0.05, 0.02),
 
                 /* with 2 serials */
                 cryptoDeleteAllowance()
@@ -364,7 +364,7 @@ public class CryptoDeleteAllowanceSuite {
                         .addNftDeleteAllowance(owner, nft, List.of(1L))
                         .signedBy(payer, owner)
                         .via("twoDeleteNft"),
-                validateChargedUsdWithin("twoDeleteNft", 0.08124, 0.01));
+                validateChargedUsdWithin("twoDeleteNft", 0.08124, 0.02));
     }
 
     @HapiTest

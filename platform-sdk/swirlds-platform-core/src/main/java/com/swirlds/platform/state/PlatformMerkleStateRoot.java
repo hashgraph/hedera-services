@@ -70,7 +70,7 @@ import java.util.function.Function;
 public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleStateRoot>
         implements SwirldState, MerkleRoot {
 
-    private static final long CLASS_ID = 0x8e300b0dfdafbb1bL;
+    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
     /**
      * The callbacks for Hedera lifecycle events.
      */

@@ -122,7 +122,8 @@ jobs:
     name: Execute eXtended Test Suite
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' &&
+            !github.event.workflow_dispatch.repository.fork }}
     with:
       custom-job-label: Execute eXtended Test Suite
       enable-timing-sensitive-tests: true
@@ -140,7 +141,8 @@ jobs:
     name: JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' &&
+            !github.event.workflow_dispatch.repository.fork }}
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
@@ -166,7 +168,8 @@ jobs:
     name: Hedera Node JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' &&
+            !github.event.workflow_dispatch.repository.fork }}
     with:
       custom-job-name: "Abbrev Update Test"
       ref: ${{ needs.fetch-xts-candidate.outputs.xts-tag-commit }} # pass the xts-candidate tag to the JRS panel for checkout
@@ -194,9 +197,7 @@ jobs:
       - extended-test-suite
       - fetch-xts-candidate
       - hedera-node-jrs-panel
-    if: ${{ needs.abbreviated-panel.result == 'success' ||
-            needs.extended-test-suite.result == 'success' ||
-            needs.hedera-node-jrs-panel.result == 'success' }}
+    if: ${{ needs.abbreviated-panel.result == 'success' || needs.extended-test-suite.result == 'success' || needs.hedera-node-jrs-panel.result == 'success' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
@@ -284,12 +285,37 @@ jobs:
         with:
           path: run.log
 
+      - name: Report failure (PagerDuty)
+        run: |
+          curl --request 'POST' \
+          --url 'https://events.pagerduty.com/v2/enqueue' \
+          --header 'Content-Type: application/json' \
+          --data '{
+            "payload": {
+              "summary": "Hedera Services - eXtended Test Suite Failure",
+              "severity": "error",
+              "source": "GitHub Actions - eXtended Test Suite",
+              "custom_details": {
+                "Fetch XTS Candidate Tag": "${{ needs.fetch-xts-candidate.result }}",
+                "Execute eXtended Test Suite": "${{ needs.extended-test-suite.result }}",
+                "JRS Panel": "${{ needs.abbreviated-panel.result }}",
+                "Hedera Node JRS Panel": "${{ needs.hedera-node-jrs-panel.result }}",
+                "Tag as XTS-Passing": "${{ needs.tag-for-promotion.result }}",
+                "Source Commit": "<${{ github.server_url }}/${{ github.repository }}/commit/${{ needs.fetch-xts-candidate.outputs.xts-tag-commit }}>",
+                "Commit Author": "${{ needs.fetch-xts-candidate.outputs.xts-tag-commit-author }}",
+                "Workflow Run": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
+              }
+            },
+            "routing_key": "${{ secrets.PAGERDUTY_CITR_INTEGRATION_KEY }}",
+            "event_action": "trigger",
+          }'
+
       - name: Report failure (slack)
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
-        env:
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_FAILURES_WEBHOOK }}
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
+          webhook: ${{ secrets.SLACK_CITR_FAILURES_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload-templated: true
           payload: |
             {
               "attachments": [

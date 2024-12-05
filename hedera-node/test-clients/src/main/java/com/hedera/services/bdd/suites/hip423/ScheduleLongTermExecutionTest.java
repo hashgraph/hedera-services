@@ -63,6 +63,7 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SIMPLE_UPDATE;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SUCCESS_TXN;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.TRANSACTION_NOT_SCHEDULED;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.TRIGGERING_TXN;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.VALID_SCHEDULE;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WEIRDLY_POPULAR_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_CONSENSUS_TIMESTAMP;
@@ -72,6 +73,7 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_TRANSFER_LIST;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.scheduleFakeUpgrade;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.triggerSchedule;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -97,14 +99,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
-// Enable when long term scheduling is enabled
-@Disabled
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @HapiTestLifecycle
 public class ScheduleLongTermExecutionTest {
@@ -115,12 +114,12 @@ public class ScheduleLongTermExecutionTest {
     private static final String BASIC_XFER = "basicXfer";
     private static final String CREATE_TX = "createTxn";
     private static final String SIGN_TX = "sign_tx";
-    private static final String TRIGGERING_TXN = "triggeringTxn";
     private static final String PAYING_ACCOUNT_TXN = "payingAccountTxn";
     private static final String LUCKY_RECEIVER = "luckyReceiver";
     private static final String FAILED_XFER = "failedXfer";
     private static final String WEIRDLY_POPULAR_KEY_TXN = "weirdlyPopularKeyTxn";
     private static final String PAYER_TXN = "payerTxn";
+    private static final String FILE_NAME = "misc";
     private static final long PAYER_INITIAL_BALANCE = 1000000000000L;
 
     @BeforeAll
@@ -139,7 +138,7 @@ public class ScheduleLongTermExecutionTest {
     @HapiTest
     @Order(1)
     final Stream<DynamicTest> executionWithCustomPayerWorks() {
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT),
                 cryptoCreate(RECEIVER),
                 cryptoCreate(SENDER).via(SENDER_TXN),
@@ -160,9 +159,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(BASIC_XFER),
                 withOpContext((spec, opLog) -> {
                     var createTx = getTxnRecord(CREATE_TX);
                     var signTx = getTxnRecord(SIGN_TX);
@@ -224,13 +221,13 @@ public class ScheduleLongTermExecutionTest {
                                     asId(PAYING_ACCOUNT, spec),
                                     1L),
                             WRONG_TRANSFER_LIST);
-                }));
+                })));
     }
 
     @HapiTest
     @Order(2)
     final Stream<DynamicTest> executionWithCustomPayerAndAdminKeyWorks() {
-        return hapiTest(
+        return hapiTest(flattened(
                 newKeyNamed("adminKey"),
                 cryptoCreate(PAYING_ACCOUNT),
                 cryptoCreate(RECEIVER),
@@ -253,9 +250,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(BASIC_XFER),
                 withOpContext((spec, opLog) -> {
                     var createTx = getTxnRecord(CREATE_TX);
                     var signTx = getTxnRecord(SIGN_TX);
@@ -316,13 +311,13 @@ public class ScheduleLongTermExecutionTest {
                                     asId(PAYING_ACCOUNT, spec),
                                     1L),
                             WRONG_TRANSFER_LIST);
-                }));
+                })));
     }
 
     @HapiTest
     @Order(3)
     final Stream<DynamicTest> executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT),
                 cryptoCreate(RECEIVER),
                 cryptoCreate(SENDER).via(SENDER_TXN),
@@ -341,9 +336,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(BASIC_XFER),
                 withOpContext((spec, opLog) -> {
                     var createTx = getTxnRecord(CREATE_TX);
                     var signTx = getTxnRecord(SIGN_TX);
@@ -405,14 +398,14 @@ public class ScheduleLongTermExecutionTest {
                                     asId(PAYING_ACCOUNT, spec),
                                     1L),
                             WRONG_TRANSFER_LIST);
-                }));
+                })));
     }
 
     @HapiTest
     @Order(4)
     public Stream<DynamicTest> executionWithDefaultPayerWorks() {
         long transferAmount = 1;
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(SENDER).via(SENDER_TXN),
                 cryptoCreate(RECEIVER),
                 cryptoCreate(PAYING_ACCOUNT),
@@ -494,14 +487,14 @@ public class ScheduleLongTermExecutionTest {
                                     asId(PAYING_ACCOUNT, spec),
                                     transferAmount),
                             WRONG_TRANSFER_LIST);
-                }));
+                })));
     }
 
     @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
     @Order(5)
     public Stream<DynamicTest> executionWithContractCallWorksAtExpiry() {
         final var payerBalance = new AtomicLong();
-        return hapiTest(
+        return hapiTest(flattened(
                 // upload fees for SCHEDULE_CREATE_CONTRACT_CALL
                 uploadScheduledContractPrices(GENESIS),
                 uploadInitCode(SIMPLE_UPDATE),
@@ -524,10 +517,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(PAYING_ACCOUNT_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                sleepFor(500),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(BASIC_XFER),
                 getAccountBalance(PAYING_ACCOUNT)
                         .hasTinyBars(spec ->
                                 bal -> bal < PAYER_INITIAL_BALANCE ? Optional.empty() : Optional.of("didnt change"))
@@ -550,14 +540,14 @@ public class ScheduleLongTermExecutionTest {
                                     .getContractCallResult()
                                     .size()
                             >= 0);
-                }));
+                })));
     }
 
     @HapiTest
     @Order(6)
     public Stream<DynamicTest> executionWithContractCreateWorksAtExpiry() {
         final var payerBalance = new AtomicLong();
-        return hapiTest(
+        return hapiTest(flattened(
                 uploadInitCode(SIMPLE_UPDATE),
                 cryptoCreate(PAYING_ACCOUNT).balance(PAYER_INITIAL_BALANCE).via(PAYING_ACCOUNT_TXN),
                 scheduleCreate(
@@ -576,10 +566,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(PAYING_ACCOUNT_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                sleepFor(2000),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(BASIC_XFER),
                 getAccountBalance(PAYING_ACCOUNT)
                         .hasTinyBars(spec ->
                                 bal -> bal < PAYER_INITIAL_BALANCE ? Optional.empty() : Optional.of("didnt change"))
@@ -605,7 +592,7 @@ public class ScheduleLongTermExecutionTest {
                                     .getContractCallResult()
                                     .size()
                             >= 0);
-                }));
+                })));
     }
 
     @HapiTest
@@ -614,7 +601,7 @@ public class ScheduleLongTermExecutionTest {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).balance(balance),
                 cryptoCreate(LUCKY_RECEIVER),
                 cryptoCreate(SENDER).balance(transferAmount).via(SENDER_TXN),
@@ -639,9 +626,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(BASIC_XFER),
                 getAccountBalance(SENDER).hasTinyBars(transferAmount),
                 getAccountBalance(RECEIVER).hasTinyBars(noBalance),
                 withOpContext((spec, opLog) -> {
@@ -653,14 +638,14 @@ public class ScheduleLongTermExecutionTest {
                             INSUFFICIENT_PAYER_BALANCE,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                }));
+                })));
     }
 
     @HapiTest
     @Order(8)
     public Stream<DynamicTest> executionWithCustomPayerThatNeverSignsFails() {
         long transferAmount = 1;
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT),
                 cryptoCreate(SENDER).via(SENDER_TXN),
                 cryptoCreate(RECEIVER),
@@ -678,10 +663,8 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getTxnRecord(CREATE_TX).scheduled().hasPriority(recordWith().status(INVALID_PAYER_SIGNATURE)));
+                triggerSchedule(BASIC_XFER),
+                getTxnRecord(CREATE_TX).scheduled().hasPriority(recordWith().status(INVALID_PAYER_SIGNATURE))));
     }
 
     @HapiTest
@@ -689,7 +672,7 @@ public class ScheduleLongTermExecutionTest {
     public Stream<DynamicTest> executionWithCustomPayerButNoFundsFails() {
         long balance = 0L;
         long transferAmount = 1;
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).balance(balance),
                 cryptoCreate(SENDER).via(SENDER_TXN),
                 cryptoCreate(RECEIVER),
@@ -710,9 +693,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(BASIC_XFER),
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
 
@@ -722,7 +703,7 @@ public class ScheduleLongTermExecutionTest {
                             INSUFFICIENT_PAYER_BALANCE,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                }));
+                })));
     }
 
     @HapiTest
@@ -731,7 +712,7 @@ public class ScheduleLongTermExecutionTest {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).balance(balance),
                 cryptoCreate(LUCKY_RECEIVER),
                 cryptoCreate(SENDER).balance(transferAmount).via(SENDER_TXN),
@@ -754,15 +735,13 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(BASIC_XFER),
                 getAccountBalance(SENDER).hasTinyBars(transferAmount),
                 getAccountBalance(RECEIVER).hasTinyBars(noBalance),
                 // future: a check if account was deleted will be added in DispatchValidator
                 getTxnRecord(CREATE_TX)
                         .scheduled()
-                        .hasPriority(recordWith().statusFrom(PAYER_ACCOUNT_DELETED, INSUFFICIENT_PAYER_BALANCE)));
+                        .hasPriority(recordWith().statusFrom(PAYER_ACCOUNT_DELETED, INSUFFICIENT_PAYER_BALANCE))));
     }
 
     @HapiTest
@@ -771,7 +750,7 @@ public class ScheduleLongTermExecutionTest {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1;
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).balance(balance),
                 cryptoCreate(SENDER).balance(transferAmount).via(SENDER_TXN),
                 cryptoCreate(RECEIVER).balance(noBalance),
@@ -793,15 +772,13 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(BASIC_XFER),
                 getAccountBalance(SENDER).hasTinyBars(transferAmount),
                 getAccountBalance(RECEIVER).hasTinyBars(noBalance),
                 // future: a check if account was deleted will be added in DispatchValidator
                 getTxnRecord(CREATE_TX)
                         .scheduled()
-                        .hasPriority(recordWith().statusFrom(INSUFFICIENT_PAYER_BALANCE, PAYER_ACCOUNT_DELETED)));
+                        .hasPriority(recordWith().statusFrom(INSUFFICIENT_PAYER_BALANCE, PAYER_ACCOUNT_DELETED))));
     }
 
     @HapiTest
@@ -832,7 +809,7 @@ public class ScheduleLongTermExecutionTest {
         long senderBalance = 100L;
         long transferAmount = 101L;
         long payerBalance = 1_000_000L;
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).balance(payerBalance),
                 cryptoCreate(SENDER).balance(senderBalance).via(SENDER_TXN),
                 cryptoCreate(RECEIVER).balance(noBalance),
@@ -853,9 +830,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(FAILED_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(FAILED_XFER),
                 getAccountBalance(SENDER).hasTinyBars(senderBalance),
                 getAccountBalance(RECEIVER).hasTinyBars(noBalance),
                 withOpContext((spec, opLog) -> {
@@ -867,7 +842,7 @@ public class ScheduleLongTermExecutionTest {
                             INSUFFICIENT_ACCOUNT_BALANCE,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                }));
+                })));
     }
 
     @HapiTest
@@ -877,7 +852,7 @@ public class ScheduleLongTermExecutionTest {
         long senderBalance = 100L;
         long transferAmount = 101L;
         long payerBalance = 1_000_000L;
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).balance(payerBalance),
                 cryptoCreate(SENDER).balance(senderBalance).via(SENDER_TXN),
                 cryptoCreate(RECEIVER).balance(noBalance),
@@ -900,9 +875,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(SENDER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(FAILED_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(FAILED_XFER),
                 getAccountBalance(RECEIVER).hasTinyBars(noBalance),
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
@@ -913,7 +886,7 @@ public class ScheduleLongTermExecutionTest {
                             ACCOUNT_DELETED,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                }));
+                })));
     }
 
     @HapiTest
@@ -921,7 +894,7 @@ public class ScheduleLongTermExecutionTest {
     public Stream<DynamicTest> executionTriggersWithWeirdlyRepeatedKey() {
         String schedule = "dupKeyXfer";
 
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(WEIRDLY_POPULAR_KEY),
                 cryptoCreate(SENDER_1).key(WEIRDLY_POPULAR_KEY).balance(1L),
                 cryptoCreate(SENDER_2).key(WEIRDLY_POPULAR_KEY).balance(1L),
@@ -946,20 +919,17 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(WEIRDLY_POPULAR_KEY_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(schedule),
                 getAccountBalance(SENDER_1).hasTinyBars(0L),
                 getAccountBalance(SENDER_2).hasTinyBars(0L),
                 getAccountBalance(SENDER_3).hasTinyBars(0L),
                 getAccountBalance(RECEIVER).hasTinyBars(3L),
-                scheduleSign(schedule).alsoSigningWith(WEIRDLY_POPULAR_KEY).hasKnownStatus(INVALID_SCHEDULE_ID));
+                scheduleSign(schedule).alsoSigningWith(WEIRDLY_POPULAR_KEY).hasKnownStatus(INVALID_SCHEDULE_ID)));
     }
 
     @HapiTest
     @Order(16)
     final Stream<DynamicTest> scheduledFreezeWorksAsExpected() {
-
         return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                 scheduleFakeUpgrade(PAYING_ACCOUNT, 4, SUCCESS_TXN),
@@ -973,9 +943,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotExecuted()
                         .isNotDeleted()
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(VALID_SCHEDULE),
                 freezeAbort().payingWith(GENESIS),
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
@@ -990,6 +958,7 @@ public class ScheduleLongTermExecutionTest {
     @HapiTest
     @Order(17)
     final Stream<DynamicTest> scheduledFreezeWithUnauthorizedPayerFails() {
+
         return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                 cryptoCreate(PAYING_ACCOUNT_2),
@@ -1000,6 +969,7 @@ public class ScheduleLongTermExecutionTest {
                 // user would be
                 // todo future throttle is not implemented yet
                 // .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
+
                 // note: the sleepFor and cryptoCreate operations are added only to clear the schedule before
                 // the next state. This was needed because an edge case in the BaseTranslator occur.
                 // When scheduleCreate trigger the schedules execution scheduleRef field is not the correct one.
@@ -1010,8 +980,7 @@ public class ScheduleLongTermExecutionTest {
     @HapiTest
     @Order(18)
     final Stream<DynamicTest> scheduledPermissionedFileUpdateWorksAsExpected() {
-
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                 scheduleCreate(VALID_SCHEDULE, fileUpdate(standardUpdateFile).contents("fooo!"))
                         .withEntityMemo(randomUppercase(100))
@@ -1032,9 +1001,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(PAYER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(VALID_SCHEDULE),
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
@@ -1043,14 +1010,13 @@ public class ScheduleLongTermExecutionTest {
                             SUCCESS,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                }));
+                })));
     }
 
     @HapiTest
     @Order(19)
     final Stream<DynamicTest> scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
-
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                 cryptoCreate(PAYING_ACCOUNT_2),
                 scheduleCreate(VALID_SCHEDULE, fileUpdate(standardUpdateFile).contents("fooo!"))
@@ -1072,9 +1038,7 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(PAYER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                triggerSchedule(VALID_SCHEDULE),
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
@@ -1083,17 +1047,16 @@ public class ScheduleLongTermExecutionTest {
                             AUTHORIZATION_FAILED,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             "Scheduled transaction be AUTHORIZATION_FAILED!");
-                }));
+                })));
     }
 
     @HapiTest
     @Order(20)
     final Stream<DynamicTest> scheduledSystemDeleteWorksAsExpected() {
-
-        return hapiTest(
+        return hapiTest(flattened(
                 cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
-                fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
-                scheduleCreate(VALID_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
+                fileCreate(FILE_NAME).lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
+                scheduleCreate(VALID_SCHEDULE, systemFileDelete(FILE_NAME).updatingExpiry(1L))
                         .withEntityMemo(randomUppercase(100))
                         .designatingPayer(SYSTEM_DELETE_ADMIN)
                         .payingWith(PAYING_ACCOUNT)
@@ -1112,10 +1075,8 @@ public class ScheduleLongTermExecutionTest {
                         .isNotDeleted()
                         .hasRelativeExpiry(PAYER_TXN, 4)
                         .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                getFileInfo("misc").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
+                triggerSchedule(VALID_SCHEDULE),
+                getFileInfo(FILE_NAME).nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
@@ -1124,7 +1085,7 @@ public class ScheduleLongTermExecutionTest {
                             SUCCESS,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                }));
+                })));
     }
 
     @HapiTest
@@ -1133,8 +1094,8 @@ public class ScheduleLongTermExecutionTest {
         return hapiTest(
                 cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                 cryptoCreate(PAYING_ACCOUNT_2),
-                fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
-                scheduleCreate(VALID_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
+                fileCreate(FILE_NAME).lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
+                scheduleCreate(VALID_SCHEDULE, systemFileDelete(FILE_NAME).updatingExpiry(1L))
                         .withEntityMemo(randomUppercase(100))
                         .designatingPayer(PAYING_ACCOUNT_2)
                         .payingWith(PAYING_ACCOUNT)

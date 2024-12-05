@@ -212,7 +212,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      * {@inheritDoc}
      */
     @Override
-    public void flush() {
+    public boolean flush() {
         if (flushed) {
             throw new IllegalStateException("copy is already flushed");
         }
@@ -261,6 +261,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         flushLatch.countDown();
 
         statistics.recordFlush(copyIndex); // Use copyIndex as flush duration
+
+        return true;
     }
 
     private static boolean shouldBeFlushed(DummyVirtualRoot copy) {
