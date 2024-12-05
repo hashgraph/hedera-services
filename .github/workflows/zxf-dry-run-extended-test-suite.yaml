@@ -98,7 +98,7 @@ jobs:
       - name: Resolve coverage file paths
         id: coverage_paths
         run: |
-          echo "COVERAGE_REPORTS=$(find . -path '*/build/test-results/test/*' -name 'TEST-*.xml' | tr '\n' ',')" >> $GITHUB_ENV
+          echo "COVERAGE_REPORTS=$(find . -path '*/build/test-results/test/*' -name 'TEST-com.hedera.hapi.block.stream.input.tests.EventHeaderTest.xml' | tr '\n' ',')" >> $GITHUB_ENV
       
       - name: Publish to codacy
         uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1.3.0
