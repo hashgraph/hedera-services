@@ -172,9 +172,10 @@ jobs:
       - name: Resolve coverage file paths
         id: coverage_paths
         run: |
-          find **/build/test-results/test -name 'TEST-*.xml' | tr '\n' ','
           echo "COVERAGE_REPORTS=$(find **/build/test-results/test -name 'TEST-*.xml' | tr '\n' ',')" >> $GITHUB_ENV
-          echo ${{ env.COVERAGE_REPORTS }}
+
+      - name: test check env variable
+        run: echo ${{ env.COVERAGE_REPORTS }}
 
       # find **/build/test-results/timingSensitive -name 'TEST-*.xml' RETURN THIS TO THE PREVIOUS STEP
       # - name: Publish to codacy
