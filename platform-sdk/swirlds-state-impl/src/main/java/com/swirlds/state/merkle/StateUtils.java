@@ -195,7 +195,7 @@ public final class StateUtils {
         // default internal representation for strings, and we need to normalize that)
         final var data = getNormalisedStringBytes(s);
         long l = hashBytes(data);
-        logger.info(LogMarker.STARTUP.getMarker(), "Hashed string {} to {}", s, l);
+        logger.debug(LogMarker.STARTUP.getMarker(), "Hashed string {} to {}", s, l);
         return l;
     }
 
