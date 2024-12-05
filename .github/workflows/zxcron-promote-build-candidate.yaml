@@ -239,7 +239,7 @@ jobs:
             "payload": {
               "summary": "Hedera Services - eXtended Test Suite Failure",
               "severity": "error",
-              "source": "GitHub Actions - Extended Test Suite",
+              "source": "GitHub Actions - eXtended Test Suite",
               "custom_details": {
                 "Fetch Latest Build Candidate": "${{ needs.determine-build-candidate.result }}",
                 "Promote Build Candidate": "${{ needs.promote-build-candidate.result }}",
