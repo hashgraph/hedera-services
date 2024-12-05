@@ -23,7 +23,6 @@ import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusApproveAllowanceHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
@@ -120,9 +119,6 @@ class HandleWorkflowModuleTest {
 
     @Mock
     private ConsensusSubmitMessageHandler consensusSubmitMessageHandler;
-
-    @Mock
-    private ConsensusApproveAllowanceHandler consensusApproveAllowanceHandler;
 
     @Mock
     private ContractCreateHandler contractCreateHandler;
@@ -265,7 +261,6 @@ class HandleWorkflowModuleTest {
         given(consensusHandlers.consensusUpdateTopicHandler()).willReturn(consensusUpdateTopicHandler);
         given(consensusHandlers.consensusDeleteTopicHandler()).willReturn(consensusDeleteTopicHandler);
         given(consensusHandlers.consensusSubmitMessageHandler()).willReturn(consensusSubmitMessageHandler);
-        given(consensusHandlers.consensusApproveAllowanceHandler()).willReturn(consensusApproveAllowanceHandler);
         given(contractHandlers.contractCreateHandler()).willReturn(contractCreateHandler);
         given(contractHandlers.contractUpdateHandler()).willReturn(contractUpdateHandler);
         given(contractHandlers.contractCallHandler()).willReturn(contractCallHandler);

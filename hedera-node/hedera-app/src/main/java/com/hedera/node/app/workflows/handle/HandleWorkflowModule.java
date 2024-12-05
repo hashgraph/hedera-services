@@ -95,7 +95,6 @@ public interface HandleWorkflowModule {
                 consensusHandlers.consensusUpdateTopicHandler(),
                 consensusHandlers.consensusDeleteTopicHandler(),
                 consensusHandlers.consensusSubmitMessageHandler(),
-                consensusHandlers.consensusApproveAllowanceHandler(),
                 contractHandlers.get().contractCreateHandler(),
                 contractHandlers.get().contractUpdateHandler(),
                 contractHandlers.get().contractCallHandler(),

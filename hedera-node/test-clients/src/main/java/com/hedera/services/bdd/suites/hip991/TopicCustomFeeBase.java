@@ -101,18 +101,6 @@ public class TopicCustomFeeBase {
         };
     }
 
-    protected static SpecOperation[] setupBaseForUpdate() {
-        return new SpecOperation[]{
-                newKeyNamed(ADMIN_KEY),
-                newKeyNamed(SUBMIT_KEY),
-                newKeyNamed(FEE_SCHEDULE_KEY),
-                newKeyNamed(FEE_SCHEDULE_KEY2),
-                cryptoCreate(COLLECTOR),
-                tokenCreate(TOKEN).tokenType(TokenType.FUNGIBLE_COMMON).initialSupply(500),
-                tokenAssociate(COLLECTOR, TOKEN)
-        };
-    }
-
     /**
      * Create and transfer multiple tokens with 2 layer custom fees to given account.
      *

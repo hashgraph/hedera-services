@@ -159,8 +159,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                         HandleContext.TransactionCategory.CHILD,
                         HandleContext.ConsensusThrottling.OFF);
                 validateTrue(record.status().equals(SUCCESS), record.status());
-                // update total allowances
-                customFeeAssessor.adjustAllowance(syntheticBody);
             }
         }
 

@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers.customfee;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -50,15 +47,12 @@ import javax.inject.Singleton;
 @Singleton
 public class ConsensusCustomFeeAssessor {
 
-    private final ConsensusAllowanceUpdater allowanceUpdater;
-
     /**
      * Constructs a {@link ConsensusCustomFeeAssessor} instance.
      */
     @Inject
-    public ConsensusCustomFeeAssessor(@NonNull final ConsensusAllowanceUpdater allowanceUpdater) {
+    public ConsensusCustomFeeAssessor() {
         // Needed for Dagger injection
-        this.allowanceUpdater = requireNonNull(allowanceUpdater);
     }
 
     public List<CryptoTransferTransactionBody> assessCustomFee(Topic topic, HandleContext context) {
@@ -110,17 +104,13 @@ public class ConsensusCustomFeeAssessor {
                     continue;
                 }
 
-                validateTokenAllowance(tokenAllowanceMap, fixedFee);
+                // todo after removing allowances - check limits
                 tokenTransfers.add(buildCustomFeeTokenTransferList(payer, fee.feeCollectorAccountId(), fixedFee));
-                // update allowance values
-                allowanceUpdater.applyFungibleTokenAllowances(
-                        topic.topicIdOrThrow(), tokenAllowanceMap.get(tokenId), topicStore);
+
             } else {
-                validateHbarAllowance(hbarAllowance, fixedFee);
+                // todo after removing allowances - check limits
                 hbarTransfers = mergeTransfers(
                         hbarTransfers, buildCustomFeeHbarTransferList(payer, fee.feeCollectorAccountId(), fixedFee));
-                // update allowance values
-                allowanceUpdater.applyCryptoAllowances(topic.topicIdOrThrow(), hbarAllowance, topicStore);
             }
             transferCounts++;
 
@@ -149,25 +139,6 @@ public class ConsensusCustomFeeAssessor {
                 .build());
 
         return transactionBodies;
-    }
-
-    private void validateTokenAllowance(
-            Map<TokenID, TopicFungibleTokenAllowance> tokenAllowanceMap, FixedFee fixedFee) {
-        final var allowance = tokenAllowanceMap.get(fixedFee.denominatingTokenId());
-        validateTrue(allowance != null, SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-        validateTrue(allowance.amountPerMessage() >= fixedFee.amount(), AMOUNT_EXCEEDS_ALLOWANCE);
-        validateTrue(allowance.amount() >= fixedFee.amount(), AMOUNT_EXCEEDS_ALLOWANCE);
-    }
-
-    private void validateHbarAllowance(TopicCryptoAllowance allowance, FixedFee fixedFee) {
-        validateTrue(allowance != null, SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-        validateTrue(allowance.amountPerMessage() >= fixedFee.amount(), AMOUNT_EXCEEDS_ALLOWANCE);
-        validateTrue(allowance.amount() >= fixedFee.amount(), AMOUNT_EXCEEDS_ALLOWANCE);
-    }
-
-    public void adjustAllowance(CryptoTransferTransactionBody syntheticBody) {
-        // todo adjust allowance
-        // extract the code for updating the allowance amounts from ConsensusApproveAllowanceHandler and reuse it here
     }
 
     private List<AccountAmount> buildCustomFeeHbarTransferList(AccountID payer, AccountID collector, FixedFee fee) {

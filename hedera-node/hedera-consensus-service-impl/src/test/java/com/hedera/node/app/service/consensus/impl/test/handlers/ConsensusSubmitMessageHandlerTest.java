@@ -49,6 +49,7 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.customfee.ConsensusCustomFeeAssessor;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -90,7 +91,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     @BeforeEach
     void setUp() {
         commonSetUp();
-        subject = new ConsensusSubmitMessageHandler();
+        subject = new ConsensusSubmitMessageHandler(new ConsensusCustomFeeAssessor());
 
         final var config = HederaTestConfigBuilder.create()
                 .withValue("consensus.message.maxBytesAllowed", 100)
@@ -200,7 +201,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     @DisplayName("Handle throws IOException")
     void handleThrowsIOException() {
         givenValidTopic();
-        subject = new ConsensusSubmitMessageHandler() {
+        subject = new ConsensusSubmitMessageHandler(new ConsensusCustomFeeAssessor()) {
             @Override
             public Topic updateRunningHashAndSequenceNumber(
                     @NonNull final TransactionBody txn, @NonNull final Topic topic, @Nullable Instant consensusNow)
