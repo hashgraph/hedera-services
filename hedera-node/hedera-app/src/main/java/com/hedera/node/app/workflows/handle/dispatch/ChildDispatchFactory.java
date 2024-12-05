@@ -16,9 +16,14 @@
 
 package com.hedera.node.app.workflows.handle.dispatch;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.functionalityForType;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId.NO;
 import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -33,6 +38,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
@@ -87,6 +93,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -102,6 +109,8 @@ import javax.inject.Singleton;
 public class ChildDispatchFactory {
     private static final KeyComparator KEY_COMPARATOR = new KeyComparator();
     public static final NoOpKeyVerifier NO_OP_KEY_VERIFIER = new NoOpKeyVerifier();
+    private static final Set<HederaFunctionality> RECURSIVE_FUNCTIONS =
+            EnumSet.of(CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
 
     private final TransactionDispatcher dispatcher;
     private final Authorizer authorizer;
@@ -169,7 +178,22 @@ public class ChildDispatchFactory {
 
         final var preHandleResult = preHandleChild(options.body(), options.payerId(), config, readableStoreFactory);
         final var childVerifier = getKeyVerifier(options.effectiveKeyVerifier(), config, options.authorizingKeys());
-        final var childTxnInfo = getTxnInfoFrom(options.payerId(), options.body());
+        boolean isLastAllowedPreset = false;
+        if (options.body().hasScheduleCreate()) {
+            final var scheduledFunction = functionalityForType(options.body()
+                    .scheduleCreateOrThrow()
+                    .scheduledTransactionBodyOrElse(SchedulableTransactionBody.DEFAULT)
+                    .data()
+                    .kind());
+            isLastAllowedPreset = RECURSIVE_FUNCTIONS.contains(scheduledFunction);
+        }
+        final var body = options.usePresetTxnId() == NO
+                ? options.body()
+                : options.body()
+                        .copyBuilder()
+                        .transactionID(stack.nextPresetTxnId(isLastAllowedPreset))
+                        .build();
+        final var childTxnInfo = getTxnInfoFrom(options.payerId(), body);
         final var streamMode = config.getConfigData(BlockStreamConfig.class).streamMode();
         final var childStack = SavepointStackImpl.newChildStack(
                 stack, options.reversingBehavior(), options.category(), options.transactionCustomizer(), streamMode);
@@ -468,6 +492,8 @@ public class ChildDispatchFactory {
      */
     public static TransactionInfo getTxnInfoFrom(
             @NonNull final AccountID payerId, @NonNull final TransactionBody txBody) {
+        requireNonNull(payerId);
+        requireNonNull(txBody);
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
         final var signedTransaction =
                 SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
@@ -478,7 +504,7 @@ public class ChildDispatchFactory {
         return new TransactionInfo(
                 transaction,
                 txBody,
-                TransactionID.DEFAULT,
+                txBody.transactionIDOrElse(TransactionID.DEFAULT),
                 payerId,
                 SignatureMap.DEFAULT,
                 signedTransactionBytes,

@@ -28,6 +28,7 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -61,7 +62,7 @@ public interface SystemContractOperations {
             @NonNull VerificationStrategy strategy,
             @NonNull AccountID syntheticPayerId,
             @NonNull Class<T> streamBuilderType) {
-        return dispatch(syntheticBody, strategy, syntheticPayerId, streamBuilderType, emptySet());
+        return dispatch(syntheticBody, strategy, syntheticPayerId, streamBuilderType, emptySet(), UsePresetTxnId.NO);
     }
 
     /**
@@ -74,10 +75,11 @@ public interface SystemContractOperations {
      * of this dispatch should have its stateful side effects cleared and its result set to {@code REVERTED_SUCCESS}.
      *
      * @param syntheticBody the synthetic transaction to dispatch
-     * @param strategy             the non-cryptographic signature verification to use
-     * @param syntheticPayerId     the payer of the synthetic transaction
-     * @param streamBuilderType  the class of the stream builder to use
-     * @param authorizingKeys     the keys authorizing the dispatch
+     * @param strategy the non-cryptographic signature verification to use
+     * @param syntheticPayerId the payer of the synthetic transaction
+     * @param streamBuilderType the class of the stream builder to use
+     * @param authorizingKeys the keys authorizing the dispatch
+     * @param usePresetTxnId whether to set the expected transaction ID in the dispatch body
      * @return the result of the dispatch
      */
     @NonNull
@@ -86,7 +88,8 @@ public interface SystemContractOperations {
             @NonNull VerificationStrategy strategy,
             @NonNull AccountID syntheticPayerId,
             @NonNull Class<T> streamBuilderType,
-            @NonNull Set<Key> authorizingKeys);
+            @NonNull Set<Key> authorizingKeys,
+            @NonNull UsePresetTxnId usePresetTxnId);
 
     /**
      * Externalizes the preemption of the given {@code syntheticTransaction} hat would have otherwise been

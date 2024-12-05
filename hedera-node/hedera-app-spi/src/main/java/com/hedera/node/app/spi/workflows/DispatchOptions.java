@@ -39,6 +39,7 @@ public record DispatchOptions<T extends StreamBuilder>(
         @NonNull Commit commit,
         @NonNull AccountID payerId,
         @NonNull TransactionBody body,
+        @NonNull UsePresetTxnId usePresetTxnId,
         @NonNull Predicate<Key> keyVerifier,
         @NonNull Set<Key> authorizingKeys,
         @NonNull TransactionCategory category,
@@ -80,10 +81,26 @@ public record DispatchOptions<T extends StreamBuilder>(
         OFF,
     }
 
+    /**
+     * Whether the dispatch's {@link TransactionBody} should use a preset transaction ID
+     * instead of receiving one at the end of the dispatch.
+     */
+    public enum UsePresetTxnId {
+        /**
+         * The dispatch's {@link TransactionBody} should include the expected transaction ID.
+         */
+        YES,
+        /**
+         * The dispatch's {@link TransactionBody} should not include the expected transaction ID.
+         */
+        NO,
+    }
+
     public DispatchOptions {
         requireNonNull(commit);
         requireNonNull(payerId);
         requireNonNull(body);
+        requireNonNull(usePresetTxnId);
         requireNonNull(keyVerifier);
         requireNonNull(category);
         requireNonNull(throttling);
@@ -132,6 +149,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 Commit.IMMEDIATELY,
                 payerId,
                 body,
+                UsePresetTxnId.NO,
                 PREAUTHORIZED_KEYS,
                 emptySet(),
                 TransactionCategory.PRECEDING,
@@ -164,6 +182,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 Commit.WITH_PARENT,
                 payerId,
                 body,
+                UsePresetTxnId.NO,
                 PREAUTHORIZED_KEYS,
                 emptySet(),
                 TransactionCategory.PRECEDING,
@@ -189,6 +208,7 @@ public record DispatchOptions<T extends StreamBuilder>(
      * @param authorizingKeys the set of keys authorizing the dispatch
      * @param streamBuilderType the type of stream builder to use for the dispatch
      * @param stakingRewards whether the dispatch can trigger staking rewards
+     * @param usePresetTxnId whether the dispatch's {@link TransactionBody} should include the expected txn id
      * @return the options for the sub-dispatch
      */
     public static <T extends StreamBuilder> DispatchOptions<T> subDispatch(
@@ -197,7 +217,8 @@ public record DispatchOptions<T extends StreamBuilder>(
             @NonNull final Predicate<Key> keyVerifier,
             @NonNull final Set<Key> authorizingKeys,
             @NonNull final Class<T> streamBuilderType,
-            @NonNull final StakingRewards stakingRewards) {
+            @NonNull final StakingRewards stakingRewards,
+            @NonNull final UsePresetTxnId usePresetTxnId) {
         final var category =
                 switch (requireNonNull(stakingRewards)) {
                     case ON -> TransactionCategory.SCHEDULED;
@@ -207,6 +228,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 Commit.WITH_PARENT,
                 payerId,
                 body,
+                usePresetTxnId,
                 keyVerifier,
                 authorizingKeys,
                 category,
@@ -239,6 +261,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 Commit.WITH_PARENT,
                 payerId,
                 body,
+                UsePresetTxnId.NO,
                 PREAUTHORIZED_KEYS,
                 emptySet(),
                 TransactionCategory.CHILD,

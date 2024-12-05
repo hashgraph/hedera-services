@@ -17,7 +17,10 @@
 package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static java.util.Collections.emptySet;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -60,8 +63,16 @@ public class RecordFinalizer {
      * and the child record finalizer is used for child and preceding transactions.
      * @param dispatch the dispatch
      */
-    public void finalizeRecord(final Dispatch dispatch) {
-        switch (dispatch.txnCategory()) {
+    public void finalizeRecord(@NonNull final Dispatch dispatch) {
+        requireNonNull(dispatch);
+        final var category = dispatch.txnCategory();
+        // We only paid staking rewards for execute_immediate=true scheduled transactions triggered by a user
+        // ScheduleCreate or ScheduleSign for mono-service compatibility; it would be even more complicated
+        // to do this when a contract's child dispatch is triggering the execute_immediate=true schedule, and
+        // no mono-service precedent forces us to do it---so we don't
+        final var effectiveCategory =
+                category != SCHEDULED ? category : (dispatch.stack().scheduledParentIsUser() ? SCHEDULED : CHILD);
+        switch (effectiveCategory) {
             case USER, SCHEDULED -> recordFinalizer.finalizeStakingRecord(
                     dispatch.finalizeContext(),
                     dispatch.txnInfo().functionality(),

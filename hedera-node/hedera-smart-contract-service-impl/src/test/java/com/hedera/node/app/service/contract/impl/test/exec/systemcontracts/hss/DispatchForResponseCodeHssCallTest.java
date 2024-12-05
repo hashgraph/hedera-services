@@ -34,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
@@ -79,7 +80,8 @@ class DispatchForResponseCodeHssCallTest extends CallTestBase {
                         verificationStrategy,
                         AccountID.DEFAULT,
                         ContractCallStreamBuilder.class,
-                        Collections.emptySet()))
+                        Collections.emptySet(),
+                        DispatchOptions.UsePresetTxnId.NO))
                 .willReturn(recordBuilder);
         given(dispatchGasCalculator.gasRequirement(
                         TransactionBody.DEFAULT, gasCalculator, mockEnhancement(), AccountID.DEFAULT))
