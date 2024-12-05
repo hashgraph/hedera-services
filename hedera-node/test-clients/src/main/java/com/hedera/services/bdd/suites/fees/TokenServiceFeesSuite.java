@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCancelAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeScheduleUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
@@ -723,6 +724,22 @@ public class TokenServiceFeesSuite {
                         .fee(10 * ONE_HBAR)
                         .via(nftUpdateTxn),
                 validateChargedUsdWithin(nftUpdateTxn, expectedNftUpdatePriceUsd, 0.01));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> deleteTokenChargedAsExpected() {
+        final var expectedDeletePriceUsd = 0.001;
+
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(MULTI_KEY).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(FUNGIBLE_COMMON_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .adminKey(MULTI_KEY),
+                tokenDelete(FUNGIBLE_COMMON_TOKEN)
+                        .via("uniqueTokenDelete")
+                        .payingWith(MULTI_KEY),
+                validateChargedUsd("uniqueTokenDelete", expectedDeletePriceUsd));
     }
 
     @HapiTest
