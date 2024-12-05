@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.WRONG_LENGTH_EDDSA_KEY;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
@@ -28,14 +29,20 @@ import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -91,7 +98,7 @@ public class NodeDeleteTest {
                         nodeDelete("node100")
                                 .setNode("0.0.5")
                                 .payingWith("payer")
-                                .hasKnownStatus(UNAUTHORIZED)
+                                .hasKnownStatus(INVALID_SIGNATURE)
                                 .via("failedDeletion"))
                 .when()
                 .then(
@@ -104,7 +111,7 @@ public class NodeDeleteTest {
                                 .setNode("0.0.5")
                                 .payingWith("payer")
                                 .signedBy("payer", "randomAccount", "testKey")
-                                .hasKnownStatus(UNAUTHORIZED)
+                                .hasKnownStatus(INVALID_SIGNATURE)
                                 .via("multipleSigsDeletion"),
                         validateChargedUsdWithin("multipleSigsDeletion", 0.0011276316, 3.0),
                         nodeDelete("node100").via("deleteNode"),
@@ -138,7 +145,7 @@ public class NodeDeleteTest {
                         .fee(ONE_HBAR)
                         .payingWith("payer")
                         .signedBy("payer", "randomAccount", "testKey")
-                        .hasKnownStatus(UNAUTHORIZED)
+                        .hasKnownStatus(INVALID_SIGNATURE)
                         .via("multipleSigsDeletion"),
                 nodeDelete("node100").via("deleteNode"),
                 getTxnRecord("deleteNode").logged());
@@ -158,7 +165,7 @@ public class NodeDeleteTest {
                         nodeDelete("ntb")
                                 .payingWith("payer")
                                 .fee(ONE_HBAR)
-                                .hasKnownStatus(UNAUTHORIZED)
+                                .hasKnownStatus(INVALID_SIGNATURE)
                                 .via("failedDeletion"))
                 .when()
                 .then();
@@ -194,7 +201,7 @@ public class NodeDeleteTest {
                 nodeDelete(nodeName)
                         .payingWith("payer")
                         .signedBy("payer", "wrongKey")
-                        .hasKnownStatus(UNAUTHORIZED),
+                        .hasKnownStatus(INVALID_SIGNATURE),
                 nodeDelete(nodeName));
     }
 
@@ -208,5 +215,67 @@ public class NodeDeleteTest {
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 overriding("nodes.enableDAB", "false"),
                 nodeDelete(nodeName).hasPrecheck(NOT_SUPPORTED));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> validateAdminKey() throws CertificateEncodingException {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                nodeDelete("testNode").adminKey(NONSENSE_KEY).hasPrecheck(KEY_REQUIRED),
+                nodeDelete("testNode")
+                        .adminKey(WRONG_LENGTH_EDDSA_KEY)
+                        .signedBy(GENESIS)
+                        .hasPrecheck(INVALID_ADMIN_KEY));
+    }
+
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
+    final Stream<DynamicTest> deleteNodeWorkWithValidAdminKey() throws CertificateEncodingException {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                viewNode("testNode", node -> assertFalse(node.deleted(), "Node should not be deleted")),
+                nodeDelete("testNode").adminKey("adminKey").signedBy(DEFAULT_PAYER, "adminKey"),
+                viewNode("testNode", node -> assertTrue(node.deleted(), "Node should be deleted")));
+    }
+
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
+    final Stream<DynamicTest> deleteNodeWorkWithTreasuryPayer() throws CertificateEncodingException {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                viewNode("testNode", node -> assertFalse(node.deleted(), "Node should not be deleted")),
+                nodeDelete("testNode").payingWith(DEFAULT_PAYER),
+                viewNode("testNode", node -> assertTrue(node.deleted(), "Node should be deleted")));
+    }
+
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
+    final Stream<DynamicTest> deleteNodeWorkWithAddressBookAdminPayer() throws CertificateEncodingException {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                viewNode("testNode", node -> assertFalse(node.deleted(), "Node should not be deleted")),
+                nodeDelete("testNode").signedBy(ADDRESS_BOOK_CONTROL),
+                viewNode("testNode", node -> assertTrue(node.deleted(), "Node should be deleted")));
+    }
+
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
+    final Stream<DynamicTest> deleteNodeWorkWithSysAdminPayer() throws CertificateEncodingException {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                viewNode("testNode", node -> assertFalse(node.deleted(), "Node should not be deleted")),
+                nodeDelete("testNode").payingWith(SYSTEM_ADMIN),
+                viewNode("testNode", node -> assertTrue(node.deleted(), "Node should be deleted")));
     }
 }

@@ -22,12 +22,13 @@ option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.addressbook">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
+import "basic_types.proto";
+
 /**
  * A transaction body to delete a node from the network address book.
  *
- * This transaction body SHALL be considered a "privileged transaction".
- *
- * - A `NodeDeleteTransactionBody` MUST be signed by the governing council.
+ * - A `NodeDeleteTransactionBody` MUST be signed by one of those keys:
+ *   adminKey, treasure account (2) key, systemAdmin(50) key and addressBookAdmin(55) key.
  * - Upon success, the address book entry SHALL enter a "pending delete"
  *   state.
  * - All address book entries pending deletion SHALL be removed from the
@@ -48,4 +49,12 @@ message NodeDeleteTransactionBody {
      * This value is REQUIRED.
      */
     uint64 node_id = 1;
+
+    /**
+    * An administrative key controlled by the node operator.
+     * <p>
+     * This field is OPTIONAL.<br/>
+     * If set, this key MUST sign this transaction.
+     */
+    proto.Key admin_key = 2;
 }

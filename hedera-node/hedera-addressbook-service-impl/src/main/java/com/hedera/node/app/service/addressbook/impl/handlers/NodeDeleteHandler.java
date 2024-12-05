@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.service.addressbook.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NODE_DELETED;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.checkDABEnabled;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody;
@@ -29,12 +32,14 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -44,22 +49,44 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class NodeDeleteHandler implements TransactionHandler {
+    private final AddressBookValidator addressBookValidator;
 
     @Inject
-    public NodeDeleteHandler() {}
+    public NodeDeleteHandler(@NonNull final AddressBookValidator addressBookValidator) {
+        this.addressBookValidator =
+                requireNonNull(addressBookValidator, "The supplied argument 'addressBookValidator' must not be null");
+    }
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
-        final NodeDeleteTransactionBody transactionBody = txn.nodeDeleteOrThrow();
-        final long nodeId = transactionBody.nodeId();
+        final var op = txn.nodeDeleteOrThrow();
+        final long nodeId = op.nodeId();
 
         validateFalsePreCheck(nodeId < 0, INVALID_NODE_ID);
+        if (op.hasAdminKey()) {
+            final var adminKey = op.adminKey();
+            addressBookValidator.validateAdminKey(adminKey);
+        }
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
-        // Empty method
+        final var op = context.body().nodeDeleteOrThrow();
+        final var accountConfig = context.configuration().getConfigData(AccountsConfig.class);
+
+        // if send admin key, check if it is valid and require to sign. If no admin key, the payer must be one of the
+        // system admin, treasury or address book admin
+        if (op.hasAdminKey()) {
+            context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
+        } else {
+            final var payerid = context.payer().accountNum();
+            validateTruePreCheck(
+                    payerid == accountConfig.treasury()
+                            || payerid == accountConfig.systemAdmin()
+                            || payerid == accountConfig.addressBookAdmin(),
+                    INVALID_SIGNATURE);
+        }
     }
 
     /**
