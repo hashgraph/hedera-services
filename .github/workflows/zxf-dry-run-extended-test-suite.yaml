@@ -86,11 +86,13 @@ jobs:
           name: "Unit Test Report"
           run-id: ${{ steps.find-build-application-workflow-id.outputs.latest-build-application-run-id }}
           github-token: ${{ secrets.GH_ACCESS_TOKEN }}
+          path: downloaded_artifacts
 
       - name: Pull in XTS Unit Test artifact
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: "Unit Test Report (Timing Sensitive)"
+          path: downloaded_artifacts
 
       - name: Resolve coverage file paths
         id: coverage_paths
