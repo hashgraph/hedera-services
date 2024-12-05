@@ -25,9 +25,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_EXPIRY_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_EXPIRY_MUST_BE_FUTURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_EXPIRY_TOO_LONG;
 import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.hapi.node.base.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
@@ -159,8 +159,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 createProvisionalSchedule(context.body(), consensusNow, maxLifetime, isLongTermEnabled);
         final var now = consensusNow.getEpochSecond();
         final var then = provisionalSchedule.calculatedExpirationSecond();
-        validateTrue(then > now, SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME);
-        validateTrue(then <= now + maxLifetime, SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE);
+        validateTrue(then > now, SCHEDULE_EXPIRY_MUST_BE_FUTURE);
+        validateTrue(then <= now + maxLifetime, SCHEDULE_EXPIRY_TOO_LONG);
         validateTrue(
                 isAllowedFunction(provisionalSchedule.scheduledTransactionOrThrow(), schedulingConfig),
                 SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
