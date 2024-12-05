@@ -94,18 +94,18 @@ jobs:
       #     name: "Unit Test Report (Timing Sensitive)"
       #     path: downloaded_artifacts_xts
 
-      # - name: Resolve coverage file paths
-      #   id: coverage_paths
-      #   run: |
-      #     echo "COVERAGE_REPORTS=$(find . -path '*/build/test-results/test/*' -name 'TEST-*.xml' | tr '\n' ','; \
-      #       find . -path '*/build/test-results/timingSensitive/*' -name 'TEST-*.xml' | tr '\n' ',')" >> $GITHUB_ENV
+      # find . -path '*/build/test-results/timingSensitive/*' -name 'TEST-*.xml' | tr '\n' ','
+      - name: Resolve coverage file paths
+        id: coverage_paths
+        run: |
+          echo "COVERAGE_REPORTS=$(find . -path '*/build/test-results/test/*' -name 'TEST-*.xml' | tr '\n' ',')" >> $GITHUB_ENV
       
       - name: Publish to codacy
         uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1.3.0
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          # coverage-reports: ${{ env.COVERAGE_REPORTS }}
-          coverage-reports: '*/build/test-results/test/TEST-*.xml'
+          coverage-reports: ${{ env.COVERAGE_REPORTS }}
+          # coverage-reports: '*/build/test-results/test/TEST-*.xml'
 
   # abbreviated-panel:
   #   name: JRS Panel
