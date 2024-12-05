@@ -86,8 +86,9 @@ public class TssMessageHandler implements TransactionHandler {
         final var directory = tssDirectoryAccessor.activeParticipantDirectory();
         // Schedule work to potentially compute a signed vote for the new key material of the target
         // roster, if this message was valid and passed the threshold number of messages required
+        final var selfNodeId = context.networkInfo().selfNodeInfo().nodeId();
         tssCryptographyManager
-                .getVoteFuture(op.targetRosterHash(), directory, context)
+                .getVoteFuture(op.targetRosterHash(), directory, tssStore, selfNodeId)
                 .thenAccept(vote -> {
                     if (vote != null) {
                         // FUTURE: Validate the ledgerId computed is same as the current ledgerId

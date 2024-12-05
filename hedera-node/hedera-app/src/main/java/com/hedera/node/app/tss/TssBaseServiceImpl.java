@@ -68,7 +68,6 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -80,8 +79,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -106,6 +103,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssKeysAccessor tssKeysAccessor;
     private final TssDirectoryAccessor tssDirectoryAccessor;
     private final AppContext appContext;
+    private final TssCryptographyManager tssCryptographyManager;
     private boolean haveSentMessageForTargetRoster;
     private boolean haveSentVoteForTargetRoster;
 
@@ -136,6 +134,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssHandlers = new TssHandlers(
                 component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
         this.tssSubmissions = component.tssSubmissions();
+        this.tssCryptographyManager = component.tssCryptographyManager();
     }
 
     @Override
@@ -393,18 +392,15 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void manageTssStatus(final State state,
-                                final StoreMetricsService storeMetricsService,
-                                final boolean isStakePeriodBoundary) {
-        final var storeFactory = new WritableStoreFactory(state,
-                TssBaseService.NAME,
-                appContext.configSupplier().get(),
-                storeMetricsService);
+    public void manageTssStatus(
+            final State state, final StoreMetricsService storeMetricsService, final boolean isStakePeriodBoundary) {
+        final var storeFactory = new WritableStoreFactory(
+                state, TssBaseService.NAME, appContext.configSupplier().get(), storeMetricsService);
         final var tssStore = storeFactory.getStore(WritableTssStore.class);
-        final var tssStatus = tssStore.getTssStatus();
-        final var statusChange = new StatusChange(tssStatus, state, isStakePeriodBoundary);
+        final var oldStatus = tssStore.getTssStatus();
+        final var statusChange = new StatusChange(oldStatus, state, isStakePeriodBoundary);
         final var newTssStatus = statusChange.computeNewStatus();
-        if (!newTssStatus.equals(tssStatus)) {
+        if (!newTssStatus.equals(oldStatus)) {
             tssStore.put(newTssStatus);
         }
     }
@@ -424,9 +420,8 @@ public class TssBaseServiceImpl implements TssBaseService {
         private ReadableTssStore tssStore;
         private ReadableRosterStore rosterStore;
 
-        public StatusChange(@NonNull final TssStatus oldStatus,
-                            @NonNull final State state,
-                            final boolean isStakePeriodBoundary) {
+        public StatusChange(
+                @NonNull final TssStatus oldStatus, @NonNull final State state, final boolean isStakePeriodBoundary) {
             this.oldStatus = oldStatus;
             this.isStakePeriodBoundary = isStakePeriodBoundary;
             this.newKeyingStatus = oldStatus.tssKeyingStatus();
@@ -446,86 +441,29 @@ public class TssBaseServiceImpl implements TssBaseService {
                         newKeyingStatus = TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES;
                     }
                 }
-                case CANDIDATE_ROSTER -> {
+                case ACTIVE_ROSTER -> {
                     final var activeRosterHash = requireNonNull(rosterStore.getCurrentRosterHash());
-                    final var candidateRosterHash = RosterUtils.hash(requireNonNull(rosterStore.getCandidateRoster())).getBytes();
-
                     switch (oldStatus.tssKeyingStatus()) {
-                        case KEYING_COMPLETE -> {
-                            newRosterToKey = RosterToKey.NONE;
-                            haveSentMessageForTargetRoster = false;
-                            haveSentVoteForTargetRoster = false;
-                        }
-                        case WAITING_FOR_THRESHOLD_TSS_MESSAGES -> {
-                            validateThresholdTssMessages(oldStatus)
-                                    .thenAccept(thresholdReached -> {
-                                        if (thresholdReached) {
-                                            newKeyingStatus = TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES;
-                                        } else if (!haveSentMessageForTargetRoster) {
-                                            // Obtain the directory of participants for the target roster
-                                            // submit ours and set haveSentMessageForTargetRoster to true
-                                            final var tssPrivateShares = tssKeysAccessor
-                                                    .accessTssKeys()
-                                                    .activeRosterShares();
-                                            final var shareIndex = new AtomicInteger(0);
-                                            for (final var tssPrivateShare : tssPrivateShares) {
-                                                CompletableFuture.runAsync(
-                                                                () -> {
-                                                                    final var msg = tssLibrary.generateTssMessage(tssDirectoryAccessor.activeParticipantDirectory(),
-                                                                            tssPrivateShare);
-                                                                    final var tssMessage = TssMessageTransactionBody.newBuilder()
-                                                                            .sourceRosterHash(activeRosterHash)
-                                                                            .targetRosterHash(candidateRosterHash)
-                                                                            .shareIndex(shareIndex.getAndAdd(1))
-                                                                            .tssMessage(Bytes.wrap(msg.toBytes()))
-                                                                            .build();
-                                                                    // need to use consensusNow here
-                                                                    tssSubmissions.submitTssMessage(tssMessage, null);
-                                                                    haveSentMessageForTargetRoster = true;
-                                                                },
-                                                                tssLibraryExecutor)
-                                                        .exceptionally(e -> {
-                                                            log.error("Error generating tssMessage", e);
-                                                            return null;
-                                                        });
-                                            }
-                                        }
-                                    }).exceptionally(e -> {
-                                        log.error("Error validating threshold TSS messages", e);
-                                        return null;
-                                    });
-                        }
-                        case WAITING_FOR_THRESHOLD_TSS_VOTES -> {
-                            final var voteBodies = validateThresholdTssVotes(oldStatus);
-                            if (voteBodies.isPresent()) {
-                                newKeyingStatus = TssKeyingStatus.KEYING_COMPLETE;
-                                newLedgerId = voteBodies.get().ledgerId();
-                            } else if (!haveSentVoteForTargetRoster) {
-                                // Obtain the directory of participants for the target roster
-                                final var directory = tssDirectoryAccessor.activeParticipantDirectory();
-                                // Schedule work to potentially compute a signed vote for the new key material of the target
-                                // roster, if this message was valid and passed the threshold number of messages required
-                                tssCryptographyManager
-                                        .getVoteFuture(candidateRosterHash, directory, context)
-                                        .thenAccept(vote -> {
-                                            if (vote != null) {
-                                                // FUTURE: Validate the ledgerId computed is same as the current ledgerId
-                                                final var tssVote = TssVoteTransactionBody.newBuilder()
-                                                        .tssVote(vote.bitSet())
-                                                        .sourceRosterHash(activeRosterHash)
-                                                        .targetRosterHash(candidateRosterHash)
-                                                        .ledgerId(vote.ledgerId())
-                                                        .nodeSignature(vote.signature().getBytes())
-                                                        .build();
-                                                tssSubmissions.submitTssVote(tssVote, null);
-                                            }
-                                        });
-                                    haveSentVoteForTargetRoster = true;
-                            }
-                        }
+                        case KEYING_COMPLETE -> reset();
+                        case WAITING_FOR_THRESHOLD_TSS_MESSAGES -> validateMessagesAndSubmitIfNeeded(
+                                activeRosterHash, activeRosterHash);
+                        case WAITING_FOR_THRESHOLD_TSS_VOTES -> validateVotesAndSubmitIfNeeded(
+                                activeRosterHash, activeRosterHash);
                     }
                 }
+                case CANDIDATE_ROSTER -> {
+                    final var activeRosterHash = requireNonNull(rosterStore.getCurrentRosterHash());
+                    final var candidateRosterHash = RosterUtils.hash(requireNonNull(rosterStore.getCandidateRoster()))
+                            .getBytes();
 
+                    switch (oldStatus.tssKeyingStatus()) {
+                        case KEYING_COMPLETE -> reset();
+                        case WAITING_FOR_THRESHOLD_TSS_MESSAGES -> validateMessagesAndSubmitIfNeeded(
+                                activeRosterHash, candidateRosterHash);
+                        case WAITING_FOR_THRESHOLD_TSS_VOTES -> validateVotesAndSubmitIfNeeded(
+                                candidateRosterHash, activeRosterHash);
+                    }
+                }
             }
             return TssStatus.newBuilder()
                     .tssKeyingStatus(newKeyingStatus)
@@ -534,28 +472,111 @@ public class TssBaseServiceImpl implements TssBaseService {
                     .build();
         }
 
+        private void validateVotesAndSubmitIfNeeded(final Bytes candidateRosterHash, final Bytes activeRosterHash) {
+            final var voteBodies = validateThresholdTssVotes(oldStatus);
+            if (voteBodies.isPresent()) {
+                newKeyingStatus = TssKeyingStatus.KEYING_COMPLETE;
+                newLedgerId = voteBodies.get().ledgerId();
+            } else if (!haveSentVoteForTargetRoster) {
+                // Obtain the directory of participants for the target roster
+                final var directory = tssDirectoryAccessor.activeParticipantDirectory();
+                // Schedule work to potentially compute a signed vote for the new key material of the target
+                // roster, if this message was valid and passed the threshold number of messages required
+                tssCryptographyManager
+                        .getVoteFuture(
+                                candidateRosterHash,
+                                directory,
+                                tssStore,
+                                appContext.selfNodeInfoSupplier().get().nodeId())
+                        .thenAccept(vote -> {
+                            if (vote != null) {
+                                // FUTURE: Validate the ledgerId computed is same as the current ledgerId
+                                final var tssVote = TssVoteTransactionBody.newBuilder()
+                                        .tssVote(vote.bitSet())
+                                        .sourceRosterHash(activeRosterHash)
+                                        .targetRosterHash(candidateRosterHash)
+                                        .ledgerId(vote.ledgerId())
+                                        .nodeSignature(vote.signature().getBytes())
+                                        .build();
+                                tssSubmissions.submitTssVote(tssVote, null);
+                            }
+                        });
+                haveSentVoteForTargetRoster = true;
+            }
+        }
+
+        private void validateMessagesAndSubmitIfNeeded(final Bytes activeRosterHash, final Bytes candidateRosterHash) {
+            validateThresholdTssMessages(oldStatus)
+                    .thenAccept(thresholdReached -> {
+                        if (thresholdReached) {
+                            newKeyingStatus = TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES;
+                        } else if (!haveSentMessageForTargetRoster) {
+                            // Obtain the directory of participants for the target roster
+                            // submit ours and set haveSentMessageForTargetRoster to true
+                            final var tssPrivateShares =
+                                    tssKeysAccessor.accessTssKeys().activeRosterShares();
+                            final var shareIndex = new AtomicInteger(0);
+                            for (final var tssPrivateShare : tssPrivateShares) {
+                                CompletableFuture.runAsync(
+                                                () -> {
+                                                    final TssMessage msg;
+                                                    if (oldStatus.rosterToKey() == RosterToKey.ACTIVE_ROSTER) {
+                                                        msg = tssLibrary.generateTssMessage(
+                                                                tssDirectoryAccessor.activeParticipantDirectory());
+                                                    } else {
+                                                        msg = tssLibrary.generateTssMessage(
+                                                                tssDirectoryAccessor.activeParticipantDirectory(),
+                                                                tssPrivateShare);
+                                                    }
+                                                    final var tssMessage = TssMessageTransactionBody.newBuilder()
+                                                            .sourceRosterHash(activeRosterHash)
+                                                            .targetRosterHash(candidateRosterHash)
+                                                            .shareIndex(shareIndex.getAndAdd(1))
+                                                            .tssMessage(Bytes.wrap(msg.toBytes()))
+                                                            .build();
+                                                    // need to use consensusNow here
+                                                    tssSubmissions.submitTssMessage(tssMessage, null);
+                                                    haveSentMessageForTargetRoster = true;
+                                                },
+                                                tssLibraryExecutor)
+                                        .exceptionally(e -> {
+                                            log.error("Error generating tssMessage", e);
+                                            return null;
+                                        });
+                            }
+                        }
+                    })
+                    .exceptionally(e -> {
+                        log.error("Error validating threshold TSS messages", e);
+                        return null;
+                    });
+        }
+
+        private void reset() {
+            newRosterToKey = RosterToKey.NONE;
+            haveSentMessageForTargetRoster = false;
+            haveSentVoteForTargetRoster = false;
+        }
+
         private CompletableFuture<Boolean> validateThresholdTssMessages(final TssStatus tssStatus) {
             final var participantDirectory = tssDirectoryAccessor.activeParticipantDirectory();
             final var targetRosterHash = getTargetRoster(rosterStore, tssStatus);
             final var tssMessageBodies = tssStore.getMessagesForTarget(targetRosterHash);
-            return CompletableFuture.supplyAsync(
-                    () -> {
-                        final var tssMessages = validateTssMessages(tssMessageBodies, participantDirectory, tssLibrary);
-                        return isThresholdMet(tssMessages, participantDirectory);
-                    });
+            return CompletableFuture.supplyAsync(() -> {
+                final var tssMessages = validateTssMessages(tssMessageBodies, participantDirectory, tssLibrary);
+                return isThresholdMet(tssMessages, participantDirectory);
+            });
         }
 
         private Optional<TssVoteTransactionBody> validateThresholdTssVotes(final TssStatus tssStatus) {
             final var targetRosterHash = getTargetRoster(rosterStore, tssStatus);
             final var voteBodies = tssStore.anyWinningVoteFrom(
-                    requireNonNull(rosterStore.getCurrentRosterHash()),
-                    targetRosterHash,
-                    rosterStore);
+                    requireNonNull(rosterStore.getCurrentRosterHash()), targetRosterHash, rosterStore);
             return voteBodies;
         }
 
-        private boolean validateThresholdEncryptionKeysReached(final WritableTssStore tssStore,
-                                                               final ReadableRosterStore rosterStore) {
+        private boolean validateThresholdEncryptionKeysReached(
+                final WritableTssStore tssStore, final ReadableRosterStore rosterStore) {
             var numTssEncryptionKeys = 0;
             for (final var node : requireNonNull(rosterStore.getActiveRoster()).rosterEntries()) {
                 final var tssEncryptionKey = tssStore.getTssEncryptionKey(node.nodeId());
@@ -563,16 +584,22 @@ public class TssBaseServiceImpl implements TssBaseService {
                     numTssEncryptionKeys++;
                 }
             }
-            return numTssEncryptionKeys >= (2 * requireNonNull(rosterStore.getActiveRoster()).rosterEntries().size()) / 3;
+            return numTssEncryptionKeys
+                    >= (2
+                                    * requireNonNull(rosterStore.getActiveRoster())
+                                            .rosterEntries()
+                                            .size())
+                            / 3;
         }
 
         @NonNull
-        private Bytes getTargetRoster(@NonNull final ReadableRosterStore rosterStore,
-                                      @NonNull final TssStatus tssStatus) {
+        private Bytes getTargetRoster(
+                @NonNull final ReadableRosterStore rosterStore, @NonNull final TssStatus tssStatus) {
             final var rosterToKey = tssStatus.rosterToKey();
             return switch (rosterToKey) {
                 case ACTIVE_ROSTER -> requireNonNull(rosterStore.getCurrentRosterHash());
-                case CANDIDATE_ROSTER -> RosterUtils.hash(requireNonNull(rosterStore.getCandidateRoster())).getBytes();
+                case CANDIDATE_ROSTER -> RosterUtils.hash(requireNonNull(rosterStore.getCandidateRoster()))
+                        .getBytes();
                 case NONE -> Bytes.EMPTY;
             };
         }

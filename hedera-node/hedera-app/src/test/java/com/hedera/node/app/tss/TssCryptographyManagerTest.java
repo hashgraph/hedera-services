@@ -99,7 +99,7 @@ public class TssCryptographyManagerTest {
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(mock(TssVoteTransactionBody.class)); // Simulate vote already submitted
 
-        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, handleContext);
+        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, tssStore, 0);
 
         assertNull(result.join());
     }
@@ -111,7 +111,7 @@ public class TssCryptographyManagerTest {
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
 
-        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, handleContext);
+        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, tssStore, 0);
 
         assertNull(result.join());
     }
@@ -133,7 +133,7 @@ public class TssCryptographyManagerTest {
         when(tssLibrary.aggregatePublicShares(any())).thenReturn(ledgerId);
         when(gossip.sign(any())).thenReturn(mockSignature);
 
-        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, handleContext);
+        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, tssStore, 0);
 
         assertNotNull(result.join());
         verify(gossip).sign(ledgerId.toBytes());
@@ -150,7 +150,7 @@ public class TssCryptographyManagerTest {
 
         when(tssLibrary.computePublicShares(any(), any())).thenThrow(new RuntimeException());
 
-        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, handleContext);
+        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, tssStore, 0);
 
         assertNull(result.join());
         verify(gossip, never()).sign(any());

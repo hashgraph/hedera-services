@@ -28,9 +28,8 @@ import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.stores.WritableTssStore;
+import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -93,17 +92,15 @@ public class TssCryptographyManager {
      *
      * @param targetRosterHash the hash of the target roster
      * @param directory the TSS participant directory
-     * @param context the handle context to use in setting up the computation
      * @return a future resolving to the signed vote if given message passes the threshold, or null otherwise
      */
     public CompletableFuture<Vote> getVoteFuture(
             @NonNull final Bytes targetRosterHash,
             @NonNull final TssParticipantDirectory directory,
-            @NonNull final HandleContext context) {
-        final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
+            @NonNull final ReadableTssStore tssStore,
+            final long selfNodeId) {
         final var tssMessageBodies = tssStore.getMessagesForTarget(targetRosterHash);
-        final var voteKey = new TssVoteMapKey(
-                targetRosterHash, context.networkInfo().selfNodeInfo().nodeId());
+        final var voteKey = new TssVoteMapKey(targetRosterHash, selfNodeId);
         if (tssStore.getVote(voteKey) == null) {
             return computeVote(tssMessageBodies, directory).exceptionally(e -> {
                 log.error("Error computing public keys and signing", e);

@@ -20,6 +20,7 @@ import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -134,7 +135,8 @@ class TssMessageHandlerTest {
         given(tssCryptographyManager.getVoteFuture(
                         eq(getTssBody().tssMessageOrThrow().targetRosterHash()),
                         any(TssParticipantDirectory.class),
-                        eq(handleContext)))
+                        eq(tssStore),
+                        eq(0)))
                 .willReturn(CompletableFuture.completedFuture(vote));
         given(signature.getBytes()).willReturn(Bytes.wrap("test"));
         given(directoryAccessor.activeParticipantDirectory()).willReturn(TSS_KEYS.activeParticipantDirectory());
@@ -147,7 +149,7 @@ class TssMessageHandlerTest {
     @Test
     public void testHandleException() {
         when(handleContext.body()).thenReturn(getTssBody());
-        when(tssCryptographyManager.getVoteFuture(any(), any(), any()))
+        when(tssCryptographyManager.getVoteFuture(any(), any(), any(), anyLong()))
                 .thenThrow(new RuntimeException("Simulated error"));
 
         // Execute the handler and ensure no vote is submitted
