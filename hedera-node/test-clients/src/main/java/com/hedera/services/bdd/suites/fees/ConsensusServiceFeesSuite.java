@@ -17,15 +17,12 @@
 package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -43,9 +40,7 @@ public class ConsensusServiceFeesSuite {
     final Stream<DynamicTest> topicCreateFeeAsExpected() {
         return hapiTest(
                 cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
-                createTopic("testTopic").blankMemo()
-                        .payingWith("payer")
-                        .via("topicCreate"),
+                createTopic("testTopic").blankMemo().payingWith("payer").via("topicCreate"),
                 validateChargedUsd("topicCreate", 0.01));
     }
 

@@ -18,38 +18,22 @@ package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
-import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
-import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
@@ -58,11 +42,10 @@ import org.junit.jupiter.api.DynamicTest;
 public class FileServiceFeesSuite {
     public static final String CIVILIAN = "civilian";
 
-
     @HapiTest
     final Stream<DynamicTest> fileCreateBaseUSDFee() {
         String memo = "Really quite something!";
-        //30 days considered for base fee
+        // 30 days considered for base fee
         var requestedExpiry = Instant.now().getEpochSecond() + 2592000L;
         var contents = "0".repeat(1000).getBytes();
 
@@ -70,7 +53,12 @@ public class FileServiceFeesSuite {
                 newKeyNamed("key").shape(KeyShape.SIMPLE),
                 cryptoCreate(CIVILIAN).key("key").balance(1_000_000_000L),
                 newKeyListNamed("WACL", List.of(CIVILIAN)),
-                fileCreate("test").memo(memo).key("WACL").contents(contents).payingWith(CIVILIAN).via("fileCreateBasic"),
+                fileCreate("test")
+                        .memo(memo)
+                        .key("WACL")
+                        .contents(contents)
+                        .payingWith(CIVILIAN)
+                        .via("fileCreateBasic"),
                 validateChargedUsd("fileCreateBasic", 0.05));
     }
 
@@ -83,7 +71,11 @@ public class FileServiceFeesSuite {
                 cryptoCreate(CIVILIAN).key("key").balance(1_000_000_000L),
                 newKeyListNamed("key", List.of(CIVILIAN)),
                 fileCreate("test").key("key").contents("ABC"),
-                fileUpdate("test").contents(contents).memo(memo).payingWith(CIVILIAN).via("fileUpdateBasic"),
+                fileUpdate("test")
+                        .contents(contents)
+                        .memo(memo)
+                        .payingWith(CIVILIAN)
+                        .via("fileUpdateBasic"),
                 validateChargedUsd("fileUpdateBasic", 0.05));
     }
 
@@ -95,9 +87,7 @@ public class FileServiceFeesSuite {
                 cryptoCreate(CIVILIAN).key("key").balance(1_000_000_000L),
                 newKeyListNamed("WACL", List.of(CIVILIAN)),
                 fileCreate("test").memo(memo).key("WACL").contents("ABC"),
-                TxnVerbs.fileDelete("test")
-                        .blankMemo()
-                        .payingWith(CIVILIAN).via("fileDeleteBasic"),
+                TxnVerbs.fileDelete("test").blankMemo().payingWith(CIVILIAN).via("fileDeleteBasic"),
                 validateChargedUsd("fileDeleteBasic", 0.007));
     }
 

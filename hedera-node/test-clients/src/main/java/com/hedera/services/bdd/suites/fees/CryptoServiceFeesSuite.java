@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -60,7 +59,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -181,7 +179,10 @@ public class CryptoServiceFeesSuite {
         return hapiTest(
                 cryptoCreate(CIVILIAN).balance(5 * ONE_HUNDRED_HBARS),
                 cryptoCreate(noAutoAssocSlots).balance(5 * ONE_HUNDRED_HBARS).key(CIVILIAN),
-                cryptoDelete(noAutoAssocSlots).via("basicDelete").payingWith(CIVILIAN).signedBy(CIVILIAN),
+                cryptoDelete(noAutoAssocSlots)
+                        .via("basicDelete")
+                        .payingWith(CIVILIAN)
+                        .signedBy(CIVILIAN),
                 validateChargedUsd("basicDelete", expectedDeletePriceUsd));
     }
 
@@ -565,7 +566,10 @@ public class CryptoServiceFeesSuite {
         return hapiTest(
                 cryptoCreate("FEES_ACCOUNT").balance(5 * ONE_HUNDRED_HBARS),
                 cryptoCreate(CIVILIAN).balance(5 * ONE_HUNDRED_HBARS).key("FEES_ACCOUNT"),
-                getAccountRecords(CIVILIAN).via("baseGetAccountRecord").signedBy("FEES_ACCOUNT").payingWith("FEES_ACCOUNT"),
+                getAccountRecords(CIVILIAN)
+                        .via("baseGetAccountRecord")
+                        .signedBy("FEES_ACCOUNT")
+                        .payingWith("FEES_ACCOUNT"),
                 validateChargedUsd("baseGetAccountRecord", expectedGetAccountRecordPriceUsd));
     }
 
@@ -575,7 +579,10 @@ public class CryptoServiceFeesSuite {
         return hapiTest(
                 cryptoCreate("FEES_ACCOUNT").balance(5 * ONE_HUNDRED_HBARS),
                 cryptoCreate(CIVILIAN).balance(5 * ONE_HUNDRED_HBARS).key("FEES_ACCOUNT"),
-                getAccountBalance(CIVILIAN).hasTinyBars(5 * ONE_HUNDRED_HBARS).signedBy("FEES_ACCOUNT").payingWith("FEES_ACCOUNT"),
+                getAccountBalance(CIVILIAN)
+                        .hasTinyBars(5 * ONE_HUNDRED_HBARS)
+                        .signedBy("FEES_ACCOUNT")
+                        .payingWith("FEES_ACCOUNT"),
                 getAccountBalance("FEES_ACCOUNT").hasTinyBars(5 * ONE_HUNDRED_HBARS));
     }
 

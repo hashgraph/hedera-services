@@ -95,12 +95,14 @@ public class ScheduleServiceFeesSuite {
                         .payingWith(OTHER_PAYER)
                         .via("canonicalContractCall")
                         .adminKey(OTHER_PAYER),
-                getScheduleInfo("canonical").payingWith(OTHER_PAYER).signedBy(OTHER_PAYER).via("getScheduleInfoBasic"),
+                getScheduleInfo("canonical")
+                        .payingWith(OTHER_PAYER)
+                        .signedBy(OTHER_PAYER)
+                        .via("getScheduleInfoBasic"),
                 validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
                 validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
                 validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0),
                 validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0),
                 validateChargedUsd("getScheduleInfoBasic", 0.0001));
-
     }
 }
