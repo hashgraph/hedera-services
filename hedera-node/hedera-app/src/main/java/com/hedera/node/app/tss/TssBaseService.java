@@ -178,4 +178,10 @@ public interface TssBaseService extends Service {
      * @return the TSS message
      */
     TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory);
+
+    /**
+     * Manages and does work based on the TSS status.
+     * @param state the network state
+     */
+    void manageTssStatus(State state);
 }

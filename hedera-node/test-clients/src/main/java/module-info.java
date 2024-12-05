@@ -99,6 +99,7 @@ module com.hedera.node.test.clients {
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.base.test.fixtures;
+    requires com.swirlds.config.extensions;
     requires com.swirlds.merkledb;
     requires com.swirlds.platform.core.test.fixtures;
     requires com.swirlds.state.impl;
