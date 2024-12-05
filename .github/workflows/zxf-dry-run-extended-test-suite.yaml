@@ -99,7 +99,8 @@ jobs:
         run: |
           pwd
           ls -la downloaded_artifacts
-          find downloaded_artifacts/hapi/build/test-results/test -name 'TEST-*.xml'
+          echo "COVERAGE_REPORTS=$(find . -path '*/build/test-results/test/*' -name 'TEST-*.xml' | tr '\n' ','; \
+            find . -path '*/build/test-results/timingSensitive/*' -name 'TEST-*.xml' | tr '\n' ',')" >> $GITHUB_ENV
 
   # echo "COVERAGE_REPORTS=$(find **/build/test-results/test -name 'TEST-*.xml' | tr '\n' ','; \
   # find **/build/test-results/timingSensitive -name 'TEST-*.xml' | tr '\n' ',')" >> $GITHUB_ENV
