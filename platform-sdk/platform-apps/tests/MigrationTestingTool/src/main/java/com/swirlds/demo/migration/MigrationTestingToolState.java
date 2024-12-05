@@ -102,28 +102,13 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
             @NonNull final MerkleStateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
-        allocateSpaceForChild(ChildIndices.CHILD_COUNT);
     }
 
     private MigrationTestingToolState(final MigrationTestingToolState that) {
         super(that);
-        if (that.getMerkleMap() != null) {
-            setMerkleMap(that.getMerkleMap().copy());
-        }
-        if (that.getVirtualMap() != null) {
-            setVirtualMap(that.getVirtualMap().copy());
-        }
         that.setImmutable(true);
         this.setImmutable(false);
         this.selfId = that.selfId;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getNumberOfChildren() {
-        return ChildIndices.CHILD_COUNT;
     }
 
     /**
