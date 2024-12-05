@@ -41,6 +41,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.protocol.Protocol;
@@ -59,6 +60,7 @@ import java.util.List;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.hiero.consensus.gossip.FallenBehindManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -129,11 +131,18 @@ class ReconnectProtocolTests {
 
     @BeforeEach
     void setup() {
+        MerkleDb.resetDefaultInstancePath();
+
         reconnectController = mock(ReconnectController.class);
         when(reconnectController.blockLearnerPermit()).thenReturn(true);
 
         teacherThrottle = mock(ReconnectThrottle.class);
         when(teacherThrottle.initiateReconnect(any())).thenReturn(true);
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
     }
 
     @DisplayName("Test the conditions under which the protocol should and should not be initiated")

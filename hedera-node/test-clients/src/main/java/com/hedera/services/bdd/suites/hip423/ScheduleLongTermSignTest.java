@@ -69,6 +69,7 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.TWO_SI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -793,6 +794,30 @@ public class ScheduleLongTermSignTest {
 
     @HapiTest
     @Order(16)
+    final Stream<DynamicTest> scheduleSignWhenAllSigPresent() {
+        return hapiTest(
+                cryptoCreate("receiver").balance(0L).receiverSigRequired(true),
+                scheduleCreate("schedule", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "receiver", 1L)))
+                        .waitForExpiry()
+                        .expiringIn(TimeUnit.SECONDS.toMillis(5))
+                        .via("one"),
+                scheduleSign("schedule").signedBy(DEFAULT_PAYER, "receiver"),
+                scheduleSign("schedule").hasKnownStatus(NO_NEW_VALID_SIGNATURES));
+    }
+
+    @HapiTest
+    @Order(17)
+    final Stream<DynamicTest> scheduleSignWhenAllSigPresentNoWaitForExpiry() {
+        return hapiTest(
+                cryptoCreate("receiver").balance(0L).receiverSigRequired(true),
+                scheduleCreate("schedule", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "receiver", 1L)))
+                        .via("one"),
+                scheduleSign("schedule").signedBy(DEFAULT_PAYER, "receiver"),
+                scheduleSign("schedule").hasKnownStatus(SCHEDULE_ALREADY_EXECUTED));
+    }
+
+    @HapiTest
+    @Order(18)
     final Stream<DynamicTest> scheduledTransactionWithWaitForExpiryFalseLessThen30Mins() {
         final var schedule = "s";
         return hapiTest(
@@ -808,7 +833,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(17)
+    @Order(19)
     final Stream<DynamicTest> scheduledTransactionWithWaitForExpiryFalseMoreThen30Mins() {
         final var schedule = "s";
         return hapiTest(
@@ -824,7 +849,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(18)
+    @Order(20)
     final Stream<DynamicTest> scheduledTriggeredWhenAllKeysHaveSigned() {
         final var schedule = "s";
 
@@ -851,7 +876,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(19)
+    @Order(21)
     final Stream<DynamicTest> scheduleSignWithNotNeededSignature() {
         final var schedule = "s";
 
@@ -867,7 +892,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(20)
+    @Order(22)
     final Stream<DynamicTest> scheduleSignWithEmptyKey() {
         final var schedule = "s";
 
@@ -883,7 +908,7 @@ public class ScheduleLongTermSignTest {
     }
 
     @HapiTest
-    @Order(21)
+    @Order(23)
     final Stream<DynamicTest> scheduleSignWithTwoSignatures() {
         final var schedule = "s";
 
