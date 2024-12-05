@@ -685,10 +685,9 @@ public class TokenServiceFeesSuite {
                         .entityMemo("")
                         .symbol("a"),
                 tokenUpdate(FUNGIBLE_COMMON_TOKEN)
-                        //                        .fee(10 * ONE_HBAR)
                         .via("uniqueTokenUpdate")
                         .payingWith(TOKEN_TREASURY),
-                validateChargedUsdWithin("uniqueTokenUpdate", expectedUpdatePriceUsd, 0.01));
+                validateChargedUsd("uniqueTokenUpdate", expectedUpdatePriceUsd));
     }
 
     @HapiTest
