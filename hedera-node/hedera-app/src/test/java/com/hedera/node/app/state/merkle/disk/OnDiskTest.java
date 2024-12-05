@@ -31,6 +31,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
@@ -185,7 +186,7 @@ class OnDiskTest extends MerkleTestBase {
         r.register(schema);
 
         // Restore to a fresh MerkleDb instance
-        testFileSystemManager.resetMerkleDb("merkledb");
+        MerkleDbTestUtils.resetMerkleDb("merkledb", testFileSystemManager);
 
         // read it back now as our map and validate the data come back fine
         virtualMap = parseTree(serializedBytes, snapshotDir);

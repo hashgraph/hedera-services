@@ -63,6 +63,7 @@ testModuleInfo {
     requires("org.junit.jupiter.params")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
+    requires("com.swirlds.merkledb.test.fixtures")
     requiresStatic("com.github.spotbugs.annotations")
 }
 

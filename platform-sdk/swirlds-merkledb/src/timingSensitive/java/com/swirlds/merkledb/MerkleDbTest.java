@@ -30,6 +30,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -236,7 +237,7 @@ public class MerkleDbTest {
     @Test
     @DisplayName("Get and create data source")
     void testGetDataSource() {
-        testFileSystemManager.resetMerkleDb(null);
+        MerkleDbTestUtils.resetMerkleDb(null, testFileSystemManager);
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tableb";
         Assertions.assertThrows(IllegalStateException.class, () -> instance.getDataSource(tableName, false));
@@ -391,7 +392,7 @@ public class MerkleDbTest {
         final Path snapshotDir = testFileSystemManager.resolveNewTemp(null);
         instance.snapshot(snapshotDir, dataSource);
 
-        testFileSystemManager.resetMerkleDb(null);
+        MerkleDbTestUtils.resetMerkleDb(null, testFileSystemManager);
         final MerkleDb instance2 = MerkleDb.restore(snapshotDir, null, CONFIGURATION);
         final MerkleDbDataSource dataSource2 = instance2.getDataSource(tableName, false);
         Assertions.assertNotNull(dataSource2);

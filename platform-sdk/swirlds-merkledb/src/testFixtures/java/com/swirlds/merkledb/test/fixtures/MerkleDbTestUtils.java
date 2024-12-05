@@ -33,15 +33,19 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSource;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -355,5 +359,16 @@ public class MerkleDbTestUtils {
         }
 
         return metric.orElse(null);
+    }
+
+    /**
+     * Reset the default path of the {@link MerkleDb} to a new temporary path
+     *
+     * @param pathSuffix the suffix to append to the path
+     */
+    public static void resetMerkleDb(
+            @Nullable final String pathSuffix, @NonNull final TestFileSystemManager fileSystemManager) {
+        final Path defaultVirtualMapPath = fileSystemManager.resolveNewTemp(pathSuffix);
+        MerkleDb.setDefaultPath(defaultVirtualMapPath);
     }
 }

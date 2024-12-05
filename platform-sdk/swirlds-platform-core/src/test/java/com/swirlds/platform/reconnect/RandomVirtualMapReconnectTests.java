@@ -32,6 +32,7 @@ import com.swirlds.common.test.fixtures.set.RandomAccessSet;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import java.util.ArrayList;
@@ -60,7 +61,7 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     protected VirtualDataSourceBuilder createBuilder() {
         // The tests create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new (temp) database location for every run
-        testFileSystemManager.resetMerkleDb(null);
+        MerkleDbTestUtils.resetMerkleDb(null, testFileSystemManager);
         final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
                 (short) 1,
