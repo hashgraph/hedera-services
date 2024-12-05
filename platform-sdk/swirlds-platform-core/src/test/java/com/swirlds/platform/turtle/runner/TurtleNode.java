@@ -46,6 +46,7 @@ import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 
@@ -121,7 +122,7 @@ public class TurtleNode {
                         nodeId,
                         AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
                         RosterUtils.buildRosterHistory(
-                                initialState.get().getState().getReadablePlatformState()))
+                                (State) initialState.get().getState()))
                 .withModel(model)
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
                 .withKeysAndCerts(privateKeys)
