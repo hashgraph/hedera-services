@@ -98,15 +98,17 @@ public final class CandidateWitness {
         this.decided = true;
         this.famous = isFamous;
 
-        logger.info(
-                CONSENSUS_VOTING.getMarker(),
-                "Fame decided for {}, election round {} unknown fame: {} ",
-                witness,
-                witness.getRoundCreated(),
-                numUnknownFame.get());
+        if (logger.isDebugEnabled(CONSENSUS_VOTING.getMarker())) {
+            logger.debug(
+                    CONSENSUS_VOTING.getMarker(),
+                    "Fame decided for {}, election round {} unknown fame: {} ",
+                    witness,
+                    witness.getRoundCreated(),
+                    numUnknownFame.get());
 
-        if (numUnknownFame.equalsInt(0)) {
-            logger.info(CONSENSUS_VOTING.getMarker(), "Fame decided for round {}", witness.getRoundCreated());
+            if (numUnknownFame.equalsInt(0)) {
+                logger.debug(CONSENSUS_VOTING.getMarker(), "Fame decided for round {}", witness.getRoundCreated());
+            }
         }
     }
 }

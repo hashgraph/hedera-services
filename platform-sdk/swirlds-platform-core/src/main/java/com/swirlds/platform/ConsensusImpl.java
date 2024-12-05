@@ -659,14 +659,16 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             @NonNull final CandidateWitness candidateWitness,
             @NonNull final String votingType,
             final long diff) {
-        logger.info(
-                CONSENSUS_VOTING.getMarker(),
-                "Witness {} voted on {}. vote:{} type:{} diff:{}",
-                votingWitness,
-                candidateWitness.getWitness(),
-                votingWitness.getVote(candidateWitness),
-                votingType,
-                diff);
+        if (logger.isDebugEnabled(CONSENSUS_VOTING.getMarker())) {
+            logger.debug(
+                    CONSENSUS_VOTING.getMarker(),
+                    "Witness {} voted on {}. vote:{} type:{} diff:{}",
+                    votingWitness,
+                    candidateWitness.getWitness(),
+                    votingWitness.getVote(candidateWitness),
+                    votingType,
+                    diff);
+        }
     }
 
     private boolean firstVote(@NonNull final EventImpl voting, @NonNull final EventImpl votedOn) {

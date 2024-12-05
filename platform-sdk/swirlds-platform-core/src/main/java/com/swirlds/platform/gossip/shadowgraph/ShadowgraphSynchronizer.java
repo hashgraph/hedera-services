@@ -421,8 +421,8 @@ public class ShadowgraphSynchronizer {
         logger.info(
                 SYNC_INFO.getMarker(),
                 "{} writing events done, wrote {} events",
-                connection::getDescription,
-                sendList::size);
+                connection.getDescription(),
+                sendList.size());
         logger.info(
                 SYNC_INFO.getMarker(),
                 "{} reading events done, read {} events",
