@@ -28,10 +28,10 @@ server.
 
 ### GrpcServiceBuilder
 
-As stated above `GrpcServiceBuilder` produces gRPC `ServerServiceDefinition`s. Those definitions are wired in with the
-proper Services handlers and gRPC `ServerCall.Listener` methods. During runtime the Netty server will be calling those
-listener methods e.g. `onMessage()` is where we integrate Service logic for handling transactions or queries by using
-the abstract `MethodBase` type.
+As mentioned earlier, the `GrpcServiceBuilder` produces gRPC `ServerServiceDefinitions`. These definitions are
+configured with the appropriate service handlers and gRPC `ServerCall.Listener` methods. At runtime, the Netty server
+invokes these listener methods. For instance, the `onMessage()` method is where service logic is integrated to handle
+transactions or queries using the abstract `MethodBase` type.
 
 ### MethodBase
 
