@@ -32,6 +32,7 @@ import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -154,7 +155,7 @@ class TssMessageHandlerTest {
 
         // Execute the handler and ensure no vote is submitted
         assertThrows(RuntimeException.class, () -> subject.handle(handleContext));
-        verify(submissionManager, never()).submitTssVote(any(), any());
+        verify(submissionManager, never()).submitTssVote(any(TssVoteTransactionBody.class), any(HandleContext.class));
     }
 
     public static TransactionBody getTssBody() {

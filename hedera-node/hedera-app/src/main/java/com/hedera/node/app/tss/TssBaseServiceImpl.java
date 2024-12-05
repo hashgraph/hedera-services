@@ -393,12 +393,15 @@ public class TssBaseServiceImpl implements TssBaseService {
 
     @Override
     public void manageTssStatus(
-            final State state, final StoreMetricsService storeMetricsService, final boolean isStakePeriodBoundary) {
+            final State state,
+            final StoreMetricsService storeMetricsService,
+            final boolean isStakePeriodBoundary,
+            final Instant consensusNow) {
         final var storeFactory = new WritableStoreFactory(
                 state, TssBaseService.NAME, appContext.configSupplier().get(), storeMetricsService);
         final var tssStore = storeFactory.getStore(WritableTssStore.class);
         final var oldStatus = tssStore.getTssStatus();
-        final var statusChange = new StatusChange(oldStatus, state, isStakePeriodBoundary);
+        final var statusChange = new StatusChange(oldStatus, state, isStakePeriodBoundary, consensusNow);
         final var newTssStatus = statusChange.computeNewStatus();
         if (!newTssStatus.equals(oldStatus)) {
             tssStore.put(newTssStatus);
@@ -410,29 +413,45 @@ public class TssBaseServiceImpl implements TssBaseService {
         return tssKeysAccessor;
     }
 
+    /**
+     * A class to manage the status change of the TSS.
+     * It computes the new status based on the old status and the current state of the system.
+     * If needed, it schedules work to generate TSS messages and votes.
+     */
     private class StatusChange {
         private TssKeyingStatus newKeyingStatus;
         private RosterToKey newRosterToKey;
         private Bytes newLedgerId;
         private final TssStatus oldStatus;
         private final boolean isStakePeriodBoundary;
+        private final Instant consensusNow;
 
         private ReadableTssStore tssStore;
         private ReadableRosterStore rosterStore;
 
         public StatusChange(
-                @NonNull final TssStatus oldStatus, @NonNull final State state, final boolean isStakePeriodBoundary) {
+                @NonNull final TssStatus oldStatus,
+                @NonNull final State state,
+                final boolean isStakePeriodBoundary,
+                final Instant consensusNow) {
             this.oldStatus = oldStatus;
             this.isStakePeriodBoundary = isStakePeriodBoundary;
             this.newKeyingStatus = oldStatus.tssKeyingStatus();
             this.newRosterToKey = oldStatus.rosterToKey();
             this.newLedgerId = oldStatus.ledgerId();
+            this.consensusNow = consensusNow;
 
             final var readableStoreFactory = new ReadableStoreFactory(state);
             this.tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
             this.rosterStore = readableStoreFactory.getStore(ReadableRosterStore.class);
         }
 
+        /**
+         * Computes the new status based on the old status and the current state of the system.
+         * If needed, it schedules work to generate TSS messages and votes.
+         *
+         * @return the new status
+         */
         public TssStatus computeNewStatus() {
             switch (oldStatus.rosterToKey()) {
                 case NONE -> {
@@ -498,7 +517,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                                         .ledgerId(vote.ledgerId())
                                         .nodeSignature(vote.signature().getBytes())
                                         .build();
-                                tssSubmissions.submitTssVote(tssVote, null);
+                                tssSubmissions.submitTssVote(tssVote, consensusNow);
                             }
                         });
                 haveSentVoteForTargetRoster = true;
@@ -511,38 +530,48 @@ public class TssBaseServiceImpl implements TssBaseService {
                         if (thresholdReached) {
                             newKeyingStatus = TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES;
                         } else if (!haveSentMessageForTargetRoster) {
-                            // Obtain the directory of participants for the target roster
-                            // submit ours and set haveSentMessageForTargetRoster to true
-                            final var tssPrivateShares =
-                                    tssKeysAccessor.accessTssKeys().activeRosterShares();
-                            final var shareIndex = new AtomicInteger(0);
-                            for (final var tssPrivateShare : tssPrivateShares) {
-                                CompletableFuture.runAsync(
-                                                () -> {
-                                                    final TssMessage msg;
-                                                    if (oldStatus.rosterToKey() == RosterToKey.ACTIVE_ROSTER) {
-                                                        msg = tssLibrary.generateTssMessage(
-                                                                tssDirectoryAccessor.activeParticipantDirectory());
-                                                    } else {
-                                                        msg = tssLibrary.generateTssMessage(
+                            if (oldStatus.rosterToKey() == RosterToKey.ACTIVE_ROSTER) {
+                                CompletableFuture.runAsync(() -> {
+                                    final var msg = tssLibrary.generateTssMessage(
+                                            tssDirectoryAccessor.activeParticipantDirectory());
+                                    final var tssMessage = TssMessageTransactionBody.newBuilder()
+                                            .sourceRosterHash(activeRosterHash)
+                                            .targetRosterHash(candidateRosterHash)
+                                            .shareIndex(1)
+                                            .tssMessage(Bytes.wrap(msg.toBytes()))
+                                            .build();
+                                    // need to use consensusNow here
+                                    tssSubmissions.submitTssMessage(tssMessage, consensusNow);
+                                    haveSentMessageForTargetRoster = true;
+                                });
+                            } else if (oldStatus.rosterToKey() == RosterToKey.CANDIDATE_ROSTER) {
+                                // Obtain the directory of participants for the target roster
+                                // submit ours and set haveSentMessageForTargetRoster to true
+                                final var tssPrivateShares =
+                                        tssKeysAccessor.accessTssKeys().activeRosterShares();
+                                final var shareIndex = new AtomicInteger(0);
+                                for (final var tssPrivateShare : tssPrivateShares) {
+                                    CompletableFuture.runAsync(
+                                                    () -> {
+                                                        final var msg = tssLibrary.generateTssMessage(
                                                                 tssDirectoryAccessor.activeParticipantDirectory(),
                                                                 tssPrivateShare);
-                                                    }
-                                                    final var tssMessage = TssMessageTransactionBody.newBuilder()
-                                                            .sourceRosterHash(activeRosterHash)
-                                                            .targetRosterHash(candidateRosterHash)
-                                                            .shareIndex(shareIndex.getAndAdd(1))
-                                                            .tssMessage(Bytes.wrap(msg.toBytes()))
-                                                            .build();
-                                                    // need to use consensusNow here
-                                                    tssSubmissions.submitTssMessage(tssMessage, null);
-                                                    haveSentMessageForTargetRoster = true;
-                                                },
-                                                tssLibraryExecutor)
-                                        .exceptionally(e -> {
-                                            log.error("Error generating tssMessage", e);
-                                            return null;
-                                        });
+                                                        final var tssMessage = TssMessageTransactionBody.newBuilder()
+                                                                .sourceRosterHash(activeRosterHash)
+                                                                .targetRosterHash(candidateRosterHash)
+                                                                .shareIndex(shareIndex.getAndAdd(1))
+                                                                .tssMessage(Bytes.wrap(msg.toBytes()))
+                                                                .build();
+                                                        // need to use consensusNow here
+                                                        tssSubmissions.submitTssMessage(tssMessage, consensusNow);
+                                                        haveSentMessageForTargetRoster = true;
+                                                    },
+                                                    tssLibraryExecutor)
+                                            .exceptionally(e -> {
+                                                log.error("Error generating tssMessage", e);
+                                                return null;
+                                            });
+                                }
                             }
                         }
                     })

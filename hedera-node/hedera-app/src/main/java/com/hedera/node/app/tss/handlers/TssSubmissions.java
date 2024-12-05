@@ -81,43 +81,67 @@ public class TssSubmissions {
     /**
      * Attempts to submit a TSS message to the network.
      *
-     * @param body the TSS message to submit
+     * @param body    the TSS message to submit
      * @param context the TSS context
      * @return a future that completes when the message has been submitted
      */
     public CompletableFuture<Void> submitTssMessage(
             @NonNull final TssMessageTransactionBody body, @NonNull final HandleContext context) {
+        return submitTssMessage(body, nextValidStartFor(context));
+    }
+
+    /**
+     * Attempts to submit a TSS message to the network.
+     *
+     * @param body    the TSS message to submit
+     * @param lastUsedConsensusTime the TSS context
+     * @return a future that completes when the message has been submitted
+     */
+    public CompletableFuture<Void> submitTssMessage(
+            @NonNull final TssMessageTransactionBody body, @NonNull final Instant lastUsedConsensusTime) {
         requireNonNull(body);
-        requireNonNull(context);
+        requireNonNull(lastUsedConsensusTime);
         return submit(
                 b -> b.tssMessage(body),
-                context.configuration(),
-                context.networkInfo().selfNodeInfo().accountId(),
-                nextValidStartFor(context));
+                appContext.configSupplier().get(),
+                appContext.selfNodeInfoSupplier().get().accountId(),
+                lastUsedConsensusTime);
     }
 
     /**
      * Attempts to submit a TSS vote to the network.
      *
-     * @param body the TSS vote to submit
-     * @param context the TSS context
+     * @param body                  the TSS vote to submit
+     * @param context               the TSS context
      * @return a future that completes when the vote has been submitted
      */
     public CompletableFuture<Void> submitTssVote(
-            @NonNull final TssVoteTransactionBody body, @NonNull final HandleContext context) {
+            @NonNull final TssVoteTransactionBody body, final HandleContext context) {
+        return submitTssVote(body, nextValidStartFor(context));
+    }
+
+    /**
+     * Attempts to submit a TSS vote to the network.
+     *
+     * @param body                  the TSS vote to submit
+     * @param lastUsedConsensusTime the
+     * @return a future that completes when the vote has been submitted
+     */
+    public CompletableFuture<Void> submitTssVote(
+            @NonNull final TssVoteTransactionBody body, final Instant lastUsedConsensusTime) {
         requireNonNull(body);
-        requireNonNull(context);
+        requireNonNull(lastUsedConsensusTime);
         return submit(
                 b -> b.tssVote(body),
-                context.configuration(),
-                context.networkInfo().selfNodeInfo().accountId(),
-                nextValidStartFor(context));
+                appContext.configSupplier().get(),
+                appContext.selfNodeInfoSupplier().get().accountId(),
+                lastUsedConsensusTime);
     }
 
     /**
      * Attempts to submit a TSS share signature to the network.
      *
-     * @param body    the TSS share signature to submit
+     * @param body                  the TSS share signature to submit
      * @param lastUsedConsensusTime the last used consensus time
      * @return a future that completes when the share signature has been submitted
      */

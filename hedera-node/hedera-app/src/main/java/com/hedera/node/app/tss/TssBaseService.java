@@ -186,7 +186,11 @@ public interface TssBaseService extends Service {
      * @param state                 the network state
      * @param storeMetricsService
      * @param isStakePeriodBoundary
+     * @param consensusNow
      */
     void manageTssStatus(
-            State state, final StoreMetricsService storeMetricsService, final boolean isStakePeriodBoundary);
+            final State state,
+            final StoreMetricsService storeMetricsService,
+            final boolean isStakePeriodBoundary,
+            final Instant consensusNow);
 }
