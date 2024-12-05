@@ -42,7 +42,6 @@ The supported functions callable from contracts are as follows:
 |     Hash     |                                                    Selector                                                    |                                                                 Description                                                                  |
 |--------------|----------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
 | `0xf0637961` | `authorizeSchedule(address) external returns (int64 responseCode)`                                             | Sign the schedule transaction whose id is `address` with a contract key containing the calling contract id                                   |
-| `0x5e147101` | `getScheduledTransactionInfo(address) external returns (int64 responseCode, ScheduleInfo memory scheduleInfo)` | Retrieves the `ScheduleInfo` struct for the schedule transaction with the given `address`                                                    |
 | `0x358eeb03` | `signSchedule(address, bytes) external returns (int64 responseCode)`                                           | Sign the schedule transaction whose id is `address` with the keys derived from signatures encoded as a protobuf signatureMap give by `bytes` |
 
 The supported functions callable from an EOA are as follows:
@@ -50,33 +49,10 @@ The supported functions callable from an EOA are as follows:
 |     Hash     |                                                Selector                                                 |                                                                                                                 Description                                                                                                                 |
 |--------------|---------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `0x06d15889` | `signSchedule() external returns (int64 responseCode)`                                                  | Signs the targeted schedule transaction with the sender's keys.  For `EthereumTransactions` the embedded ECDSA key will be used.  For `ContractCall` transactions, the keys derived from the signature map of the transaction will be used. |
-| `0x88af14e6` | `getScheduledTransactionInfo() external returns (int64 responseCode, ScheduleInfo memory scheduleInfo)` | Retrieves the `ScheduleInfo` struct for the schedule transaction given as the target for this call.                                                                                                                                         |
 
-### SchduleInfo Struct
-
-The `ScheduleInfo` struct will contain the following fields:
-
-```solidity
-   struct ScheduleInfo {
-        address scheduleID;
-
-        int64 deletionTime;
-        int64 executionTime;
-        int64 expirationTime;
-
-        string memo;
-
-        KeyValue adminKey;
-        KeyValue[] signers;
-
-        address creatorAccountID;
-        address payerAccountID;
-
-        address scheduledTransactionID;
-        bytes ledger_id;
-        bool wait_for_expiry;
-    }
-```
+The HIP mentions two additional functions `getScheduledTransactionInfo(address)` and `getScheduledTransactionInfo()` which are not included in the list above.
+It has been decided that these will only be implemented at a later time if necessary as the only useful information
+is the `scheduleID` which is needed in order to make the calls in the first place.  
 
 ### Phased Implementation
 
@@ -86,12 +62,10 @@ The `ScheduleInfo` struct will contain the following fields:
 
 The functions of the new system contract can be implemented in a phased approach in order to prioritize unblocking the implementation of the most common [HIP-756](https://hips.hedera.com/hip/hip-756) scenarios.
 The following the use cases can be implemented in the following order:
-1. The proxy contract version of the `getScheduledTransactionInfo` function should be implemented first as it will be called by an EOA.
-2. The ability to sign a schedule transaction from an EOA using the `signSchedule` function via a `ContractCall` transaction.
-3. The ability to sign a schedule transaction from an EOA using the `signSchedule` function via an `EthereumTransactions` transaction.
-4. The contract version of the `getScheduledTransactionInfo` function should be implemented in order to unblock the retrieval of the `ScheduleInfo` struct from contracts.
-5. The ability to sign a schedule transaction from a contract using the `authorizeSchedule` function.
-6. The ability to sign a schedule transaction from a contract using the `signSchedule` function.
+1. The ability to sign a schedule transaction from an EOA using the `signSchedule` function via a `ContractCall` transaction.
+2. The ability to sign a schedule transaction from an EOA using the `signSchedule` function via an `EthereumTransactions` transaction.
+3. The ability to sign a schedule transaction from a contract using the `authorizeSchedule` function.
+4. The ability to sign a schedule transaction from a contract using the `signSchedule` function.
 
 ### Dispatching to the Schedule Service
 
