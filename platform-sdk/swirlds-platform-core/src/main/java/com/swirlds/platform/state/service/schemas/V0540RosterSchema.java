@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.roster.schemas;
+package com.swirlds.platform.state.service.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
