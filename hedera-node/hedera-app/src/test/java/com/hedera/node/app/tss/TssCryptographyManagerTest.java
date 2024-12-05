@@ -96,7 +96,6 @@ public class TssCryptographyManagerTest {
     void testWhenVoteAlreadySubmitted() {
         final var body = getTssBody();
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(mock(TssVoteTransactionBody.class)); // Simulate vote already submitted
 
         final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, tssStore, 0);
@@ -108,7 +107,6 @@ public class TssCryptographyManagerTest {
     void testWhenVoteNoVoteSubmittedAndThresholdNotMet() {
         final var body = getTssBody();
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
 
         final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, tssStore, 0);
@@ -124,7 +122,6 @@ public class TssCryptographyManagerTest {
 
         final var body = getTssBody();
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
         when(tssStore.getMessagesForTarget(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
@@ -143,7 +140,6 @@ public class TssCryptographyManagerTest {
     void testWhenMetException() {
         final var body = getTssBody();
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
         when(tssStore.getVote(any())).thenReturn(null);
         when(tssStore.getMessagesForTarget(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
