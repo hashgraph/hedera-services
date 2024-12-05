@@ -130,6 +130,7 @@ public class DispatchForResponseCodeHtsCall extends AbstractCall {
      * @param attempt the attempt to translate to a dispatching
      * @param syntheticBody the synthetic body to dispatch
      * @param dispatchGasCalculator the dispatch gas calculator to use
+     * @param failureCustomizer the status customizer to use
      */
     public DispatchForResponseCodeHtsCall(
             @NonNull final HtsCallAttempt attempt,
@@ -153,6 +154,7 @@ public class DispatchForResponseCodeHtsCall extends AbstractCall {
      * @param attempt the attempt to translate to a dispatching
      * @param syntheticBody the synthetic body to dispatch
      * @param dispatchGasCalculator the dispatch gas calculator to use
+     * @param outputFn the output function to use
      */
     public DispatchForResponseCodeHtsCall(
             @NonNull final HtsCallAttempt attempt,
@@ -174,6 +176,7 @@ public class DispatchForResponseCodeHtsCall extends AbstractCall {
      * More general constructor, for cases where perhaps a custom {@link VerificationStrategy} is needed.
      *
      * @param enhancement the enhancement to use
+     * @param gasCalculator the gas calculator for the system contract
      * @param senderId the id of the spender
      * @param syntheticBody the synthetic body to dispatch
      * @param verificationStrategy the verification strategy to use

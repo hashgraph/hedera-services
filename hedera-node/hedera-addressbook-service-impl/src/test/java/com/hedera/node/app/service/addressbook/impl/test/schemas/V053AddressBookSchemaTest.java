@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.addressbook.impl.test.schemas;
 
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.FILES_KEY;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.endpointFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
@@ -27,6 +27,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NodeAddress;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.state.addressbook.Node;
@@ -47,6 +48,9 @@ import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.MapWritableStates;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,11 +58,19 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class V053AddressBookSchemaTest extends AddressBookTestBase {
+    private static final Key NODE0_ADMIN_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .build();
+    private static final Key NODE1_ADMIN_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
+            .build();
+
     @LoggingTarget
     private LogCaptor logCaptor;
 
@@ -67,6 +79,9 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
 
     @Mock
     private NetworkInfo networkInfo;
+
+    @TempDir
+    java.nio.file.Path tempDir;
 
     @LoggingSubject
     private V053AddressBookSchema subject;
@@ -98,6 +113,15 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
     }
 
     @Test
+    void parsesExpectedAdminKeys() {
+        final Map<Long, Key> expectedKeys = Map.of(
+                0L, NODE0_ADMIN_KEY,
+                1L, NODE1_ADMIN_KEY);
+        final var actualKeys = V053AddressBookSchema.parseEd25519NodeAdminKeys(nodeAdminKeysJson());
+        assertEquals(expectedKeys, actualKeys);
+    }
+
+    @Test
     void migrateAsExpected() {
         setupMigrationContext();
 
@@ -124,7 +148,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .gossipEndpoint(List.of(endpointFor("23.45.34.245", 22), endpointFor("127.0.0.1", 123)))
                         .gossipCaCertificate(Bytes.wrap(gossipCaCertificate))
                         .weight(0)
-                        .adminKey(anotherKey)
+                        .adminKey(NODE1_ADMIN_KEY)
                         .build(),
                 writableNodes.get(EntityNumber.newBuilder().number(1).build()));
         assertEquals(
@@ -204,8 +228,10 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
 
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
-        assertThat(logCaptor.warnLogs()).hasSize(1);
-        assertThat(logCaptor.warnLogs()).matches(logs -> logs.getFirst()
+        assertThat(logCaptor.warnLogs()).hasSize(2);
+        assertThat(logCaptor.warnLogs()).matches(logs -> logs.getFirst().contains("Unable to read override keys"));
+
+        assertThat(logCaptor.warnLogs()).matches(logs -> logs.getLast()
                 .contains("Can not parse file 102 com.hedera.pbj.runtime.ParseException: "));
         assertThat(logCaptor.infoLogs()).contains("Migrated 3 nodes from address book");
         assertEquals(
@@ -253,6 +279,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
 
     private void setupMigrationContext() {
         writableStates = MapWritableStates.builder().state(writableNodes).build();
+        given(migrationContext.isGenesis()).willReturn(true);
         given(migrationContext.newStates()).willReturn(writableStates);
 
         final var nodeInfo1 = new NodeInfoImpl(
@@ -276,7 +303,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
         given(networkInfo.addressBook()).willReturn(List.of(nodeInfo1, nodeInfo2, nodeInfo3));
         given(migrationContext.genesisNetworkInfo()).willReturn(networkInfo);
         final var config = HederaTestConfigBuilder.create()
-                .withValue("bootstrap.genesisPublicKey", defauleAdminKeyBytes)
+                .withValue("bootstrap.genesisPublicKey", defaultAdminKeyBytes)
                 .getOrCreateConfig();
         given(migrationContext.configuration()).willReturn(config);
     }
@@ -292,8 +319,17 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                 .build();
         given(migrationContext.newStates()).willReturn(writableStates);
 
+        final var adminKeysLoc = tempDir.resolve("node-admin-keys.json");
+        try {
+            Files.writeString(adminKeysLoc, nodeAdminKeysJson());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         final var config = HederaTestConfigBuilder.create()
-                .withValue("bootstrap.genesisPublicKey", defauleAdminKeyBytes)
+                .withValue("bootstrap.genesisPublicKey", defaultAdminKeyBytes)
+                .withValue(
+                        "bootstrap.nodeAdminKeys.path",
+                        adminKeysLoc.toAbsolutePath().toString())
                 .withValue("accounts.addressBookAdmin", "55")
                 .getOrCreateConfig();
         given(migrationContext.configuration()).willReturn(config);
@@ -327,7 +363,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
         given(migrationContext.newStates()).willReturn(writableStates);
 
         final var config = HederaTestConfigBuilder.create()
-                .withValue("bootstrap.genesisPublicKey", defauleAdminKeyBytes)
+                .withValue("bootstrap.genesisPublicKey", defaultAdminKeyBytes)
                 .withValue("accounts.addressBookAdmin", "55")
                 .withValue("files.nodeDetails", "102")
                 .getOrCreateConfig();
@@ -348,10 +384,18 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
         given(migrationContext.newStates()).willReturn(writableStates);
 
         final var config = HederaTestConfigBuilder.create()
-                .withValue("bootstrap.genesisPublicKey", defauleAdminKeyBytes)
+                .withValue("bootstrap.genesisPublicKey", defaultAdminKeyBytes)
                 .withValue("accounts.addressBookAdmin", "55")
                 .withValue("files.nodeDetails", "102")
                 .getOrCreateConfig();
         given(migrationContext.configuration()).willReturn(config);
+    }
+
+    private String nodeAdminKeysJson() {
+        return """
+                {
+                  "0": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "1": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                }""";
     }
 }

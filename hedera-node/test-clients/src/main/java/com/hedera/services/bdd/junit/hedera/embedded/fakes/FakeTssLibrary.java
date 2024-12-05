@@ -19,19 +19,19 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.bls.BlsSignature;
+import com.hedera.cryptography.bls.SignatureSchema;
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.cryptography.tss.api.TssPrivateShare;
+import com.hedera.cryptography.tss.api.TssPublicShare;
+import com.hedera.cryptography.tss.api.TssShareSignature;
+import com.hedera.node.app.tss.api.FakeFieldElement;
+import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssMessage;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.api.TssPrivateShare;
-import com.hedera.node.app.tss.api.TssPublicShare;
-import com.hedera.node.app.tss.api.TssShareId;
-import com.hedera.node.app.tss.api.TssShareSignature;
-import com.hedera.node.app.tss.pairings.FakeFieldElement;
-import com.hedera.node.app.tss.pairings.FakeGroupElement;
-import com.hedera.node.app.tss.pairings.PairingPrivateKey;
-import com.hedera.node.app.tss.pairings.PairingPublicKey;
-import com.hedera.node.app.tss.pairings.PairingSignature;
-import com.hedera.node.app.tss.pairings.SignatureSchema;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -42,10 +42,12 @@ public class FakeTssLibrary implements TssLibrary {
     private static final String INVALID_MESSAGE_PREFIX = "INVALID";
 
     private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
-    private static final PairingPrivateKey PRIVATE_KEY =
-            new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
-    public static final PairingSignature FAKE_SIGNATURE =
-            new PairingSignature(new FakeGroupElement(BigInteger.valueOf(1L)), SIGNATURE_SCHEMA);
+    public static final BlsPrivateKey PRIVATE_KEY =
+            new BlsPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    public static final BlsPublicKey FAKE_LEDGER_ID =
+            new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    public static final BlsSignature FAKE_SIGNATURE =
+            new BlsSignature(new FakeGroupElement(BigInteger.valueOf(1L)), SIGNATURE_SCHEMA);
 
     public interface DirectoryAssertion {
         void assertExpected(@NonNull TssParticipantDirectory directory) throws AssertionError;
@@ -66,7 +68,7 @@ public class FakeTssLibrary implements TssLibrary {
      * @return the message
      */
     public static TssMessage validMessage(final int i) {
-        return new TssMessage((VALID_MESSAGE_PREFIX + i).getBytes());
+        return new FakeTssMessage((VALID_MESSAGE_PREFIX + i).getBytes());
     }
 
     /**
@@ -75,7 +77,7 @@ public class FakeTssLibrary implements TssLibrary {
      * @return the message
      */
     public static TssMessage invalidMessage(final int i) {
-        return new TssMessage((INVALID_MESSAGE_PREFIX + i).getBytes());
+        return new FakeTssMessage((INVALID_MESSAGE_PREFIX + i).getBytes());
     }
 
     /**
@@ -84,14 +86,14 @@ public class FakeTssLibrary implements TssLibrary {
      * @return the index
      */
     public static int getShareIndex(final TssMessage message) {
-        final var s = new String(message.bytes());
+        final var s = new String(message.toBytes());
         return Integer.parseInt(s.substring(s.lastIndexOf('D') + 1));
     }
 
     @NonNull
     @Override
     public TssMessage generateTssMessage(@NonNull final TssParticipantDirectory tssParticipantDirectory) {
-        return new TssMessage(new byte[0]);
+        return new FakeTssMessage(new byte[0]);
     }
 
     /**
@@ -111,13 +113,13 @@ public class FakeTssLibrary implements TssLibrary {
             rekeyGenerationDirectoryAssertion.assertExpected(directory);
         }
         // The fake always returns a valid message
-        return validMessage(privateShare.shareId().idElement());
+        return validMessage(privateShare.shareId());
     }
 
     @Override
     public boolean verifyTssMessage(
-            @NonNull final TssParticipantDirectory participantDirectory, @NonNull final TssMessage tssMessage) {
-        return new String(tssMessage.bytes()).startsWith(VALID_MESSAGE_PREFIX);
+            @NonNull final TssParticipantDirectory participantDirectory, @NonNull final Bytes tssMessage) {
+        return new String(tssMessage.toByteArray()).startsWith(VALID_MESSAGE_PREFIX);
     }
 
     /**
@@ -131,7 +133,7 @@ public class FakeTssLibrary implements TssLibrary {
         requireNonNull(decryptedShareIds);
         this.decryptDirectoryAssertion = requireNonNull(decryptDirectoryAssertion);
         this.decryptedShares = decryptedShareIds.stream()
-                .map(id -> new TssPrivateShare(new TssShareId(id), PRIVATE_KEY))
+                .map(id -> new TssPrivateShare(id, PRIVATE_KEY))
                 .toList();
     }
 
@@ -157,8 +159,8 @@ public class FakeTssLibrary implements TssLibrary {
 
     @NonNull
     @Override
-    public PairingPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares) {
-        return PRIVATE_KEY.createPublicKey();
+    public BlsPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares) {
+        return FAKE_LEDGER_ID;
     }
 
     @NonNull
@@ -166,10 +168,7 @@ public class FakeTssLibrary implements TssLibrary {
     public TssShareSignature sign(@NonNull final TssPrivateShare privateShare, @NonNull final byte[] message) {
         return new TssShareSignature(
                 privateShare.shareId(),
-                new PairingSignature(
-                        new FakeGroupElement(
-                                BigInteger.valueOf(privateShare.shareId().idElement())),
-                        SIGNATURE_SCHEMA));
+                new BlsSignature(new FakeGroupElement(BigInteger.valueOf(privateShare.shareId())), SIGNATURE_SCHEMA));
     }
 
     @Override
@@ -182,13 +181,13 @@ public class FakeTssLibrary implements TssLibrary {
 
     @NonNull
     @Override
-    public PairingSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures) {
+    public BlsSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures) {
         return FAKE_SIGNATURE;
     }
 
     @NonNull
     @Override
-    public PairingPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares) {
-        return PRIVATE_KEY;
+    public TssMessage getTssMessageFromBytes(Bytes tssMessage, TssParticipantDirectory participantDirectory) {
+        return new FakeTssMessage(new byte[0]);
     }
 }

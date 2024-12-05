@@ -19,6 +19,8 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
@@ -174,8 +176,10 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void requestLedgerSignature(@NonNull final byte[] messageHash, final Instant lastUsedConsensusTime) {
+    public void requestLedgerSignature(
+            @NonNull final byte[] messageHash, @NonNull final Instant lastUsedConsensusTime) {
         requireNonNull(messageHash);
+        requireNonNull(lastUsedConsensusTime);
         switch (signing) {
             case FAKE -> {
                 if (ignoreRequests) {
@@ -251,5 +255,23 @@ public class FakeTssBaseService implements TssBaseService {
     @Override
     public void generateParticipantDirectory(@NonNull final State state) {
         delegate.generateParticipantDirectory(state);
+    }
+
+    @Override
+    public Bytes ledgerIdFrom(
+            @NonNull final TssParticipantDirectory directory, @NonNull final List<TssMessage> tssMessages) {
+        requireNonNull(directory);
+        requireNonNull(tssMessages);
+        return delegate.ledgerIdFrom(directory, tssMessages);
+    }
+
+    @Override
+    public TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory) {
+        return delegate.getTssMessageFromBytes(wrap, directory);
+    }
+
+    @Override
+    public void manageTssStatus(final State state) {
+        delegate.manageTssStatus(state);
     }
 }

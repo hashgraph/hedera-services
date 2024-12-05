@@ -117,7 +117,9 @@ class BlockImplUtilsTest {
             case STATE_ID_SCHEDULES_BY_EXPIRY -> "ScheduleService.SCHEDULES_BY_EXPIRY_SEC";
             case STATE_ID_SCHEDULES_BY_ID -> "ScheduleService.SCHEDULES_BY_ID";
             case STATE_ID_SCHEDULE_ID_BY_EQUALITY -> "ScheduleService.SCHEDULE_ID_BY_EQUALITY";
-            case STATE_ID_SCHEDULE_IDS_BY_EXPIRY -> "ScheduleService.SCHEDULE_IDS_BY_EXPIRY_SEC";
+            case STATE_ID_SCHEDULED_COUNTS -> "ScheduleService.SCHEDULED_COUNTS";
+            case STATE_ID_SCHEDULED_ORDERS -> "ScheduleService.SCHEDULED_ORDERS";
+            case STATE_ID_SCHEDULED_USAGES -> "ScheduleService.SCHEDULED_USAGES";
             case STATE_ID_ACCOUNTS -> "TokenService.ACCOUNTS";
             case STATE_ID_ALIASES -> "TokenService.ALIASES";
             case STATE_ID_NFTS -> "TokenService.NFTS";
@@ -128,6 +130,8 @@ class BlockImplUtilsTest {
             case STATE_ID_TOKENS -> "TokenService.TOKENS";
             case STATE_ID_TSS_MESSAGES -> "TssBaseService.TSS_MESSAGES";
             case STATE_ID_TSS_VOTES -> "TssBaseService.TSS_VOTES";
+            case STATE_ID_TSS_ENCRYPTION_KEYS -> "TssBaseService.TSS_ENCRYPTION_KEY";
+            case STATE_ID_TSS_STATUS -> "TssBaseService.TSS_STATUS";
         };
     }
 }

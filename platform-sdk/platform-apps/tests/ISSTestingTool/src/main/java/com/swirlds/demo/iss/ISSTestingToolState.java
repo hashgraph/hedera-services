@@ -36,12 +36,15 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -49,8 +52,14 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
+import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -61,6 +70,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,12 +78,16 @@ import org.apache.logging.log4j.Logger;
  * State for the ISSTestingTool.
  */
 @ConstructableIgnored
-public class ISSTestingToolState extends MerkleStateRoot {
+public class ISSTestingToolState extends PlatformMerkleStateRoot {
 
     private static final Logger logger = LogManager.getLogger(ISSTestingToolState.class);
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
+    }
+
+    static {
+        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     private static final long CLASS_ID = 0xf059378c7764ef47L;
@@ -83,6 +97,11 @@ public class ISSTestingToolState extends MerkleStateRoot {
      * "skips" forward longer than this window then the scheduled incident will be ignored.
      */
     private static final Duration INCIDENT_WINDOW = Duration.ofSeconds(10);
+
+    private static final int RUNNING_SUM_INDEX = 1;
+    private static final int GENESIS_TIMESTAMP_INDEX = 2;
+    private static final int PLANNED_ISS_LIST_INDEX = 3;
+    private static final int PLANNED_LOG_ERROR_LIST_INDEX = 4;
 
     private NodeId selfId;
 
@@ -167,11 +186,50 @@ public class ISSTestingToolState extends MerkleStateRoot {
 
             this.plannedIssList = testingToolConfig.getPlannedISSs();
             this.plannedLogErrorList = testingToolConfig.getPlannedLogErrors();
+            writeObjectByChildIndex(PLANNED_ISS_LIST_INDEX, plannedIssList);
+            writeObjectByChildIndex(PLANNED_LOG_ERROR_LIST_INDEX, plannedLogErrorList);
+        } else {
+            StringLeaf runningSumLeaf = getChild(RUNNING_SUM_INDEX);
+            if (runningSumLeaf != null) {
+                runningSum = Long.parseLong(runningSumLeaf.getLabel());
+            }
+            StringLeaf genesisTimestampLeaf = getChild(GENESIS_TIMESTAMP_INDEX);
+            if (genesisTimestampLeaf != null) {
+                genesisTimestamp = Instant.parse(genesisTimestampLeaf.getLabel());
+            }
+            plannedIssList = readObjectByChildIndex(PLANNED_ISS_LIST_INDEX, PlannedIss::new);
+            plannedLogErrorList = readObjectByChildIndex(PLANNED_LOG_ERROR_LIST_INDEX, PlannedLogError::new);
         }
 
         this.selfId = platform.getSelfId();
         this.scratchPad =
                 Scratchpad.create(platform.getContext(), selfId, IssTestingToolScratchpad.class, "ISSTestingTool");
+    }
+
+    <T extends SelfSerializable> List<T> readObjectByChildIndex(int index, Supplier<T> factory) {
+        StringLeaf stringValue = getChild(index);
+        if (stringValue != null) {
+            try {
+                SerializableDataInputStream in = new SerializableDataInputStream(
+                        new ByteArrayInputStream(stringValue.getLabel().getBytes(StandardCharsets.UTF_8)));
+                return in.readSerializableList(1024, false, factory);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            return null;
+        }
+    }
+
+    <T extends SelfSerializable> void writeObjectByChildIndex(int index, List<T> list) {
+        try {
+            ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+            SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
+            out.writeSerializableList(list, false, true);
+            setChild(index, new StringLeaf(byteOut.toString(StandardCharsets.UTF_8)));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -216,6 +274,7 @@ public class ISSTestingToolState extends MerkleStateRoot {
     private void captureTimestamp(final ConsensusEvent event) {
         if (genesisTimestamp == null) {
             genesisTimestamp = event.getConsensusTimestamp();
+            setChild(GENESIS_TIMESTAMP_INDEX, new StringLeaf(genesisTimestamp.toString()));
         }
     }
 
@@ -231,6 +290,7 @@ public class ISSTestingToolState extends MerkleStateRoot {
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         runningSum += delta;
+        setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
     }
 
     /**
@@ -320,7 +380,7 @@ public class ISSTestingToolState extends MerkleStateRoot {
         int largestPartition = 0;
         long largestPartitionWeight = 0;
         for (int partition = 0; partition < plannedIss.getPartitionCount(); partition++) {
-            if (partitionWeights.get(partition) > largestPartitionWeight) {
+            if (partitionWeights.get(partition) != null && partitionWeights.get(partition) > largestPartitionWeight) {
                 largestPartition = partition;
                 largestPartitionWeight = partitionWeights.getOrDefault(partition, 0L);
             }
@@ -410,6 +470,11 @@ public class ISSTestingToolState extends MerkleStateRoot {
      */
     @Override
     public int getVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    @Override
+    public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
     }
 }

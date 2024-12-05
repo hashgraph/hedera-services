@@ -122,7 +122,8 @@ jobs:
     name: Execute eXtended Test Suite
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' &&
+            !github.event.workflow_dispatch.repository.fork }}
     with:
       custom-job-label: Execute eXtended Test Suite
       enable-timing-sensitive-tests: true
@@ -140,7 +141,8 @@ jobs:
     name: JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' &&
+            !github.event.workflow_dispatch.repository.fork }}
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
@@ -166,14 +168,15 @@ jobs:
     name: Hedera Node JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts-tag-exists == 'true' &&
+            !github.event.workflow_dispatch.repository.fork }}
     with:
       custom-job-name: "Abbrev Update Test"
       ref: ${{ needs.fetch-xts-candidate.outputs.xts-tag-commit }} # pass the xts-candidate tag to the JRS panel for checkout
       branch-name: ${{ github.head_ref || github.ref_name }}
       hedera-tests-enabled: true
       use-branch-for-slack-channel: false
-      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Abbrev-Update-4N-2C.json"
+      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Abbrev-DAB-Update-4N-2C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
@@ -194,9 +197,7 @@ jobs:
       - extended-test-suite
       - fetch-xts-candidate
       - hedera-node-jrs-panel
-    if: ${{ needs.abbreviated-panel.result == 'success' ||
-            needs.extended-test-suite.result == 'success' ||
-            needs.hedera-node-jrs-panel.result == 'success' }}
+    if: ${{ needs.abbreviated-panel.result == 'success' || needs.extended-test-suite.result == 'success' || needs.hedera-node-jrs-panel.result == 'success' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
@@ -286,15 +287,15 @@ jobs:
 
       - name: Report failure (slack)
         uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
-        env:
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_WEBHOOK }}
         with:
+          webhook: ${{ secrets.SLACK_CITR_FAILURES_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload-templated: true
           payload: |
             {
               "attachments": [
                 {
-                  "color": "#7647cd",
+                  "color": "#FF0000",
                   "blocks": [
                     {
                       "type": "header",

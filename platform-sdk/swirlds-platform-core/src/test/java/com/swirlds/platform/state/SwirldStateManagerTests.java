@@ -23,18 +23,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,21 +48,22 @@ class SwirldStateManagerTests {
 
     @BeforeEach
     void setup() {
+        MerkleDb.resetDefaultInstancePath();
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(Randotron.create()).build();
-        when(platform.getAddressBook()).thenReturn(addressBook);
+        final Roster roster = RandomRosterBuilder.create(Randotron.create()).build();
+        when(platform.getRoster()).thenReturn(roster);
         initialState = newState();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
         swirldStateManager = new SwirldStateManager(
-                platformContext,
-                addressBook,
-                NodeId.of(0L),
-                mock(StatusActionSubmitter.class),
-                new BasicSoftwareVersion(1));
+                platformContext, roster, NodeId.of(0L), mock(StatusActionSubmitter.class), new BasicSoftwareVersion(1));
         swirldStateManager.setInitialState(initialState);
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
     }
 
     @Test
@@ -88,6 +91,7 @@ class SwirldStateManagerTests {
     @DisplayName("Load From Signed State - state reference counts")
     void loadFromSignedStateRefCount() {
         final SignedState ss1 = newSignedState();
+        MerkleDb.resetDefaultInstancePath();
         swirldStateManager.loadFromSignedState(ss1);
 
         assertEquals(
@@ -100,7 +104,9 @@ class SwirldStateManagerTests {
                 swirldStateManager.getConsensusState().getReservationCount(),
                 "The current consensus state should have a single reference count.");
 
+        MerkleDb.resetDefaultInstancePath();
         final SignedState ss2 = newSignedState();
+        MerkleDb.resetDefaultInstancePath();
         swirldStateManager.loadFromSignedState(ss2);
 
         assertEquals(
@@ -120,8 +126,8 @@ class SwirldStateManagerTests {
     }
 
     private static MerkleRoot newState() {
-        final MerkleStateRoot state =
-                new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        final PlatformMerkleStateRoot state = new PlatformMerkleStateRoot(
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
 
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);

@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.state.service.schemas;
 
-import static com.swirlds.common.RosterStateId.ROSTER_KEY;
-import static com.swirlds.common.RosterStateId.ROSTER_STATES_KEY;
-
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
@@ -35,8 +32,13 @@ import org.apache.logging.log4j.Logger;
  * Roster Schema
  */
 public class V0540RosterSchema extends Schema {
+    public static final String ROSTER_KEY = "ROSTERS";
+    public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
+
     private static final Logger log = LogManager.getLogger(V0540RosterSchema.class);
-    /** this can't be increased later so we pick some number large enough, 2^16. */
+    /**
+     * this can't be increased later so we pick some number large enough, 2^16.
+     */
     private static final long MAX_ROSTERS = 65_536L;
 
     /**

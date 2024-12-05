@@ -19,8 +19,10 @@ package com.hedera.node.app.spi;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -103,4 +105,16 @@ public interface AppContext {
      * @return the supplier
      */
     Supplier<NodeInfo> selfNodeInfoSupplier();
+
+    /**
+     * The supplier of (platform) metrics
+     * @return the supplier
+     */
+    Supplier<Metrics> metricsSupplier();
+
+    /**
+     * The application's strategy for creating {@link Throttle} instances.
+     * @return the throttle factory
+     */
+    Throttle.Factory throttleFactory();
 }

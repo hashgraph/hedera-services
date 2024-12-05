@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDnsServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.resourceAsString;
@@ -40,8 +41,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nOps;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.selectedItems;
@@ -55,27 +56,33 @@ import static com.hedera.services.bdd.spec.utilops.grouping.GroupingVerbs.getSys
 import static com.hedera.services.bdd.spec.utilops.streams.assertions.SelectedItemsAssertion.SELECTED_ITEMS_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
@@ -85,8 +92,11 @@ import com.hedera.services.bdd.spec.utilops.grouping.SysFileLookups;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -177,19 +187,12 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overridingTwo(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString(),
-                        "scheduling.whitelist",
-                        "ContractCall")),
+                sourcingContextual(spec -> overriding("scheduling.whitelist", "ContractCall")),
                 // Write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradeFeeSchedulesFile",
-                        feeSchedulesFile -> writeToNodeWorkingDirs(feeSchedulesJson, feeSchedulesFile)),
+                        feeSchedulesFile ->
+                                writeToNodeWorkingDirs(feeSchedulesJson, "data", "config", feeSchedulesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Verify the new fee schedules (which include a subtype for scheduled contract fees) are in effect
@@ -222,19 +225,11 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overridingTwo(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString(),
-                        "tokens.nfts.mintThrottleScaleFactor",
-                        "1:1")),
+                sourcingContextual(spec -> overriding("tokens.nfts.mintThrottleScaleFactor", "1:1")),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradeThrottlesFile",
-                        throttleDefsFile -> writeToNodeWorkingDirs(throttlesJson, throttleDefsFile)),
+                        throttleDefsFile -> writeToNodeWorkingDirs(throttlesJson, "data", "config", throttleDefsFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the new throttles are in effect
@@ -263,17 +258,12 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overriding(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString())),
+                cryptoCreate("genesisAccount"),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradePropertyOverridesFile",
-                        propOverridesFile -> writeToNodeWorkingDirs(overrideProperties, propOverridesFile)),
+                        propOverridesFile ->
+                                writeToNodeWorkingDirs(overrideProperties, "data", "config", propOverridesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the new properties are in effect
@@ -298,19 +288,11 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overridingTwo(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString(),
-                        "tokens.nfts.maxBatchSizeMint",
-                        "2")),
+                sourcingContextual(spec -> overriding("tokens.nfts.maxBatchSizeMint", "2")),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradePropertyOverridesFile",
-                        propOverridesFile -> writeToNodeWorkingDirs("", propOverridesFile)),
+                        propOverridesFile -> writeToNodeWorkingDirs("", "data", "config", propOverridesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the previous override properties are cleared
@@ -339,18 +321,12 @@ public class SystemFileExportsTest {
                         3,
                         TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
-                sourcingContextual(spec -> overriding(
-                        "networkAdmin.upgradeSysFilesLoc",
-                        spec.getNetworkNodes()
-                                .getFirst()
-                                .metadata()
-                                .workingDirOrThrow()
-                                .toString())),
+                cryptoCreate("genesisAccount"),
                 // Now write the upgrade file to the node's working dirs
                 doWithStartupConfig(
                         "networkAdmin.upgradePermissionOverridesFile",
                         permissionOverridesFile ->
-                                writeToNodeWorkingDirs(overridePermissions, permissionOverridesFile)),
+                                writeToNodeWorkingDirs(overridePermissions, "data", "config", permissionOverridesFile)),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 // Then verify the new permissions are in effect
@@ -364,6 +340,53 @@ public class SystemFileExportsTest {
                                         ByteString.copyFromUtf8("BE")))
                         .payingWith("civilian")
                         .hasKnownStatus(UNAUTHORIZED));
+    }
+
+    @GenesisHapiTest
+    final Stream<DynamicTest> syntheticNodeAdminKeysUpdateHappensAtUpgradeBoundary() {
+        return hapiTest(
+                recordStreamMustIncludePassFrom(selectedItems(
+                        nodeUpdatesValidator(),
+                        // Our node admin key file will contain two override keys
+                        2,
+                        (spec, item) -> {
+                            final var entry = RecordStreamEntry.from(item);
+                            return entry.function() == NodeUpdate
+                                    && entry.txnId().getAccountID().getAccountNum()
+                                            == spec.startupProperties().getLong("accounts.systemAdmin");
+                        })),
+                newKeyNamed("node0AdminKey").shape(ED25519_ON),
+                newKeyNamed("node3AdminKey").shape(ED25519_ON),
+                // This is the genesis transaction
+                cryptoCreate("anybody"),
+                // Now write the node admin key overrides file to the node's working dirs
+                sourcingContextual(spec -> doWithStartupConfig(
+                        "networkAdmin.upgradeNodeAdminKeysFile",
+                        nodeAdminKeysFile -> writeToNodeWorkingDirs(
+                                toJson(Map.of(
+                                        0L, spec.registry().getKey("node0AdminKey"),
+                                        3L, spec.registry().getKey("node3AdminKey"))),
+                                "data",
+                                "config",
+                                nodeAdminKeysFile))),
+                // And now simulate an upgrade boundary
+                simulatePostUpgradeTransaction(),
+                // Then verify the new admin keys are in effect
+                cryptoCreate("civilian"),
+                // We cannot update 0 or 3 because the admin keys have changed
+                nodeUpdate("0").payingWith(GENESIS).hasKnownStatus(INVALID_SIGNATURE),
+                nodeUpdate("3").payingWith(GENESIS).hasKnownStatus(INVALID_SIGNATURE),
+                // But we still can update 1
+                nodeUpdate("1").payingWith(GENESIS).description("B"),
+                // And by signing with the override admin keys, we can even update 0 and 3
+                nodeUpdate("0")
+                        .payingWith(GENESIS)
+                        .signedBy(GENESIS, "node0AdminKey")
+                        .description("A"),
+                nodeUpdate("3")
+                        .payingWith(GENESIS)
+                        .signedBy(GENESIS, "node3AdminKey")
+                        .description("C"));
     }
 
     @GenesisHapiTest
@@ -395,6 +418,19 @@ public class SystemFileExportsTest {
 
     private interface ParseFunction<T> {
         T parse(@NonNull byte[] bytes) throws InvalidProtocolBufferException;
+    }
+
+    private static VisibleItemsValidator nodeUpdatesValidator() {
+        return (spec, records) -> {
+            final var items = records.get(SELECTED_ITEMS_KEY);
+            assertNotNull(items, "No post-upgrade node updates found");
+            final Map<Long, Key> newAdminKeys = items.entries().stream()
+                    .filter(item -> item.function() == NodeUpdate)
+                    .map(item -> item.body().getNodeUpdate())
+                    .collect(toMap(NodeUpdateTransactionBody::getNodeId, NodeUpdateTransactionBody::getAdminKey));
+            assertEquals(spec.registry().getKey("node0AdminKey"), newAdminKeys.get(0L));
+            assertEquals(spec.registry().getKey("node3AdminKey"), newAdminKeys.get(3L));
+        };
     }
 
     private static <T> VisibleItemsValidator sysFileExportValidator(
@@ -565,6 +601,19 @@ public class SystemFileExportsTest {
             return List.of(asServiceEndpoint("127.0.0." + (i * 2 + 1) + ":" + (80 + i)));
         } else {
             return List.of(asDnsServiceEndpoint("host" + i + ":" + (80 + i)));
+        }
+    }
+
+    private static String toJson(@NonNull final Map<Long, Key> nodeAdminKeys) {
+        final var mapper = new ObjectMapper();
+        try {
+            return mapper.writeValueAsString(nodeAdminKeys.entrySet().stream()
+                    .collect(toMap(
+                            entry -> entry.getKey().toString(),
+                            entry -> CommonUtils.hex(
+                                    entry.getValue().getEd25519().toByteArray()))));
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to serialize node admin keys", e);
         }
     }
 }

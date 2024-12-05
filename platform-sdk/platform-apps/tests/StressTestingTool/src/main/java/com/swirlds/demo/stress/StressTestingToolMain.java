@@ -32,7 +32,11 @@ import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -40,7 +44,7 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -56,6 +60,25 @@ import org.apache.logging.log4j.Logger;
 public class StressTestingToolMain implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(StressTestingToolMain.class);
     private static final BasicSoftwareVersion SOFTWARE_VERSION = new BasicSoftwareVersion(1);
+
+    static {
+        try {
+            logger.info(STARTUP.getMarker(), "Registering StressTestingToolState with ConstructableRegistry");
+            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            constructableRegistry.registerConstructable(new ClassConstructorPair(StressTestingToolState.class, () -> {
+                StressTestingToolState stressTestingToolState = new StressTestingToolState(
+                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                FAKE_MERKLE_STATE_LIFECYCLES.initStates(stressTestingToolState);
+                return stressTestingToolState;
+            }));
+            registerMerkleStateRootClassIds();
+            logger.info(STARTUP.getMarker(), "StressTestingToolState is registered with ConstructableRegistry");
+        } catch (ConstructableRegistryException e) {
+            logger.error(STARTUP.getMarker(), "Failed to register StressTestingToolState", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * the time of the last measurement of TPS
      */
@@ -134,7 +157,7 @@ public class StressTestingToolMain implements SwirldMain {
         this.platform = platform;
         config = platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
         expectedTPS = config.transPerSecToCreate()
-                / (double) platform.getAddressBook().getSize();
+                / (double) platform.getRoster().rosterEntries().size();
 
         // the higher the expected TPS, the smaller the window
         tps_measure_window_milliseconds = (int) (WINDOW_CALCULATION_CONST / expectedTPS);
@@ -231,11 +254,11 @@ public class StressTestingToolMain implements SwirldMain {
     }
 
     @Override
-    public MerkleStateRoot newMerkleStateRoot() {
-        final MerkleStateRoot state = new StressTestingToolState(
+    public PlatformMerkleStateRoot newMerkleStateRoot() {
+        final PlatformMerkleStateRoot state = new StressTestingToolState(
                 FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(SOFTWARE_VERSION.getSoftwareVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 

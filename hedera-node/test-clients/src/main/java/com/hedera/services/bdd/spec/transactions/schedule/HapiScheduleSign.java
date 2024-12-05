@@ -117,7 +117,7 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
     @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
-            final ScheduleInfo info = ScheduleFeeUtils.lookupInfo(spec, schedule, loggingOff);
+            final ScheduleInfo info = ScheduleFeeUtils.lookupInfo(spec, schedule, true);
             FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> scheduleOpsUsage.scheduleSignUsage(
                     _txn, suFrom(svo), info.getExpirationTime().getSeconds());
             return spec.fees().forActivityBasedOp(HederaFunctionality.ScheduleSign, metricsCalc, txn, numPayerKeys);
@@ -142,8 +142,6 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
-                super.toStringHelper().add("schedule", schedule).add("signers", signatories);
-        return helper;
+        return super.toStringHelper().add("schedule", schedule).add("signers", signatories);
     }
 }

@@ -64,6 +64,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
@@ -193,6 +194,9 @@ public class NetworkAdminHandlerTestBase {
     private NetworkInfo networkInfo;
 
     @Mock
+    private StartupNetworks startupNetworks;
+
+    @Mock
     protected FeeCalculator feeCalculator;
 
     private final InstantSource instantSource = InstantSource.system();
@@ -222,7 +226,7 @@ public class NetworkAdminHandlerTestBase {
         final var registry = new FakeSchemaRegistry();
         final var svc = new RecordCacheService();
         svc.registerSchemas(registry);
-        registry.migrate(svc.getServiceName(), state, networkInfo);
+        registry.migrate(svc.getServiceName(), state, networkInfo, startupNetworks);
         lenient().when(wsa.getState()).thenReturn(state);
         lenient().when(stack.getWritableStates(NAME)).thenReturn(state.getWritableStates(NAME));
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
