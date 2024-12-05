@@ -184,11 +184,11 @@ public class RepeatableHip423Tests {
                 exposeSpecSecondTo(lastSecond::set),
                 sourcing(() -> scheduleCreate("tooSoon", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 12L)))
                         .expiringAt(lastSecond.get())
-                    .hasKnownStatus(SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME)),
+                        .hasKnownStatus(SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME)),
                 exposeSpecSecondTo(lastSecond::set),
                 sourcing(() -> scheduleCreate("tooLate", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 34L)))
                         .expiringAt(lastSecond.get() + 1 + ONE_MINUTE + 1)
-                    .hasKnownStatus(SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE)),
+                        .hasKnownStatus(SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE)),
                 scheduleCreate("unspecified", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 56L)))
                         .waitForExpiry()
                         .hasPrecheck(MISSING_EXPIRY_TIME));
