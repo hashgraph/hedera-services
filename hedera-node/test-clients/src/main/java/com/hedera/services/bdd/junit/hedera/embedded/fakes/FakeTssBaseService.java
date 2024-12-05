@@ -272,7 +272,8 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void manageTssStatus(final State state, final StoreMetricsService storeMetricsService, final boolean isStakePeriodBoundary) {
+    public void manageTssStatus(
+            final State state, final StoreMetricsService storeMetricsService, final boolean isStakePeriodBoundary) {
         delegate.manageTssStatus(state, storeMetricsService, isStakePeriodBoundary);
     }
 }

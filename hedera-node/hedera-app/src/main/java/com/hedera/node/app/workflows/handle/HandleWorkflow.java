@@ -709,7 +709,7 @@ public class HandleWorkflow {
      */
     private boolean processStakePeriodChanges(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
         try {
-           return stakePeriodChanges.process(
+            return stakePeriodChanges.process(
                     dispatch,
                     userTxn.stack(),
                     userTxn.tokenContextImpl(),

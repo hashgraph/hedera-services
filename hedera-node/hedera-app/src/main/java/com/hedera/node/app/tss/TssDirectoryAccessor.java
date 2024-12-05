@@ -26,7 +26,6 @@ import com.hedera.node.config.data.TssConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.State;
-import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 import javax.inject.Inject;
