@@ -84,6 +84,7 @@ final class ReconnectTest {
     static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
+        registry.registerConstructables("com.swirlds.state.merkle");
         registry.registerConstructables("com.swirlds.platform.state");
         registry.registerConstructables("com.swirlds.platform.state.signed");
         registry.registerConstructables("com.swirlds.platform.system");
