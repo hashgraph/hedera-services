@@ -623,9 +623,10 @@ public class ScheduleSignTest {
                         getAccountBalance(SENDER).hasTinyBars(664L));
     }
 
-    @LeakyHapiTest(overrides = {"ledger.schedule.txExpiryTimeSecs"})
+    @LeakyHapiTest(overrides = {"ledger.schedule.txExpiryTimeSecs", "scheduling.longTermEnabled"})
     final Stream<DynamicTest> signFailsDueToDeletedExpiration() {
         return hapiTest(
+                overriding("scheduling.longTermEnabled", "false"),
                 cryptoCreate(SENDER).balance(1L),
                 cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true),
                 overriding("ledger.schedule.txExpiryTimeSecs", "1"),
