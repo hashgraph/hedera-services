@@ -222,9 +222,22 @@ public final class HandlerUtility {
      */
     @NonNull
     static TransactionID transactionIdForScheduled(@NonNull final Schedule schedule) {
-        final var op = schedule.originalCreateTransactionOrThrow();
-        final var parentTxnId = op.transactionIDOrThrow();
-        return parentTxnId.copyBuilder().scheduled(true).build();
+        return scheduledTxnIdFrom(schedule.originalCreateTransactionOrThrow().transactionIDOrThrow());
+    }
+
+    /**
+     * Given the scheduling transaction ID, return the scheduled transaction ID.
+     * @param schedulingTxnId the scheduling transaction ID
+     * @return the scheduled transaction ID
+     */
+    static TransactionID scheduledTxnIdFrom(@NonNull final TransactionID schedulingTxnId) {
+        requireNonNull(schedulingTxnId);
+        return schedulingTxnId.scheduled()
+                ? schedulingTxnId
+                        .copyBuilder()
+                        .nonce(schedulingTxnId.nonce() + 1)
+                        .build()
+                : schedulingTxnId.copyBuilder().scheduled(true).build();
     }
 
     private static long calculateExpiration(

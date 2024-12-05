@@ -20,6 +20,7 @@ import static org.assertj.core.api.BDDAssertions.assertThat;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -34,10 +35,38 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class HandlerUtilityTest extends ScheduleHandlerTestBase {
+    private static final AccountID PAYER_ID =
+            AccountID.newBuilder().accountNum(666L).build();
+    private static final Timestamp VALID_START = new Timestamp(1_234_567L, 890);
 
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
         setUpBase();
+    }
+
+    @Test
+    void scheduledTxnIdIsSchedulingIdWithTrueIfNotAlreadySet() {
+        final var schedulingId = TransactionID.newBuilder()
+                .accountID(PAYER_ID)
+                .transactionValidStart(VALID_START)
+                .build();
+        final var scheduledId = HandlerUtility.scheduledTxnIdFrom(schedulingId);
+        assertThat(scheduledId)
+                .isEqualTo(schedulingId.copyBuilder().scheduled(true).build());
+    }
+
+    @Test
+    void scheduledTxnIdIsSchedulingIdWithIncrementedNonceIfNotAlreadySet() {
+        final var nonce = 123;
+        final var schedulingId = TransactionID.newBuilder()
+                .accountID(PAYER_ID)
+                .nonce(nonce)
+                .scheduled(true)
+                .transactionValidStart(VALID_START)
+                .build();
+        final var scheduledId = HandlerUtility.scheduledTxnIdFrom(schedulingId);
+        assertThat(scheduledId)
+                .isEqualTo(scheduledId.copyBuilder().nonce(nonce + 1).build());
     }
 
     @Test

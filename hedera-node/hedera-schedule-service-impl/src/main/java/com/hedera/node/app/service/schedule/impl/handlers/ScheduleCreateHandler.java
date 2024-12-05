@@ -34,6 +34,7 @@ import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.createProvisionalSchedule;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.functionalityForType;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.scheduledTxnIdFrom;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.transactionIdForScheduled;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -185,12 +186,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var possibleDuplicate = possibleDuplicateId == null ? null : scheduleStore.get(possibleDuplicateId);
         final var duplicate = maybeDuplicate(provisionalSchedule, possibleDuplicate);
         if (duplicate != null) {
-            final var scheduledTxnId = duplicate
-                    .originalCreateTransactionOrThrow()
-                    .transactionIDOrThrow()
-                    .copyBuilder()
-                    .scheduled(true)
-                    .build();
+            final var scheduledTxnId = scheduledTxnIdFrom(
+                    duplicate.originalCreateTransactionOrThrow().transactionIDOrThrow());
             context.savepointStack()
                     .getBaseBuilder(ScheduleStreamBuilder.class)
                     .scheduleID(duplicate.scheduleId())
