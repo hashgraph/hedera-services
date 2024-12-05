@@ -211,7 +211,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
                 .transactionID(transactionID)
                 .contractCall(ContractCallTransactionBody.newBuilder()
                         .gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1)
-                        .contractID(targetContract))
+                        .contractID(invalidContract))
                 .build();
     }
 
@@ -221,7 +221,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
                 .transactionID(transactionID)
                 .contractCall(ContractCallTransactionBody.newBuilder()
                         .gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1)
-                        .contractID(invalidContract))
+                        .contractID(targetContract))
                 .build();
     }
 }
