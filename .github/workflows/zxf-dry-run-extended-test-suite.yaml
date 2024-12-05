@@ -105,7 +105,7 @@ jobs:
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           # coverage-reports: ${{ env.COVERAGE_REPORTS }}
-          coverage-reports: '*/build/test-results/test/TEST-*.xml,*/build/test-results/timingSensitive/TEST-*.xml'
+          coverage-reports: '*/build/test-results/test/TEST-*.xml'
 
   abbreviated-panel:
     name: JRS Panel
