@@ -121,7 +121,9 @@ public class ReconnectStateLoader {
             final State state = (MerkleStateRoot<?>) signedState.getState().getSwirldState();
             final Roster stateRoster = RosterRetriever.retrieveActiveOrGenesisRoster(state);
             if (!roster.equals(stateRoster)) {
-                throw new IllegalStateException("Current roster and state-based roster do not contain the same nodes");
+                throw new IllegalStateException("Current roster and state-based roster do not contain the same nodes "
+                        + " (currentRoster=" + Roster.JSON.toJSON(roster) + ") (stateRoster="
+                        + Roster.JSON.toJSON(stateRoster) + ")");
             }
 
             swirldStateManager.loadFromSignedState(signedState);
