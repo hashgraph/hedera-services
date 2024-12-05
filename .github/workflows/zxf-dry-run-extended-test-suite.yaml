@@ -104,7 +104,8 @@ jobs:
         uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1.3.0
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          coverage-reports: ${{ env.COVERAGE_REPORTS }}
+          # coverage-reports: ${{ env.COVERAGE_REPORTS }}
+          coverage-reports: '*/build/test-results/test/TEST-*.xml,*/build/test-results/timingSensitive/TEST-*.xml'
 
   abbreviated-panel:
     name: JRS Panel
