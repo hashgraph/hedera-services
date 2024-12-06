@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCancelAird
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeScheduleUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
@@ -740,6 +741,26 @@ public class TokenServiceFeesSuite {
                         .via("uniqueTokenDelete")
                         .payingWith(MULTI_KEY),
                 validateChargedUsd("uniqueTokenDelete", expectedDeletePriceUsd));
+    }
+
+    @HapiTest
+    @DisplayName("FT happy path")
+    final Stream<DynamicTest> tokenAssociateDissociateChargedAsExpected() {
+        final var account = "account";
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(account),
+                cryptoCreate(MULTI_KEY).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(FUNGIBLE_COMMON_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON),
+                tokenAssociate(MULTI_KEY, FUNGIBLE_COMMON_TOKEN)
+                        .via("tokenAssociate")
+                        .payingWith(MULTI_KEY),
+                validateChargedUsd("tokenAssociate", 0.05),
+                tokenDissociate(MULTI_KEY, FUNGIBLE_COMMON_TOKEN)
+                        .via("tokenDissociate")
+                        .payingWith(MULTI_KEY),
+                validateChargedUsd("tokenDissociate", 0.05));
     }
 
     @HapiTest
