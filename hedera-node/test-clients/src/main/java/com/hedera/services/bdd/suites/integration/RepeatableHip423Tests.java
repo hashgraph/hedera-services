@@ -779,6 +779,7 @@ public class RepeatableHip423Tests {
                 getAccountBalance("luckyYou").hasTinyBars(0),
                 sleepForSeconds(THIRTY_MINUTES + 10),
                 cryptoCreate("TRIGGER"),
+                sleepForSeconds(1),
                 getAccountBalance("luckyYou").hasTinyBars(1L));
     }
 
@@ -803,6 +804,7 @@ public class RepeatableHip423Tests {
 
                 // try to trigger the scheduled transaction with failing crypto create(on pre-handle)
                 cryptoCreate("trigger").evmAddress(longZeroAddress).hasPrecheck(INVALID_ALIAS_KEY),
+                sleepForSeconds(1),
 
                 // the balance not is changed
                 getAccountBalance(RECEIVER).hasTinyBars(0L),
@@ -811,6 +813,7 @@ public class RepeatableHip423Tests {
                 cryptoCreate("trigger2")
                         .maxAutomaticTokenAssociations(5001)
                         .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                sleepForSeconds(1),
 
                 // the balance is changed
                 getAccountBalance(RECEIVER).hasTinyBars(1L));
@@ -864,6 +867,7 @@ public class RepeatableHip423Tests {
                 scheduleSign(schedule).alsoSigningWith(RECEIVER),
                 sleepForSeconds(THIRTY_MINUTES * 3),
                 cryptoCreate("trigger"),
+                sleepForSeconds(1),
 
                 // the balance is not changed
                 getAccountBalance(RECEIVER).hasTinyBars(0L));
@@ -897,6 +901,7 @@ public class RepeatableHip423Tests {
                 scheduleSign(schedule).alsoSigningWith(RECEIVER),
                 sleepForSeconds(THIRTY_MINUTES * 3),
                 cryptoCreate("trigger"),
+                sleepForSeconds(1),
 
                 // the balance is changed
                 getAccountBalance(RECEIVER).hasTinyBars(1L));
@@ -915,6 +920,7 @@ public class RepeatableHip423Tests {
                 getAccountBalance(RECEIVER).hasTinyBars(0L),
                 sleepForSeconds(THIRTY_MINUTES * 2),
                 cryptoCreate("trigger"),
+                sleepForSeconds(1),
                 getAccountBalance(RECEIVER).hasTinyBars(0L),
                 getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
@@ -932,6 +938,7 @@ public class RepeatableHip423Tests {
                 getAccountBalance(RECEIVER).hasTinyBars(0L),
                 sleepForSeconds(THIRTY_MINUTES * 2),
                 cryptoCreate("trigger"),
+                sleepForSeconds(1),
                 getAccountBalance(RECEIVER).hasTinyBars(0L),
                 getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
@@ -974,6 +981,7 @@ public class RepeatableHip423Tests {
                                 .expiringIn(THIRTY_MINUTES))),
                 sleepForSeconds(THIRTY_MINUTES * 2),
                 cryptoCreate("trigger"),
+                sleepForSeconds(1),
                 tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN).hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
     }
 
@@ -997,6 +1005,7 @@ public class RepeatableHip423Tests {
                 tokenUpdate("token").supplyKey("newSupplyKey"),
                 sleepForSeconds(THIRTY_MINUTES * 2),
                 cryptoCreate("trigger"),
+                sleepForSeconds(1),
                 getAccountBalance("treasury").hasTokenBalance("token", 100));
     }
 
