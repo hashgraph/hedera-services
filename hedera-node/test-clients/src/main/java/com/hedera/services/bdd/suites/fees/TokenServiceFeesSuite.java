@@ -32,7 +32,9 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCancelAirdrop;
@@ -119,6 +121,8 @@ public class TokenServiceFeesSuite {
     private static final double EXPECTED_FREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_UNFREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_BURN_PRICE_USD = 0.001;
+    private static final double EXPECTED_GRANTKYC_PRICE_USD = 0.001;
+    private static final double EXPECTED_REVOKEKYC_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.02;
     private static final double EXPECTED_FUNGIBLE_MINT_PRICE_USD = 0.001;
     private static final double EXPECTED_FUNGIBLE_REJECT_PRICE_USD = 0.001;
@@ -564,6 +568,35 @@ public class TokenServiceFeesSuite {
                         .blankMemo()
                         .via(BASE_TXN))
                 .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_BURN_PRICE_USD, 0.01));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> baseGrantRevokeKycChargedAsExpected() {
+        return defaultHapiSpec("baseGrantRevokeKycChargedAsExpected")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).key(MULTI_KEY),
+                        cryptoCreate(CIVILIAN_ACCT),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .kycKey(MULTI_KEY)
+                                .payingWith(TOKEN_TREASURY)
+                                .via(BASE_TXN),
+                        tokenAssociate(CIVILIAN_ACCT, FUNGIBLE_TOKEN))
+                .when(
+                        grantTokenKyc(FUNGIBLE_TOKEN, CIVILIAN_ACCT)
+                                .blankMemo()
+                                .signedBy(MULTI_KEY)
+                                .payingWith(TOKEN_TREASURY)
+                                .via("grantKyc"),
+                        revokeTokenKyc(FUNGIBLE_TOKEN, CIVILIAN_ACCT)
+                                .blankMemo()
+                                .signedBy(MULTI_KEY)
+                                .payingWith(TOKEN_TREASURY)
+                                .via("revokeKyc"))
+                .then(
+                        validateChargedUsd("grantKyc", EXPECTED_GRANTKYC_PRICE_USD),
+                        validateChargedUsd("revokeKyc", EXPECTED_REVOKEKYC_PRICE_USD));
     }
 
     @HapiTest
