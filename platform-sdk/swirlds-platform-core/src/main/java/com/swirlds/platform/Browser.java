@@ -74,6 +74,7 @@ import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
@@ -302,7 +303,7 @@ public class Browser {
                     initialState,
                     nodeId,
                     AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
-                    RosterUtils.buildRosterHistory(initialState.get().getState().getReadablePlatformState()));
+                    RosterUtils.buildRosterHistory((State) initialState.get().getState()));
             if (showUi && index == 0) {
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
@@ -311,7 +312,6 @@ public class Browser {
             // dependencies into the PlatformBuilder.
             final SwirldsPlatform platform = (SwirldsPlatform) builder.withConfiguration(configuration)
                     .withPlatformContext(platformContext)
-                    .withConfiguration(configuration)
                     .withKeysAndCerts(keysAndCerts)
                     .build();
             platforms.put(nodeId, platform);

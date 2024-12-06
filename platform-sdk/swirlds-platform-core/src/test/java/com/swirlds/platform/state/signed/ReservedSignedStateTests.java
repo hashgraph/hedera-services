@@ -28,12 +28,25 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("ReservedSignedState Tests")
 class ReservedSignedStateTests {
+
+    @BeforeEach
+    void setUp() {
+        MerkleDb.resetDefaultInstancePath();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
+    }
 
     @Test
     @DisplayName("Null State Test")
