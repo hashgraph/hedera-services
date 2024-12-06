@@ -87,6 +87,8 @@ import java.time.Duration;
  *                                             time, pause PCES replay until the system is able to catch up.
  * @param limitReplayFrequency                 if true, then directly limit the replay frequency of preconsensus events
  * @param maxEventReplayFrequency              the maximum number of events that can be replayed per second
+ * @param inlinePcesSyncOption                 when to sync the preconsensus event file to disk (applies only to inline
+ *                                             PCES)
  */
 @ConfigData("event.preconsensus")
 public record PcesConfig(

@@ -125,7 +125,7 @@ public class PcesMutableFile {
      * Sync the buffer with the file system.
      */
     public void sync() throws IOException {
-        writer.flush();
+        writer.sync();
     }
 
     /**
