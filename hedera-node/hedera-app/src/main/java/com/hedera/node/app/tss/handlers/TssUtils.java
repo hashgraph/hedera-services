@@ -18,17 +18,17 @@ package com.hedera.node.app.tss.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.bls.GroupAssignment;
+import com.hedera.cryptography.bls.SignatureSchema;
+import com.hedera.cryptography.pairings.api.Curve;
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssMessage;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.pairings.FakeFieldElement;
-import com.hedera.node.app.tss.pairings.FakeGroupElement;
-import com.hedera.node.app.tss.pairings.PairingPrivateKey;
-import com.hedera.node.app.tss.pairings.PairingPublicKey;
-import com.hedera.node.app.tss.pairings.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
@@ -37,37 +37,33 @@ import java.util.List;
 import java.util.Map;
 
 public class TssUtils {
+    public static final SignatureSchema SIGNATURE_SCHEMA =
+            SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
     /**
      * Compute the TSS participant directory from the roster.
      *
-     * @param roster the roster
+     * @param roster           the roster
      * @param maxSharesPerNode the maximum number of shares per node
-     * @param selfNodeId the node ID of the current node
      * @return the TSS participant directory
      */
     public static TssParticipantDirectory computeParticipantDirectory(
-            @NonNull final Roster roster, final long maxSharesPerNode, final int selfNodeId) {
+            @NonNull final Roster roster, final long maxSharesPerNode) {
         final var computedShares = computeNodeShares(roster.rosterEntries(), maxSharesPerNode);
         final var totalShares =
                 computedShares.values().stream().mapToLong(Long::longValue).sum();
         final var threshold = getThresholdForTssMessages(totalShares);
 
         final var builder = TssParticipantDirectory.createBuilder().withThreshold(threshold);
-        // FUTURE: This private key must be loaded from disk
-        builder.withSelf(
-                selfNodeId,
-                new PairingPrivateKey(
-                        new FakeFieldElement(BigInteger.valueOf(10L)), SignatureSchema.create(new byte[] {1})));
         for (var rosterEntry : roster.rosterEntries()) {
             final int numSharesPerThisNode =
                     computedShares.get(rosterEntry.nodeId()).intValue();
             // FUTURE: Use the actual public key from the node
-            final var pairingPublicKey = new PairingPublicKey(
-                    new FakeGroupElement(BigInteger.valueOf(10L)), SignatureSchema.create(new byte[] {1}));
-            builder.withParticipant((int) rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
+            final var pairingPublicKey =
+                    new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(10L)), SIGNATURE_SCHEMA);
+            builder.withParticipant(rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
         }
         // FUTURE: Use the actual signature schema
-        return builder.build(SignatureSchema.create(new byte[] {1}));
+        return builder.build();
     }
 
     /**
@@ -94,8 +90,7 @@ public class TssUtils {
             @NonNull final TssLibrary tssLibrary) {
         final var validTssMessages = new LinkedList<TssMessageTransactionBody>();
         for (final var op : tssMessages) {
-            final var isValid = tssLibrary.verifyTssMessage(
-                    tssParticipantDirectory, new TssMessage(op.tssMessage().toByteArray()));
+            final var isValid = tssLibrary.verifyTssMessage(tssParticipantDirectory, op.tssMessage());
             if (isValid) {
                 validTssMessages.add(op);
             }
@@ -106,13 +101,18 @@ public class TssUtils {
     /**
      * Get the TSS messages from the list of valid TSS Message bodies.
      *
-     * @param validTssOps list of valid TSS message bodies
+     * @param validTssOps             list of valid TSS message bodies
+     * @param tssParticipantDirectory
+     * @param tssLibrary
      * @return list of TSS messages
      */
-    public static List<TssMessage> getTssMessages(List<TssMessageTransactionBody> validTssOps) {
+    public static List<TssMessage> getTssMessages(
+            @NonNull final List<TssMessageTransactionBody> validTssOps,
+            @NonNull final TssParticipantDirectory tssParticipantDirectory,
+            @NonNull final TssLibrary tssLibrary) {
         return validTssOps.stream()
                 .map(TssMessageTransactionBody::tssMessage)
-                .map(k -> new TssMessage(k.toByteArray()))
+                .map(k -> tssLibrary.getTssMessageFromBytes(k, tssParticipantDirectory))
                 .toList();
     }
 
@@ -147,5 +147,16 @@ public class TssUtils {
             shares.put(nodeId, numShares);
         });
         return shares;
+    }
+
+    /**
+     * Returns whether a vote bitset with the given weight has met the threshold for a roster with the given
+     * total weight.
+     * @param voteWeight the weight of the vote bitset
+     * @param totalWeight the total weight of the roster
+     * @return true if the threshold has been met, false otherwise
+     */
+    public static boolean hasMetThreshold(final long voteWeight, final long totalWeight) {
+        return voteWeight >= (totalWeight + 2) / 3;
     }
 }

@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isRandomResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -247,15 +246,13 @@ public class PrngPrecompileSuite {
     final Stream<DynamicTest> prngPrecompileInsufficientGas() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
-        return defaultHapiSpec("prngPrecompileInsufficientGas")
-                .given(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
-                .when(sourcing(() -> contractCall(prng, GET_SEED)
-                        .gas(1L)
-                        .payingWith(BOB)
-                        .via(randomBits)
-                        .hasPrecheckFrom(OK, INSUFFICIENT_GAS)
-                        .hasKnownStatus(INSUFFICIENT_GAS)
-                        .logged()))
-                .then();
+        return hapiTest(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng), sourcing(() -> contractCall(
+                        prng, GET_SEED)
+                .gas(1L)
+                .payingWith(BOB)
+                .via(randomBits)
+                .hasPrecheckFrom(OK, INSUFFICIENT_GAS)
+                .hasKnownStatus(INSUFFICIENT_GAS)
+                .logged()));
     }
 }

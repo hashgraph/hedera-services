@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -129,27 +128,26 @@ public class CreatePrecompileSuite {
         final var tokenCreateContractAsKeyDelegate = "tokenCreateContractAsKeyDelegate";
         final var createTokenNum = new AtomicLong();
         final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
-        return defaultHapiSpec("fungibleTokenCreateHappyPath")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
-                        newKeyNamed(CONTRACT_ADMIN_KEY),
-                        cryptoCreate(ACCOUNT_TO_ASSOCIATE),
-                        uploadInitCode(TOKEN_CREATE_CONTRACT),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
-                        contractCreate(TOKEN_CREATE_CONTRACT)
-                                .autoRenewAccountId(ACCOUNT)
-                                .adminKey(CONTRACT_ADMIN_KEY)
-                                .gas(GAS_TO_OFFER),
-                        newKeyNamed(THRESHOLD_KEY)
-                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT)))
-                                .exposingKeyTo(k -> ed2551Key.set(k.getThresholdKey()
-                                        .getKeys()
-                                        .getKeys(0)
-                                        .getEd25519()
-                                        .toByteArray())),
-                        cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
-                        cryptoUpdate(ACCOUNT_TO_ASSOCIATE).key(THRESHOLD_KEY))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                newKeyNamed(CONTRACT_ADMIN_KEY),
+                cryptoCreate(ACCOUNT_TO_ASSOCIATE),
+                uploadInitCode(TOKEN_CREATE_CONTRACT),
+                cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                contractCreate(TOKEN_CREATE_CONTRACT)
+                        .autoRenewAccountId(ACCOUNT)
+                        .adminKey(CONTRACT_ADMIN_KEY)
+                        .gas(GAS_TO_OFFER),
+                newKeyNamed(THRESHOLD_KEY)
+                        .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT)))
+                        .exposingKeyTo(k -> ed2551Key.set(k.getThresholdKey()
+                                .getKeys()
+                                .getKeys(0)
+                                .getEd25519()
+                                .toByteArray())),
+                cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
+                cryptoUpdate(ACCOUNT_TO_ASSOCIATE).key(THRESHOLD_KEY),
+                withOpContext((spec, opLog) -> {
                     spec.registry()
                             .saveKey(
                                     ED25519KEY,
@@ -194,8 +192,8 @@ public class CreatePrecompileSuite {
                             newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY).shape(CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)),
                             newKeyNamed(tokenCreateContractAsKeyDelegate)
                                     .shape(DELEGATE_CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)));
-                }))
-                .then(withOpContext((spec, opLog) -> allRunFor(
+                }),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
@@ -245,28 +243,27 @@ public class CreatePrecompileSuite {
     final Stream<DynamicTest> inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
         final var createdNftTokenNum = new AtomicLong();
         final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
-        return defaultHapiSpec("inheritsSenderAutoRenewAccountIfAnyForNftCreate")
-                .given(
-                        newKeyNamed(ED25519KEY).shape(ED25519),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
-                        uploadInitCode(TOKEN_CREATE_CONTRACT),
-                        contractCreate(TOKEN_CREATE_CONTRACT)
-                                .autoRenewAccountId(ACCOUNT)
-                                .gas(GAS_TO_OFFER),
-                        newKeyNamed(THRESHOLD_KEY)
-                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT)))
-                                .exposingKeyTo(k -> ed2551Key.set(k.getThresholdKey()
-                                        .getKeys()
-                                        .getKeys(0)
-                                        .getEd25519()
-                                        .toByteArray())),
-                        cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(ED25519KEY).shape(ED25519),
+                cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                uploadInitCode(TOKEN_CREATE_CONTRACT),
+                contractCreate(TOKEN_CREATE_CONTRACT)
+                        .autoRenewAccountId(ACCOUNT)
+                        .gas(GAS_TO_OFFER),
+                newKeyNamed(THRESHOLD_KEY)
+                        .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT)))
+                        .exposingKeyTo(k -> ed2551Key.set(k.getThresholdKey()
+                                .getKeys()
+                                .getKeys(0)
+                                .getEd25519()
+                                .toByteArray())),
+                cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
-                                .logged())))
-                .then(withOpContext((spec, ignore) -> {
+                                .logged())),
+                withOpContext((spec, ignore) -> {
                     final var subop1 = balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
                     final var subop2 = contractCall(
                                     TOKEN_CREATE_CONTRACT,
@@ -313,31 +310,30 @@ public class CreatePrecompileSuite {
     final Stream<DynamicTest> inheritsSenderAutoRenewAccountForTokenCreate() {
         final var createTokenNum = new AtomicLong();
         final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
-        return defaultHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
-                        newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
-                        newKeyNamed(CONTRACT_ADMIN_KEY),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
-                        uploadInitCode(TOKEN_CREATE_CONTRACT),
-                        contractCreate(TOKEN_CREATE_CONTRACT)
-                                .gas(GAS_TO_OFFER)
-                                .adminKey(CONTRACT_ADMIN_KEY)
-                                .autoRenewAccountId(ACCOUNT),
-                        newKeyNamed(THRESHOLD_KEY)
-                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT)))
-                                .exposingKeyTo(k -> ed2551Key.set(k.getThresholdKey()
-                                        .getKeys()
-                                        .getKeys(0)
-                                        .getEd25519()
-                                        .toByteArray())),
-                        cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
-                        cryptoUpdate(ACCOUNT_TO_ASSOCIATE).key(THRESHOLD_KEY),
-                        getContractInfo(TOKEN_CREATE_CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
-                                .logged())
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
+                newKeyNamed(CONTRACT_ADMIN_KEY),
+                cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
+                uploadInitCode(TOKEN_CREATE_CONTRACT),
+                contractCreate(TOKEN_CREATE_CONTRACT)
+                        .gas(GAS_TO_OFFER)
+                        .adminKey(CONTRACT_ADMIN_KEY)
+                        .autoRenewAccountId(ACCOUNT),
+                newKeyNamed(THRESHOLD_KEY)
+                        .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT)))
+                        .exposingKeyTo(k -> ed2551Key.set(k.getThresholdKey()
+                                .getKeys()
+                                .getKeys(0)
+                                .getEd25519()
+                                .toByteArray())),
+                cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
+                cryptoUpdate(ACCOUNT_TO_ASSOCIATE).key(THRESHOLD_KEY),
+                getContractInfo(TOKEN_CREATE_CONTRACT)
+                        .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
+                        .logged(),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         TOKEN_CREATE_CONTRACT,
@@ -369,8 +365,8 @@ public class CreatePrecompileSuite {
                                     final var res = (Address) result[0];
                                     createTokenNum.set(res.value().longValueExact());
                                 })
-                                .hasKnownStatus(SUCCESS))))
-                .then(sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+                                .hasKnownStatus(SUCCESS))),
+                sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
                                 .setTokenNum(createTokenNum.get())
                                 .build()))
                         .logged()
@@ -382,15 +378,14 @@ public class CreatePrecompileSuite {
     @HapiTest
     final Stream<DynamicTest> nonFungibleTokenCreateHappyPath() {
         final var createdTokenNum = new AtomicLong();
-        return defaultHapiSpec("nonFungibleTokenCreateHappyPath")
-                .given(
-                        newKeyNamed(ED25519KEY).shape(ED25519),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
-                        uploadInitCode(TOKEN_CREATE_CONTRACT),
-                        getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER))
-                .when(withOpContext((spec, opLog) ->
-                        allRunFor(spec, contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER))))
-                .then(withOpContext((spec, ignore) -> {
+        return hapiTest(
+                newKeyNamed(ED25519KEY).shape(ED25519),
+                cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
+                uploadInitCode(TOKEN_CREATE_CONTRACT),
+                getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER),
+                withOpContext((spec, opLog) ->
+                        allRunFor(spec, contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER))),
+                withOpContext((spec, ignore) -> {
                     final var subop1 = balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
                     final var subop2 = contractCall(
                                     TOKEN_CREATE_CONTRACT,
@@ -474,23 +469,22 @@ public class CreatePrecompileSuite {
     final Stream<DynamicTest> fungibleTokenCreateThenQueryAndTransfer() {
         final var createdTokenNum = new AtomicLong();
         final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
-        return defaultHapiSpec("fungibleTokenCreateThenQueryAndTransfer")
-                .given(
-                        uploadInitCode(TOKEN_CREATE_CONTRACT),
-                        contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
-                        newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY).shape(CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)),
-                        newKeyNamed(THRESHOLD_KEY)
-                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT)))
-                                .exposingKeyTo(k -> ed2551Key.set(k.getThresholdKey()
-                                        .getKeys()
-                                        .getKeys(0)
-                                        .getEd25519()
-                                        .toByteArray())),
-                        cryptoCreate(ACCOUNT)
-                                .balance(ONE_MILLION_HBARS)
-                                .key(THRESHOLD_KEY)
-                                .maxAutomaticTokenAssociations(1))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(TOKEN_CREATE_CONTRACT),
+                contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
+                newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY).shape(CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)),
+                newKeyNamed(THRESHOLD_KEY)
+                        .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT)))
+                        .exposingKeyTo(k -> ed2551Key.set(k.getThresholdKey()
+                                .getKeys()
+                                .getKeys(0)
+                                .getEd25519()
+                                .toByteArray())),
+                cryptoCreate(ACCOUNT)
+                        .balance(ONE_MILLION_HBARS)
+                        .key(THRESHOLD_KEY)
+                        .maxAutomaticTokenAssociations(1),
+                withOpContext((spec, opLog) -> {
                     spec.registry()
                             .saveKey(
                                     ADMIN_KEY,
@@ -519,8 +513,8 @@ public class CreatePrecompileSuite {
                                         createdTokenNum.set(res.value().longValueExact());
                                     })
                                     .hasKnownStatus(SUCCESS));
-                }))
-                .then(withOpContext((spec, opLog) -> allRunFor(
+                }),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
                         getAccountBalance(ACCOUNT).logged(),
@@ -570,17 +564,15 @@ public class CreatePrecompileSuite {
     @HapiTest
     final Stream<DynamicTest> nonFungibleTokenCreateThenQuery() {
         final var createdTokenNum = new AtomicLong();
-        return defaultHapiSpec("nonFungibleTokenCreateThenQuery")
-                .given(
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
-                        uploadInitCode(TOKEN_CREATE_CONTRACT),
-                        contractCreate(TOKEN_CREATE_CONTRACT)
-                                .autoRenewAccountId(ACCOUNT)
-                                .gas(GAS_TO_OFFER),
-                        newKeyNamed(THRESHOLD_KEY)
-                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_CREATE_CONTRACT))),
-                        cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                uploadInitCode(TOKEN_CREATE_CONTRACT),
+                contractCreate(TOKEN_CREATE_CONTRACT)
+                        .autoRenewAccountId(ACCOUNT)
+                        .gas(GAS_TO_OFFER),
+                newKeyNamed(THRESHOLD_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_CREATE_CONTRACT))),
+                cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         TOKEN_CREATE_CONTRACT,
@@ -601,56 +593,54 @@ public class CreatePrecompileSuite {
                                     final var res = (Address) result[0];
                                     createdTokenNum.set(res.value().longValueExact());
                                 }),
-                        newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY).shape(CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)))))
-                .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
-                        getAccountBalance(ACCOUNT).logged(),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
-                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
-                        childRecordsCheck(
-                                FIRST_CREATE_TXN,
-                                ResponseCodeEnum.SUCCESS,
-                                TransactionRecordAsserts.recordWith().status(SUCCESS),
-                                TransactionRecordAsserts.recordWith().status(SUCCESS),
-                                TransactionRecordAsserts.recordWith().status(SUCCESS)),
-                        sourcing(() -> getAccountBalance(TOKEN_CREATE_CONTRACT)
-                                .hasTokenBalance(
-                                        asTokenString(TokenID.newBuilder()
-                                                .setTokenNum(createdTokenNum.get())
-                                                .build()),
-                                        0)),
-                        sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+                        newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY).shape(CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)))),
+                getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                getAccountBalance(ACCOUNT).logged(),
+                getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
+                childRecordsCheck(
+                        FIRST_CREATE_TXN,
+                        ResponseCodeEnum.SUCCESS,
+                        TransactionRecordAsserts.recordWith().status(SUCCESS),
+                        TransactionRecordAsserts.recordWith().status(SUCCESS),
+                        TransactionRecordAsserts.recordWith().status(SUCCESS)),
+                sourcing(() -> getAccountBalance(TOKEN_CREATE_CONTRACT)
+                        .hasTokenBalance(
+                                asTokenString(TokenID.newBuilder()
                                         .setTokenNum(createdTokenNum.get())
-                                        .build()))
-                                .hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .hasSymbol(TOKEN_SYMBOL)
-                                .hasName(TOKEN_NAME)
-                                .hasDecimals(0)
-                                .hasTotalSupply(0)
-                                .hasEntityMemo(MEMO)
-                                .hasTreasury(TOKEN_CREATE_CONTRACT)
-                                .hasAutoRenewAccount(ACCOUNT)
-                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
-                                .hasSupplyType(TokenSupplyType.INFINITE)
-                                .searchKeysGlobally()
-                                .hasAdminKey(TOKEN_CREATE_CONTRACT_AS_KEY)
-                                .hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
-                                .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
-                                .logged()));
+                                        .build()),
+                                0)),
+                sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+                                .setTokenNum(createdTokenNum.get())
+                                .build()))
+                        .hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .hasSymbol(TOKEN_SYMBOL)
+                        .hasName(TOKEN_NAME)
+                        .hasDecimals(0)
+                        .hasTotalSupply(0)
+                        .hasEntityMemo(MEMO)
+                        .hasTreasury(TOKEN_CREATE_CONTRACT)
+                        .hasAutoRenewAccount(ACCOUNT)
+                        .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                        .hasSupplyType(TokenSupplyType.INFINITE)
+                        .searchKeysGlobally()
+                        .hasAdminKey(TOKEN_CREATE_CONTRACT_AS_KEY)
+                        .hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
+                        .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
+                        .logged()));
     }
 
     @HapiTest
     final Stream<DynamicTest> createTokenWithDefaultExpiryAndEmptyKeys() {
         final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
         final var createdTokenNum = new AtomicLong();
-        return defaultHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")
-                .given(
-                        uploadInitCode(TOKEN_CREATE_CONTRACT),
-                        contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
-                        newKeyNamed(THRESHOLD_KEY)
-                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT))),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(THRESHOLD_KEY))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                uploadInitCode(TOKEN_CREATE_CONTRACT),
+                contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
+                newKeyNamed(THRESHOLD_KEY)
+                        .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT))),
+                cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(THRESHOLD_KEY),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(TOKEN_CREATE_CONTRACT, tokenCreateContractAsKeyDelegate)
                                 .via(FIRST_CREATE_TXN)
@@ -662,33 +652,32 @@ public class CreatePrecompileSuite {
                                     final var res = (Address) result[0];
                                     createdTokenNum.set(res.value().longValueExact());
                                 })
-                                .hasKnownStatus(SUCCESS))))
-                .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
-                        getAccountBalance(ACCOUNT).logged(),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
-                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
-                        childRecordsCheck(
-                                FIRST_CREATE_TXN,
-                                ResponseCodeEnum.SUCCESS,
-                                TransactionRecordAsserts.recordWith().status(SUCCESS)),
-                        sourcing(() -> getAccountBalance(TOKEN_CREATE_CONTRACT)
-                                .hasTokenBalance(
-                                        asTokenString(TokenID.newBuilder()
-                                                .setTokenNum(createdTokenNum.get())
-                                                .build()),
-                                        200)),
-                        sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+                                .hasKnownStatus(SUCCESS))),
+                getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                getAccountBalance(ACCOUNT).logged(),
+                getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
+                childRecordsCheck(
+                        FIRST_CREATE_TXN,
+                        ResponseCodeEnum.SUCCESS,
+                        TransactionRecordAsserts.recordWith().status(SUCCESS)),
+                sourcing(() -> getAccountBalance(TOKEN_CREATE_CONTRACT)
+                        .hasTokenBalance(
+                                asTokenString(TokenID.newBuilder()
                                         .setTokenNum(createdTokenNum.get())
-                                        .build()))
-                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
-                                .hasDecimals(8)
-                                .hasTotalSupply(200)
-                                .hasTreasury(TOKEN_CREATE_CONTRACT)
-                                .hasAutoRenewPeriod(0L)
-                                .searchKeysGlobally()
-                                .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
-                                .logged()));
+                                        .build()),
+                                200)),
+                sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+                                .setTokenNum(createdTokenNum.get())
+                                .build()))
+                        .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                        .hasDecimals(8)
+                        .hasTotalSupply(200)
+                        .hasTreasury(TOKEN_CREATE_CONTRACT)
+                        .hasAutoRenewPeriod(0L)
+                        .searchKeysGlobally()
+                        .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
+                        .logged()));
     }
 
     // TEST-007 & TEST-016
@@ -1009,28 +998,27 @@ public class CreatePrecompileSuite {
         final var FEE_COLLECTOR = "feeCollector";
         final var RECIPIENT = "recipient";
         final var SECOND_RECIPIENT = "secondRecipient";
-        return defaultHapiSpec("createTokenWithFixedFeeThenTransferAndAssessFee")
-                .given(
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(RECIPIENT).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(SECOND_RECIPIENT),
-                        cryptoCreate(FEE_COLLECTOR).balance(0L),
-                        uploadInitCode(TOKEN_MISC_OPERATIONS_CONTRACT),
-                        contractCreate(TOKEN_MISC_OPERATIONS_CONTRACT)
-                                .gas(GAS_TO_OFFER_2)
-                                .autoRenewAccountId(ACCOUNT),
-                        newKeyNamed(THRESHOLD_KEY)
-                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_MISC_OPERATIONS_CONTRACT))),
-                        cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
-                        cryptoUpdate(FEE_COLLECTOR).key(THRESHOLD_KEY),
-                        cryptoUpdate(RECIPIENT).key(THRESHOLD_KEY),
-                        cryptoUpdate(SECOND_RECIPIENT).key(THRESHOLD_KEY),
-                        cryptoTransfer(TokenMovement.movingHbar(ONE_HUNDRED_HBARS)
-                                .between(GENESIS, TOKEN_MISC_OPERATIONS_CONTRACT)),
-                        getContractInfo(TOKEN_MISC_OPERATIONS_CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
-                                .logged())
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                cryptoCreate(RECIPIENT).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(SECOND_RECIPIENT),
+                cryptoCreate(FEE_COLLECTOR).balance(0L),
+                uploadInitCode(TOKEN_MISC_OPERATIONS_CONTRACT),
+                contractCreate(TOKEN_MISC_OPERATIONS_CONTRACT)
+                        .gas(GAS_TO_OFFER_2)
+                        .autoRenewAccountId(ACCOUNT),
+                newKeyNamed(THRESHOLD_KEY)
+                        .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_MISC_OPERATIONS_CONTRACT))),
+                cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
+                cryptoUpdate(FEE_COLLECTOR).key(THRESHOLD_KEY),
+                cryptoUpdate(RECIPIENT).key(THRESHOLD_KEY),
+                cryptoUpdate(SECOND_RECIPIENT).key(THRESHOLD_KEY),
+                cryptoTransfer(
+                        TokenMovement.movingHbar(ONE_HUNDRED_HBARS).between(GENESIS, TOKEN_MISC_OPERATIONS_CONTRACT)),
+                getContractInfo(TOKEN_MISC_OPERATIONS_CONTRACT)
+                        .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
+                        .logged(),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         TOKEN_MISC_OPERATIONS_CONTRACT,
@@ -1053,8 +1041,8 @@ public class CreatePrecompileSuite {
                                     final var res = (Address) result[0];
                                     createTokenNum.set(res.value().longValueExact());
                                 })
-                                .hasKnownStatus(SUCCESS))))
-                .then(withOpContext((spec, opLog) -> allRunFor(
+                                .hasKnownStatus(SUCCESS))),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
                         getAccountBalance(RECIPIENT)

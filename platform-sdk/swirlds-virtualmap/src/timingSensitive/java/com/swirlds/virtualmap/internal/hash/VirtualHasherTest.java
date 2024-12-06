@@ -91,24 +91,48 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      */
     @Test
     @Tag(TestComponentTags.VMAP)
-    @DisplayName("Invalid leaf paths returns null for hash")
-    void invalidFirstOrLastLeafPathProducesNull() {
+    @DisplayName("Invalid leaf paths")
+    void invalidLeafPaths() {
         final TestDataSource ds = new TestDataSource(Path.INVALID_PATH, Path.INVALID_PATH);
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
-        final List<VirtualLeafRecord<TestKey, TestValue>> leaves = new ArrayList<>();
-        leaves.add(appleLeaf(VirtualTestBase.A_PATH));
+        final List<VirtualLeafRecord<TestKey, TestValue>> emptyLeaves = new ArrayList<>();
+        // Empty dirty leaves stream -> null hash
         assertNull(
-                hasher.hash(ds::loadHash, leaves.iterator(), Path.INVALID_PATH, 2, VIRTUAL_MAP_CONFIG),
+                hasher.hash(
+                        ds::loadHash, emptyLeaves.iterator(), Path.INVALID_PATH, Path.INVALID_PATH, VIRTUAL_MAP_CONFIG),
                 "Call should have produced null");
         assertNull(
-                hasher.hash(ds::loadHash, leaves.iterator(), 1, Path.INVALID_PATH, VIRTUAL_MAP_CONFIG),
+                hasher.hash(ds::loadHash, emptyLeaves.iterator(), Path.INVALID_PATH, 2, VIRTUAL_MAP_CONFIG),
                 "Call should have produced null");
         assertNull(
-                hasher.hash(ds::loadHash, leaves.iterator(), 0, 2, VIRTUAL_MAP_CONFIG),
+                hasher.hash(ds::loadHash, emptyLeaves.iterator(), 1, Path.INVALID_PATH, VIRTUAL_MAP_CONFIG),
                 "Call should have produced null");
         assertNull(
-                hasher.hash(ds::loadHash, leaves.iterator(), 1, 0, VIRTUAL_MAP_CONFIG),
+                hasher.hash(ds::loadHash, emptyLeaves.iterator(), 0, 2, VIRTUAL_MAP_CONFIG),
                 "Call should have produced null");
+        assertNull(
+                hasher.hash(ds::loadHash, emptyLeaves.iterator(), 1, 0, VIRTUAL_MAP_CONFIG),
+                "Call should have produced null");
+        // Non-empty dirty leaves stream + empty leaf path range -> IllegalStateException
+        final List<VirtualLeafRecord<TestKey, TestValue>> nonEmptyLeaves = new ArrayList<>();
+        nonEmptyLeaves.add(appleLeaf(VirtualTestBase.A_PATH));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> hasher.hash(
+                        ds::loadHash,
+                        nonEmptyLeaves.iterator(),
+                        Path.INVALID_PATH,
+                        Path.INVALID_PATH,
+                        VIRTUAL_MAP_CONFIG),
+                "Non-null leaves iterator + invalid paths should throw an exception");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> hasher.hash(ds::loadHash, nonEmptyLeaves.iterator(), 0, 2, VIRTUAL_MAP_CONFIG),
+                "Non-null leaves iterator + invalid paths should throw an exception");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> hasher.hash(ds::loadHash, nonEmptyLeaves.iterator(), 1, 0, VIRTUAL_MAP_CONFIG),
+                "Non-null leaves iterator + invalid paths should throw an exception");
     }
 
     /**

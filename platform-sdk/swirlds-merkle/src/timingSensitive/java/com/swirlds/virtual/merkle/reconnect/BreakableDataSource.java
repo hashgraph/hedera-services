@@ -66,7 +66,12 @@ public final class BreakableDataSource implements VirtualDataSource {
         }
 
         delegate.saveRecords(
-                firstLeafPath, lastLeafPath, pathHashRecordsToUpdate, leaves.stream(), leafRecordsToDelete);
+                firstLeafPath,
+                lastLeafPath,
+                pathHashRecordsToUpdate,
+                leaves.stream(),
+                leafRecordsToDelete,
+                isReconnectContext);
     }
 
     @Override

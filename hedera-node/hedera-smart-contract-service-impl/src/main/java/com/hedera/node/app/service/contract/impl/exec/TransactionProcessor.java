@@ -38,6 +38,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
@@ -164,7 +165,13 @@ public class TransactionProcessor {
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
             @NonNull final Configuration config) {
-        return computeInvolvedParties(transaction, updater, config);
+        try {
+            return computeInvolvedParties(transaction, updater, config);
+        } catch (HandleException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
     }
 
     private HederaEvmTransactionResult safeCommit(
@@ -257,10 +264,18 @@ public class TransactionProcessor {
         return parties;
     }
 
+    /**
+     * Returns whether the given account facade is required to exist.  This only applies to account and contract facade
+     * as tokens and schedule txn facades are not required to exist.
+     *
+     * @param to descendant of {@link HederaEvmAccount} that is the target of this call
+     * @param config the current node configuration
+     * @return whether the contract is not required to exist.
+     */
     private boolean contractNotRequired(@Nullable final HederaEvmAccount to, @NonNull final Configuration config) {
-        final var maybeGrandfatheredNumber =
-                (to == null) ? null : to.isTokenFacade() ? null : to.hederaId().accountNumOrThrow();
-
+        final var maybeGrandfatheredNumber = (to == null || to.isTokenFacade() || to.isScheduleTxnFacade())
+                ? null
+                : to.hederaId().accountNumOrThrow();
         return featureFlags.isAllowCallsToNonContractAccountsEnabled(
                 config.getConfigData(ContractsConfig.class), maybeGrandfatheredNumber);
     }

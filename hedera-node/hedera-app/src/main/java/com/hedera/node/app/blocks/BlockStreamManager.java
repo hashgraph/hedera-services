@@ -102,6 +102,18 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
     Instant lastIntervalProcessTime();
 
     /**
+     * Sets the last consensus time at which a user transaction was last handled.
+     * @param lastHandleTime the last consensus time at which a user transaction was handled
+     */
+    void setLastHandleTime(@NonNull Instant lastHandleTime);
+
+    /**
+     * Returns the consensus time at which a user transaction was last handled.
+     */
+    @NonNull
+    Instant lastHandleTime();
+
+    /**
      * Updates both the internal state of the block stream manager and the durable state of the network
      * to reflect the end of the last-started round.
      *

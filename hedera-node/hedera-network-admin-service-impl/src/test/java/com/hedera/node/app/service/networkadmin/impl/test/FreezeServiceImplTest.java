@@ -29,6 +29,7 @@ import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import org.junit.jupiter.api.Assertions;
@@ -45,6 +46,9 @@ class FreezeServiceImplTest {
 
     @Mock
     private NetworkInfo networkInfo;
+
+    @Mock
+    private StartupNetworks startupNetworks;
 
     @Test
     void testSpi() {
@@ -83,7 +87,7 @@ class FreezeServiceImplTest {
         final var state = new FakeState();
 
         subject.registerSchemas(registry);
-        registry.migrate(FreezeService.NAME, state, networkInfo);
+        registry.migrate(FreezeService.NAME, state, networkInfo, startupNetworks);
         final var upgradeFileHashKeyState =
                 state.getReadableStates(FreezeService.NAME).getSingleton(UPGRADE_FILE_HASH_KEY);
         assertNull(upgradeFileHashKeyState.get());

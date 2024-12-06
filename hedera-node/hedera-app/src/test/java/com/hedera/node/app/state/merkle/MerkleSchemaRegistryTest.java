@@ -25,7 +25,6 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationStateChanges;
-import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -36,17 +35,19 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
-import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.test.fixtures.merkle.TestMerkleStateRoot;
+import com.swirlds.state.test.fixtures.merkle.TestSchema;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -73,6 +74,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
     @Mock
     private MigrationStateChanges migrationStateChanges;
+
+    @Mock
+    private StartupNetworks startupNetworks;
 
     private MerkleSchemaRegistry schemaRegistry;
     private Configuration config;
@@ -193,7 +197,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         void migrateFromV9ToV10() {
             SemanticVersion latestVersion = version(10, 0, 0);
             schemaRegistry.migrate(
-                    new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0)),
+                    new TestMerkleStateRoot(),
                     version(9, 0, 0),
                     latestVersion,
                     config,
@@ -202,7 +206,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     mock(Metrics.class),
                     mock(WritableEntityIdStore.class),
                     new HashMap<>(),
-                    migrationStateChanges);
+                    migrationStateChanges,
+                    startupNetworks);
         }
     }
 
@@ -220,7 +225,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             for (int i = 1; i < versions.length; i++) {
                 versions[i] = version(0, i, 0);
             }
-            merkleTree = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0));
+            merkleTree = new TestMerkleStateRoot();
         }
 
         @Test
@@ -237,7 +242,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             mock(Metrics.class),
                             mock(WritableEntityIdStore.class),
                             new HashMap<>(),
-                            migrationStateChanges))
+                            migrationStateChanges,
+                            startupNetworks))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -255,7 +261,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             mock(Metrics.class),
                             mock(WritableEntityIdStore.class),
                             new HashMap<>(),
-                            migrationStateChanges))
+                            migrationStateChanges,
+                            startupNetworks))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -273,7 +280,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             mock(Metrics.class),
                             mock(WritableEntityIdStore.class),
                             new HashMap<>(),
-                            migrationStateChanges))
+                            migrationStateChanges,
+                            startupNetworks))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -291,7 +299,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             mock(Metrics.class),
                             mock(WritableEntityIdStore.class),
                             new HashMap<>(),
-                            migrationStateChanges))
+                            migrationStateChanges,
+                            startupNetworks))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -309,7 +318,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             null,
                             mock(WritableEntityIdStore.class),
                             new HashMap<>(),
-                            migrationStateChanges))
+                            migrationStateChanges,
+                            startupNetworks))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -327,7 +337,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             mock(Metrics.class),
                             mock(WritableEntityIdStore.class),
                             new HashMap<>(),
-                            migrationStateChanges))
+                            migrationStateChanges,
+                            startupNetworks))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -349,7 +360,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     mock(Metrics.class),
                     mock(WritableEntityIdStore.class),
                     new HashMap<>(),
-                    migrationStateChanges);
+                    migrationStateChanges,
+                    startupNetworks);
 
             // Then nothing happens
             Mockito.verify(schema, Mockito.times(0)).migrate(Mockito.any());
@@ -373,7 +385,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     mock(Metrics.class),
                     mock(WritableEntityIdStore.class),
                     new HashMap<>(),
-                    migrationStateChanges);
+                    migrationStateChanges,
+                    startupNetworks);
 
             // Then migration doesn't happen but restart is called
             Mockito.verify(schema, Mockito.times(0)).migrate(Mockito.any());
@@ -398,7 +411,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     mock(Metrics.class),
                     mock(WritableEntityIdStore.class),
                     new HashMap<>(),
-                    migrationStateChanges);
+                    migrationStateChanges,
+                    startupNetworks);
 
             // Then migration doesn't happen but restart is called
             Mockito.verify(schema, Mockito.times(1)).migrate(Mockito.any());
@@ -431,7 +445,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     mock(Metrics.class),
                     mock(WritableEntityIdStore.class),
                     new HashMap<>(),
-                    migrationStateChanges);
+                    migrationStateChanges,
+                    startupNetworks);
 
             // Then each of v1, v4, and v6 are called
             assertThat(called).hasSize(3);
@@ -602,7 +617,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         mock(Metrics.class),
                         mock(WritableEntityIdStore.class),
                         new HashMap<>(),
-                        migrationStateChanges);
+                        migrationStateChanges,
+                        startupNetworks);
 
                 // Then we see that the values for A, B, and C are available
                 final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
@@ -631,7 +647,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         mock(Metrics.class),
                         mock(WritableEntityIdStore.class),
                         new HashMap<>(),
-                        migrationStateChanges);
+                        migrationStateChanges,
+                        startupNetworks);
 
                 // We should see the v2 state (the delta from v2 after applied atop v1)
                 final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
@@ -671,7 +688,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         mock(Metrics.class),
                         mock(WritableEntityIdStore.class),
                         new HashMap<>(),
-                        migrationStateChanges);
+                        migrationStateChanges,
+                        startupNetworks);
 
                 // We should see the v3 state (the delta from v3 after applied atop v2 and v1)
                 final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
@@ -716,7 +734,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                                 mock(Metrics.class),
                                 mock(WritableEntityIdStore.class),
                                 new HashMap<>(),
-                                migrationStateChanges))
+                                migrationStateChanges,
+                                startupNetworks))
                         .isInstanceOf(RuntimeException.class)
                         .hasMessage("Bad");
 

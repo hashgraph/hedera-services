@@ -107,6 +107,8 @@ public class ContractHandlerTestBase implements TransactionFactory {
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final ContractID targetContract =
             ContractID.newBuilder().contractNum(9_999L).build();
+    protected final ContractID invalidContract =
+            ContractID.newBuilder().evmAddress(Bytes.fromHex("abcdabcd")).build();
 
     @Mock
     private Bytes evmAddress;

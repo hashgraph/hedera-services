@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.contract.hapi;
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -162,10 +161,11 @@ public class ContractCallLocalSuite {
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
-                .when(contractCall(CONTRACT, "create").gas(785_000))
-                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> contractCallLocal(CONTRACT, "getIndirect")));
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(THRESHOLD),
+                contractCall(CONTRACT, "create").gas(785_000),
+                sendModified(withSuccessivelyVariedQueryIds(), () -> contractCallLocal(CONTRACT, "getIndirect")));
     }
 
     @HapiTest

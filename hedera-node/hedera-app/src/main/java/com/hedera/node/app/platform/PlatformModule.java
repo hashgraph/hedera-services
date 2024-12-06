@@ -58,7 +58,7 @@ public interface PlatformModule {
     @Provides
     @Singleton
     static IntSupplier provideFrontendThrottleSplit(@NonNull final Platform platform) {
-        return () -> platform.getAddressBook().getSize();
+        return () -> platform.getRoster().rosterEntries().size();
     }
 
     @Binds

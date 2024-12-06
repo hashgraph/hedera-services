@@ -49,7 +49,7 @@ public class SetUnlimitedAutoAssociationsTranslator extends AbstractCallTranslat
         final var setUnlimitedAutoAssocEnabled = attempt.configuration()
                 .getConfigData(ContractsConfig.class)
                 .systemContractSetUnlimitedAutoAssociationsEnabled();
-        return attempt.isSelectorIfConfigEnabled(SET_UNLIMITED_AUTO_ASSOC, setUnlimitedAutoAssocEnabled);
+        return attempt.isSelectorIfConfigEnabled(setUnlimitedAutoAssocEnabled, SET_UNLIMITED_AUTO_ASSOC);
     }
 
     @Override

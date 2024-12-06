@@ -18,6 +18,7 @@ package com.swirlds.platform.turtle.runner;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 
 import com.swirlds.base.time.Time;
@@ -45,6 +46,7 @@ import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 
@@ -91,6 +93,8 @@ public class TurtleNode {
                 .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "0")
                 .getOrCreateConfig();
 
+        setupGlobalMetrics(configuration);
+
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
@@ -102,11 +106,10 @@ public class TurtleNode {
         final Supplier<MerkleRoot> genesisStateSupplier = TurtleTestingToolState::getStateRootNode;
         final var version = new BasicSoftwareVersion(1);
 
-        final NodeId selfId = null;
-        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final var metrics = getMetricsProvider().createPlatformMetrics(nodeId);
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
-                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, nodeId);
 
         final var reservedState = getInitialState(
                 configuration, recycleBin, version, genesisStateSupplier, "foo", "bar", nodeId, addressBook);
@@ -119,7 +122,7 @@ public class TurtleNode {
                         nodeId,
                         AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
                         RosterUtils.buildRosterHistory(
-                                initialState.get().getState().getReadablePlatformState()))
+                                (State) initialState.get().getState()))
                 .withModel(model)
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
                 .withKeysAndCerts(privateKeys)

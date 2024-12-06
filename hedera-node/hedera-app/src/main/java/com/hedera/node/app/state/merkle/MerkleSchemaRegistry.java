@@ -22,6 +22,8 @@ import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFIN
 import static com.hedera.node.app.state.merkle.VersionUtils.alreadyIncludesStateDefs;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
+import static com.swirlds.state.merkle.StateUtils.registerWithSystem;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -29,11 +31,7 @@ import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationContextImpl;
 import com.hedera.node.app.services.MigrationStateChanges;
-import com.hedera.node.app.spi.state.FilteredReadableStates;
-import com.hedera.node.app.spi.state.FilteredWritableStates;
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
@@ -41,26 +39,23 @@ import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
-import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
-import com.swirlds.state.merkle.memory.InMemoryValue;
-import com.swirlds.state.merkle.memory.InMemoryWritableKVState;
 import com.swirlds.state.merkle.queue.QueueNode;
 import com.swirlds.state.merkle.singleton.SingletonNode;
-import com.swirlds.state.merkle.singleton.StringLeaf;
-import com.swirlds.state.merkle.singleton.ValueLeaf;
+import com.swirlds.state.spi.FilteredReadableStates;
+import com.swirlds.state.spi.FilteredWritableStates;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -82,7 +77,7 @@ import org.apache.logging.log4j.Logger;
  * then registers each and every {@link Schema} that it has. Each {@link Schema} is associated with
  * a {@link SemanticVersion}.
  *
- * <p>The Hedera application then calls {@code com.hedera.node.app.Hedera#onMigrate(MerkleStateRoot, HederaSoftwareVersion, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * <p>The Hedera application then calls {@code com.hedera.node.app.Hedera#onMigrate(MerkleStateRoot, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleStateRoot}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.
@@ -151,7 +146,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         schema.statesToCreate(bootstrapConfig).forEach(def -> {
             //noinspection rawtypes,unchecked
             final var md = new StateMetadata<>(serviceName, schema, def);
-            registerWithSystem(md);
+            registerWithSystem(md, constructableRegistry);
         });
 
         return this;
@@ -175,7 +170,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * to perform any necessary logic on restart. Most services have nothing to do, but some may need
      * to read files from disk, and could potentially change their state as a result.
      *
-     * @param state     the state for this registry to use.
+     * @param state the state for this registry to use.
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion The current version. Never null. Must be newer than {@code
      * previousVersion}.
@@ -184,8 +179,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param genesisNetworkInfo The network information to use at the time of migration
      * @param sharedValues A map of shared values for cross-service migration patterns
      * @param migrationStateChanges Tracker for state changes during migration
+     * @param startupNetworks The startup networks to use for the migrations
      * @throws IllegalArgumentException if the {@code currentVersion} is not at least the
-     *                                  {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
+     * {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
      */
     // too many parameters, commented out code
     @SuppressWarnings({"java:S107", "java:S125"})
@@ -199,7 +195,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore,
             @NonNull final Map<String, Object> sharedValues,
-            @NonNull final MigrationStateChanges migrationStateChanges) {
+            @NonNull final MigrationStateChanges migrationStateChanges,
+            @NonNull final StartupNetworks startupNetworks) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);
@@ -213,6 +210,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         if (!(state instanceof MerkleStateRoot stateRoot)) {
             throw new IllegalArgumentException("The state must be an instance of " + MerkleStateRoot.class.getName());
         }
+        final long roundNumber = PLATFORM_STATE_SERVICE.roundOf(stateRoot);
         if (schemas.isEmpty()) {
             logger.info("Service {} does not use state", serviceName);
             return;
@@ -267,7 +265,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     genesisNetworkInfo,
                     entityIdStore,
                     previousVersion,
-                    sharedValues);
+                    roundNumber,
+                    sharedValues,
+                    startupNetworks);
             if (applications.contains(MIGRATION)) {
                 schema.migrate(migrationContext);
             }
@@ -290,7 +290,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final Configuration nodeConfiguration,
             @NonNull final Configuration platformConfiguration,
             @NonNull final Metrics metrics,
-            @NonNull final MerkleStateRoot stateRoot) {
+            @NonNull final MerkleStateRoot<?> stateRoot) {
         // Create the new states (based on the schema) which, thanks to the above, does not
         // expand the set of states that the migration code will see
         schema.statesToCreate(nodeConfiguration).stream()
@@ -379,82 +379,5 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         logger.info("  Removing states {} from service {}", statesToRemove, serviceName);
         final var newStates = new FilteredWritableStates(writableStates, remainingStates);
         return new RedefinedWritableStates(writableStates, newStates);
-    }
-
-    /**
-     * Registers with the {@link ConstructableRegistry} system a class ID and a class. While this
-     * will only be used for in-memory states, it is safe to register for on-disk ones as well.
-     *
-     * <p>The implementation will take the service name and the state key and compute a hash for it.
-     * It will then convert the hash to a long, and use that as the class ID. It will then register
-     * an {@link InMemoryWritableKVState}'s value merkle type to be deserialized, answering with the
-     * generated class ID.
-     *
-     * @param md The state metadata
-     */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private void registerWithSystem(@NonNull final StateMetadata md) {
-        // Register with the system the uniqueId as the "classId" of an InMemoryValue. There can be
-        // multiple id's associated with InMemoryValue. The secret is that the supplier captures the
-        // various delegate writers and parsers, and so can parse/write different types of data
-        // based on the id.
-        try {
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    InMemoryValue.class,
-                    () -> new InMemoryValue(
-                            md.inMemoryValueClassId(),
-                            md.stateDefinition().keyCodec(),
-                            md.stateDefinition().valueCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskKey.class,
-                    () -> new OnDiskKey<>(
-                            md.onDiskKeyClassId(), md.stateDefinition().keyCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskKeySerializer.class,
-                    () -> new OnDiskKeySerializer<>(
-                            md.onDiskKeySerializerClassId(),
-                            md.onDiskKeyClassId(),
-                            md.stateDefinition().keyCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskValue.class,
-                    () -> new OnDiskValue<>(
-                            md.onDiskValueClassId(), md.stateDefinition().valueCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    OnDiskValueSerializer.class,
-                    () -> new OnDiskValueSerializer<>(
-                            md.onDiskValueSerializerClassId(),
-                            md.onDiskValueClassId(),
-                            md.stateDefinition().valueCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    SingletonNode.class,
-                    () -> new SingletonNode<>(
-                            md.serviceName(),
-                            md.stateDefinition().stateKey(),
-                            md.singletonClassId(),
-                            md.stateDefinition().valueCodec(),
-                            null)));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    QueueNode.class,
-                    () -> new QueueNode<>(
-                            md.serviceName(),
-                            md.stateDefinition().stateKey(),
-                            md.queueNodeClassId(),
-                            md.singletonClassId(),
-                            md.stateDefinition().valueCodec())));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    ValueLeaf.class,
-                    () -> new ValueLeaf<>(
-                            md.singletonClassId(), md.stateDefinition().valueCodec())));
-        } catch (ConstructableRegistryException e) {
-            // This is a fatal error.
-            throw new IllegalStateException(
-                    "Failed to register with the system '"
-                            + serviceName
-                            + ":"
-                            + md.stateDefinition().stateKey()
-                            + "'",
-                    e);
-        }
     }
 }

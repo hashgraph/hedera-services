@@ -18,23 +18,19 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.cance
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asTokenId;
+import static com.hedera.node.app.service.contract.impl.exec.utils.PendingAirdropsHelper.decodePendingAirdrops;
+import static com.hedera.node.app.service.contract.impl.exec.utils.PendingAirdropsHelper.pendingFTAirdrop;
+import static com.hedera.node.app.service.contract.impl.exec.utils.PendingAirdropsHelper.pendingNFTAirdrop;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.PendingAirdropId;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.TokenCancelAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 public class TokenCancelAirdropDecoder {
@@ -43,10 +39,6 @@ public class TokenCancelAirdropDecoder {
     // Indexes for CANCEL_AIRDROP
     // cancelAirdrops((address,address,address,int64)[])
     private static final int TRANSFER_LIST = 0;
-    private static final int SENDER = 0;
-    private static final int RECEIVER = 1;
-    private static final int TOKEN = 2;
-    private static final int SERIAL = 3;
 
     // Indexes for HRC_CANCEL_AIRDROP_FT and HRC_CANCEL_AIRDROP_NFT
     // cancelAirdropFT(address)
@@ -66,26 +58,7 @@ public class TokenCancelAirdropDecoder {
         final var transferList = (Tuple[]) call.get(TRANSFER_LIST);
         validateFalse(transferList.length > maxPendingAirdropsToCancel, PENDING_AIRDROP_ID_LIST_TOO_LONG);
 
-        final var pendingAirdrops = Arrays.stream(transferList)
-                .map(transfer -> {
-                    final var senderAddress = (Address) transfer.get(SENDER);
-                    final var receiverAddress = (Address) transfer.get(RECEIVER);
-                    final var tokenAddress = (Address) transfer.get(TOKEN);
-                    final var serial = (long) transfer.get(SERIAL);
-
-                    final var senderId = attempt.addressIdConverter().convert(senderAddress);
-                    final var receiverId = attempt.addressIdConverter().convert(receiverAddress);
-                    final var tokenId = asTokenId(tokenAddress);
-
-                    final var token = attempt.enhancement().nativeOperations().getToken(tokenId.tokenNum());
-                    validateTrue(token != null, INVALID_TOKEN_ID);
-                    if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-                        return pendingFTAirdrop(senderId, receiverId, tokenId);
-                    } else {
-                        return pendingNFTAirdrop(senderId, receiverId, tokenId, serial);
-                    }
-                })
-                .toList();
+        final var pendingAirdrops = decodePendingAirdrops(attempt, transferList);
 
         return TransactionBody.newBuilder()
                 .tokenCancelAirdrop(
@@ -121,27 +94,6 @@ public class TokenCancelAirdropDecoder {
         return TransactionBody.newBuilder()
                 .tokenCancelAirdrop(TokenCancelAirdropTransactionBody.newBuilder()
                         .pendingAirdrops(pendingNFTAirdrop(senderId, receiverId, token, serial)))
-                .build();
-    }
-
-    private PendingAirdropId pendingFTAirdrop(
-            @NonNull final AccountID senderId, @NonNull final AccountID receiverId, @NonNull final TokenID tokenId) {
-        return PendingAirdropId.newBuilder()
-                .senderId(senderId)
-                .receiverId(receiverId)
-                .fungibleTokenType(tokenId)
-                .build();
-    }
-
-    private PendingAirdropId pendingNFTAirdrop(
-            @NonNull final AccountID senderId,
-            @NonNull final AccountID receiverId,
-            @NonNull final TokenID tokenId,
-            final long serial) {
-        return PendingAirdropId.newBuilder()
-                .senderId(senderId)
-                .receiverId(receiverId)
-                .nonFungibleToken(NftID.newBuilder().tokenId(tokenId).serialNumber(serial))
                 .build();
     }
 }

@@ -36,9 +36,8 @@ option java_multiple_files = true;
  * - A deleted address book node SHALL be removed entirely from network state.
  * - A deleted address book node identifier SHALL NOT be reused.
  *
- * ### Record Stream Effects
- * Upon completion the "deleted" `node_id` SHALL be in the transaction
- * receipt.
+ * ### Block Stream Effects
+ * None.
  */
 message NodeDeleteTransactionBody {
     /**

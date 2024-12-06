@@ -47,6 +47,13 @@ public interface HederaEvmAccount extends MutableAccount {
     boolean isRegularAccount();
 
     /**
+     * Returns whether this account is a facade for a schedule transaction.
+     *
+     * @return whether this account is schedule transaction facade
+     */
+    boolean isScheduleTxnFacade();
+
+    /**
      * Returns the Hedera account id for this account.
      *
      * @return the Hedera account id

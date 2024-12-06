@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.roster;
 
-import static com.swirlds.common.RosterStateId.ROSTER_KEY;
-import static com.swirlds.common.RosterStateId.ROSTER_STATES_KEY;
+import static com.swirlds.platform.state.service.WritableRosterStore.ROSTER_KEY;
+import static com.swirlds.platform.state.service.WritableRosterStore.ROSTER_STATES_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -25,9 +25,9 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.system.address.Address;
@@ -49,6 +49,7 @@ import java.util.regex.Pattern;
 public final class RosterRetriever {
     private RosterRetriever() {}
 
+    private static final String ROSTER_SERVICE = "RosterService";
     private static final String IP_ADDRESS_COMPONENT_REGEX = "(\\d{1,2}|(?:0|1)\\d{2}|2[0-4]\\d|25[0-5])";
     private static final Pattern IP_ADDRESS_PATTERN =
             Pattern.compile("^%N\\.%N\\.%N\\.%N$".replace("%N", IP_ADDRESS_COMPONENT_REGEX));
@@ -74,6 +75,35 @@ public final class RosterRetriever {
         final var readablePlatformStateStore =
                 new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
         return buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
+    }
+
+    /**
+     * Retrieve the previous Roster from the state, or null if the roster has never changed yet.
+     *
+     * The previous roster is the one that has been in use prior to the current active roster,
+     * i.e. prior to the one returned by the retrieveActiveOrGenesisRoster() method.
+     *
+     * @param state a state to fetch the previous roster from
+     * @return the previous roster, or null
+     */
+    @Nullable
+    public static Roster retrievePreviousRoster(@NonNull final State state) {
+        final ReadableSingletonState<RosterState> rosterState =
+                state.getReadableStates(ROSTER_SERVICE).getSingleton(ROSTER_STATES_KEY);
+        final List<RoundRosterPair> roundRosterPairs =
+                requireNonNull(rosterState.get()).roundRosterPairs();
+
+        if (roundRosterPairs.isEmpty()) {
+            final var readablePlatformStateStore =
+                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+            return buildRoster(readablePlatformStateStore.getPreviousAddressBook());
+        }
+
+        if (roundRosterPairs.size() < 2) {
+            return null;
+        }
+
+        return retrieveInternal(state, roundRosterPairs.get(1).activeRosterHash());
     }
 
     /**
@@ -112,7 +142,7 @@ public final class RosterRetriever {
     @Nullable
     public static Bytes getActiveRosterHash(@NonNull final State state, final long round) {
         final ReadableSingletonState<RosterState> rosterState =
-                state.getReadableStates(RosterStateId.NAME).getSingleton(ROSTER_STATES_KEY);
+                state.getReadableStates(ROSTER_SERVICE).getSingleton(ROSTER_STATES_KEY);
         // replace with binary search when/if the list size becomes unreasonably large (100s of entries or more)
         final var roundRosterPairs = requireNonNull(rosterState.get()).roundRosterPairs();
         for (final var roundRosterPair : roundRosterPairs) {
@@ -129,8 +159,7 @@ public final class RosterRetriever {
      * @return the hash of the candidate roster
      */
     public static @NonNull Bytes getCandidateRosterHash(@NonNull final State state) {
-        final var rosterState =
-                state.getReadableStates(RosterStateId.NAME).<RosterState>getSingleton(ROSTER_STATES_KEY);
+        final var rosterState = state.getReadableStates(ROSTER_SERVICE).<RosterState>getSingleton(ROSTER_STATES_KEY);
         return requireNonNull(rosterState.get()).candidateRosterHash();
     }
 
@@ -225,7 +254,7 @@ public final class RosterRetriever {
     private static Roster retrieveInternal(@NonNull final State state, @Nullable final Bytes activeRosterHash) {
         if (activeRosterHash != null) {
             final ReadableKVState<ProtoBytes, Roster> rosterMap =
-                    state.getReadableStates(RosterStateId.NAME).get(ROSTER_KEY);
+                    state.getReadableStates(ROSTER_SERVICE).get(ROSTER_KEY);
             return rosterMap.get(new ProtoBytes(activeRosterHash));
         }
         return null;

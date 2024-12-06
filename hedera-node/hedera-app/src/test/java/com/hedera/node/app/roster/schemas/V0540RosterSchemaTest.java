@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.roster.schemas;
 
-import static com.swirlds.common.RosterStateId.ROSTER_KEY;
-import static com.swirlds.common.RosterStateId.ROSTER_STATES_KEY;
+import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_KEY;
+import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
