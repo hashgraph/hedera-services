@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -57,7 +58,7 @@ public class NonFungibleTransfers implements ErroringAssertsProvider<List<TokenT
                 final var sender = change.getLeft();
                 accountNameLookup.put(registry.getAccountID(sender), sender);
                 final var receiver = change.getMiddle();
-                accountNameLookup.put(registry.getAccountID(receiver), receiver);
+                accountNameLookup.put(asId(receiver, spec), receiver);
             }
         }
 

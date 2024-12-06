@@ -27,9 +27,10 @@ import com.hedera.node.config.data.NodesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.cert.CertificateException;
@@ -47,7 +48,6 @@ import org.bouncycastle.util.io.pem.PemWriter;
  * Utility class that provides static methods and constants to facilitate the Address Book Services functions.
  */
 public class AddressBookHelper {
-    public static final String NODES_KEY = "NODES";
 
     private AddressBookHelper() {
         throw new IllegalStateException("Utility class");
@@ -71,19 +71,28 @@ public class AddressBookHelper {
     /**
      * Write the Certificate to a pem file.
      * @param pemFile to write
-     * @param encodes Certificate encoded byte[]
+     * @param x509Encoding Certificate encoded byte[]
      * @throws IOException if an I/O error occurs while writing the file
      */
-    public static void writeCertificatePemFile(@NonNull final Path pemFile, @NonNull final byte[] encodes)
+    public static void writeCertificatePemFile(@NonNull final Path pemFile, @NonNull final byte[] x509Encoding)
             throws IOException {
-        Objects.requireNonNull(pemFile, "pemFile must not be null");
-        Objects.requireNonNull(encodes, "cert must not be null");
+        writeCertificatePemFile(x509Encoding, new FileOutputStream(pemFile.toFile()));
+    }
 
-        final PemObject pemObj = new PemObject("CERTIFICATE", encodes);
-        try (final var f = new FileOutputStream(pemFile.toFile());
-                final var out = new OutputStreamWriter(f);
-                final PemWriter writer = new PemWriter(out)) {
-            writer.writeObject(pemObj);
+    /**
+     * Given an X509 encoded certificate, writes it as a PEM to the given output stream.
+     *
+     * @param x509Encoding the X509 encoded certificate
+     * @param out the output stream to write to
+     * @throws IOException if an I/O error occurs while writing the PEM
+     */
+    public static void writeCertificatePemFile(@NonNull final byte[] x509Encoding, @NonNull final OutputStream out)
+            throws IOException {
+        requireNonNull(x509Encoding);
+        requireNonNull(out);
+        try (final var writer = new OutputStreamWriter(out);
+                final PemWriter pemWriter = new PemWriter(writer)) {
+            pemWriter.writeObject(new PemObject("CERTIFICATE", x509Encoding));
         }
     }
 
@@ -96,22 +105,31 @@ public class AddressBookHelper {
      */
     public static X509Certificate readCertificatePemFile(@NonNull final Path pemFile)
             throws IOException, CertificateException {
-        Objects.requireNonNull(pemFile, "pemFile must not be null");
-        X509Certificate cert = null;
+        return readCertificatePemFile(Files.newInputStream(pemFile));
+    }
+
+    /**
+     * Reads a PEM-encoded X509 certificate from the given input stream.
+     * @param in the input stream to read from
+     * @return the X509Certificate
+     * @throws IOException if an I/O error occurs while reading the certificate
+     * @throws CertificateException if the file does not contain a valid X509Certificate
+     */
+    public static X509Certificate readCertificatePemFile(@NonNull final InputStream in)
+            throws IOException, CertificateException {
+        requireNonNull(in);
         Object entry;
-        try (final PEMParser parser =
-                new PEMParser(new InputStreamReader(Files.newInputStream(pemFile), StandardCharsets.UTF_8))) {
+        try (final var parser = new PEMParser(new InputStreamReader(in))) {
             while ((entry = parser.readObject()) != null) {
                 if (entry instanceof X509CertificateHolder ch) {
-                    cert = new JcaX509CertificateConverter().getCertificate(ch);
-                    break;
+                    return new JcaX509CertificateConverter().getCertificate(ch);
                 } else {
                     throw new CertificateException(
                             "Not X509 Certificate, it is " + entry.getClass().getSimpleName());
                 }
             }
         }
-        return cert;
+        throw new CertificateException("No X509 Certificate found in the PEM file");
     }
 
     /**

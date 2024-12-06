@@ -139,7 +139,7 @@ public class RandomRosterBuilder {
                 .mapToObj(index -> {
                     final NodeId nodeId = getNextNodeId();
                     final RandomRosterEntryBuilder addressBuilder = RandomRosterEntryBuilder.create(random)
-                            .withNodeId(nodeId)
+                            .withNodeId(nodeId.id())
                             .withWeight(getNextWeight());
 
                     generateKeys(nodeId, addressBuilder);

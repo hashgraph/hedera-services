@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -32,6 +31,7 @@ import com.hedera.node.config.types.StreamMode;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
+import com.swirlds.state.test.fixtures.MapWritableStates;
 import com.swirlds.state.test.fixtures.StateTestBase;
 import java.util.HashMap;
 import java.util.Map;

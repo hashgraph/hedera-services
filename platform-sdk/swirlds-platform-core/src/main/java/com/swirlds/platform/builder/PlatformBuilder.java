@@ -26,8 +26,11 @@ import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConf
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.WiringConfig;
@@ -36,7 +39,9 @@ import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
@@ -48,7 +53,6 @@ import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.roster.RosterHistory;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
@@ -56,7 +60,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -279,15 +282,29 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Provide the cryptographic keys to use for this node.
+     * Provide the cryptographic keys to use for this node.  The signing certificate for this node must be valid.
      *
      * @param keysAndCerts the cryptographic keys to use
      * @return this
+     * @throws IllegalStateException if the signing certificate is not valid or does not match the signing private key.
      */
     @NonNull
     public PlatformBuilder withKeysAndCerts(@NonNull final KeysAndCerts keysAndCerts) {
         throwIfAlreadyUsed();
         this.keysAndCerts = Objects.requireNonNull(keysAndCerts);
+        // Ensure that the platform has a valid signing cert that matches the signing private key.
+        // https://github.com/hashgraph/hedera-services/issues/16648
+        if (!CryptoStatic.checkCertificate(keysAndCerts.sigCert())) {
+            throw new IllegalStateException("Starting the platform requires a signing cert.");
+        }
+        final PlatformSigner platformSigner = new PlatformSigner(keysAndCerts);
+        final String testString = "testString";
+        final Bytes testBytes = Bytes.wrap(testString.getBytes());
+        final Signature signature = platformSigner.sign(testBytes.toByteArray());
+        if (!CryptoStatic.verifySignature(
+                testBytes, signature.getBytes(), keysAndCerts.sigCert().getPublicKey())) {
+            throw new IllegalStateException("The signing certificate does not match the signing private key.");
+        }
         return this;
     }
 
@@ -358,12 +375,12 @@ public final class PlatformBuilder {
 
         checkNodesToRun(List.of(selfId));
 
-        final AddressBook addressBook = RosterUtils.buildAddressBook(rosterHistory.getCurrentRoster());
+        final Roster currentRoster = rosterHistory.getCurrentRoster();
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
         if (syncConfig.waitForEventsInIntake()) {
-            intakeEventCounter = new DefaultIntakeEventCounter(addressBook);
+            intakeEventCounter = new DefaultIntakeEventCounter(currentRoster);
         } else {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
@@ -400,7 +417,7 @@ public final class PlatformBuilder {
         final AtomicReference<StatusActionSubmitter> statusActionSubmitterAtomicReference = new AtomicReference<>();
         final SwirldStateManager swirldStateManager = new SwirldStateManager(
                 platformContext,
-                addressBook,
+                currentRoster,
                 selfId,
                 x -> statusActionSubmitterAtomicReference.get().submitStatusAction(x),
                 softwareVersion);

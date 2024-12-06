@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractNativeSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.EntityType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -47,7 +48,7 @@ public class HasSystemContract extends AbstractNativeSystemContract implements H
 
     @Override
     protected FrameUtils.CallType callTypeOf(@NonNull MessageFrame frame) {
-        return FrameUtils.callTypeForAccountOf(frame);
+        return FrameUtils.callTypeOf(frame, EntityType.REGULAR_ACCOUNT);
     }
 
     @Override

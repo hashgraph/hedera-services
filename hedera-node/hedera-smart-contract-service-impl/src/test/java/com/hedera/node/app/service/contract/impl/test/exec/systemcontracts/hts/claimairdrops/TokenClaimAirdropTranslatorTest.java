@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -39,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.claimairdrops.TokenClaimAirdropDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.claimairdrops.TokenClaimAirdropTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
@@ -113,6 +115,27 @@ class TokenClaimAirdropTranslatorTest {
 
         // then:
         assertTrue(matches);
+    }
+
+    @Test
+    void testMatchesFailsOnRandomSelector() {
+        // given:
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.systemContractClaimAirdropsEnabled()).willReturn(true);
+        attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
+                MintTranslator.MINT,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                configuration);
+
+        // when:
+        boolean matches = subject.matches(attempt);
+
+        // then:
+        assertFalse(matches);
     }
 
     @Test
@@ -245,6 +268,7 @@ class TokenClaimAirdropTranslatorTest {
 
         // then:
         assertEquals(DispatchForResponseCodeHtsCall.class, call.getClass());
+        verify(decoder).decodeTokenClaimAirdrop(attempt);
     }
 
     @Test
@@ -267,6 +291,7 @@ class TokenClaimAirdropTranslatorTest {
 
         // then:
         assertEquals(DispatchForResponseCodeHtsCall.class, call.getClass());
+        verify(decoder).decodeHrcClaimAirdropFt(attempt);
     }
 
     @Test
@@ -289,6 +314,7 @@ class TokenClaimAirdropTranslatorTest {
 
         // then:
         assertEquals(DispatchForResponseCodeHtsCall.class, call.getClass());
+        verify(decoder).decodeHrcClaimAirdropNft(attempt);
     }
 
     @Test

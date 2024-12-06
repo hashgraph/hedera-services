@@ -456,7 +456,7 @@ class DispatchProcessorTest {
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody(), dispatch.config());
         verify(recordBuilder).status(CONSENSUS_GAS_EXHAUSTED);
         verify(feeAccumulator).chargeNetworkFee(PAYER_ACCOUNT_ID, FEES.totalFee());
         verify(opWorkflowMetrics).incrementThrottled(CRYPTO_TRANSFER);
@@ -531,7 +531,7 @@ class DispatchProcessorTest {
         subject.processDispatch(dispatch);
 
         verifyUtilization();
-        verify(platformStateUpdates).handleTxBody(stack, CONTRACT_TXN_INFO.txBody());
+        verify(platformStateUpdates).handleTxBody(stack, CONTRACT_TXN_INFO.txBody(), dispatch.config());
         verify(recordBuilder, times(2)).status(SUCCESS);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(opWorkflowMetrics, never()).incrementThrottled(any());
@@ -551,7 +551,7 @@ class DispatchProcessorTest {
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody(), dispatch.config());
         verify(recordBuilder).status(SUCCESS);
         verify(feeAccumulator).chargeNetworkFee(PAYER_ACCOUNT_ID, FEES.totalFee());
         verify(opWorkflowMetrics, never()).incrementThrottled(any());
@@ -570,7 +570,7 @@ class DispatchProcessorTest {
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody(), dispatch.config());
         verify(recordBuilder).status(SUCCESS);
         verify(opWorkflowMetrics, never()).incrementThrottled(any());
         assertFinished(IsRootStack.NO);

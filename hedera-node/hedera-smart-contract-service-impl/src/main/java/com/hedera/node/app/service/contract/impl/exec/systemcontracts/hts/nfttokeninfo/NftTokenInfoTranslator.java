@@ -55,7 +55,7 @@ public class NftTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttemp
         final var v2Enabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractTokenInfoV2Enabled();
         return attempt.isSelector(NON_FUNGIBLE_TOKEN_INFO)
-                || attempt.isSelectorIfConfigEnabled(NON_FUNGIBLE_TOKEN_INFO_V2, v2Enabled);
+                || attempt.isSelectorIfConfigEnabled(v2Enabled, NON_FUNGIBLE_TOKEN_INFO_V2);
     }
 
     /**

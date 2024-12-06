@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
@@ -59,9 +59,9 @@ import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -427,11 +427,11 @@ public class NodeStakeUpdatesTest {
                                 .roundNumber(12345)
                                 .activeRosterHash(RosterCase.ACTIVE_ROSTER_HASH.value())
                                 .build())));
-        given(writableStates.<RosterState>getSingleton(RosterStateId.ROSTER_STATES_KEY))
+        given(writableStates.<RosterState>getSingleton(V0540RosterSchema.ROSTER_STATES_KEY))
                 .willReturn(rosterState);
-        given(writableStates.<ProtoBytes, Roster>get(RosterStateId.ROSTER_KEY))
+        given(writableStates.<ProtoBytes, Roster>get(V0540RosterSchema.ROSTER_KEY))
                 .willReturn(new MapWritableKVState<>(
-                        RosterStateId.ROSTER_KEY,
+                        V0540RosterSchema.ROSTER_KEY,
                         Map.of(
                                 RosterCase.CANDIDATE_ROSTER_HASH,
                                 RosterCase.CURRENT_CANDIDATE_ROSTER,

@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -221,30 +220,29 @@ public class TokenExpiryInfoSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
         final var someValidExpiry = new AtomicLong();
-        return defaultHapiSpec("updateExpiryInfoForTokenAndReadLatestInfo")
-                .given(
-                        new RunnableOp(() ->
-                                someValidExpiry.set(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 123L)),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                        cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
-                                .keyShape(SigControl.ED25519_ON)
-                                .balance(0L)
-                                .exposingCreatedIdTo(updatedAutoRenewAccountID::set),
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(TOKEN_EXPIRY_CONTRACT),
-                        contractCreate(TOKEN_EXPIRY_CONTRACT).gas(1_000_000L),
-                        tokenCreate(VANILLA_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .treasury(TOKEN_TREASURY)
-                                .expiry(100)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(1000)
-                                .initialSupply(500L)
-                                .adminKey(ADMIN_KEY)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                new RunnableOp(
+                        () -> someValidExpiry.set(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 123L)),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
+                        .keyShape(SigControl.ED25519_ON)
+                        .balance(0L)
+                        .exposingCreatedIdTo(updatedAutoRenewAccountID::set),
+                newKeyNamed(ADMIN_KEY),
+                uploadInitCode(TOKEN_EXPIRY_CONTRACT),
+                contractCreate(TOKEN_EXPIRY_CONTRACT).gas(1_000_000L),
+                tokenCreate(VANILLA_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .treasury(TOKEN_TREASURY)
+                        .expiry(100)
+                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .maxSupply(1000)
+                        .initialSupply(500L)
+                        .adminKey(ADMIN_KEY)
+                        .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_EXPIRY_CONTRACT))),
@@ -260,8 +258,8 @@ public class TokenExpiryInfoSuite {
                                 .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
                                 .via("updateExpiryAndReadLatestInfoTxn")
                                 .gas(GAS_TO_OFFER)
-                                .payingWith(GENESIS))))
-                .then(withOpContext((spec, opLog) -> allRunFor(
+                                .payingWith(GENESIS))),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         childRecordsCheck(
                                 "updateExpiryAndReadLatestInfoTxn",

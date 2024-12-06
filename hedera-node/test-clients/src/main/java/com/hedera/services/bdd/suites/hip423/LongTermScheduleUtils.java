@@ -16,38 +16,45 @@
 
 package com.hedera.services.bdd.suites.hip423;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.purgeUpgradeArtifacts;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepForSeconds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.FAKE_UPGRADE_ZIP_LOC;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_FILE_ID;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.FAKE_ASSETS_LOC;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileAppendsPerBurst;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileHashAt;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 public final class LongTermScheduleUtils {
 
-    static final String SENDER = "sender";
+    public static final String SENDER = "sender";
+    public static final String SENDER_KEY = "senderKey";
+    public static final String SENDER_TXN = "senderTxn";
+    public static final String NEW_SENDER_KEY = "newSenderKey";
+    public static final String RECEIVER = "receiver";
+    public static final String CREATE_TXN = "createTxn";
     static final String PAYER = "payer";
     static final String ADMIN = "admin";
     static final String EXTRA_KEY = "extraKey";
     static final String SHARED_KEY = "sharedKey";
-    static final String NEW_SENDER_KEY = "newSenderKey";
-    static final String SENDER_TXN = "senderTxn";
-    static final String CREATE_TXN = "createTxn";
-    static final String RECEIVER = "receiver";
+    static final String TRIGGERING_TXN = "triggeringTxn";
     static final String BASIC_XFER = "basicXfer";
     static final String TWO_SIG_XFER = "twoSigXfer";
     static final String DEFERRED_XFER = "deferredXfer";
@@ -106,7 +113,8 @@ public final class LongTermScheduleUtils {
         return amountHasBeenTransferred && payerHasPaid;
     }
 
-    static SpecOperation[] scheduleFakeUpgrade(String payer, String relativeTransaction, long offset, String via) {
+    static SpecOperation[] scheduleFakeUpgrade(
+            @NonNull final String payer, final long lifetime, @NonNull final String via) {
         final var operations = List.of(
                 buildUpgradeZipFrom(FAKE_ASSETS_LOC),
                 // Upload it to file 0.0.150; need sourcing() here because the operation reads contents eagerly
@@ -116,7 +124,6 @@ public final class LongTermScheduleUtils {
                         FAKE_UPGRADE_ZIP_LOC,
                         TxnUtils.BYTES_4K,
                         upgradeFileAppendsPerBurst())),
-                purgeUpgradeArtifacts(),
                 // Issue PREPARE_UPGRADE; need sourcing() here because we want to hash only after creating the ZIP
                 sourcing(() -> scheduleCreate(
                                 VALID_SCHEDULE,
@@ -126,10 +133,24 @@ public final class LongTermScheduleUtils {
                         .withEntityMemo(randomUppercase(100))
                         .designatingPayer(GENESIS)
                         .payingWith(payer)
-                        .waitForExpiry()
                         .recordingScheduledTxn()
-                        .withRelativeExpiry(relativeTransaction, offset)
+                        .waitForExpiry()
+                        .expiringIn(lifetime)
                         .via(via)));
         return operations.toArray(SpecOperation[]::new);
+    }
+
+    public static SpecOperation[] triggerSchedule(String schedule, long waitForSeconds) {
+        return flattened(
+                sleepForSeconds(waitForSeconds),
+                cryptoCreate("foo").via(TRIGGERING_TXN),
+                // Pause execution for 1 second to allow time for the scheduled transaction to be
+                // processed and removed from the state
+                sleepForSeconds(1),
+                getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
+    }
+
+    public static SpecOperation[] triggerSchedule(String schedule) {
+        return triggerSchedule(schedule, 5);
     }
 }

@@ -16,10 +16,8 @@
 
 package com.hedera.services.bdd.spec;
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Defines the interface for a single operation in a {@link HapiSpec}.
@@ -33,14 +31,4 @@ public interface SpecOperation {
      * @return an optional containing any failure that was thrown
      */
     Optional<Throwable> execFor(@NonNull HapiSpec spec);
-
-    /**
-     * Returns whether the operation should be skipped when auto-scheduling is enabled.
-     *
-     * @param beingAutoScheduled the set of {@link HederaFunctionality} that are being auto-scheduled
-     * @return whether the operation should be skipped when auto-scheduling is enabled
-     */
-    default boolean shouldSkipWhenAutoScheduling(@NonNull Set<HederaFunctionality> beingAutoScheduled) {
-        return false;
-    }
 }

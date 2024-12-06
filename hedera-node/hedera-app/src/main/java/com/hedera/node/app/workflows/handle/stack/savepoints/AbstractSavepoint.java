@@ -30,7 +30,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.WrappedState;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
@@ -115,7 +114,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
     public StreamBuilder createBuilder(
             @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
-            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final StreamBuilder.TransactionCustomizer customizer,
             @NonNull final StreamMode streamMode,
             final boolean isBaseBuilder) {
         requireNonNull(reversingBehavior);
@@ -127,7 +126,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
                     case BLOCKS -> new BlockStreamBuilder(reversingBehavior, customizer, txnCategory);
                     case BOTH -> new PairedStreamBuilder(reversingBehavior, customizer, txnCategory);
                 };
-        if (!customizer.shouldSuppressRecord()) {
+        if (!customizer.isSuppressed()) {
             // Other code is a bit simpler when we always put the base builder for a stack in its
             // "following" list, even if the stack is child stack for a preceding child dispatch;
             // the base builder will still end up in the correct relative position in the parent

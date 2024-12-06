@@ -229,6 +229,7 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.LongConsumer;
 import java.util.function.ObjIntConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -563,6 +564,10 @@ public class UtilVerbs {
                         opLog.info("Stopping background traffic after freeze complete");
                     });
         });
+    }
+
+    public static HapiSpecSleep sleepForSeconds(final long seconds) {
+        return sleepFor(seconds * 1_000L);
     }
 
     public static HapiSpecSleep sleepFor(long timeMs) {
@@ -1212,6 +1217,24 @@ public class UtilVerbs {
 
     public static HapiSpecOperation[] nOps(final int n, @NonNull final IntFunction<HapiSpecOperation> source) {
         return IntStream.range(0, n).mapToObj(source).toArray(HapiSpecOperation[]::new);
+    }
+
+    /**
+     * Returns an operation that exposes the consensus time of the current spec to the given observer.
+     * @param observer the observer to pass the consensus time to
+     * @return the operation that exposes the consensus time
+     */
+    public static SpecOperation exposeSpecSecondTo(@NonNull final LongConsumer observer) {
+        return exposeSpecTimeTo(instant -> observer.accept(instant.getEpochSecond()));
+    }
+
+    /**
+     * Returns an operation that exposes the consensus time of the current spec to the given observer.
+     * @param observer the observer to pass the consensus time to
+     * @return the operation that exposes the consensus time
+     */
+    public static SpecOperation exposeSpecTimeTo(@NonNull final Consumer<Instant> observer) {
+        return doingContextual(spec -> observer.accept(spec.consensusTime()));
     }
 
     /**

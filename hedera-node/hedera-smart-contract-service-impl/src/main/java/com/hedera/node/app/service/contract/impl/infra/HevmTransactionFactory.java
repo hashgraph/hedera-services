@@ -144,17 +144,15 @@ public class HevmTransactionFactory {
      * Given a {@link TransactionBody}, creates the implied {@link HederaEvmTransaction}.
      *
      * @param body the {@link TransactionBody} to convert
+     * @param payerId transaction payer id
      * @return the implied {@link HederaEvmTransaction}
      * @throws IllegalArgumentException if the {@link TransactionBody} is not a contract operation
      */
-    public HederaEvmTransaction fromHapiTransaction(@NonNull final TransactionBody body) {
+    public HederaEvmTransaction fromHapiTransaction(@NonNull final TransactionBody body, @NonNull AccountID payerId) {
         return switch (body.data().kind()) {
-            case CONTRACT_CREATE_INSTANCE -> fromHapiCreate(
-                    body.transactionIDOrThrow().accountIDOrThrow(), body.contractCreateInstanceOrThrow());
-            case CONTRACT_CALL -> fromHapiCall(
-                    body.transactionIDOrThrow().accountIDOrThrow(), body.contractCallOrThrow());
-            case ETHEREUM_TRANSACTION -> fromHapiEthereum(
-                    body.transactionIDOrThrow().accountIDOrThrow(), body.ethereumTransactionOrThrow());
+            case CONTRACT_CREATE_INSTANCE -> fromHapiCreate(payerId, body.contractCreateInstanceOrThrow());
+            case CONTRACT_CALL -> fromHapiCall(payerId, body.contractCallOrThrow());
+            case ETHEREUM_TRANSACTION -> fromHapiEthereum(payerId, body.ethereumTransactionOrThrow());
             default -> throw new IllegalArgumentException("Not a contract operation");
         };
     }

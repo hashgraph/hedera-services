@@ -29,6 +29,7 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,7 +52,7 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
 
     /**
      * Constructor that supports getting full {@link SoftwareVersion} information from the platform state. Must
-     * be used from within {@link com.swirlds.platform.state.MerkleStateRoot}.
+     * be used from within {@link MerkleStateRoot}.
      * @param readableStates the readable states
      * @param versionFactory a factory to create the current {@link SoftwareVersion} from a {@link SemanticVersion}
      */

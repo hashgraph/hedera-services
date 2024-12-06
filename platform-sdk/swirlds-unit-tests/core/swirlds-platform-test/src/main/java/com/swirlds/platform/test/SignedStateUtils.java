@@ -22,7 +22,7 @@ import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import java.util.Random;
@@ -34,8 +34,8 @@ public class SignedStateUtils {
     }
 
     public static SignedState randomSignedState(Random random) {
-        MerkleStateRoot root =
-                new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.minor()));
+        PlatformMerkleStateRoot root = new PlatformMerkleStateRoot(
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.minor()));
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(root);
         randomPlatformState(random, root.getWritablePlatformState());
         boolean shouldSaveToDisk = random.nextBoolean();

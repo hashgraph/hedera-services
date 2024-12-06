@@ -60,7 +60,6 @@ public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
     public HasCallAttempt(
             @NonNull final Bytes input,
             @NonNull final Address senderAddress,
-            @NonNull final Address authorizingAddress,
             final boolean onlyDelegatableContractKeysActive,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final Configuration configuration,
@@ -73,7 +72,7 @@ public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
         super(
                 input,
                 senderAddress,
-                authorizingAddress,
+                senderAddress,
                 onlyDelegatableContractKeysActive,
                 enhancement,
                 configuration,

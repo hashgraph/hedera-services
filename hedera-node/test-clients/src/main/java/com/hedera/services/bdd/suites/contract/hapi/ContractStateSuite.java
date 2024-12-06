@@ -17,13 +17,13 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateAnyLogAfter;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static java.lang.Integer.MAX_VALUE;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -80,9 +80,10 @@ public class ContractStateSuite {
                 Map.entry("Int128", BigInteger.valueOf(5)),
                 Map.entry("Int256", BigInteger.valueOf(6)));
 
-        return defaultHapiSpec("stateChangesSpec")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(IntStream.range(0, iterations)
+        return hapiTest(flattened(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                IntStream.range(0, iterations)
                         .boxed()
                         .flatMap(i -> Stream.of(
                                         Stream.of(contractCall(CONTRACT, "setVarBool", RANDOM.nextBoolean())),
@@ -98,8 +99,7 @@ public class ContractStateSuite {
                                         randomSetAndDeleteString(),
                                         randomSetAndDeleteStruct())
                                 .flatMap(s -> s))
-                        .toArray(HapiSpecOperation[]::new))
-                .then();
+                        .toArray(HapiSpecOperation[]::new)));
     }
 
     private Stream<HapiSpecOperation> randomSetAndDeleteVarInt() {

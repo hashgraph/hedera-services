@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -99,5 +100,10 @@ class QuerySystemContractOperationsTest {
                 () -> subject.externalizeResult(ContractFunctionResult.DEFAULT, SUCCESS, Transaction.DEFAULT));
         assertSame(
                 Transaction.DEFAULT, subject.syntheticTransactionForNativeCall(Bytes.EMPTY, ContractID.DEFAULT, true));
+    }
+
+    @Test
+    void maybeEthSenderKeyIsNullTest() {
+        assertNull(subject.maybeEthSenderKey());
     }
 }

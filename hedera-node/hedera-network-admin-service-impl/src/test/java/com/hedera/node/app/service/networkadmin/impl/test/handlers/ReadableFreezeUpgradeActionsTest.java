@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.loadResourceFile;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.readCertificatePemFile;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_IMMEDIATE_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_TELEMETRY_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.NOW_FROZEN_MARKER;

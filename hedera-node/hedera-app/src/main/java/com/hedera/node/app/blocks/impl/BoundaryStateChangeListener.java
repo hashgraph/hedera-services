@@ -39,6 +39,7 @@ import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
+import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.OneOf;
@@ -65,6 +66,9 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     private final SortedMap<Integer, List<StateChange>> queueUpdates = new TreeMap<>();
 
     @Nullable
+    private Instant lastConsensusTime;
+
+    @Nullable
     private Timestamp boundaryTimestamp;
 
     /**
@@ -76,10 +80,18 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     }
 
     /**
+     * Returns the last consensus time used for a transaction.
+     */
+    public @NonNull Instant lastConsensusTimeOrThrow() {
+        return requireNonNull(lastConsensusTime);
+    }
+
+    /**
      * Resets the state of the listener.
      */
     public void reset() {
         boundaryTimestamp = null;
+        lastConsensusTime = null;
         singletonUpdates.clear();
         queueUpdates.clear();
     }
@@ -116,7 +128,8 @@ public class BoundaryStateChangeListener implements StateChangeListener {
      * @param lastUsedConsensusTime the last used consensus time
      */
     public void setBoundaryTimestamp(@NonNull final Instant lastUsedConsensusTime) {
-        boundaryTimestamp = asTimestamp(requireNonNull(lastUsedConsensusTime).plusNanos(1));
+        this.lastConsensusTime = requireNonNull(lastUsedConsensusTime);
+        boundaryTimestamp = asTimestamp(lastUsedConsensusTime.plusNanos(1));
     }
 
     @Override
@@ -218,6 +231,9 @@ public class BoundaryStateChangeListener implements StateChangeListener {
             }
             case PlatformState platformState -> {
                 return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.PLATFORM_STATE_VALUE, platformState);
+            }
+            case TssStatus tssStatus -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.TSS_STATUS_STATE_VALUE, tssStatus);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());

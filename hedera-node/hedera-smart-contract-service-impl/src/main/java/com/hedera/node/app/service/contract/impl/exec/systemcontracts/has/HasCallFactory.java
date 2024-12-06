@@ -80,7 +80,6 @@ public class HasCallFactory implements CallFactory<HasCallAttempt> {
         return new HasCallAttempt(
                 input,
                 frame.getSenderAddress(),
-                frame.getSenderAddress(),
                 addressChecks.hasParentDelegateCall(frame),
                 enhancement,
                 configOf(frame),

@@ -22,8 +22,11 @@ import static com.swirlds.state.lifecycle.HapiUtils.serializeSemVer;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -68,6 +71,18 @@ public final class ServicesSoftwareVersion implements SoftwareVersion {
         // We must preserve the original semantic version in state so that reconnected nodes
         // will not believe they are upgrading when they restart with a non-zero config version
         this.stateSemVer = semVer.copyBuilder().build("" + configVersion).build();
+    }
+
+    /**
+     * Returns the software version set in the given configuration.
+     * @param config the configuration to examine
+     * @return the software version
+     */
+    public static ServicesSoftwareVersion from(@NonNull final Configuration config) {
+        final var versionConfig = config.getConfigData(VersionConfig.class);
+        return new ServicesSoftwareVersion(
+                versionConfig.servicesVersion(),
+                config.getConfigData(HederaConfig.class).configVersion());
     }
 
     @Override
