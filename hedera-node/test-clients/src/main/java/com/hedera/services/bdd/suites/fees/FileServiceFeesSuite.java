@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.fees;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
@@ -106,22 +105,21 @@ public class FileServiceFeesSuite {
         final var magicKey = "magicKey";
         final var magicWacl = "magicWacl";
 
-        return defaultHapiSpec("BaseOpsHaveExpectedPrices")
-                .given(
-                        newKeyNamed(magicKey),
-                        newKeyListNamed(magicWacl, List.of(magicKey)),
-                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS).key(magicKey),
-                        fileCreate(targetFile)
-                                .key(magicWacl)
-                                .lifetime(THREE_MONTHS_IN_SECONDS)
-                                .contents("Nothing much!"))
-                .when(fileAppend(targetFile)
+        return hapiTest(
+                newKeyNamed(magicKey),
+                newKeyListNamed(magicWacl, List.of(magicKey)),
+                cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS).key(magicKey),
+                fileCreate(targetFile)
+                        .key(magicWacl)
+                        .lifetime(THREE_MONTHS_IN_SECONDS)
+                        .contents("Nothing much!"),
+                fileAppend(targetFile)
                         .signedBy(magicKey)
                         .blankMemo()
                         .content(contentBuilder.toString())
                         .payingWith(civilian)
-                        .via(baseAppend))
-                .then(validateChargedUsdWithin(baseAppend, expectedAppendFeesPriceUsd, 0.01));
+                        .via(baseAppend),
+                validateChargedUsdWithin(baseAppend, expectedAppendFeesPriceUsd, 0.01));
     }
 
     @HapiTest

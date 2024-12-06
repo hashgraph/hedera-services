@@ -60,7 +60,6 @@ import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.re
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingToken;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getAccountNftInfosNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
@@ -188,49 +187,47 @@ public class TokenServiceFeesSuite {
     @HapiTest
     final Stream<DynamicTest> claimFungibleTokenAirdrop() {
         var nftSupplyKey = "nftSupplyKey";
-        return defaultHapiSpec("should transfer fungible tokens")
-                .given(flattened(
-                        setUpTokensAndAllReceivers(), cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS)))
-                .when(
-                        // do pending airdrop
-                        newKeyNamed(nftSupplyKey),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .treasury(OWNER)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .name(NON_FUNGIBLE_TOKEN)
-                                .supplyKey(nftSupplyKey),
-                        mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                IntStream.range(0, 10)
-                                        .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
-                                        .toList()),
-                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
-                                .payingWith(OWNER),
-                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
-                                .payingWith(OWNER),
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
+                // do pending airdrop
+                newKeyNamed(nftSupplyKey),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .treasury(OWNER)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .name(NON_FUNGIBLE_TOKEN)
+                        .supplyKey(nftSupplyKey),
+                mintToken(
+                        NON_FUNGIBLE_TOKEN,
+                        IntStream.range(0, 10)
+                                .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                .toList()),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
+                        .payingWith(OWNER),
+                tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
+                        .payingWith(OWNER),
 
-                        // do claim
-                        tokenClaimAirdrop(
-                                        HapiTokenClaimAirdrop.pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
-                                        HapiTokenClaimAirdrop.pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
-                                .payingWith(RECEIVER)
-                                .via("claimTxn"))
-                .then( // assert txn record
-                        getTxnRecord("claimTxn")
-                                .hasPriority(recordWith()
-                                        .tokenTransfers(includingFungibleMovement(
-                                                moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))
-                                        .tokenTransfers(includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 1)
-                                                .between(OWNER, RECEIVER)))),
-                        validateChargedUsd("claimTxn", 0.001, 1),
-                        // assert balance fungible tokens
-                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
-                        // assert balances NFT
-                        getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
-                        // assert token associations
-                        getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
-                        getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)));
+                // do claim
+                tokenClaimAirdrop(
+                                HapiTokenClaimAirdrop.pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
+                                HapiTokenClaimAirdrop.pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
+                        .payingWith(RECEIVER)
+                        .via("claimTxn"), // assert txn record
+                getTxnRecord("claimTxn")
+                        .hasPriority(recordWith()
+                                .tokenTransfers(includingFungibleMovement(
+                                        moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))
+                                .tokenTransfers(includingNonfungibleMovement(
+                                        movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER)))),
+                validateChargedUsd("claimTxn", 0.001, 1),
+                // assert balance fungible tokens
+                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                // assert balances NFT
+                getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                // assert token associations
+                getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
+                getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))));
     }
 
     @HapiTest
@@ -321,49 +318,39 @@ public class TokenServiceFeesSuite {
 
     @HapiTest
     final Stream<DynamicTest> baseCommonTokenRejectChargedAsExpected() {
-        return defaultHapiSpec("baseCommonTokenRejectChargedAsExpected")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
-                        tokenCreate(FUNGIBLE_COMMON_TOKEN)
-                                .initialSupply(1000L)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(UNIQUE_TOKEN)
-                                .initialSupply(0)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(TOKEN_TREASURY)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE),
-                        mintToken(
-                                UNIQUE_TOKEN,
-                                List.of(
-                                        metadata("nemo the fish"),
-                                        metadata("garfield the cat"),
-                                        metadata("snoopy the dog"))),
-                        tokenAssociate(ALICE, FUNGIBLE_COMMON_TOKEN, UNIQUE_TOKEN),
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE))
-                                .payingWith(TOKEN_TREASURY)
-                                .via("nftTransfer"),
-                        cryptoTransfer(moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
-                                .payingWith(TOKEN_TREASURY)
-                                .via("fungibleTransfer"))
-                .when(
-                        tokenReject(rejectingToken(FUNGIBLE_COMMON_TOKEN))
-                                .payingWith(ALICE)
-                                .via("rejectFungible"),
-                        tokenReject(rejectingNFT(UNIQUE_TOKEN, 1))
-                                .payingWith(ALICE)
-                                .via("rejectNft"))
-                .then(
-                        validateChargedUsdWithin(
-                                "fungibleTransfer", EXPECTED_FUNGIBLE_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
-                        validateChargedUsdWithin("nftTransfer", EXPECTED_NFT_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
-                        validateChargedUsdWithin(
-                                "rejectFungible", EXPECTED_FUNGIBLE_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
-                        validateChargedUsdWithin("rejectNft", EXPECTED_NFT_REJECT_PRICE_USD, ALLOWED_DIFFERENCE));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(FUNGIBLE_COMMON_TOKEN)
+                        .initialSupply(1000L)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .treasury(TOKEN_TREASURY),
+                tokenCreate(UNIQUE_TOKEN)
+                        .initialSupply(0)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .treasury(TOKEN_TREASURY)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE),
+                mintToken(
+                        UNIQUE_TOKEN,
+                        List.of(metadata("nemo the fish"), metadata("garfield the cat"), metadata("snoopy the dog"))),
+                tokenAssociate(ALICE, FUNGIBLE_COMMON_TOKEN, UNIQUE_TOKEN),
+                cryptoTransfer(movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE))
+                        .payingWith(TOKEN_TREASURY)
+                        .via("nftTransfer"),
+                cryptoTransfer(moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
+                        .payingWith(TOKEN_TREASURY)
+                        .via("fungibleTransfer"),
+                tokenReject(rejectingToken(FUNGIBLE_COMMON_TOKEN))
+                        .payingWith(ALICE)
+                        .via("rejectFungible"),
+                tokenReject(rejectingNFT(UNIQUE_TOKEN, 1)).payingWith(ALICE).via("rejectNft"),
+                validateChargedUsdWithin("fungibleTransfer", EXPECTED_FUNGIBLE_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                validateChargedUsdWithin("nftTransfer", EXPECTED_NFT_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                validateChargedUsdWithin("rejectFungible", EXPECTED_FUNGIBLE_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                validateChargedUsdWithin("rejectNft", EXPECTED_NFT_REJECT_PRICE_USD, ALLOWED_DIFFERENCE));
     }
 
     @HapiTest
@@ -477,20 +464,19 @@ public class TokenServiceFeesSuite {
 
     @HapiTest
     final Stream<DynamicTest> baseFungibleMintOperationIsChargedExpectedFee() {
-        return defaultHapiSpec("BaseFungibleMintOperationIsChargedExpectedFee")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .initialSupply(0L)
-                                .supplyKey(SUPPLY_KEY)
-                                .tokenType(FUNGIBLE_COMMON))
-                .when(mintToken(FUNGIBLE_TOKEN, 10)
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .initialSupply(0L)
+                        .supplyKey(SUPPLY_KEY)
+                        .tokenType(FUNGIBLE_COMMON),
+                mintToken(FUNGIBLE_TOKEN, 10)
                         .payingWith(CIVILIAN_ACCT)
                         .signedBy(SUPPLY_KEY)
                         .blankMemo()
-                        .via("fungibleMint"))
-                .then(validateChargedUsd("fungibleMint", EXPECTED_FUNGIBLE_MINT_PRICE_USD));
+                        .via("fungibleMint"),
+                validateChargedUsd("fungibleMint", EXPECTED_FUNGIBLE_MINT_PRICE_USD));
     }
 
     @HapiTest
@@ -498,22 +484,21 @@ public class TokenServiceFeesSuite {
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
-        return defaultHapiSpec("BaseUniqueMintOperationIsChargedExpectedFee")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
-                        tokenCreate(UNIQUE_TOKEN)
-                                .initialSupply(0L)
-                                .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                                .supplyKey(SUPPLY_KEY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE))
-                .when(mintToken(UNIQUE_TOKEN, List.of(standard100ByteMetadata))
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
+                tokenCreate(UNIQUE_TOKEN)
+                        .initialSupply(0L)
+                        .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                        .supplyKey(SUPPLY_KEY)
+                        .tokenType(NON_FUNGIBLE_UNIQUE),
+                mintToken(UNIQUE_TOKEN, List.of(standard100ByteMetadata))
                         .payingWith(CIVILIAN_ACCT)
                         .signedBy(SUPPLY_KEY)
                         .blankMemo()
                         .fee(ONE_HUNDRED_HBARS)
-                        .via(BASE_TXN))
-                .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_MINT_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
+                        .via(BASE_TXN),
+                validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_MINT_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
     @HapiTest
@@ -522,16 +507,15 @@ public class TokenServiceFeesSuite {
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
-        return defaultHapiSpec("NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
-                        tokenCreate(UNIQUE_TOKEN)
-                                .initialSupply(0L)
-                                .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                                .supplyKey(SUPPLY_KEY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE))
-                .when(mintToken(
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
+                tokenCreate(UNIQUE_TOKEN)
+                        .initialSupply(0L)
+                        .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                        .supplyKey(SUPPLY_KEY)
+                        .tokenType(NON_FUNGIBLE_UNIQUE),
+                mintToken(
                                 UNIQUE_TOKEN,
                                 List.of(
                                         standard100ByteMetadata,
@@ -548,132 +532,122 @@ public class TokenServiceFeesSuite {
                         .signedBy(SUPPLY_KEY)
                         .blankMemo()
                         .fee(ONE_HUNDRED_HBARS)
-                        .via(BASE_TXN))
-                .then(validateChargedUsdWithin(BASE_TXN, expectedFee, ALLOWED_DIFFERENCE_PERCENTAGE));
+                        .via(BASE_TXN),
+                validateChargedUsdWithin(BASE_TXN, expectedFee, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
     @HapiTest
     final Stream<DynamicTest> baseNftBurnOperationIsChargedExpectedFee() {
-        return defaultHapiSpec("BaseUniqueBurnOperationIsChargedExpectedFee")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(CIVILIAN_ACCT).key(SUPPLY_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(UNIQUE_TOKEN)
-                                .initialSupply(0)
-                                .supplyKey(SUPPLY_KEY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY),
-                        mintToken(UNIQUE_TOKEN, List.of(metadata("memo"))))
-                .when(burnToken(UNIQUE_TOKEN, List.of(1L))
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(CIVILIAN_ACCT).key(SUPPLY_KEY),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(UNIQUE_TOKEN)
+                        .initialSupply(0)
+                        .supplyKey(SUPPLY_KEY)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY),
+                mintToken(UNIQUE_TOKEN, List.of(metadata("memo"))),
+                burnToken(UNIQUE_TOKEN, List.of(1L))
                         .fee(ONE_HBAR)
                         .payingWith(CIVILIAN_ACCT)
                         .blankMemo()
-                        .via(BASE_TXN))
-                .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_BURN_PRICE_USD, 0.01));
+                        .via(BASE_TXN),
+                validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_BURN_PRICE_USD, 0.01));
     }
 
     @HapiTest
     final Stream<DynamicTest> baseGrantRevokeKycChargedAsExpected() {
-        return defaultHapiSpec("baseGrantRevokeKycChargedAsExpected")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).key(MULTI_KEY),
-                        cryptoCreate(CIVILIAN_ACCT),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .kycKey(MULTI_KEY)
-                                .payingWith(TOKEN_TREASURY)
-                                .via(BASE_TXN),
-                        tokenAssociate(CIVILIAN_ACCT, FUNGIBLE_TOKEN))
-                .when(
-                        grantTokenKyc(FUNGIBLE_TOKEN, CIVILIAN_ACCT)
-                                .blankMemo()
-                                .signedBy(MULTI_KEY)
-                                .payingWith(TOKEN_TREASURY)
-                                .via("grantKyc"),
-                        revokeTokenKyc(FUNGIBLE_TOKEN, CIVILIAN_ACCT)
-                                .blankMemo()
-                                .signedBy(MULTI_KEY)
-                                .payingWith(TOKEN_TREASURY)
-                                .via("revokeKyc"))
-                .then(
-                        validateChargedUsd("grantKyc", EXPECTED_GRANTKYC_PRICE_USD),
-                        validateChargedUsd("revokeKyc", EXPECTED_REVOKEKYC_PRICE_USD));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).key(MULTI_KEY),
+                cryptoCreate(CIVILIAN_ACCT),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .kycKey(MULTI_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .via(BASE_TXN),
+                tokenAssociate(CIVILIAN_ACCT, FUNGIBLE_TOKEN),
+                grantTokenKyc(FUNGIBLE_TOKEN, CIVILIAN_ACCT)
+                        .blankMemo()
+                        .signedBy(MULTI_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .via("grantKyc"),
+                revokeTokenKyc(FUNGIBLE_TOKEN, CIVILIAN_ACCT)
+                        .blankMemo()
+                        .signedBy(MULTI_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .via("revokeKyc"),
+                validateChargedUsd("grantKyc", EXPECTED_GRANTKYC_PRICE_USD),
+                validateChargedUsd("revokeKyc", EXPECTED_REVOKEKYC_PRICE_USD));
     }
 
     @HapiTest
     final Stream<DynamicTest> baseNftFreezeUnfreezeChargedAsExpected() {
-        return defaultHapiSpec("baseNftFreezeUnfreezeChargedAsExpected")
-                .given(
-                        newKeyNamed(TREASURE_KEY),
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(KYC_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).key(TREASURE_KEY),
-                        cryptoCreate(CIVILIAN_ACCT),
-                        tokenCreate(UNIQUE_TOKEN)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .initialSupply(0L)
-                                .adminKey(ADMIN_KEY)
-                                .freezeKey(TOKEN_TREASURY)
-                                .kycKey(KYC_KEY)
-                                .freezeDefault(false)
-                                .treasury(TOKEN_TREASURY)
-                                .payingWith(TOKEN_TREASURY)
-                                .supplyKey(ADMIN_KEY)
-                                .via(BASE_TXN),
-                        tokenAssociate(CIVILIAN_ACCT, UNIQUE_TOKEN))
-                .when(
-                        tokenFreeze(UNIQUE_TOKEN, CIVILIAN_ACCT)
-                                .blankMemo()
-                                .signedBy(TOKEN_TREASURY)
-                                .payingWith(TOKEN_TREASURY)
-                                .via("freeze"),
-                        tokenUnfreeze(UNIQUE_TOKEN, CIVILIAN_ACCT)
-                                .blankMemo()
-                                .payingWith(TOKEN_TREASURY)
-                                .signedBy(TOKEN_TREASURY)
-                                .via(UNFREEZE))
-                .then(
-                        validateChargedUsdWithin("freeze", EXPECTED_FREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
-                        validateChargedUsdWithin(UNFREEZE, EXPECTED_UNFREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
+        return hapiTest(
+                newKeyNamed(TREASURE_KEY),
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(KYC_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).key(TREASURE_KEY),
+                cryptoCreate(CIVILIAN_ACCT),
+                tokenCreate(UNIQUE_TOKEN)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyType(TokenSupplyType.INFINITE)
+                        .initialSupply(0L)
+                        .adminKey(ADMIN_KEY)
+                        .freezeKey(TOKEN_TREASURY)
+                        .kycKey(KYC_KEY)
+                        .freezeDefault(false)
+                        .treasury(TOKEN_TREASURY)
+                        .payingWith(TOKEN_TREASURY)
+                        .supplyKey(ADMIN_KEY)
+                        .via(BASE_TXN),
+                tokenAssociate(CIVILIAN_ACCT, UNIQUE_TOKEN),
+                tokenFreeze(UNIQUE_TOKEN, CIVILIAN_ACCT)
+                        .blankMemo()
+                        .signedBy(TOKEN_TREASURY)
+                        .payingWith(TOKEN_TREASURY)
+                        .via("freeze"),
+                tokenUnfreeze(UNIQUE_TOKEN, CIVILIAN_ACCT)
+                        .blankMemo()
+                        .payingWith(TOKEN_TREASURY)
+                        .signedBy(TOKEN_TREASURY)
+                        .via(UNFREEZE),
+                validateChargedUsdWithin("freeze", EXPECTED_FREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
+                validateChargedUsdWithin(UNFREEZE, EXPECTED_UNFREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
     @HapiTest
     final Stream<DynamicTest> baseCommonFreezeUnfreezeChargedAsExpected() {
-        return defaultHapiSpec("baseCommonFreezeUnfreezeChargedAsExpected")
-                .given(
-                        newKeyNamed(TREASURE_KEY),
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).key(TREASURE_KEY),
-                        cryptoCreate(CIVILIAN_ACCT),
-                        tokenCreate(FUNGIBLE_COMMON_TOKEN)
-                                .adminKey(ADMIN_KEY)
-                                .freezeKey(TOKEN_TREASURY)
-                                .wipeKey(WIPE_KEY)
-                                .supplyKey(SUPPLY_KEY)
-                                .freezeDefault(false)
-                                .treasury(TOKEN_TREASURY)
-                                .payingWith(TOKEN_TREASURY),
-                        tokenAssociate(CIVILIAN_ACCT, FUNGIBLE_COMMON_TOKEN))
-                .when(
-                        tokenFreeze(FUNGIBLE_COMMON_TOKEN, CIVILIAN_ACCT)
-                                .blankMemo()
-                                .signedBy(TOKEN_TREASURY)
-                                .payingWith(TOKEN_TREASURY)
-                                .via("freeze"),
-                        tokenUnfreeze(FUNGIBLE_COMMON_TOKEN, CIVILIAN_ACCT)
-                                .blankMemo()
-                                .payingWith(TOKEN_TREASURY)
-                                .signedBy(TOKEN_TREASURY)
-                                .via(UNFREEZE))
-                .then(
-                        validateChargedUsdWithin("freeze", EXPECTED_FREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
-                        validateChargedUsdWithin(UNFREEZE, EXPECTED_UNFREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
+        return hapiTest(
+                newKeyNamed(TREASURE_KEY),
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(FREEZE_KEY),
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(WIPE_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).key(TREASURE_KEY),
+                cryptoCreate(CIVILIAN_ACCT),
+                tokenCreate(FUNGIBLE_COMMON_TOKEN)
+                        .adminKey(ADMIN_KEY)
+                        .freezeKey(TOKEN_TREASURY)
+                        .wipeKey(WIPE_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .freezeDefault(false)
+                        .treasury(TOKEN_TREASURY)
+                        .payingWith(TOKEN_TREASURY),
+                tokenAssociate(CIVILIAN_ACCT, FUNGIBLE_COMMON_TOKEN),
+                tokenFreeze(FUNGIBLE_COMMON_TOKEN, CIVILIAN_ACCT)
+                        .blankMemo()
+                        .signedBy(TOKEN_TREASURY)
+                        .payingWith(TOKEN_TREASURY)
+                        .via("freeze"),
+                tokenUnfreeze(FUNGIBLE_COMMON_TOKEN, CIVILIAN_ACCT)
+                        .blankMemo()
+                        .payingWith(TOKEN_TREASURY)
+                        .signedBy(TOKEN_TREASURY)
+                        .via(UNFREEZE),
+                validateChargedUsdWithin("freeze", EXPECTED_FREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
+                validateChargedUsdWithin(UNFREEZE, EXPECTED_UNFREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
     @HapiTest
@@ -684,23 +658,17 @@ public class TokenServiceFeesSuite {
         final var tokenUnpauseTransaction = "tokenUnpauseTxn";
         final var civilian = "NonExemptPayer";
 
-        return defaultHapiSpec("BasePauseAndUnpauseHaveExpectedPrices")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        newKeyNamed(PAUSE_KEY),
-                        cryptoCreate(civilian).key(PAUSE_KEY))
-                .when(
-                        tokenCreate(token)
-                                .pauseKey(PAUSE_KEY)
-                                .treasury(TOKEN_TREASURY)
-                                .payingWith(civilian),
-                        tokenPause(token).blankMemo().payingWith(civilian).via(tokenPauseTransaction),
-                        getTokenInfo(token).hasPauseStatus(Paused),
-                        tokenUnpause(token).blankMemo().payingWith(civilian).via(tokenUnpauseTransaction),
-                        getTokenInfo(token).hasPauseStatus(Unpaused))
-                .then(
-                        validateChargedUsd(tokenPauseTransaction, expectedBaseFee),
-                        validateChargedUsd(tokenUnpauseTransaction, expectedBaseFee));
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY),
+                newKeyNamed(PAUSE_KEY),
+                cryptoCreate(civilian).key(PAUSE_KEY),
+                tokenCreate(token).pauseKey(PAUSE_KEY).treasury(TOKEN_TREASURY).payingWith(civilian),
+                tokenPause(token).blankMemo().payingWith(civilian).via(tokenPauseTransaction),
+                getTokenInfo(token).hasPauseStatus(Paused),
+                tokenUnpause(token).blankMemo().payingWith(civilian).via(tokenUnpauseTransaction),
+                getTokenInfo(token).hasPauseStatus(Unpaused),
+                validateChargedUsd(tokenPauseTransaction, expectedBaseFee),
+                validateChargedUsd(tokenUnpauseTransaction, expectedBaseFee));
     }
 
     @HapiTest
@@ -741,9 +709,7 @@ public class TokenServiceFeesSuite {
                         .initialSupply(0)
                         .entityMemo("")
                         .symbol("a"),
-                tokenUpdate(FUNGIBLE_COMMON_TOKEN)
-                        .via("uniqueTokenUpdate")
-                        .payingWith(TOKEN_TREASURY),
+                tokenUpdate(FUNGIBLE_COMMON_TOKEN).via("uniqueTokenUpdate").payingWith(TOKEN_TREASURY),
                 validateChargedUsd("uniqueTokenUpdate", expectedUpdatePriceUsd));
     }
 
@@ -789,12 +755,8 @@ public class TokenServiceFeesSuite {
         return hapiTest(
                 newKeyNamed(MULTI_KEY),
                 cryptoCreate(MULTI_KEY).balance(ONE_HUNDRED_HBARS),
-                tokenCreate(FUNGIBLE_COMMON_TOKEN)
-                        .tokenType(FUNGIBLE_COMMON)
-                        .adminKey(MULTI_KEY),
-                tokenDelete(FUNGIBLE_COMMON_TOKEN)
-                        .via("uniqueTokenDelete")
-                        .payingWith(MULTI_KEY),
+                tokenCreate(FUNGIBLE_COMMON_TOKEN).tokenType(FUNGIBLE_COMMON).adminKey(MULTI_KEY),
+                tokenDelete(FUNGIBLE_COMMON_TOKEN).via("uniqueTokenDelete").payingWith(MULTI_KEY),
                 validateChargedUsd("uniqueTokenDelete", expectedDeletePriceUsd));
     }
 
@@ -806,8 +768,7 @@ public class TokenServiceFeesSuite {
                 newKeyNamed(MULTI_KEY),
                 cryptoCreate(account),
                 cryptoCreate(MULTI_KEY).balance(ONE_HUNDRED_HBARS),
-                tokenCreate(FUNGIBLE_COMMON_TOKEN)
-                        .tokenType(FUNGIBLE_COMMON),
+                tokenCreate(FUNGIBLE_COMMON_TOKEN).tokenType(FUNGIBLE_COMMON),
                 tokenAssociate(MULTI_KEY, FUNGIBLE_COMMON_TOKEN)
                         .via("tokenAssociate")
                         .payingWith(MULTI_KEY),
@@ -868,13 +829,10 @@ public class TokenServiceFeesSuite {
                         .tokenType(FUNGIBLE_COMMON)
                         .freezeKey(FUNGIBLE_FREEZE_KEY)
                         .initialSupply(1000L),
-                getTokenInfo(FUNGIBLE_TOKEN)
-                        .via("getTokenInfo")
-                        .payingWith(OWNER),
+                getTokenInfo(FUNGIBLE_TOKEN).via("getTokenInfo").payingWith(OWNER),
                 sleepFor(1000),
                 validateChargedUsd("getTokenInfo", expectedTokenGetInfo));
     }
-
 
     @HapiTest
     final Stream<DynamicTest> tokenGetNftInfoFeeChargedAsExpected() {
@@ -904,9 +862,7 @@ public class TokenServiceFeesSuite {
                                 copyFromUtf8("e"),
                                 copyFromUtf8("f"),
                                 copyFromUtf8("g"))),
-               getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L)
-                        .via("getTokenInfo")
-                        .payingWith(TOKEN_TREASURY),
+                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).via("getTokenInfo").payingWith(TOKEN_TREASURY),
                 sleepFor(1000),
                 validateChargedUsd("getTokenInfo", expectedTokenGetNftInfo));
     }
