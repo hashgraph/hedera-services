@@ -29,6 +29,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -47,6 +48,7 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.customfee.ConsensusCustomFeeAssessor;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -78,6 +80,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * Running hash version
      */
     public static final long RUNNING_HASH_VERSION = 3L;
+
     private final ConsensusCustomFeeAssessor customFeeAssessor;
 
     /**
@@ -155,15 +158,12 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             final var syntheticBodies = customFeeAssessor.assessCustomFee(topic, handleContext);
             for (final var syntheticBody : syntheticBodies) {
                 // dispatch crypto transfer
-                var record = handleContext.dispatchChildTransaction(
+                var record = handleContext.dispatch(setupDispatch(
+                        handleContext.payer(),
                         TransactionBody.newBuilder()
                                 .cryptoTransfer(syntheticBody)
                                 .build(),
-                        ConsensusSubmitMessageStreamBuilder.class,
-                        null,
-                        handleContext.payer(),
-                        HandleContext.TransactionCategory.CHILD,
-                        HandleContext.ConsensusThrottling.OFF);
+                        CryptoTransferStreamBuilder.class));
                 validateTrue(record.status().equals(SUCCESS), record.status());
             }
         }
