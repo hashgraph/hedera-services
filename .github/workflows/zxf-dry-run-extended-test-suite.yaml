@@ -105,7 +105,7 @@ jobs:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: |
           pwd
-          ls -la
+          ls -la /home/runner/_work/hedera-services/hedera-services/hapi/build/test-results/test
           source <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r hapi/build/test-results/test/TEST-com.hedera.hapi.block.stream.input.tests.EventHeaderTest.xml
 
       # - name: Publish to codacy
