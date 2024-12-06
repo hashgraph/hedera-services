@@ -104,6 +104,7 @@ jobs:
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: |
+          pwd
           ls -la
           bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r hapi/build/test-results/test/TEST-com.hedera.hapi.block.stream.input.tests.EventHeaderTest.xml
 
