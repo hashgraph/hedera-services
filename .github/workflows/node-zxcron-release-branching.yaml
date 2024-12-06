@@ -37,6 +37,7 @@ jobs:
   check-trigger:
     name: Check Trigger Conditions
     runs-on: network-node-linux-small-scheduler
+    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     outputs:
       triggered: ${{ steps.evaluate.outputs.triggered }}
     steps:
