@@ -39,23 +39,23 @@ matches a supported function.
 
 The supported functions callable from contracts are as follows:
 
-|     Hash     |                                                    Selector                                                    |                                                                 Description                                                                  |
-|--------------|----------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| `0xf0637961` | `authorizeSchedule(address) external returns (int64 responseCode)`                                             | Sign the schedule transaction whose id is `address` with a contract key containing the calling contract id                                   |
-| `0x358eeb03` | `signSchedule(address, bytes) external returns (int64 responseCode)`                                           | Sign the schedule transaction whose id is `address` with the keys derived from signatures encoded as a protobuf signatureMap give by `bytes` |
+|     Hash     |                               Selector                               |                                                                 Description                                                                  |
+|--------------|----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `0xf0637961` | `authorizeSchedule(address) external returns (int64 responseCode)`   | Sign the schedule transaction whose id is `address` with a contract key containing the calling contract id                                   |
+| `0x358eeb03` | `signSchedule(address, bytes) external returns (int64 responseCode)` | Sign the schedule transaction whose id is `address` with the keys derived from signatures encoded as a protobuf signatureMap give by `bytes` |
 
 The supported functions callable from an EOA are as follows:
 
-|     Hash     |                                                Selector                                                 |                                                                                                                 Description                                                                                                                 |
-|--------------|---------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `0x06d15889` | `signSchedule() external returns (int64 responseCode)`                                                  | Signs the targeted schedule transaction with the sender's keys.  For `EthereumTransactions` the embedded ECDSA key will be used.  For `ContractCall` transactions, the keys derived from the signature map of the transaction will be used. |
+|     Hash     |                        Selector                        |                                                                                                                 Description                                                                                                                 |
+|--------------|--------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `0x06d15889` | `signSchedule() external returns (int64 responseCode)` | Signs the targeted schedule transaction with the sender's keys.  For `EthereumTransactions` the embedded ECDSA key will be used.  For `ContractCall` transactions, the keys derived from the signature map of the transaction will be used. |
 
-In order to validate the signatures in signature map for the `signSchedule(address, bytes)` function call, 
+In order to validate the signatures in signature map for the `signSchedule(address, bytes)` function call,
 a message has to be agreed upon.  The most logical message would be the schedule transaction ID.
 
 The HIP mentions two additional functions `getScheduledTransactionInfo(address)` and `getScheduledTransactionInfo()` which are not included in the list above.
 It has been decided that these will only be implemented at a later time if necessary as the only useful information
-is the `scheduleID` which is needed in order to make the calls in the first place.  
+is the `scheduleID` which is needed in order to make the calls in the first place.
 
 ### Phased Implementation
 
