@@ -108,7 +108,7 @@ jobs:
           IFS=','
           for report in $COVERAGE_REPORTS; do
               echo "Processing report: $report"
-              source <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r $report --partial
+              source <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r $report --partial >/dev/null
           done
           unset IFS
           source <(curl -Ls https://coverage.codacy.com/get.sh) final
