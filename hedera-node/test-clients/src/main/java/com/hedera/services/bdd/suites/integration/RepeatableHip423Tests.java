@@ -36,12 +36,10 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.PREDEFINED_SHAPE;
-import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -102,10 +100,9 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
-import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.CREATE_TXN;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.NEW_SENDER_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.RECEIVER;
@@ -113,6 +110,7 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_TXN;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.triggerSchedule;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -123,8 +121,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_EXPIRY
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_MUST_BE_FUTURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
@@ -155,14 +151,14 @@ import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
+import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -909,6 +905,7 @@ public class RepeatableHip423Tests {
                                                         asHeadlongAddress(asAddress(
                                                                 spec.registry().getTokenID("FungibleToken"))))
                                                 .gas(4_000_000L))
+                                .waitForExpiry(true)
                                 .expiringIn(ONE_MINUTE)
                                 .via("fungibleTokenAssociate"),
                         sleepForSeconds(ONE_MINUTE),
@@ -1003,6 +1000,7 @@ public class RepeatableHip423Tests {
                                         tinyBarsFromTo("sender1", "receiver", 1L),
                                         tinyBarsFromTo("sender2", "receiver", 1L)))
                         .expiringIn(ONE_MINUTE)
+                        .waitForExpiry(true)
                         .via("transfer"),
                 // provide one signature
                 scheduleSign("transfer").alsoSigningWith("sender1"),
@@ -1027,6 +1025,7 @@ public class RepeatableHip423Tests {
                 tokenAssociate("receiver", "token"),
                 scheduleCreate("transfer", cryptoTransfer(moving(1, "token").between("sender", "receiver")))
                         .payingWith("sender")
+                        .waitForExpiry(true)
                         .expiringIn(ONE_MINUTE)
                         .via("transfer"),
                 // freeze
@@ -1057,6 +1056,7 @@ public class RepeatableHip423Tests {
                         .adminKey("contractAdmin"),
                 // contract call
                 scheduleCreate("contractCall", contractCall(contract, "callSpecific", zeroAddress))
+                        .waitForExpiry(true)
                         .expiringIn(ONE_MINUTE)
                         .via("contractCall"),
                 contractDelete(contract).payingWith("contractAdmin"),
@@ -1134,6 +1134,7 @@ public class RepeatableHip423Tests {
                                                 tokenAddress.get())
                                         .payingWith(account)
                                         .gas(4_000_000L))
+                        .waitForExpiry(true)
                         .expiringIn(ONE_MINUTE)
                         .via("scheduleDelegateCall")),
                 // wait and execute
@@ -1179,7 +1180,7 @@ public class RepeatableHip423Tests {
             sleepForSeconds(sleepDuration),
             // Trigger the executions
             cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
-            sleepFor(2),
+            sleepForSeconds(1),
             // validate records
             withOpContext((spec, opLog) -> {
                 final var ops = new ArrayList<HapiGetTxnRecord>();
