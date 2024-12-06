@@ -90,7 +90,7 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(testDataDirectory.resolve("enhanced-invalid-case-2"))
                 .exists()
                 .isNotEmptyDirectory();
-        assertThat(testDataDirectory.resolve("enhanced-invalid-case-3"))
+        assertThat(testDataDirectory.resolve("enhanced-valid-corrupt-tss-key"))
                 .exists()
                 .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("legacy-valid").resolve("public.pfx"))
