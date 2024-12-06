@@ -1,0 +1,54 @@
+{
+  "branches": ["main", "develop", "semantic-release-workflow-update"],
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits"
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits"
+      }
+    ],
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "target/*.jar",
+            "label": "JAR Package"
+          },
+          {
+            "path": "target/*.pom",
+            "label": "POM File"
+          }
+        ]
+      }
+    ],
+    [
+      "semantic-release-maven",
+      {
+        "deploy": true,
+        "deployUrl": "https://oss.sonatype.org/service/local/staging/deploy/maven2/",
+        "repositoryId": "ossrh",
+        "gpgSign": true
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["CHANGELOG.md", "pom.xml"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ]
+  ]
+}
