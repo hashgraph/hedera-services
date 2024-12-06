@@ -122,8 +122,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var op = handleContext.body().consensusCreateTopicOrThrow();
         final var topicStore = handleContext.storeFactory().writableStore(WritableTopicStore.class);
 
+        validateSemantics(op, handleContext);
         final var builder = new Topic.Builder();
-        validateSemantics(op, handleContext, builder);
 
         final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
                 + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
@@ -173,8 +173,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         }
     }
 
-    private void validateSemantics(
-            ConsensusCreateTopicTransactionBody op, HandleContext handleContext, Topic.Builder builder) {
+    private void validateSemantics(ConsensusCreateTopicTransactionBody op, HandleContext handleContext) {
 
         final var configuration = handleContext.configuration();
         final var topicConfig = configuration.getConfigData(TopicsConfig.class);
@@ -186,33 +185,25 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         // Validate admin and submit keys and set them. Empty key list is allowed and is used for immutable entities
         if (op.hasAdminKey() && !isImmutableKey(op.adminKey())) {
             handleContext.attributeValidator().validateKey(op.adminKey());
-            builder.adminKey(op.adminKey());
         }
 
         // submitKey() is not checked in preCheck()
         if (op.hasSubmitKey()) {
             handleContext.attributeValidator().validateKey(op.submitKey());
-            builder.submitKey(op.submitKey());
         }
 
         // validate hasFeeScheduleKey()
         if (op.hasFeeScheduleKey()) {
             handleContext.attributeValidator().validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
-            builder.feeScheduleKey(op.feeScheduleKey());
         }
 
-        // validate size of the list and the keys
-        if (!op.feeExemptKeyList().isEmpty()) {
-            validateTrue(
-                    op.feeExemptKeyList().size() <= topicConfig.maxEntriesForFeeExemptKeyList(),
-                    MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED);
-            // todo check if we need MISSING_CUSTOM_FEES
-            // validateTrue(!op.customFees().isEmpty(), MISSING_CUSTOM_FEES);
-            op.feeExemptKeyList()
-                    .forEach(key ->
-                            handleContext.attributeValidator().validateKey(key, INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST));
-            builder.feeExemptKeyList(op.feeExemptKeyList());
-        }
+        // validate fee exempt key list
+        validateTrue(
+                op.feeExemptKeyList().size() <= topicConfig.maxEntriesForFeeExemptKeyList(),
+                MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED);
+        op.feeExemptKeyList()
+                .forEach(
+                        key -> handleContext.attributeValidator().validateKey(key, INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST));
 
         // validate custom fees
         if (!op.customFees().isEmpty()) {
