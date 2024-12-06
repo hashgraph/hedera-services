@@ -31,7 +31,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
@@ -215,13 +214,28 @@ public class NodeDeleteTest {
     }
 
     @HapiTest
-    final Stream<DynamicTest> validateAdminKey() throws CertificateEncodingException {
+    final Stream<DynamicTest> signWithWrongAdminKeyFailed() throws CertificateEncodingException {
         return hapiTest(
+                newKeyNamed("payerKey"),
+                cryptoCreate("payer").key("payerKey").balance(10_000_000_000L),
                 newKeyNamed("adminKey"),
                 nodeCreate("testNode")
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
-                nodeDelete("testNode").signedBy(NONSENSE_KEY).hasPrecheck(INVALID_SIGNATURE));
+                nodeDelete("testNode").payingWith("payer").signedBy("payerKey").hasPrecheck(INVALID_SIGNATURE));
+    }
+
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
+    final Stream<DynamicTest> signWithCorrectAdminKeySuccess() throws CertificateEncodingException {
+        return hapiTest(
+                newKeyNamed("payerKey"),
+                cryptoCreate("payer").key("payerKey").balance(10_000_000_000L),
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                nodeDelete("testNode").payingWith("payer").signedBy("payer", "adminKey"),
+                viewNode("testNode", node -> assertTrue(node.deleted(), "Node should be deleted")));
     }
 
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
