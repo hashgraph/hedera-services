@@ -120,6 +120,7 @@ public class TokenServiceFeesSuite {
     private static final double EXPECTED_UNFREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_BURN_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.02;
+    private static final double EXPECTED_FUNGIBLE_MINT_PRICE_USD = 0.001;
     private static final double EXPECTED_FUNGIBLE_REJECT_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_REJECT_PRICE_USD = 0.001;
     private static final String OWNER = "owner";
@@ -465,6 +466,24 @@ public class TokenServiceFeesSuite {
                         .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
                         .via("baseFeeSchUpd"),
                 validateChargedUsdWithin("baseFeeSchUpd", expectedBasePriceUsd, 1.0));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> baseFungibleMintOperationIsChargedExpectedFee() {
+        return defaultHapiSpec("BaseFungibleMintOperationIsChargedExpectedFee")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .initialSupply(0L)
+                                .supplyKey(SUPPLY_KEY)
+                                .tokenType(FUNGIBLE_COMMON))
+                .when(mintToken(FUNGIBLE_TOKEN, 10)
+                        .payingWith(CIVILIAN_ACCT)
+                        .signedBy(SUPPLY_KEY)
+                        .blankMemo()
+                        .via("fungibleMint"))
+                .then(validateChargedUsd("fungibleMint", EXPECTED_FUNGIBLE_MINT_PRICE_USD));
     }
 
     @HapiTest
