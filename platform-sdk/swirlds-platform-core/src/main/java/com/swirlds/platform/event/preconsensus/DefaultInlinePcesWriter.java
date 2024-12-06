@@ -28,6 +28,7 @@ import java.util.Objects;
 public class DefaultInlinePcesWriter implements InlinePcesWriter {
     private final CommonPcesWriter commonPcesWriter;
     private final NodeId selfId;
+    private final FileSyncOption fileSyncOption;
 
     /**
      * Constructor
@@ -43,6 +44,7 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
         Objects.requireNonNull(fileManager, "fileManager is required");
         commonPcesWriter = new CommonPcesWriter(platformContext, fileManager, false);
         this.selfId = Objects.requireNonNull(selfId, "selfId is required");
+        this.fileSyncOption = platformContext.getConfiguration().getConfigData(PcesConfig.class).inlinePcesSyncOption();
     }
 
     @Override
@@ -69,9 +71,12 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
         try {
             commonPcesWriter.prepareOutputStream(event);
             commonPcesWriter.getCurrentMutableFile().writeEvent(event);
-            if (event.getCreatorId().equals(selfId)) {
-                commonPcesWriter.getCurrentMutableFile().flush();
+
+            if (fileSyncOption == FileSyncOption.EVERY_EVENT
+                    || (fileSyncOption == FileSyncOption.EVERY_SELF_EVENT && event.getCreatorId().equals(selfId))) {
+                commonPcesWriter.getCurrentMutableFile().sync();
             }
+
             return event;
         } catch (final IOException e) {
             throw new UncheckedIOException(e);

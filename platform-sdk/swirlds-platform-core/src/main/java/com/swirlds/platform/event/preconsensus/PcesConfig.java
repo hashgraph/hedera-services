@@ -109,4 +109,6 @@ public record PcesConfig(
         @ConfigProperty(defaultValue = "1m") Duration suspiciousRoundDurabilityDuration,
         @ConfigProperty(defaultValue = "1ms") Duration replayHealthThreshold,
         @ConfigProperty(defaultValue = "true") boolean limitReplayFrequency,
-        @ConfigProperty(defaultValue = "5000") int maxEventReplayFrequency) {}
+        @ConfigProperty(defaultValue = "5000") int maxEventReplayFrequency,
+        @ConfigProperty(defaultValue = "EVERY_SELF_EVENT") FileSyncOption inlinePcesSyncOption) {
+}
