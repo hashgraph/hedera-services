@@ -76,7 +76,6 @@ import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
@@ -109,11 +108,6 @@ public class SwirldsPlatform implements Platform {
      * the current nodes in the network and their information
      */
     private final Roster currentRoster;
-
-    /**
-     * the current nodes in the network and their information
-     */
-    private final AddressBook currentAddressBook;
 
     /**
      * the object that contains all key pairs and CSPRNG state for this member
@@ -217,7 +211,6 @@ public class SwirldsPlatform implements Platform {
         initialPcesFiles = blocks.initialPcesFiles();
         notificationEngine = blocks.notificationEngine();
 
-        currentAddressBook = initialState.getAddressBook();
         currentRoster = blocks.rosterHistory().getCurrentRoster();
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
@@ -349,7 +342,7 @@ public class SwirldsPlatform implements Platform {
                 swirldStateManager,
                 latestImmutableStateNexus,
                 savedStateController,
-                currentAddressBook);
+                currentRoster);
 
         blocks.loadReconnectStateReference().set(reconnectStateLoader::loadReconnectState);
         blocks.clearAllPipelinesForReconnectReference().set(platformWiring::clear);
