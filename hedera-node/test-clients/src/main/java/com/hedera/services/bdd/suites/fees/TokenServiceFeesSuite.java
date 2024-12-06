@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -59,7 +60,9 @@ import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.re
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingToken;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getAccountNftInfosNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -850,6 +853,97 @@ public class TokenServiceFeesSuite {
                         .fee(10 * ONE_HBAR)
                         .via(nftUpdateTxn),
                 validateChargedUsdWithin(nftUpdateTxn, expectedNftUpdatePriceUsd, 0.01));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> tokenGetInfoFeeChargedAsExpected() {
+        final var expectedTokenGetInfo = 0.0001;
+        final var account = "account";
+
+        return hapiTest(
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(FUNGIBLE_FREEZE_KEY),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .treasury(OWNER)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .freezeKey(FUNGIBLE_FREEZE_KEY)
+                        .initialSupply(1000L),
+                getTokenInfo(FUNGIBLE_TOKEN)
+                        .via("getTokenInfo")
+                        .payingWith(OWNER),
+                sleepFor(1000),
+                validateChargedUsd("getTokenInfo", expectedTokenGetInfo));
+    }
+
+
+    @HapiTest
+    final Stream<DynamicTest> tokenGetNftInfoFeeChargedAsExpected() {
+        final var expectedTokenGetNftInfo = 0.0001;
+
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(WIPE_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .wipeKey(WIPE_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .metadataKey(METADATA_KEY)
+                        .initialSupply(0L),
+                mintToken(
+                        NON_FUNGIBLE_TOKEN,
+                        List.of(
+                                copyFromUtf8("a"),
+                                copyFromUtf8("b"),
+                                copyFromUtf8("c"),
+                                copyFromUtf8("d"),
+                                copyFromUtf8("e"),
+                                copyFromUtf8("f"),
+                                copyFromUtf8("g"))),
+               getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L)
+                        .via("getTokenInfo")
+                        .payingWith(TOKEN_TREASURY),
+                sleepFor(1000),
+                validateChargedUsd("getTokenInfo", expectedTokenGetNftInfo));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> tokenUpdateNftsFeeChargedAsExpected() {
+        final var expectedTokenUpdateNfts = 0.001;
+
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(WIPE_KEY),
+                newKeyNamed(METADATA_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .wipeKey(WIPE_KEY)
+                        .metadataKey(METADATA_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .initialSupply(0L),
+                mintToken(
+                        NON_FUNGIBLE_TOKEN,
+                        List.of(
+                                copyFromUtf8("a"),
+                                copyFromUtf8("b"),
+                                copyFromUtf8("c"),
+                                copyFromUtf8("d"),
+                                copyFromUtf8("e"),
+                                copyFromUtf8("f"),
+                                copyFromUtf8("g"))),
+                tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                        .signedBy(TOKEN_TREASURY, METADATA_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .via("nftUpdateTxn"),
+                validateChargedUsd("nftUpdateTxn", expectedTokenUpdateNfts));
     }
 
     private String txnFor(String tokenSubType) {
