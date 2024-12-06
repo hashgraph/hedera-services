@@ -45,6 +45,7 @@ import org.hyperledger.besu.datatypes.Address;
  * everything it will need to execute.
  */
 public class HtsCallAttempt extends AbstractCallAttempt<HtsCallAttempt> {
+    /** Selector for redirectForToken(address,bytes) method. */
     public static final Function REDIRECT_FOR_TOKEN = new Function("redirectForToken(address,bytes)");
 
     // The id address of the account authorizing the call, in the sense

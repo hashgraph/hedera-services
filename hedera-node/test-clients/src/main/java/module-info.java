@@ -27,8 +27,8 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.utilops.lifecycle;
     exports com.hedera.services.bdd.spec.utilops.lifecycle.ops;
     exports com.hedera.services.bdd.spec.utilops.mod;
+    exports com.hedera.services.bdd.spec.utilops.tss;
     exports com.hedera.services.bdd.spec.utilops.pauses;
-    exports com.hedera.services.bdd.spec.utilops.records;
     exports com.hedera.services.bdd.spec.utilops.streams;
     exports com.hedera.services.bdd.spec.utilops.upgrade;
     exports com.hedera.services.bdd.spec.utilops.streams.assertions;
@@ -65,6 +65,7 @@ module com.hedera.node.test.clients {
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
+    requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.app.test.fixtures;
     requires transitive com.hedera.node.app;
     requires transitive com.hedera.node.config;
@@ -78,6 +79,8 @@ module com.hedera.node.test.clients {
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
+    requires transitive com.hedera.cryptography.bls;
+    requires transitive com.hedera.cryptography.tss;
     requires transitive headlong;
     requires transitive io.grpc;
     requires transitive net.i2p.crypto.eddsa;
@@ -89,21 +92,21 @@ module com.hedera.node.test.clients {
     requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.addressbook.impl;
     requires com.hedera.node.app.service.addressbook;
-    requires com.hedera.node.app.service.consensus.impl;
     requires com.hedera.node.app.service.contract.impl;
-    requires com.hedera.node.app.service.file.impl;
-    requires com.hedera.node.app.service.network.admin.impl;
     requires com.hedera.node.app.service.schedule.impl;
+    requires com.hedera.node.app.service.schedule;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
-    requires com.hedera.node.app.service.util.impl;
-    requires com.hedera.node.app.spi;
     requires com.swirlds.base.test.fixtures;
-    requires com.swirlds.config.extensions.test.fixtures;
+    requires com.swirlds.config.extensions;
+    requires com.swirlds.merkledb;
     requires com.swirlds.platform.core.test.fixtures;
+    requires com.swirlds.state.impl;
+    requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
-    requires com.github.docker.java.api;
+    requires com.github.dockerjava.api;
+    requires com.hedera.cryptography.pairings.api;
     requires com.sun.jna;
     requires io.grpc.netty;
     requires io.grpc.stub;

@@ -22,6 +22,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Strategy interface for translating {@link HtsCallAttempt}s into {@link Call}s.
+ * @param <T> the type of the call translator
  */
 public interface CallTranslator<T> {
     /**

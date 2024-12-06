@@ -46,9 +46,9 @@ public class MultiObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public void onRamp() {
+    public void onRamp(final long delta) {
         for (final ObjectCounter counter : counters) {
-            counter.onRamp();
+            counter.onRamp(delta);
         }
     }
 
@@ -56,14 +56,14 @@ public class MultiObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public boolean attemptOnRamp() {
-        final boolean success = counters[0].attemptOnRamp();
+    public boolean attemptOnRamp(final long delta) {
+        final boolean success = counters[0].attemptOnRamp(delta);
         if (!success) {
             return false;
         }
 
         for (int i = 1; i < counters.length; i++) {
-            counters[i].forceOnRamp();
+            counters[i].forceOnRamp(delta);
         }
 
         return true;
@@ -73,9 +73,9 @@ public class MultiObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public void forceOnRamp() {
+    public void forceOnRamp(final long delta) {
         for (final ObjectCounter counter : counters) {
-            counter.forceOnRamp();
+            counter.forceOnRamp(delta);
         }
     }
 
@@ -83,9 +83,9 @@ public class MultiObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public void offRamp() {
+    public void offRamp(final long delta) {
         for (final ObjectCounter counter : counters) {
-            counter.offRamp();
+            counter.offRamp(delta);
         }
     }
 

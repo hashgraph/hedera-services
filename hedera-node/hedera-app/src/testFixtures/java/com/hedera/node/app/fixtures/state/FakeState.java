@@ -21,7 +21,6 @@ import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.spi.EmptyReadableStates;
@@ -40,6 +39,7 @@ import com.swirlds.state.test.fixtures.ListWritableQueueState;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import com.swirlds.state.test.fixtures.MapReadableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
+import com.swirlds.state.test.fixtures.MapWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,7 +66,11 @@ public class FakeState implements State {
      */
     public FakeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
         final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
-        serviceStates.putAll(dataSources);
+        dataSources.forEach((k, b) -> {
+            if (!serviceStates.containsKey(k)) {
+                serviceStates.put(k, b);
+            }
+        });
         // Purge any readable or writable states whose state definitions are now stale,
         // since they don't include the new data sources we just added
         readableStates.remove(serviceName);

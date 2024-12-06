@@ -25,12 +25,14 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.singleton.StringLeaf;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -38,9 +40,9 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A test implementation of {@link MerkleRoot} and {@link SwirldState} state for SignedStateManager unit tests.
  * Node that some of the {@link MerkleRoot} methods are intentionally not implemented. If a test needs these methods,
- * {@link com.swirlds.platform.state.MerkleStateRoot} should be used instead.
+ * {@link MerkleStateRoot} should be used instead.
  */
-public class BlockingSwirldState extends MerkleStateRoot {
+public class BlockingSwirldState extends PlatformMerkleStateRoot {
 
     static {
         try {
@@ -77,16 +79,18 @@ public class BlockingSwirldState extends MerkleStateRoot {
     }
 
     @Override
-    public void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
+    public void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
         // intentionally does nothing
     }
 
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public BlockingSwirldState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new BlockingSwirldState(this);
     }
 
@@ -102,8 +106,8 @@ public class BlockingSwirldState extends MerkleStateRoot {
             return false;
         }
         return Objects.equals(
-                this.getPlatformState().getAddressBook(),
-                that.getPlatformState().getAddressBook());
+                this.getReadablePlatformState().getAddressBook(),
+                that.getReadablePlatformState().getAddressBook());
     }
 
     /**

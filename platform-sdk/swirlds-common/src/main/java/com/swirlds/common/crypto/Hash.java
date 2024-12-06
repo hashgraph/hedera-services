@@ -48,17 +48,31 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     }
 
     /**
-     * Same as {@link #Hash(byte[], DigestType)} but with an empty byte array.
+     * Same as {@link #Hash(Bytes, DigestType)} but with an empty byte array.
      */
     public Hash(@NonNull final DigestType digestType) {
-        this(new byte[digestType.digestLength()], digestType);
+        this(Bytes.wrap(new byte[digestType.digestLength()]), digestType);
     }
 
     /**
-     * Same as {@link #Hash(byte[], DigestType)} but with a digest type ({@link DigestType#SHA_384})
+     * Same as {@link #Hash(Bytes, DigestType)} but with a digest type ({@link DigestType#SHA_384}) and wrapping the byte array.
      */
     public Hash(@NonNull final byte[] value) {
+        this(Bytes.wrap(value), DigestType.SHA_384);
+    }
+
+    /**
+     * Same as {@link #Hash(Bytes, DigestType)} but with a digest type ({@link DigestType#SHA_384})
+     */
+    public Hash(@NonNull final Bytes value) {
         this(value, DigestType.SHA_384);
+    }
+
+    /**
+     * Same as {@link #Hash(Bytes, DigestType)} but with wrapping the byte array.
+     */
+    public Hash(@NonNull final byte[] value, @NonNull final DigestType digestType) {
+        this(Bytes.wrap(value), digestType);
     }
 
     /**
@@ -70,16 +84,16 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      * @param digestType
      * 		the digest type
      */
-    public Hash(@NonNull final byte[] value, @NonNull final DigestType digestType) {
+    public Hash(@NonNull final Bytes value, @NonNull final DigestType digestType) {
         Objects.requireNonNull(value, "value");
         Objects.requireNonNull(digestType, "digestType");
 
-        if (value.length != digestType.digestLength()) {
-            throw new IllegalArgumentException("value: " + value.length);
+        if ((int) value.length() != digestType.digestLength()) {
+            throw new IllegalArgumentException("value: " + value.length());
         }
 
         this.digestType = digestType;
-        this.bytes = Bytes.wrap(value);
+        this.bytes = value;
     }
 
     /**

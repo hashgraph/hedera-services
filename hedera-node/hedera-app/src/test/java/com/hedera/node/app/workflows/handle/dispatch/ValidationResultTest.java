@@ -41,8 +41,7 @@ public class ValidationResultTest {
 
     @Test
     public void testCreatorErrorReport() {
-        ValidationResult report =
-                ValidationResult.creatorValidationReport(CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION);
+        ValidationResult report = ValidationResult.newCreatorError(CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION);
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
         assertEquals(INVALID_TRANSACTION_DURATION, report.creatorError());
@@ -56,7 +55,7 @@ public class ValidationResultTest {
 
     @Test
     public void testPayerDuplicateErrorReport() {
-        ValidationResult report = ValidationResult.payerDuplicateErrorReport(CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID);
+        ValidationResult report = ValidationResult.newPayerDuplicateError(CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID);
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
         assertNull(report.creatorError());
@@ -70,8 +69,8 @@ public class ValidationResultTest {
 
     @Test
     public void testPayerUniqueErrorReport() {
-        ValidationResult report = ValidationResult.payerUniqueValidationReport(
-                CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE);
+        ValidationResult report =
+                ValidationResult.newPayerUniqueError(CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE);
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
         assertNull(report.creatorError());
@@ -85,7 +84,7 @@ public class ValidationResultTest {
 
     @Test
     public void testPayerErrorReport() {
-        ValidationResult report = ValidationResult.payerValidationReport(
+        ValidationResult report = ValidationResult.newPayerError(
                 CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE, UNABLE_TO_PAY_SERVICE_FEE, DUPLICATE);
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
@@ -100,7 +99,7 @@ public class ValidationResultTest {
 
     @Test
     public void testErrorFreeReport() {
-        ValidationResult report = ValidationResult.successReport(CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID);
+        ValidationResult report = ValidationResult.newSuccess(CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID);
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
         assertNull(report.creatorError());

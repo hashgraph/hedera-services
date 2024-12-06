@@ -74,9 +74,15 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ConsensusSubmitMessageHandler implements TransactionHandler {
+    /**
+     * Running hash version
+     */
     public static final long RUNNING_HASH_VERSION = 3L;
     private final ConsensusCustomFeeAssessor customFeeAssessor;
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public ConsensusSubmitMessageHandler(@NonNull ConsensusCustomFeeAssessor customFeeAssessor) {
         this.customFeeAssessor = requireNonNull(customFeeAssessor);
@@ -302,6 +308,10 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         return topicBuilder.build();
     }
 
+    /**
+     * @param byteArray the byte array to hash
+     * @return the byte array of the hashed value
+     */
     public static byte[] noThrowSha384HashOf(final byte[] byteArray) {
         try {
             return MessageDigest.getInstance("SHA-384").digest(byteArray);

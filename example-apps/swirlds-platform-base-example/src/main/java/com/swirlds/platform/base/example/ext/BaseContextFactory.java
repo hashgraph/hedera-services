@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.base.example.ext;
 
+import static com.swirlds.base.utility.FileSystemUtils.waitForPathPresence;
+
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -64,7 +66,7 @@ public class BaseContextFactory {
                     .withSource(new ClasspathFileConfigSource(Path.of(APPLICATION_PROPERTIES)))
                     .autoDiscoverExtensions();
 
-            if (EXTERNAL_PROPERTIES.toFile().exists()) {
+            if (waitForPathPresence(EXTERNAL_PROPERTIES)) {
                 configurationBuilder.withSources(new PropertyFileConfigSource(EXTERNAL_PROPERTIES));
             }
 

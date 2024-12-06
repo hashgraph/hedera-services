@@ -181,13 +181,15 @@ public class TokenTupleUtils {
      * @return Tuple encoding of the TokenInfo
      */
     @NonNull
-    public static Tuple tokenInfoTupleFor(@NonNull final Token token, @NonNull final String ledgerId) {
+    public static Tuple tokenInfoTupleFor(@NonNull final Token token, @NonNull final String ledgerId, int version) {
         final var fixedFees = fixedFeesTupleListFor(token);
         final var fractionalFees = fractionalFeesTupleListFor(token);
         final var royaltyFees = royaltyFeesTupleListFor(token);
 
+        final var hederaToken = version == 1 ? hederaTokenTupleFor(token) : hederaTokenTupleForV2(token);
+
         return Tuple.of(
-                hederaTokenTupleFor(token),
+                hederaToken,
                 token.totalSupply(),
                 token.deleted(),
                 token.accountsKycGrantedByDefault(),
@@ -205,8 +207,9 @@ public class TokenTupleUtils {
      * @return Tuple encoding of the FungibleTokenInfo
      */
     @NonNull
-    public static Tuple fungibleTokenInfoTupleFor(@NonNull final Token token, @NonNull final String ledgerId) {
-        return Tuple.of(tokenInfoTupleFor(token, ledgerId), token.decimals());
+    public static Tuple fungibleTokenInfoTupleFor(
+            @NonNull final Token token, @NonNull final String ledgerId, int version) {
+        return Tuple.of(tokenInfoTupleFor(token, ledgerId, version), token.decimals());
     }
 
     /**
@@ -220,7 +223,8 @@ public class TokenTupleUtils {
             @NonNull final Nft nft,
             final long serialNumber,
             @NonNull final String ledgerId,
-            @NonNull final HederaNativeOperations nativeOperations) {
+            @NonNull final HederaNativeOperations nativeOperations,
+            int version) {
         requireNonNull(nft);
         requireNonNull(token);
         requireNonNull(ledgerId);
@@ -228,7 +232,7 @@ public class TokenTupleUtils {
 
         final var nftMetaData = nft.metadata() != null ? nft.metadata().toByteArray() : Bytes.EMPTY.toByteArray();
         return Tuple.of(
-                tokenInfoTupleFor(token, ledgerId),
+                tokenInfoTupleFor(token, ledgerId, version),
                 serialNumber,
                 // The odd construct allowing a token to not have a treasury account set is to accommodate
                 // Token.DEFAULT being passed into this method, which a few Call implementations do
@@ -273,17 +277,6 @@ public class TokenTupleUtils {
      */
     @NonNull
     private static Tuple hederaTokenTupleFor(@NonNull final Token token) {
-        //
-        final Tuple[] keyList = {
-            typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), token.adminKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), token.kycKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), token.freezeKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), token.wipeKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), token.supplyKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), token.feeScheduleKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), token.pauseKeyOrElse(Key.DEFAULT))
-        };
-
         return Tuple.of(
                 token.name(),
                 token.symbol(),
@@ -292,8 +285,42 @@ public class TokenTupleUtils {
                 token.supplyType().protoOrdinal() == TokenSupplyType.FINITE_VALUE,
                 token.maxSupply(),
                 token.accountsFrozenByDefault(),
-                keyList,
+                prepareKeyList(token, false),
                 expiryTupleFor(token));
+    }
+
+    private static Tuple[] prepareKeyList(@NonNull final Token token, final boolean isV2) {
+        final var keyList = new java.util.ArrayList<>(List.of(
+                typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), token.adminKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), token.kycKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), token.freezeKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), token.wipeKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), token.supplyKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(
+                        TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), token.feeScheduleKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), token.pauseKeyOrElse(Key.DEFAULT))));
+        if (isV2) {
+            keyList.add(typedKeyTupleFor(
+                    TokenKeyType.METADATA_KEY.bigIntegerValue(), token.metadataKeyOrElse(Key.DEFAULT)));
+        }
+        return keyList.toArray(Tuple[]::new);
+    }
+
+    @NonNull
+    private static Tuple hederaTokenTupleForV2(@NonNull final Token token) {
+        final var tokenMetaData =
+                token.metadata().length() > 0 ? token.metadata().toByteArray() : Bytes.EMPTY.toByteArray();
+        return Tuple.of(
+                token.name(),
+                token.symbol(),
+                headlongAddressOf(token.treasuryAccountIdOrElse(ZERO_ACCOUNT_ID)),
+                token.memo(),
+                token.supplyType().protoOrdinal() == TokenSupplyType.FINITE_VALUE,
+                token.maxSupply(),
+                token.accountsFrozenByDefault(),
+                prepareKeyList(token, true),
+                expiryTupleFor(token),
+                tokenMetaData);
     }
 
     public enum TokenKeyType {
@@ -303,7 +330,8 @@ public class TokenTupleUtils {
         WIPE_KEY(8),
         SUPPLY_KEY(16),
         FEE_SCHEDULE_KEY(32),
-        PAUSE_KEY(64);
+        PAUSE_KEY(64),
+        METADATA_KEY(128);
 
         private final int value;
 

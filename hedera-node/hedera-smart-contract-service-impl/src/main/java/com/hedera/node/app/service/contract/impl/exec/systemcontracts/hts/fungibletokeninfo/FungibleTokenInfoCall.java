@@ -22,8 +22,10 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.fungibleTokenInfoTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungibletokeninfo.FungibleTokenInfoTranslator.FUNGIBLE_TOKEN_INFO;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungibletokeninfo.FungibleTokenInfoTranslator.FUNGIBLE_TOKEN_INFO_V2;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -39,16 +41,19 @@ import org.apache.tuweni.bytes.Bytes;
 public class FungibleTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
     private final Configuration configuration;
     private final boolean isStaticCall;
+    private final Function function;
 
     public FungibleTokenInfoCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            Function function) {
         super(gasCalculator, enhancement, token);
         this.configuration = requireNonNull(configuration);
         this.isStaticCall = isStaticCall;
+        this.function = function;
     }
 
     /**
@@ -78,10 +83,17 @@ public class FungibleTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         if (isStaticCall && status != SUCCESS) {
             return revertResult(status, gasRequirement);
         }
-        return successResult(
-                FUNGIBLE_TOKEN_INFO
-                        .getOutputs()
-                        .encodeElements(status.protoOrdinal(), fungibleTokenInfoTupleFor(token, ledgerId)),
-                gasRequirement);
+
+        return function.getName().equals(FUNGIBLE_TOKEN_INFO.getName())
+                ? successResult(
+                        FUNGIBLE_TOKEN_INFO
+                                .getOutputs()
+                                .encodeElements(status.protoOrdinal(), fungibleTokenInfoTupleFor(token, ledgerId, 1)),
+                        gasRequirement)
+                : successResult(
+                        FUNGIBLE_TOKEN_INFO_V2
+                                .getOutputs()
+                                .encodeElements(status.protoOrdinal(), fungibleTokenInfoTupleFor(token, ledgerId, 2)),
+                        gasRequirement);
     }
 }

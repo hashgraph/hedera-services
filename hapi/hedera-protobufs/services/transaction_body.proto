@@ -3,7 +3,7 @@ syntax = "proto3";
 package proto;
 
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +88,13 @@ import "util_prng.proto";
 import "node_create.proto";
 import "node_update.proto";
 import "node_delete.proto";
+
+import "auxiliary/tss/tss_message.proto";
+import "auxiliary/tss/tss_vote.proto";
+import "auxiliary/tss/tss_share_signature.proto";
+import "auxiliary/tss/tss_encryption_key.proto";
+
+import "event/state_signature_transaction.proto";
 
 /**
  * A single transaction. All transaction types are possible here.
@@ -418,5 +425,30 @@ message TransactionBody {
         * A transaction body for a `claimAirdrop` request.
          */
         TokenClaimAirdropTransactionBody tokenClaimAirdrop = 60;
+
+        /**
+         * A transaction body for a `tssMessage` request.
+         */
+        com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody tssMessage = 61;
+
+        /**
+         * A transaction body for a `tssVote` request.
+         */
+        com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody tssVote = 62;
+
+        /**
+         * A transaction body for node signature as part of the Threshold Signature Scheme (TSS) processing.
+         */
+        com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody tssShareSignature = 63;
+
+        /**
+         * A transaction body for a 'tssEncryptionKey` request
+         */
+        com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody tssEncryptionKey = 64;
+
+        /**
+         * A transaction body for signature of a state root hash gossiped to other nodes
+         */
+        com.hedera.hapi.platform.event.StateSignatureTransaction state_signature_transaction = 65;
     }
 }

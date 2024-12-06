@@ -95,14 +95,14 @@ class PreHandleContextImplTest implements Scenarios {
     void setup() throws PreCheckException {
         given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(PAYER)).willReturn(account);
-        given(account.key()).willReturn(payerKey);
+        given(account.keyOrThrow()).willReturn(payerKey);
 
         final var txn = createAccountTransaction();
         subject = new PreHandleContextImpl(storeFactory, txn, configuration, dispatcher);
     }
 
     @Test
-    void gettersWork() throws PreCheckException {
+    void gettersWork() {
         subject.requireKey(otherKey);
 
         assertThat(subject.body()).isEqualTo(createAccountTransaction());

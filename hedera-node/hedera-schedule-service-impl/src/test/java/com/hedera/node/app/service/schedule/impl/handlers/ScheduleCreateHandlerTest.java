@@ -16,28 +16,35 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static org.assertj.core.api.BDDAssertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.ScheduledTransactionFactory;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -45,18 +52,24 @@ import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.security.InvalidKeyException;
 import java.time.InstantSource;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.BDDMockito;
-import org.mockito.Mockito;
+import org.mockito.Mock;
 
 class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
+    @Mock
+    private Throttle.Factory throttleFactory;
+
+    @Mock
+    private Throttle throttle;
+
     private ScheduleCreateHandler subject;
     private PreHandleContext realPreContext;
 
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
-        subject = new ScheduleCreateHandler(InstantSource.system());
+        subject = new ScheduleCreateHandler(InstantSource.system(), throttleFactory);
         setUpBase();
     }
 
@@ -113,8 +126,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
         final TransactionBody createBody = scheduleCreateTransaction(payer);
         realPreContext = new PreHandleContextImpl(mockStoreFactory, createBody, testConfig, mockDispatcher);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.preHandle(realPreContext), ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST);
+        Assertions.assertThrowsPreCheck(() -> subject.preHandle(realPreContext), ACCOUNT_ID_DOES_NOT_EXIST);
     }
 
     @Test
@@ -132,8 +144,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 assertThat(realPreContext.payerKey()).isNotNull().isEqualTo(schedulerKey);
             } else {
                 Assertions.assertThrowsPreCheck(
-                        () -> subject.preHandle(realPreContext),
-                        ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+                        () -> subject.preHandle(realPreContext), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
             }
         }
     }
@@ -142,46 +153,17 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     void handleRejectsDuplicateTransaction() throws PreCheckException {
         final TransactionBody createTransaction = otherScheduleInState.originalCreateTransaction();
         prepareContext(createTransaction, otherScheduleInState.scheduleId().scheduleNum() + 1);
-        throwsHandleException(() -> subject.handle(mockContext), ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED);
-    }
-
-    @Test
-    void verifyPureChecks() throws PreCheckException {
-        final TransactionBody.Builder failures = alternateCreateTransaction.copyBuilder();
-        final TransactionID originalId = alternateCreateTransaction.transactionID();
-        Assertions.assertThrowsPreCheck(() -> subject.pureChecks(null), ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-        failures.transactionID(nullTransactionId);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(failures.build()), ResponseCodeEnum.INVALID_TRANSACTION_ID);
-        TransactionID.Builder idErrors = originalId.copyBuilder().scheduled(true);
-        failures.transactionID(idErrors);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(failures.build()), ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-        idErrors = originalId.copyBuilder().transactionValidStart(nullTime);
-        failures.transactionID(idErrors);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(failures.build()), ResponseCodeEnum.INVALID_TRANSACTION_START);
-        idErrors = originalId.copyBuilder().accountID(nullAccount);
-        failures.transactionID(idErrors);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(failures.build()), ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID);
-        failures.transactionID(originalId);
-        setLongTermError(failures, alternateCreateTransaction);
-        // The code here should be INVALID_LONG_TERM_SCHEDULE when/if that is added to response codes.
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(failures.build()), ResponseCodeEnum.INVALID_TRANSACTION);
-    }
-
-    private void setLongTermError(final TransactionBody.Builder failures, final TransactionBody original) {
-        final var createBuilder = original.scheduleCreate().copyBuilder();
-        createBuilder.waitForExpiry(true).expirationTime(nullTime);
-        failures.scheduleCreate(createBuilder);
+        throwsHandleException(() -> subject.handle(mockContext), IDENTICAL_SCHEDULE_ALREADY_CREATED);
     }
 
     @Test
     void handleRejectsNonWhitelist() throws HandleException, PreCheckException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
+        given(keyVerifier.authorizingSimpleKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
+        given(throttleFactory.newThrottle(anyInt(), any())).willReturn(throttle);
+        given(throttle.allow(any(), any(), any(), any())).willReturn(true);
+        given(throttle.usageSnapshots()).willReturn(ThrottleUsageSnapshots.DEFAULT);
         for (final Schedule next : listOfScheduledOptions) {
             final TransactionBody createTransaction = next.originalCreateTransaction();
             final TransactionID createId = createTransaction.transactionID();
@@ -194,8 +176,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 subject.handle(mockContext);
                 verifyHandleSucceededForWhitelist(next, createId, startCount);
             } else {
-                throwsHandleException(
-                        () -> subject.handle(mockContext), ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+                throwsHandleException(() -> subject.handle(mockContext), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
             }
         }
     }
@@ -218,7 +199,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
             prepareContext(createTransaction, next.scheduleId().scheduleNum());
             // all keys are "valid" with this mock setup
-            given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+            given(keyVerifier.verificationFor(any(Key.class), any(VerificationAssistant.class)))
                     .willReturn(new SignatureVerificationImpl(nullKey, null, true));
             if (configuredWhitelist.contains(functionType)) {
                 throwsHandleException(
@@ -234,6 +215,9 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         int successCount = 0;
         // make sure we have at least four items in the whitelist to test.
         assertThat(configuredWhitelist.size()).isGreaterThan(4);
+        given(throttleFactory.newThrottle(anyInt(), any())).willReturn(throttle);
+        given(throttle.allow(any(), any(), any(), any())).willReturn(true);
+        given(throttle.usageSnapshots()).willReturn(ThrottleUsageSnapshots.DEFAULT);
         for (final Schedule next : listOfScheduledOptions) {
             final TransactionBody createTransaction = next.originalCreateTransaction();
             final TransactionID createId = createTransaction.transactionID();
@@ -242,8 +226,9 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
             prepareContext(createTransaction, next.scheduleId().scheduleNum());
             // all keys are "valid" with this mock setup
-            given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+            given(keyVerifier.verificationFor(any(Key.class), any(VerificationAssistant.class)))
                     .willReturn(new SignatureVerificationImpl(nullKey, null, true));
+            given(keyVerifier.authorizingSimpleKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
             final int startCount = scheduleMapById.size();
             if (configuredWhitelist.contains(functionType)) {
                 subject.handle(mockContext);
@@ -285,9 +270,9 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         given(mockContext.body()).willReturn(createTransaction);
         given(mockContext.entityNumGenerator()).willReturn(entityNumGenerator);
         given(entityNumGenerator.newEntityNum()).willReturn(nextEntityId);
-        given(mockContext.allKeysForTransaction(Mockito.any(), Mockito.any())).willReturn(testChildKeys);
-        // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
-        given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+        given(mockContext.allKeysForTransaction(any(), any())).willReturn(testChildKeys);
+        // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
+        given(keyVerifier.verificationFor(any(Key.class), any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(testChildKeys));
     }
 }

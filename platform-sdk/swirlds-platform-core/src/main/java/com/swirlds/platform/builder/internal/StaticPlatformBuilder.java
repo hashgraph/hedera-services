@@ -22,7 +22,6 @@ import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAM
 import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThread;
 import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
@@ -91,8 +90,6 @@ public final class StaticPlatformBuilder {
             return false;
         }
         staticSetupCompleted = true;
-
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
         // Setup logging
         final Path log4jPath = getAbsolutePath(LOG4J_FILE_NAME);

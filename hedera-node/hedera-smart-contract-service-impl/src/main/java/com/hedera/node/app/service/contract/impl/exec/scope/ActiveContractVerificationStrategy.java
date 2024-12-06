@@ -32,11 +32,26 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
     private final boolean requiresDelegatePermission;
     private final UseTopLevelSigs useTopLevelSigs;
 
+    /**
+     * Enum whether to use the top level signature
+     */
     public enum UseTopLevelSigs {
+        /**
+         * Use top level signature
+         */
         YES,
+        /**
+         * Do not use top level signature
+         */
         NO
     }
 
+    /**
+     * @param activeContractID the active contract id
+     * @param activeAddress the active address
+     * @param requiresDelegatePermission if delegate permission is required
+     * @param useTopLevelSigs whether to use the top level signature
+     */
     public ActiveContractVerificationStrategy(
             final ContractID activeContractID,
             @NonNull final Bytes activeAddress,
@@ -69,14 +84,23 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
         }
     }
 
+    /**
+     * @return the active contract id
+     */
     public ContractID getActiveContractID() {
         return activeContractID;
     }
 
+    /**
+     * @return the active address
+     */
     public Bytes getActiveAddress() {
         return activeAddress;
     }
 
+    /**
+     * @return if delegate permission is required
+     */
     public boolean requiresDelegatePermission() {
         return requiresDelegatePermission;
     }

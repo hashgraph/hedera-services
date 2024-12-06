@@ -62,7 +62,7 @@ public final class StateProofSerialization {
         out.writeInt(signatures.size());
         for (final NodeSignature entry : signatures) {
             out.writeSerializable(entry.nodeId(), false);
-            out.writeSerializable(entry.signature(), false);
+            entry.signature().serialize(out, false);
         }
     }
 
@@ -87,11 +87,7 @@ public final class StateProofSerialization {
             if (nodeId == null) {
                 throw new IOException("nodeId is null");
             }
-            final Signature signature = in.readSerializable(false, Signature::new);
-            if (signature == null) {
-                throw new IOException("signature is null");
-            }
-
+            final Signature signature = Signature.deserialize(in, false);
             signatures.add(new NodeSignature(nodeId, signature));
         }
         return signatures;

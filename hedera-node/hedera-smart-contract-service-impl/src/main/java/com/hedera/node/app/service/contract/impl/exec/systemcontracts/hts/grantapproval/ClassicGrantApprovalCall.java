@@ -37,7 +37,20 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
+/**
+ * Implements the token redirect {@code approve()} call of the HTS system contract
+ */
 public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
+    /**
+     * @param gasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to be used
+     * @param verificationStrategy the verification strategy to use
+     * @param senderId the account id of the sender
+     * @param token the account id of the token
+     * @param spender the account id of the spender
+     * @param amount the amount to approve
+     * @param tokenType the type of the token
+     */
     // too many parameters
     @SuppressWarnings("java:S107")
     public ClassicGrantApprovalCall(

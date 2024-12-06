@@ -35,6 +35,9 @@ import java.util.Set;
  */
 @SuppressWarnings("java:S6548")
 public final class ConsensusServiceDefinition implements RpcServiceDefinition {
+    /**
+     * Singleton instance of the Token Service
+     */
     public static final ConsensusServiceDefinition INSTANCE = new ConsensusServiceDefinition();
 
     private static final Set<RpcMethodDefinition<?, ?>> methods = Set.of(

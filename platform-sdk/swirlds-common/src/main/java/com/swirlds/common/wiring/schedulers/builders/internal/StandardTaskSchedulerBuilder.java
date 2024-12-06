@@ -24,7 +24,6 @@ import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
-import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
@@ -37,6 +36,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Supplier;
 
 /**
  * A builder for {@link TaskScheduler}s.
@@ -83,22 +83,22 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
     /**
      * Register all configured metrics.
      *
-     * @param unhandledTaskCounter the counter that is used to track the number of scheduled tasks
-     * @param busyFractionTimer    the timer that is used to track the fraction of the time that the underlying thread
+     * @param longSupplier      the counter that is used to track the number of unhandled tasks
+     * @param busyFractionTimer the timer that is used to track the fraction of the time that the underlying thread
      *                             is busy
      */
     private void registerMetrics(
-            @Nullable final ObjectCounter unhandledTaskCounter, @NonNull final FractionalTimer busyFractionTimer) {
+            @Nullable final Supplier<Long> longSupplier, @NonNull final FractionalTimer busyFractionTimer) {
 
         if (type == NO_OP) {
             return;
         }
 
         if (unhandledTaskMetricEnabled) {
-            Objects.requireNonNull(unhandledTaskCounter);
+            Objects.requireNonNull(longSupplier);
 
             final FunctionGauge.Config<Long> config = new FunctionGauge.Config<>(
-                            "platform", name + "_unhandled_task_count", Long.class, unhandledTaskCounter::getCount)
+                            "platform", name + "_unhandled_task_count", Long.class, longSupplier)
                     .withDescription(
                             "The number of scheduled tasks that have not been fully handled for the scheduler " + name);
             platformContext.getMetrics().getOrCreate(config);
@@ -121,9 +121,6 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
     public TaskScheduler<OUT> build() {
         final Counters counters = buildCounters();
         final FractionalTimer busyFractionTimer = buildBusyTimer();
-
-        registerMetrics(counters.onRamp(), busyFractionTimer);
-
         final boolean insertionIsBlocking =
                 ((unhandledTaskCapacity != UNLIMITED_CAPACITY) || externalBackPressure) && (type != NO_OP);
 
@@ -158,8 +155,8 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
                             buildUncaughtExceptionHandler(),
                             counters.onRamp(),
                             counters.offRamp(),
+                            dataCounter,
                             busyFractionTimer,
-                            sleepDuration,
                             unhandledTaskCapacity,
                             flushingEnabled,
                             squelchingEnabled,
@@ -179,6 +176,8 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
         if (type != NO_OP) {
             model.registerScheduler(scheduler, hyperlink);
         }
+
+        registerMetrics(scheduler::getUnprocessedTaskCount, busyFractionTimer);
 
         return scheduler;
     }

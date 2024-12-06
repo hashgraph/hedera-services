@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.fixtures.stream;
 
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.ImmutableHash;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.stream.Signer;
@@ -57,7 +57,7 @@ public final class StreamUtils {
                         signer,
                         false,
                         EventStreamType.getInstance()));
-        stream.setRunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
+        stream.setRunningHash(new Hash(new byte[DigestType.SHA_384.digestLength()]));
         rounds.stream().flatMap(r -> r.getStreamedEvents().stream()).forEach(stream::addObject);
         stream.close();
     }

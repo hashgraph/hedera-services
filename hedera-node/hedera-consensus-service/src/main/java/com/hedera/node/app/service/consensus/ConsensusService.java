@@ -29,6 +29,9 @@ import java.util.Set;
  * Service</a>.
  */
 public interface ConsensusService extends RpcService {
+    /**
+     * The name of the service
+     */
     String NAME = "ConsensusService";
 
     @NonNull

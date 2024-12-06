@@ -379,6 +379,10 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 accountStore, tokenRelStore, tokenStore, op.customFees().fees(), handleContext.expiryValidator());
     }
 
+    /**
+     * @param op the transaction body of consensus update operation
+     * @return {@code true} if the operation wants to update a non-expiry field, {@code false} otherwise.
+     */
     public static boolean wantsToMutateNonExpiryField(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.hasMemo()
                 || op.hasAdminKey()

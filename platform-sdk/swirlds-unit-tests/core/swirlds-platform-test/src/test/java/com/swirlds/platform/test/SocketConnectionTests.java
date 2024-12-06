@@ -51,8 +51,8 @@ class SocketConnectionTests {
 
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
 
-    private NodeId selfId = new NodeId(0L);
-    private NodeId otherId = new NodeId(1L);
+    private NodeId selfId = NodeId.of(0L);
+    private NodeId otherId = NodeId.of(1L);
     private Socket socket;
     private SyncInputStream dis;
     private SyncOutputStream dos;

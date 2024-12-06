@@ -24,6 +24,9 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
+/**
+ * Abstract class of system contracts
+ */
 public abstract class AbstractFullContract extends AbstractPrecompiledContract {
     protected AbstractFullContract(@NonNull final String name, @NonNull final GasCalculator gasCalculator) {
         super(requireNonNull(name), requireNonNull(gasCalculator));

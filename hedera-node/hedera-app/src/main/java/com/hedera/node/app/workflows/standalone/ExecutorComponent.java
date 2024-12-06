@@ -19,18 +19,23 @@ package com.hedera.node.app.workflows.standalone;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.state.HederaStateInjectionModule;
+import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowInjectionModule;
 import com.hedera.node.app.workflows.standalone.impl.StandaloneDispatchFactory;
 import com.hedera.node.app.workflows.standalone.impl.StandaloneModule;
-import com.hedera.node.app.workflows.standalone.impl.StateNetworkInfo;
+import com.hedera.node.app.workflows.standalone.impl.StandaloneNetworkInfo;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import dagger.BindsInstance;
@@ -39,7 +44,7 @@ import java.util.function.Consumer;
 import javax.inject.Singleton;
 
 /**
- * A component that provides DI for construction of {@link StandaloneDispatchFactory}, {@link StateNetworkInfo}, and
+ * A component that provides DI for construction of {@link StandaloneDispatchFactory}, {@link StandaloneNetworkInfo}, and
  * {@link DispatchProcessor} instances needed to execute standalone transactions against a {@link State}.
  */
 @Singleton
@@ -58,10 +63,16 @@ public interface ExecutorComponent {
     @Component.Builder
     interface Builder {
         @BindsInstance
+        Builder tssBaseService(TssBaseService tssBaseService);
+
+        @BindsInstance
         Builder fileServiceImpl(FileServiceImpl fileService);
 
         @BindsInstance
         Builder contractServiceImpl(ContractServiceImpl contractService);
+
+        @BindsInstance
+        Builder scheduleServiceImpl(ScheduleServiceImpl scheduleService);
 
         @BindsInstance
         Builder configProviderImpl(ConfigProviderImpl configProvider);
@@ -72,6 +83,9 @@ public interface ExecutorComponent {
         @BindsInstance
         Builder metrics(Metrics metrics);
 
+        @BindsInstance
+        Builder throttleFactory(Throttle.Factory throttleFactory);
+
         ExecutorComponent build();
     }
 
@@ -79,7 +93,11 @@ public interface ExecutorComponent {
 
     DispatchProcessor dispatchProcessor();
 
-    StateNetworkInfo stateNetworkInfo();
+    StandaloneNetworkInfo stateNetworkInfo();
+
+    ExchangeRateManager exchangeRateManager();
+
+    ThrottleServiceManager throttleServiceManager();
 
     StandaloneDispatchFactory standaloneDispatchFactory();
 }

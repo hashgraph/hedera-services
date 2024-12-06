@@ -45,6 +45,7 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
@@ -70,7 +71,7 @@ public class TestIntake {
      * @param addressBook     the address book used by this intake
      */
     public TestIntake(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
-        final NodeId selfId = new NodeId(0);
+        final NodeId selfId = NodeId.of(0);
         roundsNonAncient = platformContext
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)
@@ -93,7 +94,8 @@ public class TestIntake {
         orphanBufferWiring = new ComponentWiring<>(model, OrphanBuffer.class, directScheduler("orphanBuffer"));
         orphanBufferWiring.bind(orphanBuffer);
 
-        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, addressBook, selfId);
+        final ConsensusEngine consensusEngine =
+                new DefaultConsensusEngine(platformContext, RosterRetriever.buildRoster(addressBook), selfId);
 
         consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, directScheduler("consensusEngine"));
         consensusEngineWiring.bind(consensusEngine);

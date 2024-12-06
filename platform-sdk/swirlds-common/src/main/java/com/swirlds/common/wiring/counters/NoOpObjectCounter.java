@@ -41,13 +41,13 @@ public class NoOpObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public void onRamp() {}
+    public void onRamp(final long delta) {}
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean attemptOnRamp() {
+    public boolean attemptOnRamp(final long delta) {
         return true;
     }
 
@@ -55,13 +55,13 @@ public class NoOpObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public void forceOnRamp() {}
+    public void forceOnRamp(final long delta) {}
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void offRamp() {}
+    public void offRamp(final long delta) {}
 
     /**
      * {@inheritDoc}

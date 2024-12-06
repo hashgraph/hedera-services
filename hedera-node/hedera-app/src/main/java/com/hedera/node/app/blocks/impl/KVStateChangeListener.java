@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -46,12 +47,20 @@ import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.schedule.ScheduledCounts;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.StateChangeListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -59,17 +68,22 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import javax.inject.Singleton;
 
 /**
  * A state change listener that tracks an entire sequence of changes, even if this sequence
  * repeats changes to the same key multiple times in a block boundary.
  */
-@Singleton
 public class KVStateChangeListener implements StateChangeListener {
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(MAP);
 
     private final List<StateChange> stateChanges = new ArrayList<>();
+
+    /**
+     * Resets the state changes.
+     */
+    public void reset() {
+        stateChanges.clear();
+    }
 
     @Override
     public Set<StateType> stateTypes() {
@@ -105,13 +119,6 @@ public class KVStateChangeListener implements StateChangeListener {
                 MapDeleteChange.newBuilder().key(mapChangeKeyFor(key)).build();
         stateChanges.add(
                 StateChange.newBuilder().stateId(stateId).mapDelete(change).build());
-    }
-
-    /**
-     * Clears the list of state changes.
-     */
-    public void resetStateChanges() {
-        stateChanges.clear();
     }
 
     /**
@@ -162,6 +169,18 @@ public class KVStateChangeListener implements StateChangeListener {
             case PendingAirdropId pendingAirdropId -> MapChangeKey.newBuilder()
                     .pendingAirdropIdKey(pendingAirdropId)
                     .build();
+            case TimestampSeconds timestampSeconds -> MapChangeKey.newBuilder()
+                    .timestampSecondsKey(timestampSeconds)
+                    .build();
+            case ScheduledOrder scheduledOrder -> MapChangeKey.newBuilder()
+                    .scheduledOrderKey(scheduledOrder)
+                    .build();
+            case TssMessageMapKey tssMessageMapKey -> MapChangeKey.newBuilder()
+                    .tssMessageMapKey(tssMessageMapKey)
+                    .build();
+            case TssVoteMapKey tssVoteMapKey -> MapChangeKey.newBuilder()
+                    .tssVoteMapKey(tssVoteMapKey)
+                    .build();
             default -> throw new IllegalStateException(
                     "Unrecognized key type " + key.getClass().getSimpleName());
         };
@@ -190,6 +209,9 @@ public class KVStateChangeListener implements StateChangeListener {
             case Schedule schedule -> MapChangeValue.newBuilder()
                     .scheduleValue(schedule)
                     .build();
+            case ScheduleID scheduleID -> MapChangeValue.newBuilder()
+                    .scheduleIdValue(scheduleID)
+                    .build();
             case ScheduleList scheduleList -> MapChangeValue.newBuilder()
                     .scheduleListValue(scheduleList)
                     .build();
@@ -206,6 +228,21 @@ public class KVStateChangeListener implements StateChangeListener {
             case Topic topic -> MapChangeValue.newBuilder().topicValue(topic).build();
             case AccountPendingAirdrop accountPendingAirdrop -> MapChangeValue.newBuilder()
                     .accountPendingAirdropValue(accountPendingAirdrop)
+                    .build();
+            case ScheduledCounts scheduledCounts -> MapChangeValue.newBuilder()
+                    .scheduledCountsValue(scheduledCounts)
+                    .build();
+            case ThrottleUsageSnapshots throttleUsageSnapshots -> MapChangeValue.newBuilder()
+                    .throttleUsageSnapshotsValue(throttleUsageSnapshots)
+                    .build();
+            case TssMessageTransactionBody tssMessageTransactionBody -> MapChangeValue.newBuilder()
+                    .tssMessageValue(tssMessageTransactionBody)
+                    .build();
+            case TssVoteTransactionBody tssVoteTransactionBody -> MapChangeValue.newBuilder()
+                    .tssVoteValue(tssVoteTransactionBody)
+                    .build();
+            case TssEncryptionKeyTransactionBody tssEncryptionKeyTransactionBody -> MapChangeValue.newBuilder()
+                    .tssEncryptionKeyValue(tssEncryptionKeyTransactionBody)
                     .build();
             default -> throw new IllegalStateException(
                     "Unexpected value: " + value.getClass().getSimpleName());

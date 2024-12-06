@@ -16,11 +16,18 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.merkledb.MerkleDbDataSourceBuilder.CLASS_ID;
+import static java.util.Objects.requireNonNull;
+
+import com.swirlds.common.constructable.ConstructableClass;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.constructable.constructors.MerkleDbDataSourceBuilderConstructor;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -36,9 +43,10 @@ import java.util.Objects;
  * between data sources with the same label, e.g. on copy or snapshot, MerkleDb builders
  * use different database directories, usually managed using {@link LegacyTemporaryFileBuilder}.
  */
+@ConstructableClass(value = CLASS_ID, constructorType = MerkleDbDataSourceBuilderConstructor.class)
 public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
 
-    private static final long CLASS_ID = 0x176ede0e1a69828L;
+    public static final long CLASS_ID = 0x176ede0e1a69828L;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -55,11 +63,15 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      */
     private MerkleDbTableConfig tableConfig;
 
+    /** Platform configuration */
+    private final Configuration configuration;
+
     /**
-     * Default constructor for deserialization purposes.
+     * Constructor for deserialization purposes.
      */
-    public MerkleDbDataSourceBuilder() {
+    public MerkleDbDataSourceBuilder(final @NonNull Configuration configuration) {
         // for deserialization
+        this.configuration = requireNonNull(configuration);
     }
 
     /**
@@ -67,9 +79,11 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      *
      * @param tableConfig
      *      Table configuration to use to create new data sources
+     * @param configuration platform configuration
      */
-    public MerkleDbDataSourceBuilder(final MerkleDbTableConfig tableConfig) {
-        this(null, tableConfig);
+    public MerkleDbDataSourceBuilder(
+            final MerkleDbTableConfig tableConfig, final @NonNull Configuration configuration) {
+        this(null, tableConfig, configuration);
     }
 
     /**
@@ -79,10 +93,13 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      *      Default database folder. May be {@code null}
      * @param tableConfig
      *      Table configuration to use to create new data sources
+     * @param configuration platform configuration
      */
-    public MerkleDbDataSourceBuilder(final Path databaseDir, final MerkleDbTableConfig tableConfig) {
+    public MerkleDbDataSourceBuilder(
+            final Path databaseDir, final MerkleDbTableConfig tableConfig, final @NonNull Configuration configuration) {
         this.databaseDir = databaseDir;
         this.tableConfig = tableConfig;
+        this.configuration = requireNonNull(configuration);
     }
 
     /**
@@ -94,7 +111,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
             throw new IllegalArgumentException("Table serialization config is missing");
         }
         // Creates a new data source in this builder's database dir or in the default MerkleDb instance
-        final MerkleDb database = MerkleDb.getInstance(databaseDir);
+        final MerkleDb database = MerkleDb.getInstance(databaseDir, configuration);
         try {
             return database.createDataSource(
                     label, // use VirtualMap name as the table name
@@ -146,7 +163,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
         try {
             // Restore to the default database. Assuming the default database hasn't been initialized yet.
             // Note that all database data, shared and per-table for all tables, will be restored.
-            final MerkleDb database = MerkleDb.restore(source, databaseDir);
+            final MerkleDb database = MerkleDb.restore(source, databaseDir, configuration);
             return database.getDataSource(label, true);
         } catch (final IOException z) {
             throw new UncheckedIOException(z);

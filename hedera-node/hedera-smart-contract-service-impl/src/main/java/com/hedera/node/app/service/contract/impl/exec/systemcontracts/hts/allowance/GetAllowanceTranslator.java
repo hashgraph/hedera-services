@@ -34,10 +34,19 @@ import javax.inject.Singleton;
 @Singleton
 public class GetAllowanceTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    /**
+     * Selector for allowance(address,address,address) method.
+     */
     public static final Function GET_ALLOWANCE =
             new Function("allowance(address,address,address)", ReturnTypes.RESPONSE_CODE_UINT256);
+    /**
+     * Selector for allowance(address,address) method.
+     */
     public static final Function ERC_GET_ALLOWANCE = new Function("allowance(address,address)", ReturnTypes.UINT256);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public GetAllowanceTranslator() {
         // Dagger2

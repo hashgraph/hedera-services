@@ -19,7 +19,6 @@ package com.hedera.node.app.blocks.impl;
 import static com.hedera.hapi.block.stream.output.StateChange.ChangeOperationOneOfType.QUEUE_POP;
 import static com.hedera.hapi.block.stream.output.StateChange.ChangeOperationOneOfType.QUEUE_PUSH;
 import static com.hedera.hapi.block.stream.output.StateChange.ChangeOperationOneOfType.SINGLETON_UPDATE;
-import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.stateIdFor;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
@@ -32,7 +31,7 @@ import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.node.app.blocks.BlockStreamService;
-import com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema;
+import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
@@ -60,13 +59,13 @@ class BoundaryStateChangeListenerTest {
     @Test
     void understandsStateIds() {
         final var service = BlockStreamService.NAME;
-        final var stateKey = V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+        final var stateKey = V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
         assertEquals(stateIdFor(service, stateKey), listener.stateIdFor(service, stateKey));
     }
 
     @Test
     void testFlushChanges() {
-        listener.setLastUsedConsensusTime(Instant.now());
+        listener.setBoundaryTimestamp(Instant.now());
         listener.singletonUpdateChange(STATE_ID, PROTO_STRING);
         BlockItem blockItem = listener.flushChanges();
 
@@ -81,13 +80,6 @@ class BoundaryStateChangeListenerTest {
 
         List<StateChange> stateChanges = listener.allStateChanges();
         assertEquals(2, stateChanges.size());
-    }
-
-    @Test
-    void testEndOfBlockTimestamp() {
-        Instant now = Instant.now();
-        listener.setLastUsedConsensusTime(now);
-        assertEquals(now.plusNanos(1), asInstant(listener.endOfBlockTimestamp()));
     }
 
     @Test

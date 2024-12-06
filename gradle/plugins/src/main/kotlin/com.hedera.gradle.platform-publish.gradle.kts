@@ -31,50 +31,6 @@ if (
     apply(plugin = "com.google.cloud.artifactregistry.gradle-plugin")
 }
 
-// Publishing tasks are only enabled if we publish to the matching group.
-// Otherwise, Nexus configuration and credentials do not fit.
-val publishingPackageGroup = providers.gradleProperty("publishingPackageGroup").getOrElse("")
-
-tasks.withType<PublishToMavenRepository>().configureEach {
-    enabled = publishingPackageGroup == "com.swirlds"
-}
-
-publishing.publications.named<MavenPublication>("maven") {
-    pom.description =
-        "Swirlds is a software platform designed to build fully-distributed " +
-            "applications that harness the power of the cloud without servers. " +
-            "Now you can develop applications with fairness in decision making, " +
-            "speed, trust and reliability, at a fraction of the cost of " +
-            "traditional server-based platforms."
-
-    pom.developers {
-        developer {
-            name = "Platform Base Team"
-            email = "platform-base@swirldslabs.com"
-            organization = "Hedera Hashgraph"
-            organizationUrl = "https://www.hedera.com"
-        }
-        developer {
-            name = "Platform Hashgraph Team"
-            email = "platform-hashgraph@swirldslabs.com"
-            organization = "Hedera Hashgraph"
-            organizationUrl = "https://www.hedera.com"
-        }
-        developer {
-            name = "Platform Data Team"
-            email = "platform-data@swirldslabs.com"
-            organization = "Hedera Hashgraph"
-            organizationUrl = "https://www.hedera.com"
-        }
-        developer {
-            name = "Release Engineering Team"
-            email = "release-engineering@swirldslabs.com"
-            organization = "Hedera Hashgraph"
-            organizationUrl = "https://www.hedera.com"
-        }
-    }
-}
-
 publishing.repositories {
     maven("artifactregistry://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel") {
         name = "prereleaseChannel"

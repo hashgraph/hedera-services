@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.recovery.internal;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.CesEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -34,7 +34,7 @@ public class EventStreamRoundIterator implements IOIterator<StreamedRound> {
 
     private final IOIterator<CesEvent> eventIterator;
     private final boolean allowPartialRound;
-    private final AddressBook consensusRoster;
+    private final Roster consensusRoster;
 
     private StreamedRound next;
     private boolean ended = false;
@@ -51,7 +51,7 @@ public class EventStreamRoundIterator implements IOIterator<StreamedRound> {
      *                             If false then do not return a round that does not have all of its events.
      */
     public EventStreamRoundIterator(
-            @NonNull final AddressBook consensusRoster,
+            @NonNull final Roster consensusRoster,
             final Path eventStreamDirectory,
             final long startingRound,
             boolean allowPartialRound)
@@ -69,7 +69,7 @@ public class EventStreamRoundIterator implements IOIterator<StreamedRound> {
      * @param eventIterator   an iterator that walks over events
      */
     public EventStreamRoundIterator(
-            @NonNull final AddressBook consensusRoster,
+            @NonNull final Roster consensusRoster,
             final IOIterator<CesEvent> eventIterator,
             boolean allowPartialRound) {
         this.consensusRoster = Objects.requireNonNull(consensusRoster);

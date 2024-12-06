@@ -16,10 +16,12 @@
 
 package com.swirlds.virtualmap.internal.hash;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
@@ -68,7 +70,8 @@ class VirtualHasherHugeTest extends VirtualHasherTestBase {
                         .mapToObj(leafGetter)
                         .iterator(),
                 firstLeafPath,
-                lastLeafPath);
+                lastLeafPath,
+                CONFIGURATION.getConfigData(VirtualMapConfig.class));
         assertNotNull(rootHash, "No hash produced");
     }
 }

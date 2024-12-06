@@ -17,26 +17,38 @@
 package com.swirlds.platform.state.snapshot;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNATURE_SET_FILE_NAME;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SUPPORTED_SIGSET_VERSIONS;
 import static java.nio.file.Files.exists;
 
-import com.swirlds.base.function.CheckedBiFunction;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.signed.SigSet;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.merkle.MerkleStateRoot;
+import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
+import com.swirlds.state.merkle.SigSet;
+import com.swirlds.state.merkle.StateMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -66,60 +78,54 @@ public final class SignedStateFileReader {
     }
 
     /**
-     * Reads a SignedState from disk using the provided snapshot reader function. If the reader throws
-     * an exception, it is propagated by this method to the caller.
+     * Reads a SignedState from disk. If the reader throws an exception, it is propagated by this method to the caller.
      *
-     * @param platformContext               the platform context
+     * @param configuration                 the configuration for this node
      * @param stateFile                     the file to read from
-     * @param snapshotStateReader           state snapshot reading function
      * @return a signed state with it's associated hash (as computed when the state was serialized)
      * @throws IOException if there is any problems with reading from a file
      */
     public static @NonNull DeserializedSignedState readStateFile(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Path stateFile,
-            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
-            throws IOException {
+            @NonNull final Configuration configuration, @NonNull final Path stateFile) throws IOException {
 
-        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(configuration);
         Objects.requireNonNull(stateFile);
 
         checkSignedStatePath(stateFile);
 
         final DeserializedSignedState returnState;
+        final MerkleTreeSnapshotReader.StateFileData data = MerkleTreeSnapshotReader.readStateFileData(stateFile);
 
-        record StateFileData(MerkleRoot state, Hash hash, SigSet sigSet) {}
-
-        final StateFileData data = deserializeAndDebugOnFailure(
-                () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
-                (final MerkleDataInputStream in) -> {
-                    readAndCheckVersion(in);
-
-                    final Path directory = stateFile.getParent();
-
-                    try {
-                        final MerkleRoot state = snapshotStateReader.apply(in, directory);
-                        final Hash hash = in.readSerializable();
+        final MerkleTreeSnapshotReader.StateFileData normalizedData;
+        if (data.sigSet() == null) {
+            final File sigSetFile =
+                    stateFile.getParent().resolve(SIGNATURE_SET_FILE_NAME).toFile();
+            normalizedData = deserializeAndDebugOnFailure(
+                    () -> new BufferedInputStream(new FileInputStream(sigSetFile)),
+                    (final MerkleDataInputStream in) -> {
+                        readAndCheckSigSetFileVersion(in);
                         final SigSet sigSet = in.readSerializable();
-                        return new StateFileData(state, hash, sigSet);
-                    } catch (final IOException e) {
-                        throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
-                    }
-                });
+                        return new MerkleTreeSnapshotReader.StateFileData(data.stateRoot(), data.hash(), sigSet);
+                    });
+        } else {
+            normalizedData = data;
+        }
 
         final SignedState newSignedState = new SignedState(
-                platformContext,
+                configuration,
                 CryptoStatic::verifySignature,
-                data.state(),
+                (MerkleRoot) normalizedData.stateRoot(),
                 "SignedStateFileReader.readStateFile()",
                 false,
                 false,
                 false);
 
-        newSignedState.setSigSet(data.sigSet());
+        registerServiceStates(newSignedState);
+
+        newSignedState.setSigSet(normalizedData.sigSet());
 
         returnState = new DeserializedSignedState(
-                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.hash());
+                newSignedState.reserve("SignedStateFileReader.readStateFile()"), normalizedData.hash());
 
         return returnState;
     }
@@ -140,18 +146,79 @@ public final class SignedStateFileReader {
     }
 
     /**
-     * Read the version from a signed state file and check it
+     * Read the version from a signature set file and check it
      *
      * @param in the stream to read from
      * @throws IOException if the version is invalid
      */
-    private static void readAndCheckVersion(@NonNull final MerkleDataInputStream in) throws IOException {
-        final byte versionByte = in.readByte();
-        if (versionByte != VERSIONED_FILE_BYTE) {
-            throw new IOException("File is not versioned -- data corrupted or is an unsupported legacy state");
+    private static void readAndCheckSigSetFileVersion(@NonNull final MerkleDataInputStream in) throws IOException {
+        final int fileVersion = in.readInt();
+        if (!SUPPORTED_SIGSET_VERSIONS.contains(fileVersion)) {
+            throw new IOException("Unsupported file version: " + fileVersion);
         }
-
-        in.readInt(); // file version
         in.readProtocolVersion();
+    }
+
+    /**
+     * Register stub states for PlatformStateService and RosterService so that the State knows about them per the metadata and services registry.
+     * <p>
+     * Note that the state data objects associated with these services MUST ALREADY EXIST in the merkle tree (or on disk.)
+     * These stubs WILL NOT create missing nodes in the state, or run any state migration code. The stubs assume that the
+     * data structures present in the snapshot match the version of the software where this code runs.
+     * <p>
+     * These stubs are necessary to enable a state (a SignedState, in particular) to read the roster (or fall back
+     * to reading the legacy AddressBook) from the state using the States API which would normally require
+     * the complete initialization of services and all the schemas. However, only the PlatformState and RosterState/RosterMap
+     * are really required to support reading the Roster (or AddressBook.) So we only initialize the schemas for these two.
+     * <p>
+     * If this SignedState object needs to become a real state to support the node operations later, the services/app
+     * code will be responsible for initializing all the supported services. Note that the app skips registering
+     * service states if it finds the PlatformState is already registered. For this reason, a call to
+     * {@code SignedStateFileReader.unregisterServiceStates(SignedState)} below needs to be made to remove the stubs.
+     *
+     * @param signedState a signed state to register schemas in
+     */
+    public static void registerServiceStates(@NonNull final SignedState signedState) {
+        registerServiceState(
+                (MerkleStateRoot) signedState.getState(), new V0540PlatformStateSchema(), PlatformStateService.NAME);
+        registerServiceState((MerkleStateRoot) signedState.getState(), new V0540RosterSchema(), RosterStateId.NAME);
+    }
+
+    private static void registerServiceState(
+            @NonNull final State state, @NonNull final Schema schema, @NonNull final String name) {
+        if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
+            throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
+        }
+        schema.statesToCreate().stream()
+                .sorted(Comparator.comparing(StateDefinition::stateKey))
+                .forEach(def -> {
+                    final var md = new StateMetadata<>(name, schema, def);
+                    if (def.singleton() || def.onDisk()) {
+                        merkleStateRoot.putServiceStateIfAbsent(md, () -> {
+                            throw new IllegalStateException(
+                                    "State nodes " + md.stateDefinition().stateKey() + " for service " + name
+                                            + " are supposed to exist in the state snapshot already.");
+                        });
+                    } else {
+                        throw new IllegalStateException(
+                                "Only singletons and onDisk virtual maps are supported as stub states");
+                    }
+                });
+    }
+
+    /**
+     * Unregister the PlatformStateService and RosterService so that the app
+     * can initialize States API eventually. Currently, it wouldn't initialize it
+     * if it sees the PlatformStateService already present.
+     *
+     * See the doc for registerServiceStates above for more details on why
+     * we initialize these stub states in the first place.
+     *
+     * @param signedState a signed state to unregister services from
+     */
+    public static void unregisterServiceStates(@NonNull final SignedState signedState) {
+        final MerkleStateRoot state = (MerkleStateRoot) signedState.getState();
+        state.unregisterService(PlatformStateService.NAME);
+        state.unregisterService(RosterStateId.NAME);
     }
 }

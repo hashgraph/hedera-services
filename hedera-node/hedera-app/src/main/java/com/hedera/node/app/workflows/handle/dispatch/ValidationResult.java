@@ -56,7 +56,7 @@ public record ValidationResult(
      * @return the error report
      */
     @NonNull
-    public static ValidationResult creatorValidationReport(
+    public static ValidationResult newCreatorError(
             @NonNull AccountID creatorId, @NonNull ResponseCodeEnum creatorError) {
         return new ValidationResult(creatorId, creatorError, null, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
     }
@@ -69,7 +69,7 @@ public record ValidationResult(
      * @return the error report
      */
     @NonNull
-    public static ValidationResult payerDuplicateErrorReport(
+    public static ValidationResult newPayerDuplicateError(
             @NonNull final AccountID creatorId, @NonNull final Account payer) {
         requireNonNull(payer);
         requireNonNull(creatorId);
@@ -85,7 +85,7 @@ public record ValidationResult(
      * @return the error report
      */
     @NonNull
-    public static ValidationResult payerUniqueValidationReport(
+    public static ValidationResult newPayerUniqueError(
             @NonNull final AccountID creatorId,
             @NonNull final Account payer,
             @NonNull final ResponseCodeEnum payerError) {
@@ -105,7 +105,7 @@ public record ValidationResult(
      * @return the error report
      */
     @NonNull
-    public static ValidationResult payerValidationReport(
+    public static ValidationResult newPayerError(
             @NonNull AccountID creatorId,
             @NonNull Account payer,
             @NonNull ResponseCodeEnum payerError,
@@ -121,7 +121,9 @@ public record ValidationResult(
      * @return the error report
      */
     @NonNull
-    public static ValidationResult successReport(@NonNull AccountID creatorId, @NonNull Account payer) {
+    public static ValidationResult newSuccess(@NonNull final AccountID creatorId, @NonNull final Account payer) {
+        requireNonNull(creatorId);
+        requireNonNull(payer);
         return new ValidationResult(creatorId, null, payer, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
     }
 

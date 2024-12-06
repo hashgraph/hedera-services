@@ -35,8 +35,14 @@ import javax.inject.Singleton;
 @Singleton
 public class Erc721TransferFromTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    /**
+     * Selector for transferFrom(address,address,uint256) method.
+     */
     public static final Function ERC_721_TRANSFER_FROM = new Function("transferFrom(address,address,uint256)");
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public Erc721TransferFromTranslator() {
         // Dagger2

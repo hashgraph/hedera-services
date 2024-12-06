@@ -18,7 +18,7 @@ plugins {
     id("com.hedera.gradle.protobuf")
     id("com.hedera.gradle.services-publish")
     id("com.hedera.gradle.feature.test-fixtures")
-    alias(libs.plugins.pbj)
+    id("com.hedera.pbj.pbj-compiler") version "0.9.2"
 }
 
 description = "Hedera API"
@@ -36,12 +36,14 @@ sourceSets {
             srcDir(layout.projectDirectory.dir("hedera-protobufs/streams"))
             srcDir(layout.projectDirectory.dir("hedera-protobufs/block"))
             srcDir(layout.projectDirectory.dir("hedera-protobufs/platform"))
+            srcDir(layout.projectDirectory.dir("internal-protobufs/network"))
         }
         proto {
             srcDir(layout.projectDirectory.dir("hedera-protobufs/services"))
             srcDir(layout.projectDirectory.dir("hedera-protobufs/streams"))
             srcDir(layout.projectDirectory.dir("hedera-protobufs/block"))
             srcDir(layout.projectDirectory.dir("hedera-protobufs/platform"))
+            srcDir(layout.projectDirectory.dir("internal-protobufs/network"))
         }
     }
 }

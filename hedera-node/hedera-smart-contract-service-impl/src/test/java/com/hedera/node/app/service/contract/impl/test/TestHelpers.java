@@ -44,6 +44,7 @@ import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
@@ -77,6 +78,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerifi
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
@@ -205,6 +207,8 @@ public class TestHelpers {
             ContractID.newBuilder().contractNum(777).build();
     public static final AccountID CALLED_EOA_ID =
             AccountID.newBuilder().accountNum(666).build();
+    public static final ScheduleID CALLED_SCHEDULE_ID =
+            ScheduleID.newBuilder().scheduleNum(666).build();
     public static final ContractID INVALID_CONTRACT_ADDRESS =
             ContractID.newBuilder().evmAddress(Bytes.wrap("abcdefg")).build();
     public static final ContractID VALID_CONTRACT_ADDRESS = ContractID.newBuilder()
@@ -313,6 +317,9 @@ public class TestHelpers {
     public static final Key PAUSE_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0505050505050505050505050505050505050505050505050505050505050505"))
             .build();
+    public static final Key METADATA_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0606060606060606060606060606060606060606060606060606060606060606"))
+            .build();
     public static final Token FUNGIBLE_EVERYTHING_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
             .name("Fungible Everything Token")
@@ -339,6 +346,35 @@ public class TestHelpers {
             .feeScheduleKey(FEE_SCHEDULE_KEY)
             .pauseKey(PAUSE_KEY)
             .build();
+
+    public static final Token FUNGIBLE_EVERYTHING_TOKEN_V2 = Token.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .name("Fungible Everything Token")
+            .symbol("FET")
+            .memo("The memo")
+            .treasuryAccountId(SENDER_ID)
+            .decimals(6)
+            .totalSupply(7777777L)
+            .maxSupply(88888888L)
+            .supplyType(TokenSupplyType.FINITE)
+            .tokenType(TokenType.FUNGIBLE_COMMON)
+            .accountsFrozenByDefault(true)
+            .accountsKycGrantedByDefault(true)
+            .paused(true)
+            .expirationSecond(100)
+            .autoRenewAccountId(SENDER_ID)
+            .autoRenewSeconds(200)
+            .metadata(Bytes.wrap("SOLD"))
+            .customFees(CUSTOM_FEES)
+            .adminKey(ADMIN_KEY)
+            .kycKey(KYC_KEY)
+            .freezeKey(FREEZE_KEY)
+            .wipeKey(WIPE_KEY)
+            .supplyKey(SUPPLY_KEY)
+            .feeScheduleKey(FEE_SCHEDULE_KEY)
+            .pauseKey(PAUSE_KEY)
+            .metadataKey(METADATA_KEY)
+            .build();
     public static final List<Tuple> EXPECTED_FIXED_CUSTOM_FEES = List.of(
             Tuple.of(2L, headlongAddressOf(ZERO_TOKEN_ID), true, false, headlongAddressOf(SENDER_ID)),
             Tuple.of(3L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, false, headlongAddressOf(SENDER_ID)));
@@ -356,6 +392,16 @@ public class TestHelpers {
             typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), SUPPLY_KEY),
             typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), FEE_SCHEDULE_KEY),
             typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), PAUSE_KEY));
+
+    public static final List<Tuple> EXPECTED_KEYLIST_V2 = List.of(
+            typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), ADMIN_KEY),
+            typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), KYC_KEY),
+            typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), FREEZE_KEY),
+            typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), WIPE_KEY),
+            typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), SUPPLY_KEY),
+            typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), FEE_SCHEDULE_KEY),
+            typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), PAUSE_KEY),
+            typedKeyTupleFor(TokenKeyType.METADATA_KEY.bigIntegerValue(), METADATA_KEY));
 
     public static final List<Tuple> EXPECTE_DEFAULT_KEYLIST = List.of(
             typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), Key.DEFAULT),
@@ -665,6 +711,7 @@ public class TestHelpers {
             "6080604052348015600f57600080fd5b50600061016a905077e4cbd3a7fefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
     public static byte[] messageHash = unhex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad");
+    public static byte[] message = "This is a message".getBytes();
 
     public static byte[] signature = unhex(
             "aca7da997ad177f040240cdccf6905b71ab16b74434388c3a72f34fd25d6439346b2bac274ff29b48b3ea6e2d04c1336eaceafda3c53ab483fc3ff12fac3ebf200");
@@ -867,6 +914,14 @@ public class TestHelpers {
                 org.apache.tuweni.bytes.Bytes.of(subSelector));
     }
 
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirectScheduleTxn(
+            final byte[] subSelector, final Address scheduleAddress) {
+        return org.apache.tuweni.bytes.Bytes.concatenate(
+                org.apache.tuweni.bytes.Bytes.wrap(HssCallAttempt.REDIRECT_FOR_SCHEDULE_TXN.selector()),
+                scheduleAddress,
+                org.apache.tuweni.bytes.Bytes.of(subSelector));
+    }
+
     public static org.apache.tuweni.bytes.Bytes asBytesResult(final ByteBuffer encoded) {
         return org.apache.tuweni.bytes.Bytes.wrap(encoded.array());
     }
@@ -894,6 +949,12 @@ public class TestHelpers {
      */
     public static Map<HederaEvmVersion, TransactionProcessor> processorsForAllCurrentEvmVersions(
             @NonNull final TransactionProcessor processor) {
-        return Map.of(HederaEvmVersion.VERSION_046, processor, HederaEvmVersion.VERSION_050, processor);
+        return Map.of(
+                HederaEvmVersion.VERSION_046,
+                processor,
+                HederaEvmVersion.VERSION_050,
+                processor,
+                HederaEvmVersion.VERSION_051,
+                processor);
     }
 }

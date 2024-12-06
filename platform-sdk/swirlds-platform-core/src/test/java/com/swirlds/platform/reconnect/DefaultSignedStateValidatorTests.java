@@ -29,6 +29,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
@@ -47,6 +48,8 @@ import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -143,7 +146,7 @@ class DefaultSignedStateValidatorTests {
             // Allow zero-weight
             final int weight = r.nextInt(MAX_WEIGHT_PER_NODE);
             final boolean hasValidSig = r.nextBoolean();
-            nodes.add(new Node(new NodeId(i), weight, hasValidSig));
+            nodes.add(new Node(NodeId.of(i), weight, hasValidSig));
         }
         return nodes;
     }
@@ -213,13 +216,13 @@ class DefaultSignedStateValidatorTests {
         }
 
         final List<Node> nodes = new ArrayList<>(NUM_NODES_IN_STATIC_TESTS);
-        nodes.add(new Node(new NodeId(0L), 5L, isValidSigList.get(0)));
-        nodes.add(new Node(new NodeId(1L), 5L, isValidSigList.get(1)));
-        nodes.add(new Node(new NodeId(2L), 8L, isValidSigList.get(2)));
-        nodes.add(new Node(new NodeId(3L), 15L, isValidSigList.get(3)));
-        nodes.add(new Node(new NodeId(4L), 17L, isValidSigList.get(4)));
-        nodes.add(new Node(new NodeId(5L), 10L, isValidSigList.get(5)));
-        nodes.add(new Node(new NodeId(6L), 30L, isValidSigList.get(6)));
+        nodes.add(new Node(NodeId.of(0L), 5L, isValidSigList.get(0)));
+        nodes.add(new Node(NodeId.of(1L), 5L, isValidSigList.get(1)));
+        nodes.add(new Node(NodeId.of(2L), 8L, isValidSigList.get(2)));
+        nodes.add(new Node(NodeId.of(3L), 15L, isValidSigList.get(3)));
+        nodes.add(new Node(NodeId.of(4L), 17L, isValidSigList.get(4)));
+        nodes.add(new Node(NodeId.of(5L), 10L, isValidSigList.get(5)));
+        nodes.add(new Node(NodeId.of(6L), 30L, isValidSigList.get(6)));
         return nodes;
     }
 
@@ -244,6 +247,16 @@ class DefaultSignedStateValidatorTests {
         return addressBook;
     }
 
+    @BeforeEach
+    void setUp() {
+        MerkleDb.resetDefaultInstancePath();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
+    }
+
     @ParameterizedTest
     @MethodSource({"staticNodeParams", "randomizedNodeParams"})
     @DisplayName("Signed State Validation")
@@ -258,7 +271,7 @@ class DefaultSignedStateValidatorTests {
 
         final SignedState signedState = stateSignedByNodes(signingNodes);
         final SignedStateValidationData originalData =
-                new SignedStateValidationData(signedState.getState().getPlatformState(), addressBook);
+                new SignedStateValidationData(signedState.getState().getReadablePlatformState(), addressBook);
 
         final boolean shouldSucceed = stateHasEnoughWeight(nodes, signingNodes);
         if (shouldSucceed) {
@@ -322,7 +335,7 @@ class DefaultSignedStateValidatorTests {
             if (signature.getByte(0) == 0) {
                 return false;
             }
-            final Hash hash = new Hash(data.toByteArray(), stateHash.getDigestType());
+            final Hash hash = new Hash(data, stateHash.getDigestType());
 
             return hash.equals(stateHash);
         };

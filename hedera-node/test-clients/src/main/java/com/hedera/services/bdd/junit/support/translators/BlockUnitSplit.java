@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.support.translators;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.FILE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.FILE_UPDATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_UPDATE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
@@ -25,6 +26,7 @@ import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
@@ -33,8 +35,10 @@ import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Splits a block into units for translation.
@@ -87,6 +91,9 @@ public class BlockUnitSplit {
         }
     }
 
+    @Nullable
+    private List<StateChange> genesisStateChanges = new ArrayList<>();
+
     /**
      * Splits the given block into transactional units.
      * @param block the block to split
@@ -120,6 +127,10 @@ public class BlockUnitSplit {
                             completeAndAdd(units, unitParts, unitStateChanges);
                         }
                         pendingParts.clear();
+                        if (genesisStateChanges != null) {
+                            unitStateChanges.addAll(genesisStateChanges);
+                            genesisStateChanges = null;
+                        }
                         if (txnIdType != TxnIdType.AUTO_SYSFILE_MGMT_ID) {
                             unitTxnId = txnId;
                         }
@@ -129,8 +140,13 @@ public class BlockUnitSplit {
                 }
                 case TRANSACTION_RESULT -> pendingParts.result = item.transactionResultOrThrow();
                 case TRANSACTION_OUTPUT -> pendingParts.addOutput(item.transactionOutputOrThrow());
-                case STATE_CHANGES -> unitStateChanges.addAll(
-                        item.stateChangesOrThrow().stateChanges());
+                case STATE_CHANGES -> {
+                    if (genesisStateChanges != null) {
+                        genesisStateChanges.addAll(item.stateChangesOrThrow().stateChanges());
+                    } else {
+                        unitStateChanges.addAll(item.stateChangesOrThrow().stateChanges());
+                    }
+                }
             }
         }
         if (pendingParts.areComplete()) {
@@ -145,7 +161,7 @@ public class BlockUnitSplit {
             @Nullable final TransactionID unitTxnId,
             @NonNull final TransactionParts parts,
             @Nullable final TxnIdType lastTxnIdType) {
-        if (isAutoSysFileMgmtTxn(parts)) {
+        if (isAutoEntityMgmtTxn(parts)) {
             return TxnIdType.AUTO_SYSFILE_MGMT_ID;
         }
         if (lastTxnIdType == TxnIdType.AUTO_SYSFILE_MGMT_ID) {
@@ -163,8 +179,11 @@ public class BlockUnitSplit {
         return radicallyDifferent ? TxnIdType.NEW_UNIT_BY_ID : TxnIdType.SAME_UNIT_BY_ID;
     }
 
-    private boolean isAutoSysFileMgmtTxn(@NonNull final TransactionParts parts) {
-        return (parts.function() == FILE_CREATE || parts.function() == FILE_UPDATE)
+    private static final Set<HederaFunctionality> AUTO_MGMT_FUNCTIONS =
+            EnumSet.of(FILE_CREATE, FILE_UPDATE, NODE_UPDATE);
+
+    private boolean isAutoEntityMgmtTxn(@NonNull final TransactionParts parts) {
+        return AUTO_MGMT_FUNCTIONS.contains(parts.function())
                 && parts.transactionIdOrThrow().nonce() > 0;
     }
 

@@ -31,6 +31,9 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 
+/**
+ * Util class used in unit tests for Consensus Service
+ */
 public final class ConsensusTestUtils {
 
     static final Key SIMPLE_KEY_A = Key.newBuilder()

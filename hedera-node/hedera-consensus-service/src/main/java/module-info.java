@@ -1,3 +1,6 @@
+/**
+ * Provides the classes necessary to manage Hedera Consensus Service.
+ */
 module com.hedera.node.app.service.consensus {
     exports com.hedera.node.app.service.consensus;
 

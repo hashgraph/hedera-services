@@ -92,7 +92,7 @@ class FreezeHandlerTest {
     @Mock(strictness = LENIENT)
     private Account account;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private ReadableNodeStore nodeStore;
 
     @Mock

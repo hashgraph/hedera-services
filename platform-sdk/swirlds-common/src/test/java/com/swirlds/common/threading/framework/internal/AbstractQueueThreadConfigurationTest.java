@@ -72,7 +72,7 @@ class AbstractQueueThreadConfigurationTest {
         }
     }
 
-    static final NodeId NODE_ID = new NodeId(1L);
+    static final NodeId NODE_ID = NodeId.of(1L);
     static final String THREAD_POOL_NAME = "myThreadPool";
     static final String THREAD_NAME = "myThread";
     static final int MAX_BUFFER_SIZE = 50;

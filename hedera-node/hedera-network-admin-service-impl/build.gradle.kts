@@ -23,7 +23,7 @@ description = "Default Hedera Network Admin Service Implementation"
 
 val writeSemanticVersionProperties =
     tasks.register<WriteProperties>("writeSemanticVersionProperties") {
-        property("hapi.proto.version", libs.versions.hapi.proto.get())
+        property("hapi.proto.version", project.version)
         property("hedera.services.version", project.version)
 
         destinationFile.set(

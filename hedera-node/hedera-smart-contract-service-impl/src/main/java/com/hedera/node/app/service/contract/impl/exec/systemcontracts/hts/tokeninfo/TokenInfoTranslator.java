@@ -24,14 +24,24 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
+/**
+ * Translates {@code getTokenInfo()} calls to the HTS system contract.
+ */
 public class TokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> {
-
+    /** Selector for getTokenInfo(address) method. */
     public static final Function TOKEN_INFO =
             new Function("getTokenInfo(address)", ReturnTypes.RESPONSE_CODE_TOKEN_INFO);
+    /** Selector for getTokenInfoV2(address) method. */
+    public static final Function TOKEN_INFO_V2 =
+            new Function("getTokenInfoV2(address)", ReturnTypes.RESPONSE_CODE_TOKEN_INFO_V2);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenInfoTranslator() {
         // Dagger2
@@ -43,7 +53,9 @@ public class TokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        return attempt.isSelector(TOKEN_INFO);
+        final var v2Enabled =
+                attempt.configuration().getConfigData(ContractsConfig.class).systemContractTokenInfoV2Enabled();
+        return attempt.isSelector(TOKEN_INFO) || attempt.isSelectorIfConfigEnabled(v2Enabled, TOKEN_INFO_V2);
     }
 
     /**
@@ -52,13 +64,15 @@ public class TokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     @Override
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        final var args = TOKEN_INFO.decodeCall(attempt.input().toArrayUnsafe());
+        final var function = attempt.isSelector(TOKEN_INFO) ? TOKEN_INFO : TOKEN_INFO_V2;
+        final var args = function.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new TokenInfoCall(
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.isStaticCall(),
                 token,
-                attempt.configuration());
+                attempt.configuration(),
+                function);
     }
 }

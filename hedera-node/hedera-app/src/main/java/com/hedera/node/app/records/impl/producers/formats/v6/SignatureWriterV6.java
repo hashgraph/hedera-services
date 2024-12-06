@@ -128,7 +128,7 @@ final class SignatureWriterV6 {
      * @return Signature object
      */
     private static SignatureObject generateSignatureObject(@NonNull final Signer signer, @NonNull final Bytes hash) {
-        final Bytes signature = Bytes.wrap(signer.sign(hash.toByteArray()).getSignatureBytes());
+        final Bytes signature = signer.sign(hash.toByteArray()).getBytes();
         return SignatureObject.newBuilder()
                 .type(SignatureType.SHA_384_WITH_RSA)
                 .length((int) signature.length())

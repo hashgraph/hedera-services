@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.hash;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.VIRTUAL_MAP_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -65,7 +66,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         assertThrows(
                 NullPointerException.class,
-                () -> hasher.hash(ds::loadHash, null, 1, 2),
+                () -> hasher.hash(ds::loadHash, null, 1, 2, VIRTUAL_MAP_CONFIG),
                 "Call should have produced an NPE");
     }
 
@@ -80,7 +81,9 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final TestDataSource ds = new TestDataSource(1, 2);
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = new ArrayList<>();
-        assertNull(hasher.hash(ds::loadHash, leaves.iterator(), 1, 2), "Call should have returned a null hash");
+        assertNull(
+                hasher.hash(ds::loadHash, leaves.iterator(), 1, 2, VIRTUAL_MAP_CONFIG),
+                "Call should have returned a null hash");
     }
 
     /**
@@ -88,18 +91,48 @@ class VirtualHasherTest extends VirtualHasherTestBase {
      */
     @Test
     @Tag(TestComponentTags.VMAP)
-    @DisplayName("Invalid leaf paths returns null for hash")
-    void invalidFirstOrLastLeafPathProducesNull() {
+    @DisplayName("Invalid leaf paths")
+    void invalidLeafPaths() {
         final TestDataSource ds = new TestDataSource(Path.INVALID_PATH, Path.INVALID_PATH);
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
-        final List<VirtualLeafRecord<TestKey, TestValue>> leaves = new ArrayList<>();
-        leaves.add(appleLeaf(VirtualTestBase.A_PATH));
+        final List<VirtualLeafRecord<TestKey, TestValue>> emptyLeaves = new ArrayList<>();
+        // Empty dirty leaves stream -> null hash
         assertNull(
-                hasher.hash(ds::loadHash, leaves.iterator(), Path.INVALID_PATH, 2), "Call should have produced null");
+                hasher.hash(
+                        ds::loadHash, emptyLeaves.iterator(), Path.INVALID_PATH, Path.INVALID_PATH, VIRTUAL_MAP_CONFIG),
+                "Call should have produced null");
         assertNull(
-                hasher.hash(ds::loadHash, leaves.iterator(), 1, Path.INVALID_PATH), "Call should have produced null");
-        assertNull(hasher.hash(ds::loadHash, leaves.iterator(), 0, 2), "Call should have produced null");
-        assertNull(hasher.hash(ds::loadHash, leaves.iterator(), 1, 0), "Call should have produced null");
+                hasher.hash(ds::loadHash, emptyLeaves.iterator(), Path.INVALID_PATH, 2, VIRTUAL_MAP_CONFIG),
+                "Call should have produced null");
+        assertNull(
+                hasher.hash(ds::loadHash, emptyLeaves.iterator(), 1, Path.INVALID_PATH, VIRTUAL_MAP_CONFIG),
+                "Call should have produced null");
+        assertNull(
+                hasher.hash(ds::loadHash, emptyLeaves.iterator(), 0, 2, VIRTUAL_MAP_CONFIG),
+                "Call should have produced null");
+        assertNull(
+                hasher.hash(ds::loadHash, emptyLeaves.iterator(), 1, 0, VIRTUAL_MAP_CONFIG),
+                "Call should have produced null");
+        // Non-empty dirty leaves stream + empty leaf path range -> IllegalStateException
+        final List<VirtualLeafRecord<TestKey, TestValue>> nonEmptyLeaves = new ArrayList<>();
+        nonEmptyLeaves.add(appleLeaf(VirtualTestBase.A_PATH));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> hasher.hash(
+                        ds::loadHash,
+                        nonEmptyLeaves.iterator(),
+                        Path.INVALID_PATH,
+                        Path.INVALID_PATH,
+                        VIRTUAL_MAP_CONFIG),
+                "Non-null leaves iterator + invalid paths should throw an exception");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> hasher.hash(ds::loadHash, nonEmptyLeaves.iterator(), 0, 2, VIRTUAL_MAP_CONFIG),
+                "Non-null leaves iterator + invalid paths should throw an exception");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> hasher.hash(ds::loadHash, nonEmptyLeaves.iterator(), 1, 0, VIRTUAL_MAP_CONFIG),
+                "Non-null leaves iterator + invalid paths should throw an exception");
     }
 
     /**
@@ -123,7 +156,8 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         final Hash expected = hashTree(ds);
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = invalidateNodes(ds, dirtyPaths.stream());
-        final Hash rootHash = hasher.hash(ds::loadHash, leaves.iterator(), firstLeafPath, lastLeafPath, listener);
+        final Hash rootHash =
+                hasher.hash(ds::loadHash, leaves.iterator(), firstLeafPath, lastLeafPath, listener, VIRTUAL_MAP_CONFIG);
         assertEquals(expected, rootHash, "Hash value does not match expected");
 
         // Make sure the saver saw each dirty node exactly once.
@@ -278,7 +312,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         // this will *likely* find it.
         for (int i = 0; i < 1000; i++) {
             final List<VirtualLeafRecord<TestKey, TestValue>> leaves = invalidateNodes(ds, dirtyLeafPaths.stream());
-            final Hash rootHash = hasher.hash(ds::loadHash, leaves.iterator(), 52L, 104L);
+            final Hash rootHash = hasher.hash(ds::loadHash, leaves.iterator(), 52L, 104L, VIRTUAL_MAP_CONFIG);
             assertEquals(expected, rootHash, "Expected equals");
         }
     }
@@ -300,7 +334,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
                 53L, 56L, 59L, 63L, 66L, 72L, 76L, 77L, 80L, 81L, 82L, 83L, 85L, 87L, 88L, 94L, 96L, 100L, 104L);
 
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = invalidateNodes(ds, dirtyLeafPaths.stream());
-        hasher.hash(ds::loadHash, leaves.iterator(), 52L, 104L, listener);
+        hasher.hash(ds::loadHash, leaves.iterator(), 52L, 104L, listener, VIRTUAL_MAP_CONFIG);
 
         // Check the different callbacks were called the correct number of times
         assertEquals(1, listener.onHashingStartedCallCount, "Unexpected count");
@@ -340,7 +374,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
 
         assertDoesNotThrow(
                 () -> {
-                    hasher.hash(hashReader, dirtyLeaves, firstLeafPath, lastLeafPath, listener);
+                    hasher.hash(hashReader, dirtyLeaves, firstLeafPath, lastLeafPath, listener, VIRTUAL_MAP_CONFIG);
                 },
                 "Hashing should not throw an exception");
     }

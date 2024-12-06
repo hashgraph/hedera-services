@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -176,9 +176,6 @@ public class NftTransferSuite {
 
     @HapiTest
     final Stream<DynamicTest> transferNfts() {
-        return defaultHapiSpec("TransferNfts")
-                .given(setupNftTest(), transferInitial())
-                .when(seqFor(0, NUM_ROUNDS, NftTransferSuite::transferRound))
-                .then();
+        return hapiTest(setupNftTest(), transferInitial(), seqFor(0, NUM_ROUNDS, NftTransferSuite::transferRound));
     }
 }
