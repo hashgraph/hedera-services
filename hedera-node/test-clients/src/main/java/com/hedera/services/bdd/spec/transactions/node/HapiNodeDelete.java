@@ -16,8 +16,6 @@
 
 package com.hedera.services.bdd.spec.transactions.node;
 
-import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
-
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -27,7 +25,6 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -47,25 +44,12 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
     private String nodeName = DEFAULT_NODE_ID;
     private Optional<Supplier<String>> nodeSupplier = Optional.empty();
 
-    private Optional<Key> newAdminKey = Optional.empty();
-    private Optional<String> newAdminKeyName = Optional.empty();
-
     public HapiNodeDelete(@NonNull final String nodeName) {
         this.nodeName = nodeName;
     }
 
     public HapiNodeDelete(@NonNull final Supplier<String> supplier) {
         this.nodeSupplier = Optional.of(supplier);
-    }
-
-    public HapiNodeDelete adminKey(final String name) {
-        newAdminKeyName = Optional.of(name);
-        return this;
-    }
-
-    public HapiNodeDelete adminKey(final Key key) {
-        newAdminKey = Optional.of(key);
-        return this;
     }
 
     @Override
@@ -75,15 +59,12 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
-        newAdminKeyName.ifPresent(
-                name -> newAdminKey = Optional.of(spec.registry().getKey(name)));
         nodeName = nodeSupplier.isPresent() ? nodeSupplier.get().get() : nodeName;
         final var nodeId = TxnUtils.asNodeIdLong(nodeName, spec);
         final NodeDeleteTransactionBody opBody = spec.txns()
                 .<NodeDeleteTransactionBody, NodeDeleteTransactionBody.Builder>body(
                         NodeDeleteTransactionBody.class, builder -> {
                             builder.setNodeId(nodeId);
-                            newAdminKey.ifPresent(builder::setAdminKey);
                         });
         return builder -> builder.setNodeDelete(opBody);
     }
@@ -93,13 +74,6 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
         if (actualStatus != ResponseCodeEnum.SUCCESS) {
             return;
         }
-        newAdminKey.ifPresent(k -> {
-            if (newAdminKey.get() == EMPTY_KEY) {
-                spec.registry().removeKey(nodeName);
-            } else {
-                spec.registry().saveKey(nodeName, k);
-            }
-        });
 
         if (verboseLoggingOn) {
             LOG.info("Actual status was {}", actualStatus);
@@ -121,10 +95,6 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
     @Override
     protected HapiNodeDelete self() {
         return this;
-    }
-
-    public Key getAdminKey() {
-        return newAdminKey.orElse(null);
     }
 
     @Override

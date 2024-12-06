@@ -18,12 +18,10 @@ package com.hedera.node.app.service.addressbook.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NODE_DELETED;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.checkDABEnabled;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody;
@@ -31,8 +29,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
-import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -49,13 +47,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class NodeDeleteHandler implements TransactionHandler {
-    private final AddressBookValidator addressBookValidator;
 
     @Inject
-    public NodeDeleteHandler(@NonNull final AddressBookValidator addressBookValidator) {
-        this.addressBookValidator =
-                requireNonNull(addressBookValidator, "The supplied argument 'addressBookValidator' must not be null");
-    }
+    public NodeDeleteHandler() {}
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
@@ -64,28 +58,24 @@ public class NodeDeleteHandler implements TransactionHandler {
         final long nodeId = op.nodeId();
 
         validateFalsePreCheck(nodeId < 0, INVALID_NODE_ID);
-        if (op.hasAdminKey()) {
-            final var adminKey = op.adminKey();
-            addressBookValidator.validateAdminKey(adminKey);
-        }
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         final var op = context.body().nodeDeleteOrThrow();
         final var accountConfig = context.configuration().getConfigData(AccountsConfig.class);
+        final var nodeStore = context.createStore(ReadableNodeStore.class);
+        final var payerNum = context.payer().accountNum();
 
-        // if send admin key, check if it is valid and require to sign. If no admin key, the payer must be one of the
-        // system admin, treasury or address book admin
-        if (op.hasAdminKey()) {
-            context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
-        } else {
-            final var payerid = context.payer().accountNum();
-            validateTruePreCheck(
-                    payerid == accountConfig.treasury()
-                            || payerid == accountConfig.systemAdmin()
-                            || payerid == accountConfig.addressBookAdmin(),
-                    INVALID_SIGNATURE);
+        final var existingNode = nodeStore.get(op.nodeId());
+        validateFalsePreCheck(existingNode == null, INVALID_NODE_ID);
+        validateFalsePreCheck(existingNode.deleted(), NODE_DELETED);
+
+        // if payer is not one of the system admin, treasury or address book admin, check the admin key signature
+        if (payerNum != accountConfig.treasury()
+                && payerNum != accountConfig.systemAdmin()
+                && payerNum != accountConfig.addressBookAdmin()) {
+            context.requireKeyOrThrow(existingNode.adminKey(), INVALID_ADMIN_KEY);
         }
     }
 

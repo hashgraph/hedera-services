@@ -43,7 +43,6 @@ import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
-import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
@@ -93,8 +92,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableNodeStoreImpl.class);
-        final var addressBookValidator = new AddressBookValidator();
-        subject = new NodeDeleteHandler(addressBookValidator);
+        subject = new NodeDeleteHandler();
 
         writableNodeState = writableNodeStateWithOneKey();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
@@ -226,26 +224,24 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void adminKeyInvalid() {
-        final var txn = newDeleteTxnWithKey(invalidKey);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_ADMIN_KEY);
-    }
+    void preHandleWorksWhenExistingAdminKeyValid() throws PreCheckException {
+        givenValidNodeWithAdminKey(anotherKey);
+        refreshStoresWithCurrentNodeInReadable();
 
-    @Test
-    void preHandleWorksWhenAdminKeyValid() throws PreCheckException {
-        final var txn = newDeleteTxnWithKey(key);
-        final var context = setupPreHandlePayerKey(txn, payerId, anotherKey);
+        final var txn = newDeleteTxnWithNodeId(nodeId.number());
+        final var context = setupPreHandlePayerKey(txn, accountId, key);
         subject.preHandle(context);
         assertThat(txn).isEqualTo(context.body());
-        assertThat(context.payerKey()).isEqualTo(anotherKey);
-        assertThat(context.requiredNonPayerKeys()).contains(key);
+        assertThat(context.payerKey()).isEqualTo(key);
+        assertThat(context.requiredNonPayerKeys()).contains(anotherKey);
     }
 
     @Test
     void preHandleFailedWhenAdminKeyInValid() throws PreCheckException {
-        final var txn = newDeleteTxnWithKey(invalidKey);
-        final var context = setupPreHandlePayerKey(txn, payerId, anotherKey);
+        givenValidNodeWithAdminKey(invalidKey);
+        refreshStoresWithCurrentNodeInReadable();
+        final var txn = newDeleteTxnWithNodeId(nodeId.number());
+        final var context = setupPreHandlePayerKey(txn, accountId, anotherKey);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ADMIN_KEY);
     }
 
@@ -299,11 +295,9 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
                 .build();
     }
 
-    private TransactionBody newDeleteTxnWithKey(Key key) {
-        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
-        final var deleteFileBuilder = NodeDeleteTransactionBody.newBuilder()
-                .nodeId(WELL_KNOWN_NODE_ID)
-                .adminKey(key);
+    private TransactionBody newDeleteTxnWithNodeId(long nodeId) {
+        final var txnId = TransactionID.newBuilder().accountID(accountId).build();
+        final var deleteFileBuilder = NodeDeleteTransactionBody.newBuilder().nodeId(nodeId);
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .nodeDelete(deleteFileBuilder.build())

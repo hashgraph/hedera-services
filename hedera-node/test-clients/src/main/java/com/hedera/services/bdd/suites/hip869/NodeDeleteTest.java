@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.WRONG_LENGTH_EDDSA_KEY;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
@@ -37,10 +36,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -224,11 +221,7 @@ public class NodeDeleteTest {
                 nodeCreate("testNode")
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
-                nodeDelete("testNode").adminKey(NONSENSE_KEY).hasPrecheck(KEY_REQUIRED),
-                nodeDelete("testNode")
-                        .adminKey(WRONG_LENGTH_EDDSA_KEY)
-                        .signedBy(GENESIS)
-                        .hasPrecheck(INVALID_ADMIN_KEY));
+                nodeDelete("testNode").signedBy(NONSENSE_KEY).hasPrecheck(INVALID_SIGNATURE));
     }
 
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
@@ -239,7 +232,7 @@ public class NodeDeleteTest {
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 viewNode("testNode", node -> assertFalse(node.deleted(), "Node should not be deleted")),
-                nodeDelete("testNode").adminKey("adminKey").signedBy(DEFAULT_PAYER, "adminKey"),
+                nodeDelete("testNode").signedBy(DEFAULT_PAYER, "adminKey"),
                 viewNode("testNode", node -> assertTrue(node.deleted(), "Node should be deleted")));
     }
 
