@@ -18,6 +18,7 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.platform.eventhandling.DefaultTransactionPrehandler.NO_OP_CONSUMER;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -56,8 +57,7 @@ public class TransactionHandler {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
 
-            state.getSwirldState()
-                    .handleConsensusRound(round, state.getWritablePlatformState(), systemTransactions -> {});
+            state.getSwirldState().handleConsensusRound(round, state.getWritablePlatformState(), NO_OP_CONSUMER);
 
             final double secondsElapsed = (System.nanoTime() - startTime) * NANOSECONDS_TO_SECONDS;
 
