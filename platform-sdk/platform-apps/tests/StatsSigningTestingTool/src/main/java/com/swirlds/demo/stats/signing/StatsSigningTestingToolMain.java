@@ -75,7 +75,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
                                 FAKE_MERKLE_STATE_LIFECYCLES,
                                 version -> new BasicSoftwareVersion(version.major()),
                                 () -> null);
-                        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(statsSigningTestingToolState);
+                        FAKE_MERKLE_STATE_LIFECYCLES.initStates(statsSigningTestingToolState);
                         return statsSigningTestingToolState;
                     }));
             registerMerkleStateRootClassIds();
@@ -303,7 +303,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
                 FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()),
                 () -> sttTransactionPool);
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 
