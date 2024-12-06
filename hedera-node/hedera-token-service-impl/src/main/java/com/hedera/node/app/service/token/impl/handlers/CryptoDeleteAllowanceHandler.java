@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -33,6 +32,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -113,8 +114,8 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
 
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         // validate payer account exists
-        final var payerAccount = accountStore.getAccountById(payer);
-        validateTrue(payerAccount != null, INVALID_PAYER_ACCOUNT_ID);
+        final var payerAccount = TokenHandlerHelper.getIfUsable(
+                payer, accountStore, context.expiryValidator(), INVALID_PAYER_ACCOUNT_ID);
 
         // validate the transaction body fields that include state or configuration
         // We can use payerAccount for validations since it's not mutated in validateSemantics
@@ -180,9 +181,10 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
             final var owner = getEffectiveOwner(allowance.owner(), payerAccount, accountStore, expiryValidator);
             final var token = tokenStore.get(tokenId);
             for (final var serial : serialNums) {
-                final var nft = nftStore.get(tokenId, serial);
+                final var nftId =
+                        NftID.newBuilder().serialNumber(serial).tokenId(tokenId).build();
+                final var nft = TokenHandlerHelper.getIfUsable(nftId, nftStore);
 
-                validateTrue(nft != null, INVALID_NFT_ID);
                 final AccountID accountOwner = owner.accountId();
                 validateTrue(isValidOwner(nft, accountOwner, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 

@@ -71,6 +71,11 @@ class ProxyEvmContractTest {
     }
 
     @Test
+    void notScheduleTxnFacade() {
+        assertFalse(subject.isScheduleTxnFacade());
+    }
+
+    @Test
     void hasExpectedId() {
         assertEquals(AccountID.newBuilder().accountNum(ACCOUNT_NUM).build(), subject.hederaId());
     }

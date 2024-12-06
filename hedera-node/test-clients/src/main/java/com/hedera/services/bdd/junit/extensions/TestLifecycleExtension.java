@@ -17,6 +17,8 @@
 package com.hedera.services.bdd.junit.extensions;
 
 import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMethodOf;
+import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
+import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.ensureEmbeddedNetwork;
 
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -38,8 +40,8 @@ public class TestLifecycleExtension
     @Override
     public void beforeAll(@NonNull final ExtensionContext extensionContext) {
         if (isRootTestClass(extensionContext)) {
-            getStore(extensionContext)
-                    .put(SPEC_MANAGER, new TestLifecycle(NetworkTargetingExtension.SHARED_NETWORK.get()));
+            ensureEmbeddedNetwork(extensionContext);
+            getStore(extensionContext).put(SPEC_MANAGER, new TestLifecycle(SHARED_NETWORK.get()));
         }
         getStore(extensionContext)
                 .get(SPEC_MANAGER, TestLifecycle.class)

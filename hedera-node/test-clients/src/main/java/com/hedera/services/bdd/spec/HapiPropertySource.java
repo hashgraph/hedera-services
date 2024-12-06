@@ -27,8 +27,10 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.types.LongPair;
+import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -111,6 +113,16 @@ public interface HapiPropertySource {
         return AccountID.getDefaultInstance();
     }
 
+    /**
+     * Returns an {@link StreamMode} parsed from the given property.
+     * @param property the property to get the value from
+     * @return the {@link StreamMode} value
+     */
+    default StreamMode getStreamMode(@NonNull final String property) {
+        requireNonNull(property);
+        return StreamMode.valueOf(get(property));
+    }
+
     default ServiceEndpoint getServiceEndpoint(String property) {
         try {
             return asServiceEndpoint(get(property));
@@ -138,6 +150,11 @@ public interface HapiPropertySource {
 
     default TimeUnit getTimeUnit(String property) {
         return TimeUnit.valueOf(get(property));
+    }
+
+    default ScaleFactor getScaleFactor(@NonNull final String property) {
+        requireNonNull(property);
+        return ScaleFactor.from(get(property));
     }
 
     default double getDouble(String property) {

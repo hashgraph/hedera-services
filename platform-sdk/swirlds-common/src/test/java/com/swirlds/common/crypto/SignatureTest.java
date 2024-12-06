@@ -16,11 +16,11 @@
 
 package com.swirlds.common.crypto;
 
-import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.BeforeAll;
@@ -40,5 +40,13 @@ public class SignatureTest {
         Signature signature = new Signature(signatureType, sigBytes);
         Signature deserialized = serializeDeserialize(signature);
         assertEquals(signature, deserialized);
+    }
+
+    private Signature serializeDeserialize(final Signature signature) throws IOException {
+        try (final InputOutputStream io = new InputOutputStream()) {
+            signature.serialize(io.getOutput(), true);
+            io.startReading();
+            return Signature.deserialize(io.getInput(), true);
+        }
     }
 }

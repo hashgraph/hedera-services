@@ -62,10 +62,7 @@ public record EventDescriptorWrapper(
     }
 
     public EventDescriptorWrapper(@NonNull EventDescriptor eventDescriptor) {
-        this(
-                eventDescriptor,
-                new Hash(eventDescriptor.hash().toByteArray()),
-                new NodeId(eventDescriptor.creatorNodeId()));
+        this(eventDescriptor, new Hash(eventDescriptor.hash()), NodeId.of(eventDescriptor.creatorNodeId()));
     }
 
     /**

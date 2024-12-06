@@ -22,8 +22,7 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 /**
  * Implements an assertion about one or more {@link RecordStreamItem}'s that should appear in the
- * record stream during---or shortly after---execution of a {@link
- * HapiSpec}.
+ * record stream during---or shortly after---execution of a {@link HapiSpec}.
  *
  * <p>Typical implementations will be stateful, and will be constructed with their "parent" {@link HapiSpec}.
  */

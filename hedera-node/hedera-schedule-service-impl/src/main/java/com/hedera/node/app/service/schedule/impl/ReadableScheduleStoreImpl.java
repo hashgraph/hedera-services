@@ -16,20 +16,23 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.calculateBytesHash;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.schedule.ScheduledCounts;
+import com.hedera.hapi.node.state.schedule.ScheduledOrder;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -41,8 +44,10 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
             "Null states instance passed to ReadableScheduleStore constructor, possible state corruption.";
 
     private final ReadableKVState<ScheduleID, Schedule> schedulesById;
-    private final ReadableKVState<ProtoLong, ScheduleList> schedulesByExpirationSecond;
-    private final ReadableKVState<ProtoBytes, ScheduleList> schedulesByStringHash;
+    private final ReadableKVState<TimestampSeconds, ScheduledCounts> scheduledCounts;
+    private final ReadableKVState<TimestampSeconds, ThrottleUsageSnapshots> scheduledUsages;
+    private final ReadableKVState<ScheduledOrder, ScheduleID> scheduledOrders;
+    private final ReadableKVState<ProtoBytes, ScheduleID> scheduleIdByStringHash;
 
     /**
      * Create a new {@link ReadableScheduleStore} instance.
@@ -50,10 +55,12 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
      * @param states The state to use.
      */
     public ReadableScheduleStoreImpl(@NonNull final ReadableStates states) {
-        Objects.requireNonNull(states, NULL_STATE_IN_CONSTRUCTOR_MESSAGE);
+        requireNonNull(states, NULL_STATE_IN_CONSTRUCTOR_MESSAGE);
         schedulesById = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
-        schedulesByExpirationSecond = states.get(V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY);
-        schedulesByStringHash = states.get(V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY);
+        scheduledCounts = states.get(V0570ScheduleSchema.SCHEDULED_COUNTS_KEY);
+        scheduledOrders = states.get(V0570ScheduleSchema.SCHEDULED_ORDERS_KEY);
+        scheduledUsages = states.get(V0570ScheduleSchema.SCHEDULED_USAGES_KEY);
+        scheduleIdByStringHash = states.get(V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY);
     }
 
     /**
@@ -72,21 +79,38 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
 
     @Override
     @Nullable
-    public List<Schedule> getByEquality(final @NonNull Schedule scheduleToMatch) {
-        Bytes bytesHash = ScheduleStoreUtility.calculateBytesHash(scheduleToMatch);
-        final ScheduleList inStateValue = schedulesByStringHash.get(new ProtoBytes(bytesHash));
-        return inStateValue != null ? inStateValue.schedules() : null;
+    public ScheduleID getByEquality(@NonNull final Schedule schedule) {
+        requireNonNull(schedule);
+        final var bytesHash = calculateBytesHash(schedule);
+        return scheduleIdByStringHash.get(new ProtoBytes(bytesHash));
     }
 
     @Nullable
     @Override
-    public List<Schedule> getByExpirationSecond(final long expirationTime) {
-        final ScheduleList inStateValue = schedulesByExpirationSecond.get(new ProtoLong(expirationTime));
-        return inStateValue != null ? inStateValue.schedules() : null;
+    public ScheduleID getByOrder(@NonNull final ScheduledOrder scheduledOrder) {
+        requireNonNull(scheduledOrder);
+        return scheduledOrders.get(scheduledOrder);
     }
 
     @Override
     public long numSchedulesInState() {
         return schedulesById.size();
+    }
+
+    @Override
+    public int numTransactionsScheduledAt(final long consensusSecond) {
+        final var counts = scheduledCounts.get(new TimestampSeconds(consensusSecond));
+        return counts == null ? 0 : counts.numberScheduled();
+    }
+
+    @Nullable
+    @Override
+    public ScheduledCounts scheduledCountsAt(long consensusSecond) {
+        return scheduledCounts.get(new TimestampSeconds(consensusSecond));
+    }
+
+    @Override
+    public @Nullable ThrottleUsageSnapshots usageSnapshotsForScheduled(final long consensusSecond) {
+        return scheduledUsages.get(new TimestampSeconds(consensusSecond));
     }
 }

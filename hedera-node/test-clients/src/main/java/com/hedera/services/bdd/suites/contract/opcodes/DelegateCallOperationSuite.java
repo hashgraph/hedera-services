@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -39,21 +39,19 @@ public class DelegateCallOperationSuite {
     final Stream<DynamicTest> verifiesExistence() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
-        return defaultHapiSpec("VerifiesExistence")
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when()
-                .then(
-                        contractCall(contract, "delegateCall", asHeadlongAddress(INVALID_ADDRESS))
-                                .hasKnownStatus(SUCCESS),
-                        withOpContext((spec, opLog) -> {
-                            final var id = spec.registry().getAccountID(DEFAULT_PAYER);
-                            final var solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                contractCall(contract, "delegateCall", asHeadlongAddress(INVALID_ADDRESS))
+                        .hasKnownStatus(SUCCESS),
+                withOpContext((spec, opLog) -> {
+                    final var id = spec.registry().getAccountID(DEFAULT_PAYER);
+                    final var solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
 
-                            final var contractCall = contractCall(
-                                            contract, "delegateCall", asHeadlongAddress(solidityAddress))
-                                    .hasKnownStatus(SUCCESS);
+                    final var contractCall = contractCall(contract, "delegateCall", asHeadlongAddress(solidityAddress))
+                            .hasKnownStatus(SUCCESS);
 
-                            allRunFor(spec, contractCall);
-                        }));
+                    allRunFor(spec, contractCall);
+                }));
     }
 }

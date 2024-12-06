@@ -25,21 +25,25 @@ import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAc
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.merkle.MerkleStateRoot;
+import com.swirlds.state.merkle.SigSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -164,7 +168,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * Instantiate a signed state.
      *
-     * @param platformContext          the platform context
+     * @param configuration            the configuration for this node
      * @param signatureVerifier        the signature verifier
      * @param state                    a fast copy of the state resulting from all transactions in consensus order from
      *                                 all events with received rounds up through the round this SignedState represents
@@ -179,7 +183,7 @@ public class SignedState implements SignedStateInfo {
      *                                 event stream
      */
     public SignedState(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final MerkleRoot state,
             @NonNull final String reason,
@@ -192,7 +196,7 @@ public class SignedState implements SignedStateInfo {
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.state = state;
 
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         if (stateConfig.stateHistoryEnabled()) {
             history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
             history.recordAction(CREATION, getReservationCount(), reason, null);
@@ -213,7 +217,7 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public long getRound() {
-        return state.getPlatformState().getRound();
+        return state.getReadablePlatformState().getRound();
     }
 
     /**
@@ -222,7 +226,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if this is the genesis state
      */
     public boolean isGenesisState() {
-        return state.getPlatformState().getRound() == GENESIS_ROUND;
+        return state.getReadablePlatformState().getRound() == GENESIS_ROUND;
     }
 
     /**
@@ -258,7 +262,8 @@ public class SignedState implements SignedStateInfo {
     @Override
     public @NonNull AddressBook getAddressBook() {
         return Objects.requireNonNull(
-                getState().getPlatformState().getAddressBook(),
+                RosterUtils.buildAddressBook(RosterRetriever.retrieveActiveOrGenesisRoster(
+                        (MerkleStateRoot) getState().getSwirldState())),
                 "address book stored in this signed state is null, this should never happen");
     }
 
@@ -455,7 +460,7 @@ public class SignedState implements SignedStateInfo {
      * @return the consensus timestamp for this signed state.
      */
     public @NonNull Instant getConsensusTimestamp() {
-        return state.getPlatformState().getConsensusTimestamp();
+        return state.getReadablePlatformState().getConsensusTimestamp();
     }
 
     /**
@@ -605,6 +610,12 @@ public class SignedState implements SignedStateInfo {
 
         if (address.getWeight() == 0) {
             // Signing node has no weight.
+            return false;
+        }
+
+        if (address.getSigPublicKey() == null) {
+            // If the address does not have a valid public key, the signature is invalid.
+            // https://github.com/hashgraph/hedera-services/issues/16648
             return false;
         }
 

@@ -32,12 +32,12 @@ import com.hedera.node.app.Hedera;
 import com.hedera.node.app.service.token.TokenService;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -109,13 +109,13 @@ class MerkleStateLifecyclesImplTest extends MerkleTestBase {
     void delegatesOnStateInitialized() {
         subject.onStateInitialized(merkleStateRoot, platform, InitTrigger.GENESIS, null);
 
-        verify(hedera).onStateInitialized(merkleStateRoot, platform, InitTrigger.GENESIS, null);
+        verify(hedera).onStateInitialized(merkleStateRoot, platform, InitTrigger.GENESIS);
     }
 
     @Test
     void updatesAddressBookWithZeroWeightOnGenesisStart() {
-        final var node0 = new NodeId(0);
-        final var node1 = new NodeId(1);
+        final var node0 = NodeId.of(0);
+        final var node1 = NodeId.of(1);
         given(platform.getSelfId()).willReturn(node0);
 
         final var pretendAddressBook = createPretendBookFrom(platform, true);
@@ -133,8 +133,8 @@ class MerkleStateLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void updatesAddressBookWithZeroWeightForNewNodes() {
-        final var node0 = new NodeId(0);
-        final var node1 = new NodeId(1);
+        final var node0 = NodeId.of(0);
+        final var node1 = NodeId.of(1);
         given(platform.getSelfId()).willReturn(node0);
         final var pretendAddressBook = createPretendBookFrom(platform, true);
         given(merkleStateRoot.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
@@ -163,9 +163,9 @@ class MerkleStateLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void doesntUpdateAddressBookIfNodeIdFromStateDoesntExist() {
-        final var node0 = new NodeId(0);
-        final var node1 = new NodeId(1);
-        final var node2 = new NodeId(2);
+        final var node0 = NodeId.of(0);
+        final var node1 = NodeId.of(1);
+        final var node2 = NodeId.of(2);
         given(platform.getSelfId()).willReturn(node0);
 
         final var pretendAddressBook = createPretendBookFrom(platform, true);
@@ -214,8 +214,8 @@ class MerkleStateLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void updatesAddressBookWithNonZeroWeightsOnGenesisStartIfStakesExist() {
-        final var node0 = new NodeId(0);
-        final var node1 = new NodeId(1);
+        final var node0 = NodeId.of(0);
+        final var node1 = NodeId.of(1);
         given(platform.getSelfId()).willReturn(node0);
 
         final var pretendAddressBook = createPretendBookFrom(platform, true);
@@ -278,8 +278,8 @@ class MerkleStateLifecyclesImplTest extends MerkleTestBase {
                 .when(weightUpdateVisitor)
                 .accept(any(), any());
 
-        final var node0 = new NodeId(0);
-        final var node1 = new NodeId(1);
+        final var node0 = NodeId.of(0);
+        final var node1 = NodeId.of(1);
 
         given(platform.getSelfId()).willReturn(node0);
 

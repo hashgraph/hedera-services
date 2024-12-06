@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -27,8 +27,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -65,10 +63,10 @@ public class SStoreSuite {
     final Stream<DynamicTest> multipleSStoreOpsSucceed() {
         final var contract = "GrowArray";
         final var GAS_TO_OFFER = 6_000_000L;
-        return defaultHapiSpec(
-                        "multipleSStoreOpsSucceed", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                withOpContext((spec, opLog) -> {
                     final var step = 16;
                     final List<SpecOperation> subOps = new ArrayList<>();
 
@@ -79,8 +77,8 @@ public class SStoreSuite {
                         subOps.add(subOp1);
                     }
                     CustomSpecAssert.allRunFor(spec, subOps);
-                }))
-                .then(withOpContext((spec, opLog) -> {
+                }),
+                withOpContext((spec, opLog) -> {
                     final var numberOfIterations = 10;
                     final List<SpecOperation> subOps = new ArrayList<>();
 
@@ -101,9 +99,10 @@ public class SStoreSuite {
     final Stream<DynamicTest> childStorage() {
         // Successfully exceeds deprecated max contract storage of 1 KB
         final var contract = "ChildStorage";
-        return defaultHapiSpec("ChildStorage", HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(flattened(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                withOpContext((spec, opLog) -> {
                     final var almostFullKb = MAX_CONTRACT_STORAGE_KB * 3 / 4;
                     final var kbPerStep = 16;
 
@@ -130,13 +129,12 @@ public class SStoreSuite {
                                 getTxnRecord("large" + childKbStorage).logged();
                         CustomSpecAssert.allRunFor(spec, subOp1, subOp2, subOp3, subOp4);
                     }
-                }))
-                .then(flattened(
-                        valuesMatch(contract, 19, 17, 19),
-                        contractCall(contract, "setZeroReadOne", BigInteger.valueOf(23)),
-                        valuesMatch(contract, 23, 23, 19),
-                        contractCall(contract, "setBoth", BigInteger.valueOf(29)),
-                        valuesMatch(contract, 29, 29, 29)));
+                }),
+                valuesMatch(contract, 19, 17, 19),
+                contractCall(contract, "setZeroReadOne", BigInteger.valueOf(23)),
+                valuesMatch(contract, 23, 23, 19),
+                contractCall(contract, "setBoth", BigInteger.valueOf(29)),
+                valuesMatch(contract, 29, 29, 29)));
     }
 
     private HapiSpecOperation[] valuesMatch(
@@ -167,24 +165,18 @@ public class SStoreSuite {
         final var GAS_LIMIT = 1_000_000;
         var value = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005")
                 .toArray();
-        return defaultHapiSpec("benchmarkSingleSetter", HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS), uploadInitCode(contract))
-                .when(
-                        contractCreate(contract)
-                                .payingWith("payer")
-                                .via("creationTx")
-                                .gas(GAS_LIMIT),
-                        contractCall(contract, "twoSSTOREs", value)
-                                .gas(GAS_LIMIT)
-                                .via("storageTx"))
-                .then(
-                        getTxnRecord("storageTx").logged(),
-                        contractCallLocal(contract, "counter")
-                                .nodePayment(1_234_567)
-                                .has(ContractFnResultAsserts.resultWith()
-                                        .resultThruAbi(
-                                                Utils.getABIFor(FUNCTION, "counter", contract),
-                                                ContractFnResultAsserts.isLiteralResult(
-                                                        new Object[] {BigInteger.valueOf(1L)}))));
+        return hapiTest(
+                cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
+                uploadInitCode(contract),
+                contractCreate(contract).payingWith("payer").via("creationTx").gas(GAS_LIMIT),
+                contractCall(contract, "twoSSTOREs", value).gas(GAS_LIMIT).via("storageTx"),
+                getTxnRecord("storageTx").logged(),
+                contractCallLocal(contract, "counter")
+                        .nodePayment(1_234_567)
+                        .has(ContractFnResultAsserts.resultWith()
+                                .resultThruAbi(
+                                        Utils.getABIFor(FUNCTION, "counter", contract),
+                                        ContractFnResultAsserts.isLiteralResult(
+                                                new Object[] {BigInteger.valueOf(1L)}))));
     }
 }

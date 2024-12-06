@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.contract.openzeppelin;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -29,8 +29,6 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 
@@ -53,84 +51,72 @@ public class ERC1155ContractInteractions {
 
     @HapiTest
     final Stream<DynamicTest> erc1155() {
-        // Adding NONDETERMINISTIC_CONTRACT_CALL_RESULTS because one of the
-        // contractCallResult->logInfo->topics is always different(both in mono and mod)
-        return defaultHapiSpec("erc1155", NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .given(
-                        newKeyNamed("ec").shape(SECP_256K1_SHAPE),
-                        cryptoCreate(ACCOUNT1),
-                        withOpContext((spec, log) -> allRunFor(
-                                spec,
-                                cryptoCreate(ACCOUNT2)
-                                        .balance(ONE_HUNDRED_HBARS)
-                                        .key("ec")
-                                        .alias(ByteString.copyFrom(EthSigsUtils.recoverAddressFromPubKey(spec.registry()
-                                                .getKey("ec")
-                                                .getECDSASecp256K1()
-                                                .toByteArray()))))),
-                        uploadInitCode(CONTRACT))
-                .when()
-                .then(
-                        contractCreate(CONTRACT)
-                                .gas(500_000L)
-                                .via("contractCreate")
-                                .payingWith(ACCOUNT2),
-                        getTxnRecord("contractCreate").logged(),
-                        getAccountBalance(ACCOUNT2).logged(),
-                        getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
-                        getAccountInfo(ACCOUNT2)
-                                .savingSnapshot(ACCOUNT2 + "Info")
-                                .logged(),
-                        withOpContext((spec, log) -> {
-                            final var accountOneAddress = spec.registry()
-                                    .getAccountInfo(ACCOUNT1 + "Info")
-                                    .getContractAccountID();
-                            final var senderAddress = spec.registry()
-                                    .getAccountInfo(ACCOUNT2 + "Info")
-                                    .getContractAccountID();
+        return hapiTest(
+                newKeyNamed("ec").shape(SECP_256K1_SHAPE),
+                cryptoCreate(ACCOUNT1),
+                withOpContext((spec, log) -> allRunFor(
+                        spec,
+                        cryptoCreate(ACCOUNT2)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .key("ec")
+                                .alias(ByteString.copyFrom(EthSigsUtils.recoverAddressFromPubKey(spec.registry()
+                                        .getKey("ec")
+                                        .getECDSASecp256K1()
+                                        .toByteArray()))))),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).gas(500_000L).via("contractCreate").payingWith(ACCOUNT2),
+                getTxnRecord("contractCreate"),
+                getAccountBalance(ACCOUNT2),
+                getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
+                getAccountInfo(ACCOUNT2).savingSnapshot(ACCOUNT2 + "Info"),
+                withOpContext((spec, log) -> {
+                    final var accountOneAddress =
+                            spec.registry().getAccountInfo(ACCOUNT1 + "Info").getContractAccountID();
+                    final var senderAddress =
+                            spec.registry().getAccountInfo(ACCOUNT2 + "Info").getContractAccountID();
 
-                            final var ops = new ArrayList<SpecOperation>();
+                    final var ops = new ArrayList<SpecOperation>();
 
-                            /* approve for other accounts */
-                            final var approveCall = contractCall(
-                                            CONTRACT, "setApprovalForAll", asHeadlongAddress(accountOneAddress), true)
-                                    .via("acc1ApproveCall")
-                                    .payingWith(ACCOUNT2)
-                                    .signingWith(ACCOUNT2)
-                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
-                            ops.add(approveCall);
+                    /* approve for other accounts */
+                    final var approveCall = contractCall(
+                                    CONTRACT, "setApprovalForAll", asHeadlongAddress(accountOneAddress), true)
+                            .via("acc1ApproveCall")
+                            .payingWith(ACCOUNT2)
+                            .signingWith(ACCOUNT2)
+                            .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+                    ops.add(approveCall);
 
-                            /* mint to the contract owner */
-                            final var mintCall = contractCall(
-                                            CONTRACT,
-                                            "mintToken",
-                                            BigInteger.ZERO,
-                                            BigInteger.valueOf(10),
-                                            asHeadlongAddress(senderAddress))
-                                    .via("contractMintCall")
-                                    .payingWith(ACCOUNT2)
-                                    .signingWith(ACCOUNT2)
-                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
-                            ops.add(mintCall);
+                    /* mint to the contract owner */
+                    final var mintCall = contractCall(
+                                    CONTRACT,
+                                    "mintToken",
+                                    BigInteger.ZERO,
+                                    BigInteger.valueOf(10),
+                                    asHeadlongAddress(senderAddress))
+                            .via("contractMintCall")
+                            .payingWith(ACCOUNT2)
+                            .signingWith(ACCOUNT2)
+                            .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+                    ops.add(mintCall);
 
-                            /* transfer from - account to account */
-                            final var transferCall = contractCall(
-                                            CONTRACT,
-                                            "safeTransferFrom",
-                                            asHeadlongAddress(senderAddress),
-                                            asHeadlongAddress(accountOneAddress),
-                                            BigInteger.ZERO, // token id
-                                            BigInteger.ONE, // amount
-                                            "0x0".getBytes())
-                                    .via("contractTransferFromCall")
-                                    .payingWith(ACCOUNT2)
-                                    .signingWith(ACCOUNT2)
-                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
-                            ops.add(transferCall);
-                            allRunFor(spec, ops);
-                        }),
-                        getTxnRecord("contractMintCall").logged(),
-                        getTxnRecord("acc1ApproveCall").logged(),
-                        getTxnRecord("contractTransferFromCall").logged());
+                    /* transfer from - account to account */
+                    final var transferCall = contractCall(
+                                    CONTRACT,
+                                    "safeTransferFrom",
+                                    asHeadlongAddress(senderAddress),
+                                    asHeadlongAddress(accountOneAddress),
+                                    BigInteger.ZERO, // token id
+                                    BigInteger.ONE, // amount
+                                    "0x0".getBytes())
+                            .via("contractTransferFromCall")
+                            .payingWith(ACCOUNT2)
+                            .signingWith(ACCOUNT2)
+                            .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+                    ops.add(transferCall);
+                    allRunFor(spec, ops);
+                }),
+                getTxnRecord("contractMintCall"),
+                getTxnRecord("acc1ApproveCall"),
+                getTxnRecord("contractTransferFromCall"));
     }
 }

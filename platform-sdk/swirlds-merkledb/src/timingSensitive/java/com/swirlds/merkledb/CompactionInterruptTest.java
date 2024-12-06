@@ -21,11 +21,13 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTr
 import static com.swirlds.merkledb.MerkleDbCompactionCoordinator.HASH_STORE_DISK_SUFFIX;
 import static com.swirlds.merkledb.MerkleDbCompactionCoordinator.OBJECT_KEY_TO_PATH_SUFFIX;
 import static com.swirlds.merkledb.MerkleDbCompactionCoordinator.PATH_TO_KEY_VALUE_SUFFIX;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.runTaskAndCleanThreadLocals;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
@@ -138,7 +140,8 @@ class CompactionInterruptTest {
             });
 
             ThreadPoolExecutor compactingExecutor =
-                    (ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor();
+                    (ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor(
+                            CONFIGURATION.getConfigData(MerkleDbConfig.class));
             // we should take into account previous test runs
             long initTaskCount = compactingExecutor.getTaskCount();
             // start compaction for all three storages
@@ -163,8 +166,8 @@ class CompactionInterruptTest {
     }
 
     private static void stopCompactionAndVerifyItsStopped(String tableName, MerkleDbCompactionCoordinator compactor) {
-        ThreadPoolExecutor compactingExecutor =
-                (ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor();
+        ThreadPoolExecutor compactingExecutor = (ThreadPoolExecutor)
+                MerkleDbCompactionCoordinator.getCompactionExecutor(CONFIGURATION.getConfigData(MerkleDbConfig.class));
         long initCount = compactingExecutor.getCompletedTaskCount();
 
         // getting access to the guts of the compactor to check the state of the futures

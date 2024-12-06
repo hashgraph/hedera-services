@@ -25,7 +25,6 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.fcqueue.internal.FCQHashAlgorithm;
@@ -134,11 +133,11 @@ public class SlowMockFCQueue<E extends FastCopyable & SerializableHashable> exte
     public Hash getHash() {
         byte[] localHash = getNullHash();
         if (head == null) {
-            return new ImmutableHash(localHash);
+            return new Hash(localHash);
         }
         synchronized (this) {
             if (!Arrays.equals(hash, getNullHash())) {
-                return new ImmutableHash(hash);
+                return new Hash(hash);
             }
         }
         // traverse FCQueueNode from head to tail - works, caches HotH
@@ -173,7 +172,7 @@ public class SlowMockFCQueue<E extends FastCopyable & SerializableHashable> exte
             hash = localHash;
         }
 
-        return new ImmutableHash(hash);
+        return new Hash(hash);
     }
 
     /**

@@ -38,6 +38,9 @@ import org.hyperledger.besu.datatypes.Address;
  * Provides the Hedera operations that only a {@link ProxyWorldUpdater} needs (but not a {@link DispatchingEvmFrameState}.
  */
 public interface HederaOperations {
+    /**
+     * A contract id to indicate that a given ContractId has a mismatch with the config.
+     */
     ContractID MISSING_CONTRACT_ID = ContractID.newBuilder().contractNum(0).build();
 
     /**

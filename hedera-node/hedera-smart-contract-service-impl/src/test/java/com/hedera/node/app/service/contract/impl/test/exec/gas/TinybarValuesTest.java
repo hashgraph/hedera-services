@@ -23,6 +23,9 @@ import com.hedera.hapi.node.base.FeeData;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
+import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,10 +52,12 @@ class TinybarValuesTest {
             new FunctionalityResourcePrices(CHILD_TRANSACTION_PRICES_TO_USE, 2);
 
     private TinybarValues subject;
+    private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
+    private final ContractsConfig contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
 
     @BeforeEach
     void setUp() {
-        subject = TinybarValues.forTransactionWith(RATE_TO_USE, resourcePrices, childResourcePrices);
+        subject = TinybarValues.forTransactionWith(RATE_TO_USE, contractsConfig, resourcePrices, childResourcePrices);
     }
 
     @Test
@@ -65,8 +70,7 @@ class TinybarValuesTest {
     @Test
     void computesExpectedRbhServicePrice() {
         withTransactionSubject();
-        final var expectedRbhPrice = RBH_FEE_SCHEDULE_PRICE / (CENTS_PER_HBAR * 1000);
-        assertEquals(expectedRbhPrice, subject.topLevelTinybarRbhPrice());
+        assertEquals(RBH_FEE_SCHEDULE_PRICE, subject.topLevelTinycentRbhPrice());
     }
 
     @Test
@@ -90,10 +94,10 @@ class TinybarValuesTest {
     }
 
     private void withTransactionSubject() {
-        subject = TinybarValues.forTransactionWith(RATE_TO_USE, resourcePrices, childResourcePrices);
+        subject = TinybarValues.forTransactionWith(RATE_TO_USE, contractsConfig, resourcePrices, childResourcePrices);
     }
 
     private void withQuerySubject() {
-        subject = TinybarValues.forQueryWith(RATE_TO_USE);
+        subject = TinybarValues.forQueryWith(RATE_TO_USE, contractsConfig);
     }
 }

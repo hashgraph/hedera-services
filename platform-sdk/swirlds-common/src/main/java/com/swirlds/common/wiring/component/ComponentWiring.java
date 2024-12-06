@@ -47,6 +47,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 
 /**
  * Builds and manages input/output wires for a component.
@@ -144,6 +145,22 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             @NonNull final WiringModel model,
             @NonNull final Class<COMPONENT_TYPE> clazz,
             @NonNull final TaskSchedulerConfiguration schedulerConfiguration) {
+        this(model, clazz, schedulerConfiguration, data -> 1);
+    }
+
+    /**
+     * Create a new component wiring.
+     *
+     * @param model                  the wiring model that will contain the component
+     * @param clazz                  the interface class of the component
+     * @param schedulerConfiguration for the task scheduler that will run the component
+     * @param dataCounter            the function to weight input data objects for health monitoring
+     */
+    public ComponentWiring(
+            @NonNull final WiringModel model,
+            @NonNull final Class<COMPONENT_TYPE> clazz,
+            @NonNull final TaskSchedulerConfiguration schedulerConfiguration,
+            @NonNull final ToLongFunction<Object> dataCounter) {
 
         this.model = Objects.requireNonNull(model);
         Objects.requireNonNull(schedulerConfiguration);
@@ -160,6 +177,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
                 .configure(schedulerConfiguration)
                 // FUTURE WORK: all components not currently in platform core should move there
                 .withHyperlink(platformCoreHyperlink(clazz))
+                .withDataCounter(dataCounter)
                 .build()
                 .cast();
 

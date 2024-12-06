@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_EVERYTHING_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,6 +37,25 @@ class DefaultKycStatusCallTest extends CallTestBase {
     @Test
     void returnsDefaultKycStatusForPresentToken() {
         final var subject = new DefaultKycStatusCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                Bytes.wrap(DefaultKycStatusTranslator.DEFAULT_KYC_STATUS
+                        .getOutputs()
+                        .encodeElements(SUCCESS.protoOrdinal(), true)
+                        .array()),
+                result.getOutput());
+    }
+
+    @Test
+    void returnsDefaultKycStatusForPresentTokenWithKey() {
+        final var token = FUNGIBLE_EVERYTHING_TOKEN
+                .copyBuilder()
+                .accountsKycGrantedByDefault(false)
+                .build();
+        final var subject = new DefaultKycStatusCall(gasCalculator, mockEnhancement(), false, token);
 
         final var result = subject.execute().fullResult().result();
 

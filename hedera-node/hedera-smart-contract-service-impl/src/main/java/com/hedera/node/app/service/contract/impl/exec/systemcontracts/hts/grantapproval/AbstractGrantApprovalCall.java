@@ -37,6 +37,9 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuild
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Implements the grant approval {@code approve()} call of the HTS system contract.
+ */
 public abstract class AbstractGrantApprovalCall extends AbstractCall {
     protected final VerificationStrategy verificationStrategy;
     protected final AccountID senderId;

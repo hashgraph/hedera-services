@@ -53,7 +53,7 @@ import java.util.stream.Stream;
 public class TestingEventBuilder {
     private static final Instant DEFAULT_TIMESTAMP = Instant.ofEpochMilli(1588771316678L);
     private static final SoftwareVersion DEFAULT_SOFTWARE_VERSION = new BasicSoftwareVersion(1);
-    private static final NodeId DEFAULT_CREATOR_ID = new NodeId(0);
+    private static final NodeId DEFAULT_CREATOR_ID = NodeId.of(0);
     private static final int DEFAULT_APP_TRANSACTION_COUNT = 2;
     private static final int DEFAULT_SYSTEM_TRANSACTION_COUNT = 0;
     private static final int DEFAULT_TRANSACTION_SIZE = 4;

@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public interface RecordStreamValidator {
-    default Stream<Throwable> validationErrorsIn(@NonNull final RecordStreamAccess.Data data) {
+    default Stream<Throwable> validationErrorsIn(@NonNull final StreamFileAccess.RecordStreamData data) {
         try {
             validateFiles(data.files());
             validateRecordsAndSidecars(data.records());

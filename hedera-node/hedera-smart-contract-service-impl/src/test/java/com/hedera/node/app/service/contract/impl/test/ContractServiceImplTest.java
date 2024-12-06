@@ -28,8 +28,8 @@ import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.time.InstantSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +55,7 @@ class ContractServiceImplTest {
         // given
         when(appContext.instantSource()).thenReturn(instantSource);
         when(appContext.signatureVerifier()).thenReturn(signatureVerifier);
+        when(appContext.metricsSupplier()).thenReturn(() -> null);
 
         subject = new ContractServiceImpl(appContext);
     }

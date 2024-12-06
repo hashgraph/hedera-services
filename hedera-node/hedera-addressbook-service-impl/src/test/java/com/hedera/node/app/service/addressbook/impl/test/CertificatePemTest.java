@@ -24,7 +24,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -73,8 +72,7 @@ class CertificatePemTest {
         final var cert = readCertificatePemFile(pemFilePath);
         final var test = Path.of(tmpDir.getPath() + "/test");
         Files.write(test, cert.getEncoded());
-        final var genCert = readCertificatePemFile(test);
-        assertNull(genCert);
+        assertThrows(CertificateException.class, () -> readCertificatePemFile(test));
     }
 
     @Test
@@ -82,7 +80,7 @@ class CertificatePemTest {
         final var genPemPath = Path.of(tmpDir.getPath() + "/generated.pem");
         writeCertificatePemFile(genPemPath, Bytes.wrap("anyString").toByteArray());
         final var exception = assertThrows(IOException.class, () -> readCertificatePemFile(genPemPath));
-        assertThat(exception.getMessage()).contains("problem parsing cert: java.io.IOException:");
+        assertThat(exception.getMessage()).contains("problem parsing cert: java.io.EOFException:");
         final var msg = assertThrows(PreCheckException.class, () -> validateX509Certificate(Bytes.wrap("anyString")));
         assertEquals(ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE, msg.responseCode());
     }

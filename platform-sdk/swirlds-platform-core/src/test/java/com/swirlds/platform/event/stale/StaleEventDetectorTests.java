@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -35,7 +36,6 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -104,7 +104,7 @@ class StaleEventDetectorTests {
     @Test
     void throwIfInitialEventWindowNotSetTest() {
         final Randotron randotron = Randotron.create();
-        final NodeId selfId = new NodeId(randotron.nextPositiveLong());
+        final NodeId selfId = NodeId.of(randotron.nextPositiveLong());
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -122,7 +122,7 @@ class StaleEventDetectorTests {
     @Test
     void eventIsStaleBeforeAddedTest() {
         final Randotron randotron = Randotron.create();
-        final NodeId selfId = new NodeId(randotron.nextPositiveLong());
+        final NodeId selfId = NodeId.of(randotron.nextPositiveLong());
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -171,7 +171,7 @@ class StaleEventDetectorTests {
                 randotron.nextPositiveLong(), ancientThreshold, randotron.nextPositiveLong(), BIRTH_ROUND_THRESHOLD);
 
         return new ConsensusRound(
-                mock(AddressBook.class),
+                mock(Roster.class),
                 events,
                 mock(PlatformEvent.class),
                 mock(Generations.class),
@@ -184,7 +184,7 @@ class StaleEventDetectorTests {
     @Test
     void randomEventsTest() {
         final Randotron randotron = Randotron.create();
-        final NodeId selfId = new NodeId(randotron.nextPositiveLong());
+        final NodeId selfId = NodeId.of(randotron.nextPositiveLong());
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -207,7 +207,7 @@ class StaleEventDetectorTests {
 
         for (int i = 0; i < 10_000; i++) {
             final boolean selfEvent = randotron.nextBoolean(0.25);
-            final NodeId eventCreator = selfEvent ? selfId : new NodeId(randotron.nextPositiveLong());
+            final NodeId eventCreator = selfEvent ? selfId : NodeId.of(randotron.nextPositiveLong());
 
             final TestingEventBuilder eventBuilder = new TestingEventBuilder(randotron).setCreatorId(eventCreator);
 
@@ -263,7 +263,7 @@ class StaleEventDetectorTests {
     @Test
     void clearTest() {
         final Randotron randotron = Randotron.create();
-        final NodeId selfId = new NodeId(randotron.nextPositiveLong());
+        final NodeId selfId = NodeId.of(randotron.nextPositiveLong());
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)

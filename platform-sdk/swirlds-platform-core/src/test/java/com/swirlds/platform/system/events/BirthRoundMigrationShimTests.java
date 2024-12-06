@@ -43,7 +43,7 @@ class BirthRoundMigrationShimTests {
             final long generation,
             final long birthRound) {
 
-        final NodeId creatorId = new NodeId(random.nextLong(1, 10));
+        final NodeId creatorId = NodeId.of(random.nextLong(1, 10));
         final PlatformEvent selfParent = new TestingEventBuilder(random)
                 .setCreatorId(creatorId)
                 .setBirthRound(random.nextLong(birthRound - 2, birthRound + 1)) /* realistic range */

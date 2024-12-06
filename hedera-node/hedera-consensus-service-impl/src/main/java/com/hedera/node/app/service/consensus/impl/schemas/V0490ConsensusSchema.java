@@ -21,9 +21,9 @@ import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TO
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -42,6 +42,9 @@ public class V0490ConsensusSchema extends Schema {
 
     private static final long MAX_TOPICS = 1_000_000_000L;
 
+    /**
+     * Constructor for this schema.
+     */
     public V0490ConsensusSchema() {
         super(VERSION);
     }

@@ -202,24 +202,10 @@ public class HashBuilder {
     }
 
     /**
-     * @return a mutable Hash
+     * @return a immutable Hash
      */
     public Hash build() {
-        return mutable();
-    }
-
-    /**
-     * @return a mutable Hash
-     */
-    public Hash mutable() {
         return new Hash(digest.digest(), digestType);
-    }
-
-    /**
-     * @return an immutable Hash
-     */
-    public ImmutableHash immutable() {
-        return new ImmutableHash(digest.digest(), digestType);
     }
 
     /**

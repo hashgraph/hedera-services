@@ -24,7 +24,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Configuration for event handling inside the platform.
  *
- * @param eventIntakeQueueThrottleSize      The value for the event intake queue at which the node should stop syncing
  * @param eventStreamQueueCapacity          capacity of the blockingQueue from which we take events and write to
  *                                          EventStream files
  * @param eventsLogPeriod                   period of generating eventStream file
@@ -33,17 +32,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param useBirthRoundAncientThreshold     if true, use birth rounds instead of generations for deciding if an event is
  *                                          ancient or not. Once this setting has been enabled on a network, it can
  *                                          never be disabled again (migration pathway is one-way).
- * @param useOldStyleIntakeQueue            if true then use an old style queue between gossip and the intake queue
  */
 @ConfigData("event")
 public record EventConfig(
-        @ConfigProperty(defaultValue = "1000") int eventIntakeQueueThrottleSize,
         @ConfigProperty(defaultValue = "5000") int eventStreamQueueCapacity,
         @ConfigProperty(defaultValue = "5") long eventsLogPeriod,
         @ConfigProperty(defaultValue = "/opt/hgcapp/eventsStreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
-        @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold,
-        @ConfigProperty(defaultValue = "false") boolean useOldStyleIntakeQueue) {
+        @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold) {
 
     /**
      * @return the {@link AncientMode} based on useBirthRoundAncientThreshold

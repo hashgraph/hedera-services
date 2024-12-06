@@ -83,6 +83,7 @@ import com.hedera.services.bdd.junit.support.translators.impl.CryptoTransferTran
 import com.hedera.services.bdd.junit.support.translators.impl.CryptoUpdateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.EthereumTransactionTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.FileCreateTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.FileUpdateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.NodeCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.ScheduleCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.ScheduleDeleteTranslator;
@@ -117,7 +118,7 @@ public class BlockTransactionalUnitTranslator {
     /**
      * The base translator used to create the {@link SingleTransactionRecord}s.
      */
-    private final BaseTranslator baseTranslator = new BaseTranslator();
+    private final BaseTranslator baseTranslator;
     /**
      * The translators used to translate the block transaction parts for a logical HAPI transaction.
      */
@@ -142,7 +143,7 @@ public class BlockTransactionalUnitTranslator {
                     put(FILE_APPEND, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(FILE_CREATE, new FileCreateTranslator());
                     put(FILE_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(FILE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+                    put(FILE_UPDATE, new FileUpdateTranslator());
                     put(FREEZE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(NODE_CREATE, new NodeCreateTranslator());
                     put(NODE_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
@@ -176,6 +177,14 @@ public class BlockTransactionalUnitTranslator {
                     put(UTIL_PRNG, new UtilPrngTranslator());
                 }
             };
+
+    /**
+     * Constructs a new {@link BlockTransactionalUnitTranslator} with the given network size.
+     * @param networkSize the network size
+     */
+    public BlockTransactionalUnitTranslator(final int networkSize) {
+        baseTranslator = new BaseTranslator(networkSize - 1);
+    }
 
     /**
      * Scans a block for genesis information and returns true if found.

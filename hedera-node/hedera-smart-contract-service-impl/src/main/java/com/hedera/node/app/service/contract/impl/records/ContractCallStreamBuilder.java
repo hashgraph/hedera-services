@@ -111,6 +111,10 @@ public interface ContractCallStreamBuilder extends ContractOperationStreamBuilde
      */
     long getNewTotalSupply();
 
+    /**
+     * @param prngBytes bytes to use for entropy
+     * @return the contract call stream builder
+     */
     @NonNull
     ContractCallStreamBuilder entropyBytes(@NonNull final Bytes prngBytes);
 

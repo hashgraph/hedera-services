@@ -22,6 +22,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -35,15 +36,16 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -60,6 +62,13 @@ import java.util.stream.Stream;
  * A utility for generating random signed states.
  */
 public class RandomSignedStateGenerator {
+
+    /**
+     * Signed states now use virtual maps which are heavy RAM consumers. They need to be released
+     * in order to avoid producing OOMs when running tests. This list tracks all signed states
+     * built on a given thread.
+     */
+    private static final ThreadLocal<List<SignedState>> builtSignedStates = ThreadLocal.withInitial(ArrayList::new);
 
     final Random random;
 
@@ -130,9 +139,10 @@ public class RandomSignedStateGenerator {
             if (useBlockingState) {
                 stateInstance = new BlockingSwirldState();
             } else {
-                stateInstance = new MerkleStateRoot(
+                stateInstance = new PlatformMerkleStateRoot(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
             }
+            ((MerkleStateRoot) stateInstance).setTime(Time.getCurrent());
         } else {
             stateInstance = state;
         }
@@ -185,8 +195,8 @@ public class RandomSignedStateGenerator {
         } else {
             consensusSnapshotInstance = consensusSnapshot;
         }
-
-        final PlatformStateAccessor platformState = stateInstance.getPlatformState();
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState((MerkleStateRoot) stateInstance);
+        final PlatformStateModifier platformState = stateInstance.getWritablePlatformState();
 
         platformState.bulkUpdate(v -> {
             v.setSnapshot(consensusSnapshotInstance);
@@ -196,6 +206,9 @@ public class RandomSignedStateGenerator {
             v.setRoundsNonAncient(roundsNonAncientInstance);
             v.setConsensusTimestamp(consensusTimestampInstance);
         });
+
+        FAKE_MERKLE_STATE_LIFECYCLES.initRosterState((MerkleStateRoot) stateInstance);
+        // Future Work: populate roster history and stop setting AddressBook on platformState above.
 
         if (signatureVerifier == null) {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;
@@ -210,7 +223,7 @@ public class RandomSignedStateGenerator {
                 .build();
 
         final SignedState signedState = new SignedState(
-                platformContext,
+                configuration,
                 signatureVerifier,
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
@@ -250,6 +263,7 @@ public class RandomSignedStateGenerator {
             signedState.getSigSet().addSignature(nodeId, signaturesInstance.get(nodeId));
         }
 
+        builtSignedStates.get().add(signedState);
         return signedState;
     }
 
@@ -286,7 +300,7 @@ public class RandomSignedStateGenerator {
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setState(final MerkleStateRoot state) {
+    public RandomSignedStateGenerator setState(final PlatformMerkleStateRoot state) {
         this.state = state;
         return this;
     }
@@ -447,5 +461,30 @@ public class RandomSignedStateGenerator {
     public RandomSignedStateGenerator setUseBlockingState(boolean useBlockingState) {
         this.useBlockingState = useBlockingState;
         return this;
+    }
+
+    /**
+     * Release all the SignedState objects built by this generator on the current thread,
+     * and then clear the list of built states.
+     */
+    public static void releaseAllBuiltSignedStates() {
+        builtSignedStates.get().forEach(signedState -> {
+            while (signedState.getState().getReservationCount() >= 0) {
+                signedState.getState().release();
+            }
+        });
+        builtSignedStates.get().clear();
+    }
+
+    /**
+     * Clear the list of states built on the current thread w/o releasing them.
+     * There are tests that actually release the states on purpose, verifying the reserve/release behavior.
+     * Some of these tests use mocks which fail if the state is released more than what the test expects.
+     * For these few special cases, this method allows the test to "forget" about any states that it built
+     * using this generator on the current thread. As long as the number of such special cases is low enough,
+     * this shouldn't cause any serious resource leaks or OOMs in tests.
+     */
+    public static void forgetAllBuiltSignedStatesWithoutReleasing() {
+        builtSignedStates.get().clear();
     }
 }

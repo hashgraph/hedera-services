@@ -21,7 +21,7 @@ import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNCTIONS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.createSelectorsMap;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isTopLevelTransaction;
@@ -81,6 +81,14 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         NO,
     }
 
+    /**
+     * Constructor.
+     * @param evm the evm to use in this call
+     * @param featureFlags current evm module feature flags
+     * @param precompiles the present precompiles
+     * @param addressChecks checks against addresses reserved for Hedera
+     * @param systemContracts the Hedera system contracts
+     */
     public CustomMessageCallProcessor(
             @NonNull final EVM evm,
             @NonNull final FeatureFlags featureFlags,
@@ -187,9 +195,13 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             return false;
         }
         var selector = frame.getInputData().slice(0, 4).toArray();
-        return CREATE_FUNCTIONS.stream().anyMatch(s -> Arrays.equals(s.selector(), selector));
+        return createSelectorsMap.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), selector));
     }
 
+    /**
+     * @param config the current configuration
+     * @return whether the implicit creation is currently enabled
+     */
     public boolean isImplicitCreationEnabled(@NonNull Configuration config) {
         return featureFlags.isImplicitCreationEnabled(config);
     }

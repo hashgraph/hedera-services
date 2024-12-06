@@ -44,7 +44,7 @@ import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.util.MarkerFileWriter;
 import com.swirlds.platform.wiring.components.StateAndRound;
-import com.swirlds.state.spi.HapiUtils;
+import com.swirlds.state.lifecycle.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -364,8 +364,8 @@ public class DefaultIssDetector implements IssDetector {
             return null;
         }
 
-        final boolean decided = roundValidator.reportHashFromNetwork(
-                signerId, nodeWeight, new Hash(signaturePayload.hash().toByteArray()));
+        final boolean decided =
+                roundValidator.reportHashFromNetwork(signerId, nodeWeight, new Hash(signaturePayload.hash()));
         if (decided) {
             return checkValidity(roundValidator);
         }

@@ -42,6 +42,13 @@ public interface HederaNode {
     int getGrpcPort();
 
     /**
+     * Gets the port number of the node operator gRPC service.
+     *
+     * @return the port number of the node operator gRPC service
+     */
+    int getGrpcNodeOperatorPort();
+
+    /**
      * Gets the node ID, such as 0, 1, 2, or 3.
      * @return the node ID
      */
@@ -129,4 +136,11 @@ public interface HederaNode {
      * @return the metadata for this node
      */
     NodeMetadata metadata();
+
+    /**
+     * Dumps the threads of the node, if applicable. Returns whether threads were dumped.
+     */
+    default boolean dumpThreads() {
+        return false;
+    }
 }

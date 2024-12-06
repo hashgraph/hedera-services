@@ -67,10 +67,12 @@ hammerModuleInfo {
     requires("com.swirlds.merkledb")
     requires("com.swirlds.merkledb.test.fixtures")
     requires("com.swirlds.metrics.api")
+    requires("com.swirlds.config.api")
     requires("com.swirlds.virtualmap")
     requires("org.apache.logging.log4j")
     requires("org.apache.logging.log4j.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
+    runtimeOnly("com.swirlds.common.test.fixtures")
     runtimeOnly("com.swirlds.config.impl")
 }

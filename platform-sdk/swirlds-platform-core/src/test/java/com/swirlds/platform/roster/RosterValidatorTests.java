@@ -43,12 +43,11 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(0)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -58,7 +57,6 @@ public class RosterValidatorTests {
                                         .nodeId(2)
                                         .weight(0)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -68,7 +66,6 @@ public class RosterValidatorTests {
                                         .nodeId(3)
                                         .weight(0)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -83,12 +80,11 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(0)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -98,7 +94,6 @@ public class RosterValidatorTests {
                                         .nodeId(2)
                                         .weight(-1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -108,7 +103,6 @@ public class RosterValidatorTests {
                                         .nodeId(3)
                                         .weight(2)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -123,12 +117,11 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -138,7 +131,6 @@ public class RosterValidatorTests {
                                         .nodeId(1)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -148,7 +140,6 @@ public class RosterValidatorTests {
                                         .nodeId(2)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -163,12 +154,11 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -178,7 +168,6 @@ public class RosterValidatorTests {
                                         .nodeId(2)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.EMPTY)
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -188,7 +177,6 @@ public class RosterValidatorTests {
                                         .nodeId(3)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -203,12 +191,11 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -218,7 +205,6 @@ public class RosterValidatorTests {
                                         .nodeId(2)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -228,7 +214,6 @@ public class RosterValidatorTests {
                                         .nodeId(3)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .build())
                         .build()));
         assertEquals("gossipEndpoint is empty for NodeId 3", ex.getMessage());
@@ -239,12 +224,11 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(0)
@@ -254,7 +238,6 @@ public class RosterValidatorTests {
                                         .nodeId(2)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -264,7 +247,6 @@ public class RosterValidatorTests {
                                         .nodeId(3)
                                         .weight(2)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -281,12 +263,11 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -296,7 +277,6 @@ public class RosterValidatorTests {
                                         .nodeId(2)
                                         .weight(2)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .ipAddressV4(Bytes.wrap("test"))
@@ -307,7 +287,6 @@ public class RosterValidatorTests {
                                         .nodeId(3)
                                         .weight(3)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -324,12 +303,11 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -339,7 +317,6 @@ public class RosterValidatorTests {
                                         .nodeId(3)
                                         .weight(2)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -349,7 +326,6 @@ public class RosterValidatorTests {
                                         .nodeId(2)
                                         .weight(3)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -364,12 +340,11 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -379,7 +354,6 @@ public class RosterValidatorTests {
                                         .nodeId(2)
                                         .weight(2)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .domainName("domain.com")
                                                 .port(666)
@@ -389,7 +363,6 @@ public class RosterValidatorTests {
                                         .nodeId(3)
                                         .weight(3)
                                         .gossipCaCertificate(Bytes.wrap("test"))
-                                        .tssEncryptionKey(Bytes.wrap("test"))
                                         .gossipEndpoint(ServiceEndpoint.newBuilder()
                                                 .ipAddressV4(Bytes.wrap("test too long"))
                                                 .port(666)
@@ -401,15 +374,13 @@ public class RosterValidatorTests {
                 ex.getMessage());
     }
 
-    @Test
-    void validTest() {
-        RosterValidator.validate(Roster.newBuilder()
-                .rosters(
+    static Roster buildValidRoster() {
+        return Roster.newBuilder()
+                .rosterEntries(
                         RosterEntry.newBuilder()
                                 .nodeId(1)
                                 .weight(1)
                                 .gossipCaCertificate(Bytes.wrap("test"))
-                                .tssEncryptionKey(Bytes.wrap("test"))
                                 .gossipEndpoint(ServiceEndpoint.newBuilder()
                                         .domainName("domain.com")
                                         .port(666)
@@ -419,7 +390,6 @@ public class RosterValidatorTests {
                                 .nodeId(2)
                                 .weight(2)
                                 .gossipCaCertificate(Bytes.wrap("test"))
-                                .tssEncryptionKey(Bytes.wrap("test"))
                                 .gossipEndpoint(ServiceEndpoint.newBuilder()
                                         .domainName("domain.com")
                                         .port(666)
@@ -429,12 +399,16 @@ public class RosterValidatorTests {
                                 .nodeId(3)
                                 .weight(3)
                                 .gossipCaCertificate(Bytes.wrap("test"))
-                                .tssEncryptionKey(Bytes.wrap("test"))
                                 .gossipEndpoint(ServiceEndpoint.newBuilder()
                                         .domainName("domain.com")
                                         .port(666)
                                         .build())
                                 .build())
-                .build());
+                .build();
+    }
+
+    @Test
+    void validTest() {
+        RosterValidator.validate(buildValidRoster());
     }
 }

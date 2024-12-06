@@ -136,7 +136,8 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
                     INVALID_TOKEN_BURN_AMOUNT,
                     accountStore,
                     tokenStore,
-                    tokenRelStore);
+                    tokenRelStore,
+                    context.expiryValidator());
             record.newTotalSupply(newTotalSupply);
         } else {
             validateTrue(!nftSerialNums.isEmpty(), INVALID_TOKEN_BURN_METADATA);
@@ -152,7 +153,14 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
 
             // Update counts for accounts and token rels
             final var newTotalSupply = changeSupply(
-                    token, treasuryRel, -nftSerialNums.size(), FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
+                    token,
+                    treasuryRel,
+                    -nftSerialNums.size(),
+                    FAIL_INVALID,
+                    accountStore,
+                    tokenStore,
+                    tokenRelStore,
+                    context.expiryValidator());
 
             // Update treasury's NFT count
             final var treasuryAcct = accountStore.get(token.treasuryAccountIdOrThrow());

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.services;
 
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -44,14 +45,12 @@ public class MigrationStateChanges {
      * changes to the given state.
      *
      * @param state  The state to track changes on
-     * @param config
+     * @param config The configuration for the state
      */
     public MigrationStateChanges(@NonNull final State state, final Configuration config) {
-        requireNonNull(state);
-        this.state = state;
-        final var blockStreamsEnabled =
-                config.getConfigData(BlockStreamConfig.class).streamBlocks();
-        if (blockStreamsEnabled) {
+        requireNonNull(config);
+        this.state = requireNonNull(state);
+        if (config.getConfigData(BlockStreamConfig.class).streamMode() != RECORDS) {
             state.registerCommitListener(kvStateChangeListener);
             state.registerCommitListener(roundStateChangeListener);
         }
@@ -66,7 +65,7 @@ public class MigrationStateChanges {
         final var maybeKvChanges = kvStateChangeListener.getStateChanges();
         if (!maybeKvChanges.isEmpty()) {
             stateChanges.add(new ArrayList<>(maybeKvChanges));
-            kvStateChangeListener.resetStateChanges();
+            kvStateChangeListener.reset();
         }
     }
 

@@ -126,7 +126,7 @@ public abstract class CryptoBench extends VirtualMapBench {
 
         logger.info(RUN_DELIMITER);
 
-        if (getConfig().enableSnapshots()) {
+        if (getBenchmarkConfig().enableSnapshots()) {
             enableSnapshots();
         }
 
@@ -204,7 +204,7 @@ public abstract class CryptoBench extends VirtualMapBench {
 
         logger.info(RUN_DELIMITER);
 
-        if (getConfig().enableSnapshots()) {
+        if (getBenchmarkConfig().enableSnapshots()) {
             enableSnapshots();
         }
 
@@ -320,7 +320,7 @@ public abstract class CryptoBench extends VirtualMapBench {
 
         logger.info(RUN_DELIMITER);
 
-        if (getConfig().enableSnapshots()) {
+        if (getBenchmarkConfig().enableSnapshots()) {
             enableSnapshots();
         }
 

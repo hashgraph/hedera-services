@@ -103,6 +103,51 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     }
 
     /**
+     * Returns an operation to transfer tokens, transferring its balance to the given beneficiary.
+     *
+     * @param to the beneficiary
+     * @param units the number of units to transfer
+     * @param token the token to transfer
+     * @return the operation
+     */
+    public TransferTokensOperation transferUnitsTo(
+            @NonNull final SpecContract to, final long units, @NonNull final SpecFungibleToken token) {
+        requireNonNull(token);
+        requireNonNull(to);
+        return new TransferTokensOperation(this, to, token, units);
+    }
+
+    /**
+     * Returns an operation to transfer NFT, transferring the NFT to the given beneficiary.
+     *
+     * @param to the beneficiary
+     * @param serialNumber the specific serial number of the NFT
+     * @param token the NFT to transfer
+     * @return the operation
+     */
+    public TransferTokensOperation transferNFTsTo(
+            @NonNull final SpecContract to, @NonNull final SpecNonFungibleToken token, final long... serialNumber) {
+        requireNonNull(token);
+        requireNonNull(to);
+        return new TransferTokensOperation(this, to, token, serialNumber);
+    }
+
+    /**
+     * Returns an operation to transfer NFT, transferring the NFT to the given beneficiary.
+     *
+     * @param to the beneficiary
+     * @param serialNumber the specific serial number of the NFT
+     * @param token the NFT to transfer
+     * @return the operation
+     */
+    public TransferTokensOperation transferNFTsTo(
+            @NonNull final SpecAccount to, @NonNull final SpecNonFungibleToken token, final long... serialNumber) {
+        requireNonNull(token);
+        requireNonNull(to);
+        return new TransferTokensOperation(this, to, token, serialNumber);
+    }
+
+    /**
      * Returns an operation to perform the given airdrops.
      *
      * @param airdrops the airdrops

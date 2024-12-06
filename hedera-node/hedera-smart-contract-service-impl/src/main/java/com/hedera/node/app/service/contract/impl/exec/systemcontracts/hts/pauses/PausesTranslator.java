@@ -37,11 +37,16 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class PausesTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for pauseToken(address) method. */
     public static final Function PAUSE = new Function("pauseToken(address)", ReturnTypes.INT_64);
+    /** Selector for unpauseToken(address) method. */
     public static final Function UNPAUSE = new Function("unpauseToken(address)", ReturnTypes.INT_64);
 
     private final PausesDecoder decoder;
 
+    /**
+     * @param decoder the decoder to use for pause calls
+     */
     @Inject
     public PausesTranslator(@NonNull final PausesDecoder decoder) {
         this.decoder = decoder;
