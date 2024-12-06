@@ -44,7 +44,10 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
         Objects.requireNonNull(fileManager, "fileManager is required");
         commonPcesWriter = new CommonPcesWriter(platformContext, fileManager, false);
         this.selfId = Objects.requireNonNull(selfId, "selfId is required");
-        this.fileSyncOption = platformContext.getConfiguration().getConfigData(PcesConfig.class).inlinePcesSyncOption();
+        this.fileSyncOption = platformContext
+                .getConfiguration()
+                .getConfigData(PcesConfig.class)
+                .inlinePcesSyncOption();
     }
 
     @Override
@@ -73,7 +76,8 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
             commonPcesWriter.getCurrentMutableFile().writeEvent(event);
 
             if (fileSyncOption == FileSyncOption.EVERY_EVENT
-                    || (fileSyncOption == FileSyncOption.EVERY_SELF_EVENT && event.getCreatorId().equals(selfId))) {
+                    || (fileSyncOption == FileSyncOption.EVERY_SELF_EVENT
+                            && event.getCreatorId().equals(selfId))) {
                 commonPcesWriter.getCurrentMutableFile().sync();
             }
 
