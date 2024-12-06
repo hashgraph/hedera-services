@@ -194,7 +194,7 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     private ByteBuffer initOrGetTransferBuffer() {
         ByteBuffer buffer = TRANSFER_BUFFER_THREAD_LOCAL.get();
-        if (buffer == null) {
+        if (buffer == null || buffer.capacity() != memoryChunkSize) {
             buffer = ByteBuffer.allocate(memoryChunkSize).order(ByteOrder.nativeOrder());
             TRANSFER_BUFFER_THREAD_LOCAL.set(buffer);
         } else {

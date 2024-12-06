@@ -315,6 +315,53 @@ class LongListDiskTest {
     }
 
     @Test
+    void testReallocateThreadLocalBufferWhenMemoryChunkSizeChanges() throws IOException {
+        // Create two long lists with different memory chunk sizes
+        var largeMemoryChunkList = new LongListDisk(100, SAMPLE_SIZE * 2, 0, CONFIGURATION);
+        var smallMemoryChunkList = new LongListDisk(10, SAMPLE_SIZE * 2, 0, CONFIGURATION);
+
+        // Populate both long lists with sample data and validate
+        populateList(largeMemoryChunkList);
+        checkData(largeMemoryChunkList, 0, SAMPLE_SIZE);
+        populateList(smallMemoryChunkList);
+        checkData(smallMemoryChunkList, 0, SAMPLE_SIZE);
+
+        // Capture the original file channel sizes before closing chunks
+        final long originalLargeListChannelSize =
+                largeMemoryChunkList.getCurrentFileChannel().size();
+        final long originalSmallListChannelSize =
+                smallMemoryChunkList.getCurrentFileChannel().size();
+
+        // Close all chunks in long lists
+        for (int i = 0; i < largeMemoryChunkList.chunkList.length(); i++) {
+            final Long chunk = largeMemoryChunkList.chunkList.get(i);
+            if (chunk != null) {
+                largeMemoryChunkList.closeChunk(chunk);
+            }
+        }
+        for (int i = 0; i < smallMemoryChunkList.chunkList.length(); i++) {
+            final Long chunk = smallMemoryChunkList.chunkList.get(i);
+            if (chunk != null) {
+                smallMemoryChunkList.closeChunk(chunk);
+            }
+        }
+
+        // Ensure that file channel sizes have not inadvertently grown
+        assertEquals(
+                originalLargeListChannelSize,
+                largeMemoryChunkList.getCurrentFileChannel().size());
+        assertEquals(
+                originalSmallListChannelSize,
+                smallMemoryChunkList.getCurrentFileChannel().size());
+
+        // Tear down
+        largeMemoryChunkList.close();
+        largeMemoryChunkList.resetTransferBuffer();
+        smallMemoryChunkList.close();
+        smallMemoryChunkList.resetTransferBuffer();
+    }
+
+    @Test
     void testBigIndex() throws IOException {
         try (LongListDisk list = new LongListDisk(CONFIGURATION)) {
             long bigIndex = Integer.MAX_VALUE + 1L;
