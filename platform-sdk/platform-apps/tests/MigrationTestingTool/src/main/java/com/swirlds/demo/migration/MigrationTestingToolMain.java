@@ -60,6 +60,8 @@ public class MigrationTestingToolMain implements SwirldMain {
                         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(migrationTestingToolState);
                         return migrationTestingToolState;
                     }));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MigrationTestingToolStateRoot.class, MigrationTestingToolStateRoot::new));
             registerMerkleStateRootClassIds();
             logger.info(STARTUP.getMarker(), "MigrationTestingToolState is registered with ConstructableRegistry");
         } catch (ConstructableRegistryException e) {
