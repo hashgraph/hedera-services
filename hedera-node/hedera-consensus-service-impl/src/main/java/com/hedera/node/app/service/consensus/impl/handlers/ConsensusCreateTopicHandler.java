@@ -123,7 +123,20 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var topicStore = handleContext.storeFactory().writableStore(WritableTopicStore.class);
 
         validateSemantics(op, handleContext);
+
         final var builder = new Topic.Builder();
+        if (op.hasAdminKey() && !isImmutableKey(op.adminKey())) {
+            builder.adminKey(op.adminKey());
+        }
+        if (op.hasSubmitKey()) {
+            builder.submitKey(op.submitKey());
+        }
+        if (op.hasFeeScheduleKey()) {
+            builder.feeScheduleKey(op.feeScheduleKey());
+        }
+        builder.feeExemptKeyList(op.feeExemptKeyList());
+        builder.customFees(op.customFees());
+        builder.memo(op.memo());
 
         final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
                 + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
@@ -206,13 +219,9 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
                         key -> handleContext.attributeValidator().validateKey(key, INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST));
 
         // validate custom fees
-        if (!op.customFees().isEmpty()) {
-            validateTrue(
-                    op.customFees().size() <= topicConfig.maxCustomFeeEntriesForTopics(), CUSTOM_FEES_LIST_TOO_LONG);
-            customFeesValidator.validate(
-                    accountStore, tokenRelStore, tokenStore, op.customFees(), handleContext.expiryValidator());
-            builder.customFees(op.customFees());
-        }
+        validateTrue(op.customFees().size() <= topicConfig.maxCustomFeeEntriesForTopics(), CUSTOM_FEES_LIST_TOO_LONG);
+        customFeesValidator.validate(
+                accountStore, tokenRelStore, tokenStore, op.customFees(), handleContext.expiryValidator());
 
         /* Validate if the current topic can be created */
         validateTrue(
@@ -220,7 +229,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         /* Validate the topic memo */
         handleContext.attributeValidator().validateMemo(op.memo());
-        builder.memo(op.memo());
     }
 
     @NonNull
