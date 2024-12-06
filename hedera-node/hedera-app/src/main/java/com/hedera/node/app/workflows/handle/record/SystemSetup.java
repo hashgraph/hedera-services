@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRew
 import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
+import static java.util.Comparator.comparingLong;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.addressbook.NodeUpdateTransactionBody;
@@ -39,6 +40,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -78,11 +80,15 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedSet;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -192,6 +198,25 @@ public class SystemSetup {
                 adminConfig.upgradeNodeAdminKeysFile(),
                 SystemSetup::parseNodeAdminKeys);
         if (autoNodeAdminKeyUpdates.tryIfPresent(adminConfig.upgradeSysFilesLoc(), systemContext)) {
+            dispatch.stack().commitFullStack();
+        }
+        // In 0.57 specifically, we export synthetic node updates for all non-deleted nodes in the address book,
+        // exposing their admin keys to mirror nodes to supplement the NodeAddressBook message in 0.0.112
+        final var nodes = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
+        final var undeletedNodes = StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(nodes.keys(), Spliterator.NONNULL), false)
+                .map(EntityNumber::number)
+                .map(nodes::get)
+                .filter(Objects::nonNull)
+                .filter(node -> !node.deleted())
+                .sorted(comparingLong(Node::nodeId))
+                .toList();
+        if (!undeletedNodes.isEmpty()) {
+            undeletedNodes.forEach(
+                    node -> systemContext.dispatchAdmin(b -> b.nodeUpdate(NodeUpdateTransactionBody.newBuilder()
+                            .nodeId(node.nodeId())
+                            .adminKey(node.adminKey())
+                            .build())));
             dispatch.stack().commitFullStack();
         }
     }

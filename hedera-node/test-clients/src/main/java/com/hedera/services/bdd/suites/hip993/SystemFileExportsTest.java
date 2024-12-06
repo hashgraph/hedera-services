@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.writeToNodeWorkingDirs;
 import static com.hedera.services.bdd.spec.utilops.grouping.GroupingVerbs.getSystemFiles;
 import static com.hedera.services.bdd.spec.utilops.streams.assertions.SelectedItemsAssertion.SELECTED_ITEMS_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -71,6 +72,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -347,8 +351,10 @@ public class SystemFileExportsTest {
         return hapiTest(
                 recordStreamMustIncludePassFrom(selectedItems(
                         nodeUpdatesValidator(),
-                        // Our node admin key file will contain two override keys
-                        2,
+                        // Our node admin key file will contain two override keys ordinarily; but in release/0.57
+                        // we also export all the node admin keys no matter what so that mirror nodes can supplement
+                        // their address book with the admin keys of all nodes in the network
+                        6,
                         (spec, item) -> {
                             final var entry = RecordStreamEntry.from(item);
                             return entry.function() == NodeUpdate
@@ -424,12 +430,22 @@ public class SystemFileExportsTest {
         return (spec, records) -> {
             final var items = records.get(SELECTED_ITEMS_KEY);
             assertNotNull(items, "No post-upgrade node updates found");
-            final Map<Long, Key> newAdminKeys = items.entries().stream()
+            final Map<Long, List<Key>> newAdminKeys = items.entries().stream()
                     .filter(item -> item.function() == NodeUpdate)
                     .map(item -> item.body().getNodeUpdate())
-                    .collect(toMap(NodeUpdateTransactionBody::getNodeId, NodeUpdateTransactionBody::getAdminKey));
-            assertEquals(spec.registry().getKey("node0AdminKey"), newAdminKeys.get(0L));
-            assertEquals(spec.registry().getKey("node3AdminKey"), newAdminKeys.get(3L));
+                    .collect(groupingBy(
+                            NodeUpdateTransactionBody::getNodeId,
+                            mapping(NodeUpdateTransactionBody::getAdminKey, toList())));
+            // Only node 0 and node 3 should have been updated and hence repeated
+            final var node0AdminKey = spec.registry().getKey("node0AdminKey");
+            assertEquals(List.of(node0AdminKey, node0AdminKey), newAdminKeys.get(0L), "Wrong admin keys for node0");
+            final var node3AdminKey = spec.registry().getKey("node3AdminKey");
+            assertEquals(List.of(node3AdminKey, node3AdminKey), newAdminKeys.get(3L), "Wrong admin keys for node3");
+            // Nodes 1 and 2 are exported just once
+            final var genesisAdminKey =
+                    spec.registry().getKey(ADDRESS_BOOK_CONTROL).getKeyList().getKeys(0);
+            assertEquals(List.of(genesisAdminKey), newAdminKeys.get(1L), "Wrong admin keys for node1");
+            assertEquals(List.of(genesisAdminKey), newAdminKeys.get(2L), "Wrong admin keys for node2");
         };
     }
 
