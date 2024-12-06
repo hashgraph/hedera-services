@@ -103,7 +103,9 @@ jobs:
       - name: Publish to Codacy
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r hapi/build/test-results/test/TEST-com.hedera.hapi.block.stream.input.tests.EventHeaderTest.xml
+        run: |
+          ls -la
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r hapi/build/test-results/test/TEST-com.hedera.hapi.block.stream.input.tests.EventHeaderTest.xml
 
       # - name: Publish to codacy
       #   uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1.3.0
