@@ -102,9 +102,9 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     }
 
     private static final long CLASS_ID = 0xf052378c7364ef47L;
-
-    private static final int RUNNING_SUM_INDEX = 1;
-    private static final int ROUND_HANDLED_INDEX = 2;
+    // 0 is PLATFORM_STATE, 1 is ROSTERS, 2 is ROSTER_STATE
+    private static final int RUNNING_SUM_INDEX = 3;
+    private static final int ROUND_HANDLED_INDEX = 4;
 
     private NodeId selfId;
 

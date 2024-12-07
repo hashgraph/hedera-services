@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.crypto;
 
+import com.hedera.cryptography.bls.BlsKeyPair;
+import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.Key;
@@ -59,9 +62,12 @@ public record KeysAndCerts(
         KeyPair agrKeyPair,
         X509Certificate sigCert,
         X509Certificate agrCert,
-        PublicStores publicStores) {
+        PublicStores publicStores,
+        BlsPrivateKey privateTssEncryptionKey,
+        BlsPublicKey publicTssEncryptionKey) {
     private static final int SIG_SEED = 2;
     private static final int AGR_SEED = 0;
+    private static final int TSS_ENCRYPTION_KEY_SEED = 3;
 
     /**
      * Creates an instance holding all the keys and certificates. It reads its own key pairs from privateKeyStore
@@ -111,7 +117,7 @@ public record KeysAndCerts(
             publicStores.setCertificate(KeyCertPurpose.AGREEMENT, agreementCert, dnA);
         }
 
-        return new KeysAndCerts(signingKeyPair, agreementKeyPair, signingCert, agreementCert, publicStores);
+        return new KeysAndCerts(signingKeyPair, agreementKeyPair, signingCert, agreementCert, publicStores, null, null);
     }
 
     private static KeyPair getKeyPair(final KeyStore privateKeyStore, final char[] password, final String storeName)
@@ -152,12 +158,14 @@ public record KeysAndCerts(
 
         final SecureRandom sigDetRandom; // deterministic CSPRNG, used briefly then discarded
         final SecureRandom agrDetRandom; // deterministic CSPRNG, used briefly then discarded
+        final SecureRandom tssEncryptionKeyRandom;
 
         sigKeyGen = KeyPairGenerator.getInstance(CryptoConstants.SIG_TYPE1, CryptoConstants.SIG_PROVIDER);
         agrKeyGen = KeyPairGenerator.getInstance(CryptoConstants.AGR_TYPE, CryptoConstants.AGR_PROVIDER);
 
         sigDetRandom = CryptoUtils.getDetRandom(); // deterministic, not shared
         agrDetRandom = CryptoUtils.getDetRandom(); // deterministic, not shared
+        tssEncryptionKeyRandom = CryptoUtils.getDetRandom(); // deterministic, not shared
 
         sigDetRandom.setSeed(masterKey);
         sigDetRandom.setSeed(swirldId);
@@ -170,6 +178,11 @@ public record KeysAndCerts(
         agrDetRandom.setSeed(memberId);
         agrDetRandom.setSeed(AGR_SEED);
         agrKeyGen.initialize(CryptoConstants.AGR_KEY_SIZE_BITS, agrDetRandom);
+
+        tssEncryptionKeyRandom.setSeed(masterKey);
+        tssEncryptionKeyRandom.setSeed(swirldId);
+        tssEncryptionKeyRandom.setSeed(memberId);
+        tssEncryptionKeyRandom.setSeed(TSS_ENCRYPTION_KEY_SEED);
 
         final KeyPair sigKeyPair = sigKeyGen.generateKeyPair();
         final KeyPair agrKeyPair = agrKeyGen.generateKeyPair();
@@ -188,7 +201,16 @@ public record KeysAndCerts(
         publicStores.setCertificate(KeyCertPurpose.SIGNING, sigCert, name);
         publicStores.setCertificate(KeyCertPurpose.AGREEMENT, agrCert, name);
 
-        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores);
+        final BlsKeyPair blsKeyPair = CryptoStatic.generateBlsKeyPair(tssEncryptionKeyRandom);
+
+        return new KeysAndCerts(
+                sigKeyPair,
+                agrKeyPair,
+                sigCert,
+                agrCert,
+                publicStores,
+                blsKeyPair.privateKey(),
+                blsKeyPair.publicKey());
     }
 
     /**
