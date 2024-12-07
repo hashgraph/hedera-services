@@ -256,10 +256,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     /**
-     * If block stream is enabled, notify the block stream manager of the state hash at the end of the round.
-     * @param roundNumber the round number
+     * If block stream is enabled, notifies the block stream manager of the state hash at the end of the round
+     * given by {@code roundNumber}. (The block stream manager must have this information to construct the
+     * block hash for round {@code roundNumber + 1}.)
+     * @param roundNumber the round number of the state hash
      */
-    protected void notifyBlockStreamManagerIfEnabled(final long roundNumber) {
+    protected void notifyStateHashed(final long roundNumber) {
         if (blockStreamEnabled) {
             hedera.blockStreamManager().notify(new StateHashedNotification(roundNumber, FAKE_START_OF_STATE_HASH));
         }
