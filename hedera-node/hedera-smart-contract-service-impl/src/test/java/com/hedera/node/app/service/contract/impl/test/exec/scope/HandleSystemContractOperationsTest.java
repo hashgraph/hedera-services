@@ -227,4 +227,9 @@ class HandleSystemContractOperationsTest {
         verify(context).exchangeRateInfo();
         verify(exchangeRateInfo).activeRate(any());
     }
+
+    @Test
+    void maybeEthSenderKeyTest() {
+        assertSame(A_SECP256K1_KEY, subject.maybeEthSenderKey());
+    }
 }

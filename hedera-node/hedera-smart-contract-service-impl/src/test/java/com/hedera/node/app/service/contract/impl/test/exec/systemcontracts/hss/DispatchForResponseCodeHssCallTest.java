@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hss;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
@@ -113,5 +114,24 @@ class DispatchForResponseCodeHssCallTest extends CallTestBase {
                 Optional.of(ERROR_DECODING_PRECOMPILE_INPUT),
                 fullResult.result().getHaltReason());
         assertEquals(DEFAULT_CONTRACTS_CONFIG.precompileHtsDefaultGasCost(), fullResult.gasRequirement());
+    }
+
+    @Test
+    void failureResultCustomized() {
+        given(systemContractOperations.dispatch(
+                        TransactionBody.DEFAULT,
+                        verificationStrategy,
+                        AccountID.DEFAULT,
+                        ContractCallStreamBuilder.class,
+                        emptySet()))
+                .willReturn(recordBuilder);
+        given(dispatchGasCalculator.gasRequirement(
+                        TransactionBody.DEFAULT, gasCalculator, mockEnhancement(), AccountID.DEFAULT))
+                .willReturn(123L);
+        given(recordBuilder.status()).willReturn(INVALID_SCHEDULE_ID);
+
+        final var pricedResult = subject.execute(frame);
+        final var contractResult = pricedResult.fullResult().result().getOutput();
+        assertArrayEquals(ReturnTypes.encodedRc(INVALID_SCHEDULE_ID).array(), contractResult.toArray());
     }
 }
