@@ -35,6 +35,9 @@ import com.swirlds.config.api.ConfigProperty;
  * @param tcpNoDelay                 if true, then Nagel's algorithm is disabled, which helps latency, hurts bandwidth
  *                                   usage
  * @param gzipCompression            whether to use gzip compression over the network
+ * @param bindInterfaceHostname      the hostname of the interface to bind to.  The default is all ipv4 interfaces.
+ * @param bindInterfacePort          the port of the interface to bind to.  If less than 0, the roster indicated port
+ *                                   for this node is used.
  */
 @ConfigData("socket")
 public record SocketConfig(
@@ -45,4 +48,8 @@ public record SocketConfig(
         @ConfigProperty(defaultValue = "5000") int timeoutServerAcceptConnect,
         @ConfigProperty(defaultValue = "false") boolean useLoopbackIp,
         @ConfigProperty(defaultValue = "true") boolean tcpNoDelay,
-        @ConfigProperty(defaultValue = "false") boolean gzipCompression) {}
+        @ConfigProperty(defaultValue = "false") boolean gzipCompression,
+        @ConfigProperty(defaultValue = ALL_IPV4_INTERFACES) String bindInterfaceHostname,
+        @ConfigProperty(defaultValue = "-1") int bindInterfacePort) {
+    public static final String ALL_IPV4_INTERFACES = "0.0.0.0";
+}

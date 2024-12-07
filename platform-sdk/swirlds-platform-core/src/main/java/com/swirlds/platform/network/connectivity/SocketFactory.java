@@ -62,7 +62,15 @@ public interface SocketFactory {
             // set the IP_TOS option
             serverSocket.setOption(java.net.StandardSocketOptions.IP_TOS, socketConfig.ipTos());
         }
-        final InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByAddress(ALL_INTERFACES), port);
+
+        // Determine interface to bind to.
+        final InetAddress bindInterface = socketConfig.bindInterfaceHostname().equals(SocketConfig.ALL_IPV4_INTERFACES)
+                ? InetAddress.getByAddress(ALL_INTERFACES)
+                : InetAddress.getByName(socketConfig.bindInterfaceHostname());
+        // Determine port to bind to.
+        final int bindPort = socketConfig.bindInterfacePort() < 0 ? port : socketConfig.bindInterfacePort();
+
+        final InetSocketAddress endpoint = new InetSocketAddress(bindInterface, bindPort);
         serverSocket.setReuseAddress(true);
         serverSocket.bind(endpoint); // try to grab a port on this computer
         // do NOT do clientSocket.setSendBufferSize or clientSocket.setReceiveBufferSize
