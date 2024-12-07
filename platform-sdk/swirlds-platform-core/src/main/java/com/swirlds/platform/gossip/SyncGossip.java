@@ -272,11 +272,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                     syncManager.resetFallenBehind();
                 },
                 new ReconnectLearnerFactory(
-                        platformContext,
-                        threadManager,
-                        RosterUtils.buildAddressBook(roster),
-                        reconnectConfig.asyncStreamTimeout(),
-                        reconnectMetrics),
+                        platformContext, threadManager, roster, reconnectConfig.asyncStreamTimeout(), reconnectMetrics),
                 stateConfig);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 

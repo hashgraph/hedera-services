@@ -16,10 +16,11 @@
 
 package com.hedera.node.app.tss.schemas;
 
+import static com.hedera.hapi.node.state.tss.RosterToKey.ACTIVE_ROSTER;
+import static com.hedera.hapi.node.state.tss.TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.tss.RosterToKey;
-import com.hedera.hapi.node.state.tss.TssKeyingStatus;
 import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -55,13 +56,9 @@ public class V0570TssBaseSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        if (ctx.isGenesis()) {
-            final var tssStatusState = ctx.newStates().getSingleton(TSS_STATUS_KEY);
-            tssStatusState.put(TssStatus.newBuilder()
-                    .ledgerId(Bytes.EMPTY)
-                    .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS)
-                    .rosterToKey(RosterToKey.ACTIVE_ROSTER)
-                    .build());
+        final var tssStatusState = ctx.newStates().getSingleton(TSS_STATUS_KEY);
+        if (tssStatusState.get() == null) {
+            tssStatusState.put(new TssStatus(WAITING_FOR_ENCRYPTION_KEYS, ACTIVE_ROSTER, Bytes.EMPTY));
         }
     }
 

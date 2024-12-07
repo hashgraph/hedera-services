@@ -864,7 +864,7 @@ public class ContractCreateSuite {
                 BigInteger.ONE.toByteArray(),
                 BigInteger.ONE.toByteArray(),
                 150_000,
-                new byte[] {1, 2, 3},
+                new byte[] {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4},
                 BigInteger.ONE,
                 new byte[] {},
                 new byte[] {},

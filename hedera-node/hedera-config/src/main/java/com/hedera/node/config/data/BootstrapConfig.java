@@ -38,6 +38,8 @@ public record BootstrapConfig(
         @ConfigProperty(value = "networkProperties.path", defaultValue = "data/config/application.properties")
                 @NodeProperty
                 String networkPropertiesPath,
+        @ConfigProperty(value = "nodeAdminKeys.path", defaultValue = "data/config/node-admin-keys.json") @NodeProperty
+                String nodeAdminKeysPath,
         @ConfigProperty(value = "rates.currentHbarEquiv", defaultValue = "1") @NetworkProperty
                 int ratesCurrentHbarEquiv,
         @ConfigProperty(value = "rates.currentCentEquiv", defaultValue = "12") @NetworkProperty
