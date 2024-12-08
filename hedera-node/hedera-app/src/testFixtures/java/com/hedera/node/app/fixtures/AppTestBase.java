@@ -344,13 +344,14 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), addressBook);
             final var initialState = new FakeState();
             final var genesisRoster = buildRoster(addressBook);
-            final var networkInfo = new GenesisNetworkInfo(genesisRoster, Bytes.fromHex("03"));
-            final var startupNetworks = new FakeStartupNetworks(Network.newBuilder()
+            final var genesisNetwork = Network.newBuilder()
                     .nodeMetadata(genesisRoster.rosterEntries().stream()
                             .map(entry ->
                                     NodeMetadata.newBuilder().rosterEntry(entry).build())
                             .toList())
-                    .build());
+                    .build();
+            final var networkInfo = new GenesisNetworkInfo(genesisNetwork.nodeMetadata(), Bytes.fromHex("03"));
+            final var startupNetworks = new FakeStartupNetworks(genesisNetwork);
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
                 svc.registerSchemas(reg);
