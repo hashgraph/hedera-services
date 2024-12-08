@@ -98,7 +98,6 @@ import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -375,12 +374,7 @@ public class HandleWorkflow {
                 // as there are available consensus times and execution slots (ordinarily there will
                 // be more than enough of both, but we must be prepared for the edge cases)
                 executeAsManyScheduled(
-                        state,
-                        executionStart,
-                        userTxn.consensusNow(),
-                        userTxn.creatorInfo(),
-                        userTxn.config(),
-                        userTxn.type());
+                        state, executionStart, userTxn.consensusNow(), userTxn.creatorInfo(), userTxn.type());
             } catch (Exception e) {
                 logger.error(
                         "{} - unhandled exception while executing schedules between [{}, {}]",
@@ -406,7 +400,6 @@ public class HandleWorkflow {
      * @param executionStart the start of the interval to execute transactions in
      * @param consensusNow the consensus time at which the user transaction triggering this execution was processed
      * @param creatorInfo the node info of the user transaction creator
-     * @param config the configuration to use
      * @param type the type of the user transaction triggering this execution
      */
     private void executeAsManyScheduled(
@@ -414,13 +407,13 @@ public class HandleWorkflow {
             @NonNull final Instant executionStart,
             @NonNull final Instant consensusNow,
             @NonNull final NodeInfo creatorInfo,
-            @NonNull final Configuration config,
             @NonNull final TransactionType type) {
         // Non-final right endpoint of the execution interval, in case we cannot do all the scheduled work
         var executionEnd = consensusNow;
         // We only construct an Iterator<ExecutableTxn> if this is not genesis, and we haven't already
         // created and exhausted iterators through the last second in the interval
         if (type != GENESIS_TRANSACTION && executionEnd.getEpochSecond() > lastExecutedSecond) {
+            final var config = configProvider.getConfiguration();
             final var schedulingConfig = config.getConfigData(SchedulingConfig.class);
             final var consensusConfig = config.getConfigData(ConsensusConfig.class);
             // Since the next platform-assigned consensus time may be as early as (now + separationNanos),

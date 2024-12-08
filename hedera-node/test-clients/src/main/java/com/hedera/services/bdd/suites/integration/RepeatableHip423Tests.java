@@ -908,7 +908,6 @@ public class RepeatableHip423Tests {
                     final var parts =
                             TransactionParts.from(item.eventTransactionOrThrow().applicationTransactionOrThrow());
                     if (parts.transactionIdOrThrow().equals(executionTxnId)) {
-                        System.out.println("Found " + creationTxn + " execution as " + executionTxnId);
                         for (int j = i + 1; j < n; j++) {
                             final var followingItem = items.get(j);
                             if (followingItem.hasTransactionResult()) {
