@@ -143,7 +143,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -679,7 +678,7 @@ public class RepeatableHip423Tests {
                 scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
                         .waitForExpiry(true)
                         .expiringIn(ONE_MINUTE),
-                sleepForSeconds(ONE_MINUTE),
+                sleepForSeconds(ONE_MINUTE - 1),
                 cryptoCreate("trigger"),
                 getAccountBalance("luckyYou").hasTinyBars(1),
                 doingContextual(spec -> {
@@ -704,6 +703,7 @@ public class RepeatableHip423Tests {
                     state.getStates().putAll(services.get());
                     embeddedHedera.setRoundDuration(DEFAULT_ROUND_DURATION);
                 }),
+                // Verify the second transaction in the same second did not recreate the iterator
                 assertHgcaaLogDoesNotContain(
                         byNodeId(0L), "Unknown k/v state key SCHEDULES_BY_ID", Duration.ofMillis(100L)));
     }
@@ -791,16 +791,25 @@ public class RepeatableHip423Tests {
                 getAccountBalance(RECEIVER).hasTinyBars(1L)));
     }
 
-    // TODO - add withQueryableStatus variant confirming the RecordCache will also return the correct status
-    private static BiConsumer<TransactionBody, TransactionResult> withStatus(@NonNull final ResponseCodeEnum status) {
+    private static ScheduledExecutionAssertion withStatus(@NonNull final ResponseCodeEnum status) {
         requireNonNull(status);
-        return (body, result) -> assertEquals(status, result.status());
+        return (spec, body, result) -> {
+            assertEquals(status, result.status());
+            allRunFor(spec, getTxnRecord(body.transactionIDOrThrow()).logged().assertingNothingAboutHashes());
+        };
+    }
+
+    /**
+     * Asserts that a scheduled execution is as expected.
+     */
+    interface ScheduledExecutionAssertion {
+        void test(@NonNull HapiSpec spec, @NonNull TransactionBody body, @NonNull TransactionResult result);
     }
 
     private static Function<HapiSpec, BlockStreamAssertion> scheduledExecutionResult(
-            @NonNull final String creationTxn, @NonNull final BiConsumer<TransactionBody, TransactionResult> observer) {
+            @NonNull final String creationTxn, @NonNull final ScheduledExecutionAssertion assertion) {
         requireNonNull(creationTxn);
-        requireNonNull(observer);
+        requireNonNull(assertion);
         return spec -> block -> {
             final com.hederahashgraph.api.proto.java.TransactionID creationTxnId;
             try {
@@ -820,7 +829,7 @@ public class RepeatableHip423Tests {
                         for (int j = i + 1; j < n; j++) {
                             final var followingItem = items.get(j);
                             if (followingItem.hasTransactionResult()) {
-                                observer.accept(parts.body(), followingItem.transactionResultOrThrow());
+                                assertion.test(spec, parts.body(), followingItem.transactionResultOrThrow());
                                 return true;
                             }
                         }
@@ -932,6 +941,7 @@ public class RepeatableHip423Tests {
      * @return the calculated expiration second of the schedule
      */
     private static long expiryOf(@NonNull final String schedule, @NonNull final HapiSpec spec) {
+        requireNonNull(schedule);
         final ReadableKVState<ScheduleID, Schedule> schedules = spec.embeddedStateOrThrow()
                 .getReadableStates(ScheduleService.NAME)
                 .get(SCHEDULES_BY_ID_KEY);

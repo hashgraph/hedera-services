@@ -368,10 +368,13 @@ public class HandleWorkflow {
             // further consideration here
             purgeScheduling(state, lastRecordManagerTime, userTxn.consensusNow());
         } else {
+            // We initially consider executions expiring in [lastIntervalProcessTime, consensusNow]
             final var executionStart = blockStreamManager.lastIntervalProcessTime();
-            if (Instant.EPOCH.equals(executionStart)) {
-                blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
-            } else if (executionStart.getEpochSecond() > lastExecutedSecond) {
+            // But the right endpoint of the interval is non-final as we may not be able execute everything
+            var executionEnd = userTxn.consensusNow();
+            // Only construct an Iterator<ExecutableTxn> if this is not genesis and we haven't already
+            // created and exhausted iterators through the last second in the interval
+            if (userTxn.type() != GENESIS_TRANSACTION && executionEnd.getEpochSecond() > lastExecutedSecond) {
                 final var schedulingConfig = userTxn.config().getConfigData(SchedulingConfig.class);
                 final var consensusConfig = userTxn.config().getConfigData(ConsensusConfig.class);
                 // Since the next consensus time may be (now + separationNanos), we need to ensure that
@@ -396,7 +399,6 @@ public class HandleWorkflow {
                 // If we discover an executable transaction somewhere in the middle of the interval, this will
                 // be revised to the NBF time of that transaction; but for now we assume that everything up to
                 // the last second of the interval was executed
-                var executionEnd = userTxn.consensusNow();
                 while (iter.hasNext() && !nextTime.isAfter(lastUsableTime) && n > 0) {
                     final var executableTxn = iter.next();
                     if (schedulingConfig.longTermEnabled()) {
@@ -433,14 +435,15 @@ public class HandleWorkflow {
                             .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
                     n--;
                 }
-                blockStreamManager.setLastIntervalProcessTime(executionEnd);
-                if (!iter.hasNext() && executionEnd.getEpochSecond() > executionStart.getEpochSecond()) {
-                    // Since the execution interval spanned at least full second and there are no remaining
-                    // transactions to execute in it, we can mark the last full second as executed
-                    lastExecutedSecond = executionEnd.getEpochSecond() - 1;
-                }
                 doStreamingKVChanges(writableStates, executionEnd, iter::purgeUntilNext);
+                // If the iterator is not exhausted, we can only mark the second _before_ the last-executed NBF time
+                // as complete; if it is exhausted, we mark the second _of_ last-executed NBF time as complete
+                lastExecutedSecond = iter.hasNext()
+                        ? executionEnd.getEpochSecond() - 1
+                        : userTxn.consensusNow().getEpochSecond();
             }
+            // Update our last-processed time with where we ended
+            blockStreamManager.setLastIntervalProcessTime(executionEnd);
         }
     }
 
