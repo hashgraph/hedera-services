@@ -370,7 +370,7 @@ public class HandleWorkflow {
         } else {
             // We initially consider executions expiring in [lastIntervalProcessTime, consensusNow]
             final var executionStart = blockStreamManager.lastIntervalProcessTime();
-            // But the right endpoint of the interval is non-final as we may not be able execute everything
+            // But the right endpoint of the interval is non-final as we may not be able to execute everything
             var executionEnd = userTxn.consensusNow();
             // Only construct an Iterator<ExecutableTxn> if this is not genesis and we haven't already
             // created and exhausted iterators through the last second in the interval
@@ -437,7 +437,7 @@ public class HandleWorkflow {
                 }
                 doStreamingKVChanges(writableStates, executionEnd, iter::purgeUntilNext);
                 // If the iterator is not exhausted, we can only mark the second _before_ the last-executed NBF time
-                // as complete; if it is exhausted, we mark the second _of_ last-executed NBF time as complete
+                // as complete; if it is exhausted, we mark the rightmost second of the interval as complete
                 lastExecutedSecond = iter.hasNext()
                         ? executionEnd.getEpochSecond() - 1
                         : userTxn.consensusNow().getEpochSecond();
