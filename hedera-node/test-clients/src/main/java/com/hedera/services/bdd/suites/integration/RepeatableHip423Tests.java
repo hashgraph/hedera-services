@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.integration;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
 import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.calculateBytesHash;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
@@ -40,12 +41,14 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -54,6 +57,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeScheduleUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.exposeMaxSchedulable;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertHgcaaLogDoesNotContain;
@@ -75,12 +79,16 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
@@ -108,8 +116,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.hapi.block.stream.output.TransactionResult;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.ServicesConfigurationList;
+import com.hedera.hapi.node.base.Setting;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -120,6 +131,8 @@ import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
@@ -226,9 +239,9 @@ public class RepeatableHip423Tests {
     }
 
     /**
-     * Tests that the consensus {@link com.hedera.hapi.node.base.HederaFunctionality#SCHEDULE_CREATE} throttle is
+     * Tests that the consensus {@link HederaFunctionality#SCHEDULE_CREATE} throttle is
      * enforced by overriding the dev throttles to the more restrictive mainnet throttles and scheduling one more
-     * {@link com.hedera.hapi.node.base.HederaFunctionality#CONSENSUS_CREATE_TOPIC} that is allowed.
+     * {@link HederaFunctionality#CONSENSUS_CREATE_TOPIC} that is allowed.
      */
     @LeakyRepeatableHapiTest(
             value = {
@@ -274,9 +287,9 @@ public class RepeatableHip423Tests {
     }
 
     /**
-     * Tests that the consensus {@link com.hedera.hapi.node.base.HederaFunctionality#SCHEDULE_CREATE} throttle is
+     * Tests that the consensus {@link HederaFunctionality#SCHEDULE_CREATE} throttle is
      * enforced by overriding the dev throttles to the more restrictive mainnet throttles and scheduling one more
-     * {@link com.hedera.hapi.node.base.HederaFunctionality#CONSENSUS_CREATE_TOPIC} that is allowed.
+     * {@link HederaFunctionality#CONSENSUS_CREATE_TOPIC} that is allowed.
      */
     @LeakyRepeatableHapiTest(
             value = {
@@ -709,6 +722,44 @@ public class RepeatableHip423Tests {
                         byNodeId(0L), "Unknown k/v state key SCHEDULES_BY_ID", Duration.ofMillis(100L)));
     }
 
+    /**
+     * Validates that if a privileged {@link HederaFunctionality#FILE_UPDATE} transaction is scheduled to be executed
+     * then later scheduled transactions executions in the same second reflect the new values of any just-overridden
+     * properties.
+     */
+    @RepeatableHapiTest({NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION, NEEDS_STATE_ACCESS})
+    final Stream<DynamicTest> scheduledPrivilegedOverridesAreReflectedInSubsequentSchedules() {
+        final AtomicReference<Bytes> originalFile121 = new AtomicReference<>();
+        final var lastSecond = new AtomicLong();
+        return hapiTest(
+                blockStreamMustIncludePassFrom(
+                        scheduledExecutionResult("creation", withStatus(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED))),
+                exposeSpecSecondTo(lastSecond::set),
+                getFileContents(APP_PROPERTIES).consumedBy(bytes -> originalFile121.set(Bytes.wrap(bytes))),
+                // We cannot schedule an overriding() because it is not a HapiSpecOperation; so instead schedule
+                // an FileUpdate to 0.0.121 with the temporary limit on token symbol bytes
+                sourcing(() -> scheduleCreate(
+                                "transferListLimitOverride",
+                                fileUpdate(APP_PROPERTIES)
+                                        .contents(withAddedConfig(originalFile121.get(), "ledger.transfers.maxLen", "2")
+                                                .toByteArray()))
+                        .designatingPayer(GENESIS)
+                        .expiringAt(lastSecond.get() + ONE_MINUTE)),
+                // Also schedule a token create with symbol length 3 > 2
+                sourcing(() -> scheduleCreate(
+                                "nowOverLongTransferList",
+                                cryptoTransfer(movingHbar(2L).distributing(DEFAULT_PAYER, STAKING_REWARD, NODE_REWARD)))
+                        .expiringAt(lastSecond.get() + ONE_MINUTE)
+                        .via("creation")),
+                // Trigger execution of both schedules
+                sleepForSeconds(ONE_MINUTE),
+                cryptoCreate("trigger"),
+                // Restore the initial 0.0.121 contents manually now
+                sourcing(() -> fileUpdate(APP_PROPERTIES)
+                        .contents(originalFile121.get().toByteArray())
+                        .payingWith(GENESIS)));
+    }
+
     @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
     final Stream<DynamicTest> receiverSigRequiredUpdateIsRecognized() {
         var senderShape = threshOf(2, 3);
@@ -857,6 +908,7 @@ public class RepeatableHip423Tests {
                     final var parts =
                             TransactionParts.from(item.eventTransactionOrThrow().applicationTransactionOrThrow());
                     if (parts.transactionIdOrThrow().equals(executionTxnId)) {
+                        System.out.println("Found " + creationTxn + " execution as " + executionTxnId);
                         for (int j = i + 1; j < n; j++) {
                             final var followingItem = items.get(j);
                             if (followingItem.hasTransactionResult()) {
@@ -987,5 +1039,25 @@ public class RepeatableHip423Tests {
         return source.toBuilder()
                 .setThresholdKey(source.getThresholdKey().toBuilder().setKeys(newKeyList))
                 .build();
+    }
+
+    /**
+     * Returns the given config list with an added setting with the given name and value.
+     * @param rawConfigList the raw bytes of the config list
+     * @param name the name of the setting to add
+     * @param value the value of the setting to add
+     * @return the updated config list
+     */
+    private static Bytes withAddedConfig(
+            @NonNull final Bytes rawConfigList, @NonNull final String name, @NonNull final String value) {
+        try {
+            final var configList = ServicesConfigurationList.PROTOBUF.parse(rawConfigList);
+            final var updatedConfigList = new ServicesConfigurationList(
+                    Stream.concat(configList.nameValue().stream(), Stream.of(new Setting(name, value, Bytes.EMPTY)))
+                            .toList());
+            return ServicesConfigurationList.PROTOBUF.toBytes(updatedConfigList);
+        } catch (ParseException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

@@ -369,13 +369,14 @@ public class HandleWorkflow {
             // further consideration here
             purgeScheduling(state, lastRecordManagerTime, userTxn.consensusNow());
         } else {
+            final var executionStart = blockStreamManager.lastIntervalProcessTime();
             try {
                 // We execute as many schedules expiring in [lastIntervalProcessTime, consensusNow]
                 // as there are available consensus times and execution slots (ordinarily there will
                 // be more than enough of both, but we must be prepared for the edge cases)
                 executeAsManyScheduled(
                         state,
-                        blockStreamManager.lastIntervalProcessTime(),
+                        executionStart,
                         userTxn.consensusNow(),
                         userTxn.creatorInfo(),
                         userTxn.config(),
@@ -384,7 +385,7 @@ public class HandleWorkflow {
                 logger.error(
                         "{} - unhandled exception while executing schedules between [{}, {}]",
                         ALERT_MESSAGE,
-                        blockStreamManager.lastIntervalProcessTime(),
+                        executionStart,
                         userTxn.consensusNow(),
                         e);
                 // This should never happen, but if it does, we skip over everything in the interval to
@@ -447,7 +448,7 @@ public class HandleWorkflow {
                 final var executableTxn = iter.next();
                 if (schedulingConfig.longTermEnabled()) {
                     stakePeriodManager.setCurrentStakePeriodFor(nextTime);
-                    if (streamMode != BLOCKS) {
+                    if (streamMode == BOTH) {
                         blockRecordManager.startUserTransaction(nextTime, state);
                     }
                     final var handleOutput = executeScheduled(state, nextTime, creatorInfo, executableTxn);
