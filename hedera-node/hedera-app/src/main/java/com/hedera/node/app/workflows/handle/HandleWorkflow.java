@@ -418,7 +418,7 @@ public class HandleWorkflow {
                                 .buildHandleOutput(scheduledTxn.consensusNow(), exchangeRateManager.exchangeRates());
                         recordCache.addRecordSource(
                                 scheduledTxn.creatorInfo().nodeId(),
-                                scheduledTxn.txnInfo().txnIdOrThrow(),
+                                scheduledTxn.txnInfo().transactionID(),
                                 DueDiligenceFailure.NO,
                                 scheduledOutput.preferringBlockRecordSource());
                         scheduledOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
@@ -595,7 +595,7 @@ public class HandleWorkflow {
                     userTxn.stack().buildHandleOutput(userTxn.consensusNow(), exchangeRateManager.exchangeRates());
             recordCache.addRecordSource(
                     userTxn.creatorInfo().nodeId(),
-                    userTxn.txnInfo().txnIdOrThrow(),
+                    userTxn.txnInfo().transactionID(),
                     userTxn.preHandleResult().dueDiligenceFailure(),
                     handleOutput.preferringBlockRecordSource());
             return handleOutput;

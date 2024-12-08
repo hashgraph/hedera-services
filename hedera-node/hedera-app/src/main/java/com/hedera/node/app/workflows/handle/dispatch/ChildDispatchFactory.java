@@ -468,6 +468,8 @@ public class ChildDispatchFactory {
      */
     public static TransactionInfo getTxnInfoFrom(
             @NonNull final AccountID payerId, @NonNull final TransactionBody txBody) {
+        requireNonNull(payerId);
+        requireNonNull(txBody);
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
         final var signedTransaction =
                 SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
@@ -478,7 +480,7 @@ public class ChildDispatchFactory {
         return new TransactionInfo(
                 transaction,
                 txBody,
-                TransactionID.DEFAULT,
+                txBody.transactionIDOrElse(TransactionID.DEFAULT),
                 payerId,
                 SignatureMap.DEFAULT,
                 signedTransactionBytes,
