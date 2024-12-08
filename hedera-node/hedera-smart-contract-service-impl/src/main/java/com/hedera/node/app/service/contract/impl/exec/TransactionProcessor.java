@@ -38,6 +38,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
@@ -164,7 +165,13 @@ public class TransactionProcessor {
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
             @NonNull final Configuration config) {
-        return computeInvolvedParties(transaction, updater, config);
+        try {
+            return computeInvolvedParties(transaction, updater, config);
+        } catch (HandleException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
     }
 
     private HederaEvmTransactionResult safeCommit(
