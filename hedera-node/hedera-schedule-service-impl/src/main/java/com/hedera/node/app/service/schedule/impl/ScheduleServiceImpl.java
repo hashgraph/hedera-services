@@ -159,7 +159,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
         @Override
         public boolean purgeUntilNext() {
             if (!nextKnown) {
-                throw new IllegalStateException("purgeUntilNext() called before next()");
+                throw new IllegalStateException("purgeUntilNext() called before hasNext()");
             }
             if (previousOrder != null) {
                 var order = previousOrder;
