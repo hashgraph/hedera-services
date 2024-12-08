@@ -465,7 +465,13 @@ public class HandleWorkflow {
             doStreamingKVChanges(writableStates, executionEnd, iter::purgeUntilNext);
             // If the iterator is not exhausted, we can only mark the second _before_ the last-executed NBF time
             // as complete; if it is exhausted, we mark the rightmost second of the interval as complete
-            lastExecutedSecond = iter.hasNext() ? executionEnd.getEpochSecond() - 1 : consensusNow.getEpochSecond();
+            if (iter.hasNext()) {
+                lastExecutedSecond = executionEnd.getEpochSecond() - 1;
+            } else {
+                // We exhausted the iterator, so jump back ahead to the interval right endpoint
+                executionEnd = consensusNow;
+                lastExecutedSecond = consensusNow.getEpochSecond();
+            }
         }
         // Update our last-processed time with where we ended
         blockStreamManager.setLastIntervalProcessTime(executionEnd);
