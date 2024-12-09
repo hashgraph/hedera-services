@@ -18,11 +18,15 @@ package com.swirlds.platform.turtle.runner;
 
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.*;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * A simple testing application intended for use with TURTLE.
@@ -77,7 +81,12 @@ public class TurtleTestingToolState extends PlatformMerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateModifier platformState) {
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         state = NonCryptographicHashing.hash64(
                 state,
                 round.getRoundNum(),
