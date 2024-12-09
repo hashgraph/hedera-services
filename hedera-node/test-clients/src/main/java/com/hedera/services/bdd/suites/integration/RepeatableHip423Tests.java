@@ -78,6 +78,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepForSeconds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
@@ -799,6 +800,24 @@ public class RepeatableHip423Tests {
                         .fee(ONE_HBAR)
                         .expiringAt(expiry.get())),
                 purgeExpiringWithin(oddLifetime));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> testFailingScheduleSingChargesFee() {
+        return hapiTest(
+                cryptoCreate("sender").balance(ONE_HBAR),
+                cryptoCreate("receiver").balance(0L).receiverSigRequired(true),
+                scheduleCreate("scheduleSign", cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
+                        .expiringIn(5)
+                        .alsoSigningWith("sender"),
+                sleepForSeconds(5),
+                cryptoCreate("trigger"),
+                scheduleSign("scheduleSign")
+                        .payingWith("sender")
+                        .alsoSigningWith("receiver")
+                        .hasKnownStatusFrom(INVALID_SCHEDULE_ID)
+                        .via("signTxn"),
+                validateChargedUsd("signTxn", 0.001));
     }
 
     @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
