@@ -19,9 +19,7 @@ package com.hedera.services.bdd.junit.restart;
 import static com.hedera.services.bdd.junit.TestTags.ONLY_REPEATABLE;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.node.config.data.FilesConfig;
 import com.hedera.services.bdd.junit.ConfigOverride;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
@@ -56,22 +54,29 @@ import org.junit.jupiter.api.parallel.Execution;
 @Tag(ONLY_REPEATABLE)
 public @interface RestartHapiTest {
     /**
-     * Any overrides that should be present at restart. At genesis, these will be appended to the embedded
-     * node's {@link com.hedera.services.bdd.junit.hedera.ExternalPath#APPLICATION_PROPERTIES} file. With a
-     * saved state, these overrides will be the initial contents of the {@link ServicesConfigurationList} message
-     * serialized as contents of the {@link FilesConfig#networkProperties()} system file.
-     */
-    ConfigOverride[] bootstrapOverrides() default {};
-
-    /**
      * The type of restart being tested.
      */
     RestartType restartType() default RestartType.GENESIS;
 
     /**
+     * Any overrides that should be present when creating the setup state before restart.
+     */
+    ConfigOverride[] setupOverrides() default {};
+
+    /**
+     * Any overrides that should be present at restart.
+     */
+    ConfigOverride[] restartOverrides() default {};
+
+    /**
+     * The type of startup assets that should be present on disk when creating the setup state before restart.
+     */
+    StartupAssets setupAssets() default StartupAssets.NONE;
+
+    /**
      * The type of startup assets that should be present on disk for the test.
      */
-    StartupAssets startupAssets() default StartupAssets.NONE;
+    StartupAssets restartAssets() default StartupAssets.NONE;
 
     /**
      * The type of saved state spec that should be used to customize the state of the {@link FakeState} when
