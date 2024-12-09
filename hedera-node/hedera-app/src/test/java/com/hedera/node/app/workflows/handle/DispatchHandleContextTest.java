@@ -95,6 +95,7 @@ import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
+import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -586,10 +587,17 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             VERIFIER_CALLBACK,
                             emptySet(),
                             StreamBuilder.class,
-                            StakingRewards.ON)))
+                            StakingRewards.ON,
+                            UsePresetTxnId.NO)))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatch(subDispatch(
-                            AccountID.DEFAULT, txBody, VERIFIER_CALLBACK, emptySet(), null, StakingRewards.ON)))
+                            AccountID.DEFAULT,
+                            txBody,
+                            VERIFIER_CALLBACK,
+                            emptySet(),
+                            null,
+                            StakingRewards.ON,
+                            UsePresetTxnId.NO)))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -603,7 +611,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             VERIFIER_CALLBACK,
                             emptySet(),
                             StreamBuilder.class,
-                            StakingRewards.OFF))),
+                            StakingRewards.OFF,
+                            UsePresetTxnId.NO))),
                     Arguments.of((Consumer<HandleContext>) context ->
                             context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class)))));
         }
@@ -695,7 +704,13 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             assertThat(context.dispatchPaidRewards()).isSameAs(Collections.emptyMap());
 
             context.dispatch(subDispatch(
-                    ALICE.accountID(), txBody, VERIFIER_CALLBACK, emptySet(), StreamBuilder.class, StakingRewards.ON));
+                    ALICE.accountID(),
+                    txBody,
+                    VERIFIER_CALLBACK,
+                    emptySet(),
+                    StreamBuilder.class,
+                    StakingRewards.ON,
+                    UsePresetTxnId.NO));
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();

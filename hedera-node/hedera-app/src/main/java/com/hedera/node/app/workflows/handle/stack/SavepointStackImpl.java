@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_SCHEDULING_ALLOWED_AFTER_SCHEDULED_RECURSION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.RECURSIVE_SCHEDULING_LIMIT_REACHED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
@@ -37,6 +40,8 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.records.RecordSource;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -91,6 +96,10 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
 
     private final StreamMode streamMode;
 
+    private int numPresetIds;
+    private int noncesToSkipPerPresetId;
+    private boolean presetIdsAllowed;
+
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
      *
@@ -132,7 +141,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     public static SavepointStackImpl newChildStack(
             @NonNull final SavepointStackImpl root,
             @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
-            @NonNull final HandleContext.TransactionCategory category,
+            @NonNull final TransactionCategory category,
             @NonNull final StreamBuilder.TransactionCustomizer customizer,
             @NonNull final StreamMode streamMode) {
         return new SavepointStackImpl(root, reversingBehavior, category, customizer, streamMode);
@@ -159,6 +168,8 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.roundStateChangeListener = requireNonNull(roundStateChangeListener);
         builderSink = new BuilderSinkImpl(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
+        presetIdsAllowed = true;
+        noncesToSkipPerPresetId = maxBuildersBeforeUser + maxBuildersAfterUser;
         setupFirstSavepoint(USER);
         baseBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_TRANSACTION_CUSTOMIZER, streamMode, true);
         this.streamMode = requireNonNull(streamMode);
@@ -177,7 +188,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     private SavepointStackImpl(
             @NonNull final SavepointStackImpl parent,
             @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
-            @NonNull final HandleContext.TransactionCategory category,
+            @NonNull final TransactionCategory category,
             @NonNull final StreamBuilder.TransactionCustomizer customizer,
             @NonNull final StreamMode streamMode) {
         requireNonNull(reversingBehavior);
@@ -190,6 +201,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         this.roundStateChangeListener = null;
         setupFirstSavepoint(category);
         baseBuilder = peek().createBuilder(reversingBehavior, category, customizer, streamMode, true);
+        presetIdsAllowed = false;
     }
 
     @Override
@@ -272,6 +284,16 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             stack.pop().rollback();
         }
         setupFirstSavepoint(baseBuilder.category());
+    }
+
+    /**
+     * Returns true when this is stack was for a {@link TransactionCategory#SCHEDULED} dispatch with
+     * parent stack of type {@link TransactionCategory#USER}.
+     */
+    public boolean scheduledParentIsUser() {
+        return baseBuilder.category() == SCHEDULED
+                && (state instanceof SavepointStackImpl parent)
+                && parent.txnCategory() == USER;
     }
 
     /**
@@ -397,11 +419,40 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     }
 
     /**
-     * Returns the {@link HandleContext.TransactionCategory} of the transaction that created this stack.
+     * Returns a transaction ID that can safely assigned to a child in this stack's context without
+     * waiting to the end of the transaction.
+     * @param isLastAllowed whether the stack should refuse to create more preset ids after this one
+     * @return the next expected transaction ID
+     * @throws HandleException if the last allowed preset id was already created, or if the nonce
+     * changed from negative to positive, indicating there are no more nonces left for the base id
+     * @throws NullPointerException if this is called before the base builder was given an id
+     */
+    public TransactionID nextPresetTxnId(final boolean isLastAllowed) {
+        // Child stacks always delegate such requests to their parent
+        if (state instanceof SavepointStackImpl parent) {
+            return parent.nextPresetTxnId(isLastAllowed);
+        }
+        if (!presetIdsAllowed) {
+            throw new HandleException(NO_SCHEDULING_ALLOWED_AFTER_SCHEDULED_RECURSION);
+        }
+        numPresetIds++;
+        if (isLastAllowed) {
+            presetIdsAllowed = false;
+        }
+        final var baseId = requireNonNull(baseBuilder.transactionID());
+        final var presetNonce = baseId.nonce() + numPresetIds * noncesToSkipPerPresetId;
+        if (baseId.nonce() < 0 && presetNonce >= 0) {
+            throw new HandleException(RECURSIVE_SCHEDULING_LIMIT_REACHED);
+        }
+        return baseId.copyBuilder().nonce(presetNonce).build();
+    }
+
+    /**
+     * Returns the {@link TransactionCategory} of the transaction that created this stack.
      *
      * @return the transaction category
      */
-    public HandleContext.TransactionCategory txnCategory() {
+    public TransactionCategory txnCategory() {
         return baseBuilder.category();
     }
 
@@ -463,31 +514,39 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         var lastAssignedConsenusTime = consensusTime;
         final var builders = requireNonNull(builderSink).allBuilders();
         TransactionID.Builder idBuilder = null;
-        int indexOfUserRecord = 0;
-        for (int i = 0, n = builders.size(); i < n; i++) {
-            if (builders.get(i).category() == USER) {
-                indexOfUserRecord = i;
-                idBuilder = builders.get(i).transactionID().copyBuilder();
+        int indexOfTopLevelRecord = 0;
+        int topLevelNonce = 0;
+        final int n = builders.size();
+        for (int i = 0; i < n; i++) {
+            final var builder = builders.get(i);
+            final var category = builder.category();
+            if (category == USER || category == NODE) {
+                indexOfTopLevelRecord = i;
+                topLevelNonce = builder.transactionID().nonce();
+                idBuilder = builder.transactionID().copyBuilder();
                 break;
             }
         }
-        int nextNonce = 1;
-        for (int i = 0; i < builders.size(); i++) {
+        int nextNonceOffset = 1;
+        for (int i = 0; i < n; i++) {
             final var builder = builders.get(i);
-            final var nonce =
+            final var nonceOffset =
                     switch (builder.category()) {
                         case USER, SCHEDULED, NODE -> 0;
-                        case PRECEDING, CHILD -> nextNonce++;
+                        case PRECEDING, CHILD -> nextNonceOffset++;
                     };
-            // The schedule service specifies the transaction id to use for a triggered transaction
-            if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
-                builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+            final var txnId = builder.transactionID();
+            // If the builder does not already have a transaction id, then complete with the next nonce offset
+            if (txnId == null || TransactionID.DEFAULT.equals(txnId)) {
+                builder.transactionID(requireNonNull(idBuilder)
+                                .nonce(topLevelNonce + nonceOffset)
+                                .build())
                         .syncBodyIdFromRecordId();
             }
-            final var consensusNow = consensusTime.plusNanos((long) i - indexOfUserRecord);
+            final var consensusNow = consensusTime.plusNanos((long) i - indexOfTopLevelRecord);
             lastAssignedConsenusTime = consensusNow;
             builder.consensusTimestamp(consensusNow);
-            if (i > indexOfUserRecord) {
+            if (i > indexOfTopLevelRecord) {
                 if (builder.category() != SCHEDULED) {
                     // Only set exchange rates on transactions preceding the user transaction, since
                     // no subsequent child can change the exchange rate
@@ -524,7 +583,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         return new HandleOutput(blockRecordSource, recordSource);
     }
 
-    private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {
+    private void setupFirstSavepoint(@NonNull final TransactionCategory category) {
         if (state instanceof SavepointStackImpl parent) {
             stack.push(new FirstChildSavepoint(new WrappedState(state), parent.peek(), category));
         } else {
