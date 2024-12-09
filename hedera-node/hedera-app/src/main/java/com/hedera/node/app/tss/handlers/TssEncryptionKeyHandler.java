@@ -19,6 +19,7 @@ package com.hedera.node.app.tss.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -68,7 +69,19 @@ public class TssEncryptionKeyHandler implements TransactionHandler {
         final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
         final var nodeEntityNumber =
                 EntityNumber.newBuilder().number(context.creatorInfo().nodeId()).build();
-        tssStore.put(nodeEntityNumber, op);
-        // (TSS-FUTURE) Check condition for resuming normal execution of TssBaseService
+        TssEncryptionKeys currentTssEncryptionKeys =
+                tssStore.getTssEncryptionKeys(context.creatorInfo().nodeId());
+        TssEncryptionKeys newTssEncryptionKeys;
+        if (currentTssEncryptionKeys == null) {
+            newTssEncryptionKeys = TssEncryptionKeys.newBuilder()
+                    .currentEncryptionKey(op.publicTssEncryptionKey())
+                    .build();
+        } else {
+            newTssEncryptionKeys = currentTssEncryptionKeys
+                    .copyBuilder()
+                    .nextEncryptionKey(op.publicTssEncryptionKey())
+                    .build();
+        }
+        tssStore.put(nodeEntityNumber, newTssEncryptionKeys);
     }
 }

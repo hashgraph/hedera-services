@@ -18,15 +18,15 @@ package com.hedera.node.app.tss.stores;
 
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
 import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_STATUS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.spi.WritableKVState;
@@ -45,7 +45,7 @@ public class WritableTssStore extends ReadableTssStoreImpl {
 
     private final WritableKVState<TssVoteMapKey, TssVoteTransactionBody> tssVoteState;
 
-    private final WritableKVState<EntityNumber, TssEncryptionKeyTransactionBody> tssEncryptionKeyState;
+    private final WritableKVState<EntityNumber, TssEncryptionKeys> tssEncryptionKeyState;
 
     private final WritableSingletonState<TssStatus> tssStatusState;
 
@@ -53,7 +53,7 @@ public class WritableTssStore extends ReadableTssStoreImpl {
         super(states);
         this.tssMessageState = states.get(TSS_MESSAGE_MAP_KEY);
         this.tssVoteState = states.get(TSS_VOTE_MAP_KEY);
-        this.tssEncryptionKeyState = states.get(TSS_ENCRYPTION_KEY_MAP_KEY);
+        this.tssEncryptionKeyState = states.get(TSS_ENCRYPTION_KEYS_KEY);
         this.tssStatusState = states.getSingleton(TSS_STATUS_KEY);
     }
 
@@ -69,10 +69,10 @@ public class WritableTssStore extends ReadableTssStoreImpl {
         tssVoteState.put(tssVoteMapKey, txBody);
     }
 
-    public void put(@NonNull final EntityNumber entityNumber, @NonNull final TssEncryptionKeyTransactionBody txBody) {
+    public void put(@NonNull final EntityNumber entityNumber, @NonNull final TssEncryptionKeys tssEncryptionKeys) {
         requireNonNull(entityNumber);
-        requireNonNull(txBody);
-        tssEncryptionKeyState.put(entityNumber, txBody);
+        requireNonNull(tssEncryptionKeys);
+        tssEncryptionKeyState.put(entityNumber, tssEncryptionKeys);
     }
 
     public void put(@NonNull final TssStatus tssStatus) {

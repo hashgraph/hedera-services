@@ -403,7 +403,7 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final KeysAndCerts keysAndCerts) {
         final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
         final var tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
-        final var tssEncryptionKeyTransactionBody = tssStore.getTssEncryptionKey(
+        final var tssEncryptionKeys = tssStore.getTssEncryptionKeys(
                 handleContext.networkInfo().selfNodeInfo().nodeId());
         Duration timeSinceLastSubmission = tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission() == null
                 ? null
@@ -413,12 +413,11 @@ public class TssBaseServiceImpl implements TssBaseService {
                 handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeyRetryDelay();
         final var tssEncryptionKeySubmissionRetries =
                 handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeySubmissionRetries();
-        if ((tssEncryptionKeyTransactionBody == null
-                        || Arrays.equals(
+        if ((tssEncryptionKeys == null
+                        || tssEncryptionKeys.currentEncryptionKey().equals(Bytes.EMPTY)
+                        || !Arrays.equals(
                                 keysAndCerts.publicTssEncryptionKey().toBytes(),
-                                tssEncryptionKeyTransactionBody
-                                        .publicTssEncryptionKey()
-                                        .toByteArray()))
+                                tssEncryptionKeys.currentEncryptionKey().toByteArray()))
                 && (timeSinceLastSubmission == null
                         || timeSinceLastSubmission.compareTo(tssEncryptionKeyRetryDelay) > 0)) {
             if (tssSubmissions.getTssEncryptionKeySubmissionAttempts() >= tssEncryptionKeySubmissionRetries) {

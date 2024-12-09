@@ -21,8 +21,8 @@ import static com.hedera.hapi.node.state.tss.TssKeyingStatus.WAITING_FOR_ENCRYPT
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssStatus;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
@@ -35,7 +35,7 @@ import java.util.Set;
  */
 public class V0570TssBaseSchema extends Schema {
     public static final String TSS_STATUS_KEY = "TSS_STATUS";
-    public static final String TSS_ENCRYPTION_KEY_MAP_KEY = "TSS_ENCRYPTION_KEY";
+    public static final String TSS_ENCRYPTION_KEYS_KEY = "TSS_ENCRYPTION_KEYS";
     /**
      * This will at most be equal to the number of nodes in the network.
      */
@@ -68,9 +68,9 @@ public class V0570TssBaseSchema extends Schema {
         return Set.of(
                 StateDefinition.singleton(TSS_STATUS_KEY, TssStatus.PROTOBUF),
                 StateDefinition.onDisk(
-                        TSS_ENCRYPTION_KEY_MAP_KEY,
+                        TSS_ENCRYPTION_KEYS_KEY,
                         EntityNumber.PROTOBUF,
-                        TssEncryptionKeyTransactionBody.PROTOBUF,
+                        TssEncryptionKeys.PROTOBUF,
                         MAX_TSS_ENCRYPTION_KEYS));
     }
 }

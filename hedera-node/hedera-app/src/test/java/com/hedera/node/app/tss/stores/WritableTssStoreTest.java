@@ -18,15 +18,15 @@ package com.hedera.node.app.tss.stores;
 
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
 import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_STATUS_KEY;
 import static org.mockito.Mockito.*;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.spi.WritableKVState;
@@ -48,7 +48,7 @@ class WritableTssStoreTest {
     private WritableKVState<TssVoteMapKey, TssVoteTransactionBody> tssVoteState;
 
     @Mock
-    private WritableKVState<EntityNumber, TssEncryptionKeyTransactionBody> tssEncryptionKeyState;
+    private WritableKVState<EntityNumber, TssEncryptionKeys> tssEncryptionKeyState;
 
     @Mock
     private WritableSingletonState<TssStatus> tssStatusState;
@@ -64,7 +64,7 @@ class WritableTssStoreTest {
                 .thenReturn(tssMessageState);
         when(states.<TssVoteMapKey, TssVoteTransactionBody>get(TSS_VOTE_MAP_KEY))
                 .thenReturn(tssVoteState);
-        when(states.<EntityNumber, TssEncryptionKeyTransactionBody>get(TSS_ENCRYPTION_KEY_MAP_KEY))
+        when(states.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY))
                 .thenReturn(tssEncryptionKeyState);
         when(states.<TssStatus>getSingleton(TSS_STATUS_KEY)).thenReturn(tssStatusState);
 
@@ -90,9 +90,9 @@ class WritableTssStoreTest {
     @Test
     void testPutEncryptionKey() {
         EntityNumber entityNumber = new EntityNumber(1);
-        TssEncryptionKeyTransactionBody body = TssEncryptionKeyTransactionBody.DEFAULT;
-        tssStore.put(entityNumber, body);
-        verify(tssEncryptionKeyState).put(entityNumber, body);
+        TssEncryptionKeys tssEncryptionKeys = TssEncryptionKeys.DEFAULT;
+        tssStore.put(entityNumber, tssEncryptionKeys);
+        verify(tssEncryptionKeyState).put(entityNumber, tssEncryptionKeys);
     }
 
     @Test

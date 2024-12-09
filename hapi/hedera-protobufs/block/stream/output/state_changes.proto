@@ -70,6 +70,7 @@ import "auxiliary/tss/tss_vote.proto";
 import "state/tss/tss_message_map_key.proto";
 import "state/tss/tss_vote_map_key.proto";
 import "state/tss/tss_status.proto";
+import "state/tss/tss_encryption_keys.proto";
 
 /**
  * A set of state changes.
@@ -892,7 +893,7 @@ message MapChangeValue {
         /**
          * The value of a map that stores tss encryption keys for each node.
          */
-        com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody tss_encryption_key_value = 20;
+        com.hedera.hapi.node.state.tss.TssEncryptionKeys tss_encryption_keys_value = 20;
 
         /**
          * The value of a map that stores tss messages submitted for each share of nodes.

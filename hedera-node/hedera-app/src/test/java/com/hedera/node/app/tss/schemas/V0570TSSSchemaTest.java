@@ -40,6 +40,6 @@ public class V0570TSSSchemaTest {
         assertThat(statesToCreate.size()).isEqualTo(1);
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
-        assertEquals(V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY, iter.next());
+        assertEquals(V0570TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY, iter.next());
     }
 }
