@@ -67,9 +67,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
             return hapiTest(
                     cryptoCreate(collector).balance(0L),
                     createTopic(TOPIC).withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector)),
-                    //                    approveTopicAllowance()
-                    //                            .addCryptoAllowance(SUBMITTER, TOPIC, ONE_HUNDRED_HBARS, ONE_HBAR)
-                    //                            .payingWith(SUBMITTER),
                     submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER),
                     getAccountBalance(collector).hasTinyBars(ONE_HBAR));
         }
@@ -389,10 +386,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     createTopic(TOPIC)
                             .withConsensusCustomFee(fixedConsensusHtsFee(1, BASE_TOKEN, collector))
                             .withConsensusCustomFee(fixedConsensusHtsFee(1, SECOND_TOKEN, secondCollector)),
-                    //                    approveTopicAllowance()
-                    //                            .addTokenAllowance(collector, BASE_TOKEN, TOPIC, 1, 1)
-                    //                            .addTokenAllowance(collector, SECOND_TOKEN, TOPIC, 1, 1)
-                    //                            .payingWith(collector),
                     submitMessageTo(TOPIC).message("TEST").payingWith(collector),
                     // only second fee should be paid
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L),

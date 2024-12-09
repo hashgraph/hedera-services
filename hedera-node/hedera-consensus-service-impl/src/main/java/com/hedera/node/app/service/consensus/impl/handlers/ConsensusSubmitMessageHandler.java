@@ -29,10 +29,11 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.stepDispatch;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -158,12 +159,13 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             final var syntheticBodies = customFeeAssessor.assessCustomFee(topic, handleContext);
             for (final var syntheticBody : syntheticBodies) {
                 // dispatch crypto transfer
-                var record = handleContext.dispatch(setupDispatch(
+                var record = handleContext.dispatch(stepDispatch(
                         handleContext.payer(),
                         TransactionBody.newBuilder()
                                 .cryptoTransfer(syntheticBody)
                                 .build(),
-                        CryptoTransferStreamBuilder.class));
+                        CryptoTransferStreamBuilder.class,
+                        NOOP_TRANSACTION_CUSTOMIZER));
                 validateTrue(record.status().equals(SUCCESS), record.status());
             }
         }

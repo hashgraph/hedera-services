@@ -27,7 +27,6 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.ConsensusCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
-import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.LedgerConfig;
@@ -56,7 +55,6 @@ public class ConsensusCustomFeeAssessor {
         final List<CryptoTransferTransactionBody> transactionBodies = new ArrayList<>();
 
         final var payer = context.payer();
-        final var topicStore = context.storeFactory().writableStore(WritableTopicStore.class);
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
 
