@@ -22,6 +22,8 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.roster.RosterService;
@@ -34,11 +36,13 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -136,6 +140,24 @@ public class StakePeriodChanges {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
             }
+            final var tssStore = newWritableTssStore(stack, config);
+            TssEncryptionKeys currentTssEncryptionKeys = tssStore.getTssEncryptionKeys(
+                    dispatch.handleContext().networkInfo().selfNodeInfo().nodeId());
+            if (currentTssEncryptionKeys != null
+                    && !currentTssEncryptionKeys.nextEncryptionKey().equals(Bytes.EMPTY)) {
+                TssEncryptionKeys newTssEncryptionKeys = TssEncryptionKeys.newBuilder()
+                        .currentEncryptionKey(currentTssEncryptionKeys.nextEncryptionKey())
+                        .build();
+                tssStore.put(
+                        EntityNumber.newBuilder()
+                                .number(dispatch.handleContext()
+                                        .networkInfo()
+                                        .selfNodeInfo()
+                                        .nodeId())
+                                .build(),
+                        newTssEncryptionKeys);
+                stack.commitSystemStateChanges();
+            }
             if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
                 tssBaseService.regenerateKeyMaterial(stack);
                 startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
@@ -207,6 +229,12 @@ public class StakePeriodChanges {
         final var writableFactory =
                 new WritableStoreFactory(stack, AddressBookService.NAME, config, storeMetricsService);
         return writableFactory.getStore(WritableNodeStore.class);
+    }
+
+    private WritableTssStore newWritableTssStore(
+            @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
+        final var writableFactory = new WritableStoreFactory(stack, TssBaseService.NAME, config, storeMetricsService);
+        return writableFactory.getStore(WritableTssStore.class);
     }
 
     private static boolean isLaterUtcDay(@NonNull final Instant now, @NonNull final Instant then) {
