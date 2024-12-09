@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.com
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeTranslator.TOKEN_TYPE;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -71,6 +72,7 @@ public class TokenTypeCall extends AbstractNonRevertibleTokenViewCall {
         if (isStaticCall && status != SUCCESS) {
             return revertResult(status, gasRequirement);
         }
-        return successResult(TOKEN_TYPE.getOutputs().encodeElements(status.protoOrdinal(), tokenType), gasRequirement);
+        return successResult(
+                TOKEN_TYPE.getOutputs().encode(Tuple.of(status.protoOrdinal(), tokenType)), gasRequirement);
     }
 }

@@ -390,7 +390,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi.orElse(null));
                 final var result = function.decodeReturn(
                         rcd.getContractCallResult().getContractCallResult().toByteArray());
-                resultObserver.accept(result.toList().toArray());
+                resultObserver.accept(result.toArray());
             });
         }
         if (eventDataObserver != null) {

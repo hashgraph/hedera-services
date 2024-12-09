@@ -349,7 +349,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
                         .getContractCallResult()
                         .getContractCallResult()
                         .toByteArray());
-                resultObserver.accept(result.toList().toArray());
+                resultObserver.accept(result.toArray());
             });
         }
     }

@@ -545,7 +545,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     protected byte[] gasLongToBytes(final Long gas) {
-        return Bytes.wrap(LONG_TUPLE.encode(Tuple.of(gas)).array()).toArray();
+        return Bytes.wrap(LONG_TUPLE.encode(Tuple.singleton(gas)).array()).toArray();
     }
 
     /* Fluent builder methods to chain. */

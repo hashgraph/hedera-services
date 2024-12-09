@@ -41,6 +41,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.he
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -129,7 +130,7 @@ public class ClassicCreatesCall extends AbstractCall {
                     FIXED_GAS_COST,
                     systemContractOperations()
                             .externalizePreemptedDispatch(syntheticCreate, INSUFFICIENT_TX_FEE, TOKEN_CREATE),
-                    RC_AND_ADDRESS_ENCODER.encodeElements((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS));
+                    RC_AND_ADDRESS_ENCODER.encode(Tuple.of((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS)));
         } else {
             operations().collectFee(spenderId, nonGasCost);
         }
@@ -156,21 +157,25 @@ public class ClassicCreatesCall extends AbstractCall {
                 if (customFees.isEmpty()) {
                     encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                             .getOutputs()
-                            .encodeElements((long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID()));
+                            .encode(Tuple.of(
+                                    (long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID())));
                 } else {
                     encodedOutput = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
                             .getOutputs()
-                            .encodeElements((long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID()));
+                            .encode(Tuple.of(
+                                    (long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID())));
                 }
             } else {
                 if (customFees.isEmpty()) {
                     encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                             .getOutputs()
-                            .encodeElements((long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID()));
+                            .encode(Tuple.of(
+                                    (long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID())));
                 } else {
                     encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
                             .getOutputs()
-                            .encodeElements((long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID()));
+                            .encode(Tuple.of(
+                                    (long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID())));
                 }
             }
             return gasPlus(successResult(encodedOutput, FIXED_GAS_COST, recordBuilder), status, false, nonGasCost);

@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -244,7 +245,7 @@ public class ReturnTypes {
      * @return the encoded status
      */
     public static ByteBuffer encodedRc(@NonNull final ResponseCodeEnum status) {
-        return RC_ENCODER.encodeElements((long) status.protoOrdinal());
+        return RC_ENCODER.encode(Tuple.singleton((long) status.protoOrdinal()));
     }
 
     public static ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {

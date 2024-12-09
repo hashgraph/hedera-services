@@ -47,12 +47,12 @@ class TokenCustomFeesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenCustomFeesTranslator.TOKEN_CUSTOM_FEES
                         .getOutputs()
-                        .encodeElements(
+                        .encode(Tuple.of(
                                 SUCCESS.protoOrdinal(),
                                 EXPECTED_FIXED_CUSTOM_FEES.toArray(new Tuple[EXPECTED_FIXED_CUSTOM_FEES.size()]),
                                 EXPECTED_FRACTIONAL_CUSTOM_FEES.toArray(
                                         new Tuple[EXPECTED_FRACTIONAL_CUSTOM_FEES.size()]),
-                                EXPECTED_ROYALTY_CUSTOM_FEES.toArray(new Tuple[EXPECTED_ROYALTY_CUSTOM_FEES.size()]))
+                                EXPECTED_ROYALTY_CUSTOM_FEES.toArray(new Tuple[EXPECTED_ROYALTY_CUSTOM_FEES.size()])))
                         .array()),
                 result.getOutput());
     }
@@ -67,11 +67,11 @@ class TokenCustomFeesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenCustomFeesTranslator.TOKEN_CUSTOM_FEES
                         .getOutputs()
-                        .encodeElements(
+                        .encode(Tuple.of(
                                 INVALID_TOKEN_ID.protoOrdinal(),
                                 Collections.emptyList().toArray(new Tuple[0]),
                                 Collections.emptyList().toArray(new Tuple[0]),
-                                Collections.emptyList().toArray(new Tuple[0]))
+                                Collections.emptyList().toArray(new Tuple[0])))
                         .array()),
                 result.getOutput());
     }
@@ -86,11 +86,11 @@ class TokenCustomFeesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenCustomFeesTranslator.TOKEN_CUSTOM_FEES
                         .getOutputs()
-                        .encodeElements(
+                        .encode(Tuple.of(
                                 SUCCESS.protoOrdinal(),
                                 Collections.emptyList().toArray(new Tuple[0]),
                                 Collections.emptyList().toArray(new Tuple[0]),
-                                Collections.emptyList().toArray(new Tuple[0]))
+                                Collections.emptyList().toArray(new Tuple[0])))
                         .array()),
                 result.getOutput());
     }

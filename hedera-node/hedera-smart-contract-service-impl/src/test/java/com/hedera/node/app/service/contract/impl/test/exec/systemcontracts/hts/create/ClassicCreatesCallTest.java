@@ -36,6 +36,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -99,7 +100,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -115,7 +116,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -131,7 +132,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -147,7 +148,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_WITH_METADATA
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -163,7 +164,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -179,7 +180,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -195,7 +196,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -211,7 +212,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -227,7 +228,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -243,7 +244,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -259,7 +260,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -275,7 +276,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -291,7 +292,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -307,7 +308,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -323,7 +324,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -339,7 +340,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .encode(Tuple.of((long) SUCCESS.protoOrdinal(), tokenId))
                         .array()),
                 result.getOutput());
     }
@@ -357,7 +358,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
                         .getOutputs()
-                        .encodeElements((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS)
+                        .encode(Tuple.of((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS))
                         .array()),
                 result.getOutput());
     }

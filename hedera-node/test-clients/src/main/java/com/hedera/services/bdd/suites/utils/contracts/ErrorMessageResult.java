@@ -34,7 +34,7 @@ public class ErrorMessageResult implements ContractCallResult {
     @Override
     public Bytes getBytes() {
         Function errFunction = new Function("Error(string)");
-        final var result = Tuple.of(exists);
+        final var result = Tuple.singleton(exists);
         return Bytes.wrap(errFunction.encodeCall(result).array());
     }
 }

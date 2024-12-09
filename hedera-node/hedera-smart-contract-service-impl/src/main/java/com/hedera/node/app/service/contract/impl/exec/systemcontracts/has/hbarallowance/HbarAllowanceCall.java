@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -81,6 +82,6 @@ public class HbarAllowanceCall extends AbstractCall {
         requireNonNull(allowance);
         return HbarAllowanceTranslator.HBAR_ALLOWANCE_PROXY
                 .getOutputs()
-                .encodeElements((long) SUCCESS.protoOrdinal(), allowance);
+                .encode(Tuple.of((long) SUCCESS.protoOrdinal(), allowance));
     }
 }

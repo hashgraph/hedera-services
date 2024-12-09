@@ -62,7 +62,7 @@ public class LogBuilder {
         if (tupleTypes.length() > 1) {
             tupleTypes.deleteCharAt(tupleTypes.length() - 1);
             tupleTypes.append(")");
-            final var tuple = Tuple.of(data.toArray());
+            final var tuple = Tuple.from(data.toArray());
             final var tupleType = TupleType.parse(tupleTypes.toString());
             return new Log(logger, Bytes.wrap(tupleType.encode(tuple).array()), topics);
         } else {

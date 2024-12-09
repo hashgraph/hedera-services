@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
@@ -140,8 +141,8 @@ public class Erc20TransfersCall extends AbstractCall {
             }
             specialRewardReceivers.addInFrame(frame, op, recordBuilder.getAssessedCustomFees());
             final var encodedOutput = (from == null)
-                    ? ERC_20_TRANSFER.getOutputs().encodeElements(true)
-                    : ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
+                    ? ERC_20_TRANSFER.getOutputs().encode(Tuple.singleton(true))
+                    : ERC_20_TRANSFER_FROM.getOutputs().encode(Tuple.singleton(true));
             recordBuilder.contractCallResult(ContractFunctionResult.newBuilder()
                     .contractCallResult(Bytes.wrap(encodedOutput.array()))
                     .build());

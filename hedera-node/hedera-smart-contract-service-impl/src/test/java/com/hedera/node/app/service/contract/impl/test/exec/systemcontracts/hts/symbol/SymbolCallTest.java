@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBL
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol.SymbolTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
@@ -52,7 +53,7 @@ class SymbolCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(SymbolTranslator.SYMBOL
                         .getOutputs()
-                        .encodeElements(FUNGIBLE_TOKEN.symbol())
+                        .encode(Tuple.singleton(FUNGIBLE_TOKEN.symbol()))
                         .array()),
                 result.getOutput());
     }

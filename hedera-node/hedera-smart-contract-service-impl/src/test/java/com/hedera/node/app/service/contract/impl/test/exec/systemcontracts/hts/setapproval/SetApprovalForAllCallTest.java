@@ -66,7 +66,7 @@ public class SetApprovalForAllCallTest extends CallTestBase {
     @BeforeEach
     void setup() {
         final Tuple tuple =
-                new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, Boolean.TRUE);
+                Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, Boolean.TRUE);
         final byte[] inputBytes = Bytes.wrapByteBuffer(
                         SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL.encodeCall(tuple))
                 .toArray();
@@ -139,7 +139,7 @@ public class SetApprovalForAllCallTest extends CallTestBase {
         assertEquals(
                 asBytesResult(SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(expectedStatus.protoOrdinal()))),
+                        .encode(Tuple.singleton(BigInteger.valueOf(expectedStatus.protoOrdinal())))),
                 result.getOutput());
     }
 }

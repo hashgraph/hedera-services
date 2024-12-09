@@ -37,7 +37,7 @@ public class AddressResult implements ContractCallResult {
     @Override
     public Bytes getBytes() {
         final var addressType = TupleType.parse("(address)");
-        final var result = Tuple.of(Address.wrap(toChecksumAddress(hexedAddress)));
+        final var result = Tuple.singleton(Address.wrap(toChecksumAddress(hexedAddress)));
         return Bytes.wrap(addressType.encode(result).array());
     }
 }

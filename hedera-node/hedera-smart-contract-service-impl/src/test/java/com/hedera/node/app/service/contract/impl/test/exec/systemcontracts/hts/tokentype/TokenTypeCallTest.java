@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBL
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
@@ -43,7 +44,7 @@ class TokenTypeCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenTypeTranslator.TOKEN_TYPE
                         .getOutputs()
-                        .encodeElements(SUCCESS.protoOrdinal(), 0)
+                        .encode(Tuple.of(SUCCESS.protoOrdinal(), 0))
                         .array()),
                 result.getOutput());
     }
@@ -58,7 +59,7 @@ class TokenTypeCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenTypeTranslator.TOKEN_TYPE
                         .getOutputs()
-                        .encodeElements(INVALID_TOKEN_ID.protoOrdinal(), 0)
+                        .encode(Tuple.of(INVALID_TOKEN_ID.protoOrdinal(), 0))
                         .array()),
                 result.getOutput());
     }

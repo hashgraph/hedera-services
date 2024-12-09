@@ -77,12 +77,12 @@ module com.hedera.node.test.clients {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
+    requires transitive com.esaulpaugh.headlong;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
     requires transitive com.hedera.cryptography.bls;
     requires transitive com.hedera.cryptography.tss;
-    requires transitive com.esaulpaugh.headlong;
     requires transitive io.grpc;
     requires transitive net.i2p.crypto.eddsa;
     requires transitive org.apache.commons.io;

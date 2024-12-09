@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
@@ -71,7 +72,7 @@ public class DecimalsCall extends AbstractRevertibleTokenViewCall {
         final var decimals = Math.min(MAX_REPORTABLE_DECIMALS, token.decimals());
         return gasOnly(
                 successResult(
-                        DecimalsTranslator.DECIMALS.getOutputs().encodeElements(decimals),
+                        DecimalsTranslator.DECIMALS.getOutputs().encode(Tuple.singleton(decimals)),
                         gasCalculator.viewGasRequirement()),
                 SUCCESS,
                 true);

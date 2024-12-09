@@ -164,7 +164,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     @Nullable
     private Consumer<List<AccountAmount>> stakingRewardsObserver = null;
 
-    private Consumer<List<?>> eventDataObserver;
+    private Consumer<Object[]> eventDataObserver;
     private String eventName;
     private String contractResultAbi = null;
 
@@ -231,7 +231,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     public HapiGetTxnRecord exposingFilteredCallResultVia(
-            final String abi, final String eventName, final Consumer<List<?>> dataObserver) {
+            final String abi, final String eventName, final Consumer<Object[]> dataObserver) {
         this.contractResultAbi = abi;
         this.eventName = eventName;
         this.eventDataObserver = dataObserver;
@@ -1010,7 +1010,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             }
             if (event.isPresent()) {
                 final var decodedLog = event.get().decodeArgs(topics, data);
-                eventDataObserver.accept(decodedLog.toList());
+                eventDataObserver.accept(decodedLog.toArray());
             }
         }
     }

@@ -164,7 +164,7 @@ public record EthTxData(
             throw new IllegalStateException("Re-encoding access list is unsupported");
         }
         return switch (type) {
-            case LEGACY_ETHEREUM -> RLPEncoder.encodeAsList(
+            case LEGACY_ETHEREUM -> RLPEncoder.list(
                     Integers.toBytes(nonce),
                     gasPrice,
                     Integers.toBytes(gasLimit),
@@ -174,7 +174,7 @@ public record EthTxData(
                     v,
                     r,
                     s);
-            case EIP2930 -> RLPEncoder.encodeSequentially(
+            case EIP2930 -> RLPEncoder.sequence(
                     Integers.toBytes(0x01),
                     List.of(
                             chainId,
@@ -188,7 +188,7 @@ public record EthTxData(
                             Integers.toBytes(recId),
                             r,
                             s));
-            case EIP1559 -> RLPEncoder.encodeSequentially(
+            case EIP1559 -> RLPEncoder.sequence(
                     Integers.toBytes(0x02),
                     List.of(
                             chainId,

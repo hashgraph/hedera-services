@@ -50,14 +50,14 @@ class TokenKeyCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenKeyTranslator.TOKEN_KEY
                         .getOutputs()
-                        .encodeElements(
+                        .encode(Tuple.of(
                                 SUCCESS.protoOrdinal(),
                                 Tuple.of(
                                         false,
                                         headlongAddressOf(ZERO_CONTRACT_ID),
                                         key.ed25519().toByteArray(),
                                         com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY.toByteArray(),
-                                        headlongAddressOf(ZERO_CONTRACT_ID)))
+                                        headlongAddressOf(ZERO_CONTRACT_ID))))
                         .array()),
                 result.getOutput());
     }
@@ -74,14 +74,14 @@ class TokenKeyCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenKeyTranslator.TOKEN_KEY
                         .getOutputs()
-                        .encodeElements(
+                        .encode(Tuple.of(
                                 SUCCESS.protoOrdinal(),
                                 Tuple.of(
                                         false,
                                         headlongAddressOf(ZERO_CONTRACT_ID),
                                         com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY.toByteArray(),
                                         key.ecdsaSecp256k1().toByteArray(),
-                                        headlongAddressOf(ZERO_CONTRACT_ID)))
+                                        headlongAddressOf(ZERO_CONTRACT_ID))))
                         .array()),
                 result.getOutput());
     }
@@ -97,14 +97,14 @@ class TokenKeyCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenKeyTranslator.TOKEN_KEY
                         .getOutputs()
-                        .encodeElements(
+                        .encode(Tuple.of(
                                 SUCCESS.protoOrdinal(),
                                 Tuple.of(
                                         false,
                                         headlongAddressOf(VALID_CONTRACT_ADDRESS),
                                         com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY.toByteArray(),
                                         com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY.toByteArray(),
-                                        headlongAddressOf(ZERO_CONTRACT_ID)))
+                                        headlongAddressOf(ZERO_CONTRACT_ID))))
                         .array()),
                 result.getOutput());
     }
@@ -121,14 +121,14 @@ class TokenKeyCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenKeyTranslator.TOKEN_KEY
                         .getOutputs()
-                        .encodeElements(
+                        .encode(Tuple.of(
                                 SUCCESS.protoOrdinal(),
                                 Tuple.of(
                                         false,
                                         headlongAddressOf(ZERO_CONTRACT_ID),
                                         com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY.toByteArray(),
                                         com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY.toByteArray(),
-                                        headlongAddressOf(VALID_CONTRACT_ADDRESS)))
+                                        headlongAddressOf(VALID_CONTRACT_ADDRESS))))
                         .array()),
                 result.getOutput());
     }
@@ -143,14 +143,14 @@ class TokenKeyCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenKeyTranslator.TOKEN_KEY
                         .getOutputs()
-                        .encodeElements(
+                        .encode(Tuple.of(
                                 INVALID_TOKEN_ID.protoOrdinal(),
                                 Tuple.of(
                                         false,
                                         headlongAddressOf(ZERO_CONTRACT_ID),
                                         com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY.toByteArray(),
                                         com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY.toByteArray(),
-                                        headlongAddressOf(ZERO_CONTRACT_ID)))
+                                        headlongAddressOf(ZERO_CONTRACT_ID))))
                         .array()),
                 result.getOutput());
     }

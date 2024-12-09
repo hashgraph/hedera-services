@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.keyTupleFor;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
@@ -78,6 +79,6 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
             return revertResult(status, 0);
         }
         return successResult(
-                TOKEN_KEY.getOutputs().encodeElements(status.protoOrdinal(), keyTupleFor(key)), gasRequirement);
+                TOKEN_KEY.getOutputs().encode(Tuple.of(status.protoOrdinal(), keyTupleFor(key))), gasRequirement);
     }
 }

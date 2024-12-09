@@ -46,7 +46,7 @@ public class CreateNonFungibleTokenFailableCall extends AbstractFailableNonStati
         throwIfUnsupported(mode);
         // Must be INVALID_ACCOUNT_ID_FAILURE
         return SIGNATURE
-                .encodeCallWithArgs(Tuple.of(
+                .encodeCallWithArgs(Tuple.from(
                         "Name",
                         "SYM",
                         INVALID_ACCOUNT_ADDRESS,

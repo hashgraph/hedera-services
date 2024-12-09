@@ -47,7 +47,7 @@ public class CreateFungibleTokenFailableCall extends AbstractFailableNonStaticCa
         // Must be INVALID_ACCOUNT_ID_FAILURE
         return SIGNATURE
                 .encodeCallWithArgs(
-                        Tuple.of(
+                        Tuple.from(
                                 "Name",
                                 "SYM",
                                 INVALID_ACCOUNT_ADDRESS,

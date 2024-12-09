@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUN
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNREASONABLY_DIVISIBLE_TOKEN;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsTranslator;
@@ -55,7 +56,7 @@ class DecimalsCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(DecimalsTranslator.DECIMALS
                         .getOutputs()
-                        .encodeElements(FUNGIBLE_TOKEN.decimals())
+                        .encode(Tuple.singleton(FUNGIBLE_TOKEN.decimals()))
                         .array()),
                 result.getOutput());
     }
@@ -70,7 +71,7 @@ class DecimalsCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(DecimalsTranslator.DECIMALS
                         .getOutputs()
-                        .encodeElements(0xFF)
+                        .encode(Tuple.singleton(0xFF))
                         .array()),
                 result.getOutput());
     }

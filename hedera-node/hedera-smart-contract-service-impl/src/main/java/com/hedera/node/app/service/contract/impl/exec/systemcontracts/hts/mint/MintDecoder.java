@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -35,12 +36,12 @@ import javax.inject.Singleton;
 public class MintDecoder {
     private static final TupleType MINT_RESULT_ENCODER = TupleType.parse("(int64,int64,int64[])");
     public static final DispatchForResponseCodeHtsCall.OutputFn MINT_OUTPUT_FN =
-            recordBuilder -> MINT_RESULT_ENCODER.encodeElements(
+            recordBuilder -> MINT_RESULT_ENCODER.encode(Tuple.of(
                     (long) recordBuilder.status().protoOrdinal(),
                     recordBuilder.getNewTotalSupply(),
                     recordBuilder.serialNumbers().stream()
                             .mapToLong(Long::longValue)
-                            .toArray());
+                            .toArray()));
 
     @Inject
     public MintDecoder() {

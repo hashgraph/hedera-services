@@ -17,10 +17,10 @@ module com.hedera.node.app.hapi.utils {
 
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.common;
+    requires transitive com.esaulpaugh.headlong;
     requires transitive com.google.protobuf;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
-    requires transitive com.esaulpaugh.headlong;
     requires transitive java.compiler;
     requires transitive javax.inject;
     requires transitive net.i2p.crypto.eddsa;

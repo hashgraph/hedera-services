@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asExactLongValueOrZero;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.TokenID;
@@ -45,8 +46,8 @@ public class BurnDecoder {
      * Dispatch for burn calls output.
      */
     public static final DispatchForResponseCodeHtsCall.OutputFn BURN_OUTPUT_FN =
-            recordBuilder -> BURN_RESULT_ENCODER.encodeElements(
-                    (long) recordBuilder.status().protoOrdinal(), recordBuilder.getNewTotalSupply());
+            recordBuilder -> BURN_RESULT_ENCODER.encode(
+                    Tuple.of((long) recordBuilder.status().protoOrdinal(), recordBuilder.getNewTotalSupply()));
 
     /**
      * Default constructor for injection.

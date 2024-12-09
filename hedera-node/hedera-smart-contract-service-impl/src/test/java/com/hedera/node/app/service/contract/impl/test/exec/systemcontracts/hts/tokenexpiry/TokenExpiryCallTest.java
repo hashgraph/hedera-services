@@ -47,7 +47,7 @@ class TokenExpiryCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenExpiryTranslator.TOKEN_EXPIRY
                         .getOutputs()
-                        .encodeElements(SUCCESS.protoOrdinal(), Tuple.of(100L, headlongAddressOf(SENDER_ID), 200L))
+                        .encode(Tuple.of(SUCCESS.protoOrdinal(), Tuple.of(100L, headlongAddressOf(SENDER_ID), 200L)))
                         .array()),
                 result.getOutput());
     }
@@ -62,8 +62,8 @@ class TokenExpiryCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(TokenExpiryTranslator.TOKEN_EXPIRY
                         .getOutputs()
-                        .encodeElements(
-                                INVALID_TOKEN_ID.protoOrdinal(), Tuple.of(0L, headlongAddressOf(ZERO_ACCOUNT_ID), 0L))
+                        .encode(Tuple.of(
+                                INVALID_TOKEN_ID.protoOrdinal(), Tuple.of(0L, headlongAddressOf(ZERO_ACCOUNT_ID), 0L)))
                         .array()),
                 result.getOutput());
     }

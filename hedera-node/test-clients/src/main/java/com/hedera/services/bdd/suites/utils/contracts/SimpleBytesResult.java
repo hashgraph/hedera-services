@@ -35,7 +35,7 @@ public class SimpleBytesResult implements ContractCallResult {
     @Override
     public Bytes getBytes() {
         final var intType = TupleType.parse("(int)");
-        final var result = Tuple.of(exists);
+        final var result = Tuple.singleton(exists);
         return Bytes.wrap(intType.encode(result).array());
     }
 }

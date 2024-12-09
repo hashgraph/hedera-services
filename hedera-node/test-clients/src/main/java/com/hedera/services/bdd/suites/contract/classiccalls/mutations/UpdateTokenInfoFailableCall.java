@@ -54,7 +54,7 @@ public class UpdateTokenInfoFailableCall extends AbstractFailableNonStaticCall {
             return SIGNATURE
                     .encodeCallWithArgs(
                             INVALID_TOKEN_ADDRESS,
-                            Tuple.of(
+                            Tuple.from(
                                     "Name",
                                     "SYM",
                                     validAccountAddress,
@@ -70,7 +70,7 @@ public class UpdateTokenInfoFailableCall extends AbstractFailableNonStaticCall {
             return SIGNATURE
                     .encodeCallWithArgs(
                             idAsHeadlongAddress(spec.registry().getTokenID(VALID_FUNGIBLE_TOKEN_IDS[0])),
-                            Tuple.of(
+                            Tuple.from(
                                     "Name",
                                     "SYM",
                                     INVALID_ACCOUNT_ADDRESS,

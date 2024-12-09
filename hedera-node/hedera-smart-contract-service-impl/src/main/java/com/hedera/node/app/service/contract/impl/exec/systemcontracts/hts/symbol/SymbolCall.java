@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
@@ -43,7 +44,7 @@ public class SymbolCall extends AbstractRevertibleTokenViewCall {
      */
     @Override
     protected @NonNull PricedResult resultOfViewingToken(@NonNull Token token) {
-        final var output = SymbolTranslator.SYMBOL.getOutputs().encodeElements(token.symbol());
+        final var output = SymbolTranslator.SYMBOL.getOutputs().encode(Tuple.singleton(token.symbol()));
         return gasOnly(successResult(output, gasCalculator.viewGasRequirement()), SUCCESS, true);
     }
 }

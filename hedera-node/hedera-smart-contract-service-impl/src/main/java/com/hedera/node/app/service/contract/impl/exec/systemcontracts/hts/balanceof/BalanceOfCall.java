@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.ac
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
@@ -68,7 +69,8 @@ public class BalanceOfCall extends AbstractRevertibleTokenViewCall {
         final var tokenNum = token.tokenIdOrThrow().tokenNum();
         final var relation = nativeOperations().getTokenRelation(ownerNum, tokenNum);
         final var balance = relation == null ? 0 : relation.balance();
-        final var output = BalanceOfTranslator.BALANCE_OF.getOutputs().encodeElements(BigInteger.valueOf(balance));
+        final var output =
+                BalanceOfTranslator.BALANCE_OF.getOutputs().encode(Tuple.singleton(BigInteger.valueOf(balance)));
 
         return gasOnly(successResult(output, gasCalculator.viewGasRequirement()), SUCCESS, true);
     }

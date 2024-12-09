@@ -58,8 +58,9 @@ public final class EncodingUtils {
             params = new byte[] {};
         } else {
             final var abi = getABIFor(Utils.FunctionType.CONSTRUCTOR, StringUtils.EMPTY, binFileName);
-            params =
-                    Function.fromJson(abi).encodeCall(Tuple.of(constructorArgs)).array();
+            params = Function.fromJson(abi)
+                    .encodeCall(Tuple.from(constructorArgs))
+                    .array();
         }
 
         final var byteCode = ByteStringUtils.wrapUnsafely(params.length > 4 ? stripSelector(params) : params);
@@ -89,7 +90,7 @@ public final class EncodingUtils {
      */
     public static byte[] encodeTuple(final String argumentsSignature, final Object... actualArguments) {
         return TupleType.parse(argumentsSignature)
-                .encode(Tuple.of(actualArguments))
+                .encode(Tuple.from(actualArguments))
                 .array();
     }
 

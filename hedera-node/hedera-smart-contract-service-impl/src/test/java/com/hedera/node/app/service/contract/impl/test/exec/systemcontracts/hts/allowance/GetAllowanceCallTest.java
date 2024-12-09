@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceTranslator;
@@ -96,7 +97,7 @@ class GetAllowanceCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(GetAllowanceTranslator.ERC_GET_ALLOWANCE
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(0L))
+                        .encode(Tuple.singleton(BigInteger.valueOf(0L)))
                         .array()),
                 result.getOutput());
     }
@@ -120,7 +121,7 @@ class GetAllowanceCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(GetAllowanceTranslator.GET_ALLOWANCE
                         .getOutputs()
-                        .encodeElements((long) SUCCESS.getNumber(), BigInteger.valueOf(0L))
+                        .encode(Tuple.of((long) SUCCESS.getNumber(), BigInteger.valueOf(0L)))
                         .array()),
                 result.getOutput());
     }

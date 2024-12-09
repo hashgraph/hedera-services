@@ -740,7 +740,7 @@ public class TxnVerbs {
             final byte[] params = args.length == 0
                     ? new byte[] {}
                     : com.esaulpaugh.headlong.abi.Function.fromJson(abi)
-                            .encodeCall(Tuple.of(args))
+                            .encodeCall(Tuple.from(args))
                             .array();
             final var updatedFile = updateLargeFile(
                     GENESIS,

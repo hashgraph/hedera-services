@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBL
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultkycstatus.DefaultKycStatusCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultkycstatus.DefaultKycStatusTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
@@ -44,7 +45,7 @@ class DefaultKycStatusCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(DefaultKycStatusTranslator.DEFAULT_KYC_STATUS
                         .getOutputs()
-                        .encodeElements(SUCCESS.protoOrdinal(), true)
+                        .encode(Tuple.of(SUCCESS.protoOrdinal(), true))
                         .array()),
                 result.getOutput());
     }
@@ -63,7 +64,7 @@ class DefaultKycStatusCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(DefaultKycStatusTranslator.DEFAULT_KYC_STATUS
                         .getOutputs()
-                        .encodeElements(SUCCESS.protoOrdinal(), false)
+                        .encode(Tuple.of(SUCCESS.protoOrdinal(), false))
                         .array()),
                 result.getOutput());
     }
@@ -78,7 +79,7 @@ class DefaultKycStatusCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(DefaultKycStatusTranslator.DEFAULT_KYC_STATUS
                         .getOutputs()
-                        .encodeElements(INVALID_TOKEN_ID.protoOrdinal(), false)
+                        .encode(Tuple.of(INVALID_TOKEN_ID.protoOrdinal(), false))
                         .array()),
                 result.getOutput());
     }

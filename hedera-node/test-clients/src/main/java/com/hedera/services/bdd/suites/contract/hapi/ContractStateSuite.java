@@ -135,7 +135,7 @@ public class ContractStateSuite {
     }
 
     private Tuple randomContractStruct() {
-        return Tuple.of(
+        return Tuple.from(
                 BigInteger.valueOf(RANDOM.nextInt(MAX_VALUE)),
                 randomHeadlongAddress(),
                 randomBytes32(),

@@ -739,7 +739,7 @@ public class ContractCallSuite {
                         .exposingFilteredCallResultVia(
                                 getABIForContract(jurisdictions),
                                 "JurisdictionAdded",
-                                data -> nyJurisCode.set((byte[]) data.get(0))),
+                                data -> nyJurisCode.set((byte[]) data[0])),
                 sourcing(() -> logIt("NY juris code is " + CommonUtils.hex(nyJurisCode.get()))),
                 sourcing(() -> contractCallLocal(jurisdictions, "isValid", nyJurisCode.get())
                         .has(resultWith()

@@ -34,7 +34,7 @@ public class BoolResult implements ContractCallResult {
     @Override
     public Bytes getBytes() {
         final var boolType = TupleType.parse("(bool)");
-        final var result = Tuple.of(expected);
+        final var result = Tuple.singleton(expected);
         return Bytes.wrap(boolType.encode(result).array());
     }
 }
