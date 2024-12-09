@@ -29,6 +29,7 @@ import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * A {@link com.hedera.hapi.node.state.roster.Roster} implementation of the {@link Service} interface.
@@ -51,8 +52,18 @@ public class RosterService implements Service {
      */
     private final Predicate<Roster> canAdopt;
 
-    public RosterService(@NonNull final Predicate<Roster> canAdopt) {
+    @Deprecated
+    private final Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
+
+    private final Supplier<WritableTssStore> writableTssStoreSupplier;
+
+    public RosterService(
+            @NonNull final Predicate<Roster> canAdopt,
+            @NonNull final Supplier<ReadablePlatformStateStore> platformStateStoreFactory,
+            @NonNull final Supplier<WritableTssStore> writableTssStoreSupplier) {
         this.canAdopt = requireNonNull(canAdopt);
+        this.platformStateStoreFactory = requireNonNull(platformStateStoreFactory);
+        this.writableTssStoreSupplier = requireNonNull(writableTssStoreSupplier);
     }
 
     @NonNull
@@ -71,6 +82,6 @@ public class RosterService implements Service {
         requireNonNull(registry);
         registry.register(new V0540RosterSchema());
         registry.register(new V057RosterSchema(
-                canAdopt, WritableRosterStore::new, ReadablePlatformStateStore::new, WritableTssStore::new));
+                canAdopt, WritableRosterStore::new, platformStateStoreFactory, writableTssStoreSupplier));
     }
 }

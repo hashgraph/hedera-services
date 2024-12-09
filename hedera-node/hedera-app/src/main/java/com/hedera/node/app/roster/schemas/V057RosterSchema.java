@@ -34,6 +34,7 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,23 +58,24 @@ public class V057RosterSchema extends Schema {
      */
     private final Function<WritableStates, WritableRosterStore> rosterStoreFactory;
     /**
-     * The factory to use to create the readable platform store.
+     * Required until the upgrade that adopts the roster lifecycle; at that upgrade boundary,
+     * we must initialize the active roster from the platform state's legacy address books.
      */
-    private final Function<WritableStates, ReadablePlatformStateStore> platformStateStoreFactory;
-    /**
-     * The factory to use to create the writable tss store.
-     */
-    private final Function<WritableStates, WritableTssStore> tssStoreFactory;
+    @Deprecated
+    private final Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
+
+    private final Supplier<WritableTssStore> writableTssStore;
 
     public V057RosterSchema(
             @NonNull final Predicate<Roster> canAdopt,
             @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory,
-            @NonNull final Function<WritableStates, ReadablePlatformStateStore> platformStateStoreFactory,
-            @NonNull final Function<WritableStates, WritableTssStore> tssStoreFactory) {
+            @NonNull final Supplier<ReadablePlatformStateStore> platformStateStoreFactory,
+            @NonNull final Supplier<WritableTssStore> writableTssStore) {
+
         super(VERSION);
         this.canAdopt = requireNonNull(canAdopt);
         this.rosterStoreFactory = requireNonNull(rosterStoreFactory);
-        this.tssStoreFactory = requireNonNull(tssStoreFactory);
+        this.writableTssStore = requireNonNull(writableTssStore);
         this.platformStateStoreFactory = requireNonNull(platformStateStoreFactory);
     }
 
@@ -84,7 +86,7 @@ public class V057RosterSchema extends Schema {
             return;
         }
         final var states = ctx.newStates();
-        final var tssStore = tssStoreFactory.apply(states);
+        final var tssStore = writableTssStore.get();
         final var rosterStore = rosterStoreFactory.apply(states);
         final var rostersEntriesNodeIds = rosterStore.getCombinedRosterEntriesNodeIds();
         final var startupNetworks = ctx.startupNetworks();
@@ -97,6 +99,7 @@ public class V057RosterSchema extends Schema {
         } else {
             final long roundNumber = ctx.roundNumber();
             final var overrideNetwork = startupNetworks.overrideNetworkFor(roundNumber);
+            final var platformState = platformStateStoreFactory.get();
             if (overrideNetwork.isPresent()) {
                 // currentRound := state round +1
                 final long currentRound = roundNumber + 1;
@@ -106,7 +109,6 @@ public class V057RosterSchema extends Schema {
                 if (rosterStore.getActiveRoster() == null) {
                     //   Read the current AddressBooks from the platform state.
                     //   previousRoster := translateToRoster(currentAddressBook)
-                    final var platformState = platformStateStoreFactory.apply(ctx.newStates());
                     final var previousRoster = buildRoster(platformState.getAddressBook());
                     //   (previousRoster, previousRound) := (previousRoster, 0)
                     //   set (previousRoster, 0) as the active roster in the roster state.
@@ -133,7 +135,6 @@ public class V057RosterSchema extends Schema {
                     // Read the current AddressBooks from the platform state.
                     // previousRoster := translateToRoster(currentAddressBook)
                     // set (previousRoster, 0) as the active roster in the roster state.
-                    final var platformState = platformStateStoreFactory.apply(ctx.newStates());
                     final var previousRoster = buildRoster(platformState.getAddressBook());
                     rosterStore.putActiveRoster(previousRoster, 0L);
 

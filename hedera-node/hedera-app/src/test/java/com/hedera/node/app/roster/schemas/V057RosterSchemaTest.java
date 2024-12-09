@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,13 +84,13 @@ class V057RosterSchemaTest {
     private Function<WritableStates, WritableRosterStore> rosterStoreFactory;
 
     @Mock
-    private Function<WritableStates, ReadablePlatformStateStore> platformStateStoreFactory;
+    private Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
 
     @Mock
     private ReadablePlatformStateStore platformStateStore;
 
     @Mock
-    private Function<WritableStates, WritableTssStore> tssStoreFactory;
+    private Supplier<WritableTssStore> tssStoreFactory;
 
     @Mock
     private WritableTssStore tssStore;
@@ -116,7 +117,7 @@ class V057RosterSchemaTest {
         final var rosterEntries =
                 new HashSet<>(List.of(EntityNumber.newBuilder().number(1L).build()));
         given(context.isGenesis()).willReturn(true);
-        given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
+        given(tssStoreFactory.get()).willReturn(tssStore);
         given(rosterStore.getCombinedRosterEntriesNodeIds()).willReturn(rosterEntries);
         subject.restart(context);
 
@@ -153,9 +154,9 @@ class V057RosterSchemaTest {
         givenContextWith(CurrentVersion.NEW, RosterLifecycle.ON, AvailableNetwork.MIGRATION);
         given(context.previousVersion()).willReturn(THEN);
         given(context.roundNumber()).willReturn(ROUND_NO);
-        given(platformStateStoreFactory.apply(writableStates)).willReturn(platformStateStore);
+        given(platformStateStoreFactory.get()).willReturn(platformStateStore);
         given(platformStateStore.getAddressBook()).willReturn(ADDRESS_BOOK);
-        given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
+        given(tssStoreFactory.get()).willReturn(tssStore);
 
         subject.restart(context);
 
@@ -172,7 +173,7 @@ class V057RosterSchemaTest {
         given(rosterStore.getCandidateRoster()).willReturn(ROSTER);
         given(canAdopt.test(ROSTER)).willReturn(true);
         given(context.roundNumber()).willReturn(ROUND_NO);
-        given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
+        given(tssStoreFactory.get()).willReturn(tssStore);
         given(rosterStore.getCombinedRosterEntriesNodeIds()).willReturn(rosterEntries);
 
         subject.restart(context);
@@ -186,9 +187,9 @@ class V057RosterSchemaTest {
         given(context.roundNumber()).willReturn(ROUND_NO);
         givenContextWith(CurrentVersion.OLD, RosterLifecycle.ON, AvailableNetwork.OVERRIDE);
         given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));
-        given(platformStateStoreFactory.apply(writableStates)).willReturn(platformStateStore);
+        given(platformStateStoreFactory.get()).willReturn(platformStateStore);
         given(platformStateStore.getAddressBook()).willReturn(ADDRESS_BOOK);
-        given(tssStoreFactory.apply(writableStates)).willReturn(tssStore);
+        given(tssStoreFactory.get()).willReturn(tssStore);
 
         subject.restart(context);
 

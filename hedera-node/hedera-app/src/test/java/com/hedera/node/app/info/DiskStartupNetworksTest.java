@@ -29,6 +29,7 @@ import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KE
 import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.FAKE_NETWORK_INFO;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.NO_OP_METRICS;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -63,6 +64,7 @@ import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -75,6 +77,8 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
@@ -304,7 +308,16 @@ class DiskStartupNetworksTest {
                 tssLibrary,
                 ForkJoinPool.commonPool(),
                 NO_OP_METRICS);
-        Set.of(tssBaseService, new EntityIdService(), new RosterService(roster -> true), new AddressBookServiceImpl())
+        Set.of(
+                        tssBaseService,
+                        PLATFORM_STATE_SERVICE,
+                        new EntityIdService(),
+                        new RosterService(
+                                roster -> true,
+                                () -> new ReadablePlatformStateStore(
+                                        state.getReadableStates(PlatformStateService.NAME)),
+                                () -> new WritableTssStore(state.getWritableStates(TssBaseService.NAME))),
+                        new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
