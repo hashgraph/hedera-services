@@ -22,8 +22,7 @@ javaModules {
     directory("hedera-node") {
         group = "com.hedera.hashgraph"
 
-        // Configure 'artifact' for projects where the folder does not correspond to the artifact
-        // name
+        // Configure 'artifact' for projects where folder does not correspond to artifact name
         module("hapi-fees") { artifact = "app-hapi-fees" }
         module("hapi-utils") { artifact = "app-hapi-utils" }
         module("hedera-addressbook-service") { artifact = "app-service-addressbook" }
