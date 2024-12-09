@@ -1157,11 +1157,13 @@ public class ScheduleLongTermExecutionTest {
                         .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED));
     }
 
-    @HapiTest
+    @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
     @Order(26)
     final Stream<DynamicTest> scheduleCreateIdenticalContractCall() {
         final var contract = "CallOperationsChecker";
         return hapiTest(
+                // upload fees for SCHEDULE_CREATE_CONTRACT_CALL
+                uploadScheduledContractPrices(GENESIS),
                 cryptoCreate("luckyYou").balance(0L).via("cryptoCreate"),
                 uploadInitCode(contract),
                 contractCreate(contract),
