@@ -20,7 +20,7 @@ module com.hedera.node.app.hapi.utils {
     requires transitive com.google.protobuf;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
-    requires transitive headlong;
+    requires transitive com.esaulpaugh.headlong;
     requires transitive java.compiler;
     requires transitive javax.inject;
     requires transitive net.i2p.crypto.eddsa;

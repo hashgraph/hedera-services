@@ -82,7 +82,7 @@ module com.hedera.node.test.clients {
     requires transitive com.google.protobuf;
     requires transitive com.hedera.cryptography.bls;
     requires transitive com.hedera.cryptography.tss;
-    requires transitive headlong;
+    requires transitive com.esaulpaugh.headlong;
     requires transitive io.grpc;
     requires transitive net.i2p.crypto.eddsa;
     requires transitive org.apache.commons.io;
