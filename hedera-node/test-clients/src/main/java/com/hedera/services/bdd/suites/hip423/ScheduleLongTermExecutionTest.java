@@ -1114,7 +1114,7 @@ public class ScheduleLongTermExecutionTest {
 
     @HapiTest
     @Order(22)
-    final Stream<DynamicTest> scheduleCreateWithExpiringInMoreThenTwoMouths() {
+    final Stream<DynamicTest> scheduleCreateWithExpiringInMoreThenTwoMonths() {
         return hapiTest(
                 cryptoCreate("luckyYou").balance(0L),
                 scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
