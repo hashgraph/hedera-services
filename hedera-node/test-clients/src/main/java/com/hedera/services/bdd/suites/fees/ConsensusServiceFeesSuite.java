@@ -70,7 +70,7 @@ public class ConsensusServiceFeesSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> feeAsExpected() {
+    final Stream<DynamicTest> topicSubmitMessageBasicFeeAsExpected() {
         final byte[] messageBytes = new byte[100]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
         return hapiTest(

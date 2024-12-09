@@ -133,7 +133,7 @@ public class TokenServiceFeesSuite {
 
     @HapiTest
     @DisplayName("charge association fee for FT correctly")
-    final Stream<DynamicTest> chargeAssociationFeeForFT() {
+    final Stream<DynamicTest> chargeAirdropAssociationFeeForFT() {
         var receiver = "receiver";
         return hapiTest(
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
@@ -156,7 +156,7 @@ public class TokenServiceFeesSuite {
 
     @HapiTest
     @DisplayName("charge association fee for NFT correctly")
-    final Stream<DynamicTest> chargeAssociationFeeForNFT() {
+    final Stream<DynamicTest> chargeAirdropAssociationFeeForNFT() {
         var receiver = "receiver";
         var nftSupplyKey = "nftSupplyKey";
         return hapiTest(
@@ -185,7 +185,7 @@ public class TokenServiceFeesSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> claimFungibleTokenAirdrop() {
+    final Stream<DynamicTest> claimFungibleTokenAirdropBaseFee() {
         var nftSupplyKey = "nftSupplyKey";
         return hapiTest(flattened(
                 setUpTokensAndAllReceivers(),
@@ -231,8 +231,8 @@ public class TokenServiceFeesSuite {
     }
 
     @HapiTest
-    @DisplayName("FT happy path")
-    final Stream<DynamicTest> ftHappyPath() {
+    @DisplayName("cancel airdrop FT happy path")
+    final Stream<DynamicTest> cancelAirdropFungibleTokenHappyPath() {
         final var account = "account";
         return hapiTest(
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
@@ -270,8 +270,8 @@ public class TokenServiceFeesSuite {
     }
 
     @HapiTest
-    @DisplayName("NFT happy path")
-    final Stream<DynamicTest> nftHappyPath() {
+    @DisplayName("cancel airdrop NFT happy path")
+    final Stream<DynamicTest> cancelAirdropNftHappyPath() {
         var nftSupplyKey = "nftSupplyKey";
         final var account = "account";
         return hapiTest(
@@ -437,7 +437,7 @@ public class TokenServiceFeesSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> baseOperationIsChargedExpectedFee() {
+    final Stream<DynamicTest> baseTokenOperationIsChargedExpectedFee() {
         final var htsAmount = 2_345L;
         final var targetToken = "immutableToken";
         final var feeDenom = "denom";
@@ -503,7 +503,7 @@ public class TokenServiceFeesSuite {
 
     @HapiTest
     final Stream<DynamicTest> nftMintsScaleLinearlyBasedOnNumberOfSerialNumbers() {
-        final var expectedFee = 10 * EXPECTED_NFT_MINT_PRICE_USD;
+        final var expectedFee = 20 * EXPECTED_NFT_MINT_PRICE_USD;
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
