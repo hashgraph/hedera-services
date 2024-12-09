@@ -68,6 +68,7 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -79,6 +80,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -418,7 +420,7 @@ public class TssBaseServiceImpl implements TssBaseService {
      * It computes the new status based on the old status and the current state of the system.
      * If needed, it schedules work to generate TSS messages and votes.
      */
-    private class StatusChange {
+    public class StatusChange {
         private TssKeyingStatus newKeyingStatus;
         private RosterToKey newRosterToKey;
         private Bytes newLedgerId;
@@ -468,6 +470,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                                 activeRosterHash, activeRosterHash);
                         case WAITING_FOR_THRESHOLD_TSS_VOTES -> validateVotesAndSubmitIfNeeded(
                                 activeRosterHash, activeRosterHash);
+                        case WAITING_FOR_ENCRYPTION_KEYS ->
+                                validateThresholdEncryptionKeysReached(rosterStore.getCurrentRosterHash());
                     }
                 }
                 case CANDIDATE_ROSTER -> {
@@ -481,6 +485,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                                 activeRosterHash, candidateRosterHash);
                         case WAITING_FOR_THRESHOLD_TSS_VOTES -> validateVotesAndSubmitIfNeeded(
                                 candidateRosterHash, activeRosterHash);
+                        case WAITING_FOR_ENCRYPTION_KEYS -> validateThresholdEncryptionKeysReached(candidateRosterHash);
                     }
                 }
             }
@@ -604,21 +609,25 @@ public class TssBaseServiceImpl implements TssBaseService {
             return voteBodies;
         }
 
-        private boolean validateThresholdEncryptionKeysReached(
-                final WritableTssStore tssStore, final ReadableRosterStore rosterStore) {
+        private void validateThresholdEncryptionKeysReached(@NonNull Bytes rosterHash) {
             var numTssEncryptionKeys = 0;
-            for (final var node : requireNonNull(rosterStore.getActiveRoster()).rosterEntries()) {
+            for (final var node : requireNonNull(rosterStore.get(rosterHash)).rosterEntries()) {
                 final var tssEncryptionKey = tssStore.getTssEncryptionKey(node.nodeId());
                 if (tssEncryptionKey != null) {
                     numTssEncryptionKeys++;
                 }
             }
-            return numTssEncryptionKeys
+            final var thresholdReached = numTssEncryptionKeys
                     >= (2
-                                    * requireNonNull(rosterStore.getActiveRoster())
-                                            .rosterEntries()
-                                            .size())
-                            / 3;
+                    * requireNonNull(rosterStore.getActiveRoster())
+                    .rosterEntries()
+                    .size())
+                    / 3;
+            if (thresholdReached) {
+                newKeyingStatus = TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES;
+            } else {
+                // TODO: Create the encryption key for self if not present
+            }
         }
 
         @NonNull
