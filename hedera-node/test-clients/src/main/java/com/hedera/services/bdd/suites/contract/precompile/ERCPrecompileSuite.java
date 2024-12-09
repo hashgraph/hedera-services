@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -58,6 +59,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
@@ -82,6 +85,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -148,6 +152,8 @@ public class ERCPrecompileSuite {
     private static final String MULTI_KEY_NAME = "multiKey";
     private static final String A_CIVILIAN = "aCivilian";
     private static final String B_CIVILIAN = "bCivilian";
+    private static final String OWNER_CIVILIAN = "ownerCivilian";
+    private static final String OWNER_CIVILIAN_NO_ALIAS = "ownerCivilianNoAlias";
     private static final String DO_TRANSFER_FROM = "doTransferFrom";
     private static final String MISSING_FROM = "MISSING_FROM";
     private static final String MISSING_TO = "MISSING_TO";
@@ -1612,11 +1618,24 @@ public class ERCPrecompileSuite {
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> ownerCivilianMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> ownerCivilianMirrorAddrNoAlias = new AtomicReference<>();
 
         return hapiTest(
                 newKeyNamed(MULTI_KEY_NAME),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                 cryptoCreate(A_CIVILIAN).exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                 cryptoCreate(B_CIVILIAN).exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+                withOpContext((spec, log) -> allRunFor(
+                        spec,
+                        cryptoCreate(OWNER_CIVILIAN)
+                                .balance(666666L)
+                                .key(SECP_256K1_SOURCE_KEY)
+                                .alias(ByteString.copyFrom(EthSigsUtils.recoverAddressFromPubKey(spec.registry()
+                                        .getKey(SECP_256K1_SOURCE_KEY)
+                                        .getECDSASecp256K1()
+                                        .toByteArray()))))),
+                cryptoCreate(OWNER_CIVILIAN_NO_ALIAS).exposingCreatedIdTo(id -> ownerCivilianMirrorAddrNoAlias.set(asHexedSolidityAddress(id))),
                 uploadInitCode(SOME_ERC_20_SCENARIOS),
                 contractCreate(SOME_ERC_20_SCENARIOS)
                         .adminKey(MULTI_KEY_NAME)
@@ -1634,6 +1653,8 @@ public class ERCPrecompileSuite {
                 withOpContext((spec, opLog) -> {
                     zCivilianMirrorAddr.set(asHexedSolidityAddress(
                             AccountID.newBuilder().setAccountNum(666_666_666L).build()));
+                    ownerCivilianMirrorAddr.set(asHexedSolidityAddress(spec.registry().getAccountID(OWNER_CIVILIAN)));
+                    ownerCivilianMirrorAddrNoAlias.set(asHexedSolidityAddress(spec.registry().getAccountID(OWNER_CIVILIAN_NO_ALIAS)));
                     contractMirrorAddr.set(
                             asHexedSolidityAddress(spec.registry().getAccountID(SOME_ERC_20_SCENARIOS)));
                 }),
@@ -1647,6 +1668,8 @@ public class ERCPrecompileSuite {
                         .gas(1_000_000)
                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                 tokenAssociate(SOME_ERC_20_SCENARIOS, TOKEN),
+                tokenAssociate(OWNER_CIVILIAN, TOKEN),
+                tokenAssociate(OWNER_CIVILIAN_NO_ALIAS, TOKEN),
                 sourcing(() -> contractCall(
                                 SOME_ERC_20_SCENARIOS,
                                 DO_SPECIFIC_APPROVAL,
@@ -1681,6 +1704,22 @@ public class ERCPrecompileSuite {
                                 asHeadlongAddress(contractMirrorAddr.get()),
                                 asHeadlongAddress(aCivilianMirrorAddr.get()))
                         .via("ALLOWANCE_TXN")
+                        .gas(1_000_000)
+                        .hasKnownStatus(SUCCESS)),
+                sourcing(() -> contractCall(
+                                SOME_ERC_20_SCENARIOS,
+                                GET_ALLOWANCE,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(ownerCivilianMirrorAddrNoAlias.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()))
+                                .gas(1_000_000)
+                                .hasKnownStatus(SUCCESS)),
+                sourcing(() -> contractCall(
+                        SOME_ERC_20_SCENARIOS,
+                        GET_ALLOWANCE,
+                        asHeadlongAddress(tokenMirrorAddr.get()),
+                        asHeadlongAddress(ownerCivilianMirrorAddr.get()),
+                        asHeadlongAddress(aCivilianMirrorAddr.get()))
                         .gas(1_000_000)
                         .hasKnownStatus(SUCCESS)),
                 sourcing(() -> contractCallLocal(
