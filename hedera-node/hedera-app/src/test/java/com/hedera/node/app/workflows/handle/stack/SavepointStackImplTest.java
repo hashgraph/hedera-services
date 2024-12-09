@@ -16,14 +16,19 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -48,7 +53,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SavepointStackImplTest extends StateTestBase {
-
     private static final String FOOD_SERVICE = "FOOD_SERVICE";
 
     private final Map<String, String> BASE_DATA = Map.of(
@@ -62,6 +66,12 @@ class SavepointStackImplTest extends StateTestBase {
 
     @Mock(strictness = LENIENT)
     private State baseState;
+
+    @Mock
+    private SavepointStackImpl parent;
+
+    @Mock
+    private Savepoint savepoint;
 
     @Mock
     private BoundaryStateChangeListener roundStateChangeListener;
@@ -80,6 +90,46 @@ class SavepointStackImplTest extends StateTestBase {
         when(baseState.getWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
         final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
         streamMode = config.getConfigData(BlockStreamConfig.class).streamMode();
+    }
+
+    @Test
+    void topLevelPermitsStakingRewards() {
+        final var subject = SavepointStackImpl.newRootStack(
+                baseState, 3, 50, roundStateChangeListener, kvStateChangeListener, StreamMode.BOTH);
+        assertThat(subject.permitsStakingRewards()).isTrue();
+    }
+
+    @Test
+    void childDoesNotPermitStakingRewardsIfNotScheduled() {
+        given(parent.peek()).willReturn(savepoint);
+        given(savepoint.followingCapacity()).willReturn(123);
+        final var subject = SavepointStackImpl.newChildStack(
+                parent,
+                REVERSIBLE,
+                HandleContext.TransactionCategory.CHILD,
+                NOOP_TRANSACTION_CUSTOMIZER,
+                StreamMode.BOTH);
+        assertThat(subject.permitsStakingRewards()).isFalse();
+    }
+
+    @Test
+    void childDoesNotPermitStakingRewardsIfNotScheduledByUser() {
+        given(parent.peek()).willReturn(savepoint);
+        given(savepoint.followingCapacity()).willReturn(123);
+        given(parent.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
+        final var subject = SavepointStackImpl.newChildStack(
+                parent, REVERSIBLE, SCHEDULED, NOOP_TRANSACTION_CUSTOMIZER, StreamMode.BOTH);
+        assertThat(subject.permitsStakingRewards()).isFalse();
+    }
+
+    @Test
+    void scheduledTopLevelIfSchedulingParentIsUser() {
+        given(parent.peek()).willReturn(savepoint);
+        given(savepoint.followingCapacity()).willReturn(123);
+        given(parent.txnCategory()).willReturn(HandleContext.TransactionCategory.USER);
+        final var subject = SavepointStackImpl.newChildStack(
+                parent, REVERSIBLE, SCHEDULED, NOOP_TRANSACTION_CUSTOMIZER, StreamMode.BOTH);
+        assertThat(subject.permitsStakingRewards()).isTrue();
     }
 
     @Test
