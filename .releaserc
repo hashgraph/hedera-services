@@ -25,7 +25,7 @@
       "@semantic-release/git",
       {
         "assets": [
-          "gradle.properties"
+          "version.txt"
         ]
       }
     ]
