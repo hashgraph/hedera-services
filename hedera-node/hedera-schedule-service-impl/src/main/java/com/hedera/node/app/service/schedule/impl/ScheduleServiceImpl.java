@@ -66,11 +66,11 @@ public final class ScheduleServiceImpl implements ScheduleService {
      */
     private static class PurgingIterator implements ExecutableTxnIterator {
         /**
-         * No loop that exceeds this iteration limit; if that happens, the iterator will throw an unchecked
+         * No loop should exceed this iteration limit; if that happens, the iterator will throw an unchecked
          * exception to trigger the handle workflow to skip over the interval used to construct this iterator
          * and log an {@code ERROR} event.
          */
-        private static final int LOOP_INVARIANT_LIMIT = 10_000;
+        private static final int LOOP_INVARIANT_LIMIT = 100_000;
 
         private static final Comparator<ScheduledOrder> ORDER_COMPARATOR =
                 Comparator.comparingLong(ScheduledOrder::expirySecond).thenComparingInt(ScheduledOrder::orderNumber);
