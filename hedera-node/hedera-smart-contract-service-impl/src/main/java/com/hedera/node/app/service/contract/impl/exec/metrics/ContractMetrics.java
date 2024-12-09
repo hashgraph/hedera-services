@@ -52,7 +52,6 @@ public class ContractMetrics {
     private final Supplier<Metrics> metricsSupplier;
     private final Supplier<ContractsConfig> contractsConfigSupplier;
     private boolean p1MetricsEnabled;
-    private boolean p2MetricsEnabled;
 
     private final HashMap<HederaFunctionality, Counter> rejectedTxsCounters = new HashMap<>();
     private final HashMap<HederaFunctionality, Counter> rejectedTxsLackingIntrinsicGas = new HashMap<>();
@@ -69,7 +68,7 @@ public class ContractMetrics {
     //             %2$s - METRIC_SERVICE
     //             %3$s - short specific metric description
 
-    private static final String REJECTED_NAME_TEMPLATE = "%2$s:Rejected-%1$s_total";
+    private static final String REJECTED_NAME_TEMPLATE = "%2$s:Rejected_%1$s_total";
     private static final String REJECTED_DESCR_TEMPLATE = "submitted %1$s %3$s rejected by pureChecks";
 
     private static final String REJECTED_TXN_SHORT_DESCR = "txns";
@@ -88,52 +87,61 @@ public class ContractMetrics {
                 requireNonNull(contractsConfigSupplier, "contracts configuration supplier must not be null");
     }
 
+    private final Object metricsCreationLock = new Object();
+    private volatile boolean primaryMetricsAreCreated = false;
+
     public void createContractMetrics() {
 
-        final var contractsConfig = requireNonNull(contractsConfigSupplier.get());
-        this.p1MetricsEnabled = contractsConfig.metricsSmartContractPrimaryEnabled();
-        this.p2MetricsEnabled = contractsConfig.metricsSmartContractSecondaryEnabled();
+        // Primary metrics are a fixed set and can be created when `Hedera` initializes the system.
+        // But it actually must wait until the platform calls `Hedera.onStateInitialized` and,
+        // remarkably, that can happen more than once.  We must only create the metrics the
+        // _first_ time.  Hence, the simple gate here.
 
-        final var metrics = requireNonNull(metricsSupplier.get());
+        synchronized (metricsCreationLock) {
+            if (!primaryMetricsAreCreated) {
 
-        if (p1MetricsEnabled) {
-            // Rejected transactions counters
-            for (final var txKind : POSSIBLE_FAILING_TX_TYPES.keySet()) {
-                final var name = toRejectedName(txKind, REJECTED_TXN_SHORT_DESCR);
-                final var descr = toRejectedDescr(txKind, REJECTED_TXN_SHORT_DESCR);
-                final var config = new Counter.Config(METRIC_CATEGORY, name)
-                        .withDescription(descr)
-                        .withUnit(METRIC_TXN_UNIT);
-                final var metric = newCounter(metrics, config);
-                rejectedTxsCounters.put(txKind, metric);
+                final var contractsConfig = requireNonNull(contractsConfigSupplier.get());
+                this.p1MetricsEnabled = contractsConfig.metricsSmartContractPrimaryEnabled();
+
+                final var metrics = requireNonNull(metricsSupplier.get());
+
+                if (p1MetricsEnabled) {
+                    // Rejected transactions counters
+                    for (final var txKind : POSSIBLE_FAILING_TX_TYPES.keySet()) {
+                        final var name = toRejectedName(txKind, REJECTED_TXN_SHORT_DESCR);
+                        final var descr = toRejectedDescr(txKind, REJECTED_TXN_SHORT_DESCR);
+                        final var config = new Counter.Config(METRIC_CATEGORY, name)
+                                .withDescription(descr)
+                                .withUnit(METRIC_TXN_UNIT);
+                        final var metric = newCounter(metrics, config);
+                        rejectedTxsCounters.put(txKind, metric);
+                    }
+
+                    // Rejected transactions because they don't even have intrinsic gas
+                    for (final var txKind : POSSIBLE_FAILING_TX_TYPES.keySet()) {
+                        final var functionalityName = POSSIBLE_FAILING_TX_TYPES.get(txKind) + "DueToIntrinsicGas";
+                        final var name = toRejectedName(functionalityName, REJECTED_FOR_GAS_SHORT_DESCR);
+                        final var descr = toRejectedDescr(functionalityName, REJECTED_FOR_GAS_SHORT_DESCR);
+                        final var config = new Counter.Config(METRIC_CATEGORY, name)
+                                .withDescription(descr)
+                                .withUnit(METRIC_TXN_UNIT);
+                        final var metric = newCounter(metrics, config);
+                        rejectedTxsLackingIntrinsicGas.put(txKind, metric);
+                    }
+
+                    // Rejected transactions for ethereum calls that are in type 3 blob transaction format
+                    {
+                        final var name = toRejectedName(REJECTED_TYPE3_FUNCTIONALITY, REJECTED_TYPE3_SHORT_DESCR);
+                        final var descr = toRejectedDescr(REJECTED_TYPE3_FUNCTIONALITY, REJECTED_TYPE3_SHORT_DESCR);
+                        final var config = new Counter.Config(METRIC_CATEGORY, name)
+                                .withDescription(descr)
+                                .withUnit(METRIC_TXN_UNIT);
+                        final var metric = newCounter(metrics, config);
+                        rejectedEthType3Counter = metric;
+                    }
+                }
+                primaryMetricsAreCreated = true;
             }
-
-            // Rejected transactions because they don't even have intrinsic gas
-            for (final var txKind : POSSIBLE_FAILING_TX_TYPES.keySet()) {
-                final var functionalityName = POSSIBLE_FAILING_TX_TYPES.get(txKind) + "DueToIntrinsicGas";
-                final var name = toRejectedName(functionalityName, REJECTED_FOR_GAS_SHORT_DESCR);
-                final var descr = toRejectedDescr(functionalityName, REJECTED_FOR_GAS_SHORT_DESCR);
-                final var config = new Counter.Config(METRIC_CATEGORY, name)
-                        .withDescription(descr)
-                        .withUnit(METRIC_TXN_UNIT);
-                final var metric = newCounter(metrics, config);
-                rejectedTxsLackingIntrinsicGas.put(txKind, metric);
-            }
-
-            // Rejected transactions for ethereum calls that are in type 3 blob transaction format
-            {
-                final var name = toRejectedName(REJECTED_TYPE3_FUNCTIONALITY, REJECTED_TYPE3_SHORT_DESCR);
-                final var descr = toRejectedDescr(REJECTED_TYPE3_FUNCTIONALITY, REJECTED_TYPE3_SHORT_DESCR);
-                final var config = new Counter.Config(METRIC_CATEGORY, name)
-                        .withDescription(descr)
-                        .withUnit(METRIC_TXN_UNIT);
-                final var metric = newCounter(metrics, config);
-                rejectedEthType3Counter = metric;
-            }
-        }
-
-        if (p2MetricsEnabled) {
-            // PLACEHOLDER
         }
     }
 
@@ -142,7 +150,9 @@ public class ContractMetrics {
     }
 
     public void bumpRejectedTx(@NonNull final HederaFunctionality txKind, final long bumpBy) {
-        if (p1MetricsEnabled) requireNonNull(rejectedTxsCounters.get(txKind)).add(bumpBy);
+        if (p1MetricsEnabled) {
+            requireNonNull(rejectedTxsCounters.get(txKind)).add(bumpBy);
+        }
     }
 
     public void incrementRejectedForGasTx(@NonNull final HederaFunctionality txKind) {
@@ -159,7 +169,9 @@ public class ContractMetrics {
     }
 
     public void bumpRejectedType3EthTx(final long bumpBy) {
-        if (p1MetricsEnabled) rejectedEthType3Counter.add(bumpBy);
+        if (p1MetricsEnabled) {
+            rejectedEthType3Counter.add(bumpBy);
+        }
     }
 
     @VisibleForTesting
