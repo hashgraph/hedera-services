@@ -57,7 +57,6 @@ public class MigrationTestingToolMain implements SwirldMain {
                     new ClassConstructorPair(MigrationTestingToolState.class, () -> {
                         MigrationTestingToolState migrationTestingToolState = new MigrationTestingToolState(
                                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        FAKE_MERKLE_STATE_LIFECYCLES.initStates(migrationTestingToolState);
                         return migrationTestingToolState;
                     }));
             constructableRegistry.registerConstructable(
