@@ -78,10 +78,12 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -98,6 +100,7 @@ import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -563,9 +566,17 @@ public class HandleWorkflow {
                 // correctly detect stake period boundary, so the order of the following two lines is important
                 final var isStakePeriodBoundary = processStakePeriodChanges(userTxn, dispatch);
                 if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
+                    final var storeFactory = new WritableStoreFactory(
+                            userTxn.stack(),
+                            TssBaseService.NAME,
+                            configProvider.getConfiguration(),
+                            storeMetricsService);
+                    final var tssStore = storeFactory.getStore(WritableTssStore.class);
+                    final var rosterStore =
+                            new ReadableStoreFactory(userTxn.stack()).getStore(ReadableRosterStore.class);
                     // Check the tss status and manage it if necessary
                     tssBaseService.manageTssStatus(
-                            userTxn.stack(), storeMetricsService, isStakePeriodBoundary, userTxn.consensusNow());
+                            rosterStore, tssStore, isStakePeriodBoundary, userTxn.consensusNow());
                 }
                 blockStreamManager.setLastHandleTime(userTxn.consensusNow());
                 if (streamMode != BLOCKS) {

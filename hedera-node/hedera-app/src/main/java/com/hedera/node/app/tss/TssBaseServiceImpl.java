@@ -42,10 +42,8 @@ import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
@@ -68,7 +66,6 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -80,7 +77,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -395,15 +391,13 @@ public class TssBaseServiceImpl implements TssBaseService {
 
     @Override
     public void manageTssStatus(
-            final State state,
-            final StoreMetricsService storeMetricsService,
+            final ReadableRosterStore readableRosterStore,
+            final WritableTssStore tssStore,
             final boolean isStakePeriodBoundary,
             final Instant consensusNow) {
-        final var storeFactory = new WritableStoreFactory(
-                state, TssBaseService.NAME, appContext.configSupplier().get(), storeMetricsService);
-        final var tssStore = storeFactory.getStore(WritableTssStore.class);
         final var oldStatus = tssStore.getTssStatus();
-        final var statusChange = new StatusChange(oldStatus, state, isStakePeriodBoundary, consensusNow);
+        final var statusChange =
+                new StatusChange(oldStatus, readableRosterStore, tssStore, isStakePeriodBoundary, consensusNow);
         final var newTssStatus = statusChange.computeNewStatus();
         if (!newTssStatus.equals(oldStatus)) {
             tssStore.put(newTssStatus);
@@ -428,12 +422,13 @@ public class TssBaseServiceImpl implements TssBaseService {
         private final boolean isStakePeriodBoundary;
         private final Instant consensusNow;
 
-        private ReadableTssStore tssStore;
-        private ReadableRosterStore rosterStore;
+        private final ReadableTssStore tssStore;
+        private final ReadableRosterStore rosterStore;
 
         public StatusChange(
                 @NonNull final TssStatus oldStatus,
-                @NonNull final State state,
+                @NonNull final ReadableRosterStore rosterStore,
+                @NonNull final ReadableTssStore tssStore,
                 final boolean isStakePeriodBoundary,
                 final Instant consensusNow) {
             this.oldStatus = oldStatus;
@@ -442,10 +437,8 @@ public class TssBaseServiceImpl implements TssBaseService {
             this.newRosterToKey = oldStatus.rosterToKey();
             this.newLedgerId = oldStatus.ledgerId();
             this.consensusNow = consensusNow;
-
-            final var readableStoreFactory = new ReadableStoreFactory(state);
-            this.tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
-            this.rosterStore = readableStoreFactory.getStore(ReadableRosterStore.class);
+            this.tssStore = tssStore;
+            this.rosterStore = rosterStore;
         }
 
         /**
@@ -470,8 +463,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                                 activeRosterHash, activeRosterHash);
                         case WAITING_FOR_THRESHOLD_TSS_VOTES -> validateVotesAndSubmitIfNeeded(
                                 activeRosterHash, activeRosterHash);
-                        case WAITING_FOR_ENCRYPTION_KEYS ->
-                                validateThresholdEncryptionKeysReached(rosterStore.getCurrentRosterHash());
+                        case WAITING_FOR_ENCRYPTION_KEYS -> validateThresholdEncryptionKeysReached(
+                                rosterStore.getCurrentRosterHash());
                     }
                 }
                 case CANDIDATE_ROSTER -> {
@@ -531,7 +524,7 @@ public class TssBaseServiceImpl implements TssBaseService {
 
         private void validateMessagesAndSubmitIfNeeded(final Bytes activeRosterHash, final Bytes candidateRosterHash) {
             validateThresholdTssMessages(oldStatus)
-                    .thenAccept(thresholdReached -> {
+                    .thenAcceptAsync(thresholdReached -> {
                         if (thresholdReached) {
                             newKeyingStatus = TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES;
                         } else if (!haveSentMessageForTargetRoster) {
@@ -596,10 +589,12 @@ public class TssBaseServiceImpl implements TssBaseService {
             final var participantDirectory = tssDirectoryAccessor.activeParticipantDirectory();
             final var targetRosterHash = getTargetRoster(rosterStore, tssStatus);
             final var tssMessageBodies = tssStore.getMessagesForTarget(targetRosterHash);
-            return CompletableFuture.supplyAsync(() -> {
-                final var tssMessages = validateTssMessages(tssMessageBodies, participantDirectory, tssLibrary);
-                return isThresholdMet(tssMessages, participantDirectory);
-            });
+            return CompletableFuture.supplyAsync(
+                    () -> {
+                        final var tssMessages = validateTssMessages(tssMessageBodies, participantDirectory, tssLibrary);
+                        return isThresholdMet(tssMessages, participantDirectory);
+                    },
+                    tssLibraryExecutor);
         }
 
         private Optional<TssVoteTransactionBody> validateThresholdTssVotes(final TssStatus tssStatus) {
@@ -619,10 +614,10 @@ public class TssBaseServiceImpl implements TssBaseService {
             }
             final var thresholdReached = numTssEncryptionKeys
                     >= (2
-                    * requireNonNull(rosterStore.getActiveRoster())
-                    .rosterEntries()
-                    .size())
-                    / 3;
+                                    * requireNonNull(rosterStore.getActiveRoster())
+                                            .rosterEntries()
+                                            .size())
+                            / 3;
             if (thresholdReached) {
                 newKeyingStatus = TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES;
             } else {

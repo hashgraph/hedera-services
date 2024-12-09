@@ -63,8 +63,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PlatformStateUpdatesTest implements TransactionFactory {
-    private static final RosterState ROSTER_STATE = RosterState.newBuilder()
+public class PlatformStateUpdatesTest implements TransactionFactory {
+    public static final RosterState ROSTER_STATE = RosterState.newBuilder()
             .roundRosterPairs(List.of(RoundRosterPair.DEFAULT))
             .build();
     private FakeState state;

@@ -16,26 +16,55 @@
 
 package com.hedera.node.app.tss;
 
+import static com.hedera.node.app.workflows.handle.steps.PlatformStateUpdatesTest.ROSTER_STATE;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
+import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_KEY;
+import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.state.roster.RosterState;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
+import com.hedera.hapi.node.state.tss.RosterToKey;
+import com.hedera.hapi.node.state.tss.TssKeyingStatus;
+import com.hedera.hapi.node.state.tss.TssStatus;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
+import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
+import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +73,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TssBaseServiceImplTest {
+    private static final Bytes SOURCE_HASH = Bytes.wrap("SOURCE");
+    private static final Bytes TARGET_HASH = Bytes.wrap("TARGET");
+    private static final Roster SOURCE_ROSTER = Roster.newBuilder()
+            .rosterEntries(
+                    new RosterEntry(0L, 4L, Bytes.EMPTY, List.of()),
+                    new RosterEntry(1L, 3L, Bytes.EMPTY, List.of()),
+                    new RosterEntry(2L, 2L, Bytes.EMPTY, List.of()))
+            .build();
+    private static final long SOURCE_WEIGHT = 9L;
+    private static final Roster TARGET_ROSTER = Roster.newBuilder()
+            .rosterEntries(
+                    new RosterEntry(0L, 1L, Bytes.EMPTY, List.of()),
+                    new RosterEntry(1L, 2L, Bytes.EMPTY, List.of()),
+                    new RosterEntry(2L, 3L, Bytes.EMPTY, List.of()),
+                    new RosterEntry(3L, 4L, Bytes.EMPTY, List.of()))
+            .build();
+
     private CountDownLatch latch;
     private final List<byte[]> receivedMessageHashes = new ArrayList<>();
     private final List<byte[]> receivedSignatures = new ArrayList<>();
@@ -67,19 +113,59 @@ class TssBaseServiceImplTest {
     @Mock
     private Metrics metrics;
 
+    @Mock
+    private WritableTssStore tssStore;
+
+    @Mock
+    private ReadableRosterStore rosterStore;
+
+    @Mock
+    private TssLibrary tssLibrary;
+
+    private State state;
     private TssBaseServiceImpl subject;
 
     @BeforeEach
     void setUp() {
+        final ConcurrentHashMap<ProtoBytes, Roster> rosters = new ConcurrentHashMap<>();
+        final AtomicReference<RosterState> rosterStateBackingStore = new AtomicReference<>(ROSTER_STATE);
+        rosterStateBackingStore.set(RosterState.newBuilder()
+                .roundRosterPairs(List.of(RoundRosterPair.newBuilder()
+                        .activeRosterHash(SOURCE_HASH)
+                        .roundNumber(1)
+                        .build()))
+                .candidateRosterHash(TARGET_HASH)
+                .build());
+        rosters.put(ProtoBytes.newBuilder().value(SOURCE_HASH).build(), SOURCE_ROSTER);
+        rosters.put(ProtoBytes.newBuilder().value(TARGET_HASH).build(), TARGET_ROSTER);
+        state = new FakeState()
+                .addService(
+                        RosterService.NAME,
+                        Map.of(
+                                ROSTER_STATES_KEY, rosterStateBackingStore,
+                                ROSTER_KEY, rosters))
+                .addService(
+                        TssBaseService.NAME,
+                        Map.of(
+                                V0570TssBaseSchema.TSS_STATUS_KEY,
+                                new AtomicReference<>(TssStatus.DEFAULT),
+                                V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY,
+                                new HashMap<>(),
+                                V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY,
+                                new HashMap<>(),
+                                V0560TssBaseSchema.TSS_VOTE_MAP_KEY,
+                                new HashMap<>()));
+
         given(appContext.gossip()).willReturn(gossip);
         given(appContext.instantSource()).willReturn(InstantSource.system());
         given(appContext.configSupplier()).willReturn(HederaTestConfigBuilder::createConfig);
         given(appContext.selfNodeInfoSupplier()).willReturn(() -> DEFAULT_NODE_INFO);
+
         subject = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),
                 ForkJoinPool.commonPool(),
-                new TssLibraryImpl(appContext),
+                tssLibrary,
                 ForkJoinPool.commonPool(),
                 metrics);
     }
@@ -111,5 +197,88 @@ class TssBaseServiceImplTest {
     void placeholderRegistersSchemas() {
         subject.registerSchemas(registry);
         verify(registry).register(argThat(s -> s instanceof V0560TssBaseSchema));
+    }
+
+    @Test
+    void managesTssStatusWhenRosterToKeyIsNone() {
+        final var oldStatus =
+                TssStatus.newBuilder().rosterToKey(RosterToKey.NONE).build();
+        given(tssStore.getTssStatus()).willReturn(oldStatus);
+        subject.manageTssStatus(rosterStore, tssStore, true, Instant.ofEpochSecond(1_234_567L));
+        verify(tssStore)
+                .put(TssStatus.newBuilder()
+                        .rosterToKey(RosterToKey.CANDIDATE_ROSTER)
+                        .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES)
+                        .build());
+    }
+
+    @Test
+    void managesTssStatusWhenMessagesReachedThreshold() {
+        final var messages = IntStream.range(0, 8)
+                .mapToObj(i ->
+                        new TssMessageTransactionBody(SOURCE_HASH, TARGET_HASH, i * 2L + 1, Bytes.wrap("MESSAGE" + i)))
+                .toList();
+        final var oldStatus = TssStatus.newBuilder()
+                .rosterToKey(RosterToKey.ACTIVE_ROSTER)
+                .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES)
+                .build();
+        given(tssStore.getTssStatus()).willReturn(oldStatus);
+        given(tssStore.getMessagesForTarget(any())).willReturn(messages);
+        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+        given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
+
+        subject.generateParticipantDirectory(state);
+        subject.manageTssStatus(rosterStore, tssStore, true, Instant.ofEpochSecond(1_234_567L));
+
+        verify(tssStore)
+                .put(TssStatus.newBuilder()
+                        .rosterToKey(RosterToKey.ACTIVE_ROSTER)
+                        .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES)
+                        .build());
+    }
+
+    @Test
+    void managesTssStatusWhenVotesReachedThreshold() {
+        final var oldStatus = TssStatus.newBuilder()
+                .rosterToKey(RosterToKey.ACTIVE_ROSTER)
+                .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES)
+                .build();
+        given(tssStore.getTssStatus()).willReturn(oldStatus);
+        given(tssStore.anyWinningVoteFrom(any(), any(), any()))
+                .willReturn(Optional.of(TssVoteTransactionBody.newBuilder()
+                        .ledgerId(Bytes.wrap("ledger"))
+                        .tssVote(Bytes.wrap(BitSet.valueOf(new long[] {1L, 2L}).toByteArray()))
+                        .build()));
+        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+
+        subject.generateParticipantDirectory(state);
+        subject.manageTssStatus(rosterStore, tssStore, true, Instant.ofEpochSecond(1_234_567L));
+
+        verify(tssStore)
+                .put(TssStatus.newBuilder()
+                        .rosterToKey(RosterToKey.ACTIVE_ROSTER)
+                        .tssKeyingStatus(TssKeyingStatus.KEYING_COMPLETE)
+                        .ledgerId(Bytes.wrap("ledger"))
+                        .build());
+    }
+
+    @Test
+    void managesTssStatusWhenKeyingComplete() {
+        final var oldStatus = TssStatus.newBuilder()
+                .rosterToKey(RosterToKey.ACTIVE_ROSTER)
+                .tssKeyingStatus(TssKeyingStatus.KEYING_COMPLETE)
+                .build();
+        given(tssStore.getTssStatus()).willReturn(oldStatus);
+        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+
+        subject.generateParticipantDirectory(state);
+        subject.manageTssStatus(rosterStore, tssStore, true, Instant.ofEpochSecond(1_234_567L));
+
+        verify(tssStore)
+                .put(TssStatus.newBuilder()
+                        .rosterToKey(RosterToKey.NONE)
+                        .tssKeyingStatus(TssKeyingStatus.KEYING_COMPLETE)
+                        .ledgerId(Bytes.EMPTY)
+                        .build());
     }
 }
