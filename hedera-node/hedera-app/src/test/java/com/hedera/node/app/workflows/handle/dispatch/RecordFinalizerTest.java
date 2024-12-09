@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
@@ -28,6 +29,7 @@ import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletion
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -48,6 +50,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
@@ -68,6 +71,9 @@ public class RecordFinalizerTest {
 
     @Mock
     private Dispatch dispatch;
+
+    @Mock
+    private SavepointStackImpl stack;
 
     @Mock
     private FinalizeContext finalizeContext;
@@ -111,6 +117,31 @@ public class RecordFinalizerTest {
         lenient().when(dispatch.recordBuilder()).thenReturn(recordBuilder);
         lenient().when(dispatch.finalizeContext()).thenReturn(finalizeContext);
         lenient().when(dispatch.handleContext()).thenReturn(handleContext);
+    }
+
+    @Test
+    public void finalizesStakingRecordForScheduledDispatchOfUserTxn() {
+        when(dispatch.txnCategory()).thenReturn(SCHEDULED);
+        given(dispatch.stack()).willReturn(stack);
+        given(stack.scheduledParentIsUser()).willReturn(true);
+
+        when(dispatch.handleContext().dispatchPaidRewards()).thenReturn(Map.of());
+
+        subject.finalizeRecord(dispatch);
+
+        verify(finalizeRecordHandler).finalizeStakingRecord(any(), any(), any(), any());
+        verify(finalizeRecordHandler, never()).finalizeNonStakingRecord(any(), any());
+    }
+
+    @Test
+    public void finalizesNonStakingRecordForScheduledDispatchOfUserTxn() {
+        when(dispatch.txnCategory()).thenReturn(SCHEDULED);
+        given(dispatch.stack()).willReturn(stack);
+
+        subject.finalizeRecord(dispatch);
+
+        verify(finalizeRecordHandler, never()).finalizeStakingRecord(any(), any(), any(), any());
+        verify(finalizeRecordHandler).finalizeNonStakingRecord(any(), any());
     }
 
     @Test
