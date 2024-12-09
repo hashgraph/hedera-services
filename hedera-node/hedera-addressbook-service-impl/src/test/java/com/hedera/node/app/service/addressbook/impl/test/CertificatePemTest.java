@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.addressbook.impl.test;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.loadResourceFile;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.readCertificatePemFile;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.writeCertificatePemFile;
-import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.getX509Certificate;
 import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.validateX509Certificate;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -30,11 +30,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -146,5 +150,21 @@ class CertificatePemTest {
         final var badFilePath = loadResourceFile(badPem);
         final byte[] badBytes = Files.readAllBytes(badFilePath);
         assertArrayEquals(genBytes, badBytes);
+    }
+
+    /**
+     * Parse X509Certificate bytes and get the X509Certificate object.
+     * @param certBytes the Bytes to validate
+     * @throws PreCheckException if the certificate is invalid
+     */
+    private static X509Certificate getX509Certificate(@NonNull Bytes certBytes) throws PreCheckException {
+        X509Certificate cert;
+        try {
+            cert = (X509Certificate) CertificateFactory.getInstance("X.509")
+                    .generateCertificate(new ByteArrayInputStream(certBytes.toByteArray()));
+        } catch (final CertificateException e) {
+            throw new PreCheckException(INVALID_GOSSIP_CA_CERTIFICATE);
+        }
+        return cert;
     }
 }
