@@ -42,6 +42,10 @@ public class AddOnEvmActionTracer implements ActionSidecarContentTracer {
     private final EvmActionTracer evmActionTracer;
     private final List<OperationTracer> addOnTracers;
 
+    /**
+     * @param evmActionTracer the evm action tracer
+     * @param addOnTracers all operation tracer callbacks
+     */
     public AddOnEvmActionTracer(
             @NonNull final EvmActionTracer evmActionTracer, @NonNull final List<OperationTracer> addOnTracers) {
         this.evmActionTracer = requireNonNull(evmActionTracer);

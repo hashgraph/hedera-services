@@ -20,8 +20,11 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.function.BiConsumer;
 
 /**
  * Maintains the state and process objects needed to produce the block stream.
@@ -34,13 +37,81 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Items written to the stream will be produced in the order they are written. The leaves of the input and output item
  * Merkle trees will be in the order they are written.
  */
-public interface BlockStreamManager extends BlockRecordInfo {
+public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], byte[]>, StateHashedListener {
+    Bytes ZERO_BLOCK_HASH = Bytes.wrap(new byte[48]);
+
+    /**
+     * The types of work that may be identified as pending within a block.
+     */
+    enum PendingWork {
+        /**
+         * No work is pending.
+         */
+        NONE,
+        /**
+         * Genesis work is pending.
+         */
+        GENESIS_WORK,
+        /**
+         * Post-upgrade work is pending.
+         */
+        POST_UPGRADE_WORK
+    }
+
+    /**
+     * Initializes the block stream manager after a restart or during reconnect with the hash of the last block
+     * incorporated in the state used in the restart or reconnect. (At genesis, this hash should be the
+     * {@link #ZERO_BLOCK_HASH}.)
+     * @param blockHash the hash of the last block
+     */
+    void initLastBlockHash(@NonNull Bytes blockHash);
+
     /**
      * Updates the internal state of the block stream manager to reflect the start of a new round.
+     *
      * @param round the round that has just started
      * @param state the state of the network at the beginning of the round
+     * @throws IllegalStateException if the last block hash was not explicitly initialized
      */
     void startRound(@NonNull Round round, @NonNull State state);
+
+    /**
+     * Confirms that the post-upgrade work has been completed.
+     */
+    void confirmPendingWorkFinished();
+
+    /**
+     * Returns whether post-upgrade work is pending.
+     *
+     * @return whether post-upgrade work is pending
+     */
+    @NonNull
+    PendingWork pendingWork();
+
+    /**
+     * Sets the last interval process time.
+     * @param lastIntervalProcessTime the last interval process time
+     */
+    void setLastIntervalProcessTime(@NonNull Instant lastIntervalProcessTime);
+
+    /**
+     * Get the consensus time at which an interval was last processed.
+     * @return the consensus time at which an interval was last processed
+     */
+    @NonNull
+    Instant lastIntervalProcessTime();
+
+    /**
+     * Sets the last consensus time at which a user transaction was last handled.
+     * @param lastHandleTime the last consensus time at which a user transaction was handled
+     */
+    void setLastHandleTime(@NonNull Instant lastHandleTime);
+
+    /**
+     * Returns the consensus time at which a user transaction was last handled.
+     */
+    @NonNull
+    Instant lastHandleTime();
 
     /**
      * Updates both the internal state of the block stream manager and the durable state of the network
@@ -57,11 +128,4 @@ public interface BlockStreamManager extends BlockRecordInfo {
      * @throws IllegalStateException if the stream is closed
      */
     void writeItem(@NonNull BlockItem item);
-
-    /**
-     * Completes the block proof for the given block with the given signature.
-     * @param blockNumber the number of the block to finish
-     * @param signature the signature to use in the block proof
-     */
-    void finishBlockProof(long blockNumber, @NonNull Bytes signature);
 }

@@ -673,16 +673,16 @@ public class GraphGeneratorTests {
         events = generator.generateEvents(numberOfEvents);
 
         final HashSet<NodeId> excludedNodes = new HashSet<>();
-        excludedNodes.add(new NodeId(3L));
+        excludedNodes.add(NodeId.of(3L));
         eventAges = gatherOtherParentAges(events, excludedNodes);
         assertAgeRatio(eventAges, 0, 0.95, 0.05);
         assertAgeRatio(eventAges, 1, 0.05 * 0.95, 0.05);
         assertAgeRatio(eventAges, 2, 0.05 * 0.05 * 0.95, 0.2);
 
         excludedNodes.clear();
-        excludedNodes.add(new NodeId(0L));
-        excludedNodes.add(new NodeId(1L));
-        excludedNodes.add(new NodeId(2L));
+        excludedNodes.add(NodeId.of(0L));
+        excludedNodes.add(NodeId.of(1L));
+        excludedNodes.add(NodeId.of(2L));
         eventAges = gatherOtherParentAges(events, excludedNodes);
         assertAgeRatio(eventAges, 0, 0.5, 0.05);
         assertAgeRatio(eventAges, 1, 0.5 * 0.5, 0.05);
@@ -704,7 +704,7 @@ public class GraphGeneratorTests {
         events = generator.generateEvents(numberOfEvents);
 
         excludedNodes.clear();
-        excludedNodes.add(new NodeId(3L));
+        excludedNodes.add(NodeId.of(3L));
         eventAges = gatherOtherParentAges(events, excludedNodes);
         assertAgeRatio(eventAges, 0, 0.666666, 0.05);
         assertAgeRatio(eventAges, 1, 0.0, 0.0);
@@ -712,9 +712,9 @@ public class GraphGeneratorTests {
         assertAgeRatio(eventAges, 3, 0.333333, 0.05);
 
         excludedNodes.clear();
-        excludedNodes.add(new NodeId(0L));
-        excludedNodes.add(new NodeId(1L));
-        excludedNodes.add(new NodeId(2L));
+        excludedNodes.add(NodeId.of(0L));
+        excludedNodes.add(NodeId.of(1L));
+        excludedNodes.add(NodeId.of(2L));
         eventAges = gatherOtherParentAges(events, excludedNodes);
         assertAgeRatio(eventAges, 0, 1.0, 0.0);
         assertAgeRatio(eventAges, 1, 0.0, 0.0);

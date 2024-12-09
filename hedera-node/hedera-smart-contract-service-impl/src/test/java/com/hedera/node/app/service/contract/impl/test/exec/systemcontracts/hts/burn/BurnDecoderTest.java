@@ -30,6 +30,9 @@ import java.math.BigInteger;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
+/**
+ * Unit tests for burn decoder
+ */
 public class BurnDecoderTest extends CallTestBase {
 
     @Mock

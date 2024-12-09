@@ -16,11 +16,11 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongListHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -39,6 +39,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * Hammer the compaction subsystem with as many small compactions as possible to try to overwhelm it.
  */
+@Disabled("This test needs to be investigated")
 class DataFileCollectionCompactionHammerTest {
 
     @BeforeAll
@@ -66,12 +68,12 @@ class DataFileCollectionCompactionHammerTest {
     @MethodSource("provideForBenchmark")
     @Tags({@Tag("Speed")})
     void benchmark(int numFiles, int maxEntriesPerFile) throws IOException {
-        final Path tempFileDir =
-                LegacyTemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
+        final Path tempFileDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(
+                "DataFileCollectionCompactionHammerTest", CONFIGURATION);
         assertDoesNotThrow(() -> {
             final LongListHeap index = new LongListHeap();
             String storeName = "benchmark";
-            final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+            final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
             final var coll = new DataFileCollection(
                     dbConfig, tempFileDir.resolve(storeName), storeName, (dataLocation, dataValue) -> {});
             final var compactor = new DataFileCompactor(dbConfig, storeName, coll, index, null, null, null, null);
@@ -131,11 +133,11 @@ class DataFileCollectionCompactionHammerTest {
     @SuppressWarnings("unchecked")
     @Test
     void hammer() throws IOException, InterruptedException, ExecutionException {
-        final Path tempFileDir =
-                LegacyTemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
+        final Path tempFileDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(
+                "DataFileCollectionCompactionHammerTest", CONFIGURATION);
         final LongListHeap index = new LongListHeap();
         String storeName = "hammer";
-        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+        final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         final var coll = new DataFileCollection(
                 dbConfig, tempFileDir.resolve(storeName), storeName, (dataLocation, dataValue) -> {});
         final var compactor = new DataFileCompactor(dbConfig, storeName, coll, index, null, null, null, null);

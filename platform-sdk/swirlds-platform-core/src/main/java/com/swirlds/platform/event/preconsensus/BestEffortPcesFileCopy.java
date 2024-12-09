@@ -89,7 +89,8 @@ public final class BestEffortPcesFileCopy {
             try {
                 executeAndRename(
                         pcesDestination,
-                        temporaryDirectory -> copyPcesFiles(platformContext, selfId, temporaryDirectory, lowerBound));
+                        temporaryDirectory -> copyPcesFiles(platformContext, selfId, temporaryDirectory, lowerBound),
+                        platformContext.getConfiguration());
 
                 return;
             } catch (final IOException | UncheckedIOException e) {

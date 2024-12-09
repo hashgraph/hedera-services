@@ -20,7 +20,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.MinimumJudgeInfo;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,7 +36,7 @@ import java.util.function.Consumer;
  * It's not meant to be used for other purposes. This class tracks the changes to the fields to prevent resetting original
  * platform state fields to null if they are not updated.
  */
-public class PlatformStateValueAccumulator implements PlatformStateAccessor {
+public class PlatformStateValueAccumulator implements PlatformStateModifier {
 
     /**
      * The address book for this round.
@@ -478,7 +478,7 @@ public class PlatformStateValueAccumulator implements PlatformStateAccessor {
     }
 
     @Override
-    public void bulkUpdate(@NonNull Consumer<PlatformStateAccessor> updater) {
+    public void bulkUpdate(@NonNull Consumer<PlatformStateModifier> updater) {
         updater.accept(this);
     }
 }

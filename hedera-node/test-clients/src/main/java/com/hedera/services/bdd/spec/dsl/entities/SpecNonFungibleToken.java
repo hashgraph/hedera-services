@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.dsl.operations.queries.GetTokenNftInfoOperation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +55,15 @@ public class SpecNonFungibleToken extends SpecToken {
      */
     public void setNumPreMints(final int numPreMints) {
         this.numPreMints = numPreMints;
+    }
+
+    /**
+     * Returns an operation that retrieves the information for an NFT, identified by its serial number.
+     *
+     * @return the operation
+     */
+    public GetTokenNftInfoOperation getInfo(final int serialNumber) {
+        return new GetTokenNftInfoOperation(this, serialNumber);
     }
 
     /**

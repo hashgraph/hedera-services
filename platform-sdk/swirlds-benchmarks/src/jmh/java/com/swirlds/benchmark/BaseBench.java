@@ -18,7 +18,6 @@ package com.swirlds.benchmark;
 
 import com.swirlds.benchmark.config.BenchmarkConfig;
 import com.swirlds.benchmark.reconnect.BenchmarkMerkleInternal;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -97,7 +96,6 @@ public abstract class BaseBench {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(CryptoConfig.class);
         configuration = configurationBuilder.build();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
         final StringBuilder settingsUsed = new StringBuilder();
         ConfigExport.addConfigContents(configuration, settingsUsed);
@@ -157,7 +155,7 @@ public abstract class BaseBench {
     @TearDown
     public void destroy() {
         BenchmarkMetrics.stop();
-        if (!getConfig().saveDataDirectory()) {
+        if (!getBenchmarkConfig().saveDataDirectory()) {
             Utils.deleteRecursively(benchDir);
         }
     }
@@ -201,7 +199,7 @@ public abstract class BaseBench {
 
     public void afterTest(boolean keepTestDir, RunnableWithException runnable) throws Exception {
         BenchmarkMetrics.report();
-        if (getConfig().printHistogram()) {
+        if (getBenchmarkConfig().printHistogram()) {
             // Class histogram is interesting before closing
             Utils.printClassHistogram(15);
         }
@@ -246,11 +244,11 @@ public abstract class BaseBench {
         return Utils.randomLong();
     }
 
-    public BenchmarkConfig getConfig() {
-        return getConfig(BenchmarkConfig.class);
-    }
-
     public <T extends Record> T getConfig(Class<T> configCls) {
         return configuration.getConfigData(configCls);
+    }
+
+    public BenchmarkConfig getBenchmarkConfig() {
+        return getConfig(BenchmarkConfig.class);
     }
 }

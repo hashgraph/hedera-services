@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.ContextRequirement.SYSTEM_ACCOUNT_BA
 import static com.hedera.services.bdd.junit.EmbeddedReason.MANIPULATES_EVENT_VERSION;
 import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
+import static com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion.PAST;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.reducedFromSnapshot;
@@ -136,6 +137,24 @@ public class DuplicateManagementTest {
                         }));
     }
 
+    @EmbeddedHapiTest(MANIPULATES_EVENT_VERSION)
+    @DisplayName("only warns of missing creator if event version is current")
+    final Stream<DynamicTest> onlyWarnsOfMissingCreatorIfCurrentVersion() {
+        return hapiTest(
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
+                        .setNode("0.0.666")
+                        .withSubmissionStrategy(usingVersion(PAST))
+                        .hasAnyStatusAtAll(),
+                assertHgcaaLogDoesNotContain(
+                        byNodeId(0), "node 666 which is not in the address book", Duration.ofSeconds(1)),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
+                        .setNode("0.0.666")
+                        .withSubmissionStrategy(usingVersion(SyntheticVersion.PRESENT))
+                        .hasAnyStatusAtAll(),
+                assertHgcaaLogContains(
+                        byNodeId(0), "node 666 which is not in the address book", Duration.ofSeconds(1)));
+    }
+
     @LeakyEmbeddedHapiTest(reason = MUST_SKIP_INGEST, requirement = SYSTEM_ACCOUNT_BALANCES)
     @DisplayName("if a node submits an authorized transaction without payer signature, it is charged the network fee")
     final Stream<DynamicTest> chargesNetworkFeeToNodeThatSubmitsAuthorizedTransactionWithoutPayerSignature() {
@@ -153,24 +172,6 @@ public class DuplicateManagementTest {
                         .hasKnownStatus(INVALID_PAYER_SIGNATURE),
                 // And verify that the node is charged the network fee for submitting this transaction
                 getAccountBalance(submittingNodeAccountId).hasTinyBars(reducedFromSnapshot("preConsensus")));
-    }
-
-    @EmbeddedHapiTest(MANIPULATES_EVENT_VERSION)
-    @DisplayName("only warns of missing creator if event version is current")
-    final Stream<DynamicTest> onlyWarnsOfMissingCreatorIfCurrentVersion() {
-        return hapiTest(
-                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
-                        .setNode("0.0.666")
-                        .withSubmissionStrategy(usingVersion(SyntheticVersion.PAST))
-                        .hasAnyStatusAtAll(),
-                assertHgcaaLogDoesNotContain(
-                        byNodeId(0), "node 666 which is not in the address book", Duration.ofSeconds(1)),
-                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
-                        .setNode("0.0.666")
-                        .withSubmissionStrategy(usingVersion(SyntheticVersion.PRESENT))
-                        .hasAnyStatusAtAll(),
-                assertHgcaaLogContains(
-                        byNodeId(0), "node 666 which is not in the address book", Duration.ofSeconds(1)));
     }
 
     @LeakyEmbeddedHapiTest(reason = MUST_SKIP_INGEST, requirement = SYSTEM_ACCOUNT_BALANCES)

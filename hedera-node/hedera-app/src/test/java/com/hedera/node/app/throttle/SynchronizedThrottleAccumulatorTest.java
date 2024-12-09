@@ -68,13 +68,15 @@ class SynchronizedThrottleAccumulatorTest {
     void verifyCheckAndEnforceThrottleQueryIsCalled() {
         // given
         final var query = mock(Query.class);
+        final var state = mock(State.class);
         final var accountID = mock(AccountID.class);
 
         // when
-        subject.shouldThrottle(HederaFunctionality.CONTRACT_CREATE, query, accountID);
+        subject.shouldThrottle(HederaFunctionality.CONTRACT_CREATE, query, state, accountID);
 
         // then
         verify(throttleAccumulator, times(1))
-                .checkAndEnforceThrottle(eq(HederaFunctionality.CONTRACT_CREATE), any(), eq(query), eq(accountID));
+                .checkAndEnforceThrottle(
+                        eq(HederaFunctionality.CONTRACT_CREATE), any(), eq(query), eq(state), eq(accountID));
     }
 }

@@ -60,7 +60,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -91,8 +91,13 @@ public interface TransactionModule {
     static TinybarValues provideTinybarValues(
             @TopLevelResourcePrices @NonNull final FunctionalityResourcePrices topLevelResourcePrices,
             @ChildTransactionResourcePrices @NonNull final FunctionalityResourcePrices childTransactionResourcePrices,
-            @NonNull final ExchangeRate exchangeRate) {
-        return TinybarValues.forTransactionWith(exchangeRate, topLevelResourcePrices, childTransactionResourcePrices);
+            @NonNull final ExchangeRate exchangeRate,
+            @NonNull final HandleContext context) {
+        return TinybarValues.forTransactionWith(
+                exchangeRate,
+                context.configuration().getConfigData(ContractsConfig.class),
+                topLevelResourcePrices,
+                childTransactionResourcePrices);
     }
 
     @Provides

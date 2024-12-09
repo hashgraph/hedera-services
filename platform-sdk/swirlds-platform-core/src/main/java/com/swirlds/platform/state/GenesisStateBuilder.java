@@ -16,7 +16,8 @@
 
 package com.swirlds.platform.state;
 
-import com.swirlds.common.context.PlatformContext;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -37,9 +38,9 @@ public final class GenesisStateBuilder {
      * Initializes a genesis platform state.
      *
      */
-    private static void initGenesisPlatformState(
-            final PlatformContext platformContext,
-            final PlatformStateAccessor platformState,
+    public static void initGenesisPlatformState(
+            final Configuration configuration,
+            final PlatformStateModifier platformState,
             final AddressBook addressBook,
             final SoftwareVersion appVersion) {
         platformState.bulkUpdate(v -> {
@@ -49,7 +50,7 @@ public final class GenesisStateBuilder {
             v.setLegacyRunningEventHash(null);
             v.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 
-            final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+            final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
 
             final long genesisFreezeTime = basicConfig.genesisFreezeTime();
             if (genesisFreezeTime > 0) {
@@ -61,22 +62,24 @@ public final class GenesisStateBuilder {
     /**
      * Build and initialize a genesis state.
      *
-     * @param platformContext       the platform context
+     * @param configuration         the configuration for this node
      * @param addressBook           the current address book
      * @param appVersion            the software version of the app
      * @param stateRoot             the merkle root node of the state
      * @return a reserved genesis signed state
      */
     public static ReservedSignedState buildGenesisState(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final MerkleRoot stateRoot) {
 
-        initGenesisPlatformState(platformContext, stateRoot.getPlatformState(), addressBook, appVersion);
+        if (!configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+            initGenesisPlatformState(configuration, stateRoot.getWritablePlatformState(), addressBook, appVersion);
+        }
 
         final SignedState signedState = new SignedState(
-                platformContext, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
+                configuration, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
         return signedState.reserve("initial reservation on genesis state");
     }
 }

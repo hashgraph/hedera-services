@@ -24,6 +24,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * Basic implementation support for a {@link CallTranslator} that returns a translated
  * call when the {@link AbstractCallAttempt} matches and null otherwise.
+ * @param <T> the type of the abstract call translator
  */
 public abstract class AbstractCallTranslator<T extends AbstractCallAttempt<T>> implements CallTranslator<T> {
     /**

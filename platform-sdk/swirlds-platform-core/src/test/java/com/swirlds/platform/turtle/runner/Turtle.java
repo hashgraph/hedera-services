@@ -16,14 +16,20 @@
 
 package com.swirlds.platform.turtle.runner;
 
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -96,7 +102,11 @@ public class Turtle {
         timeReportingEnabled = builder.isTimeReportingEnabled();
 
         try {
-            ConstructableRegistry.getInstance().registerConstructables("");
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(
+                            MerkleStateRoot.class,
+                            () -> new PlatformMerkleStateRoot(
+                                    FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(1))));
         } catch (final ConstructableRegistryException e) {
             throw new RuntimeException(e);
         }

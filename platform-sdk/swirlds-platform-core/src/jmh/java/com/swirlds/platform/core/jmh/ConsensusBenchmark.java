@@ -23,6 +23,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
@@ -73,7 +74,8 @@ public class ConsensusBenchmark {
         events = emitter.emitEvents(numEvents);
         final AddressBook addressBook = emitter.getGraphGenerator().getAddressBook();
 
-        consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
+        consensus = new ConsensusImpl(
+                platformContext, new NoOpConsensusMetrics(), RosterRetriever.buildRoster(addressBook));
     }
 
     @Benchmark

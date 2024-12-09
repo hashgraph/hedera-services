@@ -164,15 +164,21 @@ public final class DataFileWriter {
     public synchronized long storeDataItem(final BufferedData dataItem) throws IOException {
         // find offset for the start of this new data item, we assume we always write data in a
         // whole number of blocks
-        final long currentWritingMmapPos = writingPbjData.position();
+        long currentWritingMmapPos = writingPbjData.position();
         final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
         // write serialized data
         final int size = Math.toIntExact(dataItem.remaining());
-        if (writingPbjData.remaining() < ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_ITEMS, size)) {
+        final int sizeToWrite = ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_ITEMS, size);
+        if (writingPbjData.remaining() < sizeToWrite) {
             moveWritingBuffer(byteOffset);
+            currentWritingMmapPos = 0;
         }
         try {
             ProtoWriterTools.writeDelimited(writingPbjData, FIELD_DATAFILE_ITEMS, size, o -> o.writeBytes(dataItem));
+            if (writingPbjData.position() != currentWritingMmapPos + sizeToWrite) {
+                throw new IOException("Estimated size / written bytes mismatch: expected=" + sizeToWrite + " written="
+                        + (writingPbjData.position() - currentWritingMmapPos));
+            }
         } catch (final BufferOverflowException e) {
             // Buffer overflow here means the mapped buffer is smaller than even a single data item
             throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);

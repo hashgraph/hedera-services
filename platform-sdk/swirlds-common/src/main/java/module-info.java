@@ -77,7 +77,8 @@ module com.swirlds.common {
     exports com.swirlds.common.crypto.internal to
             com.swirlds.platform.core,
             com.swirlds.common.test.fixtures,
-            com.swirlds.common.testing;
+            com.swirlds.common.testing,
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.common.notification.internal to
             com.swirlds.common.testing;
     exports com.swirlds.common.crypto.engine to

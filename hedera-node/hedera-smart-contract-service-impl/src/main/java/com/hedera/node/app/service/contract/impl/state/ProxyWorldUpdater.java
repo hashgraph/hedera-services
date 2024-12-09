@@ -31,9 +31,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -443,7 +441,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      *
      * <p>We may not actually need this, as Besu only uses it in
      * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to deal
-     * with side-effects of an Ethereum consensus bug.
+     * with side effects of an Ethereum consensus bug.
      *
      * @return the accounts that have been touched
      */
@@ -467,15 +465,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public @NonNull Collection<Address> getDeletedAccountAddresses() {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void externalizeSystemContractResults(
-            @NonNull final ContractFunctionResult result, @NonNull ResponseCodeEnum responseStatus) {
-        enhancement.systemOperations().externalizeResult(result, responseStatus);
     }
 
     /**

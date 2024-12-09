@@ -46,7 +46,7 @@ public final class UnzipUtility {
     private static final int THRESHOLD_ZIP_SIZE = 1000000000; // 1 GB - max allowed total size of all uncompressed files
     private static final int THRESHOLD_ENTRY_SIZE = 100000000; // 100 MB - max allowed size of one uncompressed file
     // max allowed ratio between uncompressed and compressed file size
-    private static final double THRESHOLD_RATIO = 10;
+    private static final double THRESHOLD_RATIO = 100;
 
     private UnzipUtility() {}
 

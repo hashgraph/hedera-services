@@ -915,8 +915,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         final List<AccountCreationDetails> creationDetails =
                 (creationDetailsObserver != null) ? new ArrayList<>() : null;
         final List<TokenID> tokenCreations = (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
+        final var firstUserNum = spec.startupProperties().getLong("hedera.firstUserEntity");
         for (final var rec : childRecords) {
-            if (rec.getReceipt().hasAccountID()) {
+            if (rec.getReceipt().hasAccountID()
+                    && rec.getReceipt().getAccountID().getAccountNum() >= firstUserNum) {
                 if (creations != null) {
                     creations.add(
                             HapiPropertySource.asAccountString(rec.getReceipt().getAccountID()));

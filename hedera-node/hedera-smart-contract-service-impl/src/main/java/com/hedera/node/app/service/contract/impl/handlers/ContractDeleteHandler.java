@@ -62,10 +62,11 @@ import javax.inject.Singleton;
 public class ContractDeleteHandler implements TransactionHandler {
     private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public ContractDeleteHandler() {
-        // Exists for injection
-    }
+    public ContractDeleteHandler() {}
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {

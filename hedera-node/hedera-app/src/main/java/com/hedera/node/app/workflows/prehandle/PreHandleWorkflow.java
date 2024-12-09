@@ -22,7 +22,7 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.stream.Stream;

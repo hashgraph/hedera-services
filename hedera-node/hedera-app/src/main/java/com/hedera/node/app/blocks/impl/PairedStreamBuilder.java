@@ -68,7 +68,6 @@ import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateStreamBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -115,7 +114,7 @@ public class PairedStreamBuilder
 
     public PairedStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
-            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final TransactionCustomizer customizer,
             @NonNull final HandleContext.TransactionCategory category) {
         recordStreamBuilder = new RecordStreamBuilder(reversingBehavior, customizer, category);
         blockStreamBuilder = new BlockStreamBuilder(reversingBehavior, customizer, category);

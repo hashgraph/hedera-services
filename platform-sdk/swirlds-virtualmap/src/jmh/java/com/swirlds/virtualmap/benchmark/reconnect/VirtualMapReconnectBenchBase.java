@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.benchmark.reconnect;
 
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -30,6 +31,7 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
@@ -71,10 +73,10 @@ public abstract class VirtualMapReconnectBenchBase {
     protected void setupEach() {
         teacherBuilder = createBuilder();
         learnerBuilder = createBuilder();
-        teacherMap =
-                new VirtualMap<>("Teacher", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, teacherBuilder);
-        learnerMap =
-                new VirtualMap<>("Learner", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, learnerBuilder);
+        teacherMap = new VirtualMap<>(
+                "Teacher", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, teacherBuilder, CONFIGURATION);
+        learnerMap = new VirtualMap<>(
+                "Learner", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, learnerBuilder, CONFIGURATION);
     }
 
     protected static void startup() throws ConstructableRegistryException, FileNotFoundException {
@@ -85,9 +87,11 @@ public abstract class VirtualMapReconnectBenchBase {
         registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
+        registry.registerConstructable(new ClassConstructorPair(
+                VirtualRootNode.class,
+                () -> new VirtualRootNode<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
     }

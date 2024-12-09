@@ -49,7 +49,7 @@ class SignedStateReserverTest {
                 TestPlatformContextBuilder.create().build();
 
         final SignedState signedState = new SignedState(
-                platformContext,
+                platformContext.getConfiguration(),
                 Mockito.mock(SignatureVerifier.class),
                 Mockito.mock(MerkleRoot.class),
                 "create",

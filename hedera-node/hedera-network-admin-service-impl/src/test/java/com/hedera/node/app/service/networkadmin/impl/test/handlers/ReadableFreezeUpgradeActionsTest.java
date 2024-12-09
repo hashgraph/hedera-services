@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.loadResourceFile;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.readCertificatePemFile;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_IMMEDIATE_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_TELEMETRY_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.NOW_FROZEN_MARKER;
@@ -58,6 +58,7 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
@@ -116,6 +117,7 @@ class ReadableFreezeUpgradeActionsTest {
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     A_THRESHOLD_KEY)))
             .build();
+
     private Path noiseFileLoc;
     private Path noiseSubFileLoc;
     private Path zipArchivePath; // path to valid.zip test zip file (in zipSourceDir directory)
@@ -156,6 +158,9 @@ class ReadableFreezeUpgradeActionsTest {
     @Mock
     private NodesConfig nodesConfig;
 
+    @Mock
+    private AddressBookConfig addressBookConfig;
+
     private ReadableNodeStore nodeStore;
 
     private Executor freezeExecutor;
@@ -166,6 +171,7 @@ class ReadableFreezeUpgradeActionsTest {
     void setUp() throws IOException {
         given(configuration.getConfigData(NetworkAdminConfig.class)).willReturn(adminServiceConfig);
         given(configuration.getConfigData(NodesConfig.class)).willReturn(nodesConfig);
+        given(configuration.getConfigData(AddressBookConfig.class)).willReturn(addressBookConfig);
 
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
@@ -512,7 +518,6 @@ class ReadableFreezeUpgradeActionsTest {
                 .append("address, 1, 1, node2, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
                 .append("address, 2, 2, node3, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
                 .append("address, 4, 4, node5, 20, 127.0.0.4, 1445, test.domain.com, 50225, 0.0.8\n")
-                .append("nextNodeId, 5")
                 .toString();
         final byte[] pemFile1Bytes = pemFile1.getEncoded();
         final byte[] pemFile2Bytes = pemFile2.getEncoded();
@@ -637,7 +642,6 @@ class ReadableFreezeUpgradeActionsTest {
                 .append("address, 0, 0, node1, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
                 .append("address, 1, 1, node2, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
                 .append("address, 2, 2, node3, 20, 127.0.0.3, 1245, 35.186.191.235, 50221, 0.0.6\n")
-                .append("nextNodeId, 4")
                 .toString();
         final byte[] pemFile1Bytes = pemFile1.getEncoded();
         final byte[] pemFile2Bytes = pemFile2.getEncoded();

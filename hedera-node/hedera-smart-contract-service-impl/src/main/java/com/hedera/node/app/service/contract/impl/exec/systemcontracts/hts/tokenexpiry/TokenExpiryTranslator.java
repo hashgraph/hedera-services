@@ -26,11 +26,17 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
+/**
+ * Translates {@code getTokenExpiry()} calls to the HTS system contract.
+ */
 public class TokenExpiryTranslator extends AbstractCallTranslator<HtsCallAttempt> {
-
+    /** Selector for getTokenExpiryInfo(address) method. */
     public static final Function TOKEN_EXPIRY =
             new Function("getTokenExpiryInfo(address)", ReturnTypes.RESPONSE_CODE_EXPIRY);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenExpiryTranslator() {
         // Dagger2

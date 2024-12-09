@@ -31,7 +31,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_DELETED;
@@ -159,7 +158,7 @@ public class NodeDeleteTest {
                         nodeDelete("ntb")
                                 .payingWith("payer")
                                 .fee(ONE_HBAR)
-                                .hasPrecheck(BUSY)
+                                .hasKnownStatus(UNAUTHORIZED)
                                 .via("failedDeletion"))
                 .when()
                 .then();
@@ -195,7 +194,7 @@ public class NodeDeleteTest {
                 nodeDelete(nodeName)
                         .payingWith("payer")
                         .signedBy("payer", "wrongKey")
-                        .hasPrecheck(BUSY),
+                        .hasKnownStatus(UNAUTHORIZED),
                 nodeDelete(nodeName));
     }
 

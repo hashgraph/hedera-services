@@ -18,8 +18,8 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -28,15 +28,13 @@ import java.util.List;
 
 public class FakeRound implements Round {
     private final long roundNum;
-    private final AddressBook addressBook;
+    private final Roster roster;
     private final List<ConsensusEvent> consensusEvents;
 
     public FakeRound(
-            final long roundNum,
-            @NonNull final AddressBook addressBook,
-            @NonNull final List<ConsensusEvent> consensusEvents) {
+            final long roundNum, @NonNull final Roster roster, @NonNull final List<ConsensusEvent> consensusEvents) {
         this.roundNum = roundNum;
-        this.addressBook = requireNonNull(addressBook);
+        this.roster = requireNonNull(roster);
         this.consensusEvents = requireNonNull(consensusEvents);
     }
 
@@ -63,8 +61,8 @@ public class FakeRound implements Round {
 
     @NonNull
     @Override
-    public AddressBook getConsensusRoster() {
-        return addressBook;
+    public Roster getConsensusRoster() {
+        return roster;
     }
 
     @NonNull

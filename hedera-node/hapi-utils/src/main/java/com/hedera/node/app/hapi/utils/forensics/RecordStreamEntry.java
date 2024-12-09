@@ -18,6 +18,7 @@ package com.hedera.node.app.hapi.utils.forensics;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.timestampToInstant;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.services.stream.proto.RecordStreamItem;
@@ -70,6 +71,15 @@ public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRec
 
     public ResponseCodeEnum finalStatus() {
         return txnRecord.getReceipt().getStatus();
+    }
+
+    /**
+     * Returns the account ID created by the transaction, if any.
+     *
+     * @return the created account ID
+     */
+    public AccountID createdAccountId() {
+        return CommonPbjConverters.toPbj(txnRecord.getReceipt().getAccountID());
     }
 
     /**

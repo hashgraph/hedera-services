@@ -423,24 +423,8 @@ public class FakePreHandleContext implements PreHandleContext {
 
     @NonNull
     @Override
-    public TransactionKeys allKeysForTransaction(
-            @NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested) {
+    public TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull AccountID payerId) {
         throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    @NonNull
-    public PreHandleContext createNestedContext(
-            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
-            throws PreCheckException {
-        innerContext = new FakePreHandleContext(accountStore, nestedTxn, payerForNested, false);
-        return innerContext;
-    }
-
-    @Override
-    @Nullable
-    public PreHandleContext innerContext() {
-        return innerContext;
     }
 
     @Override

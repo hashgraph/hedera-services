@@ -91,7 +91,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(context.consensusTime()).willReturn(consensusInstant);
         givenStoresAndConfig(context);
 
-        stakingRewardHelper = new StakingRewardsHelper();
+        stakingRewardHelper = new StakingRewardsHelper(configProvider);
         stakePeriodManager = new StakePeriodManager(configProvider, instantSource);
         stakeRewardCalculator = new StakeRewardCalculatorImpl(stakePeriodManager);
         rewardsPayer = new StakingRewardsDistributor(stakingRewardHelper, stakeRewardCalculator);

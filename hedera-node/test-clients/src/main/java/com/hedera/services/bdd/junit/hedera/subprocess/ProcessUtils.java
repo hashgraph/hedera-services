@@ -60,7 +60,7 @@ public class ProcessUtils {
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     public static final String SAVED_STATES_DIR = "saved";
     public static final String RECORD_STREAMS_DIR = "recordStreams";
-    public static final String BLOCK_STREAMS_DIR = "block-streams";
+    public static final String BLOCK_STREAMS_DIR = "blockStreams";
     private static final long WAIT_SLEEP_MILLIS = 100L;
 
     public static final Executor EXECUTOR = Executors.newCachedThreadPool();
@@ -131,6 +131,8 @@ public class ProcessUtils {
         environment.put("LC_ALL", "en.UTF-8");
         environment.put("LANG", "en_US.UTF-8");
         environment.put("grpc.port", Integer.toString(metadata.grpcPort()));
+        environment.put("grpc.nodeOperatorPort", Integer.toString(metadata.grpcNodeOperatorPort()));
+        environment.put("grpc.nodeOperatorPortEnabled", Boolean.toString(metadata.grpcNodeOperatorPortEnabled()));
         environment.put("hedera.config.version", Integer.toString(configVersion));
         try {
             final var redirectFile = guaranteedExtantFile(
@@ -190,7 +192,7 @@ public class ProcessUtils {
      *
      * @param condition the condition to wait for
      * @param checkBackoffMs the supplier of the number of milliseconds to back off between checks
-     * @return
+     * @return a future that resolves when the condition is true or the timeout is reached
      */
     public static CompletableFuture<Void> conditionFuture(
             @NonNull final BooleanSupplier condition, @NonNull final LongSupplier checkBackoffMs) {

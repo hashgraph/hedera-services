@@ -19,9 +19,7 @@ package com.swirlds.merkledb;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.merkledb.collections.LongListOffHeap.DEFAULT_RESERVED_BUFFER_LENGTH;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.createMetrics;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getMetric;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.*;
 import static com.swirlds.merkledb.test.fixtures.TestType.fixed_fixed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -60,7 +58,7 @@ class MerkleDbDataSourceMetricsTest {
 
     @BeforeAll
     static void setup() throws Exception {
-        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceMetricsTest");
+        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceMetricsTest", CONFIGURATION);
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 

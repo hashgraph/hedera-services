@@ -30,7 +30,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.signed.SigSet;
+import com.swirlds.state.merkle.SigSet;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -56,7 +56,7 @@ class SigSetTests {
 
         for (int i = 0; i < 1_000; i++) {
             // There will be a few duplicates, but that doesn't really matter
-            final NodeId nodeId = new NodeId(random.nextLong(0, 10_000));
+            final NodeId nodeId = NodeId.of(random.nextLong(0, 10_000));
             final Signature signature = randomSignature(random);
             signatures.put(nodeId, signature);
         }

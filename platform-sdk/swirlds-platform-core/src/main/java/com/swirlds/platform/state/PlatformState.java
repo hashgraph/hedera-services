@@ -35,11 +35,11 @@ import java.util.function.Consumer;
 
 /**
  * State managed and used by the platform.
- * @deprecated Implementation of {@link PlatformStateAccessor} before moving platform state into State API. This class
+ * @deprecated Implementation of {@link PlatformStateModifier} before moving platform state into State API. This class
  * should be moved to the platform test fixtures after migration to 0.54.0.
  */
 @Deprecated(since = "0.54.0", forRemoval = true)
-public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf, PlatformStateAccessor {
+public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf, PlatformStateModifier {
 
     public static final long CLASS_ID = 0x52cef730a11cb6dfL;
 
@@ -560,7 +560,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf, Plat
      * {@inheritDoc}
      */
     @Override
-    public void bulkUpdate(@NonNull Consumer<PlatformStateAccessor> updater) {
+    public void bulkUpdate(@NonNull Consumer<PlatformStateModifier> updater) {
         updater.accept(this);
     }
 }

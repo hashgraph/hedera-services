@@ -16,14 +16,17 @@
 
 package com.hedera.node.app.version;
 
-import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
-import static com.swirlds.state.spi.HapiUtils.deserializeSemVer;
-import static com.swirlds.state.spi.HapiUtils.serializeSemVer;
+import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.swirlds.state.lifecycle.HapiUtils.deserializeSemVer;
+import static com.swirlds.state.lifecycle.HapiUtils.serializeSemVer;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -70,9 +73,21 @@ public final class ServicesSoftwareVersion implements SoftwareVersion {
         this.stateSemVer = semVer.copyBuilder().build("" + configVersion).build();
     }
 
+    /**
+     * Returns the software version set in the given configuration.
+     * @param config the configuration to examine
+     * @return the software version
+     */
+    public static ServicesSoftwareVersion from(@NonNull final Configuration config) {
+        final var versionConfig = config.getConfigData(VersionConfig.class);
+        return new ServicesSoftwareVersion(
+                versionConfig.servicesVersion(),
+                config.getConfigData(HederaConfig.class).configVersion());
+    }
+
     @Override
     public int compareTo(@Nullable final SoftwareVersion other) {
-        if (other == null || other instanceof HederaSoftwareVersion) {
+        if (other == null) {
             return 1;
         } else if (other instanceof ServicesSoftwareVersion that) {
             return SEMANTIC_VERSION_COMPARATOR.compare(this.stateSemVer, that.stateSemVer);

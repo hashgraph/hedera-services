@@ -39,10 +39,16 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FreezeUnfreezeTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for freezeToken(address,address) method. */
     public static final Function FREEZE = new Function("freezeToken(address,address)", ReturnTypes.INT_64);
+    /** Selector for unfreezeToken(address,address) method. */
     public static final Function UNFREEZE = new Function("unfreezeToken(address,address)", ReturnTypes.INT_64);
+
     private final FreezeUnfreezeDecoder decoder;
 
+    /**
+     * @param decoder the decoder used for freeze/unfreeze calls
+     */
     @Inject
     public FreezeUnfreezeTranslator(@NonNull final FreezeUnfreezeDecoder decoder) {
         this.decoder = decoder;

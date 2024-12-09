@@ -26,7 +26,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.PlatformStateAccessor;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -39,7 +39,7 @@ import javax.inject.Singleton;
 public interface StandaloneModule {
     @Binds
     @Singleton
-    NetworkInfo bindNetworkInfo(@NonNull StateNetworkInfo simulatedNetworkInfo);
+    NetworkInfo bindNetworkInfo(@NonNull StandaloneNetworkInfo simulatedNetworkInfo);
 
     @Binds
     @Singleton

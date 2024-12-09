@@ -48,9 +48,14 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
  */
 @Singleton
 public class CustomGasCharging {
+    /** One HBAR denominated in tinybars */
     public static final long ONE_HBAR_IN_TINYBARS = 100_000_000L;
+
     private final GasCalculator gasCalculator;
 
+    /**
+     * @param gasCalculator the gas calculator to use
+     */
     @Inject
     public CustomGasCharging(@NonNull final GasCalculator gasCalculator) {
         this.gasCalculator = gasCalculator;
@@ -233,6 +238,11 @@ public class CustomGasCharging {
         return relayerGasCost;
     }
 
+    /**
+     * @param gasCharge gas to be charged
+     * @param gasPrice the gas price
+     * @return return th cost of the gas
+     */
     public long gasCostGiven(final long gasCharge, final long gasPrice) {
         try {
             return Math.multiplyExact(gasCharge, gasPrice);
