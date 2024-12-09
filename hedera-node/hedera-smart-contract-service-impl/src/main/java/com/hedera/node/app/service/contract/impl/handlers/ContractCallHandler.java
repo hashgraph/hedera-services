@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_INT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -85,6 +86,10 @@ public class ContractCallHandler extends AbstractContractTransactionHandler {
         try {
             final var op = txn.contractCallOrThrow();
             mustExist(op.contractID(), INVALID_CONTRACT_ID);
+            if (op.contractID().hasEvmAddress()) {
+                validateTruePreCheck(
+                        op.contractID().evmAddressOrThrow().length() == EVM_ADDRESS_LENGTH_AS_INT, INVALID_CONTRACT_ID);
+            }
 
             final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(
                     Bytes.wrap(op.functionParameters().toByteArray()), false);

@@ -33,8 +33,6 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * An instantiation of this class holds all the keys and CSPRNG state for one Platform object. No other class should
@@ -70,8 +68,6 @@ public record KeysAndCerts(
     private static final int SIG_SEED = 2;
     private static final int AGR_SEED = 0;
     private static final int TSS_ENCRYPTION_KEY_SEED = 3;
-
-    private static final Logger logger = LogManager.getLogger(KeysAndCerts.class);
 
     /**
      * Creates an instance holding all the keys and certificates. It reads its own key pairs from privateKeyStore
