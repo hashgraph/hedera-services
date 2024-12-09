@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
@@ -48,7 +49,10 @@ import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -141,21 +145,24 @@ public class StakePeriodChanges {
                 stack.rollbackFullStack();
             }
             final var tssStore = newWritableTssStore(stack, config);
-            TssEncryptionKeys currentTssEncryptionKeys = tssStore.getTssEncryptionKeys(
-                    dispatch.handleContext().networkInfo().selfNodeInfo().nodeId());
-            if (currentTssEncryptionKeys != null
-                    && !currentTssEncryptionKeys.nextEncryptionKey().equals(Bytes.EMPTY)) {
-                TssEncryptionKeys newTssEncryptionKeys = TssEncryptionKeys.newBuilder()
-                        .currentEncryptionKey(currentTssEncryptionKeys.nextEncryptionKey())
-                        .build();
-                tssStore.put(
-                        EntityNumber.newBuilder()
-                                .number(dispatch.handleContext()
-                                        .networkInfo()
-                                        .selfNodeInfo()
-                                        .nodeId())
-                                .build(),
-                        newTssEncryptionKeys);
+            final var rosterStore = newWritableRosterStore(stack, config);
+            final var activeRoster = rosterStore.getActiveRoster();
+            final var candidateRoster = rosterStore.getCandidateRoster();
+            final List<RosterEntry> rosterEntries = new ArrayList<>();
+            Optional.ofNullable(activeRoster).ifPresent(ar -> rosterEntries.addAll(ar.rosterEntries()));
+            Optional.ofNullable(candidateRoster).ifPresent(cr -> rosterEntries.addAll(cr.rosterEntries()));
+            for (final var rosterEntry : rosterEntries) {
+                final var nodeId = rosterEntry.nodeId();
+                TssEncryptionKeys currentTssEncryptionKeys = tssStore.getTssEncryptionKeys(nodeId);
+                if (currentTssEncryptionKeys != null
+                        && !currentTssEncryptionKeys.nextEncryptionKey().equals(Bytes.EMPTY)) {
+                    TssEncryptionKeys newTssEncryptionKeys = TssEncryptionKeys.newBuilder()
+                            .currentEncryptionKey(currentTssEncryptionKeys.nextEncryptionKey())
+                            .build();
+                    tssStore.put(EntityNumber.newBuilder().number(nodeId).build(), newTssEncryptionKeys);
+                }
+            }
+            if (!rosterEntries.isEmpty()) {
                 stack.commitSystemStateChanges();
             }
             if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
