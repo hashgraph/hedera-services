@@ -196,9 +196,10 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
                             newExpiry.ifPresent(s -> b.setExpirationTime(asTimestamp(s)));
                             newAutoRenewPeriod.ifPresent(s -> b.setAutoRenewPeriod(asDuration(s)));
                             newAutoRenewAccount.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
-                            feeScheduleKey.ifPresent(b::setFeeScheduleKey);
                             if (emptyFeeScheduleKey) {
                                 b.setFeeScheduleKey(Key.newBuilder().build());
+                            } else {
+                                feeScheduleKey.ifPresent(b::setFeeScheduleKey);
                             }
                             freeMessageKeyList.ifPresent(keys -> b.setFeeExemptKeyList(
                                     FeeExemptKeyList.newBuilder().addAllKeys(keys)));
