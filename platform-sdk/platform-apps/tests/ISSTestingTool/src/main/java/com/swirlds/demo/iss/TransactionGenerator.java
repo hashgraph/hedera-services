@@ -16,8 +16,10 @@
 
 package com.swirlds.demo.iss;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.ByteUtils.intToByteArray;
+import static com.swirlds.common.utility.ByteUtils.longToByteArray;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -65,7 +67,14 @@ public class TransactionGenerator implements Startable {
      * Generate and submit a single transaction.
      */
     private void generateTransaction() {
-        // Transactions are simple: take an integer, and add it into the running sum.
-        platform.createTransaction(intToByteArray(random.nextInt()));
+        // Transactions are simple: take an integer, and add it into the running sum. On predefined condition a system
+        // transaction will be passed, so that ISS is tested for both application and system transactions.
+
+        final var nextValue = random.nextInt();
+        if (nextValue % 2 == 0) {
+            platform.createTransaction(longToByteArray(nextLong()));
+        } else {
+            platform.createTransaction(intToByteArray(nextValue));
+        }
     }
 }
