@@ -117,7 +117,7 @@ public interface Platform {
     void start();
 
     /**
-     * Get the keys and certificates used by this node.
+     * Get the keys and certificates used by this platform.
      *
      * @return the keys and certificates
      */
