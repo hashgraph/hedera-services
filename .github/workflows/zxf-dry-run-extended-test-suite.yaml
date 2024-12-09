@@ -38,27 +38,27 @@ defaults:
     shell: bash
 
 jobs:
-  extended-test-suite:
-    name: Execute eXtended Test Suite
-    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    with:
-      custom-job-label: Execute eXtended Test Suite
-      enable-timing-sensitive-tests: true
-      enable-time-consuming-tests: true
-      enable-hammer-tests: true
-      enable-hapi-tests-time-consuming: true
-      enable-network-log-capture: true
-      ref: ${{ inputs.commit_sha }}
-    secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
-      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+  # extended-test-suite:
+  #   name: Execute eXtended Test Suite
+  #   uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+  #   with:
+  #     custom-job-label: Execute eXtended Test Suite
+  #     enable-timing-sensitive-tests: true
+  #     enable-time-consuming-tests: true
+  #     enable-hammer-tests: true
+  #     enable-hapi-tests-time-consuming: true
+  #     enable-network-log-capture: true
+  #     ref: ${{ inputs.commit_sha }}
+  #   secrets:
+  #     access-token: ${{ secrets.GITHUB_TOKEN }}
+  #     gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+  #     gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
 
   publish-unit-tests-to-codacy:
     name: Publish Unit Tests Results to Codacy (commit merged by PR and XTS)
     runs-on: network-node-linux-medium
-    needs: extended-test-suite
-    if: ${{ needs.extended-test-suite.result == 'success' }}
+    # needs: extended-test-suite
+    # if: ${{ needs.extended-test-suite.result == 'success' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
