@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_SELF;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
@@ -57,7 +58,9 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -85,6 +88,12 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
 
     @Mock(strictness = LENIENT)
     private HandleContext.SavepointStack stack;
+
+    @Mock
+    private KeyVerifier keyVerifier;
+
+    @Mock
+    private SignatureVerification signatureVerification;
 
     private ConsensusSubmitMessageHandler subject;
 
@@ -186,6 +195,8 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
 
         given(handleContext.consensusNow()).willReturn(consensusTimestamp);
 
+        mockPayerKeyIsFeeExempt();
+
         final var initialTopic = writableTopicState.get(topicId);
         subject.handle(handleContext);
 
@@ -209,7 +220,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
                 throw new IOException();
             }
         };
-
+        mockPayerKeyIsFeeExempt();
         final var txn = newSubmitMessageTxn(topicEntityNum, "");
         given(handleContext.body()).willReturn(txn);
 
@@ -227,6 +238,8 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txn);
 
         given(handleContext.consensusNow()).willReturn(null);
+
+        mockPayerKeyIsFeeExempt();
 
         final var initialTopic = writableTopicState.get(topicId);
         subject.handle(handleContext);
@@ -414,4 +427,16 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     }
 
     private final ByteString NONSENSE = ByteString.copyFromUtf8("NONSENSE");
+
+    private void mockPayerKeyIsFeeExempt() {
+        given(handleContext.keyVerifier()).willReturn(keyVerifier);
+        given(keyVerifier.verificationFor(any(Key.class))).willReturn(signatureVerification);
+        given(signatureVerification.passed()).willReturn(true);
+    }
+
+    private void mockPayerKeyIsNotFeeExempt() {
+        given(handleContext.keyVerifier()).willReturn(keyVerifier);
+        given(keyVerifier.verificationFor(any(Key.class))).willReturn(signatureVerification);
+        given(signatureVerification.passed()).willReturn(false);
+    }
 }
