@@ -665,32 +665,12 @@ public class KeyFactory {
                 case SIG_ON:
                     signIfNecessary(key);
                     break;
-                case PREDEFINED:
-                    signPredefinedNatureKey(key, controller);
-                    break;
                 default:
-                    signCompositeKeys(key, controller);
-            }
-        }
-
-        private void signPredefinedNatureKey(Key key, SigControl control) throws GeneralSecurityException {
-            // if key is composite sign recursively
-            if (key.hasKeyList() || key.hasThresholdKey()) {
-                signCompositeKeys(key, control);
-                return;
-            }
-
-            // skip contract id keys
-            if (!(key.hasContractID() || key.hasDelegatableContractId())) {
-                signIfNecessary(key);
-            }
-        }
-
-        private void signCompositeKeys(Key key, SigControl control) throws GeneralSecurityException {
-            final KeyList composite = TxnUtils.getCompositeList(key);
-            final SigControl[] childControls = control.getChildControls();
-            for (int i = 0; i < childControls.length; i++) {
-                signRecursively(composite.getKeys(i), childControls[i]);
+                    final KeyList composite = TxnUtils.getCompositeList(key);
+                    final SigControl[] childControls = controller.getChildControls();
+                    for (int i = 0; i < childControls.length; i++) {
+                        signRecursively(composite.getKeys(i), childControls[i]);
+                    }
             }
         }
 
