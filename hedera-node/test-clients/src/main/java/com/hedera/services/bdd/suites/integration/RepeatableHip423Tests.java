@@ -73,12 +73,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThrottles;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.scheduledExecutionResult;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepForSeconds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withStatus;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
@@ -115,20 +117,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.base.Setting;
 import com.hedera.hapi.node.base.TimestampSeconds;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduledCounts;
 import com.hedera.hapi.node.state.schedule.ScheduledOrder;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.pbj.runtime.ParseException;
@@ -138,13 +136,10 @@ import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
@@ -158,7 +153,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -871,55 +865,6 @@ public class RepeatableHip423Tests {
                         .fee(ONE_HBAR)
                         .expiringAt(expiry.get())),
                 purgeExpiringWithin(oddLifetime));
-    }
-
-    private static ScheduledExecutionAssertion withStatus(@NonNull final ResponseCodeEnum status) {
-        requireNonNull(status);
-        return (spec, body, result) -> {
-            assertEquals(status, result.status());
-            allRunFor(spec, getTxnRecord(body.transactionIDOrThrow()).logged().assertingNothingAboutHashes());
-        };
-    }
-
-    /**
-     * Asserts that a scheduled execution is as expected.
-     */
-    interface ScheduledExecutionAssertion {
-        void test(@NonNull HapiSpec spec, @NonNull TransactionBody body, @NonNull TransactionResult result);
-    }
-
-    private static Function<HapiSpec, BlockStreamAssertion> scheduledExecutionResult(
-            @NonNull final String creationTxn, @NonNull final ScheduledExecutionAssertion assertion) {
-        requireNonNull(creationTxn);
-        requireNonNull(assertion);
-        return spec -> block -> {
-            final com.hederahashgraph.api.proto.java.TransactionID creationTxnId;
-            try {
-                creationTxnId = spec.registry().getTxnId(creationTxn);
-            } catch (RegistryNotFound ignore) {
-                return false;
-            }
-            final var executionTxnId =
-                    protoToPbj(creationTxnId.toBuilder().setScheduled(true).build(), TransactionID.class);
-            final var items = block.items();
-            for (int i = 0, n = items.size(); i < n; i++) {
-                final var item = items.get(i);
-                if (item.hasEventTransaction()) {
-                    final var parts =
-                            TransactionParts.from(item.eventTransactionOrThrow().applicationTransactionOrThrow());
-                    if (parts.transactionIdOrThrow().equals(executionTxnId)) {
-                        for (int j = i + 1; j < n; j++) {
-                            final var followingItem = items.get(j);
-                            if (followingItem.hasTransactionResult()) {
-                                assertion.test(spec, parts.body(), followingItem.transactionResultOrThrow());
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-            return false;
-        };
     }
 
     private record ScheduleStateSizes(

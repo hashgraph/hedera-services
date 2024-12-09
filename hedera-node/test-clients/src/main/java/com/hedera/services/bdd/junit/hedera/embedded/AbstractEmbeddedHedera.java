@@ -213,9 +213,10 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             candidateNano = 0;
             nextNano.set(1);
         }
+        final var then = now().minusSeconds(validStartOffsetSecs()).minusNanos(candidateNano);
         return Timestamp.newBuilder()
-                .setSeconds(now().getEpochSecond() - validStartOffsetSecs())
-                .setNanos(candidateNano)
+                .setSeconds(then.getEpochSecond())
+                .setNanos(then.getNano())
                 .build();
     }
 
