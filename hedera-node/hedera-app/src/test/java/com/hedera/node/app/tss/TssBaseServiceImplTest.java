@@ -68,6 +68,8 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -116,7 +118,7 @@ class TssBaseServiceImplTest {
     @Mock
     private WritableTssStore tssStore;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private ReadableRosterStore rosterStore;
 
     @Mock
@@ -237,39 +239,18 @@ class TssBaseServiceImplTest {
                         .build());
     }
 
-    @Test
-    void managesTssStatusWhenVotesReachedThreshold() {
+    @ParameterizedTest
+    @EnumSource(
+            value = RosterToKey.class,
+            names = {"ACTIVE_ROSTER", "CANDIDATE_ROSTER"})
+    void managesTssStatusWhenKeyingComplete(RosterToKey rosterToKey) {
         final var oldStatus = TssStatus.newBuilder()
-                .rosterToKey(RosterToKey.ACTIVE_ROSTER)
-                .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES)
-                .build();
-        given(tssStore.getTssStatus()).willReturn(oldStatus);
-        given(tssStore.anyWinningVoteFrom(any(), any(), any()))
-                .willReturn(Optional.of(TssVoteTransactionBody.newBuilder()
-                        .ledgerId(Bytes.wrap("ledger"))
-                        .tssVote(Bytes.wrap(BitSet.valueOf(new long[] {1L, 2L}).toByteArray()))
-                        .build()));
-        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
-
-        subject.generateParticipantDirectory(state);
-        subject.manageTssStatus(rosterStore, tssStore, true, Instant.ofEpochSecond(1_234_567L));
-
-        verify(tssStore)
-                .put(TssStatus.newBuilder()
-                        .rosterToKey(RosterToKey.ACTIVE_ROSTER)
-                        .tssKeyingStatus(TssKeyingStatus.KEYING_COMPLETE)
-                        .ledgerId(Bytes.wrap("ledger"))
-                        .build());
-    }
-
-    @Test
-    void managesTssStatusWhenKeyingComplete() {
-        final var oldStatus = TssStatus.newBuilder()
-                .rosterToKey(RosterToKey.ACTIVE_ROSTER)
+                .rosterToKey(rosterToKey)
                 .tssKeyingStatus(TssKeyingStatus.KEYING_COMPLETE)
                 .build();
         given(tssStore.getTssStatus()).willReturn(oldStatus);
         given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+        given(rosterStore.getCandidateRoster()).willReturn(TARGET_ROSTER);
 
         subject.generateParticipantDirectory(state);
         subject.manageTssStatus(rosterStore, tssStore, true, Instant.ofEpochSecond(1_234_567L));
@@ -279,6 +260,35 @@ class TssBaseServiceImplTest {
                         .rosterToKey(RosterToKey.NONE)
                         .tssKeyingStatus(TssKeyingStatus.KEYING_COMPLETE)
                         .ledgerId(Bytes.EMPTY)
+                        .build());
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = RosterToKey.class,
+            names = {"ACTIVE_ROSTER", "CANDIDATE_ROSTER"})
+    void managesTssStatusWhenVotesReachedThreshold(RosterToKey rosterToKey) {
+        final var oldStatus = TssStatus.newBuilder()
+                .rosterToKey(rosterToKey)
+                .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES)
+                .build();
+        given(tssStore.getTssStatus()).willReturn(oldStatus);
+        given(tssStore.anyWinningVoteFrom(any(), any(), any()))
+                .willReturn(Optional.of(TssVoteTransactionBody.newBuilder()
+                        .ledgerId(Bytes.wrap("ledger"))
+                        .tssVote(Bytes.wrap(BitSet.valueOf(new long[] {1L, 2L}).toByteArray()))
+                        .build()));
+        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+        given(rosterStore.getCandidateRoster()).willReturn(TARGET_ROSTER);
+
+        subject.generateParticipantDirectory(state);
+        subject.manageTssStatus(rosterStore, tssStore, true, Instant.ofEpochSecond(1_234_567L));
+
+        verify(tssStore)
+                .put(TssStatus.newBuilder()
+                        .rosterToKey(rosterToKey)
+                        .tssKeyingStatus(TssKeyingStatus.KEYING_COMPLETE)
+                        .ledgerId(Bytes.wrap("ledger"))
                         .build());
     }
 }
