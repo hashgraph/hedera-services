@@ -35,6 +35,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
@@ -75,7 +77,9 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.schedu
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.triggerSchedule;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -83,6 +87,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -120,6 +126,8 @@ public class ScheduleLongTermExecutionTest {
     private static final String WEIRDLY_POPULAR_KEY_TXN = "weirdlyPopularKeyTxn";
     private static final String PAYER_TXN = "payerTxn";
     private static final String FILE_NAME = "misc";
+    private static final long ONE_MINUTE = 60;
+    private static final long TWO_MONTHS = 5356800;
     private static final long PAYER_INITIAL_BALANCE = 1000000000000L;
 
     @BeforeAll
@@ -1102,5 +1110,68 @@ public class ScheduleLongTermExecutionTest {
                         .waitForExpiry()
                         .withRelativeExpiry(PAYER_TXN, 4)
                         .hasKnownStatus(SCHEDULE_EXPIRY_IS_BUSY));
+    }
+
+    @HapiTest
+    @Order(22)
+    final Stream<DynamicTest> scheduleCreateWithExpiringInMoreThenTwoMonths() {
+        return hapiTest(
+                cryptoCreate("luckyYou").balance(0L),
+                scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .expiringIn(TWO_MONTHS + 10)
+                        .hasKnownStatus(SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE));
+    }
+
+    @HapiTest
+    @Order(23)
+    final Stream<DynamicTest> scheduleCreateWithNonWhiteListedTransaction() {
+        return hapiTest(
+                cryptoCreate("luckyYou").balance(0L),
+                tokenCreate("testToken"),
+                scheduleCreate("payerOnly", tokenAssociate("luckyYou", "testToken"))
+                        .expiringIn(ONE_MINUTE)
+                        .hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST));
+    }
+
+    @HapiTest
+    @Order(24)
+    final Stream<DynamicTest> scheduleCreateWithNonExistingPayer() {
+        return hapiTest(
+                cryptoCreate("luckyYou").balance(0L),
+                scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .expiringIn(ONE_MINUTE)
+                        .withNonExistingDesignatingPayer()
+                        .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST));
+    }
+
+    @HapiTest
+    @Order(25)
+    final Stream<DynamicTest> scheduleCreateIdenticalTransactions() {
+        return hapiTest(
+                cryptoCreate("luckyYou").balance(0L).via("cryptoCreate"),
+                // Expiring the schedules relative to the cryptoCreate so the expiry time will be exactly the same
+                scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .withRelativeExpiry("cryptoCreate", ONE_MINUTE),
+                scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .withRelativeExpiry("cryptoCreate", ONE_MINUTE)
+                        .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED));
+    }
+
+    @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
+    @Order(26)
+    final Stream<DynamicTest> scheduleCreateIdenticalContractCall() {
+        final var contract = "CallOperationsChecker";
+        return hapiTest(
+                // upload fees for SCHEDULE_CREATE_CONTRACT_CALL
+                uploadScheduledContractPrices(GENESIS),
+                cryptoCreate("luckyYou").balance(0L).via("cryptoCreate"),
+                uploadInitCode(contract),
+                contractCreate(contract),
+
+                // Expiring the schedules relative to the cryptoCreate so the expiry time will be exactly the same
+                scheduleCreate("payerOnly", contractCall(contract)).withRelativeExpiry("cryptoCreate", ONE_MINUTE),
+                scheduleCreate("payerOnly", contractCall(contract))
+                        .withRelativeExpiry("cryptoCreate", ONE_MINUTE)
+                        .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED));
     }
 }
