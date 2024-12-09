@@ -20,8 +20,6 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MES
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
@@ -32,7 +30,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -121,9 +118,8 @@ public class RecordFinalizerTest {
 
     @Test
     public void finalizesStakingRecordForScheduledDispatchOfUserTxn() {
-        when(dispatch.txnCategory()).thenReturn(SCHEDULED);
         given(dispatch.stack()).willReturn(stack);
-        given(stack.scheduledParentIsUser()).willReturn(true);
+        given(stack.permitsStakingRewards()).willReturn(true);
 
         when(dispatch.handleContext().dispatchPaidRewards()).thenReturn(Map.of());
 
@@ -134,35 +130,13 @@ public class RecordFinalizerTest {
     }
 
     @Test
-    public void finalizesNonStakingRecordForScheduledDispatchOfUserTxn() {
-        when(dispatch.txnCategory()).thenReturn(SCHEDULED);
+    public void finalizesNonStakingRecordForIneligibleDispatchStack() {
         given(dispatch.stack()).willReturn(stack);
 
         subject.finalizeRecord(dispatch);
 
         verify(finalizeRecordHandler, never()).finalizeStakingRecord(any(), any(), any(), any());
         verify(finalizeRecordHandler).finalizeNonStakingRecord(any(), any());
-    }
-
-    @Test
-    public void testFinalizeRecordUserTransaction() {
-        when(dispatch.txnCategory()).thenReturn(USER);
-
-        when(dispatch.handleContext().dispatchPaidRewards()).thenReturn(Map.of());
-
-        subject.finalizeRecord(dispatch);
-
-        verify(finalizeRecordHandler).finalizeStakingRecord(any(), any(), any(), any());
-        verify(finalizeRecordHandler, never()).finalizeNonStakingRecord(any(), any());
-    }
-
-    @Test
-    public void testFinalizeRecordChildTransaction() {
-        when(dispatch.txnCategory()).thenReturn(CHILD);
-
-        subject.finalizeRecord(dispatch);
-        verify(finalizeRecordHandler, never()).finalizeStakingRecord(any(), any(), any(), any());
-        verify(finalizeRecordHandler, times(1)).finalizeNonStakingRecord(any(), any());
     }
 
     @Test

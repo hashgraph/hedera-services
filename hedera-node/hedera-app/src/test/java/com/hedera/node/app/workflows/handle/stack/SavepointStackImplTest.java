@@ -156,14 +156,14 @@ class SavepointStackImplTest extends StateTestBase {
     }
 
     @Test
-    void parentNotScheduledTopLevelIfNotChild() {
+    void topLevelPermitsStakingRewards() {
         final var subject = SavepointStackImpl.newRootStack(
                 baseState, 3, 50, roundStateChangeListener, kvStateChangeListener, StreamMode.BOTH);
-        assertThat(subject.scheduledParentIsUser()).isFalse();
+        assertThat(subject.permitsStakingRewards()).isTrue();
     }
 
     @Test
-    void parentNotScheduledTopLevelIfNotScheduled() {
+    void childDoesNotPermitStakingRewardsIfNotScheduled() {
         given(parent.peek()).willReturn(savepoint);
         given(savepoint.followingCapacity()).willReturn(123);
         final var subject = SavepointStackImpl.newChildStack(
@@ -172,17 +172,17 @@ class SavepointStackImplTest extends StateTestBase {
                 HandleContext.TransactionCategory.CHILD,
                 NOOP_TRANSACTION_CUSTOMIZER,
                 StreamMode.BOTH);
-        assertThat(subject.scheduledParentIsUser()).isFalse();
+        assertThat(subject.permitsStakingRewards()).isFalse();
     }
 
     @Test
-    void parentNotScheduledTopLevelIfParentNotUser() {
+    void childDoesNotPermitStakingRewardsIfNotScheduledByUser() {
         given(parent.peek()).willReturn(savepoint);
         given(savepoint.followingCapacity()).willReturn(123);
         given(parent.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
         final var subject = SavepointStackImpl.newChildStack(
                 parent, REVERSIBLE, SCHEDULED, NOOP_TRANSACTION_CUSTOMIZER, StreamMode.BOTH);
-        assertThat(subject.scheduledParentIsUser()).isFalse();
+        assertThat(subject.permitsStakingRewards()).isFalse();
     }
 
     @Test
@@ -192,7 +192,7 @@ class SavepointStackImplTest extends StateTestBase {
         given(parent.txnCategory()).willReturn(HandleContext.TransactionCategory.USER);
         final var subject = SavepointStackImpl.newChildStack(
                 parent, REVERSIBLE, SCHEDULED, NOOP_TRANSACTION_CUSTOMIZER, StreamMode.BOTH);
-        assertThat(subject.scheduledParentIsUser()).isTrue();
+        assertThat(subject.permitsStakingRewards()).isTrue();
     }
 
     @Test
