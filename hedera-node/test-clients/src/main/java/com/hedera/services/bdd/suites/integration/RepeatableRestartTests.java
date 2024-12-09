@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATA
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_ENCRYPTION_KEYS;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_KEY_MATERIAL_GENERATOR;
 import static com.hedera.services.bdd.junit.restart.RestartType.GENESIS;
+import static com.hedera.services.bdd.junit.restart.RestartType.UPGRADE_BOUNDARY;
 import static com.hedera.services.bdd.junit.restart.StartupAssets.ROSTER_AND_FULL_TSS_KEY_MATERIAL;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
@@ -68,17 +69,16 @@ import org.junit.jupiter.api.Tag;
 public class RepeatableRestartTests {
     @RestartHapiTest(
             restartType = GENESIS,
-            bootstrapOverrides = {
+            restartOverrides = {
                 @ConfigOverride(key = "tss.keyCandidateRoster", value = "true"),
                 @ConfigOverride(key = "addressBook.useRosterLifecycle", value = "true")
             },
-            startupAssets = ROSTER_AND_FULL_TSS_KEY_MATERIAL)
+            restartAssets = ROSTER_AND_FULL_TSS_KEY_MATERIAL)
     Stream<DynamicTest> genesisMigrationIncorporatesAllAvailableTssMaterial() {
         final AtomicReference<TssKeyMaterial> expectedMaterial = new AtomicReference<>();
         return hapiTest(
                 doingContextual(spec -> expectedMaterial.set(CLASSIC_KEY_MATERIAL_GENERATOR.apply(rosterFrom(
                         spec.getNetworkNodes().getFirst().startupNetwork().orElseThrow())))),
-                // --- TSS STATE VALIDATIONS ---
                 // . TssStatus
                 sourcing(() -> EmbeddedVerbs.<TssStatus>viewSingleton(
                         TssBaseService.NAME,
@@ -145,5 +145,17 @@ public class RepeatableRestartTests {
                                             tssVote,
                                             requireNonNull(tssVotes.get(key)).tssVote()));
                         })));
+    }
+
+    /**
+     * (FUTURE) Remove this test once the roster lifecycle is fully enabled.
+     */
+    @Deprecated
+    @RestartHapiTest(
+            restartType = UPGRADE_BOUNDARY,
+            restartOverrides = {@ConfigOverride(key = "addressBook.useRosterLifecycle", value = "true")},
+            restartAssets = ROSTER_AND_FULL_TSS_KEY_MATERIAL)
+    Stream<DynamicTest> rosterLifecycleEnablementUses() {
+        return hapiTest();
     }
 }
