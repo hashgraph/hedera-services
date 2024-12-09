@@ -114,7 +114,7 @@ jobs:
         run: |
           while IFS= read -r line; do
             echo "Processing report: $report"
-            source <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r $line --partial
+            source <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r $line --partial || true
           done < files.txt
           source <(curl -Ls https://coverage.codacy.com/get.sh) final
 
