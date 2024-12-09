@@ -14,23 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.types;
+package com.hedera.node.app.uploader.credentials;
+
+import java.util.Objects;
 
 /**
- * Initially we will write block streams to files, but in the next phases we will support writing
- * them to a gRPC stream.
+ * @param accessKey the access key of the bucket
+ * @param secretKey the secret key of the bucket
  */
-public enum BlockStreamWriterMode {
-    /**
-     * Write block streams to a gRPC stream.
-     */
-    GRPC,
-    /**
-     * Write block streams to files.
-     */
-    FILE,
-    /**
-     * Write block streams to files and upload them to cloud buckets.
-     */
-    FILE_AND_BUCKET
+public record BucketCredentials(String accessKey, String secretKey) {
+    public BucketCredentials {
+        Objects.requireNonNull(accessKey, "access key cannot be null");
+        Objects.requireNonNull(secretKey, "secret key cannot be null");
+    }
 }
