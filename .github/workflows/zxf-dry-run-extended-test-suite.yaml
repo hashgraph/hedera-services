@@ -106,7 +106,7 @@ jobs:
       - name: Resolve coverage file paths
         id: coverage_paths
         run: |
-          echo "COVERAGE_REPORTS=$(find . -path '*/build/test-results/test/*' -name 'TEST-*.xml')" > files.txt
+          echo "$(find . -path '*/build/test-results/test/*' -name 'TEST-*.xml')" > files.txt
 
       - name: Publish to Codacy
         env:
