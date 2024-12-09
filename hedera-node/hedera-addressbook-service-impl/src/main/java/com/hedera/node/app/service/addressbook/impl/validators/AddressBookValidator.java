@@ -51,6 +51,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -193,5 +196,21 @@ public class AddressBookValidator {
         } catch (Exception ignore) {
             throw new PreCheckException(INVALID_GOSSIP_CA_CERTIFICATE);
         }
+    }
+
+    /**
+     * Parse X509Certificate bytes and get the X509Certificate object.
+     * @param certBytes the Bytes to validate
+     * @throws PreCheckException if the certificate is invalid
+     */
+    public static X509Certificate getX509Certificate(@NonNull Bytes certBytes) throws PreCheckException {
+        X509Certificate cert;
+        try {
+            cert = (X509Certificate) CertificateFactory.getInstance("X.509")
+                    .generateCertificate(new ByteArrayInputStream(certBytes.toByteArray()));
+        } catch (final CertificateException e) {
+            throw new PreCheckException(INVALID_GOSSIP_CA_CERTIFICATE);
+        }
+        return cert;
     }
 }

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.addressbook.impl.test;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.loadResourceFile;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.readCertificatePemFile;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.writeCertificatePemFile;
+import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.getX509Certificate;
 import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.validateX509Certificate;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.cert.CertificateException;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -83,5 +85,66 @@ class CertificatePemTest {
         assertThat(exception.getMessage()).contains("problem parsing cert: java.io.EOFException:");
         final var msg = assertThrows(PreCheckException.class, () -> validateX509Certificate(Bytes.wrap("anyString")));
         assertEquals(ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE, msg.responseCode());
+    }
+
+    @Test
+    void badX509CertificateFailedOnReadAndValidation() throws IOException {
+        final var pemFileName = "badX509.pem";
+        final var pemFilePath = loadResourceFile(pemFileName);
+        final var exception = assertThrows(IOException.class, () -> readCertificatePemFile(pemFilePath));
+        assertEquals("problem parsing cert: java.io.IOException: unknown tag 13 encountered", exception.getMessage());
+
+        final byte[] certBytes = Files.readAllBytes(pemFilePath);
+        final var msg = assertThrows(PreCheckException.class, () -> validateX509Certificate(Bytes.wrap(certBytes)));
+        assertEquals(ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE, msg.responseCode());
+        final var getmsg = assertThrows(PreCheckException.class, () -> getX509Certificate(Bytes.wrap(certBytes)));
+        assertEquals(ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE, getmsg.responseCode());
+    }
+
+    @Test
+    void goodX509CertificateSuccessOnReadAndValidation() throws IOException, CertificateException {
+        final var pemFileName = "goodX509.pem";
+        final var pemFilePath = loadResourceFile(pemFileName);
+        final var cert = readCertificatePemFile(pemFilePath);
+
+        assertEquals("SHA384withRSA", cert.getSigAlgName());
+        assertEquals("X.509", cert.getType());
+        assertDoesNotThrow(() -> getX509Certificate(Bytes.wrap(cert.getEncoded())));
+        assertDoesNotThrow(() -> validateX509Certificate(Bytes.wrap(cert.getEncoded())));
+
+        final byte[] certBytes = Files.readAllBytes(pemFilePath);
+        assertDoesNotThrow(() -> getX509Certificate(Bytes.wrap(certBytes)));
+    }
+
+    @Test
+    void getSameCertificateFromPemEncodingAndPemBytes() throws IOException, CertificateException, PreCheckException {
+        final var pemFileName = "goodX509.pem";
+        final var pemFilePath = loadResourceFile(pemFileName);
+        final var cert = readCertificatePemFile(pemFilePath);
+
+        assertEquals("SHA384withRSA", cert.getSigAlgName());
+        assertEquals("X.509", cert.getType());
+        final var encodingCert = getX509Certificate(Bytes.wrap(cert.getEncoded()));
+
+        final byte[] certBytes = Files.readAllBytes(pemFilePath);
+        final var bytesCert = getX509Certificate(Bytes.wrap(certBytes));
+
+        assertEquals(encodingCert, bytesCert);
+    }
+
+    @Test
+    void goodCertificateBecomeBad() throws IOException {
+        final var goodPem = "goodX509.pem";
+        final var goodFilePath = loadResourceFile(goodPem);
+        final byte[] certBytes = Files.readAllBytes(goodFilePath);
+        final var genPemPath = Path.of(tmpDir.getPath() + "/generated.pem");
+        writeCertificatePemFile(genPemPath, certBytes);
+        final byte[] genAllBytes = Files.readAllBytes(genPemPath);
+        final byte[] genBytes = Arrays.copyOf(genAllBytes, genAllBytes.length - 1);
+
+        final var badPem = "badX509.pem";
+        final var badFilePath = loadResourceFile(badPem);
+        final byte[] badBytes = Files.readAllBytes(badFilePath);
+        assertArrayEquals(genBytes, badBytes);
     }
 }
