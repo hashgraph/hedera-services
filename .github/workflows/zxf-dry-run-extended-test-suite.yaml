@@ -106,20 +106,39 @@ jobs:
       - name: Resolve coverage file paths
         id: coverage_paths
         run: |
-          echo "COVERAGE_REPORTS=$(find . -path '*/build/test-results/test/*' -name 'TEST-*.xml'| tr '\n' ',')" >> $GITHUB_ENV
+          echo "COVERAGE_REPORTS=$(find . -path '*/build/test-results/test/*' -name 'TEST-*.xml') > files.txt
 
       - name: Publish to Codacy
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: |
-          COVERAGE_REPORTS="${{ env.COVERAGE_REPORTS }}"
-          IFS=','
-          for report in $COVERAGE_REPORTS; do
-              echo "Processing report: $report"
-              source <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r $report --partial
-          done
-          unset IFS
+          while IFS= read -r line; do
+            echo "Processing report: $report"
+            source <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r $line --partial
+          done < files.txt
           source <(curl -Ls https://coverage.codacy.com/get.sh) final
+
+        # COVERAGE_REPORTS="${{ env.COVERAGE_REPORTS }}"
+        # IFS=','
+        # for report in $COVERAGE_REPORTS; do
+        #     echo "Processing report: $report"
+        #     source <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r $report --partial
+        # done
+        # unset IFS
+        # source <(curl -Ls https://coverage.codacy.com/get.sh) final
+
+      # - name: Publish to Codacy
+      #   env:
+      #     CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+      #   run: |
+      #     COVERAGE_REPORTS="${{ env.COVERAGE_REPORTS }}"
+      #     IFS=','
+      #     for report in $COVERAGE_REPORTS; do
+      #         echo "Processing report: $report"
+      #         source <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r $report --partial
+      #     done
+      #     unset IFS
+      #     source <(curl -Ls https://coverage.codacy.com/get.sh) final
 
       # - name: Publish to codacy
       #   uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1.3.0
