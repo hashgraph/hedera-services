@@ -574,18 +574,7 @@ public class HandleWorkflow {
                 }
 
                 final var dispatch = userTxnFactory.createDispatch(userTxn, exchangeRateManager.exchangeRates());
-                // WARNING: this relies on the BlockStreamManager's last-handled time not being updated yet to
-                // correctly detect stake period boundary, so the order of the following two lines is important
-                processStakePeriodChanges(userTxn, dispatch);
-                if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
-                    // Check if the tss encryption keys are present in the state and reached threshold
-                    tssBaseService.manageTssStatus(userTxn.stack());
-                }
-                blockStreamManager.setLastHandleTime(userTxn.consensusNow());
-                if (streamMode != BLOCKS) {
-                    // This updates consTimeOfLastHandledTxn as a side effect
-                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-                }
+                advanceTimeFor(userTxn, dispatch);
                 logPreDispatch(userTxn);
                 if (userTxn.type() != ORDINARY_TRANSACTION) {
                     if (userTxn.type() == GENESIS_TRANSACTION) {
@@ -638,12 +627,12 @@ public class HandleWorkflow {
         final var scheduledTxn = userTxnFactory.createUserTxn(
                 state, creatorInfo, consensusNow, ORDINARY_TRANSACTION, executableTxn.payerId(), executableTxn.body());
         final var baseBuilder = baseBuilderFor(executableTxn, scheduledTxn);
-        final var scheduledDispatch =
+        final var dispatch =
                 userTxnFactory.createDispatch(scheduledTxn, baseBuilder, executableTxn.keyVerifier(), SCHEDULED);
-        final HandleOutput handleOutput;
+        advanceTimeFor(scheduledTxn, dispatch);
         try {
-            dispatchProcessor.processDispatch(scheduledDispatch);
-            handleOutput = scheduledTxn
+            dispatchProcessor.processDispatch(dispatch);
+            final var handleOutput = scheduledTxn
                     .stack()
                     .buildHandleOutput(scheduledTxn.consensusNow(), exchangeRateManager.exchangeRates());
             recordCache.addRecordSource(
@@ -655,6 +644,26 @@ public class HandleWorkflow {
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling scheduled transaction", ALERT_MESSAGE, e);
             return failInvalidStreamItems(scheduledTxn);
+        }
+    }
+
+    /**
+     * Manages time-based side effects for the given user transaction and dispatch.
+     * @param userTxn the user transaction to manage time for
+     * @param dispatch the dispatch to manage time for
+     */
+    private void advanceTimeFor(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
+        // WARNING: this relies on the BlockStreamManager's last-handled time not being updated yet to
+        // correctly detect stake period boundary, so the order of the following two lines is important
+        processStakePeriodChanges(userTxn, dispatch);
+        if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
+            // Check if the tss encryption keys are present in the state and reached threshold
+            tssBaseService.manageTssStatus(userTxn.stack());
+        }
+        blockStreamManager.setLastHandleTime(userTxn.consensusNow());
+        if (streamMode != BLOCKS) {
+            // This updates consTimeOfLastHandledTxn as a side effect
+            blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
         }
     }
 
