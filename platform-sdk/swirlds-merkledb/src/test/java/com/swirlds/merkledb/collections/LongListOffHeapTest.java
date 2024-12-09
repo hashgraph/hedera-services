@@ -20,14 +20,13 @@ import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_MAX_LONGS_TO_STORE;
 import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_NUM_LONGS_PER_CHUNK;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
@@ -48,6 +47,28 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     @Override
     protected LongListOffHeap createLongList() {
         return new LongListOffHeap();
+    }
+
+    @Test
+    void writeReadSize1(@TempDir final Path tempDir) throws IOException {
+        try (final AbstractLongList<?> list = createLongList()) {
+            list.updateValidRange(2, 3);
+            list.put(2, 123);
+            final Path file = tempDir.resolve("writeReadSize1.ll");
+            // write longList data
+            list.writeToFile(file);
+            // check file exists and contains some data
+            assertTrue(Files.exists(file), "file does not exist");
+            // now try and construct a new LongList reading from the file
+            try (final LongList list2 = createLongListFromFile(file, CONFIGURATION)) {
+                // now check data and other attributes
+                assertEquals(list.capacity(), list2.capacity(), "Unexpected value for list2.capacity()");
+                assertEquals(list.size(), list2.size(), "Unexpected value for list2.size()");
+                assertEquals(123, list2.get(2));
+            }
+            // delete file as we are done with it
+            Files.delete(file);
+        }
     }
 
     @Override

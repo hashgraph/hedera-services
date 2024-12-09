@@ -88,16 +88,23 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
     /** {@inheritDoc} */
     @Override
     protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
+        if (minValidIndex.get() < 0) {
+            // Empty list, nothing to read
+            return;
+        }
         // read data
         final int numOfArrays = calculateNumberOfChunks(size());
+        final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
+        final int minValidIndexInChunk = toIntExact(minValidIndex.get() % numLongsPerChunk);
         final ByteBuffer buffer = allocateDirect(memoryChunkSize);
         buffer.order(ByteOrder.nativeOrder());
         for (int i = 0; i < numOfArrays; i++) {
+            final int startOffset = (i == firstChunkWithDataIndex) ? minValidIndexInChunk : 0;
             final AtomicLongArray atomicLongArray = new AtomicLongArray(numLongsPerChunk);
             buffer.clear();
             MerkleDbFileUtils.completelyRead(fileChannel, buffer);
             buffer.flip();
-            int index = 0;
+            int index = startOffset;
             while (buffer.remaining() > 0) {
                 atomicLongArray.set(index, buffer.getLong());
                 index++;
