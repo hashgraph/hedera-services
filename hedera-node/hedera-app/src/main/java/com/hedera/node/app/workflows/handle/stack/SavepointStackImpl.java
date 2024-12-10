@@ -93,10 +93,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
 
     private final StreamMode streamMode;
 
-    private int numPresetIds;
-    private int noncesToSkipPerPresetId;
-    private boolean presetIdsAllowed;
-
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
      *
@@ -165,8 +161,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.roundStateChangeListener = requireNonNull(roundStateChangeListener);
         builderSink = new BuilderSinkImpl(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
-        presetIdsAllowed = true;
-        noncesToSkipPerPresetId = maxBuildersBeforeUser + maxBuildersAfterUser;
         setupFirstSavepoint(USER);
         baseBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_TRANSACTION_CUSTOMIZER, streamMode, true);
         this.streamMode = requireNonNull(streamMode);
@@ -198,7 +192,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         this.roundStateChangeListener = null;
         setupFirstSavepoint(category);
         baseBuilder = peek().createBuilder(reversingBehavior, category, customizer, streamMode, true);
-        presetIdsAllowed = false;
     }
 
     @Override
@@ -494,39 +487,31 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         var lastAssignedConsenusTime = consensusTime;
         final var builders = requireNonNull(builderSink).allBuilders();
         TransactionID.Builder idBuilder = null;
-        int indexOfTopLevelRecord = 0;
-        int topLevelNonce = 0;
-        final int n = builders.size();
-        for (int i = 0; i < n; i++) {
-            final var builder = builders.get(i);
-            final var category = builder.category();
-            if (category == USER || category == NODE) {
-                indexOfTopLevelRecord = i;
-                topLevelNonce = builder.transactionID().nonce();
-                idBuilder = builder.transactionID().copyBuilder();
+        int indexOfUserRecord = 0;
+        for (int i = 0, n = builders.size(); i < n; i++) {
+            if (builders.get(i).category() == USER) {
+                indexOfUserRecord = i;
+                idBuilder = builders.get(i).transactionID().copyBuilder();
                 break;
             }
         }
-        int nextNonceOffset = 1;
-        for (int i = 0; i < n; i++) {
+        int nextNonce = 1;
+        for (int i = 0; i < builders.size(); i++) {
             final var builder = builders.get(i);
-            final var nonceOffset =
+            final var nonce =
                     switch (builder.category()) {
                         case USER, SCHEDULED, NODE -> 0;
-                        case PRECEDING, CHILD -> nextNonceOffset++;
+                        case PRECEDING, CHILD -> nextNonce++;
                     };
-            final var txnId = builder.transactionID();
-            // If the builder does not already have a transaction id, then complete with the next nonce offset
-            if (txnId == null || TransactionID.DEFAULT.equals(txnId)) {
-                builder.transactionID(requireNonNull(idBuilder)
-                                .nonce(topLevelNonce + nonceOffset)
-                                .build())
+            // The schedule service specifies the transaction id to use for a triggered transaction
+            if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
+                builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
                         .syncBodyIdFromRecordId();
             }
-            final var consensusNow = consensusTime.plusNanos((long) i - indexOfTopLevelRecord);
+            final var consensusNow = consensusTime.plusNanos((long) i - indexOfUserRecord);
             lastAssignedConsenusTime = consensusNow;
             builder.consensusTimestamp(consensusNow);
-            if (i > indexOfTopLevelRecord) {
+            if (i > indexOfUserRecord) {
                 if (builder.category() != SCHEDULED) {
                     // Only set exchange rates on transactions preceding the user transaction, since
                     // no subsequent child can change the exchange rate
