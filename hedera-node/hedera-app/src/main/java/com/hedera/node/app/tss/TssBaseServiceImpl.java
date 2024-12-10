@@ -34,7 +34,6 @@ import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.node.app.roster.RosterService;
-import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -43,6 +42,7 @@ import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
+import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -53,6 +53,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -126,6 +127,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0560TssBaseSchema());
+        registry.register(new V0570TssBaseSchema());
     }
 
     @Override
@@ -375,6 +377,11 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory) {
         return tssLibrary.getTssMessageFromBytes(wrap, directory);
+    }
+
+    @Override
+    public void manageTssStatus(final State state) {
+        // TODO: Implement this method
     }
 
     @VisibleForTesting

@@ -591,6 +591,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case BLOCK_STREAM_INFO_VALUE -> singletonUpdateChange.blockStreamInfoValueOrThrow();
             case PLATFORM_STATE_VALUE -> singletonUpdateChange.platformStateValueOrThrow();
             case ROSTER_STATE_VALUE -> singletonUpdateChange.rosterStateValueOrThrow();
+            case TSS_STATUS_STATE_VALUE -> singletonUpdateChange.tssStatusStateValueOrThrow();
         };
     }
 
@@ -621,6 +622,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case PENDING_AIRDROP_ID_KEY -> mapChangeKey.pendingAirdropIdKeyOrThrow();
             case TIMESTAMP_SECONDS_KEY -> mapChangeKey.timestampSecondsKeyOrThrow();
             case SCHEDULED_ORDER_KEY -> mapChangeKey.scheduledOrderKeyOrThrow();
+            case TSS_MESSAGE_MAP_KEY -> mapChangeKey.tssMessageMapKeyOrThrow();
+            case TSS_VOTE_MAP_KEY -> mapChangeKey.tssVoteMapKeyOrThrow();
         };
     }
 
@@ -646,6 +649,9 @@ public class StateChangesValidator implements BlockStreamValidator {
             case ROSTER_VALUE -> mapChangeValue.rosterValueOrThrow();
             case SCHEDULED_COUNTS_VALUE -> mapChangeValue.scheduledCountsValueOrThrow();
             case THROTTLE_USAGE_SNAPSHOTS_VALUE -> mapChangeValue.throttleUsageSnapshotsValue();
+            case TSS_ENCRYPTION_KEY_VALUE -> mapChangeValue.tssEncryptionKeyValueOrThrow();
+            case TSS_MESSAGE_VALUE -> mapChangeValue.tssMessageValueOrThrow();
+            case TSS_VOTE_VALUE -> mapChangeValue.tssVoteValueOrThrow();
         };
     }
 

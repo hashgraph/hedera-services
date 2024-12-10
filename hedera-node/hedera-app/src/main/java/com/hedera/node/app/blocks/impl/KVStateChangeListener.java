@@ -56,6 +56,11 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.StateChangeListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -170,6 +175,12 @@ public class KVStateChangeListener implements StateChangeListener {
             case ScheduledOrder scheduledOrder -> MapChangeKey.newBuilder()
                     .scheduledOrderKey(scheduledOrder)
                     .build();
+            case TssMessageMapKey tssMessageMapKey -> MapChangeKey.newBuilder()
+                    .tssMessageMapKey(tssMessageMapKey)
+                    .build();
+            case TssVoteMapKey tssVoteMapKey -> MapChangeKey.newBuilder()
+                    .tssVoteMapKey(tssVoteMapKey)
+                    .build();
             default -> throw new IllegalStateException(
                     "Unrecognized key type " + key.getClass().getSimpleName());
         };
@@ -223,6 +234,15 @@ public class KVStateChangeListener implements StateChangeListener {
                     .build();
             case ThrottleUsageSnapshots throttleUsageSnapshots -> MapChangeValue.newBuilder()
                     .throttleUsageSnapshotsValue(throttleUsageSnapshots)
+                    .build();
+            case TssMessageTransactionBody tssMessageTransactionBody -> MapChangeValue.newBuilder()
+                    .tssMessageValue(tssMessageTransactionBody)
+                    .build();
+            case TssVoteTransactionBody tssVoteTransactionBody -> MapChangeValue.newBuilder()
+                    .tssVoteValue(tssVoteTransactionBody)
+                    .build();
+            case TssEncryptionKeyTransactionBody tssEncryptionKeyTransactionBody -> MapChangeValue.newBuilder()
+                    .tssEncryptionKeyValue(tssEncryptionKeyTransactionBody)
                     .build();
             default -> throw new IllegalStateException(
                     "Unexpected value: " + value.getClass().getSimpleName());

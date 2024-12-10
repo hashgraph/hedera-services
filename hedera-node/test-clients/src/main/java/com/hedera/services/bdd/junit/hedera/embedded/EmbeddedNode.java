@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.BLOCK_STREAMS_DI
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.GENESIS_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.LOG4J2_XML;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.NODE_ADMIN_KEYS_JSON;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork.CONCURRENT_WORKING_DIR;
@@ -74,6 +75,9 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
         System.setProperty(
                 "networkAdmin.upgradeSysFilesLoc",
                 getExternalPath(DATA_CONFIG_DIR).toAbsolutePath().toString());
+        System.setProperty(
+                "bootstrap.nodeAdminKeys.path",
+                getExternalPath(NODE_ADMIN_KEYS_JSON).toAbsolutePath().toString());
         System.setProperty("hedera.profiles.active", "DEV");
         final var log4j2ConfigLoc = getExternalPath(LOG4J2_XML).toString();
         if (isForShared(log4j2ConfigLoc)) {

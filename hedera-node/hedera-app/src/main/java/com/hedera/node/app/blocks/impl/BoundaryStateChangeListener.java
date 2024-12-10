@@ -39,6 +39,7 @@ import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
+import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.OneOf;
@@ -230,6 +231,9 @@ public class BoundaryStateChangeListener implements StateChangeListener {
             }
             case PlatformState platformState -> {
                 return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.PLATFORM_STATE_VALUE, platformState);
+            }
+            case TssStatus tssStatus -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.TSS_STATUS_STATE_VALUE, tssStatus);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());

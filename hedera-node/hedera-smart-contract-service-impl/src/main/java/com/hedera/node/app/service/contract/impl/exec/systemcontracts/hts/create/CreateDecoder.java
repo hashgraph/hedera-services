@@ -516,6 +516,16 @@ public class CreateDecoder {
         return tokenCreateWrapper;
     }
 
+    /**
+     * @param tokenCreateStruct the token struct to use
+     * @param isFungible whether the token is fungible
+     * @param initSupply the initial supply of the token
+     * @param decimals decimals of the token
+     * @param senderId the sender account id
+     * @param nativeOperations the Hedera native operation
+     * @param addressIdConverter the address ID converter for this call
+     * @return a token create wrapper object
+     */
     public TokenCreateWrapper getTokenCreateWrapperWithMetadata(
             @NonNull final Tuple tokenCreateStruct,
             final boolean isFungible,
