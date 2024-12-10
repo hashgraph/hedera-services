@@ -34,7 +34,7 @@ public record SchedulingConfig(
         @ConfigProperty(defaultValue = "10000000") @NetworkProperty long maxNumber,
         @ConfigProperty(defaultValue = "5356800") @NetworkProperty long maxExpirationFutureSeconds,
         @ConfigProperty(defaultValue =
-            "ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,CryptoCreate,CryptoUpdate,FileUpdate,"
+            "ConsensusSubmitMessage,CryptoTransfer,TokenCreate,TokenMint,TokenBurn,CryptoCreate,CryptoUpdate,FileUpdate,"
                 + "SystemDelete,SystemUndelete,Freeze,ContractCall,ContractCreate,ContractUpdate,"
                 + "ContractDelete,CryptoApproveAllowance")
                 @NetworkProperty HederaFunctionalitySet whitelist) {}

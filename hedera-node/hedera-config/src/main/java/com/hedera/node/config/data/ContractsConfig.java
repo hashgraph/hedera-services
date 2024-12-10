@@ -18,6 +18,7 @@ package com.hedera.node.config.data;
 
 import com.hedera.hapi.streams.SidecarType;
 import com.hedera.node.config.NetworkProperty;
+import com.hedera.node.config.types.HederaFunctionalitySet;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.util.Set;
@@ -116,6 +117,9 @@ public record ContractsConfig(
         @ConfigProperty(value = "systemContract.setUnlimitedAutoAssociations.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractSetUnlimitedAutoAssociationsEnabled,
+        @ConfigProperty(value = "systemContract.scheduleService.transactions.enabled`", defaultValue = "TokenCreate")
+                @NetworkProperty
+                HederaFunctionalitySet scheduledTransactions,
         @ConfigProperty(value = "evm.ethTransaction.zeroHapiFees.enabled", defaultValue = "false") @NetworkProperty
                 boolean evmEthTransactionZeroHapiFeesEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
