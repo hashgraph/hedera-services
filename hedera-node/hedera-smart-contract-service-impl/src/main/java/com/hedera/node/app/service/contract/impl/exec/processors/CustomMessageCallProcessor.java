@@ -21,7 +21,6 @@ import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateTranslator.scheduledCreateSelectors;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.createSelectorsMap;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
@@ -129,8 +128,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         // paid using gas; for example, when creating a new token. But the system contract
         // only diverts this value to the network's fee collection accounts, instead of
         // actually receiving it.
-        // We do not allow sending value to Hedera system contracts except in the case of token creation
-        // or scheduled token creation.
+        // We do not allow sending value to Hedera system contracts except in the case of token creation.
         if (systemContracts.containsKey(codeAddress)) {
             if (!isTokenCreation(frame)) {
                 doHaltIfInvalidSystemCall(frame, tracer);
@@ -184,11 +182,10 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     }
 
     /**
-     * Checks if the given message frame is a token creation or a scheduled token create scenario.
+     * Checks if the given message frame is a token creation scenario.
      *
      * <p>This method inspects the first four bytes of the input data of the message frame
-     * to determine if it matches any of the known selectors for creating fungible or non-fungible tokens
-     * or scheduling the creates.
+     * to determine if it matches any of the known selectors for creating fungible or non-fungible tokens.
      *
      * @param frame the message frame to check
      * @return true if the input data matches any of the known create selectors, false otherwise
@@ -198,10 +195,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             return false;
         }
         var selector = frame.getInputData().slice(0, 4).toArray();
-        final var isCreate = createSelectorsMap.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), selector));
-        final var isScheduledCreate =
-                scheduledCreateSelectors.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), selector));
-        return isCreate || isScheduledCreate;
+        return createSelectorsMap.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), selector));
     }
 
     /**

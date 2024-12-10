@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasPlus;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.RC_AND_ADDRESS_ENCODER;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.ClassicCreatesCall.FIXED_GAS_COST;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_SCHEDULE_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONTRACT_ACCOUNT;
@@ -43,8 +42,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import java.util.Set;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.junit.jupiter.api.Test;
@@ -74,40 +71,6 @@ class ScheduledCreateCallTest extends CallTestBase {
     private TransactionBody syntheticScheduleCreate;
 
     @Test
-    void executionFailsWithInsufficientFee() {
-        // given
-
-        syntheticScheduleCreate = TransactionBody.newBuilder()
-                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-                        .scheduledTransactionBody(SchedulableTransactionBody.newBuilder()
-                                .tokenCreation(TokenCreateTransactionBody.newBuilder()
-                                        .symbol("TEST")
-                                        .name("Test Token")
-                                        .treasury(SENDER_ID)
-                                        .build())
-                                .build())
-                        .build())
-                .build();
-
-        prepareCall();
-        given(frame.getValue()).willReturn(Wei.of(0));
-        given(gasCalculator.feeCalculatorPriceInTinyBars(any(), any())).willReturn(1000L);
-        given(gasCalculator.gasCostInTinybars(100000L)).willReturn(100L);
-        given(systemContractOperations.externalizePreemptedDispatch(any(), any(), any()))
-                .willReturn(recordBuilder);
-        // when
-        final var result = subject.execute(frame).fullResult().result();
-
-        // then
-        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        assertEquals(
-                Bytes.wrap(RC_AND_ADDRESS_ENCODER
-                        .encodeElements((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS)
-                        .array()),
-                result.getOutput());
-    }
-
-    @Test
     void executionFailsWithMissingTokenSymbol() {
         // given
         syntheticScheduleCreate = TransactionBody.newBuilder()
@@ -123,9 +86,6 @@ class ScheduledCreateCallTest extends CallTestBase {
 
         prepareCall();
 
-        given(frame.getValue()).willReturn(Wei.of(1100));
-        given(gasCalculator.feeCalculatorPriceInTinyBars(any(), any())).willReturn(1000L);
-        given(gasCalculator.gasCostInTinybars(100000L)).willReturn(100L);
         // when
         final var result = subject.execute(frame).fullResult();
 
@@ -153,9 +113,6 @@ class ScheduledCreateCallTest extends CallTestBase {
 
         prepareCall();
 
-        given(frame.getValue()).willReturn(Wei.of(1100));
-        given(gasCalculator.feeCalculatorPriceInTinyBars(any(), any())).willReturn(1000L);
-        given(gasCalculator.gasCostInTinybars(100000L)).willReturn(100L);
         // when
         final var result = subject.execute(frame).fullResult();
 
@@ -183,9 +140,6 @@ class ScheduledCreateCallTest extends CallTestBase {
 
         prepareCall();
 
-        given(frame.getValue()).willReturn(Wei.of(1100));
-        given(gasCalculator.feeCalculatorPriceInTinyBars(any(), any())).willReturn(1000L);
-        given(gasCalculator.gasCostInTinybars(100000L)).willReturn(100L);
         // when
         final var result = subject.execute(frame).fullResult();
 
@@ -214,9 +168,6 @@ class ScheduledCreateCallTest extends CallTestBase {
 
         prepareCall();
 
-        given(frame.getValue()).willReturn(Wei.of(1100));
-        given(gasCalculator.feeCalculatorPriceInTinyBars(any(), any())).willReturn(1000L);
-        given(gasCalculator.gasCostInTinybars(100000L)).willReturn(100L);
         given(nativeOperations.getAccount(SENDER_ID)).willReturn(CONTRACT_ACCOUNT);
         given(systemContractOperations.dispatch(any(), any(), any(), any(), any(), any()))
                 .willReturn(recordBuilder);

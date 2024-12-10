@@ -45,7 +45,7 @@ public class ScheduledCreateTranslator extends AbstractCallTranslator<HssCallAtt
             "scheduleCreateNonFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))",
             ReturnTypes.RESPONSE_CODE_ADDRESS);
 
-    public static final Map<Function, ScheduledCreateDecoderFunction> scheduledCreateSelectors = new HashMap<>();
+    private static final Map<Function, ScheduledCreateDecoderFunction> scheduledCreateSelectors = new HashMap<>();
 
     @Inject
     public ScheduledCreateTranslator(@NonNull final ScheduledCreateDecoder decoder) {

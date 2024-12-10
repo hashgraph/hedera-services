@@ -54,7 +54,6 @@ public class ScheduleCreateTokenTest {
             allRunFor(
                     spec,
                     contract.call("scheduleCreateFT", autoRenew, treasury)
-                            .sending(1_000_000_000L)
                             .gas(1_000_000L)
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(scheduleAddress.get());
@@ -71,7 +70,6 @@ public class ScheduleCreateTokenTest {
             allRunFor(
                     spec,
                     contract.call("scheduleCreateNFT", autoRenew, treasury)
-                            .sending(2_000_000_000L)
                             .gas(1_000_000L)
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(scheduleAddress.get());

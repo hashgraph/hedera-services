@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
@@ -26,10 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasPlus;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.RC_AND_ADDRESS_ENCODER;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.ClassicCreatesCall.FIXED_GAS_COST;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static java.util.Objects.requireNonNull;
 
@@ -47,7 +42,6 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuild
 import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class ScheduledCreateCall extends AbstractCall {
@@ -76,30 +70,14 @@ public class ScheduledCreateCall extends AbstractCall {
 
     @Override
     public PricedResult execute(@NonNull final MessageFrame frame) {
-        // Reusing some of the logic for token create in order to calculate the fees required for the scheduled
-        // transaction
-        // and do the necessary checks before its execution.
-        // This includes the gas cost for the inner token create + non-gas sent via {msg.value}.
 
-        final var costOfInnerCreate = gasCalculator.feeCalculatorPriceInTinyBars(
-                wrapIntoSyntheticTokenCreateTransactionBody(syntheticScheduleCreate), sender);
-        final long nonGasCostOfInnerCreate =
-                (costOfInnerCreate + (costOfInnerCreate / 5)) - gasCalculator.gasCostInTinybars(FIXED_GAS_COST);
-        if (frame.getValue().lessThan(Wei.of(nonGasCostOfInnerCreate))) {
-            // If the sender haven't provided enough funds to cover the inner token create, we preempt the dispatch
-            return completionWith(
-                    FIXED_GAS_COST,
-                    systemContractOperations()
-                            .externalizePreemptedDispatch(
-                                    syntheticScheduleCreate, INSUFFICIENT_TX_FEE, SCHEDULE_CREATE),
-                    RC_AND_ADDRESS_ENCODER.encodeElements((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS));
-        } else {
-            operations().collectFee(sender, nonGasCostOfInnerCreate);
-        }
+        final var gasRequirement =
+                dispatchGasCalculator.gasRequirement(syntheticScheduleCreate, gasCalculator, enhancement, sender);
 
+        // Add inner transaction validation before dispatching to the ScheduleService
         final var validStatus = validateTokenField(syntheticScheduleCreate);
         if (validStatus != OK) {
-            return gasOnly(revertResult(validStatus, FIXED_GAS_COST), validStatus, false);
+            return gasOnly(revertResult(validStatus, gasRequirement), validStatus, false);
         }
 
         final var recordBuilder = systemContractOperations()
@@ -112,33 +90,13 @@ public class ScheduledCreateCall extends AbstractCall {
                         UsePresetTxnId.YES);
 
         final var status = recordBuilder.status();
-        final var gasRequirement =
-                dispatchGasCalculator.gasRequirement(syntheticScheduleCreate, gasCalculator, enhancement, sender);
         if (status != SUCCESS) {
-            return reversionWith(status, gasRequirement);
+            return gasOnly(revertResult(status, gasRequirement), status, false);
         } else {
             final var encodedRes = RC_AND_ADDRESS_ENCODER.encodeElements(
                     (long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.scheduleID()));
-            return gasPlus(
-                    successResult(encodedRes, gasRequirement + FIXED_GAS_COST, recordBuilder),
-                    status,
-                    false,
-                    nonGasCostOfInnerCreate);
+            return gasOnly(successResult(encodedRes, gasRequirement, recordBuilder), status, false);
         }
-    }
-
-    /**
-     * Wraps the given {@link com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody} into a synthetic token create transaction body.
-     *
-     * @param transactionBody the transaction body
-     * @return the synthetic token create transaction body
-     */
-    private TransactionBody wrapIntoSyntheticTokenCreateTransactionBody(
-            @NonNull final TransactionBody transactionBody) {
-        final var tokenCreateTransactionBody = getTokenCreateTransactionBody(transactionBody);
-        return TransactionBody.newBuilder()
-                .tokenCreation(tokenCreateTransactionBody)
-                .build();
     }
 
     private ResponseCodeEnum validateTokenField(@NonNull final TransactionBody transactionBody) {

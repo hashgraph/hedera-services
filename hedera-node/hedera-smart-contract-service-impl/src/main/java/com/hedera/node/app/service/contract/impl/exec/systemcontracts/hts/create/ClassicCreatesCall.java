@@ -73,7 +73,7 @@ public class ClassicCreatesCall extends AbstractCall {
     /**
      * The mono-service stipulated gas cost for a token creation (remaining fee is collected by sent value)
      */
-    public static final long FIXED_GAS_COST = 100_000L;
+    private static final long FIXED_GAS_COST = 100_000L;
 
     @Nullable
     final TransactionBody syntheticCreate;
